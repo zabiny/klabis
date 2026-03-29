@@ -1388,10 +1388,11 @@ class MemberControllerApiTest {
             );
 
             // Assert
-            Member.SuspendMembership expectedCommand = new Member.SuspendMembership(UserId.fromString(
-                    "48e11797-a61b-4783-bc1d-1c11d1b1d288"),
-                    DeactivationReason.ODHLASKA,
-                    "Member requested termination");
+            Member.SuspendMembership expectedCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"))
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Member requested termination")
+                    .build();
 
             Mockito.verify(managementService)
                     .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand));
@@ -1509,8 +1510,9 @@ class MemberControllerApiTest {
 
             mockMvc.perform(postMemberIdResume(memberId));
 
-            Member.ResumeMembership expectedCommand = new Member.ResumeMembership(
-                    UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"));
+            Member.ResumeMembership expectedCommand = MemberResumeMembershipBuilder.builder()
+                    .resumedBy(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"))
+                    .build();
             Mockito.verify(managementService).resumeMember(eq(new MemberId(memberId)), eq(expectedCommand));
         }
 

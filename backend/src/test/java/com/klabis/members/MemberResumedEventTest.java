@@ -32,14 +32,15 @@ class MemberResumedEventTest {
                 .build();
 
         UserId adminUserId = new UserId(UUID.randomUUID());
-        member.handle(new Member.SuspendMembership(
-                adminUserId,
-                DeactivationReason.ODHLASKA,
-                "Suspension note"
-        ));
+        member.handle(MemberSuspendMembershipBuilder.builder()
+                .suspendedBy(adminUserId)
+                .reason(DeactivationReason.ODHLASKA)
+                .note("Suspension note")
+                .build());
 
         UserId resumedBy = new UserId(UUID.randomUUID());
-        Member.ResumeMembership command = new Member.ResumeMembership(resumedBy);
+        Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
+                .resumedBy(resumedBy).build();
 
         MemberResumedEvent event = MemberResumedEvent.fromAggregate(member, command);
 

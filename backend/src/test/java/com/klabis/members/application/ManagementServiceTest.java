@@ -9,6 +9,8 @@ import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
+import com.klabis.members.domain.MemberResumeMembershipBuilder;
+import com.klabis.members.domain.MemberSuspendMembershipBuilder;
 import com.klabis.members.domain.MemberUpdateMemberBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -158,9 +160,11 @@ class ManagementServiceTest {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.ODHLASKA, "Member requested resignation"
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note("Member requested resignation")
+                        .build();
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
@@ -185,9 +189,11 @@ class ManagementServiceTest {
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
                 doNothing().when(userService).suspendUser(any(UserId.class));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.ODHLASKA, "Member requested resignation"
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note("Member requested resignation")
+                        .build();
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.isActive()).isFalse();
@@ -200,9 +206,11 @@ class ManagementServiceTest {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.PRESTUP, null
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.PRESTUP)
+                        .note(null)
+                        .build();
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
@@ -221,9 +229,11 @@ class ManagementServiceTest {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.OTHER, "Administrative decision"
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.OTHER)
+                        .note("Administrative decision")
+                        .build();
                 testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
@@ -264,9 +274,11 @@ class ManagementServiceTest {
 
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(suspendedMember));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.OTHER)
+                        .note("Second termination attempt")
+                        .build();
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member is already suspended");
@@ -286,9 +298,11 @@ class ManagementServiceTest {
                 when(memberRepository.save(any(Member.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.PRESTUP, null
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.PRESTUP)
+                        .note(null)
+                        .build();
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
@@ -307,9 +321,11 @@ class ManagementServiceTest {
 
                 when(memberRepository.findById(new MemberId(nonExistentId))).thenReturn(Optional.empty());
 
-                var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
-                );
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command))
                         .isInstanceOf(MemberNotFoundException.class)
                         .hasMessageContaining("Member not found");
@@ -433,7 +449,7 @@ class ManagementServiceTest {
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
             Member result = testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
@@ -456,7 +472,7 @@ class ManagementServiceTest {
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));
 
-            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
             assertThatThrownBy(() -> testedSubject.resumeMember(new MemberId(testMemberId), command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("already active");
@@ -472,7 +488,7 @@ class ManagementServiceTest {
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
             doNothing().when(userService).resumeUser(any(UserId.class));
 
-            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
             Member result = testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
@@ -485,7 +501,7 @@ class ManagementServiceTest {
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
             testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);

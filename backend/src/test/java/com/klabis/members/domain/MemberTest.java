@@ -7,6 +7,8 @@ import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
+import com.klabis.members.domain.MemberResumeMembershipBuilder;
+import com.klabis.members.domain.MemberSuspendMembershipBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -533,11 +535,11 @@ class MemberTest {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.SuspendMembership command = new Member.SuspendMembership(
-                    adminUserId,
-                    DeactivationReason.ODHLASKA,
-                    "Member requested termination"
-            );
+            Member.SuspendMembership command = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Member requested termination")
+                    .build();
 
             // Act
             activeMember.handle(command);
@@ -556,11 +558,11 @@ class MemberTest {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.SuspendMembership command = new Member.SuspendMembership(
-                    adminUserId,
-                    DeactivationReason.PRESTUP,
-                    null
-            );
+            Member.SuspendMembership command = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.PRESTUP)
+                    .note(null)
+                    .build();
 
             // Act
             // Clear creation event first, then suspend
@@ -579,19 +581,19 @@ class MemberTest {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.SuspendMembership firstCommand = new Member.SuspendMembership(
-                    adminUserId,
-                    DeactivationReason.ODHLASKA,
-                    "First termination"
-            );
+            Member.SuspendMembership firstCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("First termination")
+                    .build();
             activeMember.handle(firstCommand);
 
             UserId anotherAdmin = new UserId(UUID.randomUUID());
-            Member.SuspendMembership secondCommand = new Member.SuspendMembership(
-                    anotherAdmin,
-                    DeactivationReason.OTHER,
-                    "Second termination attempt"
-            );
+            Member.SuspendMembership secondCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(anotherAdmin)
+                    .reason(DeactivationReason.OTHER)
+                    .note("Second termination attempt")
+                    .build();
 
             // Act & Assert
             assertThatThrownBy(() -> activeMember.handle(secondCommand))
@@ -607,20 +609,20 @@ class MemberTest {
 
             // Test ODHLASKA
             Member member1 = createActiveMember();
-            member1.handle(new Member.SuspendMembership(
-                    adminUserId, DeactivationReason.ODHLASKA, "Note 1"));
+            member1.handle(MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note("Note 1").build());
             assertThat(member1.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
 
             // Test PRESTUP
             Member member2 = createActiveMember();
-            member2.handle(new Member.SuspendMembership(
-                    adminUserId, DeactivationReason.PRESTUP, "Note 2"));
+            member2.handle(MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId).reason(DeactivationReason.PRESTUP).note("Note 2").build());
             assertThat(member2.getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
 
             // Test OTHER
             Member member3 = createActiveMember();
-            member3.handle(new Member.SuspendMembership(
-                    adminUserId, DeactivationReason.OTHER, "Note 3"));
+            member3.handle(MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId).reason(DeactivationReason.OTHER).note("Note 3").build());
             assertThat(member3.getSuspensionReason()).isEqualTo(DeactivationReason.OTHER);
         }
 
@@ -633,8 +635,8 @@ class MemberTest {
             var beforeSuspension = System.currentTimeMillis();
 
             // Act
-            activeMember.handle(new Member.SuspendMembership(
-                    adminUserId, DeactivationReason.ODHLASKA, null));
+            activeMember.handle(MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note(null).build());
             var afterSuspension = System.currentTimeMillis();
 
             // Assert
@@ -666,11 +668,11 @@ class MemberTest {
         private Member createSuspendedMember() {
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.SuspendMembership suspendCommand = new Member.SuspendMembership(
-                    adminUserId,
-                    DeactivationReason.ODHLASKA,
-                    "Member requested termination"
-            );
+            Member.SuspendMembership suspendCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Member requested termination")
+                    .build();
             activeMember.handle(suspendCommand);
             return activeMember;
         }
@@ -681,7 +683,8 @@ class MemberTest {
             // Arrange
             Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
+            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
+                    .resumedBy(adminUserId).build();
 
             // Act
             suspendedMember.handle(command);
@@ -700,7 +703,8 @@ class MemberTest {
             // Arrange
             Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
+            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
+                    .resumedBy(adminUserId).build();
 
             // Act - clear creation event first, then resume
             suspendedMember.clearDomainEvents();
@@ -718,7 +722,8 @@ class MemberTest {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
+            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
+                    .resumedBy(adminUserId).build();
 
             // Act & Assert
             assertThatThrownBy(() -> activeMember.handle(command))
@@ -732,7 +737,8 @@ class MemberTest {
             // Arrange
             Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
+            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
+                    .resumedBy(adminUserId).build();
 
             var beforeResume = System.currentTimeMillis();
 

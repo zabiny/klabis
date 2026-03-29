@@ -3,6 +3,7 @@ package com.klabis.events.domain;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -728,8 +729,11 @@ class EventTest {
 
             assertThat(registrations).hasSize(2);
 
-            assertThatThrownBy(() -> registrations.add(EventRegistration.create(new MemberId(UUID.randomUUID()),
-                    SiCardNumber.of("111111"))))
+            assertThatThrownBy(() -> registrations.add(EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(new MemberId(UUID.randomUUID()))
+                            .siCardNumber(SiCardNumber.of("111111"))
+                            .build())))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
     }

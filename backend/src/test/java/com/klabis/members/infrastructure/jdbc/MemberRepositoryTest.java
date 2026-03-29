@@ -1056,11 +1056,11 @@ class MemberRepositoryTest {
                     .build();
 
             // When - suspend the member
-            Member.SuspendMembership suspendCommand = new Member.SuspendMembership(
-                    adminUserId,
-                    DeactivationReason.ODHLASKA,
-                    "Member requested termination"
-            );
+            Member.SuspendMembership suspendCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Member requested termination")
+                    .build();
             member.handle(suspendCommand);
 
             // And save to database

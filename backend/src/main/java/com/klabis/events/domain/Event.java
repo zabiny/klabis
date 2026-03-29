@@ -499,7 +499,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
 
         // Create and add registration
-        EventRegistration registration = EventRegistration.create(memberId, siCardNumber);
+        EventRegistration registration = EventRegistration.create(
+                new EventRegistration.CreateEventRegistration(memberId, siCardNumber));
         registrations.add(registration);
 
         // Register domain event

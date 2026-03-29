@@ -1,6 +1,7 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +38,11 @@ class EventRegistrationTest {
             Instant beforeCreation = Instant.now();
 
             // Act
-            EventRegistration registration = EventRegistration.create(memberId, siCardNumber);
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId)
+                            .siCardNumber(siCardNumber)
+                            .build());
 
             // Assert
             assertThat(registration).isNotNull();
@@ -57,8 +62,12 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act
-            EventRegistration registration1 = EventRegistration.create(memberId, siCardNumber);
-            EventRegistration registration2 = EventRegistration.create(memberId, siCardNumber);
+            EventRegistration registration1 = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(siCardNumber).build());
+            EventRegistration registration2 = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(siCardNumber).build());
 
             // Assert
             assertThat(registration1.id()).isNotEqualTo(registration2.id());
@@ -71,7 +80,9 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act & Assert
-            assertThatThrownBy(() -> EventRegistration.create(null, siCardNumber))
+            assertThatThrownBy(() -> EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .siCardNumber(siCardNumber).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("memberId");
         }
@@ -83,7 +94,9 @@ class EventRegistrationTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert
-            assertThatThrownBy(() -> EventRegistration.create(memberId, null))
+            assertThatThrownBy(() -> EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("siCardNumber");
         }

@@ -1,6 +1,7 @@
 package com.klabis.events.domain;
 
 import com.klabis.members.MemberId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.ValueObject;
 
@@ -22,6 +23,12 @@ import java.util.UUID;
  */
 @ValueObject
 public class EventRegistration {
+
+    @RecordBuilder
+    public record CreateEventRegistration(
+            MemberId memberId,
+            SiCardNumber siCardNumber
+    ) {}
 
     private final UUID id;
     @Association
@@ -49,23 +56,22 @@ public class EventRegistration {
      * <p>
      * Generates a unique ID and sets the registration timestamp automatically.
      *
-     * @param memberId     member's user ID (required)
-     * @param siCardNumber SI card number (required)
+     * @param command creation command with memberId and siCardNumber (both required)
      * @return new EventRegistration instance
      * @throws IllegalArgumentException if validation fails
      */
-    public static EventRegistration create(MemberId memberId, SiCardNumber siCardNumber) {
-        if (memberId == null) {
+    public static EventRegistration create(CreateEventRegistration command) {
+        if (command.memberId() == null) {
             throw new IllegalArgumentException("memberId is required");
         }
-        if (siCardNumber == null) {
+        if (command.siCardNumber() == null) {
             throw new IllegalArgumentException("siCardNumber is required");
         }
 
         return new EventRegistration(
                 UUID.randomUUID(),
-                memberId,
-                siCardNumber,
+                command.memberId(),
+                command.siCardNumber(),
                 Instant.now()
         );
     }

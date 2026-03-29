@@ -6,6 +6,7 @@ import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventRegisterCommandBuilder;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
@@ -265,7 +266,8 @@ class EventRegistrationServiceTest {
                     LocalDate.of(2026, 3, 1),
                     EventStatus.ACTIVE,
                     null,
-                    List.of(EventRegistration.create(TEST_MEMBER_ID, SiCardNumber.of("123456"))),
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
             );
 

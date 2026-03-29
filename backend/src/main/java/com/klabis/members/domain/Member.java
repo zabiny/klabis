@@ -125,6 +125,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * This command is used by administrators to suspend a member's membership
      * with a specific reason and optional note.
      */
+    @RecordBuilder
     public record SuspendMembership(
             UserId suspendedBy,
             DeactivationReason reason,
@@ -137,6 +138,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * This command is used by administrators to resume a member's membership
      * that was previously suspended.
      */
+    @RecordBuilder
     public record ResumeMembership(
             UserId resumedBy
     ) {}

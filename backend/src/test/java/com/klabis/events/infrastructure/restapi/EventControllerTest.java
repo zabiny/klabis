@@ -16,6 +16,7 @@ import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.EventId;
@@ -527,7 +528,9 @@ class EventControllerTest {
                     .build());
             activeEvent.publish();
 
-            EventRegistration registration = EventRegistration.create(memberId, new SiCardNumber("12345"));
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(new SiCardNumber("12345")).build());
             doReturn(java.util.Optional.of(registration)).when(activeEvent).findRegistration(memberId);
 
             when(eventManagementService.getEvent(any())).thenReturn(activeEvent);
@@ -573,7 +576,9 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             Event event = EventTestDataBuilder.anEvent().buildPublished();
 
-            EventRegistration registration = EventRegistration.create(memberId, new SiCardNumber("12345"));
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(new SiCardNumber("12345")).build());
             MemberDto memberDto = new MemberDto(memberId.value(), "Jan", "Novak", "jan@example.com");
 
             when(eventManagementService.getEvent(any())).thenReturn(event);
