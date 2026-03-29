@@ -1219,7 +1219,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withNoGuardian()
                     .build();
 
@@ -1233,7 +1233,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("900101/1235")
                     .withNoGuardian()
                     .build();
@@ -1248,7 +1248,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("900101/1235")
                     .withNoGuardian()
                     .build();
@@ -1265,7 +1265,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
@@ -1282,7 +1282,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
@@ -1297,7 +1297,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 1, 15))
                     .withGender(Gender.FEMALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("905115/1239")
                     .withNoGuardian()
                     .build();
@@ -1312,7 +1312,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("000101/1235")
                     .withNoGuardian()
                     .build();
@@ -1328,7 +1328,7 @@ class MemberTest {
             Member member = aMember()
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withGender(Gender.MALE)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("800515/1235")
                     .withNoGuardian()
                     .build();

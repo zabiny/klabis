@@ -192,7 +192,7 @@ class UpdateMemberIntegrationTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
-                                            "nationality": "CZE",
+                                            "nationality": "CZ",
                                             "gender": "FEMALE",
                                             "birthNumber": "955215/2345"
                                         }

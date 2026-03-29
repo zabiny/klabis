@@ -33,7 +33,7 @@ VALUES ('11111111-1111-1111-1111-111111111111', -- User ID 1
         'Test', -- First name
         'User', -- Last name
         '1990-01-15', -- Date of birth
-        'SVK', -- Nationality (ISO 3166-1 alpha-3) - using SVK to avoid birth number requirement
+        'SK', -- Nationality (ISO 3166-1 alpha-2) - using SK to avoid birth number requirement
         'MALE', -- Gender
         'test.user@example.com', -- Email
         '+420123456789', -- Phone
@@ -76,7 +76,7 @@ VALUES ('22222222-2222-2222-2222-222222222222', -- User ID 2
         'Second', -- First name
         'User', -- Last name
         '1985-05-20', -- Date of birth
-        'SVK', -- Nationality (ISO 3166-1 alpha-3)
+        'SK', -- Nationality (ISO 3166-1 alpha-2)
         'FEMALE', -- Gender
         'second.user@example.com', -- Email
         '+42123456789', -- Phone

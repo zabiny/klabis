@@ -40,7 +40,7 @@ INSERT INTO members (
     'Petra',
     'Mala',
     '2010-08-15',  -- Minor (under 18)
-    'CZE',
+    'SK',
     'FEMALE',
     NULL,  -- Member has NO email
     NULL,  -- Member has NO phone

@@ -138,7 +138,7 @@ public final class PersonalInformation {
     /**
      * Returns the nationality as an ISO 3166-1 country code string.
      *
-     * @return the country code (e.g., "CZE", "US")
+     * @return the country code (e.g., "CZ", "US")
      */
     public String getNationalityCode() {
         return nationality.code();

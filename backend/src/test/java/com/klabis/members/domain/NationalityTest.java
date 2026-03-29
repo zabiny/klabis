@@ -19,62 +19,53 @@ class NationalityTest {
 
         // Then
         assertThat(nationality.code()).isEqualTo("CZ");
-        assertThat(nationality.isAlpha2()).isTrue();
-        assertThat(nationality.isAlpha3()).isFalse();
     }
 
     @Test
-    @DisplayName("Should create valid nationality with alpha-3 code")
-    void shouldCreateValidAlpha3Nationality() {
-        // Given
-        String code = "CZE";
-
-        // When
-        Nationality nationality = Nationality.of(code);
-
-        // Then
-        assertThat(nationality.code()).isEqualTo("CZE");
-        assertThat(nationality.isAlpha3()).isTrue();
-        assertThat(nationality.isAlpha2()).isFalse();
+    @DisplayName("Should reject alpha-3 code")
+    void shouldRejectAlpha3Code() {
+        assertThatThrownBy(() -> Nationality.of("CZE"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ISO 3166-1");
     }
 
     @Test
     @DisplayName("Should normalize lowercase code to uppercase")
     void shouldNormalizeLowercaseToUppercase() {
         // Given
-        String code = "cze";
+        String code = "cz";
 
         // When
         Nationality nationality = Nationality.of(code);
 
         // Then
-        assertThat(nationality.code()).isEqualTo("CZE");
+        assertThat(nationality.code()).isEqualTo("CZ");
     }
 
     @Test
     @DisplayName("Should normalize mixed case code to uppercase")
     void shouldNormalizeMixedCaseToUppercase() {
         // Given
-        String code = "CzE";
+        String code = "Cz";
 
         // When
         Nationality nationality = Nationality.of(code);
 
         // Then
-        assertThat(nationality.code()).isEqualTo("CZE");
+        assertThat(nationality.code()).isEqualTo("CZ");
     }
 
     @Test
     @DisplayName("Should trim whitespace from code")
     void shouldTrimWhitespace() {
         // Given
-        String code = "  CZE  ";
+        String code = "  CZ  ";
 
         // When
         Nationality nationality = Nationality.of(code);
 
         // Then
-        assertThat(nationality.code()).isEqualTo("CZE");
+        assertThat(nationality.code()).isEqualTo("CZ");
     }
 
     @Test
@@ -141,10 +132,10 @@ class NationalityTest {
     @DisplayName("Should implement equality correctly")
     void shouldImplementEqualityCorrectly() {
         // Given
-        Nationality nationality1 = Nationality.of("CZE");
-        Nationality nationality2 = Nationality.of("CZE");
-        Nationality nationality3 = Nationality.of("USA");
-        Nationality nationality4 = Nationality.of("cze"); // same after normalization
+        Nationality nationality1 = Nationality.of("CZ");
+        Nationality nationality2 = Nationality.of("CZ");
+        Nationality nationality3 = Nationality.of("US");
+        Nationality nationality4 = Nationality.of("cz"); // same after normalization
 
         // Then
         assertThat(nationality1).isEqualTo(nationality2);
@@ -158,26 +149,26 @@ class NationalityTest {
     @DisplayName("Should have proper toString")
     void shouldHaveProperToString() {
         // Given
-        Nationality nationality = Nationality.of("CZE");
+        Nationality nationality = Nationality.of("CZ");
 
         // When
         String str = nationality.toString();
 
         // Then
-        assertThat(str).isEqualTo("CZE");
+        assertThat(str).isEqualTo("CZ");
     }
 
     @Test
     @DisplayName("Should return display name")
     void shouldReturnDisplayName() {
         // Given
-        Nationality nationality = Nationality.of("CZE");
+        Nationality nationality = Nationality.of("CZ");
 
         // When
         String displayName = nationality.displayName();
 
         // Then
-        assertThat(displayName).isEqualTo("CZE");
+        assertThat(displayName).isEqualTo("CZ");
     }
 
     @Test
@@ -192,24 +183,35 @@ class NationalityTest {
     }
 
     @Test
-    @DisplayName("Should accept common alpha-3 codes")
-    void shouldAcceptCommonAlpha3Codes() {
-        assertThatCode(() -> Nationality.of("USA")).doesNotThrowAnyException();
-        assertThatCode(() -> Nationality.of("GBR")).doesNotThrowAnyException();
-        assertThatCode(() -> Nationality.of("DEU")).doesNotThrowAnyException();
-        assertThatCode(() -> Nationality.of("FRA")).doesNotThrowAnyException();
-        assertThatCode(() -> Nationality.of("SVK")).doesNotThrowAnyException();
-        assertThatCode(() -> Nationality.of("POL")).doesNotThrowAnyException();
+    @DisplayName("Should reject alpha-3 codes")
+    void shouldRejectAlpha3Codes() {
+        assertThatThrownBy(() -> Nationality.of("USA"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ISO 3166-1");
+        assertThatThrownBy(() -> Nationality.of("GBR"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ISO 3166-1");
+        assertThatThrownBy(() -> Nationality.of("POL"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ISO 3166-1");
     }
 
     @Test
     @DisplayName("Should be immutable as a record")
     void shouldBeImmutable() {
         // Given
-        Nationality nationality = Nationality.of("CZE");
+        Nationality nationality = Nationality.of("CZ");
 
         // When & Then - records are immutable by design
-        assertThat(nationality.code()).isEqualTo("CZE");
+        assertThat(nationality.code()).isEqualTo("CZ");
         // No setters available
+    }
+
+    @Test
+    @DisplayName("Should identify Czech nationality by CZ only")
+    void shouldIdentifyCzechNationalityByAlpha2Only() {
+        assertThat(Nationality.of("CZ").isCzech()).isTrue();
+        assertThat(Nationality.of("SK").isCzech()).isFalse();
+        assertThat(Nationality.of("US").isCzech()).isFalse();
     }
 }

@@ -83,7 +83,7 @@ class ManagementServiceTest {
 
             Member czechMember = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("900515/1234")
                     .build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(czechMember));
@@ -394,7 +394,7 @@ class ManagementServiceTest {
         void shouldPublishBirthNumberAccessedEventForAdmin() {
             Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
-                    .withNationality("CZE")
+                    .withNationality("CZ")
                     .withBirthNumber("900101/1234")
                     .build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));

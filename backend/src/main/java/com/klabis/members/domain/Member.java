@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Member aggregate root.
@@ -63,7 +62,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private DeactivationReason suspensionReason;
     private Instant suspendedAt;
     private String suspensionNote;
-    private String suspendedBy;
+    private UserId suspendedBy;
 
     // ========== Command Records ==========
 
@@ -165,7 +164,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             DeactivationReason suspensionReason,
             Instant suspendedAt,
             String suspensionNote,
-            String suspendedBy) {
+            UserId suspendedBy) {
 
         this.id = id;
         this.registrationNumber = registrationNumber;
@@ -243,7 +242,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             DeactivationReason suspensionReason,
             Instant suspendedAt,
             String suspensionNote,
-            String suspendedBy,
+            UserId suspendedBy,
             AuditMetadata auditMetadata) {
 
         Member member = new Member(
@@ -507,7 +506,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     public UserId getSuspendedBy() {
-        return suspendedBy != null ? new UserId(UUID.fromString(suspendedBy)) : null;
+        return suspendedBy;
     }
 
     // ========== Command Handlers (Domain Methods) ==========
@@ -590,7 +589,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspensionReason = command.reason();
         this.suspendedAt = Instant.now();
         this.suspensionNote = command.note();
-        this.suspendedBy = command.suspendedBy().uuid().toString();
+        this.suspendedBy = command.suspendedBy();
 
         registerEvent(MemberSuspendedEvent.fromAggregate(this, command));
     }

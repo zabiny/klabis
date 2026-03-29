@@ -1,6 +1,7 @@
 package com.klabis.members;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 
@@ -38,7 +39,7 @@ public class MemberTestDataBuilder {
     private DeactivationReason suspensionReason = null;
     private java.time.Instant suspendedAt = null;
     private String suspensionNote = null;
-    private String suspendedBy = null;
+    private UserId suspendedBy = null;
 
     private MemberTestDataBuilder() {
     }
@@ -197,7 +198,7 @@ public class MemberTestDataBuilder {
         this.suspensionReason = reason;
         this.suspendedAt = java.time.Instant.now();
         this.suspensionNote = note;
-        this.suspendedBy = UUID.randomUUID().toString();
+        this.suspendedBy = new UserId(UUID.randomUUID());
         return this;
     }
 

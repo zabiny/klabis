@@ -31,9 +31,9 @@ public record RegisterMemberRequest(
         @Past(message = "Date of birth must be in the past")
         LocalDate dateOfBirth,
 
-        @Schema(description = "Nationality (ISO 3166-1 alpha-2 or alpha-3 code)", example = "CZ", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "Nationality (ISO 3166-1 alpha-2 code)", example = "CZ", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Nationality is required")
-        @Size(min = 2, max = 3, message = "Nationality must be 2 or 3 characters (ISO code)")
+        @Size(min = 2, max = 2, message = "Nationality must be a 2-letter ISO 3166-1 alpha-2 code")
         String nationality,
 
         @Schema(description = "Member's gender", example = "MALE", requiredMode = Schema.RequiredMode.REQUIRED)

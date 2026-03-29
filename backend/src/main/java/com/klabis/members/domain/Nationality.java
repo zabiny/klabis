@@ -5,27 +5,21 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.Objects;
 
 /**
- * Value Object representing a nationality as an ISO 3166-1 country code.
+ * Value Object representing a nationality as an ISO 3166-1 alpha-2 country code.
  * <p>
- * This value object encapsulates the validation and normalization of nationality codes.
- * Supported formats:
- * - Alpha-2: 2-letter codes (e.g., "CZ", "US", "GB")
- * - Alpha-3: 3-letter codes (e.g., "CZE", "USA", "GBR")
- * <p>
+ * Only 2-letter ISO 3166-1 alpha-2 codes are accepted (e.g., "CZ", "US", "GB").
  * All nationality codes are normalized to uppercase for consistency.
  */
 @ValueObject
 public record Nationality(String code) {
 
-    private static final int MIN_LENGTH = 2;
-    private static final int MAX_LENGTH = 3;
-    private static final String ISO_3166_PATTERN = "^[A-Za-z]{2,3}$";
+    private static final String ISO_3166_PATTERN = "^[A-Za-z]{2}$";
 
     /**
      * Creates a Nationality value object with validation.
      *
-     * @param code the ISO 3166-1 country code (2-3 letters)
-     * @throws IllegalArgumentException if the code is null, blank, or not a valid ISO 3166-1 format
+     * @param code the ISO 3166-1 alpha-2 country code (2 letters)
+     * @throws IllegalArgumentException if the code is null, blank, or not a valid ISO 3166-1 alpha-2 format
      */
     public Nationality {
         Objects.requireNonNull(code, "Nationality code is required");
@@ -36,10 +30,9 @@ public record Nationality(String code) {
             throw new IllegalArgumentException("Nationality code cannot be blank");
         }
 
-        // Validate ISO 3166-1 alpha-2 or alpha-3 format
         if (!trimmed.matches(ISO_3166_PATTERN)) {
             throw new IllegalArgumentException(
-                    "Nationality must be a valid ISO 3166-1 code (2-3 letter country code)"
+                    "Nationality must be a valid ISO 3166-1 alpha-2 code (2-letter country code)"
             );
         }
 
@@ -50,7 +43,7 @@ public record Nationality(String code) {
     /**
      * Static factory method to create a Nationality from a string code.
      *
-     * @param code the ISO 3166-1 country code
+     * @param code the ISO 3166-1 alpha-2 country code
      * @return Nationality value object
      * @throws IllegalArgumentException if validation fails
      */
@@ -59,9 +52,9 @@ public record Nationality(String code) {
     }
 
     /**
-     * Returns the ISO 3166-1 country code in uppercase.
+     * Returns the ISO 3166-1 alpha-2 country code in uppercase.
      *
-     * @return the country code (e.g., "CZE", "US")
+     * @return the 2-letter country code (e.g., "CZ", "US")
      */
     @Override
     public String code() {
@@ -69,34 +62,16 @@ public record Nationality(String code) {
     }
 
     /**
-     * Checks if this nationality uses an alpha-2 code (2 letters).
+     * Checks if this nationality is Czech (CZ).
      *
-     * @return true if the code is 2 letters, false if 3 letters
-     */
-    public boolean isAlpha2() {
-        return code.length() == 2;
-    }
-
-    /**
-     * Checks if this nationality uses an alpha-3 code (3 letters).
-     *
-     * @return true if the code is 3 letters, false if 2 letters
-     */
-    public boolean isAlpha3() {
-        return code.length() == 3;
-    }
-
-    /**
-     * Checks if this nationality is Czech (CZ or CZE).
-     *
-     * @return true if the nationality code represents Czech Republic
+     * @return true if the nationality code is "CZ"
      */
     public boolean isCzech() {
-        return "CZ".equals(code) || "CZE".equals(code);
+        return "CZ".equals(code);
     }
 
     /**
-     * Returns the display name of this nationality (e.g., "CZE" for "Czech Republic").
+     * Returns the display name of this nationality.
      * Note: This is a placeholder implementation that returns the code.
      * A full implementation would use a locale/database mapping.
      *

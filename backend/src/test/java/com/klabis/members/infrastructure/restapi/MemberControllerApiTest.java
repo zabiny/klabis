@@ -974,7 +974,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
-                            "Nationality must be 2 or 3 characters (ISO code)"));
+                            "Nationality must be a 2-letter ISO 3166-1 alpha-2 code"));
         }
 
         @Test

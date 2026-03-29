@@ -44,7 +44,7 @@ public record UpdateMemberRequest(
         @Size(max = 50, message = "Chip number must not exceed 50 characters")
         PatchField<String> chipNumber,
 
-        @Size(max = 3, message = "Nationality must not exceed 3 characters")
+        @Size(min = 2, max = 2, message = "Nationality must be a 2-letter ISO 3166-1 alpha-2 code")
         PatchField<String> nationality,
 
         @Valid

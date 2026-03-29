@@ -124,7 +124,7 @@ class MemberLifecycleE2ETest {
                                             "firstName": "Jan",
                                             "lastName": "Novák",
                                             "dateOfBirth": "2000-01-15",
-                                            "nationality": "CZE",
+                                            "nationality": "CZ",
                                             "gender": "MALE",
                                             "email": "jan.novak@example.com",
                                             "phone": "+420777123456",

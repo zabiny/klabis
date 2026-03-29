@@ -775,7 +775,7 @@ class MemberRepositoryTest {
                     "Petra",
                     "Svobodová",
                     LocalDate.of(1995, 6, 20),
-                    "CZE",
+                    "CZ",
                     Gender.FEMALE
             );
             Address address = Address.of(

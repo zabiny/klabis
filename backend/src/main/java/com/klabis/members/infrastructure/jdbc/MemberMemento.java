@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.encryption.EncryptedString;
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.springframework.data.annotation.*;
@@ -343,7 +344,7 @@ class MemberMemento implements Persistable<UUID> {
                 this.suspensionReason,
                 this.suspendedAt,
                 this.suspensionNote,
-                this.suspendedBy,
+                this.suspendedBy != null ? new UserId(UUID.fromString(this.suspendedBy)) : null,
                 getAuditMetadata()
         );
 

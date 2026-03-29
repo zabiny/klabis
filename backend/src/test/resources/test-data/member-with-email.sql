@@ -35,7 +35,7 @@ INSERT INTO members (
     'Jan',
     'Novak',
     '1995-03-20',
-    'CZE',
+    'SK',
     'MALE',
     'jan.novak@example.com',  -- Member HAS email
     '+420987654321',
