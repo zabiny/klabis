@@ -15,4 +15,8 @@ user-invocable: false
 # Additional criteria for HATEOAS API
 
 - if API response contains ID referencing another domain object, it must contain also _link record for such domain object
-  - For example Event detail contains `coordinatorId` - refenrece to Member object -> it must also contain `_links.coordinator.href` in HAL+JSON response 
+  - For example Event detail contains `coordinatorId` - refenrece to Member object -> it must also contain `_links.coordinator.href` in HAL+JSON response
+
+# Additional criteria for Frontend code
+
+- data referenced in HAL response in `_links` and `_affordance` are fetched exclusively through `useHalResource`
