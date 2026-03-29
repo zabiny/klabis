@@ -2,7 +2,7 @@
 name: backend-patterns
 description: This skill should be used when the user asks to "implement backend feature in Klabis", "add a new module to Klabis", "write application service in Klabis", "implement REST controller in Klabis", "add JDBC adapter in Klabis", "create domain event listener in Klabis", or mentions Klabis-specific backend architecture. Provides project-specific patterns for the Klabis Spring Modulith application.
 user-invocable: false
-version: 0.1.1
+version: 0.2.0
 ---
 
 # Klabis Backend Patterns
@@ -23,9 +23,9 @@ com.klabis.<module>/
 │   └── ...value objects, enums
 │
 ├── application/               # Orchestration layer
-│   ├── <Feature>Service.java  # @PrimaryPort, Interface with nested command record
-│   ├── <Feature>ServiceImpl.java  # @Service implementation
-│   └── <Module>Configuration.java  # @Configuration for module beans
+│   ├── <Feature>Port.java     # @PrimaryPort, Interface with nested command record
+│   ├── <Feature>Service.java  # @Service implementation
+│   └── <Module>Configuration.java  # @Configuration for module beans (if needed)
 │
 ├── infrastructure/
 │   ├── restapi/               # REST controllers, DTOs, mappers
@@ -33,10 +33,13 @@ com.klabis.<module>/
 │   │   ├── <Aggregate>Mapper.java      # MapStruct @Mapper
 │   │   └── ...request/response records
 │   │
-│   └── jdbc/                  # Persistence
-│       ├── <Aggregate>RepositoryAdapter.java  # @SecondaryAdapter
-│       ├── <Aggregate>JdbcRepository.java     # Spring Data interface
-│       └── <Aggregate>Memento.java            # @Table persistence class
+│   ├── jdbc/                  # Persistence
+│   │   ├── <Aggregate>RepositoryAdapter.java  # @SecondaryAdapter
+│   │   ├── <Aggregate>JdbcRepository.java     # Spring Data interface
+│   │   └── <Aggregate>Memento.java            # @Table persistence class
+│   │
+│   └── listeners/             # Cross-module event listeners (if any)
+│       └── <Module>EventsListener.java  # @PrimaryAdapter @Component
 │
 ├── <Aggregate>Id.java         # Type-safe ID record — in root if referenced by other modules
 ├── <Aggregate>CreatedEvent.java  # Domain events — in root if consumed by other modules
@@ -56,9 +59,9 @@ grep -rh "import com.klabis.<module>" src/main/java/com/klabis/<other-modules>/ 
 @AggregateRoot
 public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
-    // Commands as nested records INSIDE aggregate
-    public record RegisterMember(MemberId id, RegistrationNumber regNum, ...) {}
-    public record SuspendMembership(UserId suspendedBy, DeactivationReason reason, String note) {}
+    // Commands as nested records INSIDE aggregate, annotated @RecordBuilder
+    @RecordBuilder public record RegisterMember(MemberId id, RegistrationNumber regNum, ...) {}
+    @RecordBuilder public record SuspendMembership(UserId suspendedBy, DeactivationReason reason, String note) {}
 
     // Factory method — validates and registers domain event
     public static Member register(RegisterMember command) {
@@ -113,11 +116,11 @@ public record EmailAddress(String value) {
 
 ## Application Service Layer
 
-### Service Interface with Command Record
+### Service Interface (Port) with Command Record
 
 ```java
 @PrimaryPort
-public interface RegistrationService {
+public interface RegistrationPort {
 
     record RegisterNewMember(
         PersonalInformation personalInformation,
@@ -133,7 +136,7 @@ public interface RegistrationService {
 
 ```java
 @Service
-public class ManagementServiceImpl implements ManagementService {
+class RegistrationService implements RegistrationPort {
 
     private final MemberRepository memberRepository;
     private final UserService userService;  // Cross-module dependency
@@ -172,53 +175,48 @@ Key rules:
 class MemberController { ... }
 ```
 
-### Role-Based Command Routing
+### Field-Level Authorization on Controller Methods
 
 ```java
 @PatchMapping("/{id}")
-@PreAuthorize("isAuthenticated()")
-public ResponseEntity<Void> updateMember(
-        @PathVariable UUID id,
-        @Valid @RequestBody UpdateMemberRequest request,
-        Authentication authentication) {
-
+@HasAuthority(Authority.MEMBERS_MANAGE)
+@OwnerVisible
+ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id,
+                                  @Valid @RequestBody UpdateMemberRequest request) {
     MemberId memberId = new MemberId(id);  // Convert UUID → type-safe ID at boundary
-
-    if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
-        managementService.updateMember(memberId, UpdateMemberRequestMapper.toAdminCommand(request));
-    } else {
-        verifyIsCurrentUser(authentication, id);
-        managementService.updateMember(memberId, UpdateMemberRequestMapper.toSelfUpdateCommand(request));
-    }
+    managementService.updateMember(memberId, UpdateMemberRequestMapper.toCommand(request));
     return ResponseEntity.noContent().build();
 }
 ```
 
-Authorization logic lives in the controller. Different roles produce different commands.
+Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `PatchField<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
 
 ### HATEOAS Affordances (State-Driven)
 
 ```java
 @GetMapping("/{id}")
-public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(@PathVariable UUID id) {
+ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(@PathVariable UUID id) {
     Member member = ...;
     EntityModel<MemberDetailsResponse> model = EntityModel.of(memberMapper.toDetailsResponse(member));
 
+    // klabisLinkTo() returns Optional<WebMvcLinkBuilder> — use .ifPresent()
     if (member.isActive()) {
-        model.add(klabisLinkTo(methodOn(MemberController.class).getMember(id))
-            .withSelfRel()
-            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
-            .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id, null, null))));
+        klabisLinkTo(methodOn(MemberController.class).getMember(id))
+            .map(link -> link.withSelfRel()
+                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
+                .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id, null, null))))
+            .ifPresent(model::add);
     } else {
-        model.add(klabisLinkTo(methodOn(MemberController.class).getMember(id))
-            .withSelfRel()
-            .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null))));
+        klabisLinkTo(methodOn(MemberController.class).getMember(id))
+            .map(link -> link.withSelfRel()
+                .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null))))
+            .ifPresent(model::add);
     }
     return ResponseEntity.ok(model);
 }
 ```
 
-Use `klabisLinkTo()` and `klabisAfford()` helpers (not standard Spring HATEOAS helpers). Affordances depend on aggregate state.
+Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()` helpers (not standard Spring HATEOAS helpers). Affordances depend on aggregate state.
 
 HATEOAS rules (NON-NEGOTIABLE):
 - Links (`withSelfRel()`, `withRel()`) — ONLY for GET endpoints
@@ -381,11 +379,11 @@ Use `@ApplicationModuleListener` (Spring Modulith) for cross-module event handli
 
 ## Field-Level Authorization on Response DTOs
 
-Filter individual response fields and HAL+FORMS template properties based on the authenticated user's authorities. Implemented via a custom Jackson `BeanSerializerModifier` — annotations go directly on record components, no interface needed.
+Filter individual response fields and HAL+FORMS template properties based on the authenticated user's authorities. Implemented via a custom Jackson 3 `ValueSerializerModifier` — annotations go directly on record components, no interface needed.
 
 ### Pattern: Annotated Record (no interface)
 
-Security annotations are placed directly on record components. `FieldSecurityBeanSerializerModifier` evaluates them during Jackson serialization. This avoids the need for a separate interface — records are final so Spring Security's `AuthorizationAdvisorProxyFactory` (JDK proxy) would require an interface, which is unnecessary boilerplate.
+Security annotations are placed directly on record components. `FieldSecurityBeanSerializerModifier` (extends `ValueSerializerModifier`) evaluates them during Jackson serialization. This avoids the need for a separate interface — records are final so Spring Security's `AuthorizationAdvisorProxyFactory` (JDK proxy) would require an interface, which is unnecessary boilerplate. Module registered via `@JacksonComponent` on `FieldSecurityJacksonModule`.
 
 ```java
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -497,10 +495,11 @@ If an unauthorized user sends a provided `PatchField` for a protected field, `Fi
 
 - Use package-protected visibility as default for new classes — make public only when accessed from another package
 - Use `org.springframework.util.Assert` for parameter validation inside methods (not raw `if` throws)
-- Use `@NonNull` on required service parameters; handle defaults in controller before delegating
+- Use `@NonNull` (from `org.jspecify`) on required service parameters; handle defaults in controller before delegating
 - Refactor methods with more than 4 parameters — introduce parameter objects or command records
 - Use `@MvcComponent` annotation on components in the presentation (restapi) layer
 - Do not use Lombok in domain classes — use records or plain Java
+- Use `@RecordBuilder` (from `io.soabase.recordbuilder`) on command records, events, and response DTOs — generates builder classes
 
 ## Additional Resources
 

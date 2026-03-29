@@ -49,18 +49,10 @@ See root `CLAUDE.md` Quick Start for env vars. Additional notes:
 - Affects all `@WebMvcTest` controllers that import `SecurityConfiguration`
 - This resolves `UnsatisfiedDependencyException` in component-scanned tests
 
-**Field-Level Authorization Pattern**
-- Implemented via `FieldSecurityBeanSerializerModifier` (Jackson `BeanSerializerModifier`)
-- Annotations (`@PreAuthorize`, `@HasAuthority`, `@HandleAuthorizationDenied`) go directly on record components — no interface required
-- `@JsonInclude(NON_NULL)` + `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class acts as default deny handler
-- `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` on a component overrides the class-level handler and shows `"***"`
-- Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1 — use `RecordComponent.getAccessor().getAnnotation(...)` for discovery
-- Module registered via `@JacksonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
-- `@OwnerVisible` + `@OwnerId` for ownership-based field/method access (OR semantics with authority)
-- `OwnershipResolver` compares owner ID with `KlabisJwtAuthenticationToken.getMemberIdUuid()` via `ConversionService`
-- `OwnershipResolver` is lazy-resolved from `ApplicationContext` in `HasAuthorityMethodInterceptor` — eager injection causes `No ServletContext set` startup error
+**Field-Level Authorization Pattern** — see `backend-patterns` skill for full details. Key gotchas:
+- `OwnershipResolver` is lazy-resolved from `ApplicationContext` — eager injection causes `No ServletContext set` startup error
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
-- See `FieldLevelAuthorizationTest` for reference implementation
+- Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 
 **Jackson 3 Annotation Packages**
 - `@JsonCreator`, `@JsonValue`, `@JsonInclude` stay in `com.fasterxml.jackson.annotation` — NOT moved to `tools.jackson`
