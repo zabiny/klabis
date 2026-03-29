@@ -6,6 +6,9 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import io.soabase.recordbuilder.core.RecordBuilder;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
@@ -37,9 +40,35 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
     @RecordBuilder
     public record CreateCalendarItem(
+            @NotBlank(message = "Calendar item name is required")
+            @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
             String name,
+
+            @NotBlank(message = "Calendar item description is required")
+            @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
             String description,
+
+            @NotNull(message = "Start date is required")
             LocalDate startDate,
+
+            @NotNull(message = "End date is required")
+            LocalDate endDate
+    ) {}
+
+    @RecordBuilder
+    public record UpdateCalendarItem(
+            @NotBlank(message = "Calendar item name is required")
+            @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
+            String name,
+
+            @NotBlank(message = "Calendar item description is required")
+            @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
+            String description,
+
+            @NotNull(message = "Start date is required")
+            LocalDate startDate,
+
+            @NotNull(message = "End date is required")
             LocalDate endDate
     ) {}
 
@@ -233,34 +262,26 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * Business rule: Only manual items (eventId == null) can be updated.
      * Event-linked items are read-only and managed automatically via event handlers.
      *
-     * @param name        new calendar item name (required)
-     * @param description new calendar item description (required)
-     * @param startDate   new start date (required)
-     * @param endDate     new end date (required, must be >= startDate)
+     * @param command update command with name, description, startDate, endDate
      * @throws BusinessRuleViolationException if calendar item is event-linked (read-only)
      * @throws IllegalArgumentException       if validation fails
      */
-    public void update(
-            String name,
-            String description,
-            LocalDate startDate,
-            LocalDate endDate) {
-
+    public void update(UpdateCalendarItem command) {
         if (isEventLinked()) {
             throw new BusinessRuleViolationException("Cannot manually update event-linked calendar item") {
             };
         }
 
-        validateName(name);
-        validateDescription(description);
-        validateStartDate(startDate);
-        validateEndDate(endDate);
-        validateDateRange(startDate, endDate);
+        validateName(command.name());
+        validateDescription(command.description());
+        validateStartDate(command.startDate());
+        validateEndDate(command.endDate());
+        validateDateRange(command.startDate(), command.endDate());
 
-        this.name = name;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.name = command.name();
+        this.description = command.description();
+        this.startDate = command.startDate();
+        this.endDate = command.endDate();
     }
 
     /**

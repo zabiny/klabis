@@ -2,7 +2,6 @@ package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
-import com.klabis.calendar.application.CalendarItemCommand;
 import com.klabis.calendar.application.CalendarItemReadOnlyException;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CalendarNotFoundException;
@@ -266,7 +265,7 @@ class CalendarControllerTest {
                     .withName("Training Session")
                     .buildManual();
 
-            when(calendarManagementService.createCalendarItem(any(CalendarItemCommand.class))).thenReturn(createdItem);
+            when(calendarManagementService.createCalendarItem(any(CalendarItem.CreateCalendarItem.class))).thenReturn(createdItem);
 
             mockMvc.perform(
                             post("/api/calendar-items")
@@ -360,7 +359,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarItemReadOnlyException())
-                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItem.UpdateCalendarItem.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
@@ -407,7 +406,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarNotFoundException(calendarItemId))
-                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItem.UpdateCalendarItem.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)

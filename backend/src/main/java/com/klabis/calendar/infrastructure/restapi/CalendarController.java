@@ -1,7 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.calendar.application.CalendarItemCommand;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.common.users.Authority;
@@ -170,7 +169,7 @@ class CalendarController {
     @ApiResponse(responseCode = "201", description = "Calendar item successfully created")
     public ResponseEntity<Void> createCalendarItem(
             @Parameter(description = "Calendar item creation data")
-            @Valid @RequestBody CalendarItemCommand command) {
+            @Valid @RequestBody CalendarItem.CreateCalendarItem command) {
 
         CalendarItem created = calendarManagementService.createCalendarItem(command);
 
@@ -192,7 +191,7 @@ class CalendarController {
     @ApiResponse(responseCode = "400", description = "Cannot update event-linked calendar item")
     public ResponseEntity<Void> updateCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id,
-            @Parameter(description = "Calendar item update data") @Valid @RequestBody CalendarItemCommand command) {
+            @Parameter(description = "Calendar item update data") @Valid @RequestBody CalendarItem.UpdateCalendarItem command) {
 
         calendarManagementService.updateCalendarItem(new CalendarItemId(id), command);
         return ResponseEntity.noContent().build();

@@ -50,20 +50,14 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public CalendarItem createCalendarItem(CalendarItemCommand command) {
-        CalendarItem calendarItem = CalendarItem.create(new CalendarItem.CreateCalendarItem(
-                command.name(),
-                command.description(),
-                command.startDate(),
-                command.endDate()
-        ));
-
+    public CalendarItem createCalendarItem(CalendarItem.CreateCalendarItem command) {
+        CalendarItem calendarItem = CalendarItem.create(command);
         return calendarRepository.save(calendarItem);
     }
 
     @Transactional
     @Override
-    public void updateCalendarItem(CalendarItemId calendarItemId, CalendarItemCommand command) {
+    public void updateCalendarItem(CalendarItemId calendarItemId, CalendarItem.UpdateCalendarItem command) {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
@@ -71,12 +65,7 @@ class CalendarManagementService implements CalendarManagementPort {
             throw new CalendarItemReadOnlyException();
         }
 
-        calendarItem.update(
-                command.name(),
-                command.description(),
-                command.startDate(),
-                command.endDate()
-        );
+        calendarItem.update(command);
 
         calendarRepository.save(calendarItem);
     }

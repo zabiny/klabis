@@ -3,6 +3,8 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
+import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -162,12 +164,12 @@ class CalendarManagementServiceTest {
         @Test
         @DisplayName("should create calendar item and return it")
         void shouldCreateCalendarItemAndReturnIt() {
-            CalendarItemCommand command = new CalendarItemCommand(
-                    "New Event",
-                    "New event description",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15)
-            );
+            CalendarItem.CreateCalendarItem command = CalendarItemCreateCalendarItemBuilder.builder()
+                    .name("New Event")
+                    .description("New event description")
+                    .startDate(LocalDate.of(2026, 3, 15))
+                    .endDate(LocalDate.of(2026, 3, 15))
+                    .build();
 
             CalendarItem savedItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("New Event")
@@ -194,12 +196,12 @@ class CalendarManagementServiceTest {
                     .withName("Old Name")
                     .buildManual();
 
-            CalendarItemCommand command = new CalendarItemCommand(
-                    "Updated Name",
-                    "Updated description",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20)
-            );
+            CalendarItem.UpdateCalendarItem command = CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Updated Name")
+                    .description("Updated description")
+                    .startDate(LocalDate.of(2026, 3, 20))
+                    .endDate(LocalDate.of(2026, 3, 20))
+                    .build();
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(existingItem));
             when(calendarRepository.save(any(CalendarItem.class))).thenReturn(existingItem);
@@ -220,12 +222,12 @@ class CalendarManagementServiceTest {
                     .withEventId(eventId)
                     .build();
 
-            CalendarItemCommand command = new CalendarItemCommand(
-                    "Updated Name",
-                    "Updated description",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20)
-            );
+            CalendarItem.UpdateCalendarItem command = CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Updated Name")
+                    .description("Updated description")
+                    .startDate(LocalDate.of(2026, 3, 20))
+                    .endDate(LocalDate.of(2026, 3, 20))
+                    .build();
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(eventLinkedItem));
 
@@ -237,12 +239,12 @@ class CalendarManagementServiceTest {
         @DisplayName("should throw CalendarNotFoundException when item not found")
         void shouldThrowExceptionWhenNotFound() {
             UUID calendarItemId = UUID.randomUUID();
-            CalendarItemCommand command = new CalendarItemCommand(
-                    "Updated Name",
-                    "Updated description",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20)
-            );
+            CalendarItem.UpdateCalendarItem command = CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Updated Name")
+                    .description("Updated description")
+                    .startDate(LocalDate.of(2026, 3, 20))
+                    .endDate(LocalDate.of(2026, 3, 20))
+                    .build();
 
             when(calendarRepository.findById(any())).thenReturn(Optional.empty());
 

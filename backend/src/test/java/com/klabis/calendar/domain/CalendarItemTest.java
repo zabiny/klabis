@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
+
 import static com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder.builder;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -201,7 +203,12 @@ class CalendarItemTest {
             LocalDate newStartDate = LocalDate.of(2026, 7, 1);
             LocalDate newEndDate = LocalDate.of(2026, 7, 5);
 
-            calendarItem.update(newName, newDescription, newStartDate, newEndDate);
+            calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name(newName)
+                    .description(newDescription)
+                    .startDate(newStartDate)
+                    .endDate(newEndDate)
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasName(newName)
@@ -223,7 +230,12 @@ class CalendarItemTest {
 
             LocalDate singleDate = LocalDate.of(2026, 6, 15);
 
-            calendarItem.update("Single Day", "Updated", singleDate, singleDate);
+            calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Single Day")
+                    .description("Updated")
+                    .startDate(singleDate)
+                    .endDate(singleDate)
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasStartDate(singleDate)
@@ -244,12 +256,12 @@ class CalendarItemTest {
                     null
             );
 
-            assertThatThrownBy(() -> calendarItem.update(
-                    "New Name",
-                    "New Description",
-                    LocalDate.of(2026, 7, 1),
-                    LocalDate.of(2026, 7, 1)
-            ))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("New Name")
+                    .description("New Description")
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot manually update event-linked calendar item");
         }
@@ -264,7 +276,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update(null, "Description", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name(null)
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -279,7 +296,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update("   ", "Description", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("   ")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -294,7 +316,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update("Name", null, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Name")
+                    .description(null)
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("description");
         }
@@ -309,7 +336,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update("Name", "   ", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Name")
+                    .description("   ")
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("description");
         }
@@ -324,7 +356,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update("Name", "Description", null, LocalDate.of(2026, 7, 1)))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(null)
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Start date");
         }
@@ -339,7 +376,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update("Name", "Description", LocalDate.of(2026, 7, 1), null))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(null)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("End date");
         }
@@ -354,12 +396,12 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update(
-                    "Name",
-                    "Description",
-                    LocalDate.of(2026, 7, 10),
-                    LocalDate.of(2026, 7, 5)
-            ))
+            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 7, 10))
+                    .endDate(LocalDate.of(2026, 7, 5))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
