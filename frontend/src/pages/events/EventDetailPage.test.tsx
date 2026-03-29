@@ -73,6 +73,18 @@ vi.mock('../../components/UI/Modal.tsx', () => ({
     ),
 }));
 
+vi.mock('../../contexts/HalRouteContext.tsx', () => ({
+    HalSubresourceProvider: ({subresourceLinkName, children}: any) => (
+        <div data-testid={`subresource-${subresourceLinkName}`}>{children}</div>
+    ),
+    useHalRoute: vi.fn(() => ({
+        resourceData: {firstName: 'Jan', lastName: 'Novák', _links: {self: {href: '/api/members/42'}}},
+        navigateToResource: vi.fn(),
+        isLoading: false,
+        error: null,
+    })),
+}));
+
 
 const mockEventDetailData = (overrides?: Partial<any>): HalResponse => ({
     name: 'Jarní závod 2025',
@@ -181,14 +193,20 @@ describe('EventDetailPage', () => {
         expect(screen.getByText('Aktivní')).toBeInTheDocument();
     });
 
-    it('renders coordinator id when present', () => {
-        renderPage(createMockPageData(mockEventDetailData()));
-        expect(screen.getByText('42')).toBeInTheDocument();
+    it('renders coordinator name when coordinator link is present', () => {
+        renderPage(createMockPageData(mockEventDetailData({
+            _links: {
+                self: {href: 'http://localhost:8443/api/events/1'},
+                coordinator: {href: 'http://localhost:8443/api/members/42'},
+            },
+        })));
+        expect(screen.getByText('Jan Novák')).toBeInTheDocument();
+        expect(screen.getByTestId('subresource-coordinator')).toBeInTheDocument();
     });
 
-    it('does not render coordinator when absent', () => {
+    it('does not render coordinator when coordinator link is absent', () => {
         renderPage(createMockPageData(mockEventDetailData({eventCoordinatorId: undefined})));
-        expect(screen.queryByText(/koordinátor/i)).not.toBeInTheDocument();
+        expect(screen.queryByTestId('subresource-coordinator')).not.toBeInTheDocument();
     });
 
     it('shows loading placeholder while loading', () => {

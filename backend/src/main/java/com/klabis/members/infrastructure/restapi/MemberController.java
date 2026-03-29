@@ -58,7 +58,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-class MemberController {
+public class MemberController {
 
     private final ManagementService managementService;
     private final MemberRepository memberRepository;

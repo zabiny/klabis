@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -553,6 +554,46 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.registrationDtoList").isArray())
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Jan"))
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0].lastName").value("Novak"));
+        }
+
+        @Test
+        @DisplayName("should include coordinator link when event has a coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorLinkWhenCoordinatorIsSet() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.coordinator.href").value(
+                            containsString("/api/members/" + coordinatorId.value())));
+        }
+
+        @Test
+        @DisplayName("should not include coordinator link when event has no coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeCoordinatorLinkWhenCoordinatorIsNotSet() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.getEvent(any())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.coordinator").doesNotExist());
         }
 
         @Test

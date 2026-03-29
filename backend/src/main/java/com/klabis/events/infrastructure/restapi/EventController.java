@@ -14,6 +14,7 @@ import com.klabis.events.domain.EventStatus;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.Members;
+import com.klabis.members.infrastructure.restapi.MemberController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -332,6 +333,11 @@ public class EventController {
 
         klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
                 .ifPresent(link -> entityModel.add(link.withRel("registrations")));
+
+        if (event.getEventCoordinatorId() != null) {
+            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
+                    .ifPresent(link -> entityModel.add(link.withRel("coordinator")));
+        }
     }
 
 }

@@ -6,12 +6,14 @@ import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
+import {HalSubresourceProvider, useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
-import {Check, CheckCircle, Globe, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Check, CheckCircle, ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {MemberName} from '../finances/FinancesPage.tsx';
 
 interface EventDetail {
     name: string;
@@ -60,6 +62,24 @@ function enrichTemplateWithReadOnlyFields(
         properties: [...template.properties, ...readOnlyProps],
     };
 }
+
+const CoordinatorDisplay = (): ReactElement => {
+    const {resourceData, navigateToResource} = useHalRoute();
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <MemberName/>
+            {resourceData && (
+                <button
+                    onClick={() => navigateToResource(resourceData)}
+                    className="text-primary hover:text-primary-light"
+                    title={labels.ui.showMemberDetails}
+                >
+                    <ExternalLink className="w-4 h-4"/>
+                </button>
+            )}
+        </span>
+    );
+};
 
 export const EventDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error} = useHalPageData<EventDetail>();
@@ -186,9 +206,16 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 ) : null)}
                             </DetailRow>
                         )}
-                        {(isEditing || event.eventCoordinatorId) && (
+                        {isEditing && (
                             <DetailRow label={labels.fields.eventCoordinatorId}>
-                                {ri('eventCoordinatorId') ?? event.eventCoordinatorId?.value}
+                                {ri('eventCoordinatorId')}
+                            </DetailRow>
+                        )}
+                        {!isEditing && resourceData._links?.coordinator && (
+                            <DetailRow label={labels.fields.eventCoordinatorId}>
+                                <HalSubresourceProvider subresourceLinkName="coordinator">
+                                    <CoordinatorDisplay/>
+                                </HalSubresourceProvider>
                             </DetailRow>
                         )}
                     </dl>
