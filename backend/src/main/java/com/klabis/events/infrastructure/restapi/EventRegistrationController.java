@@ -29,7 +29,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -103,7 +102,7 @@ class EventRegistrationController {
         if (currentUser.memberId() == null) {
             throw new MemberProfileRequiredException();
         }
-        registrationService.unregisterMember(new EventId(eventId), currentUser.memberId(), LocalDate.now());
+        registrationService.unregisterMember(new EventId(eventId), currentUser.memberId());
         return ResponseEntity.noContent().build();
     }
 

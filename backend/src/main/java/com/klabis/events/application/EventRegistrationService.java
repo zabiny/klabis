@@ -7,7 +7,6 @@ import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jspecify.annotations.NonNull;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @PrimaryPort
@@ -15,7 +14,7 @@ public interface EventRegistrationService {
 
     void registerMember(@NonNull EventId eventId, @NonNull MemberId memberId, Event.RegisterCommand command);
 
-    void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId, @NonNull LocalDate currentDate);
+    void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId);
 
     List<EventRegistration> listRegistrations(@NonNull EventId eventId);
 

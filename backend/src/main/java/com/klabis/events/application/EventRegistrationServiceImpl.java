@@ -10,7 +10,6 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -33,7 +32,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
     }
 
     @Override
-    public void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId, @NonNull LocalDate currentDate) {
+    public void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
@@ -41,7 +40,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
             throw new RegistrationNotFoundException(memberId, eventId);
         }
 
-        event.unregisterMember(memberId, currentDate);
+        event.unregisterMember(new Event.UnregisterMember(memberId));
         eventRepository.save(event);
     }
 

@@ -168,7 +168,7 @@ class EventRegistrationControllerTest {
             mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
                     .andExpect(status().isNoContent());
 
-            verify(registrationServiceMock).unregisterMember(new EventId(eventId), memberId, LocalDate.now());
+            verify(registrationServiceMock).unregisterMember(new EventId(eventId), memberId);
         }
 
         @Test
@@ -178,7 +178,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
 
             doThrow(new EventNotFoundException(new EventId(eventId))).when(registrationServiceMock)
-                    .unregisterMember(any(), any(), any());
+                    .unregisterMember(any(), any());
 
             mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
                     .andExpect(status().isNotFound());
@@ -374,7 +374,7 @@ class EventRegistrationControllerTest {
 
             doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Registration deadline has passed") {})
                     .when(registrationServiceMock)
-                    .unregisterMember(any(), any(), any());
+                    .unregisterMember(any(), any());
 
             mockMvc.perform(
                             delete("/api/events/{eventId}/registrations", eventId)

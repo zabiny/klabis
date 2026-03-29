@@ -199,7 +199,7 @@ class EventRegistrationServiceTest {
             eventId = EventId.generate();
 
             activeEvent = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .name("Test Event").eventDate(LocalDate.now().plusDays(5))
                     .location("Test Location").organizer("OOB").build());
             activeEvent.publish();
             activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
@@ -208,13 +208,12 @@ class EventRegistrationServiceTest {
         @Test
         @DisplayName("should unregister member before event date")
         void shouldUnregisterMemberBeforeEventDate() {
-            // Given
-            LocalDate currentDate = LocalDate.of(2026, 6, 10); // Before event date
+            // Given — event date is in the future (set up in @BeforeEach)
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
             // When
-            service.unregisterMember(eventId, TEST_MEMBER_ID, currentDate);
+            service.unregisterMember(eventId, TEST_MEMBER_ID);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -224,12 +223,19 @@ class EventRegistrationServiceTest {
         @Test
         @DisplayName("should reject unregistration on event date")
         void shouldRejectUnregistrationOnEventDate() {
-            // Given
-            LocalDate eventDate = LocalDate.of(2026, 6, 15); // Same as event date
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
+            // Given — event date is today so unregistration is not allowed
+            Event eventOnToday = Event.reconstruct(
+                    EventId.generate(), "Today Event", LocalDate.now(),
+                    "Test Location", "OOB",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventOnToday));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, eventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -239,12 +245,19 @@ class EventRegistrationServiceTest {
         @Test
         @DisplayName("should reject unregistration after event date")
         void shouldRejectUnregistrationAfterEventDate() {
-            // Given
-            LocalDate afterEventDate = LocalDate.of(2026, 6, 20); // After event date
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
+            // Given — event date is in the past so unregistration is not allowed
+            Event pastEvent = Event.reconstruct(
+                    EventId.generate(), "Past Event", LocalDate.now().minusDays(1),
+                    "Test Location", "OOB",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(pastEvent));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, afterEventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -254,16 +267,16 @@ class EventRegistrationServiceTest {
         @Test
         @DisplayName("should reject unregistration when registration deadline has passed")
         void shouldRejectUnregistrationWhenDeadlinePassed() {
-            // Given — use reconstruct() to bypass domain validation when setting up a past-deadline event with an existing registration
+            // Given — deadline is in the past; reconstruct() bypasses domain validation to set up this state
             Event eventWithPastDeadline = Event.reconstruct(
                     EventId.generate(),
                     "Deadline Event",
-                    LocalDate.of(2026, 9, 15),
+                    LocalDate.now().plusDays(30),
                     "Test Location",
                     "OOB",
                     null,
                     null,
-                    LocalDate.of(2026, 3, 1),
+                    LocalDate.now().minusDays(1),
                     EventStatus.ACTIVE,
                     null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -271,11 +284,10 @@ class EventRegistrationServiceTest {
                     null
             );
 
-            LocalDate currentDate = LocalDate.of(2026, 9, 1); // Before event date, but deadline passed
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithPastDeadline));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, currentDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration deadline has passed");
 
@@ -285,7 +297,7 @@ class EventRegistrationServiceTest {
         @Test
         @DisplayName("should allow unregistration before both event date and deadline")
         void shouldAllowUnregistrationBeforeDeadline() {
-            // Given
+            // Given — event date and deadline are both in the future
             Event eventWithFutureDeadline = Event.create(EventCreateEventBuilder.builder()
                     .name("Future Deadline Event").eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location").organizer("OOB")
@@ -297,7 +309,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(eventWithFutureDeadline);
 
             // When
-            service.unregisterMember(eventId, TEST_MEMBER_ID, LocalDate.now());
+            service.unregisterMember(eventId, TEST_MEMBER_ID);
 
             // Then
             verify(eventRepository).save(any(Event.class));

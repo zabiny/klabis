@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
+import com.klabis.events.domain.EventUnregisterMemberBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -616,7 +617,7 @@ class EventTest {
         void shouldUnregisterMemberBeforeEventDate() {
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Test Event")
-                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .eventDate(LocalDate.now().plusDays(1))
                     .location("Test Location")
                     .organizer("Test Organizer")
                     .build());
@@ -627,9 +628,7 @@ class EventTest {
             event.registerMember(memberId, siCardNumber);
             assertThat(event.getRegistrations()).hasSize(1);
 
-            LocalDate currentDate = LocalDate.of(2025, 7, 9); // One day before event
-
-            event.unregisterMember(memberId, currentDate);
+            event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build());
 
             assertThat(event.getRegistrations()).isEmpty();
             assertThat(event.findRegistration(memberId)).isEmpty();
@@ -638,20 +637,17 @@ class EventTest {
         @Test
         @DisplayName("should fail to unregister member on event date")
         void shouldFailToUnregisterMemberOnEventDate() {
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event")
-                    .eventDate(LocalDate.of(2025, 7, 10))
-                    .location("Test Location")
-                    .organizer("Test Organizer")
-                    .build());
-            event.publish();
-
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"));
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now(),
+                    "Test Location", "Test Organizer",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
 
-            LocalDate currentDate = LocalDate.of(2025, 7, 10); // Same as event date
-
-            assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
+            assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
         }
@@ -659,20 +655,17 @@ class EventTest {
         @Test
         @DisplayName("should fail to unregister member after event date")
         void shouldFailToUnregisterMemberAfterEventDate() {
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event")
-                    .eventDate(LocalDate.of(2025, 7, 10))
-                    .location("Test Location")
-                    .organizer("Test Organizer")
-                    .build());
-            event.publish();
-
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"));
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
+                    "Test Location", "Test Organizer",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
 
-            LocalDate currentDate = LocalDate.of(2025, 7, 11); // One day after event
-
-            assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
+            assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
         }
@@ -682,16 +675,15 @@ class EventTest {
         void shouldFailToUnregisterMemberThatIsNotRegistered() {
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Test Event")
-                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .eventDate(LocalDate.now().plusDays(1))
                     .location("Test Location")
                     .organizer("Test Organizer")
                     .build());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
-            LocalDate currentDate = LocalDate.of(2025, 7, 9);
 
-            assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
+            assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Member is not registered for this event");
         }

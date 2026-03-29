@@ -137,6 +137,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     ) {
     }
 
+    @RecordBuilder
+    public record UnregisterMember(
+            MemberId memberId
+    ) {
+    }
+
     /**
      * Private constructor for creating new Event instances.
      * <p>
@@ -505,31 +511,30 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     /**
      * Unregister a member from this event.
      * <p>
-     * Business rule: Unregistration is only allowed before the event date.
+     * Business rule: Unregistration is only allowed before the event date and before the registration deadline.
      *
-     * @param memberId    member's user ID (required)
-     * @param currentDate current date for validation
-     * @throws IllegalStateException    if current date is on or after event date
-     * @throws IllegalArgumentException if member is not registered
+     * @param command unregister command containing the member ID
+     * @throws BusinessRuleViolationException if registration deadline has passed or event date is today/past
+     * @throws IllegalArgumentException       if member is not registered
      */
-    public void unregisterMember(MemberId memberId, LocalDate currentDate) {
-        if (registrationDeadline != null && !registrationDeadline.isAfter(currentDate)) {
+    public void unregisterMember(UnregisterMember command) {
+        LocalDate today = LocalDate.now();
+
+        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
             throw new BusinessRuleViolationException("Registration deadline has passed") {};
         }
 
-        if (!currentDate.isBefore(eventDate)) {
+        if (!today.isBefore(eventDate)) {
             throw new BusinessRuleViolationException("Cannot unregister on or after event date") {
             };
         }
 
-        // Find and remove registration
-        EventRegistration registration = findRegistration(memberId)
+        EventRegistration registration = findRegistration(command.memberId())
                 .orElseThrow(() -> new IllegalArgumentException("Member is not registered for this event"));
 
         registrations.remove(registration);
 
-        // Register domain event
-        registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, memberId));
+        registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, command.memberId()));
     }
 
     /**
