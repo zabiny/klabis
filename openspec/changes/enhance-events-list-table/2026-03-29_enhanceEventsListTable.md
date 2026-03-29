@@ -124,3 +124,7 @@ Tasks 5.1–5.7, 7.1–7.4, 8.1–8.2 implemented. All 887 frontend tests pass.
 - `validateRegistrationDeadline(registrationDeadline, eventDate)` call added to `createFromOris()`, matching the validation already present in `create()` and `update()`
 
 All 85 affected tests pass (78 unit + 7 controller/service integration).
+
+### 2026-03-29 — Missing test added (backend-developer)
+
+Added `shouldRejectImportWhenEntryDate1IsAfterEventDate` to `EventManagementServiceTest.ImportEventFromOrisMethod`: verifies that importing an ORIS event where `entryDate1` is after the event date is rejected with `BusinessRuleViolationException`. This covers the validation path in `createFromOris()` added during the code review fix (Finding 2). All 27 tests in `EventManagementServiceTest` pass.

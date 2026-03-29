@@ -706,6 +706,28 @@ class EventManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should reject import when entryDate1 (registration deadline) is after event date")
+        void shouldRejectImportWhenEntryDate1IsAfterEventDate() {
+            // Given
+            int orisId = 7777;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            LocalDate eventDate = LocalDate.of(2026, 8, 10);
+            java.time.ZonedDateTime entryDateAfterEvent = LocalDate.of(2026, 8, 15)
+                    .atStartOfDay(java.time.ZoneId.of("Europe/Prague"));
+            EventDetails details = buildEventDetails(orisId, "Invalid Deadline Race", eventDate, "Forest", org1, null);
+            Mockito.when(details.entryDate1()).thenReturn(entryDateAfterEvent);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+
+            // When & Then
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Registration deadline must be on or before event date");
+        }
+
+        @Test
         @DisplayName("should set registrationDeadline to null when entryDate1 is null")
         void shouldSetRegistrationDeadlineToNullWhenEntryDate1IsNull() {
             // Given
