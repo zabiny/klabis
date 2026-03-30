@@ -1,21 +1,52 @@
 package com.klabis.events.application;
 
-import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
+import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
-import org.jmolecules.architecture.hexagonal.PrimaryPort;
+import org.jmolecules.ddd.annotation.Service;
 import org.jspecify.annotations.NonNull;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@PrimaryPort
-public interface EventRegistrationService {
+@Service
+@Transactional
+public class EventRegistrationService implements EventRegistrationPort {
 
-    void registerMember(@NonNull EventId eventId, @NonNull MemberId memberId, Event.RegisterCommand command);
+    private final EventRepository eventRepository;
 
-    void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId);
+    EventRegistrationService(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+    }
 
-    List<EventRegistration> listRegistrations(@NonNull EventId eventId);
+    @Override
+    public void registerMember(@NonNull EventId eventId, @NonNull MemberId memberId, Event.RegisterCommand command) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()));
+        eventRepository.save(event);
+    }
+
+    @Override
+    public void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        event.unregisterMember(new Event.UnregisterMember(memberId));
+        eventRepository.save(event);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventRegistration> listRegistrations(@NonNull EventId eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        return event.getRegistrations();
+    }
 
 }

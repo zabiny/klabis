@@ -4,9 +4,8 @@ import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
-import com.klabis.events.application.EventManagementService;
-import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.EventRegistrationService;
+import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
@@ -60,15 +59,15 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 public class EventController {
 
-    private final EventManagementService eventManagementService;
-    private final EventRegistrationService eventRegistrationService;
+    private final EventManagementPort eventManagementService;
+    private final EventRegistrationPort eventRegistrationService;
     private final Members members;
     private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
     private final boolean orisIntegrationActive;
 
     public EventController(
-            EventManagementService eventManagementService,
-            EventRegistrationService eventRegistrationService,
+            EventManagementPort eventManagementService,
+            EventRegistrationPort eventRegistrationService,
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
             @org.springframework.beans.factory.annotation.Value("${oris-integration.enabled:false}") boolean orisIntegrationActive) {

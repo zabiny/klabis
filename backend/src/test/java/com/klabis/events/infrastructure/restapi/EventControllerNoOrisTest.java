@@ -5,8 +5,8 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
-import com.klabis.events.application.EventManagementService;
-import com.klabis.events.application.EventRegistrationService;
+import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.members.Members;
 import org.junit.jupiter.api.DisplayName;
@@ -45,10 +45,10 @@ class EventControllerNoOrisTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private EventManagementService eventManagementService;
+    private EventManagementPort eventManagementService;
 
     @MockitoBean
-    private EventRegistrationService eventRegistrationService;
+    private EventRegistrationPort eventRegistrationService;
 
     @MockitoBean
     private Members members;

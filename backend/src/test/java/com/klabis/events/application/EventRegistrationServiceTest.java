@@ -2,16 +2,8 @@ package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
-import com.klabis.events.domain.DuplicateRegistrationException;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCreateEventBuilder;
-import com.klabis.events.domain.EventRegisterCommandBuilder;
-import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
-import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
-import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.SiCardNumber;
-import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for EventRegistrationService.
+ * Unit tests for EventRegistrationPort.
  * <p>
  * Tests event registration business logic including:
  * - Member registration for events
@@ -42,7 +34,7 @@ import static org.mockito.Mockito.*;
  * - Privacy enforcement (SI card visibility)
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("EventRegistrationService Unit Tests")
+@DisplayName("EventRegistrationPort Unit Tests")
 class EventRegistrationServiceTest {
 
     private static final UserId TEST_USER_ID = UserId.newId();
@@ -51,11 +43,11 @@ class EventRegistrationServiceTest {
     @Mock
     private EventRepository eventRepository;
 
-    private EventRegistrationService service;
+    private EventRegistrationPort service;
 
     @BeforeEach
     void setUp() {
-        service = new EventRegistrationServiceImpl(eventRepository);
+        service = new EventRegistrationService(eventRepository);
     }
 
     @Nested

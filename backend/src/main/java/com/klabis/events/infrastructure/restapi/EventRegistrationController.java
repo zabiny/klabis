@@ -1,13 +1,13 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
-import com.klabis.events.application.EventManagementService;
-import com.klabis.events.application.EventRegistrationService;
-import com.klabis.events.domain.RegistrationNotFoundException;
+import com.klabis.events.EventId;
+import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
-import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
@@ -51,12 +51,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 class EventRegistrationController {
 
-    private final EventManagementService eventManagementService;
-    private final EventRegistrationService registrationService;
+    private final EventManagementPort eventManagementService;
+    private final EventRegistrationPort registrationService;
     private final Members members;
     private final EntityLinks entityLinks;
 
-    public EventRegistrationController(EventManagementService eventManagementService, EventRegistrationService registrationService, Members members, EntityLinks entityLinks) {
+    public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members, EntityLinks entityLinks) {
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;

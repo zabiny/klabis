@@ -1,25 +1,17 @@
 package com.klabis.events.infrastructure.restapi;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
+import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.DuplicateOrisImportException;
-import com.klabis.events.application.EventManagementService;
-import com.klabis.events.domain.EventCreateEventBuilder;
-import com.klabis.events.domain.EventUpdateEventBuilder;
+import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.EventRegistrationService;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventFilter;
-import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
-import com.klabis.events.domain.EventStatus;
-import com.klabis.events.domain.SiCardNumber;
-import com.klabis.events.EventId;
+import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -36,6 +28,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -43,9 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -65,10 +56,10 @@ class EventControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private EventManagementService eventManagementService;
+    private EventManagementPort eventManagementService;
 
     @MockitoBean
-    private EventRegistrationService eventRegistrationService;
+    private EventRegistrationPort eventRegistrationService;
 
     @MockitoBean
     private Members members;

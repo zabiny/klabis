@@ -84,7 +84,19 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
             MemberId eventCoordinatorId,
             LocalDate registrationDeadline
-    ) {}
+    ) {
+        public static CreateEvent from(Event event) {
+            return new CreateEvent(
+                    event.name,
+                    event.eventDate,
+                    event.location,
+                    event.organizer,
+                    event.websiteUrl != null ? event.websiteUrl.value() : null,
+                    event.eventCoordinatorId,
+                    event.registrationDeadline
+            );
+        }
+    }
 
     @RecordBuilder
     public record UpdateEvent(
@@ -109,7 +121,19 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             MemberId eventCoordinatorId,
 
             LocalDate registrationDeadline
-    ) {}
+    ) {
+        public static UpdateEvent from(Event event) {
+            return new UpdateEvent(
+                    event.name,
+                    event.eventDate,
+                    event.location,
+                    event.organizer,
+                    event.websiteUrl != null ? event.websiteUrl.value() : null,
+                    event.eventCoordinatorId,
+                    event.registrationDeadline
+            );
+        }
+    }
 
     @RecordBuilder
     public record CreateEventFromOris(
@@ -120,7 +144,19 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             LocalDate registrationDeadline
-    ) {}
+    ) {
+        public static CreateEventFromOris from(Event event) {
+            return new CreateEventFromOris(
+                    event.orisId != null ? event.orisId : 0,
+                    event.name,
+                    event.eventDate,
+                    event.location,
+                    event.organizer,
+                    event.websiteUrl,
+                    event.registrationDeadline
+            );
+        }
+    }
 
     @RecordBuilder
     public record RegisterCommand(
@@ -128,6 +164,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
             String siCardNumber
     ) {
+        public static RegisterCommand from(Event event) {
+            return new RegisterCommand(null);
+        }
     }
 
     @RecordBuilder
@@ -135,12 +174,18 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @jakarta.validation.constraints.Positive(message = "ORIS event ID must be positive")
             int orisId
     ) {
+        public static ImportCommand from(Event event) {
+            return new ImportCommand(event.orisId != null ? event.orisId : 0);
+        }
     }
 
     @RecordBuilder
     public record UnregisterMember(
             MemberId memberId
     ) {
+        public static UnregisterMember from(Event event) {
+            return new UnregisterMember(null);
+        }
     }
 
     /**

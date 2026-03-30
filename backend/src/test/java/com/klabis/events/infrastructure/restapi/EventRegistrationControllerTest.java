@@ -1,24 +1,19 @@
 package com.klabis.events.infrastructure.restapi;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
-import com.klabis.events.EventTestDataBuilder;
-import com.klabis.events.application.EventManagementService;
-import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.EventRegistrationService;
-import com.klabis.events.domain.DuplicateRegistrationException;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventRegisterCommandBuilder;
-import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTestDataBuilder;
+import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.application.EventNotFoundException;
+import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberDto;
-import com.klabis.members.Members;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,10 +64,10 @@ class EventRegistrationControllerTest {
     private EntityLinks entityLinksMock;
 
     @MockitoBean
-    private EventManagementService eventManagementServiceMock;
+    private EventManagementPort eventManagementServiceMock;
 
     @MockitoBean
-    private EventRegistrationService registrationServiceMock;
+    private EventRegistrationPort registrationServiceMock;
 
     @MockitoBean
     private Members membersMock;

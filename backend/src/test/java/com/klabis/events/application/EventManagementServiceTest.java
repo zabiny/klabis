@@ -2,24 +2,18 @@ package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
-import com.klabis.events.WebsiteUrl;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCreateEventBuilder;
-import com.klabis.events.domain.EventUpdateEventBuilder;
-import com.klabis.events.domain.EventFilter;
-import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventStatus;
 import com.klabis.oris.apiclient.OrisApiClient;
 import com.klabis.oris.apiclient.dto.EventDetails;
 import com.klabis.oris.apiclient.dto.Organizer;
-import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -38,13 +32,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for EventManagementService.
+ * Unit tests for EventManagementPort.
  * <p>
  * Tests event management business logic including creation, updates,
  * status transitions, and querying with proper validation.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("EventManagementService Unit Tests")
+@DisplayName("EventManagementPort Unit Tests")
 class EventManagementServiceTest {
 
     @Mock
@@ -53,11 +47,11 @@ class EventManagementServiceTest {
     @Mock
     private OrisApiClient orisApiClient;
 
-    private EventManagementService service;
+    private EventManagementPort service;
 
     @BeforeEach
     void setUp() {
-        service = new EventManagementServiceImpl(eventRepository, Optional.of(orisApiClient));
+        service = new EventManagementService(eventRepository, Optional.of(orisApiClient));
     }
 
     @Nested
@@ -647,7 +641,7 @@ class EventManagementServiceTest {
         @DisplayName("should throw IllegalStateException when ORIS integration is not active")
         void shouldThrowWhenOrisNotActive() {
             // Given
-            EventManagementService serviceWithoutOris = new EventManagementServiceImpl(eventRepository, Optional.empty());
+            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty());
 
             // When & Then
             assertThatThrownBy(() -> serviceWithoutOris.importEventFromOris(9876))
