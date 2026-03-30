@@ -76,7 +76,7 @@ public class EventManagementService implements EventManagementPort {
     @Transactional
     @Override
     public void finishExpiredActiveEvents(LocalDate currentDate) {
-        eventRepository.findActiveEventsWithDateBefore(currentDate).forEach(event -> {
+        eventRepository.findAll(EventFilter.activeEventsWithDateBefore(currentDate), Pageable.unpaged()).getContent().forEach(event -> {
             event.finish();
             eventRepository.save(event);
         });

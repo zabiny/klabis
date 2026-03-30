@@ -552,7 +552,7 @@ class EventManagementServiceTest {
                     .name("Event 2").eventDate(pastDate).location("Location 2").organizer("PRG").build());
             event2.publish();
 
-            when(eventRepository.findActiveEventsWithDateBefore(today)).thenReturn(List.of(event1, event2));
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged())).thenReturn(new PageImpl<>(List.of(event1, event2)));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -570,7 +570,7 @@ class EventManagementServiceTest {
         void shouldNotFinishAnyEventWhenNoneExpired() {
             // Given
             LocalDate today = LocalDate.of(2025, 2, 1);
-            when(eventRepository.findActiveEventsWithDateBefore(today)).thenReturn(List.of());
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged())).thenReturn(new PageImpl<>(List.of()));
 
             // When
             service.finishExpiredActiveEvents(today);
