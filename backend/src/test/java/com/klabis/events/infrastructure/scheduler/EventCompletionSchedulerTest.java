@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.scheduler;
 
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.EventRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -18,6 +21,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -61,15 +65,14 @@ class EventCompletionSchedulerTest {
 
             List<Event> activeEventsWithPastDate = List.of(event1, event2);
 
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(activeEventsWithPastDate);
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(activeEventsWithPastDate));
 
             // Act
             scheduler.completeExpiredEvents(today);
 
             // Assert
-            // Verify repository was queried with correct date
-            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository).findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged());
 
             // Verify each event was transitioned to FINISHED
             assertThat(event1.getStatus()).isEqualTo(EventStatus.FINISHED);
@@ -87,16 +90,15 @@ class EventCompletionSchedulerTest {
             // Arrange
             LocalDate today = LocalDate.of(2025, 2, 1);
 
-            // findActiveEventsWithDateBefore should only return ACTIVE events
-            // Repository implementation ensures DRAFT events are not included
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(Collections.emptyList());
+            // Filter returns only ACTIVE events — DRAFT events are not included by definition
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(Collections.emptyList()));
 
             // Act
             scheduler.completeExpiredEvents(today);
 
             // Assert
-            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository).findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged());
             // No saves should occur since no ACTIVE events were found
             verify(eventRepository, never()).save(any(Event.class));
         }
@@ -107,14 +109,14 @@ class EventCompletionSchedulerTest {
             // Arrange
             LocalDate today = LocalDate.of(2025, 2, 1);
 
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(Collections.emptyList());
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(Collections.emptyList()));
 
             // Act
             scheduler.completeExpiredEvents(today);
 
             // Assert
-            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository).findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged());
             verify(eventRepository, never()).save(any(Event.class));
         }
 
@@ -129,10 +131,10 @@ class EventCompletionSchedulerTest {
                     .name("Test Event").eventDate(pastDate).location("Location").organizer("Organizer").build());
             event.publish(); // Make ACTIVE
 
-            // First run - returns the event
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(List.of(event))
-                    .thenReturn(Collections.emptyList()); // Second run - no events
+            // First run - returns the event; second run - no events
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(List.of(event)))
+                    .thenReturn(new PageImpl<>(Collections.emptyList()));
 
             // Act - First run
             scheduler.completeExpiredEvents(today);
@@ -143,14 +145,14 @@ class EventCompletionSchedulerTest {
 
             // Reset mock to clear invocation counts
             reset(eventRepository);
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(Collections.emptyList()); // No events since all are already FINISHED
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(Collections.emptyList())); // No events since all are already FINISHED
 
             // Act - Second run
             scheduler.completeExpiredEvents(today);
 
             // Assert - No additional saves (idempotent)
-            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository).findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged());
             verify(eventRepository, never()).save(any(Event.class));
         }
 
@@ -175,8 +177,8 @@ class EventCompletionSchedulerTest {
 
             List<Event> events = List.of(event1, event2, event3);
 
-            when(eventRepository.findActiveEventsWithDateBefore(today))
-                    .thenReturn(events);
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
+                    .thenReturn(new PageImpl<>(events));
 
             // Simulate failure when saving event2
             when(eventRepository.save(event1)).thenReturn(event1);
@@ -206,14 +208,14 @@ class EventCompletionSchedulerTest {
             Event event = Event.create(EventCreateEventBuilder.builder().name("Event").eventDate(LocalDate.of(2025, 1, 15)).location("Location").organizer("Organizer").build());
             event.publish();
 
-            when(eventRepository.findActiveEventsWithDateBefore(any(LocalDate.class)))
-                    .thenReturn(List.of(event));
+            when(eventRepository.findAll(any(EventFilter.class), eq(Pageable.unpaged())))
+                    .thenReturn(new PageImpl<>(List.of(event)));
 
             // Act
             scheduler.completeExpiredEvents();
 
             // Assert
-            verify(eventRepository).findActiveEventsWithDateBefore(any(LocalDate.class));
+            verify(eventRepository).findAll(any(EventFilter.class), eq(Pageable.unpaged()));
             verify(eventRepository).save(event);
             assertThat(event.getStatus()).isEqualTo(EventStatus.FINISHED);
         }
@@ -224,14 +226,14 @@ class EventCompletionSchedulerTest {
             // Arrange
             LocalDate today = LocalDate.of(2025, 2, 1);
 
-            when(eventRepository.findActiveEventsWithDateBefore(today))
+            when(eventRepository.findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged()))
                     .thenThrow(new RuntimeException("Database connection failed"));
 
             // Act - should not throw exception
             scheduler.completeExpiredEvents(today);
 
             // Assert
-            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository).findAll(EventFilter.activeEventsWithDateBefore(today), Pageable.unpaged());
             // No save should be attempted since query failed
             verify(eventRepository, never()).save(any(Event.class));
         }

@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Filtering by status
  * - Filtering by organizer
  * - Filtering by date range (from/to)
- * - Finding active events with date before (for auto-completion scheduler)
+ * - Filtering active events with date before via EventFilter (for auto-completion scheduler)
  * - Unique constraint on (event_id, member_id) in registrations
  */
 @DisplayName("Event JDBC Repository Tests")
@@ -393,8 +393,8 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findActiveEventsWithDateBefore() - for auto-completion scheduler")
-    class FindActiveEventsWithDateBefore {
+    @DisplayName("activeEventsWithDateBefore() filter — for auto-completion scheduler")
+    class ActiveEventsWithDateBeforeFilter {
 
         @Test
         @DisplayName("should find active events with date before specified date")
@@ -424,7 +424,10 @@ class EventJdbcRepositoryTest {
             eventRepository.save(draftEvent);
 
             // When
-            var pastEvents = eventRepository.findActiveEventsWithDateBefore(LocalDate.of(2026, 1, 20));
+            var pastEvents = eventRepository.findAll(
+                    EventFilter.activeEventsWithDateBefore(LocalDate.of(2026, 1, 20)),
+                    Pageable.unpaged()
+            ).getContent();
 
             // Then
             assertThat(pastEvents).hasSize(2);
@@ -443,7 +446,10 @@ class EventJdbcRepositoryTest {
             eventRepository.save(draftEvent);
 
             // When
-            var pastEvents = eventRepository.findActiveEventsWithDateBefore(LocalDate.of(2026, 2, 1));
+            var pastEvents = eventRepository.findAll(
+                    EventFilter.activeEventsWithDateBefore(LocalDate.of(2026, 2, 1)),
+                    Pageable.unpaged()
+            ).getContent();
 
             // Then
             assertThat(pastEvents).isEmpty();

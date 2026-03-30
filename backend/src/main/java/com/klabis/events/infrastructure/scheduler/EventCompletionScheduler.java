@@ -1,10 +1,12 @@
 package com.klabis.events.infrastructure.scheduler;
 
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.LocalDate;
@@ -58,7 +60,7 @@ class EventCompletionScheduler {
 
         List<Event> expiredEvents;
         try {
-            expiredEvents = eventRepository.findActiveEventsWithDateBefore(date);
+            expiredEvents = eventRepository.findAll(EventFilter.activeEventsWithDateBefore(date), Pageable.unpaged()).getContent();
         } catch (Exception e) {
             log.error("Failed to query expired events from repository", e);
             return;

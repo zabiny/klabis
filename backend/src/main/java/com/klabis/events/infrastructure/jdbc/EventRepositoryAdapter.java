@@ -15,7 +15,6 @@ import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -63,8 +62,12 @@ class EventRepositoryAdapter implements EventRepository {
 
     /**
      * Translates Pageable with domain property names to Pageable with database column names.
+     * Unpaged requests are returned as-is — there are no sort properties to translate.
      */
     private Pageable translateDomainToDbColumn(Pageable pageable) {
+        if (pageable.isUnpaged()) {
+            return pageable;
+        }
         return TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
     }
 
@@ -90,16 +93,9 @@ class EventRepositoryAdapter implements EventRepository {
                 .map(EventMemento::toEvent)
                 .toList();
 
-        long total = jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
+        long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
 
         return new PageImpl<>(results, pageable, total);
-    }
-
-    @Override
-    public List<Event> findActiveEventsWithDateBefore(LocalDate date) {
-        return jdbcRepository.findActiveEventsWithDateBefore(date).stream()
-                .map(EventMemento::toEvent)
-                .toList();
     }
 
     @Override
