@@ -363,6 +363,77 @@ COMMENT ON COLUMN birth_number_audit_log.action IS 'Action type: VIEW_BIRTH_NUMB
 COMMENT ON COLUMN birth_number_audit_log.occurred_at IS 'Timestamp when the action occurred';
 
 -- ============================================================================
+-- 10. USER_GROUPS TABLE
+-- Stores user-defined groups (free, training, family) with single table inheritance
+-- ============================================================================
+
+CREATE TABLE user_groups
+(
+    id              UUID         PRIMARY KEY,
+    type            VARCHAR(20)  NOT NULL, -- Discriminator: FREE, TRAINING, FAMILY
+    name            VARCHAR(200) NOT NULL,
+    age_range_min   INT          NULL,
+    age_range_max   INT          NULL,
+
+    -- Audit fields
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by      VARCHAR(100) NOT NULL,
+    modified_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by     VARCHAR(100) NOT NULL,
+    version         BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for user_groups
+CREATE INDEX idx_user_groups_type ON user_groups (type);
+
+-- Comments for user_groups
+COMMENT ON TABLE user_groups IS 'User-defined groups with single table inheritance (FREE, TRAINING, FAMILY)';
+COMMENT ON COLUMN user_groups.type IS 'Discriminator column: FREE, TRAINING, FAMILY';
+COMMENT ON COLUMN user_groups.age_range_min IS 'Minimum age for training groups (nullable)';
+COMMENT ON COLUMN user_groups.age_range_max IS 'Maximum age for training groups (nullable)';
+
+-- ============================================================================
+-- 11. USER_GROUP_OWNERS TABLE
+-- Maps owners (members) to their user groups
+-- ============================================================================
+
+CREATE TABLE user_group_owners
+(
+    user_group_id UUID NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
+    member_id     UUID NOT NULL,
+    PRIMARY KEY (user_group_id, member_id)
+);
+
+-- Indexes for user_group_owners
+CREATE INDEX idx_user_group_owners_user_group_id ON user_group_owners (user_group_id);
+CREATE INDEX idx_user_group_owners_member_id ON user_group_owners (member_id);
+
+-- Comments for user_group_owners
+COMMENT ON TABLE user_group_owners IS 'Maps owners (members) to user groups';
+
+-- ============================================================================
+-- 12. USER_GROUP_MEMBERS TABLE
+-- Maps members to user groups with join timestamp
+-- ============================================================================
+
+CREATE TABLE user_group_members
+(
+    user_group_id UUID      NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
+    member_id     UUID      NOT NULL,
+    joined_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_group_id, member_id)
+);
+
+-- Indexes for user_group_members
+CREATE INDEX idx_user_group_members_user_group_id ON user_group_members (user_group_id);
+CREATE INDEX idx_user_group_members_member_id ON user_group_members (member_id);
+
+-- Unique constraint: one active membership per member across all groups of the same type
+-- Enforced at application layer; DB index supports performance
+COMMENT ON TABLE user_group_members IS 'Maps members to user groups with join timestamp';
+COMMENT ON COLUMN user_group_members.joined_at IS 'Timestamp when member joined the group';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

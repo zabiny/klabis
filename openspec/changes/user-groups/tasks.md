@@ -1,17 +1,17 @@
 ## 1. Free Group CRUD (Slice 1a)
 
-- [ ] 1.1 Create `user-groups` module structure: `package-info.java` (@ApplicationModule), domain/, application/, infrastructure/ packages
-- [ ] 1.2 Domain model: `UserGroupId` value object, `GroupMembership` value object, `UserGroup` abstract aggregate root (id, name, owners, members, addMember, removeMember)
-- [ ] 1.3 Domain model: `FreeGroup` concrete aggregate extending `UserGroup` (no additional fields yet, invitation support added in Slice 1b)
-- [ ] 1.4 Domain repository interface: `UserGroupRepository` (save, findById, findAll, delete)
-- [ ] 1.5 DB migration: `user_groups` table (single table inheritance with type discriminator), `user_group_owners` table, `user_group_members` table
-- [ ] 1.6 JDBC persistence: `UserGroupMemento` (maps to user_groups table), `UserGroupJdbcRepository`, `UserGroupRepositoryAdapter`
-- [ ] 1.7 Application service: `GroupManagementService` — create free group, edit name, delete group, add/remove members
-- [ ] 1.8 REST API: `GroupController` — POST create free group, GET list free groups, GET group detail, PATCH edit name, DELETE group, POST add member, DELETE remove member (HAL+FORMS)
-- [ ] 1.9 Root API link: add `groups` link to root API response for navigation
-- [ ] 1.10 Frontend: add "Skupiny" navigation item, create groups list page (free groups where user is member), group detail page (members, edit name, delete), create group form
-- [ ] 1.11 Frontend: add/remove member actions on group detail page
-- [ ] 1.12 Tests: domain unit tests (FreeGroup creation, add/remove member, invariants), integration tests (repository, controller), Spring Modulith module test
+- [x] 1.1 Create `user-groups` module structure: `package-info.java` (@ApplicationModule), domain/, application/, infrastructure/ packages
+- [x] 1.2 Domain model: `UserGroupId` value object, `GroupMembership` value object, `UserGroup` abstract aggregate root (id, name, owners, members, addMember, removeMember)
+- [x] 1.3 Domain model: `FreeGroup` concrete aggregate extending `UserGroup` (no additional fields yet, invitation support added in Slice 1b)
+- [x] 1.4 Domain repository interface: `UserGroupRepository` (save, findById, findAll, delete)
+- [x] 1.5 DB migration: `user_groups` table (single table inheritance with type discriminator), `user_group_owners` table, `user_group_members` table
+- [x] 1.6 JDBC persistence: `UserGroupMemento` (maps to user_groups table), `UserGroupJdbcRepository`, `UserGroupRepositoryAdapter`
+- [x] 1.7 Application service: `GroupManagementService` — create free group, edit name, delete group, add/remove members
+- [x] 1.8 REST API: `GroupController` — POST create free group, GET list free groups, GET group detail, PATCH edit name, DELETE group, POST add member, DELETE remove member (HAL+FORMS)
+- [x] 1.9 Root API link: add `groups` link to root API response for navigation
+- [x] 1.10 Frontend: add "Skupiny" navigation item, create groups list page (free groups where user is member), group detail page (members, edit name, delete), create group form
+- [x] 1.11 Frontend: add/remove member actions on group detail page
+- [x] 1.12 Tests: domain unit tests (FreeGroup creation, add/remove member, invariants), integration tests (repository, controller), Spring Modulith module test
 
 ## 2. Free Group Invitations (Slice 1b)
 

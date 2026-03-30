@@ -4,6 +4,7 @@ export const labels = {
         calendar: 'Kalendář',
         events: 'Závody',
         members: 'Členové',
+        groups: 'Skupiny',
     },
 
     buttons: {
@@ -36,6 +37,11 @@ export const labels = {
         resumeMember: 'Reaktivovat',
         updateMember: 'Upravit profil',
         registerMember: 'Registrovat člena',
+        createGroup: 'Vytvořit skupinu',
+        updateGroup: 'Upravit název',
+        deleteGroup: 'Smazat skupinu',
+        addGroupMember: 'Přidat člena',
+        removeGroupMember: 'Odebrat',
     },
 
     dialogTitles: {
@@ -71,6 +77,7 @@ export const labels = {
         bankAccountNumber: 'Číslo bankovního účtu',
         dietaryRestrictions: 'Stravovací omezení',
         drivingLicenseGroup: 'Řidičský průkaz',
+        memberId: 'Registrační číslo člena',
     },
 
     enums: {
@@ -182,6 +189,7 @@ export const labels = {
         status: 'Status',
         date: 'Datum',
         registeredAt: 'Datum přihlášení',
+        joinedAt: 'Datum vstupu',
         web: 'Web',
         registrationDeadline: 'Uzávěrka',
         coordinator: 'Koordinátor',
@@ -202,6 +210,10 @@ export const labels = {
         guardian: 'ZÁKONNÝ ZÁSTUPCE',
         deactivation: 'DEAKTIVACE',
         newMemberRegistration: 'Registrace nového člena',
+        groups: 'Skupiny',
+        groupsList: 'Moje skupiny',
+        groupOwners: 'SPRÁVCI',
+        groupMembers: 'ČLENOVÉ',
     },
 
     dashboard: {
