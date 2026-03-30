@@ -84,7 +84,22 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
             UserId registeredBy
-    ) {}
+    ) {
+        public static RegisterMember from(Member member) {
+            return new RegisterMember(
+                    member.id,
+                    member.registrationNumber,
+                    member.personalInformation,
+                    member.address,
+                    member.email,
+                    member.phone,
+                    member.guardian,
+                    member.birthNumber,
+                    member.bankAccountNumber,
+                    null
+            );
+        }
+    }
 
     /**
      * Command for updating a member's profile.
@@ -115,7 +130,31 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             Gender gender,
             BirthNumber birthNumber,
             UserId updatedBy
-    ) {}
+    ) {
+        public static UpdateMember from(Member member) {
+            return new UpdateMember(
+                    member.email,
+                    member.phone,
+                    member.address,
+                    member.chipNumber,
+                    member.personalInformation != null ? member.personalInformation.getNationalityCode() : null,
+                    member.bankAccountNumber,
+                    member.identityCard,
+                    member.drivingLicenseGroup,
+                    member.medicalCourse,
+                    member.trainerLicense,
+                    member.refereeLicense,
+                    member.dietaryRestrictions,
+                    member.guardian,
+                    member.personalInformation != null ? member.personalInformation.getFirstName() : null,
+                    member.personalInformation != null ? member.personalInformation.getLastName() : null,
+                    member.personalInformation != null ? member.personalInformation.getDateOfBirth() : null,
+                    member.personalInformation != null ? member.personalInformation.getGender() : null,
+                    member.birthNumber,
+                    null
+            );
+        }
+    }
 
     /**
      * Command to suspend a member's membership.
@@ -128,7 +167,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             UserId suspendedBy,
             DeactivationReason reason,
             String note
-    ) {}
+    ) {
+        public static SuspendMembership from(Member member) {
+            return new SuspendMembership(member.suspendedBy, member.suspensionReason, member.suspensionNote);
+        }
+    }
 
     /**
      * Command to resume a suspended member's membership.
@@ -139,7 +182,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     @RecordBuilder
     public record ResumeMembership(
             UserId resumedBy
-    ) {}
+    ) {
+        public static ResumeMembership from(Member member) {
+            return new ResumeMembership(null);
+        }
+    }
 
     // ========== Constructors ==========
 

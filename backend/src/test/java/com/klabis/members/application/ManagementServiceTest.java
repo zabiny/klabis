@@ -2,16 +2,8 @@ package com.klabis.members.application;
 
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.members.BirthNumberAccessedEvent;
-import com.klabis.members.MemberId;
-import org.springframework.context.ApplicationEventPublisher;
-import com.klabis.members.MemberResumedEvent;
-import com.klabis.members.MemberSuspendedEvent;
-import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.*;
 import com.klabis.members.domain.*;
-import com.klabis.members.domain.MemberResumeMembershipBuilder;
-import com.klabis.members.domain.MemberSuspendMembershipBuilder;
-import com.klabis.members.domain.MemberUpdateMemberBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.util.Optional;
@@ -34,7 +27,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("ManagementService Unit Tests")
+@DisplayName("ManagementPort Unit Tests")
 class ManagementServiceTest {
 
     @Mock
@@ -46,13 +39,13 @@ class ManagementServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    private ManagementService testedSubject;
+    private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementServiceImpl(memberRepository, userService, eventPublisher);
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()

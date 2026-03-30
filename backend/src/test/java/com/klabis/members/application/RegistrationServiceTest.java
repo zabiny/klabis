@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link RegistrationServiceImpl}.
+ * Unit tests for {@link RegistrationService}.
  * <p>
  * Tests cover the member registration functionality including:
  * <ul>
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("RegistrationService Unit Tests")
+@DisplayName("RegistrationPort Unit Tests")
 class RegistrationServiceTest {
 
     @Mock
@@ -50,11 +50,11 @@ class RegistrationServiceTest {
     @Mock
     private RegistrationNumberGenerator registrationNumberGenerator;
 
-    private RegistrationService service;
+    private RegistrationPort service;
 
     @BeforeEach
     void setUp() {
-        service = new RegistrationServiceImpl(
+        service = new RegistrationService(
                 memberRepository,
                 userService,
                 registrationNumberGenerator
@@ -129,7 +129,7 @@ class RegistrationServiceTest {
                     "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -185,7 +185,7 @@ class RegistrationServiceTest {
                     "Eva", "Svobodová", dateOfBirth, "SK", Gender.FEMALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -231,7 +231,7 @@ class RegistrationServiceTest {
                     "Child", "Minor", dateOfBirth, "CZ", Gender.MALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -272,7 +272,7 @@ class RegistrationServiceTest {
                     "Adult", "Member", dateOfBirth, "CZ", Gender.FEMALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -310,7 +310,7 @@ class RegistrationServiceTest {
                     "Test", "Member", dateOfBirth, "CZ", Gender.MALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -347,7 +347,7 @@ class RegistrationServiceTest {
                     "Transaction", "Test", LocalDate.of(2000, 1, 1), "CZ", Gender.MALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -383,7 +383,7 @@ class RegistrationServiceTest {
             );
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -425,7 +425,7 @@ class RegistrationServiceTest {
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -468,7 +468,7 @@ class RegistrationServiceTest {
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,
@@ -511,7 +511,7 @@ class RegistrationServiceTest {
                     "Jan", "Novák", dateOfBirth, "SK", Gender.MALE
             );
 
-            RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     email,
                     phone,

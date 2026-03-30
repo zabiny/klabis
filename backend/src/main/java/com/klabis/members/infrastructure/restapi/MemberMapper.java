@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.UserId;
+import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -44,9 +45,9 @@ interface MemberMapper {
 
     RefereeLicenseDto refereeLicenseToDto(RefereeLicense refereeLicense);
 
-    default com.klabis.members.application.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(
+    default RegistrationPort.RegisterNewMember toRegisterNewMemberCommand(
             RegisterMemberRequest request, UserId registeredBy) {
-        return new com.klabis.members.application.RegistrationService.RegisterNewMember(
+        return new RegistrationPort.RegisterNewMember(
                 createPersonalInformation(request.firstName(), request.lastName(),
                         request.dateOfBirth(), request.gender(), request.nationality()),
                 request.address() != null ? new Address(request.address().street(), request.address().city(),

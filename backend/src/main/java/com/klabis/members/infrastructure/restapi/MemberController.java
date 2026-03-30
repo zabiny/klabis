@@ -10,7 +10,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import com.klabis.members.application.ManagementService;
+import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
@@ -28,11 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
@@ -60,13 +56,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 public class MemberController {
 
-    private final ManagementService managementService;
+    private final ManagementPort managementService;
     private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
 
     public MemberController(
-            ManagementService managementService,
+            ManagementPort managementService,
             MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
             MemberMapper memberMapper) {

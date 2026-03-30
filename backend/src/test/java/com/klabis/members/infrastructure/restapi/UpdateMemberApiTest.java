@@ -7,7 +7,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
-import com.klabis.members.application.ManagementService;
+import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.Disabled;
@@ -74,7 +74,7 @@ class UpdateMemberApiTest {
     private UserService userService;
 
     @MockitoBean
-    private ManagementService memberService;
+    private ManagementPort memberService;
 
     @MockitoBean
     private MemberRepository memberRepository;

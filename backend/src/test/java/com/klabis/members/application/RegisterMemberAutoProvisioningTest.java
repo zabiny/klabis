@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for automatic User provisioning during Member registration.
  * <p>
  * "Auto-provisioning" refers to the automatic creation of a User account when a Member is registered.
- * The RegistrationService creates both Member and User aggregates in a single transaction,
+ * The RegistrationPort creates both Member and User aggregates in a single transaction,
  * ensuring Member ID equals User ID.
  */
 @ApplicationModuleTest
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RegisterMemberAutoProvisioningTest {
 
     @Autowired
-    private RegistrationService memberService;
+    private RegistrationPort memberService;
 
     @Autowired
     private MemberRepository memberJpaRepository;
@@ -52,7 +52,7 @@ class RegisterMemberAutoProvisioningTest {
                 "Test", "User", LocalDate.of(2005, 6, 15), "CZ", Gender.MALE
         );
 
-        RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+        RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                 address,
                 email,
                 phone,
@@ -93,7 +93,7 @@ class RegisterMemberAutoProvisioningTest {
                 "Integration", "Test", LocalDate.of(2006, 3, 20), "SK", Gender.FEMALE
         );
 
-        RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
+        RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                 address,
                 email,
                 phone,
@@ -125,7 +125,7 @@ class RegisterMemberAutoProvisioningTest {
                 "First", "Person", LocalDate.of(2005, 1, 1), "CZ", Gender.MALE
         );
 
-        RegistrationService.RegisterNewMember command1 = new RegistrationService.RegisterNewMember(personalInformation1,
+        RegistrationPort.RegisterNewMember command1 = new RegistrationPort.RegisterNewMember(personalInformation1,
                 address1,
                 email1,
                 phone1,
@@ -144,7 +144,7 @@ class RegisterMemberAutoProvisioningTest {
                 "Second", "Person", LocalDate.of(2005, 1, 2), "CZ", Gender.MALE
         );
 
-        RegistrationService.RegisterNewMember command2 = new RegistrationService.RegisterNewMember(personalInformation2,
+        RegistrationPort.RegisterNewMember command2 = new RegistrationPort.RegisterNewMember(personalInformation2,
                 address2,
                 email2,
                 phone2,

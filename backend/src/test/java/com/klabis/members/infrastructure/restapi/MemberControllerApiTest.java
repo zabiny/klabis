@@ -8,7 +8,10 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.application.*;
+import com.klabis.members.application.InvalidUpdateException;
+import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberNotFoundException;
+import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -74,13 +77,13 @@ class MemberControllerApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ManagementService managementService;
+    private ManagementPort managementService;
 
     @MockitoBean
     private MemberRepository memberRepository;
 
     @MockitoBean
-    private RegistrationService registrationService;
+    private RegistrationPort registrationService;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -424,7 +427,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithCorrectPersonalInformation() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -459,7 +462,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithCorrectAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -494,7 +497,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithCorrectEmailAndPhone() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -526,7 +529,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithCorrectGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -569,7 +572,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithNullGuardianWhenNotProvided() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -600,7 +603,7 @@ class MemberControllerApiTest {
         void shouldCallServiceWithCorrectBirthNumberAndBankAccount() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                     {
@@ -651,7 +654,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(
                             postMembers().content("""
@@ -697,7 +700,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                             {
@@ -924,7 +927,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
                             {
@@ -1572,7 +1575,7 @@ class MemberControllerApiTest {
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(post("/api/members")
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
@@ -1594,7 +1597,7 @@ class MemberControllerApiTest {
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(post("/api/members")
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)

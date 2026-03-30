@@ -3,15 +3,15 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.application.ManagementService;
-import com.klabis.members.application.RegistrationService;
+import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.Member;
-import com.klabis.common.users.UserId;
+import com.klabis.members.domain.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,14 +30,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -55,13 +51,13 @@ class BirthNumberAuditControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ManagementService managementService;
+    private ManagementPort managementService;
 
     @MockitoBean
     private MemberRepository memberRepository;
 
     @MockitoBean
-    private RegistrationService registrationService;
+    private RegistrationPort registrationService;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -188,11 +184,11 @@ class BirthNumberAuditControllerTest {
                                     """))
                     .andExpect(status().isCreated());
 
-            ArgumentCaptor<RegistrationService.RegisterNewMember> commandCaptor =
-                    ArgumentCaptor.forClass(RegistrationService.RegisterNewMember.class);
+            ArgumentCaptor<RegistrationPort.RegisterNewMember> commandCaptor =
+                    ArgumentCaptor.forClass(RegistrationPort.RegisterNewMember.class);
             verify(registrationService).registerMember(commandCaptor.capture());
 
-            RegistrationService.RegisterNewMember command = commandCaptor.getValue();
+            RegistrationPort.RegisterNewMember command = commandCaptor.getValue();
             assertThat(command.birthNumber()).isNotNull();
             assertThat(command.registeredBy()).isNotNull();
         }
@@ -225,11 +221,11 @@ class BirthNumberAuditControllerTest {
                                     """))
                     .andExpect(status().isCreated());
 
-            ArgumentCaptor<RegistrationService.RegisterNewMember> commandCaptor =
-                    ArgumentCaptor.forClass(RegistrationService.RegisterNewMember.class);
+            ArgumentCaptor<RegistrationPort.RegisterNewMember> commandCaptor =
+                    ArgumentCaptor.forClass(RegistrationPort.RegisterNewMember.class);
             verify(registrationService).registerMember(commandCaptor.capture());
 
-            RegistrationService.RegisterNewMember command = commandCaptor.getValue();
+            RegistrationPort.RegisterNewMember command = commandCaptor.getValue();
             assertThat(command.birthNumber()).isNull();
             assertThat(command.registeredBy()).isNotNull();
         }

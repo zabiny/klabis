@@ -4,7 +4,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
-import com.klabis.members.application.RegistrationService;
+import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,11 +36,11 @@ import java.util.List;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class RegistrationController {
 
-    private final RegistrationService registrationService;
+    private final RegistrationPort registrationService;
     private final EntityLinks entityLinks;
     private final MemberMapper memberMapper;
 
-    public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks,
+    public RegistrationController(RegistrationPort registrationService, EntityLinks entityLinks,
                                   MemberMapper memberMapper) {
         this.registrationService = registrationService;
         this.entityLinks = entityLinks;
@@ -69,7 +69,7 @@ class RegistrationController {
             @Valid @RequestBody RegisterMemberRequest request,
             @CurrentUser UserId currentUserId) {
 
-        RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
+        RegistrationPort.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
         Member member = registrationService.registerMember(serviceCommand);
 
         ResponseEntity.BodyBuilder response = ResponseEntity
