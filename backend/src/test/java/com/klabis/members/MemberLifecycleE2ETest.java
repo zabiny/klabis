@@ -199,6 +199,40 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
 
         // ========================================================================
+        // STEP 6.5: Register second member with same birth year — verify unique IDs
+        // Email flow for first member is complete, so registering now avoids
+        // overwriting the activation email in LoggingEmailService.
+        // ========================================================================
+        MvcResult registerResult2 = mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content("""
+                                        {
+                                            "firstName": "Petra",
+                                            "lastName": "Nováková",
+                                            "dateOfBirth": "2000-06-20",
+                                            "nationality": "CZ",
+                                            "gender": "FEMALE",
+                                            "email": "petra.novakova@example.com",
+                                            "phone": "+420777654321",
+                                            "birthNumber": "005620/5678",
+                                            "address": {
+                                                "street": "Vedlejší 456",
+                                                "city": "Brno",
+                                                "postalCode": "60200",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UUID memberId2 = extractMemberIdFromLocation(registerResult2);
+        assertThat(memberId2).isNotEqualTo(memberId);
+
+        // ========================================================================
         // STEP 8: New member can fetch data
         // ========================================================================
         mockMvc.perform(get("/api/members")
