@@ -68,6 +68,33 @@ class EventFilterTest {
     }
 
     @Nested
+    @DisplayName("activeEventsWithDateBefore()")
+    class ActiveEventsWithDateBeforeTests {
+
+        @Test
+        @DisplayName("statuses contains only ACTIVE")
+        void statusesContainsOnlyActive() {
+            EventFilter filter = EventFilter.activeEventsWithDateBefore(java.time.LocalDate.of(2026, 5, 10));
+            assertThat(filter.statuses()).containsExactly(EventStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("dateTo is date minus one day — preserving exclusive-upper-bound semantics")
+        void dateToIsOneDayBeforeDate() {
+            EventFilter filter = EventFilter.activeEventsWithDateBefore(java.time.LocalDate.of(2026, 5, 10));
+            assertThat(filter.dateTo()).isEqualTo(java.time.LocalDate.of(2026, 5, 9));
+        }
+
+        @Test
+        @DisplayName("dateFrom and organizer are null — no restriction on those dimensions")
+        void dateFromAndOrganizerAreNull() {
+            EventFilter filter = EventFilter.activeEventsWithDateBefore(java.time.LocalDate.of(2026, 5, 10));
+            assertThat(filter.dateFrom()).isNull();
+            assertThat(filter.organizer()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("withExcludedStatus()")
     class WithExcludedStatusTests {
 

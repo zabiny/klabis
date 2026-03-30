@@ -2,9 +2,6 @@ package com.klabis.events.domain;
 
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
-import java.time.LocalDate;
-import java.util.List;
-
 /**
  * Internal repository interface for Event aggregate.
  * <p>
@@ -28,19 +25,6 @@ public interface EventRepository extends Events {
     Event save(Event event);
 
     /**
-     * Finds all active events with event date before the specified date.
-     * <p>
-     * Used by the automatic event completion scheduler to find events that should
-     * be transitioned from ACTIVE to FINISHED status after their event date has passed.
-     * <p>
-     * This is an internal method not exposed in the public Events API.
-     *
-     * @param date the date to compare against event dates
-     * @return list of active events with eventDate before the specified date
-     */
-    List<Event> findActiveEventsWithDateBefore(LocalDate date);
-
-    /**
      * Checks if an event with the given ORIS ID already exists.
      * Used to prevent duplicate imports from ORIS.
      *
@@ -50,6 +34,6 @@ public interface EventRepository extends Events {
     boolean existsByOrisId(int orisId);
 
     // Read methods inherited from Events public API:
-    // - Optional<Event> findById(EventId eventId)
+    // - Optional<Event> findById(EventId id)
     // - Page<Event> findAll(EventFilter filter, Pageable pageable)
 }

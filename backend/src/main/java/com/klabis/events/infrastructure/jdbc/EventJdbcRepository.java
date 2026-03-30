@@ -6,8 +6,6 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,20 +26,6 @@ import java.util.UUID;
  */
 @Repository
 interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, PagingAndSortingRepository<EventMemento, UUID> {
-
-    /**
-     * Find active events with event date before the specified date.
-     * Used by the automatic event completion scheduler.
-     *
-     * @param date the date to compare against
-     * @return list of active event mementos with past event dates
-     */
-    @Query("""
-            SELECT * FROM events
-            WHERE status = 'ACTIVE' AND event_date < :date
-            ORDER BY event_date ASC
-            """)
-    List<EventMemento> findActiveEventsWithDateBefore(@Param("date") LocalDate date);
 
     @Query("SELECT EXISTS(SELECT 1 FROM events WHERE oris_id = :orisId)")
     boolean existsByOrisId(@Param("orisId") int orisId);

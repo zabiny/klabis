@@ -83,6 +83,16 @@ public record EventFilter(
         return new EventFilter(remaining, organizer, dateFrom, dateTo);
     }
 
+    /**
+     * Filter for ACTIVE events whose event date is strictly before {@code date}.
+     * Equivalent to: {@code status = 'ACTIVE' AND event_date < date}.
+     * The inclusive {@code dateTo} is set to {@code date.minusDays(1)} to preserve
+     * exclusive-upper-bound semantics that the original SQL query used.
+     */
+    public static EventFilter activeEventsWithDateBefore(LocalDate date) {
+        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1));
+    }
+
     public static EventFilter byOrganizer(String organizer) {
         return new EventFilter(Set.of(), organizer, null, null);
     }
