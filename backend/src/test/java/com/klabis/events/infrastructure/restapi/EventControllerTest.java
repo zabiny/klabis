@@ -25,7 +25,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -69,9 +68,6 @@ class EventControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private PasswordEncoder passwordEncoder;
 
     @Nested
     @DisplayName("POST /api/events")
