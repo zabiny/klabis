@@ -7,6 +7,8 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+
 @PrimaryPort
 public interface EventManagementPort {
 
@@ -21,6 +23,8 @@ public interface EventManagementPort {
     void cancelEvent(EventId eventId);
 
     void finishEvent(EventId eventId);
+
+    void finishExpiredActiveEvents(LocalDate currentDate);
 
     Event getEvent(EventId eventId, boolean canManageEvents);
 

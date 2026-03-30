@@ -73,6 +73,15 @@ public class EventManagementService implements EventManagementPort {
         eventRepository.save(event);
     }
 
+    @Transactional
+    @Override
+    public void finishExpiredActiveEvents(LocalDate currentDate) {
+        eventRepository.findActiveEventsWithDateBefore(currentDate).forEach(event -> {
+            event.finish();
+            eventRepository.save(event);
+        });
+    }
+
     private static final String UNKNOWN_ORGANIZER = "---";
 
     @Transactional

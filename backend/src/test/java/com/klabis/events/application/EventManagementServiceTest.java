@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -529,6 +530,53 @@ class EventManagementServiceTest {
             // Then
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.ACTIVE);
+        }
+    }
+
+    @Nested
+    @DisplayName("finishExpiredActiveEvents() method")
+    class FinishExpiredActiveEventsMethod {
+
+        @Test
+        @DisplayName("should finish all ACTIVE events with past dates and save each one")
+        void shouldFinishActiveEventsWithPastDates() {
+            // Given
+            LocalDate today = LocalDate.of(2025, 2, 1);
+            LocalDate pastDate = LocalDate.of(2025, 1, 15);
+
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(pastDate).location("Location 1").organizer("OOB").build());
+            event1.publish();
+
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(pastDate).location("Location 2").organizer("PRG").build());
+            event2.publish();
+
+            when(eventRepository.findActiveEventsWithDateBefore(today)).thenReturn(List.of(event1, event2));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            service.finishExpiredActiveEvents(today);
+
+            // Then
+            assertThat(event1.getStatus()).isEqualTo(EventStatus.FINISHED);
+            assertThat(event2.getStatus()).isEqualTo(EventStatus.FINISHED);
+            verify(eventRepository).save(event1);
+            verify(eventRepository).save(event2);
+        }
+
+        @Test
+        @DisplayName("should not finish any event when no ACTIVE events with past dates exist")
+        void shouldNotFinishAnyEventWhenNoneExpired() {
+            // Given
+            LocalDate today = LocalDate.of(2025, 2, 1);
+            when(eventRepository.findActiveEventsWithDateBefore(today)).thenReturn(List.of());
+
+            // When
+            service.finishExpiredActiveEvents(today);
+
+            // Then
+            verify(eventRepository, never()).save(any(Event.class));
         }
     }
 
