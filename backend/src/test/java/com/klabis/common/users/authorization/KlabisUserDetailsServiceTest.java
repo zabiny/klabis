@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 class KlabisUserDetailsServiceTest {
 
     @Mock
-    private UserService userRepository;
+    private UserService userService;
 
     @Mock
     private UserPermissionsRepository permissionsRepository;
@@ -42,14 +42,14 @@ class KlabisUserDetailsServiceTest {
 
     @BeforeEach
     void setUp() {
-        userDetailsService = new KlabisUserDetailsService(userRepository, permissionsRepository);
+        userDetailsService = new KlabisUserDetailsService(userService, permissionsRepository);
     }
 
     @Test
     @DisplayName("should load user by registrationNumber")
     void shouldLoadUserByRegistrationNumber() {
         User user = UserTestDataBuilder.anAdminUser().build();
-        when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -70,7 +70,7 @@ class KlabisUserDetailsServiceTest {
     @Test
     @DisplayName("should throw UsernameNotFoundException for unknown user")
     void shouldThrowExceptionForUnknownUser() {
-        when(userRepository.findUserByUsername("ZBM9999")).thenReturn(Optional.empty());
+        when(userService.findUserByUsername("ZBM9999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userDetailsService.loadUserByUsername("ZBM9999"))
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -81,7 +81,7 @@ class KlabisUserDetailsServiceTest {
     @DisplayName("'admin' user should have all authorities")
     void shouldMapAdminRoleToAuthorities() {
         User user = UserTestDataBuilder.anAdminUser().build();
-        when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -99,7 +99,7 @@ class KlabisUserDetailsServiceTest {
     @DisplayName("should map ROLE_MEMBER to read-only authority")
     void shouldMapMemberRoleToAuthorities() {
         User user = UserTestDataBuilder.aMemberUser().build();
-        when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -119,7 +119,7 @@ class KlabisUserDetailsServiceTest {
         User user = UserTestDataBuilder.anAdminUser()
                 .status(AccountStatus.SUSPENDED)
                 .build();
-        when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -137,7 +137,7 @@ class KlabisUserDetailsServiceTest {
         User user = UserTestDataBuilder.aMemberUser()
                 .status(AccountStatus.PENDING_ACTIVATION)
                 .build();
-        when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository

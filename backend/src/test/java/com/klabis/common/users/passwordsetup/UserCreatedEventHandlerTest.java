@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,7 +65,7 @@ class UserCreatedEventHandlerTest {
             User mockUser = User.reconstruct(new UserId(userId), username, UUID.randomUUID().toString(), AccountStatus.PENDING_ACTIVATION);
 
             GeneratedTokenResult tokenResult = new GeneratedTokenResult(
-                    mock(PasswordSetupToken.class),
+                    PasswordSetupToken.generateFor(new UserId(userId), Duration.ofHours(4)),
                     "plain-token-123"
             );
 
@@ -176,7 +177,7 @@ class UserCreatedEventHandlerTest {
             User mockUser = User.reconstruct(new UserId(userId), username, UUID.randomUUID().toString(), AccountStatus.PENDING_ACTIVATION);
 
             GeneratedTokenResult tokenResult = new GeneratedTokenResult(
-                    mock(PasswordSetupToken.class),
+                    PasswordSetupToken.generateFor(new UserId(userId), Duration.ofHours(4)),
                     "plain-token-123"
             );
 
