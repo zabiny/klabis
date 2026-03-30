@@ -114,7 +114,11 @@ Disjunktnost věkových rozsahů je validována při vytváření/editaci tréni
 
 **Alternativa:** Event-driven — odmítnuto, protože jde o synchronní validační kontrolu, ne asynchronní reakci.
 
-### 6. Databázový model
+### 6. GROUPS:TRAINING oprávnění
+
+**Rozhodnutí:** Nový entry `GROUPS_TRAINING` v existujícím `Authority` enumu se scope `GLOBAL`. Toto oprávnění je vyžadováno pro vytváření, editaci a mazání tréninkových skupin. Přiděluje se administrátorem v dialogu oprávnění člena.
+
+### 7. Databázový model
 
 Všechny typy skupin v jedné tabulce s diskriminátorem (single table inheritance) — jednoduchý model, Spring Data JDBC nepodporuje table-per-class nativně.
 
@@ -158,7 +162,7 @@ erDiagram
     user_groups ||--o{ invitations : "has invitations (FREE only)"
 ```
 
-### 7. Package struktura
+### 8. Package struktura
 
 ```
 com.klabis.usergroups/
