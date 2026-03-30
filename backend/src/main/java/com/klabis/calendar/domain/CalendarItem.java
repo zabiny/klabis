@@ -52,7 +52,11 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
             @NotNull(message = "End date is required")
             LocalDate endDate
-    ) {}
+    ) {
+        public static CreateCalendarItem from(CalendarItem domain) {
+            return new CreateCalendarItem(domain.name, domain.description, domain.startDate, domain.endDate);
+        }
+    }
 
     @RecordBuilder
     public record UpdateCalendarItem(
@@ -69,7 +73,11 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
             @NotNull(message = "End date is required")
             LocalDate endDate
-    ) {}
+    ) {
+        public static UpdateCalendarItem from(CalendarItem domain) {
+            return new UpdateCalendarItem(domain.name, domain.description, domain.startDate, domain.endDate);
+        }
+    }
 
     @RecordBuilder
     public record CreateCalendarItemForEvent(
@@ -83,6 +91,10 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         String description() {
             return buildEventDescription(location, organizer, websiteUrl);
         }
+
+        public static CreateCalendarItemForEvent from(CalendarItem domain) {
+            return new CreateCalendarItemForEvent(domain.name, null, null, null, domain.startDate, domain.eventId);
+        }
     }
 
     @RecordBuilder
@@ -95,6 +107,10 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
     ) {
         String description() {
             return buildEventDescription(location, organizer, websiteUrl);
+        }
+
+        public static SynchronizeFromEvent from(CalendarItem domain) {
+            return new SynchronizeFromEvent(domain.name, null, null, null, domain.startDate);
         }
     }
 

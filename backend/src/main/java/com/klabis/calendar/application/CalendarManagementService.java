@@ -5,7 +5,7 @@ import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
+import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
