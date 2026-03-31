@@ -10,7 +10,7 @@ import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
-import {MemberName} from '../../components/members/MemberName.tsx';
+import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 
 interface GroupOwner {
     memberId: string;
@@ -117,7 +117,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         {resourceData.owners.map((owner) => (
                             <DetailRow key={owner.memberId} label="">
                                 <HalRouteProvider routeLink={owner._links.member}>
-                                    <MemberName/>
+                                    <MemberNameWithRegNumber/>
                                 </HalRouteProvider>
                             </DetailRow>
                         ))}
@@ -160,7 +160,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                                 <tr key={member.memberId} className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                                     <td className="px-4 py-3">
                                         <HalRouteProvider routeLink={member._links.member}>
-                                            <MemberName/>
+                                            <MemberNameWithRegNumber/>
                                         </HalRouteProvider>
                                     </td>
                                     <td className="px-4 py-3 text-text-secondary">{formatDate(member.joinedAt)}</td>

@@ -46,7 +46,7 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
     useHalRoute: vi.fn(() => ({
-        resourceData: {firstName: 'Jana', lastName: 'Nováková', _links: {self: {href: '/api/members/member-1'}}},
+        resourceData: {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM9500', _links: {self: {href: '/api/members/member-1'}}},
         navigateToResource: vi.fn(),
         isLoading: false,
         error: null,
@@ -154,12 +154,12 @@ describe('GroupDetailPage', () => {
         expect(screen.getByText('SPRÁVCI')).toBeInTheDocument();
     });
 
-    it('resolves owner name via HAL member link', () => {
+    it('resolves owner name with registration number via HAL member link', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        expect(screen.getByText('Jana Nováková (ZBM9500)')).toBeInTheDocument();
     });
 
     it('does not render owners section when owners list is empty', () => {
@@ -211,12 +211,12 @@ describe('GroupDetailPage', () => {
         expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
     });
 
-    it('renders member rows with resolved names and joined dates', () => {
+    it('renders member rows with resolved names, registration numbers, and joined dates', () => {
         const resourceData = buildGroupDetail({
             members: [buildMember()],
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        expect(screen.getByText('Jana Nováková (ZBM9500)')).toBeInTheDocument();
         expect(screen.getByText('15. 1. 2025')).toBeInTheDocument();
     });
 
