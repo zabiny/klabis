@@ -1,7 +1,5 @@
 package com.klabis.common.security;
 
-import tools.jackson.databind.ObjectMapper;
-
 import com.klabis.common.users.UserService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -41,6 +39,7 @@ import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.ObjectMapper;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -185,7 +184,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    @Order(4)
+    @Order(2)
     @ConditionalOnProperty(value = "spring.h2.console.enabled", havingValue = "true")
     public SecurityFilterChain h2FilterChain(HttpSecurity http) throws Exception {
         http
