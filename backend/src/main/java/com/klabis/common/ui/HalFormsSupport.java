@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import static com.klabis.common.ui.CollectionPropertyContext.markCollectionProperty;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
@@ -299,12 +300,18 @@ public class HalFormsSupport {
             boolean isPayloadClassRecord = inputPayloadMetadata.getType() != null && inputPayloadMetadata.getType()
                     .isRecord();
 
-            return getAnnotatedElementForProperty(inputPayloadMetadata, metadata)
+            AffordanceModel.PropertyMetadata wrapped = getAnnotatedElementForProperty(inputPayloadMetadata, metadata)
                     .map(annotatedElement -> (AffordanceModel.PropertyMetadata) new KlabisHalFormsPropertyMetadataWrapper(metadata,
                             annotatedElement,
                             isPayloadClassRecord,
                             isPropertyAuthorized(inputPayloadMetadata.getType(), metadata.getName())))
                     .orElse(metadata);
+
+            if (wrapped instanceof KlabisHalFormsPropertyMetadataWrapper wrapper && wrapper.isCollectionType()) {
+                markCollectionProperty(metadata.getName());
+            }
+
+            return wrapped;
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
@@ -513,11 +520,21 @@ public class HalFormsSupport {
                 result = getTypeFromClass(getEnclosedClass());
             }
 
-            if (Optional.class.getSimpleName().equalsIgnoreCase(result) || PatchField.class.getSimpleName().equalsIgnoreCase(result)) {
+            if (Optional.class.getSimpleName().equalsIgnoreCase(result)
+                    || PatchField.class.getSimpleName().equalsIgnoreCase(result)
+                    || isCollectionType()) {
                 result = getTypeFromClass(delegate.getType().getGeneric(0).getRawClass());
             }
 
             return result;
+        }
+
+        boolean isCollectionType() {
+            return isSupportedCollectionType(getEnclosedClass());
+        }
+
+        static boolean isSupportedCollectionType(Class<?> type) {
+            return Collection.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type);
         }
 
         private Optional<HtmlInputType> fromClass(Class<?> type) {

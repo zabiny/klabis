@@ -2,6 +2,7 @@ package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -17,7 +18,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -99,9 +102,61 @@ class HalFormsExpectationsTest {
                 .andExpect(status().isOk());
     }
 
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("Set<String> field should produce type 'text' with multi: true")
+    void shouldUnwrapSetOfStringToTextWithMultiple() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'tags')].type").value("text"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'tags')].multi").value(true))
+                .andExpect(status().isOk());
+    }
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("Set<Authority> field should produce type 'Authority' with multi: true")
+    void shouldUnwrapSetOfEnumToEnumTypeWithMultiple() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'roles')].type").value("Authority"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'roles')].multi").value(true))
+                .andExpect(status().isOk());
+    }
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("List<Integer> field should produce type 'number' with multi: true")
+    void shouldUnwrapListOfIntegerToNumberWithMultiple() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'scores')].type").value("number"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'scores')].multi").value(true))
+                .andExpect(status().isOk());
+    }
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("Set<Address> field should produce type 'Address' with multi: true")
+    void shouldUnwrapSetOfCompositeTypeToTypeNameWithMultiple() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'addresses')].type").value("Address"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'addresses')].multi").value(true))
+                .andExpect(status().isOk());
+    }
+
 }
 
-record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address, Optional<String> dietary, Optional<Address> postalAddress, PatchField<String> diet) {
+record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address, Optional<String> dietary, Optional<Address> postalAddress, PatchField<String> diet, Set<String> tags, Set<Authority> roles, List<Integer> scores, Set<Address> addresses) {
 
 }
 
@@ -115,7 +170,7 @@ class HalFormsExampleController {
 
     @GetMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
-        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"));
+        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"), Set.of("tag1"), Set.of(Authority.MEMBERS_READ), List.of(42), Set.of());
 
         EntityModel<User> model = EntityModel.of(data);
         klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).ifPresent(link ->
