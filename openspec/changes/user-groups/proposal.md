@@ -1,3 +1,16 @@
+## Scenarios
+
+### Free Group Invitations
+
+- Owner pozve člena → člen obdrží pozvánku ve stavu PENDING
+- Owner nemůže pozvat člena, který je již členem skupiny (včetně vlastníků)
+- Owner nemůže pozvat člena, který má již PENDING pozvánku do stejné skupiny
+- Pozvaný člen přijme pozvánku → stane se členem skupiny, pozvánka přechází do ACCEPTED
+- Pozvaný člen odmítne pozvánku → nestane se členem skupiny, pozvánka přechází do REJECTED
+- Po odmítnutí lze člena znovu pozvat
+- Pouze owner skupiny může pozvat člena
+- Pozvaný člen vidí PENDING pozvánky na stránce skupin (sekce „Čekající pozvánky")
+
 ## Why
 
 Klabis potřebuje mechanismus pro seskupování členů klubu do skupin s různým účelem — tréninkové skupiny pro organizaci svěřenců trenérů, rodinné skupiny pro propojení rodičů s dětmi, a volné skupiny pro uživatelsky definované seskupení. Skupiny umožní delegaci oprávnění (např. přihlašování členů na závody) a v budoucnu budou základem pro komunikační funkce (chat, emaily).

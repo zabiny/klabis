@@ -119,6 +119,26 @@ The system SHALL support an invitation-based membership flow for free groups. Gr
 - **THEN** the member is NOT added to the free group
 - **AND** the invitation status changes to rejected
 
+#### Scenario: Owner cannot invite existing member or owner
+- **WHEN** group owner attempts to invite a member who is already a member or owner of the group
+- **THEN** the system rejects the invitation
+- **AND** displays an error indicating the member is already in the group
+
+#### Scenario: Owner cannot invite member with pending invitation
+- **WHEN** group owner attempts to invite a member who already has a pending invitation to the same group
+- **THEN** the system rejects the invitation
+- **AND** displays an error indicating a pending invitation already exists
+
+#### Scenario: Member can be re-invited after rejection
+- **WHEN** a member has previously rejected an invitation to a free group
+- **AND** the group owner sends a new invitation to that member
+- **THEN** the system creates a new pending invitation for the member
+
+#### Scenario: Only group owner can invite members
+- **WHEN** a non-owner group member attempts to invite another member to the free group
+- **THEN** the system rejects the action
+- **AND** the invitation is not created
+
 #### Scenario: Member has multiple free group memberships
 - **WHEN** a member accepts invitations to multiple free groups
 - **THEN** the system allows membership in all accepted groups without restriction

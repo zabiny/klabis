@@ -170,6 +170,27 @@ class FreeGroupTest {
         }
 
         @Test
+        @DisplayName("should throw when inviting an existing member")
+        void shouldThrowWhenInvitingExistingMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.addMember(OTHER_MEMBER);
+
+            assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
+                    .isInstanceOf(FreeGroup.CannotInviteExistingMemberException.class)
+                    .hasMessageContaining(OTHER_MEMBER.toString());
+        }
+
+        @Test
+        @DisplayName("should throw when inviting an owner")
+        void shouldThrowWhenInvitingOwner() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+
+            assertThatThrownBy(() -> group.invite(CREATOR, CREATOR))
+                    .isInstanceOf(FreeGroup.CannotInviteExistingMemberException.class)
+                    .hasMessageContaining(CREATOR.toString());
+        }
+
+        @Test
         @DisplayName("should throw when inviting a member who already has a pending invitation")
         void shouldThrowWhenDuplicatePendingInvitation() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));

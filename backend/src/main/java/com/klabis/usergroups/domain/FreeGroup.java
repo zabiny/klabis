@@ -56,6 +56,9 @@ public class FreeGroup extends UserGroup {
     public void invite(MemberId invitedBy, MemberId target) {
         Assert.notNull(invitedBy, "invitedBy is required");
         Assert.notNull(target, "target is required");
+        if (hasMember(target) || isOwner(target)) {
+            throw new CannotInviteExistingMemberException(target);
+        }
         boolean pendingAlreadyExists = invitations.stream()
                 .anyMatch(inv -> inv.isForMember(target) && inv.isPending());
         if (pendingAlreadyExists) {
@@ -98,6 +101,12 @@ public class FreeGroup extends UserGroup {
                 .filter(inv -> inv.getId().equals(invitationId) && inv.isPending())
                 .findFirst()
                 .orElseThrow(() -> new InvitationNotFoundException(invitationId));
+    }
+
+    static final class CannotInviteExistingMemberException extends BusinessRuleViolationException {
+        CannotInviteExistingMemberException(MemberId memberId) {
+            super("Member %s is already a member or owner of this group".formatted(memberId));
+        }
     }
 
     static final class DuplicatePendingInvitationException extends BusinessRuleViolationException {
