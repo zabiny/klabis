@@ -1,8 +1,7 @@
 package com.klabis.usergroups.infrastructure.restapi;
 
+import com.klabis.members.MemberId;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.UUID;
-
-record InviteMemberRequest(@NotNull UUID memberId) {
+record InviteMemberRequest(@NotNull MemberId memberId) {
 }

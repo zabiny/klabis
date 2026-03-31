@@ -3,7 +3,6 @@ package com.klabis.usergroups.infrastructure.restapi;
 import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
-import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.InvitationPort;
 import com.klabis.usergroups.domain.FreeGroup;
@@ -49,8 +48,7 @@ class InvitationController {
         requireMemberProfile(currentUser);
 
         UserGroupId userGroupId = new UserGroupId(groupId);
-        MemberId target = new MemberId(request.memberId());
-        invitationService.inviteMember(userGroupId, currentUser.memberId(), target);
+        invitationService.inviteMember(userGroupId, currentUser.memberId(), request.memberId());
         return ResponseEntity.noContent().build();
     }
 
