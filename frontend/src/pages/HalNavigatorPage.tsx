@@ -70,6 +70,12 @@ const demoTemplate: HalFormsTemplate = {
             name: "active",
             prompt: "Aktivni",
             type: "boolean"
+        },
+        {
+            name: "driversLicence",
+            prompt: "Ridicak",
+            type: "text",
+            multiple: true
         }
     ],
 };
