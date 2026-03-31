@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupsPage} from './GroupsPage';
 import {vi} from 'vitest';
@@ -75,6 +75,19 @@ const buildGroupRow = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
+const buildPendingInvitation = (overrides?: Record<string, unknown>) => ({
+    groupId: 'group-1',
+    groupName: 'Závoďáci',
+    invitationId: 'inv-1',
+    invitedBy: 'owner-1',
+    _links: {
+        self: {href: '/api/groups/group-1/invitations/inv-1'},
+        accept: {href: '/api/groups/group-1/invitations/inv-1/accept'},
+        reject: {href: '/api/groups/group-1/invitations/inv-1/reject'},
+    },
+    ...overrides,
+});
+
 const renderPageWithGroups = (groups: unknown[], routeOverrides?: Record<string, unknown>) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/groups'}},
@@ -83,6 +96,21 @@ const renderPageWithGroups = (groups: unknown[], routeOverrides?: Record<string,
     };
     vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData, routeOverrides);
+    return renderPage(pageData);
+};
+
+const renderPageWithInvitations = (invitations: unknown[]) => {
+    const invitationsData: HalResponse = {
+        _links: {self: {href: 'http://localhost/api/invitations/pending'}},
+        _embedded: {pendingInvitationResponseList: invitations},
+    };
+    vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+        if (url.includes('invitations/pending')) {
+            return {data: invitationsData, error: null} as ReturnType<typeof useAuthorizedQuery>;
+        }
+        return {data: null, error: null} as ReturnType<typeof useAuthorizedQuery>;
+    });
+    const pageData = createMockPageData(null);
     return renderPage(pageData);
 };
 
@@ -138,5 +166,66 @@ describe('GroupsPage', () => {
     it('renders group names in the table', () => {
         renderPageWithGroups([buildGroupRow({name: 'Závoďáci'})]);
         expect(screen.getByText('Závoďáci')).toBeInTheDocument();
+    });
+
+    describe('pending invitations', () => {
+        it('shows pending invitations section heading when invitations exist', () => {
+            renderPageWithInvitations([buildPendingInvitation()]);
+            expect(screen.getByText('ČEKAJÍCÍ POZVÁNKY')).toBeInTheDocument();
+        });
+
+        it('does not show pending invitations section when no invitations', () => {
+            renderPageWithInvitations([]);
+            expect(screen.queryByText('ČEKAJÍCÍ POZVÁNKY')).not.toBeInTheDocument();
+        });
+
+        it('shows group name for each pending invitation', () => {
+            renderPageWithInvitations([buildPendingInvitation({groupName: 'Závoďáci'})]);
+            expect(screen.getByText('Závoďáci')).toBeInTheDocument();
+        });
+
+        it('shows "Přijmout" button for each pending invitation', () => {
+            renderPageWithInvitations([buildPendingInvitation()]);
+            expect(screen.getByRole('button', {name: /přijmout/i})).toBeInTheDocument();
+        });
+
+        it('shows "Odmítnout" button for each pending invitation', () => {
+            renderPageWithInvitations([buildPendingInvitation()]);
+            expect(screen.getByRole('button', {name: /odmítnout/i})).toBeInTheDocument();
+        });
+
+        it('calls mutate with accept URL when "Přijmout" is clicked', async () => {
+            const mockMutate = vi.fn();
+            vi.mocked(useAuthorizedMutation).mockReturnValue({
+                mutate: mockMutate,
+                isPending: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
+            renderPageWithInvitations([buildPendingInvitation()]);
+            fireEvent.click(screen.getByRole('button', {name: /přijmout/i}));
+            await waitFor(() => {
+                expect(mockMutate).toHaveBeenCalledWith(
+                    expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/accept'}),
+                    expect.any(Object)
+                );
+            });
+        });
+
+        it('calls mutate with reject URL when "Odmítnout" is clicked', async () => {
+            const mockMutate = vi.fn();
+            vi.mocked(useAuthorizedMutation).mockReturnValue({
+                mutate: mockMutate,
+                isPending: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
+            renderPageWithInvitations([buildPendingInvitation()]);
+            fireEvent.click(screen.getByRole('button', {name: /odmítnout/i}));
+            await waitFor(() => {
+                expect(mockMutate).toHaveBeenCalledWith(
+                    expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/reject'}),
+                    expect.any(Object)
+                );
+            });
+        });
     });
 });

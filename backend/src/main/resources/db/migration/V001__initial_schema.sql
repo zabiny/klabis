@@ -434,6 +434,30 @@ COMMENT ON TABLE user_group_members IS 'Maps members to user groups with join ti
 COMMENT ON COLUMN user_group_members.joined_at IS 'Timestamp when member joined the group';
 
 -- ============================================================================
+-- 13. INVITATIONS TABLE
+-- Stores member invitations for FREE type user groups
+-- ============================================================================
+
+CREATE TABLE invitations
+(
+    id                    UUID         PRIMARY KEY,
+    group_id              UUID         NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
+    invited_member_id     UUID         NOT NULL,
+    invited_by_member_id  UUID         NOT NULL,
+    status                VARCHAR(20)  NOT NULL, -- PENDING, ACCEPTED, REJECTED
+    created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for invitations
+CREATE INDEX idx_invitations_group_id ON invitations (group_id);
+CREATE INDEX idx_invitations_invited_member_id ON invitations (invited_member_id);
+CREATE INDEX idx_invitations_status ON invitations (status);
+
+-- Comments for invitations
+COMMENT ON TABLE invitations IS 'Member invitations for FREE type user groups';
+COMMENT ON COLUMN invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

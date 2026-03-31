@@ -10,6 +10,7 @@ import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
+import com.klabis.usergroups.domain.Invitation;
 import com.klabis.usergroups.domain.UserGroup;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -106,6 +107,10 @@ class GroupController {
                         .andAffordances(klabisAfford(methodOn(GroupController.class).updateGroup(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)))
                         .andAffordances(klabisAfford(methodOn(GroupController.class).addGroupMember(id, null, null)));
+                if (group instanceof FreeGroup) {
+                    selfLink = selfLink
+                            .andAffordances(klabisAfford(methodOn(InvitationController.class).inviteMember(id, null, null)));
+                }
             }
             model.add(selfLink);
         });
@@ -195,7 +200,14 @@ class GroupController {
                 .map(m -> buildMemberModel(m, groupUuid, requestingUserIsOwner, ownerIds))
                 .toList();
 
-        return new GroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels);
+        List<EntityModel<PendingInvitationResponse>> pendingInvitationModels = List.of();
+        if (requestingUserIsOwner && group instanceof FreeGroup freeGroup) {
+            pendingInvitationModels = freeGroup.getPendingInvitations().stream()
+                    .map(inv -> buildPendingInvitationModel(group, inv))
+                    .toList();
+        }
+
+        return new GroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels, pendingInvitationModels);
     }
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId) {
@@ -224,6 +236,11 @@ class GroupController {
         }
 
         return model;
+    }
+
+    private EntityModel<PendingInvitationResponse> buildPendingInvitationModel(
+            UserGroup group, Invitation invitation) {
+        return InvitationModelBuilder.buildPendingInvitationModel(group, invitation);
     }
 
     private void requireMemberProfile(CurrentUserData currentUser) {

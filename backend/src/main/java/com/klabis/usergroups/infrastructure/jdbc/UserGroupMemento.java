@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
+import com.klabis.usergroups.domain.Invitation;
 import com.klabis.usergroups.domain.UserGroup;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
@@ -37,6 +38,9 @@ class UserGroupMemento implements Persistable<UUID> {
 
     @MappedCollection(idColumn = "user_group_id")
     private Set<UserGroupMemberMemento> members = new HashSet<>();
+
+    @MappedCollection(idColumn = "group_id")
+    private Set<InvitationMemento> invitations = new HashSet<>();
 
     @CreatedDate
     @Column("created_at")
@@ -78,6 +82,12 @@ class UserGroupMemento implements Persistable<UUID> {
                 .map(m -> new UserGroupMemberMemento(m.memberId().uuid(), m.joinedAt()))
                 .collect(Collectors.toSet());
 
+        if (group instanceof FreeGroup freeGroup) {
+            memento.invitations = freeGroup.getInvitations().stream()
+                    .map(InvitationMemento::from)
+                    .collect(Collectors.toSet());
+        }
+
         if (group.getAuditMetadata() != null) {
             memento.createdAt = group.getCreatedAt();
             memento.createdBy = group.getCreatedBy();
@@ -106,7 +116,12 @@ class UserGroupMemento implements Persistable<UUID> {
                 : null;
 
         return switch (this.type) {
-            case FreeGroup.TYPE_DISCRIMINATOR -> FreeGroup.reconstruct(groupId, this.name, ownerIds, memberships, auditMetadata);
+            case FreeGroup.TYPE_DISCRIMINATOR -> {
+                Set<Invitation> invitationSet = invitations.stream()
+                        .map(InvitationMemento::toInvitation)
+                        .collect(Collectors.toSet());
+                yield FreeGroup.reconstruct(groupId, this.name, ownerIds, memberships, invitationSet, auditMetadata);
+            }
             default -> throw new IllegalStateException("Unknown user group type: " + this.type);
         };
     }

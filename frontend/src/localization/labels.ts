@@ -23,6 +23,8 @@ export const labels = {
         setPassword: 'Nastavit heslo a aktivovat účet',
         addItem: 'Přidat',
         removeItem: 'Odebrat',
+        accept: 'Přijmout',
+        reject: 'Odmítnout',
     },
 
     templates: {
@@ -44,6 +46,7 @@ export const labels = {
         deleteGroup: 'Smazat skupinu',
         addGroupMember: 'Přidat člena',
         removeGroupMember: 'Odebrat',
+        inviteMember: 'Pozvat člena',
     },
 
     dialogTitles: {
@@ -216,6 +219,7 @@ export const labels = {
         groupsList: 'Moje skupiny',
         groupOwners: 'SPRÁVCI',
         groupMembers: 'ČLENOVÉ',
+        pendingInvitations: 'ČEKAJÍCÍ POZVÁNKY',
     },
 
     dashboard: {

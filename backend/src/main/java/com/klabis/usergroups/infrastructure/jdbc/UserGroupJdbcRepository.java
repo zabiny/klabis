@@ -15,4 +15,9 @@ interface UserGroupJdbcRepository extends CrudRepository<UserGroupMemento, UUID>
            "JOIN user_group_members ugm ON ug.id = ugm.user_group_id " +
            "WHERE ugm.member_id = :memberId")
     List<UserGroupMemento> findAllByMemberId(@Param("memberId") UUID memberId);
+
+    @Query("SELECT ug.* FROM user_groups ug " +
+           "JOIN invitations inv ON ug.id = inv.group_id " +
+           "WHERE inv.invited_member_id = :memberId AND inv.status = 'PENDING'")
+    List<UserGroupMemento> findAllWithPendingInvitationForMember(@Param("memberId") UUID memberId);
 }

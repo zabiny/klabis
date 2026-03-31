@@ -38,6 +38,13 @@ class UserGroupRepositoryAdapter implements UserGroupRepository {
     }
 
     @Override
+    public List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId) {
+        return jdbcRepository.findAllWithPendingInvitationForMember(memberId.uuid()).stream()
+                .map(UserGroupMemento::toUserGroup)
+                .toList();
+    }
+
+    @Override
     public void delete(UserGroupId id) {
         jdbcRepository.deleteById(id.uuid());
     }

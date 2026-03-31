@@ -95,6 +95,7 @@ const buildGroupDetail = (overrides?: Record<string, unknown>): HalResponse => (
     name: 'Testovací skupina',
     owners: [],
     members: [],
+    pendingInvitations: [],
     _links: {self: {href: '/api/groups/group-1'}},
     ...overrides,
 });
@@ -111,6 +112,20 @@ const buildMember = (overrides?: Record<string, unknown>) => ({
     _links: {
         self: {href: '/api/groups/group-1/members/member-1'},
         member: {href: '/api/members/member-1'},
+    },
+    ...overrides,
+});
+
+const buildPendingInvitation = (overrides?: Record<string, unknown>) => ({
+    groupId: 'group-1',
+    groupName: 'Testovací skupina',
+    invitationId: 'inv-1',
+    invitedBy: 'owner-1',
+    _links: {
+        self: {href: '/api/groups/group-1/invitations/inv-1'},
+        accept: {href: '/api/groups/group-1/invitations/inv-1/accept'},
+        reject: {href: '/api/groups/group-1/invitations/inv-1/reject'},
+        invitedMember: {href: '/api/members/member-2'},
     },
     ...overrides,
 });
@@ -248,5 +263,64 @@ describe('GroupDetailPage', () => {
     it('shows empty state message when no members', () => {
         renderPage(createMockPageData(buildGroupDetail({members: []})));
         expect(screen.getByText('Skupina nemá žádné členy.')).toBeInTheDocument();
+    });
+
+    describe('pending invitations (owner view)', () => {
+        it('shows pending invitations section heading when invitations exist', () => {
+            const resourceData = buildGroupDetail({
+                pendingInvitations: [buildPendingInvitation()],
+            });
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getByText('ČEKAJÍCÍ POZVÁNKY')).toBeInTheDocument();
+        });
+
+        it('does not show pending invitations section when list is empty', () => {
+            renderPage(createMockPageData(buildGroupDetail({pendingInvitations: []})));
+            expect(screen.queryByText('ČEKAJÍCÍ POZVÁNKY')).not.toBeInTheDocument();
+        });
+
+        it('does not show pending invitations section when field is absent', () => {
+            renderPage(createMockPageData(buildGroupDetail()));
+            expect(screen.queryByText('ČEKAJÍCÍ POZVÁNKY')).not.toBeInTheDocument();
+        });
+
+        it('renders invited member entry when invitedMember link exists', () => {
+            const resourceData = buildGroupDetail({
+                pendingInvitations: [buildPendingInvitation()],
+            });
+            renderPage(createMockPageData(resourceData));
+            expect(screen.queryByText('inv-1')).not.toBeInTheDocument();
+        });
+
+        it('falls back to invitationId when member link is absent', () => {
+            const invitation = buildPendingInvitation({_links: {self: {href: '/api/groups/group-1/invitations/inv-1'}}});
+            const resourceData = buildGroupDetail({pendingInvitations: [invitation]});
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getByText('inv-1')).toBeInTheDocument();
+        });
+    });
+
+    describe('invite member (owner)', () => {
+        it('shows "Pozvat člena" button when inviteMember template exists', () => {
+            const resourceData = buildGroupDetail({
+                _templates: {inviteMember: mockHalFormsTemplate({title: 'Pozvat člena', method: 'POST'})},
+            });
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getByRole('button', {name: /pozvat člena/i})).toBeInTheDocument();
+        });
+
+        it('does not show "Pozvat člena" button when inviteMember template is absent', () => {
+            renderPage(createMockPageData(buildGroupDetail()));
+            expect(screen.queryByRole('button', {name: /pozvat člena/i})).not.toBeInTheDocument();
+        });
+
+        it('clicking "Pozvat člena" opens modal', () => {
+            const resourceData = buildGroupDetail({
+                _templates: {inviteMember: mockHalFormsTemplate({title: 'Pozvat člena', method: 'POST'})},
+            });
+            renderPage(createMockPageData(resourceData));
+            fireEvent.click(screen.getByRole('button', {name: /pozvat člena/i}));
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        });
     });
 });

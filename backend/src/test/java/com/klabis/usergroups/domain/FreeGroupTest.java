@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,6 +148,173 @@ class FreeGroupTest {
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
             assertThat(group.hasMember(ANOTHER_MEMBER)).isTrue();
             assertThat(group.getMembers()).hasSize(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("invite()")
+    class InviteMethod {
+
+        @Test
+        @DisplayName("should create pending invitation when owner invites a member")
+        void shouldCreatePendingInvitationForMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            List<Invitation> pending = group.getPendingInvitations();
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
+            assertThat(pending.get(0).getInvitedBy()).isEqualTo(CREATOR);
+            assertThat(pending.get(0).getStatus()).isEqualTo(InvitationStatus.PENDING);
+        }
+
+        @Test
+        @DisplayName("should throw when inviting a member who already has a pending invitation")
+        void shouldThrowWhenDuplicatePendingInvitation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
+                    .isInstanceOf(FreeGroup.DuplicatePendingInvitationException.class)
+                    .hasMessageContaining(OTHER_MEMBER.toString());
+        }
+
+        @Test
+        @DisplayName("should allow re-inviting a member whose previous invitation was rejected")
+        void shouldAllowReInviteAfterRejection() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId firstInvitationId = group.getPendingInvitations().get(0).getId();
+            group.rejectInvitation(firstInvitationId);
+
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            List<Invitation> pending = group.getPendingInvitations();
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
+        }
+    }
+
+    @Nested
+    @DisplayName("acceptInvitation()")
+    class AcceptInvitationMethod {
+
+        @Test
+        @DisplayName("should add member to group and mark invitation as accepted")
+        void shouldAcceptInvitationAndAddMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.acceptInvitation(invitationId);
+
+            assertThat(group.hasMember(OTHER_MEMBER)).isTrue();
+            assertThat(group.getPendingInvitations()).isEmpty();
+            Invitation accepted = group.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(accepted.getStatus()).isEqualTo(InvitationStatus.ACCEPTED);
+        }
+
+        @Test
+        @DisplayName("should throw when accepting a non-existent invitation")
+        void shouldThrowWhenInvitationNotFound() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            InvitationId unknownId = InvitationId.newId();
+
+            assertThatThrownBy(() -> group.acceptInvitation(unknownId))
+                    .isInstanceOf(FreeGroup.InvitationNotFoundException.class)
+                    .hasMessageContaining(unknownId.toString());
+        }
+    }
+
+    @Nested
+    @DisplayName("rejectInvitation()")
+    class RejectInvitationMethod {
+
+        @Test
+        @DisplayName("should mark invitation as rejected and not add member to group")
+        void shouldRejectInvitationWithoutAddingMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.rejectInvitation(invitationId);
+
+            assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
+            assertThat(group.getPendingInvitations()).isEmpty();
+            Invitation rejected = group.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(rejected.getStatus()).isEqualTo(InvitationStatus.REJECTED);
+        }
+
+        @Test
+        @DisplayName("should throw when rejecting a non-existent invitation")
+        void shouldThrowWhenInvitationNotFound() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            InvitationId unknownId = InvitationId.newId();
+
+            assertThatThrownBy(() -> group.rejectInvitation(unknownId))
+                    .isInstanceOf(FreeGroup.InvitationNotFoundException.class)
+                    .hasMessageContaining(unknownId.toString());
+        }
+    }
+
+    @Nested
+    @DisplayName("getPendingInvitations()")
+    class GetPendingInvitationsMethod {
+
+        @Test
+        @DisplayName("should return only pending invitations, excluding accepted and rejected")
+        void shouldReturnOnlyPendingInvitations() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            group.invite(CREATOR, ANOTHER_MEMBER);
+            InvitationId pendingId = group.getPendingInvitations().stream()
+                    .filter(inv -> inv.getInvitedMember().equals(OTHER_MEMBER))
+                    .findFirst().orElseThrow().getId();
+            group.acceptInvitation(pendingId);
+
+            List<Invitation> pending = group.getPendingInvitations();
+
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(ANOTHER_MEMBER);
+        }
+    }
+
+    @Nested
+    @DisplayName("isInvitedMember()")
+    class IsInvitedMemberMethod {
+
+        @Test
+        @DisplayName("should return true when invitation belongs to the given member")
+        void shouldReturnTrueForCorrectMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            assertThat(group.isInvitedMember(invitationId, OTHER_MEMBER)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when invitation belongs to a different member")
+        void shouldReturnFalseForWrongMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            assertThat(group.isInvitedMember(invitationId, ANOTHER_MEMBER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false for an unknown invitation ID")
+        void shouldReturnFalseForUnknownInvitationId() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            assertThat(group.isInvitedMember(InvitationId.newId(), OTHER_MEMBER)).isFalse();
         }
     }
 

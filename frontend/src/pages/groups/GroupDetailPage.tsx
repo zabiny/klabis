@@ -4,6 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
+import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -33,6 +34,7 @@ interface GroupDetail extends HalResponse {
     name: string;
     owners?: GroupOwner[];
     members?: GroupMember[];
+    pendingInvitations?: PendingInvitation[];
 }
 
 interface MemberActionModalState {
@@ -46,18 +48,22 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const navigate = useNavigate();
     const [isEditingName, setIsEditingName] = useState(false);
     const [addMemberModal, setAddMemberModal] = useState(false);
+    const [inviteMemberModal, setInviteMemberModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
 
     const editTemplate = resourceData._templates?.updateGroup ?? null;
     const deleteTemplate = resourceData._templates?.deleteGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addGroupMember ?? null;
+    const inviteMemberTemplate = resourceData._templates?.inviteMember ?? null;
 
     const handleRemoveMember = (member: GroupMember) => {
         const template = member._templates?.removeGroupMember;
         if (!template) return;
         setRemoveMemberModal({member, templateName: 'removeGroupMember', template});
     };
+
+    const pendingInvitations = resourceData.pendingInvitations ?? [];
 
     return (
         <div className="flex flex-col gap-8">
@@ -125,18 +131,48 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                 </Card>
             )}
 
+            {pendingInvitations.length > 0 && (
+                <Card className="p-6">
+                    <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">
+                        {labels.sections.pendingInvitations}
+                    </h3>
+                    <ul className="flex flex-col gap-2">
+                        {pendingInvitations.map((invitation) => (
+                            <li key={invitation.invitationId} className="text-sm text-text-primary">
+                                {invitation._links?.invitedMember ? (
+                                    <HalRouteProvider routeLink={invitation._links.invitedMember}>
+                                        <MemberNameWithRegNumber/>
+                                    </HalRouteProvider>
+                                ) : invitation.invitationId}
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            )}
+
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.groupMembers}</h2>
-                    {addMemberTemplate && (
-                        <Button
-                            variant="primary"
-                            onClick={() => setAddMemberModal(true)}
-                            startIcon={<UserPlus className="w-4 h-4"/>}
-                        >
-                            {labels.templates.addGroupMember}
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {inviteMemberTemplate && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => setInviteMemberModal(true)}
+                                startIcon={<UserPlus className="w-4 h-4"/>}
+                            >
+                                {labels.templates.inviteMember}
+                            </Button>
+                        )}
+                        {addMemberTemplate && (
+                            <Button
+                                variant="primary"
+                                onClick={() => setAddMemberModal(true)}
+                                startIcon={<UserPlus className="w-4 h-4"/>}
+                            >
+                                {labels.templates.addGroupMember}
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {(!resourceData.members || resourceData.members.length === 0) ? (
@@ -198,6 +234,24 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setAddMemberModal(false)}
+                        successMessage={labels.ui.savedSuccessfully}
+                    />
+                </Modal>
+            )}
+
+            {inviteMemberTemplate && inviteMemberModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setInviteMemberModal(false)}
+                    title={labels.templates.inviteMember}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={inviteMemberTemplate}
+                        templateName="inviteMember"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => setInviteMemberModal(false)}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>

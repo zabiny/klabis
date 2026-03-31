@@ -5,5 +5,7 @@ import org.springframework.hateoas.EntityModel;
 import java.util.List;
 import java.util.UUID;
 
-record GroupResponse(UUID id, String name, List<EntityModel<OwnerResponse>> owners, List<EntityModel<GroupMembershipResponse>> members) {
+record GroupResponse(UUID id, String name, List<EntityModel<OwnerResponse>> owners,
+                     List<EntityModel<GroupMembershipResponse>> members,
+                     List<EntityModel<PendingInvitationResponse>> pendingInvitations) {
 }
