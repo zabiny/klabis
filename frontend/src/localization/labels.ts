@@ -5,6 +5,7 @@ export const labels = {
         events: 'Akce',
         members: 'Členové',
         groups: 'Skupiny',
+        'training-groups': 'Tréninkové skupiny',
     },
 
     buttons: {
@@ -47,6 +48,12 @@ export const labels = {
         addGroupMember: 'Přidat člena',
         removeGroupMember: 'Odebrat',
         inviteMember: 'Pozvat člena',
+        createTrainingGroup: 'Vytvořit tréninkovou skupinu',
+        updateTrainingGroup: 'Upravit název',
+        deleteTrainingGroup: 'Smazat tréninkovou skupinu',
+        updateAgeRange: 'Změnit věkové rozmezí',
+        addTrainingGroupMember: 'Přidat člena',
+        removeTrainingGroupMember: 'Odebrat',
     },
 
     dialogTitles: {
@@ -83,6 +90,10 @@ export const labels = {
         dietaryRestrictions: 'Stravovací omezení',
         drivingLicenseGroup: 'Řidičský průkaz',
         memberId: 'Člen',
+        minAge: 'Min. věk',
+        maxAge: 'Max. věk',
+        memberCount: 'Počet členů',
+        ageRange: 'Věkové rozmezí',
     },
 
     enums: {
@@ -220,6 +231,9 @@ export const labels = {
         groupOwners: 'SPRÁVCI',
         groupMembers: 'ČLENOVÉ',
         pendingInvitations: 'ČEKAJÍCÍ POZVÁNKY',
+        trainingGroupsList: 'Tréninkové skupiny',
+        trainingGroupMembers: 'ČLENOVÉ',
+        trainingGroupOwners: 'SPRÁVCI',
     },
 
     dashboard: {

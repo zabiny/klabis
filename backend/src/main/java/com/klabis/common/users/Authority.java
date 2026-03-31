@@ -30,11 +30,13 @@ public enum Authority {
     MEMBERS_READ("MEMBERS:READ", Scope.CONTEXT_SPECIFIC),
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
     EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
-    EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC);
+    EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC),
+    GROUPS_TRAINING("GROUPS:TRAINING", Scope.GLOBAL);
 
     public static final String CALENDAR_SCOPE = "CALENDAR";
     public static final String MEMBERS_SCOPE = "MEMBERS";
     public static final String EVENTS_SCOPE = "EVENTS";
+    public static final String GROUPS_SCOPE = "GROUPS";
 
     private final String value;
     private final Scope scope;

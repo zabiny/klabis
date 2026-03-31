@@ -2,7 +2,9 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.FreeGroup;
+import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -24,6 +26,53 @@ class GroupManagementService implements GroupManagementPort {
     public UserGroup createFreeGroup(FreeGroup.CreateFreeGroup command) {
         FreeGroup group = FreeGroup.create(command);
         return userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command) {
+        validateNoOverlappingAgeRange(command.ageRange(), null);
+        TrainingGroup group = TrainingGroup.create(command);
+        return (TrainingGroup) userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public TrainingGroup updateTrainingGroupAgeRange(UserGroupId id, AgeRange newAgeRange, MemberId requestingMember) {
+        UserGroup group = loadGroup(id);
+        if (!(group instanceof TrainingGroup trainingGroup)) {
+            throw new GroupNotFoundException(id);
+        }
+        requireOwner(trainingGroup, requestingMember);
+        validateNoOverlappingAgeRange(newAgeRange, id);
+        trainingGroup.updateAgeRange(newAgeRange);
+        return (TrainingGroup) userGroupRepository.save(trainingGroup);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TrainingGroup> listTrainingGroups() {
+        return userGroupRepository.findAllTrainingGroups();
+    }
+
+    private void validateNoOverlappingAgeRange(AgeRange ageRange, UserGroupId excludeId) {
+        userGroupRepository.findAllTrainingGroups().stream()
+                .filter(g -> excludeId == null || !g.getId().equals(excludeId))
+                .filter(g -> g.getAgeRange().overlaps(ageRange))
+                .findFirst()
+                .ifPresent(g -> {
+                    throw new AgeRange.OverlappingAgeRangeException(g.getAgeRange());
+                });
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TrainingGroup getTrainingGroup(UserGroupId id) {
+        UserGroup group = loadGroup(id);
+        if (!(group instanceof TrainingGroup trainingGroup)) {
+            throw new GroupNotFoundException(id);
+        }
+        return trainingGroup;
     }
 
     @Transactional(readOnly = true)

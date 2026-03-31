@@ -3,9 +3,11 @@ package com.klabis.usergroups.infrastructure.jdbc;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.Invitation;
+import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.WithInvitations;
 import org.springframework.data.annotation.*;
@@ -33,6 +35,12 @@ class UserGroupMemento implements Persistable<UUID> {
 
     @Column("name")
     private String name;
+
+    @Column("age_range_min")
+    private Integer ageRangeMin;
+
+    @Column("age_range_max")
+    private Integer ageRangeMax;
 
     @MappedCollection(idColumn = "user_group_id")
     private Set<UserGroupOwnerMemento> owners = new HashSet<>();
@@ -89,6 +97,11 @@ class UserGroupMemento implements Persistable<UUID> {
                     .collect(Collectors.toSet());
         }
 
+        if (group instanceof TrainingGroup trainingGroup) {
+            memento.ageRangeMin = trainingGroup.getAgeRange().minAge();
+            memento.ageRangeMax = trainingGroup.getAgeRange().maxAge();
+        }
+
         if (group.getAuditMetadata() != null) {
             memento.createdAt = group.getCreatedAt();
             memento.createdBy = group.getCreatedBy();
@@ -123,6 +136,13 @@ class UserGroupMemento implements Persistable<UUID> {
                         .collect(Collectors.toSet());
                 yield FreeGroup.reconstruct(groupId, this.name, ownerIds, memberships, invitationSet, auditMetadata);
             }
+            case TrainingGroup.TYPE_DISCRIMINATOR -> {
+                if (this.ageRangeMin == null || this.ageRangeMax == null) {
+                    throw new IllegalStateException("TrainingGroup " + this.id + " has null age range in database");
+                }
+                AgeRange ageRange = new AgeRange(this.ageRangeMin, this.ageRangeMax);
+                yield TrainingGroup.reconstruct(groupId, this.name, ownerIds, memberships, ageRange, auditMetadata);
+            }
             default -> throw new IllegalStateException("Unknown user group type: " + this.type);
         };
     }
@@ -140,6 +160,9 @@ class UserGroupMemento implements Persistable<UUID> {
     private static String discriminatorFor(UserGroup group) {
         if (group instanceof FreeGroup) {
             return FreeGroup.TYPE_DISCRIMINATOR;
+        }
+        if (group instanceof TrainingGroup) {
+            return TrainingGroup.TYPE_DISCRIMINATOR;
         }
         throw new IllegalArgumentException("Unknown UserGroup subtype: " + group.getClass().getSimpleName());
     }

@@ -18,5 +18,7 @@ public interface UserGroupRepository {
 
     List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId);
 
+    List<TrainingGroup> findAllTrainingGroups();
+
     void delete(UserGroupId id);
 }

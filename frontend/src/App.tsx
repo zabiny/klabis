@@ -20,6 +20,8 @@ import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
 import {MemberRegistrationPage} from "./pages/members/MemberRegistrationPage.tsx";
 import {GroupsPage} from "./pages/groups/GroupsPage.tsx";
 import {GroupDetailPage} from "./pages/groups/GroupDetailPage.tsx";
+import {TrainingGroupsPage} from "./pages/training-groups/TrainingGroupsPage.tsx";
+import {TrainingGroupDetailPage} from "./pages/training-groups/TrainingGroupDetailPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
@@ -92,6 +94,8 @@ function App() {
                                     <Route path="/events/:id" element={<EventDetailPage/>}/>
                                     <Route path="/groups" element={<GroupsPage/>}/>
                                     <Route path="/groups/:id" element={<GroupDetailPage/>}/>
+                                    <Route path="/training-groups" element={<TrainingGroupsPage/>}/>
+                                    <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

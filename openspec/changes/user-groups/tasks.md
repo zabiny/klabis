@@ -26,14 +26,14 @@
 
 ## 3. Training Groups (Slice 2)
 
-- [ ] 3.1 Add `GROUPS_TRAINING` authority to `Authority` enum (scope GLOBAL)
-- [ ] 3.2 Domain model: `TrainingGroup` concrete aggregate, `AgeRange` value object (minAge, maxAge, includes(age), overlaps(AgeRange))
-- [ ] 3.3 Application service: create training group with disjunktnost validation, edit age range with overlap check, delete training group, manual add/remove member with exclusive membership enforcement
-- [ ] 3.4 DB migration: add age_range_min, age_range_max columns (already in initial migration, verify nullable for non-TRAINING types)
-- [ ] 3.5 REST API: training group endpoints on `GroupController` — POST create, GET list, GET detail, PATCH edit, DELETE (require GROUPS:TRAINING authority)
-- [ ] 3.6 Frontend: dedicated training groups page (accessible only with GROUPS:TRAINING), list with age ranges and member counts, create/edit/delete forms
-- [ ] 3.7 Frontend: training group detail — member list, manual add/remove member
-- [ ] 3.8 Tests: domain unit tests (AgeRange overlap, exclusive membership), integration tests (disjunktnost validation, authorization), Spring Modulith module test
+- [x] 3.1 Add `GROUPS_TRAINING` authority to `Authority` enum (scope GLOBAL)
+- [x] 3.2 Domain model: `TrainingGroup` concrete aggregate, `AgeRange` value object (minAge, maxAge, includes(age), overlaps(AgeRange))
+- [x] 3.3 Application service: create training group with disjunktnost validation, edit age range with overlap check, delete training group, manual add/remove member with exclusive membership enforcement
+- [x] 3.4 DB migration: add age_range_min, age_range_max columns (already in initial migration, verify nullable for non-TRAINING types)
+- [x] 3.5 REST API: training group endpoints on `GroupController` — POST create, GET list, GET detail, PATCH edit, DELETE (require GROUPS:TRAINING authority)
+- [x] 3.6 Frontend: dedicated training groups page (accessible only with GROUPS:TRAINING), list with age ranges and member counts, create/edit/delete forms
+- [x] 3.7 Frontend: training group detail — member list, manual add/remove member
+- [x] 3.8 Tests: domain unit tests (AgeRange overlap, exclusive membership), integration tests (disjunktnost validation, authorization), Spring Modulith module test
 
 ## 4. Training Group Automations (Slice 3)
 

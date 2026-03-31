@@ -2,6 +2,7 @@ package com.klabis.usergroups.infrastructure.jdbc;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
@@ -41,6 +42,13 @@ class UserGroupRepositoryAdapter implements UserGroupRepository {
     public List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId) {
         return jdbcRepository.findAllWithPendingInvitationForMember(memberId.uuid()).stream()
                 .map(UserGroupMemento::toUserGroup)
+                .toList();
+    }
+
+    @Override
+    public List<TrainingGroup> findAllTrainingGroups() {
+        return jdbcRepository.findAllTrainingGroups().stream()
+                .map(m -> (TrainingGroup) m.toUserGroup())
                 .toList();
     }
 
