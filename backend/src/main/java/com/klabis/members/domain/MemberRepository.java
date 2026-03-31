@@ -5,6 +5,7 @@ import org.jmolecules.architecture.hexagonal.Port;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,6 +59,8 @@ public interface MemberRepository {
      * @return count of members born in that year
      */
     int countByBirthYear(int birthYear);
+
+    List<Member> findAllByIds(Collection<MemberId> ids);
 
     boolean existsAny();
 

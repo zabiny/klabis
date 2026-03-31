@@ -5,6 +5,7 @@ import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
@@ -212,7 +213,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         template={removeMemberModal.template}
                         templateName={removeMemberModal.templateName}
                         resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                        pathname={toHref(removeMemberModal.member._links!.self).replace(/^https?:\/\/[^/]+/, '').replace(/^\/api/, '')}
+                        pathname={extractNavigationPath(toHref(removeMemberModal.member._links!.self))}
                         onClose={() => setRemoveMemberModal(null)}
                         successMessage={labels.ui.savedSuccessfully}
                     />

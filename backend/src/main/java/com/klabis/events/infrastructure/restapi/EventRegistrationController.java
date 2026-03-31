@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;

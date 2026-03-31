@@ -31,9 +31,13 @@ class MembersImpl implements Members {
 
     @Override
     public Map<MemberId, MemberDto> findByIds(Collection<MemberId> memberIds) {
-        return memberIds.stream()
-                .flatMap(id -> memberRepository.findById(id).stream().map(m -> Map.entry(id, fromMember(m))))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (memberIds.isEmpty()) {
+            return Map.of();
+        }
+        return memberRepository.findAllByIds(memberIds).stream()
+                .collect(Collectors.toMap(
+                        member -> new MemberId(member.getId().uuid()),
+                        this::fromMember));
     }
 
     @Override

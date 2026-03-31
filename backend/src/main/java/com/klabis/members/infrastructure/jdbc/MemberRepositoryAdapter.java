@@ -15,9 +15,11 @@ import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 @SecondaryAdapter
@@ -58,6 +60,14 @@ class MemberRepositoryAdapter implements MemberRepository {
     public Optional<Member> findById(MemberId memberId) {
         return jdbcRepository.findById(memberId.uuid())
                 .map(MemberMemento::toMember);
+    }
+
+    @Override
+    public List<Member> findAllByIds(Collection<MemberId> ids) {
+        List<UUID> uuids = ids.stream().map(MemberId::uuid).toList();
+        return StreamSupport.stream(jdbcRepository.findAllById(uuids).spliterator(), false)
+                .map(MemberMemento::toMember)
+                .toList();
     }
 
     @Override

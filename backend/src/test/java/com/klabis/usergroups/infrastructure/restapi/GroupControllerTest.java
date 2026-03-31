@@ -4,7 +4,6 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.UserService;
-import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.usergroups.UserGroupId;

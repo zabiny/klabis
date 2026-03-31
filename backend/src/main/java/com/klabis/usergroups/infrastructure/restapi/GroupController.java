@@ -1,5 +1,6 @@
 package com.klabis.usergroups.infrastructure.restapi;
 
+import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.members.CurrentUser;
@@ -191,12 +192,12 @@ class GroupController {
     private GroupResponse toGroupResponse(UserGroup group, UUID groupUuid, boolean requestingUserIsOwner) {
         Set<MemberId> ownerIdSet = group.getOwners();
         List<MemberId> ownerIds = ownerIdSet.stream().toList();
-        List<MemberId> memberIds = group.getMembers().stream().map(GroupMembership::memberId).toList();
+        Set<MemberId> memberIdSet = group.getMembers().stream().map(GroupMembership::memberId).collect(Collectors.toSet());
 
         List<MemberId> allIds = ownerIds.stream()
-                .filter(id -> !memberIds.contains(id))
+                .filter(id -> !memberIdSet.contains(id))
                 .collect(Collectors.toList());
-        allIds.addAll(memberIds);
+        allIds.addAll(memberIdSet);
 
         Map<MemberId, MemberDto> memberDtoMap = members.findByIds(allIds);
 
