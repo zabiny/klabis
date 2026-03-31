@@ -218,4 +218,76 @@ AUTH scenare otestovany pomoci close/open browser window.
 **MINOR-1: Pole "memberId" label v formulari pridani clena**
 - Formular zobrazuje technicky label "memberId*" misto uzivatelsky privetiveho "Clen"
 
+**MINOR-1 opravena** — formular nyni zobrazuje label "Clen*".
+
 **Vsechny scenare PASS. Testovani dokonceno.**
+
+### Iterace 5 (regression test po refactoringu)
+
+Testovano po commitech 5494b6fe (simplify code after review) a 5bf78bce (fix group detail API/UI issues).
+Datum: 2026-03-31.
+
+| Scenar | Vysledek | Poznamka |
+|--------|----------|----------|
+| NAV-1 | PASS | Odkaz "Skupiny" v navigaci viditelny |
+| NAV-2 | PASS | Stranka /groups se zobrazila |
+| CREATE-1 | PASS | Tlacitko "Vytvorit skupinu" viditelne |
+| CREATE-2 | PASS | Formular s polem "Nazev" v modalnim dialogu |
+| CREATE-3 | PASS | Skupina vytvorena, toast "Uspesne ulozeno" |
+| CREATE-4 | PASS | Skupina se objevila v seznamu |
+| CREATE-5 | PASS | Tvurce je vlastnikem (SPRAVCI) i clenem (CLENOVE tabulka) |
+| DETAIL-1 | PASS | Klik na radek otevre detail |
+| DETAIL-2 | PASS | Nazev skupiny zobrazen |
+| DETAIL-3 | PASS | Sekce SPRAVCI s jmenem vlastnika |
+| DETAIL-4 | PASS | Sekce CLENOVE s tabulkou |
+| DETAIL-5 | **MINOR** | Tabulka zobrazuje 2 sloupce (Clen, Datum vstupu) misto 4 (reg. cislo, prijmeni, jmeno, datum). Registracni cislo chybi. |
+| EDIT-1 | PASS | Tlacitko "Upravit nazev" viditelne |
+| EDIT-2 | PASS | Nazev zmenen na "Prejmenovana skupina" |
+| EDIT-3 | PASS | Nadpis aktualizovan |
+| DELETE-1 | PASS | Tlacitko "Smazat skupinu" viditelne |
+| DELETE-2 | PASS | Skupina uspesne smazana |
+| DELETE-3 | PASS | Po smazani presmerovano na /groups |
+| DELETE-4 | PASS | Smazana skupina neni v seznamu |
+| ADD-1 | PASS | Tlacitko "Pridat clena" viditelne |
+| ADD-2 | PASS | Formular s comboboxem "Clen*" (Jan Novak, Eva Svobodova) |
+| ADD-3 | PASS | Eva pridana, toast "Uspesne ulozeno" |
+| ADD-4 | PASS | Eva v tabulce: Eva Svobodova, 31. 3. 2026 |
+| REMOVE-1 | PASS | Tlacitko "Odebrat" u ne-vlastnika, NENI u vlastnika |
+| REMOVE-2 | PASS | Eva uspesne odebrana |
+| REMOVE-3 | PASS | Eva zmizela z tabulky |
+| REMOVE-4 | PASS | Vlastnik nema tlacitko Odebrat |
+| AUTH-1 | PASS | Eva vidi skupinu kde je clenem v seznamu |
+| AUTH-2 | PASS | Eva na detailu NEVIDI tlacitka Upravit/Smazat/Pridat/Odebrat |
+
+### Nalezene issues (Iterace 5)
+
+**MINOR-1 z Iterace 4 opravena** — formular "Pridat clena" nyni zobrazuje label "Clen*" misto "memberId*".
+
+**MINOR-2: Tabulka clenu nezobrazuje registracni cislo**
+- Refactoring zjednodusil tabulku clenu na 2 sloupce (Clen = cele jmeno, Datum vstupu)
+- Registracni cislo neni zobrazeno, coz ztezuje jednoznacnou identifikaci clenu
+- Task: .claude/tasks/user-groups-member-table-missing-reg-number.md
+
+**Zadne kriticke issues. Vsechny funkcni scenare PASS.**
+
+### Iterace 6 (retest: group members list — reg number fix)
+
+Testovano po commitech 50b033e6 (display registration number alongside member name) a 939b52f3 (resolve member names via HAL links).
+Datum: 2026-03-31. Retest zameren na zobrazeni registracniho cisla v tabulce clenu a sekci spravcu.
+
+| Scenar | Vysledek | Poznamka |
+|--------|----------|---------|
+| DETAIL-3 | PASS | SPRAVCI: "Jan Novak (ZBM9000)" — reg. cislo zobrazeno |
+| DETAIL-5 | PASS | Tabulka clenu: sloupce Clen, Datum vstupu. Format "Jmeno (RegCislo)" — napr. "Jan Novak (ZBM9000)" |
+| ADD-2 | PASS | Combobox "Clen*" zobrazuje moznosti s reg. cislem: "Eva Svobodova (ZBM9500)" |
+| ADD-3 | PASS | Eva pridana, toast "Uspesne ulozeno" |
+| ADD-4 | PASS | Eva v tabulce: "Eva Svobodova (ZBM9500)", 31. 3. 2026 — reg. cislo zobrazeno |
+| REMOVE-1 | PASS | Tlacitko "Odebrat" u ne-vlastnika (Eva), NENI u vlastnika (Jan) |
+| REMOVE-2 | PASS | Eva uspesne odebrana |
+| REMOVE-3 | PASS | Eva zmizela z tabulky po odebrani |
+
+### Nalezene issues (Iterace 6)
+
+**MINOR-2 z Iterace 5 opravena** — tabulka clenu i sekce spravcu nyni zobrazuji registracni cislo ve formatu "Jmeno (RegCislo)".
+
+**Vsechny scenare PASS. Retest uspesny, zadne nove issues.**
