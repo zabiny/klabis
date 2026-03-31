@@ -43,6 +43,16 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
+vi.mock('../../contexts/HalRouteContext.tsx', () => ({
+    HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+    useHalRoute: vi.fn(() => ({
+        resourceData: {firstName: 'Jana', lastName: 'Nováková', _links: {self: {href: '/api/members/member-1'}}},
+        navigateToResource: vi.fn(),
+        isLoading: false,
+        error: null,
+    })),
+}));
+
 const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
     resourceData,
     isLoading: false,
@@ -89,13 +99,19 @@ const buildGroupDetail = (overrides?: Record<string, unknown>): HalResponse => (
     ...overrides,
 });
 
+const buildOwner = (overrides?: Record<string, unknown>) => ({
+    memberId: 'owner-1',
+    _links: {member: {href: '/api/members/owner-1'}},
+    ...overrides,
+});
+
 const buildMember = (overrides?: Record<string, unknown>) => ({
     memberId: 'member-1',
-    firstName: 'Jana',
-    lastName: 'Nováková',
-    registrationNumber: 'ZBM0001',
     joinedAt: '2025-01-15T00:00:00Z',
-    _links: {self: {href: '/api/groups/group-1/members/member-1'}},
+    _links: {
+        self: {href: '/api/groups/group-1/members/member-1'},
+        member: {href: '/api/members/member-1'},
+    },
     ...overrides,
 });
 
@@ -132,11 +148,18 @@ describe('GroupDetailPage', () => {
 
     it('renders owners section when owners exist', () => {
         const resourceData = buildGroupDetail({
-            owners: [{id: 'owner-1', firstName: 'Petr', lastName: 'Kovář', registrationNumber: 'ZBM9000'}],
+            owners: [buildOwner()],
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('SPRÁVCI')).toBeInTheDocument();
-        expect(screen.getByText('Petr Kovář')).toBeInTheDocument();
+    });
+
+    it('resolves owner name via HAL member link', () => {
+        const resourceData = buildGroupDetail({
+            owners: [buildOwner()],
+        });
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
     });
 
     it('does not render owners section when owners list is empty', () => {
@@ -188,14 +211,13 @@ describe('GroupDetailPage', () => {
         expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
     });
 
-    it('renders member rows with names and joined dates', () => {
+    it('renders member rows with resolved names and joined dates', () => {
         const resourceData = buildGroupDetail({
             members: [buildMember()],
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Nováková')).toBeInTheDocument();
-        expect(screen.getByText('Jana')).toBeInTheDocument();
-        expect(screen.getByText('ZBM0001')).toBeInTheDocument();
+        expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        expect(screen.getByText('15. 1. 2025')).toBeInTheDocument();
     });
 
     it('renders "Odebrat" button per member when removeGroupMember template exists on member', () => {

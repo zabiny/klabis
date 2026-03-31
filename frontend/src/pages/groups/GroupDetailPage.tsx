@@ -3,26 +3,29 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
+import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
+import {MemberName} from '../../components/members/MemberName.tsx';
 
 interface GroupOwner {
-    id: string;
-    firstName: string;
-    lastName: string;
-    registrationNumber?: string;
+    memberId: string;
+    _links: {
+        member: HalResourceLinks;
+    };
 }
 
 interface GroupMember extends HalResponse {
     memberId: string;
-    firstName: string;
-    lastName: string;
-    registrationNumber?: string;
     joinedAt: string;
+    _links: {
+        self: HalResourceLinks;
+        member: HalResourceLinks;
+    };
 }
 
 interface GroupDetail extends HalResponse {
@@ -112,8 +115,10 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                     </h3>
                     <dl>
                         {resourceData.owners.map((owner) => (
-                            <DetailRow key={owner.id} label={owner.registrationNumber ?? owner.id}>
-                                {owner.firstName} {owner.lastName}
+                            <DetailRow key={owner.memberId} label="">
+                                <HalRouteProvider routeLink={owner._links.member}>
+                                    <MemberName/>
+                                </HalRouteProvider>
                             </DetailRow>
                         ))}
                     </dl>
@@ -142,13 +147,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             <thead>
                             <tr className="border-b border-border bg-slate-50 dark:bg-zinc-800">
                                 <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.fields.registrationNumber}
-                                </th>
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.fields.lastName}
-                                </th>
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.fields.firstName}
+                                    {labels.fields.memberId}
                                 </th>
                                 <th className="text-left px-4 py-3 font-medium text-text-secondary">
                                     {labels.tables.joinedAt}
@@ -159,9 +158,11 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             <tbody>
                             {resourceData.members.map((member) => (
                                 <tr key={member.memberId} className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                                    <td className="px-4 py-3 text-text-secondary">{member.registrationNumber ?? '—'}</td>
-                                    <td className="px-4 py-3">{member.lastName}</td>
-                                    <td className="px-4 py-3">{member.firstName}</td>
+                                    <td className="px-4 py-3">
+                                        <HalRouteProvider routeLink={member._links.member}>
+                                            <MemberName/>
+                                        </HalRouteProvider>
+                                    </td>
                                     <td className="px-4 py-3 text-text-secondary">{formatDate(member.joinedAt)}</td>
                                     <td className="px-4 py-3 text-right">
                                         {member._templates?.removeGroupMember && (
@@ -213,7 +214,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         template={removeMemberModal.template}
                         templateName={removeMemberModal.templateName}
                         resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                        pathname={extractNavigationPath(toHref(removeMemberModal.member._links!.self))}
+                        pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self))}
                         onClose={() => setRemoveMemberModal(null)}
                         successMessage={labels.ui.savedSuccessfully}
                     />
