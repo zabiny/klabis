@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {ImportOrisEventModal} from './ImportOrisEventModal';
+import {authorizedFetch} from '../../api/authorizedFetch';
 
 const mockNavigate = vi.fn();
 
@@ -22,8 +23,6 @@ vi.mock('../../utils/navigationPath', () => ({
 vi.mock('../../api/authorizedFetch', () => ({
     authorizedFetch: vi.fn(),
 }));
-
-import {authorizedFetch} from '../../api/authorizedFetch';
 
 const mockAuthorizedFetch = vi.mocked(authorizedFetch);
 
@@ -73,7 +72,7 @@ describe('ImportOrisEventModal', () => {
 
             renderModal();
 
-            expect(await screen.findByText('Import závodu z ORIS')).toBeInTheDocument();
+            expect(await screen.findByText('Import akce z ORIS')).toBeInTheDocument();
         });
     });
 
@@ -153,7 +152,7 @@ describe('ImportOrisEventModal', () => {
 
             renderModal();
 
-            expect(await screen.findByText('Žádné závody k importu.')).toBeInTheDocument();
+            expect(await screen.findByText('Žádné akce k importu.')).toBeInTheDocument();
         });
 
         it('submit button disabled when event list is empty', async () => {
@@ -164,7 +163,7 @@ describe('ImportOrisEventModal', () => {
 
             renderModal();
 
-            await screen.findByText('Žádné závody k importu.');
+            await screen.findByText('Žádné akce k importu.');
             const submitButton = screen.getByRole('button', {name: /importovat/i});
             expect(submitButton).toBeDisabled();
         });
@@ -177,7 +176,7 @@ describe('ImportOrisEventModal', () => {
             renderModal();
 
             expect(
-                await screen.findByText('Nepodařilo se načíst závody z ORIS.'),
+                await screen.findByText('Nepodařilo se načíst akce z ORIS.'),
             ).toBeInTheDocument();
         });
 
@@ -186,7 +185,7 @@ describe('ImportOrisEventModal', () => {
 
             renderModal();
 
-            await screen.findByText('Nepodařilo se načíst závody z ORIS.');
+            await screen.findByText('Nepodařilo se načíst akce z ORIS.');
             const submitButton = screen.getByRole('button', {name: /importovat/i});
             expect(submitButton).toBeDisabled();
         });
@@ -313,7 +312,7 @@ describe('ImportOrisEventModal', () => {
             await user.selectOptions(screen.getByRole('combobox'), '101');
             await user.click(screen.getByRole('button', {name: /importovat/i}));
 
-            expect(await screen.findByText('Tento závod již byl importován.')).toBeInTheDocument();
+            expect(await screen.findByText('Tato akce již byla importována.')).toBeInTheDocument();
             expect(onClose).not.toHaveBeenCalled();
         });
     });
@@ -345,7 +344,7 @@ describe('ImportOrisEventModal', () => {
             await user.click(screen.getByRole('button', {name: /importovat/i}));
 
             expect(
-                await screen.findByText('Import závodu se nezdařil. Zkuste to prosím znovu.'),
+                await screen.findByText('Import akce se nezdařil. Zkuste to prosím znovu.'),
             ).toBeInTheDocument();
             expect(onClose).not.toHaveBeenCalled();
         });

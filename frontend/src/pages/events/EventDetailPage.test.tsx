@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
@@ -253,11 +253,11 @@ describe('EventDetailPage', () => {
         it('shows cancelEvent button when template exists', () => {
             const data = mockEventDetailData({
                 _templates: {
-                    cancelEvent: mockHalFormsTemplate({title: 'Zrušit závod'}),
+                    cancelEvent: mockHalFormsTemplate({title: 'Zrušit akci'}),
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /zrušit závod/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /zrušit akci/i})).toBeInTheDocument();
         });
 
         it('shows finishEvent button when template exists', () => {
@@ -267,7 +267,7 @@ describe('EventDetailPage', () => {
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /ukončit závod/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /ukončit akci/i})).toBeInTheDocument();
         });
 
         it('shows registerForEvent button when template exists', () => {

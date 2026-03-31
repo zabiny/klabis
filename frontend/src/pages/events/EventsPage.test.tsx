@@ -26,7 +26,7 @@ vi.mock('../../components/events/ImportOrisEventModal', () => ({
     ImportOrisEventModal: ({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) =>
         isOpen ? (
             <div data-testid="import-oris-modal">
-                <span>Import závodu z ORIS</span>
+                <span>Import akce z ORIS</span>
                 <button onClick={onClose}>Zavřít</button>
             </div>
         ) : null,
@@ -94,9 +94,9 @@ describe('EventsPage', () => {
         vi.clearAllMocks();
     });
 
-    it('renders page title "Závody"', () => {
+    it('renders page title "Akce"', () => {
         renderPage(createMockPageData(null));
-        expect(screen.getByText('Závody')).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Akce'})).toBeInTheDocument();
     });
 
     describe('"Importovat z ORIS" button', () => {
@@ -150,7 +150,7 @@ describe('EventsPage', () => {
 
             await user.click(screen.getByRole('button', {name: /importovat z oris/i}));
 
-            expect(screen.getByText('Import závodu z ORIS')).toBeInTheDocument();
+            expect(screen.getByText('Import akce z ORIS')).toBeInTheDocument();
         });
     });
 });

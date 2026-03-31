@@ -2,7 +2,7 @@ export const labels = {
     nav: {
         home: 'Domů',
         calendar: 'Kalendář',
-        events: 'Závody',
+        events: 'Akce',
         members: 'Členové',
         groups: 'Skupiny',
     },
@@ -28,13 +28,13 @@ export const labels = {
     },
 
     templates: {
-        cancelEvent: 'Zrušit závod',
-        finishEvent: 'Ukončit závod',
-        unregisterFromEvent: 'Odhlásit se ze závodu',
+        cancelEvent: 'Zrušit akci',
+        finishEvent: 'Ukončit akci',
+        unregisterFromEvent: 'Odhlásit se z akce',
         updateEvent: 'Upravit',
         registerForEvent: 'Přihlásit se',
         publishEvent: 'Publikovat',
-        createEvent: 'Přidat závod',
+        createEvent: 'Přidat akci',
         importEvent: 'Importovat z ORIS',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
@@ -50,14 +50,14 @@ export const labels = {
     },
 
     dialogTitles: {
-        publishEvent: 'Publikování závodu',
-        cancelEvent: 'Zrušení závodu',
-        finishEvent: 'Ukončení závodu',
-        registerForEvent: 'Přihlásit se na závod',
-        unregisterFromEvent: 'Odhlásit se ze závodu',
+        publishEvent: 'Publikování akce',
+        cancelEvent: 'Zrušení akce',
+        finishEvent: 'Ukončení akce',
+        registerForEvent: 'Přihlásit se na akci',
+        unregisterFromEvent: 'Odhlásit se z akce',
         suspendMember: 'Ukončení členství',
         resumeMember: 'Reaktivace člena',
-        importEvent: 'Import závodu z ORIS',
+        importEvent: 'Import akce z ORIS',
     },
 
     fields: {
@@ -136,10 +136,10 @@ export const labels = {
         savePermissionsFailed: 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.',
         removeLastPermissionsAdmin: 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.',
         memberRegistrationUnavailable: 'Registrace nového člena není k dispozici.',
-        importOrisConflict: 'Tento závod již byl importován.',
-        importOrisFailed: 'Import závodu se nezdařil. Zkuste to prosím znovu.',
-        importOrisLoadFailed: 'Nepodařilo se načíst závody z ORIS.',
-        importOrisNoEvents: 'Žádné závody k importu.',
+        importOrisConflict: 'Tato akce již byla importována.',
+        importOrisFailed: 'Import akce se nezdařil. Zkuste to prosím znovu.',
+        importOrisLoadFailed: 'Nepodařilo se načíst akce z ORIS.',
+        importOrisNoEvents: 'Žádné akce k importu.',
     },
 
     orisRegions: {
@@ -203,9 +203,9 @@ export const labels = {
     sections: {
         members: 'Členové',
         membersList: 'Seznam členů',
-        events: 'Závody',
-        eventsList: 'Seznam závodů',
-        eventInfo: 'INFORMACE O ZÁVODĚ',
+        events: 'Akce',
+        eventsList: 'Seznam akcí',
+        eventInfo: 'INFORMACE O AKCI',
         registrations: 'Přihlášky',
         personalInfo: 'OSOBNÍ ÚDAJE',
         contact: 'KONTAKT',
@@ -226,14 +226,14 @@ export const labels = {
         welcome: 'Vítejte v Klabis',
         subtitle: 'Moderní systém pro správu členského klubu',
         activeMembers: 'Aktivních členů',
-        upcomingEvents: 'Nadcházející závody',
+        upcomingEvents: 'Nadcházející akce',
         groups: 'Skupiny a týmy',
         systemStatus: 'Systémový status',
         online: 'Online',
         myProfile: 'Můj profil',
-        myEvents: 'Moje nadcházející závody',
+        myEvents: 'Moje nadcházející akce',
         openSection: 'Otevřít',
-        noUpcomingEvents: 'Žádné nadcházející závody',
+        noUpcomingEvents: 'Žádné nadcházející akce',
     },
 
     permissions: {

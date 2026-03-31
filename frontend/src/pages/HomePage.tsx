@@ -1,11 +1,11 @@
 import {Link as RouterLink} from 'react-router-dom'
-import {Users, Calendar, Layers, Activity, User, ChevronRight} from 'lucide-react'
+import {Activity, Calendar, ChevronRight, Layers, User, Users} from 'lucide-react'
 import {Card} from '../components/UI'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {useIsAdmin} from "../hooks/useIsAdmin";
 import {useAuth} from "../contexts/AuthContext2";
 import {labels} from "../localization/labels";
-import {mockStats, mockUpcomingEvents, mockMyEvents} from "./dashboard/mockDashboardData";
+import {mockMyEvents, mockStats, mockUpcomingEvents} from "./dashboard/mockDashboardData";
 import {formatDate} from "../utils/dateUtils";
 
 const navigationCards = [
@@ -216,8 +216,8 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                                     <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400"/>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-text-primary">Závody</p>
-                                    <p className="text-sm text-text-secondary">Prohlížet nadcházející závody</p>
+                                    <p className="font-semibold text-text-primary">Akce</p>
+                                    <p className="text-sm text-text-secondary">Prohlížet nadcházející akce</p>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:translate-x-1 transition-transform"/>
                             </div>

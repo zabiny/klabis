@@ -46,13 +46,13 @@ const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
 
 const adminNavItems = [
     {rel: 'members', href: '/members', label: 'Členové'},
-    {rel: 'events', href: '/events', label: 'Závody'},
+    {rel: 'events', href: '/events', label: 'Akce'},
     {rel: 'groups', href: '/groups', label: 'Skupiny'},
     {rel: 'admin', href: '/admin', label: 'Admin'},
 ];
 
 const regularNavItems = [
-    {rel: 'events', href: '/events', label: 'Závody'},
+    {rel: 'events', href: '/events', label: 'Akce'},
 ];
 
 const renderHomePage = () => {
@@ -102,7 +102,7 @@ describe('HomePage - Admin Dashboard', () => {
     it('should display stats card labels', () => {
         renderHomePage()
         expect(screen.getByText('Aktivních členů')).toBeInTheDocument()
-        expect(screen.getAllByText('Nadcházející závody').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('Nadcházející akce').length).toBeGreaterThanOrEqual(1)
         expect(screen.getByText('Skupiny a týmy')).toBeInTheDocument()
         expect(screen.getByText('Systémový status')).toBeInTheDocument()
     })
@@ -120,7 +120,7 @@ describe('HomePage - Admin Dashboard', () => {
 
     it('should display upcoming events section', () => {
         renderHomePage()
-        expect(screen.getAllByText('Nadcházející závody').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('Nadcházející akce').length).toBeGreaterThanOrEqual(1)
         expect(screen.getByText('Jarní závod')).toBeInTheDocument()
         expect(screen.getByText('Letní kemp')).toBeInTheDocument()
     })
@@ -174,7 +174,7 @@ describe('HomePage - Regular User Dashboard', () => {
 
     it('should display my upcoming events section', () => {
         renderHomePage()
-        expect(screen.getByText('Moje nadcházející závody')).toBeInTheDocument()
+        expect(screen.getByText('Moje nadcházející akce')).toBeInTheDocument()
     })
 
     it('should display registered events from mock data', () => {

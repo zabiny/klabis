@@ -444,7 +444,7 @@ describe('HalFormButton Component', () => {
                 ['/members/123']
             );
 
-            const button = screen.getByRole('button', {name: /přidat závod/i});
+            const button = screen.getByRole('button', {name: /přidat akci/i});
             await user.click(button);
 
             // Form should display inline on current page (/members/123?form=createEvent)
@@ -653,7 +653,7 @@ describe('HalFormButton Component', () => {
             const button = screen.getByRole('button');
             await user.click(button);
 
-            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Přidat závod');
+            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Přidat akci');
         });
 
         it('should fall back to template title when dialogTitle is not provided', async () => {

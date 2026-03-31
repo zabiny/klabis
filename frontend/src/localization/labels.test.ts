@@ -1,17 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import {
-    labels,
-    t,
-    getFieldLabel,
-    getTemplateLabel,
-    getNavLabel,
-    getEnumLabel,
-} from './labels';
+import {describe, expect, it} from 'vitest';
+import {getEnumLabel, getFieldLabel, getNavLabel, getTemplateLabel, labels, t,} from './labels';
 
 describe('labels', () => {
     it('has nav labels', () => {
         expect(labels.nav.calendar).toBe('Kalendář');
-        expect(labels.nav.events).toBe('Závody');
+        expect(labels.nav.events).toBe('Akce');
         expect(labels.nav.members).toBe('Členové');
     });
 
@@ -23,13 +16,13 @@ describe('labels', () => {
     });
 
     it('has template labels', () => {
-        expect(labels.templates.cancelEvent).toBe('Zrušit závod');
-        expect(labels.templates.finishEvent).toBe('Ukončit závod');
-        expect(labels.templates.unregisterFromEvent).toBe('Odhlásit se ze závodu');
+        expect(labels.templates.cancelEvent).toBe('Zrušit akci');
+        expect(labels.templates.finishEvent).toBe('Ukončit akci');
+        expect(labels.templates.unregisterFromEvent).toBe('Odhlásit se z akce');
         expect(labels.templates.updateEvent).toBe('Upravit');
         expect(labels.templates.registerForEvent).toBe('Přihlásit se');
         expect(labels.templates.publishEvent).toBe('Publikovat');
-        expect(labels.templates.createEvent).toBe('Přidat závod');
+        expect(labels.templates.createEvent).toBe('Přidat akci');
         expect(labels.templates.createCalendarItem).toBe('Přidat položku');
         expect(labels.templates.suspendMember).toBe('Ukončit členství');
         expect(labels.templates.resumeMember).toBe('Reaktivovat');
@@ -148,7 +141,7 @@ describe('getFieldLabel()', () => {
 
 describe('getTemplateLabel()', () => {
     it('returns Czech label for known template names', () => {
-        expect(getTemplateLabel('cancelEvent')).toBe('Zrušit závod');
+        expect(getTemplateLabel('cancelEvent')).toBe('Zrušit akci');
         expect(getTemplateLabel('registerForEvent')).toBe('Přihlásit se');
     });
 
@@ -160,7 +153,7 @@ describe('getTemplateLabel()', () => {
 describe('getNavLabel()', () => {
     it('returns Czech label for known nav rels', () => {
         expect(getNavLabel('calendar')).toBe('Kalendář');
-        expect(getNavLabel('events')).toBe('Závody');
+        expect(getNavLabel('events')).toBe('Akce');
         expect(getNavLabel('members')).toBe('Členové');
     });
 
