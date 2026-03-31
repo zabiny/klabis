@@ -77,7 +77,7 @@ export const labels = {
         bankAccountNumber: 'Číslo bankovního účtu',
         dietaryRestrictions: 'Stravovací omezení',
         drivingLicenseGroup: 'Řidičský průkaz',
-        memberId: 'Registrační číslo člena',
+        memberId: 'Člen',
     },
 
     enums: {

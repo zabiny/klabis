@@ -4,7 +4,9 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.UserService;
+import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.application.GroupNotFoundException;
@@ -12,6 +14,7 @@ import com.klabis.usergroups.application.NotGroupOwnerException;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.UserGroup;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,8 +28,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,14 +58,28 @@ class GroupControllerTest {
     private GroupManagementPort groupManagementService;
 
     @MockitoBean
+    private Members members;
+
+    @MockitoBean
     private UserService userService;
 
     @MockitoBean
     private UserDetailsService userDetailsService;
 
+    @BeforeEach
+    void setUp() {
+        when(members.findByIds(any())).thenReturn(Map.of());
+    }
+
     private UserGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
         return FreeGroup.reconstruct(new UserGroupId(groupUuid), name, Set.of(owner), Set.of(), null);
+    }
+
+    private UserGroup buildGroupWithMembers(UUID groupUuid, String name, Set<String> ownerUuids, Set<String> memberUuids) {
+        Set<MemberId> owners = ownerUuids.stream().map(s -> new MemberId(UUID.fromString(s))).collect(Collectors.toSet());
+        Set<GroupMembership> memberships = memberUuids.stream().map(s -> GroupMembership.of(new MemberId(UUID.fromString(s)))).collect(Collectors.toSet());
+        return FreeGroup.reconstruct(new UserGroupId(groupUuid), name, owners, memberships, null);
     }
 
     @Nested
@@ -229,6 +248,46 @@ class GroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("should not expose removeGroupMember affordance for owner members when requesting user is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotExposeRemoveAffordanceForOwnerMembers() throws Exception {
+            // group where MEMBER_ID is owner and also a member; OTHER_MEMBER_ID is a regular member
+            UserGroup group = buildGroupWithMembers(
+                    GROUP_UUID, "Sprint Team",
+                    Set.of(MEMBER_ID),
+                    Set.of(MEMBER_ID, OTHER_MEMBER_ID));
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    // owner-member entry must not have self link pointing to removeGroupMember
+                    .andExpect(jsonPath("$.members[?(@.memberId=='" + MEMBER_ID + "')]._links").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should expose removeGroupMember affordance only for non-owner members when requesting user is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldExposeRemoveAffordanceOnlyForNonOwnerMembers() throws Exception {
+            // group where MEMBER_ID is owner and also a member; OTHER_MEMBER_ID is a regular member
+            UserGroup group = buildGroupWithMembers(
+                    GROUP_UUID, "Sprint Team",
+                    Set.of(MEMBER_ID),
+                    Set.of(MEMBER_ID, OTHER_MEMBER_ID));
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    // regular member entry must have self link (for removeGroupMember affordance)
+                    .andExpect(jsonPath("$.members[?(@.memberId=='" + OTHER_MEMBER_ID + "')]._links").exists());
         }
     }
 

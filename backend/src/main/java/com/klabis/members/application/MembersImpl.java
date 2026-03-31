@@ -51,6 +51,7 @@ class MembersImpl implements Members {
                 member.getFirstName(),
                 member.getLastName(),
                 member.getEmail() != null ? member.getEmail().value() : null,
+                member.getRegistrationNumber() != null ? member.getRegistrationNumber().getValue() : null,
                 LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
     }
 }

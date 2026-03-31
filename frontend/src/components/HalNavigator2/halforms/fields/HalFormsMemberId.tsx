@@ -4,6 +4,7 @@ import {Field} from 'formik'
 import {SelectField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
+import {getFieldLabel} from '../../../../localization'
 
 /**
  * HalFormsMemberId component - dropdown selection for member ID with clear button
@@ -37,7 +38,7 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field'}: HalFor
                             {...field}
                             id={`field-${prop.name}`}
                             value={selectValue}
-                            label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
+                            label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
                             disabled={prop.readOnly || isLoading || false}
                             required={prop.required}

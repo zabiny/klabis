@@ -95,7 +95,7 @@ const buildMember = (overrides?: Record<string, unknown>) => ({
     lastName: 'Nováková',
     registrationNumber: 'ZBM0001',
     joinedAt: '2025-01-15T00:00:00Z',
-    _links: {self: {href: '/api/members/member-1'}},
+    _links: {self: {href: '/api/groups/group-1/members/member-1'}},
     ...overrides,
 });
 

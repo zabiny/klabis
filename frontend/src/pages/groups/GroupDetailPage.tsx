@@ -1,10 +1,10 @@
 import {type ReactElement, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
-import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
@@ -39,8 +39,10 @@ interface MemberActionModalState {
 
 const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactElement => {
     const {route} = useHalPageData<GroupDetail>();
+    const navigate = useNavigate();
     const [isEditingName, setIsEditingName] = useState(false);
     const [addMemberModal, setAddMemberModal] = useState(false);
+    const [deleteModal, setDeleteModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
 
     const editTemplate = resourceData._templates?.updateGroup ?? null;
@@ -75,12 +77,13 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         </Button>
                     )}
                     {deleteTemplate && (
-                        <HalFormButton
-                            name="deleteGroup"
-                            modal={true}
+                        <Button
                             variant="danger"
-                            icon={<Trash2 className="w-4 h-4"/>}
-                        />
+                            onClick={() => setDeleteModal(true)}
+                            startIcon={<Trash2 className="w-4 h-4"/>}
+                        >
+                            {labels.templates.deleteGroup}
+                        </Button>
                     )}
                 </div>
             </div>
@@ -209,9 +212,27 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         template={removeMemberModal.template}
                         templateName={removeMemberModal.templateName}
                         resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
+                        pathname={toHref(removeMemberModal.member._links!.self).replace(/^https?:\/\/[^/]+/, '').replace(/^\/api/, '')}
                         onClose={() => setRemoveMemberModal(null)}
                         successMessage={labels.ui.savedSuccessfully}
+                    />
+                </Modal>
+            )}
+
+            {deleteTemplate && deleteModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setDeleteModal(false)}
+                    title={deleteTemplate.title ?? labels.templates.deleteGroup}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={deleteTemplate}
+                        templateName="deleteGroup"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => setDeleteModal(false)}
+                        onSubmitSuccess={() => navigate('/groups')}
                     />
                 </Modal>
             )}
