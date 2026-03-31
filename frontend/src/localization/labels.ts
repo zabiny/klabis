@@ -21,6 +21,8 @@ export const labels = {
         savePermissions: 'Uložit oprávnění',
         sendRequest: 'Odeslat žádost',
         setPassword: 'Nastavit heslo a aktivovat účet',
+        addItem: 'Přidat',
+        removeItem: 'Odebrat',
     },
 
     templates: {

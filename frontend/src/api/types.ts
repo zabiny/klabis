@@ -74,7 +74,10 @@ export interface HalFormsProperty {
     regex?: string;
     readOnly?: boolean;
     options?: HalFormsOption;
+    suggest?: HalFormsOption;
     multiple?: boolean;
+    min?: number;
+    max?: number;
 }
 
 // only update methods as template represents "request body"

@@ -2,6 +2,7 @@ import {
     HalFormsBoolean,
     HalFormsCheckbox,
     HalFormsCheckboxGroup,
+    HalFormsCollectionField,
     HalFormsDateTime,
     HalFormsInput,
     HalFormsRadio,
@@ -21,6 +22,10 @@ export const halFormsFieldsFactory = (
     fieldType: string,
     conf: HalFormsInputProps
 ): ReactElement | null => {
+    if (conf.prop.multiple && !conf.prop.options && !conf.prop.suggest) {
+        return <HalFormsCollectionField {...conf} />
+    }
+
     switch (fieldType) {
         case 'checkboxGroup':
             return <HalFormsCheckboxGroup {...conf} />

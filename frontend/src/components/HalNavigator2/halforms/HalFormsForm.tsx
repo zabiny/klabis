@@ -2,7 +2,7 @@ import * as Yup from "yup";
 import {Form, Formik, getIn, useFormikContext} from "formik";
 import React, {type ReactElement, type ReactNode, useContext, useMemo} from "react";
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
-import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, type SubElementConfiguration} from "./types.ts";
+import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
 import {sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
@@ -98,7 +98,8 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
         prop: subElementProp(parentProps.prop, attrName, conf?.prompt),
         errorText: undefined,
         renderMode: parentProps.renderMode,
-        subElementProps: parentProps.subElementProps
+        subElementProps: parentProps.subElementProps,
+        fieldFactory: parentProps.fieldFactory,
     };
 }
 
@@ -144,12 +145,6 @@ const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     return <span className="text-text-primary">{displayValue}</span>;
 };
 
-const SIMPLE_FIELD_TYPES = new Set([
-    'text', 'email', 'number', 'date', 'url', 'tel',
-    'textarea', 'select', 'radioGroup', 'checkbox', 'checkboxGroup',
-    'boolean', 'datetime'
-]);
-
 // --- Render funkce pro pole ---
 function renderFieldInternal(
     prop: HalFormsProperty,
@@ -174,7 +169,8 @@ function renderFieldInternal(
         renderMode,
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
-        }
+        },
+        fieldFactory,
     };
 
     const result = fieldFactory && fieldFactory(prop.type, fieldProps);
