@@ -15,14 +15,14 @@
 
 ## 2. Free Group Invitations (Slice 1b)
 
-- [ ] 2.1 Domain model: `Invitation` entity, `InvitationId` value object, `InvitationStatus` enum (PENDING, ACCEPTED, REJECTED)
-- [ ] 2.2 Extend `FreeGroup`: `invite(MemberId invitedBy, MemberId target)`, `acceptInvitation(InvitationId)`, `rejectInvitation(InvitationId)`, pending invitations collection
-- [ ] 2.3 DB migration: `invitations` table (id, group_id, invited_member_id, invited_by_member_id, status, created_at)
-- [ ] 2.4 Extend JDBC persistence: invitation mapping in `UserGroupMemento`, query for pending invitations by member
-- [ ] 2.5 Application service: `InvitationService` — invite member, accept invitation, reject invitation
-- [ ] 2.6 REST API: `InvitationController` — POST invite member, POST accept invitation, POST reject invitation, GET my pending invitations (HAL+FORMS)
-- [ ] 2.7 Frontend: pending invitations section on groups list page (accept/reject actions), invitation management on group detail page (owner view)
-- [ ] 2.8 Tests: domain unit tests (invitation lifecycle, duplicate invite, accept/reject), integration tests (controller, repository)
+- [x] 2.1 Domain model: `Invitation` entity, `InvitationId` value object, `InvitationStatus` enum (PENDING, ACCEPTED, REJECTED)
+- [x] 2.2 Extend `FreeGroup`: `invite(MemberId invitedBy, MemberId target)`, `acceptInvitation(InvitationId)`, `rejectInvitation(InvitationId)`, pending invitations collection
+- [x] 2.3 DB migration: `invitations` table (id, group_id, invited_member_id, invited_by_member_id, status, created_at)
+- [x] 2.4 Extend JDBC persistence: invitation mapping in `UserGroupMemento`, query for pending invitations by member
+- [x] 2.5 Application service: `InvitationService` — invite member, accept invitation, reject invitation
+- [x] 2.6 REST API: `InvitationController` — POST invite member, POST accept invitation, POST reject invitation, GET my pending invitations (HAL+FORMS)
+- [x] 2.7 Frontend: pending invitations section on groups list page (accept/reject actions), invitation management on group detail page (owner view)
+- [x] 2.8 Tests: domain unit tests (invitation lifecycle, duplicate invite, accept/reject), integration tests (controller, repository)
 
 ## 3. Training Groups (Slice 2)
 
