@@ -5,9 +5,7 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
-import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
-import com.klabis.members.Members;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.domain.FreeGroup;
@@ -22,16 +20,15 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -46,11 +43,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class GroupController {
 
     private final GroupManagementPort groupManagementService;
-    private final Members members;
 
-    GroupController(GroupManagementPort groupManagementService, Members members) {
+    GroupController(GroupManagementPort groupManagementService) {
         this.groupManagementService = groupManagementService;
-        this.members = members;
     }
 
     @PostMapping(consumes = "application/json")
@@ -190,51 +185,34 @@ class GroupController {
     }
 
     private GroupResponse toGroupResponse(UserGroup group, UUID groupUuid, boolean requestingUserIsOwner) {
-        Set<MemberId> ownerIdSet = group.getOwners();
-        List<MemberId> ownerIds = ownerIdSet.stream().toList();
-        Set<MemberId> memberIdSet = group.getMembers().stream().map(GroupMembership::memberId).collect(Collectors.toSet());
+        Set<MemberId> ownerIds = group.getOwners();
 
-        List<MemberId> allIds = ownerIds.stream()
-                .filter(id -> !memberIdSet.contains(id))
-                .collect(Collectors.toList());
-        allIds.addAll(memberIdSet);
-
-        Map<MemberId, MemberDto> memberDtoMap = members.findByIds(allIds);
-
-        List<OwnerResponse> ownerResponses = ownerIds.stream()
-                .map(id -> toOwnerResponse(id, memberDtoMap.get(id)))
+        List<EntityModel<OwnerResponse>> ownerModels = ownerIds.stream()
+                .map(id -> buildOwnerModel(id))
                 .toList();
 
-        List<EntityModel<GroupMembershipResponse>> memberResponses = group.getMembers().stream()
-                .map(m -> buildMemberModel(m, memberDtoMap.get(m.memberId()), groupUuid, requestingUserIsOwner, ownerIdSet))
+        List<EntityModel<GroupMembershipResponse>> memberModels = group.getMembers().stream()
+                .map(m -> buildMemberModel(m, groupUuid, requestingUserIsOwner, ownerIds))
                 .toList();
 
-        return new GroupResponse(group.getId().uuid(), group.getName(), ownerResponses, memberResponses);
+        return new GroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels);
     }
 
-    private OwnerResponse toOwnerResponse(MemberId ownerId, MemberDto dto) {
-        if (dto == null) {
-            return new OwnerResponse(ownerId.uuid(), null, null, null);
-        }
-        return new OwnerResponse(dto.memberId(), dto.firstName(), dto.lastName(), dto.registrationNumber());
+    private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId) {
+        EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
+        model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
+        return model;
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(
-            GroupMembership membership, MemberDto dto, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
+            GroupMembership membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
 
-        GroupMembershipResponse response;
-        if (dto == null) {
-            response = new GroupMembershipResponse(membership.memberId().uuid(), null, null, null, membership.joinedAt());
-        } else {
-            response = new GroupMembershipResponse(
-                    membership.memberId().uuid(),
-                    dto.firstName(),
-                    dto.lastName(),
-                    dto.registrationNumber(),
-                    membership.joinedAt());
-        }
+        GroupMembershipResponse response = new GroupMembershipResponse(
+                membership.memberId().uuid(),
+                membership.joinedAt());
 
         EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
+        model.add(Link.of("/api/members/" + membership.memberId().uuid(), "member"));
 
         boolean memberIsOwner = ownerIds.contains(membership.memberId());
         if (isOwner && !memberIsOwner) {

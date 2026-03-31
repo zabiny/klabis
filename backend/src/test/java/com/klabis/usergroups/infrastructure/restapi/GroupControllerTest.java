@@ -5,7 +5,6 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
-import com.klabis.members.Members;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.application.GroupNotFoundException;
@@ -13,7 +12,6 @@ import com.klabis.usergroups.application.NotGroupOwnerException;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.UserGroup;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,9 +23,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,23 +48,14 @@ class GroupControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-
     @MockitoBean
     private GroupManagementPort groupManagementService;
-
-    @MockitoBean
-    private Members members;
 
     @MockitoBean
     private UserService userService;
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @BeforeEach
-    void setUp() {
-        when(members.findByIds(any())).thenReturn(Map.of());
-    }
 
     private UserGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
@@ -208,7 +195,7 @@ class GroupControllerTest {
     class GetGroupTests {
 
         @Test
-        @DisplayName("should return 200 with group details")
+        @DisplayName("should return 200 with group details including memberId and HAL member links")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnGroupDetails() throws Exception {
             UserGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
@@ -222,7 +209,28 @@ class GroupControllerTest {
                     .andExpect(jsonPath("$.name").value("Sprint Team"))
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.owners").isArray())
+                    .andExpect(jsonPath("$.owners[0].memberId").value(MEMBER_ID))
+                    .andExpect(jsonPath("$.owners[0]._links.member.href").value("/api/members/" + MEMBER_ID))
                     .andExpect(jsonPath("$.members").isArray());
+        }
+
+        @Test
+        @DisplayName("should include member HAL link for each group membership")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldIncludeMemberLinkForEachMembership() throws Exception {
+            UserGroup group = buildGroupWithMembers(
+                    GROUP_UUID, "Sprint Team",
+                    Set.of(MEMBER_ID),
+                    Set.of(MEMBER_ID, OTHER_MEMBER_ID));
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.members[?(@.memberId=='" + OTHER_MEMBER_ID + "')]._links.member.href")
+                            .value("/api/members/" + OTHER_MEMBER_ID));
         }
 
         @Test
@@ -253,7 +261,6 @@ class GroupControllerTest {
         @DisplayName("should not expose removeGroupMember affordance for owner members when requesting user is owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldNotExposeRemoveAffordanceForOwnerMembers() throws Exception {
-            // group where MEMBER_ID is owner and also a member; OTHER_MEMBER_ID is a regular member
             UserGroup group = buildGroupWithMembers(
                     GROUP_UUID, "Sprint Team",
                     Set.of(MEMBER_ID),
@@ -266,14 +273,13 @@ class GroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     // owner-member entry must not have self link pointing to removeGroupMember
-                    .andExpect(jsonPath("$.members[?(@.memberId=='" + MEMBER_ID + "')]._links").doesNotExist());
+                    .andExpect(jsonPath("$.members[?(@.memberId=='" + MEMBER_ID + "')]._links.self").doesNotExist());
         }
 
         @Test
         @DisplayName("should expose removeGroupMember affordance only for non-owner members when requesting user is owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldExposeRemoveAffordanceOnlyForNonOwnerMembers() throws Exception {
-            // group where MEMBER_ID is owner and also a member; OTHER_MEMBER_ID is a regular member
             UserGroup group = buildGroupWithMembers(
                     GROUP_UUID, "Sprint Team",
                     Set.of(MEMBER_ID),
@@ -286,7 +292,7 @@ class GroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     // regular member entry must have self link (for removeGroupMember affordance)
-                    .andExpect(jsonPath("$.members[?(@.memberId=='" + OTHER_MEMBER_ID + "')]._links").exists());
+                    .andExpect(jsonPath("$.members[?(@.memberId=='" + OTHER_MEMBER_ID + "')]._links.self").exists());
         }
     }
 
