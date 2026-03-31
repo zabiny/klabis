@@ -176,7 +176,7 @@ class FreeGroupTest {
             group.addMember(OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
-                    .isInstanceOf(FreeGroup.CannotInviteExistingMemberException.class)
+                    .isInstanceOf(CannotInviteExistingMemberException.class)
                     .hasMessageContaining(OTHER_MEMBER.toString());
         }
 
@@ -186,7 +186,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
 
             assertThatThrownBy(() -> group.invite(CREATOR, CREATOR))
-                    .isInstanceOf(FreeGroup.CannotInviteExistingMemberException.class)
+                    .isInstanceOf(CannotInviteExistingMemberException.class)
                     .hasMessageContaining(CREATOR.toString());
         }
 
@@ -197,7 +197,7 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
-                    .isInstanceOf(FreeGroup.DuplicatePendingInvitationException.class)
+                    .isInstanceOf(DuplicatePendingInvitationException.class)
                     .hasMessageContaining(OTHER_MEMBER.toString());
         }
 
@@ -245,7 +245,7 @@ class FreeGroupTest {
             InvitationId unknownId = InvitationId.newId();
 
             assertThatThrownBy(() -> group.acceptInvitation(unknownId))
-                    .isInstanceOf(FreeGroup.InvitationNotFoundException.class)
+                    .isInstanceOf(InvitationNotFoundException.class)
                     .hasMessageContaining(unknownId.toString());
         }
     }
@@ -278,7 +278,7 @@ class FreeGroupTest {
             InvitationId unknownId = InvitationId.newId();
 
             assertThatThrownBy(() -> group.rejectInvitation(unknownId))
-                    .isInstanceOf(FreeGroup.InvitationNotFoundException.class)
+                    .isInstanceOf(InvitationNotFoundException.class)
                     .hasMessageContaining(unknownId.toString());
         }
     }

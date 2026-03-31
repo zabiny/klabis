@@ -7,6 +7,7 @@ import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.Invitation;
 import com.klabis.usergroups.domain.UserGroup;
+import com.klabis.usergroups.domain.WithInvitations;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
@@ -82,8 +83,8 @@ class UserGroupMemento implements Persistable<UUID> {
                 .map(m -> new UserGroupMemberMemento(m.memberId().uuid(), m.joinedAt()))
                 .collect(Collectors.toSet());
 
-        if (group instanceof FreeGroup freeGroup) {
-            memento.invitations = freeGroup.getInvitations().stream()
+        if (group instanceof WithInvitations groupWithInvitations) {
+            memento.invitations = groupWithInvitations.getInvitations().stream()
                     .map(InvitationMemento::from)
                     .collect(Collectors.toSet());
         }

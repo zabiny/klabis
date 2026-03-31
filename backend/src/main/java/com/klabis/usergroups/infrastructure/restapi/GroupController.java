@@ -12,6 +12,7 @@ import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.Invitation;
 import com.klabis.usergroups.domain.UserGroup;
+import com.klabis.usergroups.domain.WithInvitations;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -107,7 +108,7 @@ class GroupController {
                         .andAffordances(klabisAfford(methodOn(GroupController.class).updateGroup(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)))
                         .andAffordances(klabisAfford(methodOn(GroupController.class).addGroupMember(id, null, null)));
-                if (group instanceof FreeGroup) {
+                if (group instanceof WithInvitations) {
                     selfLink = selfLink
                             .andAffordances(klabisAfford(methodOn(InvitationController.class).inviteMember(id, null, null)));
                 }
@@ -201,8 +202,8 @@ class GroupController {
                 .toList();
 
         List<EntityModel<PendingInvitationResponse>> pendingInvitationModels = List.of();
-        if (requestingUserIsOwner && group instanceof FreeGroup freeGroup) {
-            pendingInvitationModels = freeGroup.getPendingInvitations().stream()
+        if (requestingUserIsOwner && group instanceof WithInvitations groupWithInvitations) {
+            pendingInvitationModels = groupWithInvitations.getPendingInvitations().stream()
                     .map(inv -> buildPendingInvitationModel(group, inv))
                     .toList();
         }

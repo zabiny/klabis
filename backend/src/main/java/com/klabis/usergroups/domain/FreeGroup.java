@@ -1,7 +1,6 @@
 package com.klabis.usergroups.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -13,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class FreeGroup extends UserGroup {
+public class FreeGroup extends UserGroup implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
@@ -53,6 +52,7 @@ public class FreeGroup extends UserGroup {
         return group;
     }
 
+    @Override
     public void invite(MemberId invitedBy, MemberId target) {
         Assert.notNull(invitedBy, "invitedBy is required");
         Assert.notNull(target, "target is required");
@@ -67,6 +67,7 @@ public class FreeGroup extends UserGroup {
         invitations.add(Invitation.createPending(invitedBy, target));
     }
 
+    @Override
     public void acceptInvitation(InvitationId invitationId) {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
@@ -74,22 +75,26 @@ public class FreeGroup extends UserGroup {
         addMember(invitation.getInvitedMember());
     }
 
+    @Override
     public void rejectInvitation(InvitationId invitationId) {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
         invitation.reject();
     }
 
+    @Override
     public List<Invitation> getPendingInvitations() {
         return invitations.stream()
                 .filter(Invitation::isPending)
                 .toList();
     }
 
+    @Override
     public Set<Invitation> getInvitations() {
         return Collections.unmodifiableSet(invitations);
     }
 
+    @Override
     public boolean isInvitedMember(InvitationId invitationId, MemberId memberId) {
         return invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
@@ -101,23 +106,5 @@ public class FreeGroup extends UserGroup {
                 .filter(inv -> inv.getId().equals(invitationId) && inv.isPending())
                 .findFirst()
                 .orElseThrow(() -> new InvitationNotFoundException(invitationId));
-    }
-
-    static final class CannotInviteExistingMemberException extends BusinessRuleViolationException {
-        CannotInviteExistingMemberException(MemberId memberId) {
-            super("Member %s is already a member or owner of this group".formatted(memberId));
-        }
-    }
-
-    static final class DuplicatePendingInvitationException extends BusinessRuleViolationException {
-        DuplicatePendingInvitationException(MemberId memberId) {
-            super("Member %s already has a pending invitation to this group".formatted(memberId));
-        }
-    }
-
-    static final class InvitationNotFoundException extends BusinessRuleViolationException {
-        InvitationNotFoundException(InvitationId invitationId) {
-            super("Pending invitation not found: %s".formatted(invitationId));
-        }
     }
 }

@@ -2,8 +2,9 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
-import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.InvitationId;
+import com.klabis.usergroups.domain.UserGroup;
+import com.klabis.usergroups.domain.WithInvitations;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.List;
@@ -17,5 +18,5 @@ public interface InvitationPort {
 
     void rejectInvitation(UserGroupId groupId, InvitationId invitationId, MemberId rejectingMember);
 
-    List<FreeGroup> getGroupsWithPendingInvitations(MemberId memberId);
+    <T extends UserGroup & WithInvitations> List<T> getGroupsWithPendingInvitations(MemberId memberId);
 }

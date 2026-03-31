@@ -5,7 +5,6 @@ import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.InvitationPort;
-import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.InvitationId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -91,7 +90,7 @@ class InvitationController {
 
         requireMemberProfile(currentUser);
 
-        List<FreeGroup> groups = invitationService.getGroupsWithPendingInvitations(currentUser.memberId());
+        var groups = invitationService.getGroupsWithPendingInvitations(currentUser.memberId());
         List<EntityModel<PendingInvitationResponse>> items = groups.stream()
                 .flatMap(group -> group.getPendingInvitations().stream()
                         .filter(inv -> inv.getInvitedMember().equals(currentUser.memberId()))

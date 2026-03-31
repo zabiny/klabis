@@ -2,10 +2,10 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
-import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.InvitationId;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
+import com.klabis.usergroups.domain.WithInvitations;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +23,7 @@ class InvitationService implements InvitationPort {
     @Transactional
     @Override
     public void inviteMember(UserGroupId groupId, MemberId invitedBy, MemberId target) {
-        FreeGroup group = loadFreeGroup(groupId);
+        var group = loadGroupWithInvitations(groupId);
         requireOwner(group, invitedBy);
         group.invite(invitedBy, target);
         userGroupRepository.save(group);
@@ -32,7 +32,7 @@ class InvitationService implements InvitationPort {
     @Transactional
     @Override
     public void acceptInvitation(UserGroupId groupId, InvitationId invitationId, MemberId acceptingMember) {
-        FreeGroup group = loadFreeGroup(groupId);
+        var group = loadGroupWithInvitations(groupId);
         requireInvitedMember(group, invitationId, acceptingMember);
         group.acceptInvitation(invitationId);
         userGroupRepository.save(group);
@@ -41,7 +41,7 @@ class InvitationService implements InvitationPort {
     @Transactional
     @Override
     public void rejectInvitation(UserGroupId groupId, InvitationId invitationId, MemberId rejectingMember) {
-        FreeGroup group = loadFreeGroup(groupId);
+        var group = loadGroupWithInvitations(groupId);
         requireInvitedMember(group, invitationId, rejectingMember);
         group.rejectInvitation(invitationId);
         userGroupRepository.save(group);
@@ -49,29 +49,32 @@ class InvitationService implements InvitationPort {
 
     @Transactional(readOnly = true)
     @Override
-    public List<FreeGroup> getGroupsWithPendingInvitations(MemberId memberId) {
+    @SuppressWarnings("unchecked")
+    public <T extends UserGroup & WithInvitations> List<T> getGroupsWithPendingInvitations(MemberId memberId) {
         return userGroupRepository.findAllWithPendingInvitationForMember(memberId).stream()
-                .filter(FreeGroup.class::isInstance)
-                .map(FreeGroup.class::cast)
+                .filter(WithInvitations.class::isInstance)
+                .map(g -> (T) g)
                 .toList();
     }
 
-    private FreeGroup loadFreeGroup(UserGroupId groupId) {
+    private <T extends UserGroup & WithInvitations> T loadGroupWithInvitations(UserGroupId groupId) {
         UserGroup group = userGroupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException(groupId));
-        if (!(group instanceof FreeGroup freeGroup)) {
+        if (!(group instanceof WithInvitations)) {
             throw new GroupNotFoundException(groupId);
         }
-        return freeGroup;
+        @SuppressWarnings("unchecked")
+        T result = (T) group;
+        return result;
     }
 
-    private void requireOwner(FreeGroup group, MemberId requestingMember) {
+    private void requireOwner(UserGroup group, MemberId requestingMember) {
         if (!group.isOwner(requestingMember)) {
             throw new NotGroupOwnerException(requestingMember, group.getId());
         }
     }
 
-    private void requireInvitedMember(FreeGroup group, InvitationId invitationId, MemberId member) {
+    private void requireInvitedMember(WithInvitations group, InvitationId invitationId, MemberId member) {
         if (!group.isInvitedMember(invitationId, member)) {
             throw new NotInvitedMemberException(member, invitationId);
         }
