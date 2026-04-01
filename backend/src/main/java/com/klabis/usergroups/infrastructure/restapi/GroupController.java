@@ -106,11 +106,13 @@ class GroupController {
             if (isOwner) {
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(GroupController.class).updateGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupController.class).addGroupMember(id, null, null)));
+                        .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)));
                 if (group instanceof WithInvitations) {
                     selfLink = selfLink
                             .andAffordances(klabisAfford(methodOn(InvitationController.class).inviteMember(id, null, null)));
+                } else {
+                    selfLink = selfLink
+                            .andAffordances(klabisAfford(methodOn(GroupController.class).addGroupMember(id, null, null)));
                 }
             }
             model.add(selfLink);

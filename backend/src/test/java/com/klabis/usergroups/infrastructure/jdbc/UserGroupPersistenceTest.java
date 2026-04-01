@@ -4,6 +4,7 @@ import com.klabis.CleanupTestData;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.FreeGroup;
+import com.klabis.usergroups.domain.InvitationId;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.ddd.annotation.Repository;
@@ -71,7 +72,7 @@ class UserGroupPersistenceTest {
         @DisplayName("should save and retrieve FreeGroup with additional member")
         void shouldSaveAndRetrieveFreeGroupWithAdditionalMember() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Sprint Team", OWNER));
-            group.addMember(EXTRA_MEMBER);
+            addMemberViaInvitation(group, EXTRA_MEMBER);
 
             UserGroup saved = userGroupRepository.save(group);
             Optional<UserGroup> found = userGroupRepository.findById(saved.getId());
@@ -111,11 +112,11 @@ class UserGroupPersistenceTest {
         @DisplayName("should return groups where member is a member")
         void shouldReturnGroupsForMember() {
             FreeGroup group1 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Alpha", OWNER));
-            group1.addMember(EXTRA_MEMBER);
+            addMemberViaInvitation(group1, EXTRA_MEMBER);
             userGroupRepository.save(group1);
 
             FreeGroup group2 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Beta", OWNER));
-            group2.addMember(EXTRA_MEMBER);
+            addMemberViaInvitation(group2, EXTRA_MEMBER);
             userGroupRepository.save(group2);
 
             FreeGroup group3 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Gamma", OWNER));
@@ -164,5 +165,13 @@ class UserGroupPersistenceTest {
 
             assertThat(userGroupRepository.findById(id)).isEmpty();
         }
+    }
+
+    private static void addMemberViaInvitation(FreeGroup group, MemberId member) {
+        group.invite(OWNER, member);
+        InvitationId invitationId = group.getPendingInvitations().stream()
+                .filter(inv -> inv.getInvitedMember().equals(member))
+                .findFirst().orElseThrow().getId();
+        group.acceptInvitation(invitationId);
     }
 }

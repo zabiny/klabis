@@ -8,7 +8,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.domain.AgeRange;
-import com.klabis.usergroups.domain.GroupMembership;
+import com.klabis.usergroups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.domain.TrainingGroup;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +39,6 @@ class TrainingGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    private static final UserGroupId GROUP_ID = new UserGroupId(GROUP_UUID);
 
     @Autowired
     private MockMvc mockMvc;
@@ -196,6 +195,29 @@ class TrainingGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/training-groups/{id}/members")
+    class AddTrainingGroupMemberTests {
+
+        @Test
+        @DisplayName("should return 422 when domain rejects direct member addition")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn422WhenDirectMemberAdditionNotAllowed() throws Exception {
+            when(groupManagementService.addMemberToGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenThrow(new DirectMemberAdditionNotAllowedException());
+
+            mockMvc.perform(
+                            post("/api/training-groups/{id}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(UUID.randomUUID()))
+                    )
+                    .andExpect(status().is(422));
         }
     }
 }

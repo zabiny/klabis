@@ -37,6 +37,13 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
     }
 
     public void addMember(MemberId memberId) {
+        if (this instanceof WithInvitations) {
+            throw new DirectMemberAdditionNotAllowedException();
+        }
+        addMemberInternal(memberId);
+    }
+
+    protected void addMemberInternal(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
         boolean alreadyMember = members.stream().anyMatch(m -> m.memberId().equals(memberId));
         if (alreadyMember) {

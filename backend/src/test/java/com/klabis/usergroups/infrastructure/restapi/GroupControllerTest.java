@@ -9,8 +9,11 @@ import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.application.GroupNotFoundException;
 import com.klabis.usergroups.application.NotGroupOwnerException;
+import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
+import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -66,6 +69,12 @@ class GroupControllerTest {
         Set<MemberId> owners = ownerUuids.stream().map(s -> new MemberId(UUID.fromString(s))).collect(Collectors.toSet());
         Set<GroupMembership> memberships = memberUuids.stream().map(s -> GroupMembership.of(new MemberId(UUID.fromString(s)))).collect(Collectors.toSet());
         return FreeGroup.reconstruct(new UserGroupId(groupUuid), name, owners, memberships, null);
+    }
+
+    private UserGroup buildTrainingGroup(UUID groupUuid, String name, String ownerUuidStr) {
+        MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
+        return TrainingGroup.reconstruct(new UserGroupId(groupUuid), name, Set.of(owner), Set.of(),
+                new AgeRange(10, 18), null);
     }
 
     @Nested
@@ -297,6 +306,56 @@ class GroupControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/groups/{id} — HATEOAS affordances")
+    class GetGroupAffordanceTests {
+
+        @Test
+        @DisplayName("should NOT include addGroupMember affordance for WithInvitations group when user is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotIncludeAddGroupMemberAffordanceForFreeGroup() throws Exception {
+            UserGroup freeGroup = buildGroup(GROUP_UUID, "Free Group", MEMBER_ID);
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(freeGroup);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addGroupMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include addGroupMember affordance for non-invitation group when user is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldIncludeAddGroupMemberAffordanceForTrainingGroup() throws Exception {
+            UserGroup trainingGroup = buildTrainingGroup(GROUP_UUID, "Training Group", MEMBER_ID);
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(trainingGroup);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addGroupMember").exists());
+        }
+
+        @Test
+        @DisplayName("should include inviteMember affordance for WithInvitations group when user is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldIncludeInviteMemberAffordanceForFreeGroup() throws Exception {
+            UserGroup freeGroup = buildGroup(GROUP_UUID, "Free Group", MEMBER_ID);
+            when(groupManagementService.getGroup(any(UserGroupId.class))).thenReturn(freeGroup);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.inviteMember").exists());
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /api/groups/{id}")
     class RenameGroupTests {
 
@@ -513,6 +572,24 @@ class GroupControllerTest {
                                             """.formatted(UUID.randomUUID()))
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 422 when adding member directly to a WithInvitations group")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn422WhenAddingMemberDirectlyToFreeGroup() throws Exception {
+            when(groupManagementService.addMemberToGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenThrow(new DirectMemberAdditionNotAllowedException());
+
+            mockMvc.perform(
+                            post("/api/groups/{id}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(UUID.randomUUID()))
+                    )
+                    .andExpect(status().is(422));
         }
     }
 

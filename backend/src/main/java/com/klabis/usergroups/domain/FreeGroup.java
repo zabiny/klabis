@@ -72,7 +72,7 @@ public class FreeGroup extends UserGroup implements WithInvitations {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
         invitation.accept();
-        addMember(invitation.getInvitedMember());
+        addMemberInternal(invitation.getInvitedMember());
     }
 
     @Override
