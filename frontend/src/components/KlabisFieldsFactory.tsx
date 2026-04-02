@@ -1,6 +1,7 @@
 import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
+import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import React, {type ReactElement} from "react";
-import {HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
+import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
 
 const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | ReactElement[] }> = ({label, children}) => (
@@ -102,8 +103,9 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
 export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
-        case "MemberId": {
-            const propWithOptions = {
+        case "MemberId":
+        case "UUID": {
+            const propWithMemberOptions = {
                 ...conf.prop,
                 options: {
                     link: {
@@ -111,7 +113,10 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
                     }
                 }
             };
-            return <HalFormsMemberId {...conf} prop={propWithOptions}/>;
+            if (isMultipleProperty(conf.prop)) {
+                return <HalFormsCheckboxGroup {...conf} prop={propWithMemberOptions}/>;
+            }
+            return <HalFormsMemberId {...conf} prop={propWithMemberOptions}/>;
         }
         case "Gender": {
             const propWithGenderOptions = {

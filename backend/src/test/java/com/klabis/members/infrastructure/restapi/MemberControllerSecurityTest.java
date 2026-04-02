@@ -4,6 +4,7 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.members.FamilyGroupProvider;
 import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.TrainingGroupProvider;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,10 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @MockitoBean
     @SuppressWarnings("unused")
     private TrainingGroupProvider trainingGroupProvider;
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private FamilyGroupProvider familyGroupProvider;
 
     @Test
     @DisplayName("POST /api/members without authentication should return 401")

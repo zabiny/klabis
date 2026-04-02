@@ -18,11 +18,12 @@ import {FetchError} from "../../api/authorizedFetch.ts";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse & {
     trainingGroup?: {
-        name: string;
+        groupName: string;
         owners: Array<{ fullName: string; email: string }>;
     } | null;
     familyGroup?: {
-        name: string;
+        groupName: string;
+        owners: Array<{ fullName: string; email: string }>;
     } | null;
 };
 
@@ -371,7 +372,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     <Section title={labels.sections.trainingGroup}>
                         {member.trainingGroup ? (
                             <>
-                                <DetailRow label={labels.fields.name}>{member.trainingGroup.name}</DetailRow>
+                                <DetailRow label={labels.fields.name}>{member.trainingGroup.groupName}</DetailRow>
                                 {member.trainingGroup.owners.map((owner, i) => (
                                     <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
                                         <div className="flex flex-col">
@@ -389,7 +390,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
                 {member.familyGroup && (
                     <Section title={labels.sections.familyGroup}>
-                        <DetailRow label={labels.fields.name}>{member.familyGroup.name}</DetailRow>
+                        <DetailRow label={labels.fields.name}>{member.familyGroup.groupName}</DetailRow>
+                        {member.familyGroup.owners.map((owner, i) => (
+                            <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
+                                <div className="flex flex-col">
+                                    <span>{owner.fullName}</span>
+                                    {owner.email && <span className="text-text-secondary text-sm">{owner.email}</span>}
+                                </div>
+                            </DetailRow>
+                        ))}
                     </Section>
                 )}
 

@@ -36,6 +36,10 @@ class UpdateMemberPersistenceTest {
     @SuppressWarnings("unused")
     private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
 
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private com.klabis.members.FamilyGroupProvider familyGroupProvider;
+
     @Autowired
     private MockMvc mockMvc;
 

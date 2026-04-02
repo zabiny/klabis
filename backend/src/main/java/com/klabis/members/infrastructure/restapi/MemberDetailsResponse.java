@@ -63,10 +63,13 @@ public record MemberDetailsResponse(
         String suspendedBy,
         @HasAuthority(Authority.MEMBERS_MANAGE)
         String suspensionNote,
-        TrainingGroupResponse trainingGroup
+        TrainingGroupResponse trainingGroup,
+        FamilyGroupResponse familyGroup
 ) {
 
     public record TrainingGroupResponse(String groupName, java.util.List<OwnerResponse> owners) {
         public record OwnerResponse(String fullName, String email) {}
     }
+
+    public record FamilyGroupResponse(String groupName, java.util.List<TrainingGroupResponse.OwnerResponse> owners) {}
 }

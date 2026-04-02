@@ -76,6 +76,8 @@ export interface HalFormsProperty {
     options?: HalFormsOption;
     suggest?: HalFormsOption;
     multiple?: boolean;
+    // Backend sends "multi" (non-standard shorthand) — kept for backend compatibility
+    multi?: boolean;
     min?: number;
     max?: number;
 }

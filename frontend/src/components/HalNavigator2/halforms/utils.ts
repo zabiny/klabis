@@ -1,4 +1,7 @@
-import {type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link} from "../../../api";
+import {type HalFormsProperty, type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link} from "../../../api";
+
+// Backend sends "multi" instead of "multiple" — normalizes both to a single boolean
+export const isMultipleProperty = (prop: HalFormsProperty): boolean => !!(prop.multiple || prop.multi);
 
 export function sanitizeFormValues(values: Record<string, unknown>): Record<string, unknown> {
     return Object.fromEntries(

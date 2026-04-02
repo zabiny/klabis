@@ -6,6 +6,7 @@ export const labels = {
         members: 'Členové',
         groups: 'Skupiny',
         'training-groups': 'Tréninkové skupiny',
+        'family-groups': 'Rodinné skupiny',
     },
 
     buttons: {
@@ -57,6 +58,13 @@ export const labels = {
         createFamilyGroup: 'Vytvořit rodinnou skupinu',
         addOwner: 'Přidat správce',
         removeOwner: 'Odebrat správce',
+        addGroupOwner: 'Přidat správce',
+        removeGroupOwner: 'Odebrat správce',
+        addTrainingGroupOwner: 'Přidat správce',
+        removeTrainingGroupOwner: 'Odebrat správce',
+        addFamilyGroupOwner: 'Přidat správce',
+        removeFamilyGroupOwner: 'Odebrat správce',
+        deleteFamilyGroup: 'Smazat rodinnou skupinu',
     },
 
     dialogTitles: {
@@ -240,6 +248,10 @@ export const labels = {
         trainingGroupOwners: 'SPRÁVCI',
         trainingGroup: 'TRÉNINKOVÁ SKUPINA',
         familyGroup: 'RODINNÁ SKUPINA',
+        familyGroups: 'Rodinné skupiny',
+        familyGroupsList: 'Rodinné skupiny',
+        familyGroupOwners: 'SPRÁVCI',
+        familyGroupMembers: 'ČLENOVÉ',
     },
 
     dashboard: {

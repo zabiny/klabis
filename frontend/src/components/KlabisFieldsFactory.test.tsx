@@ -20,6 +20,15 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
                 {errorText && <span data-testid="select-error">{errorText}</span>}
             </div>
         ),
+        HalFormsCheckboxGroup: ({prop}: HalFormsInputProps) => (
+            <div data-testid="hal-forms-checkboxgroup-mock">
+                <span data-testid="checkboxgroup-name">{prop.name}</span>
+                <span data-testid="checkboxgroup-prompt">{prop.prompt}</span>
+                {prop.options?.link?.href && (
+                    <span data-testid="checkboxgroup-href">{prop.options.link.href}</span>
+                )}
+            </div>
+        ),
         HalFormsSelect: ({prop}: HalFormsInputProps) => (
             <div data-testid={`hal-select-${prop.name}`}>{prop.prompt}</div>
         ),
@@ -284,6 +293,97 @@ describe('KlabisFieldsFactory', () => {
             expect(values).toContain('ODHLASKA');
             expect(values).toContain('PRESTUP');
             expect(values).toContain('OTHER');
+        });
+    });
+
+    describe('UUID field type', () => {
+
+        it('should render HalFormsMemberId for single UUID field (memberId)', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberId', prompt: 'Vyberte člena', type: 'UUID'},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+        });
+
+        it('should configure remote options pointing to /members/options for single UUID field', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberId', prompt: 'Vyberte člena', type: 'UUID'},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('select-href')).toHaveTextContent('/members/options');
+        });
+
+        it('should render HalFormsCheckboxGroup for multi UUID field (multiple: true)', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+        });
+
+        it('should configure remote options pointing to /members/options for multi UUID field', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('checkboxgroup-href')).toHaveTextContent('/members/options');
+        });
+
+        it('should preserve the original prompt for single UUID field', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberId', prompt: 'Správce skupiny', type: 'UUID'},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('select-prompt')).toHaveTextContent('Správce skupiny');
+        });
+
+        it('should preserve the original prompt for multi UUID field', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Členové rodiny', type: 'UUID', multiple: true},
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Členové rodiny');
+        });
+
+        it('should render HalFormsCheckboxGroup for UUID field with backend multi:true shorthand', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true} as any,
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+        });
+
+        it('should configure remote options for UUID field with backend multi:true shorthand', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true} as any,
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('checkboxgroup-href')).toHaveTextContent('/members/options');
         });
     });
 

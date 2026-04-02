@@ -62,6 +62,9 @@ class BirthNumberAuditControllerTest {
     @MockitoBean
     private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
 
+    @MockitoBean
+    private com.klabis.members.FamilyGroupProvider familyGroupProvider;
+
     @TestBean
     private EntityLinks entityLinks;
 

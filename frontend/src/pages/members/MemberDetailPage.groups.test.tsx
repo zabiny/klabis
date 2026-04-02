@@ -136,7 +136,7 @@ describe('MemberDetailPage — group membership sections', () => {
         it('shows training group section when trainingGroup data is present', () => {
             const data = mockMemberDetailData({
                 trainingGroup: {
-                    name: 'Mladí závodníci',
+                    groupName: 'Mladí závodníci',
                     owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
                 },
             });
@@ -148,7 +148,7 @@ describe('MemberDetailPage — group membership sections', () => {
         it('shows owner name and email in training group section', () => {
             const data = mockMemberDetailData({
                 trainingGroup: {
-                    name: 'Mladí závodníci',
+                    groupName: 'Mladí závodníci',
                     owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
                 },
             });
@@ -186,7 +186,7 @@ describe('MemberDetailPage — group membership sections', () => {
 
         it('shows training group section when trainingGroup has no owners', () => {
             const data = mockMemberDetailData({
-                trainingGroup: {name: 'Bezprizorní', owners: []},
+                trainingGroup: {groupName: 'Bezprizorní', owners: []},
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
@@ -197,7 +197,7 @@ describe('MemberDetailPage — group membership sections', () => {
     describe('Family group section (task 5.4)', () => {
         it('shows family group section when familyGroup data is present', () => {
             const data = mockMemberDetailData({
-                familyGroup: {name: 'Rodina Novákových'},
+                familyGroup: {groupName: 'Rodina Novákových', owners: []},
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('RODINNÁ SKUPINA')).toBeInTheDocument();

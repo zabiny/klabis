@@ -22,6 +22,8 @@ import {GroupsPage} from "./pages/groups/GroupsPage.tsx";
 import {GroupDetailPage} from "./pages/groups/GroupDetailPage.tsx";
 import {TrainingGroupsPage} from "./pages/training-groups/TrainingGroupsPage.tsx";
 import {TrainingGroupDetailPage} from "./pages/training-groups/TrainingGroupDetailPage.tsx";
+import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
+import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
@@ -96,6 +98,8 @@ function App() {
                                     <Route path="/groups/:id" element={<GroupDetailPage/>}/>
                                     <Route path="/training-groups" element={<TrainingGroupsPage/>}/>
                                     <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
+                                    <Route path="/family-groups" element={<FamilyGroupsPage/>}/>
+                                    <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

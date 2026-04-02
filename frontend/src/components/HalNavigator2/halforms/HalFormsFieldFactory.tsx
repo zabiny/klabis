@@ -10,6 +10,7 @@ import {
     HalFormsTextArea,
 } from './fields'
 import {type HalFormFieldFactory, type HalFormsInputProps} from './types.ts'
+import {isMultipleProperty} from './utils.ts'
 import {type ReactElement} from 'react'
 
 /**
@@ -22,7 +23,7 @@ export const halFormsFieldsFactory = (
     fieldType: string,
     conf: HalFormsInputProps
 ): ReactElement | null => {
-    if (conf.prop.multiple && !conf.prop.options && !conf.prop.suggest) {
+    if (isMultipleProperty(conf.prop) && !conf.prop.options && !conf.prop.suggest) {
         return <HalFormsCollectionField {...conf} />
     }
 

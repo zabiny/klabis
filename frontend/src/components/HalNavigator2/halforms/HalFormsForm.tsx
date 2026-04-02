@@ -4,7 +4,7 @@ import React, {type ReactElement, type ReactNode, useContext, useMemo} from "rea
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
-import {sanitizeFormValues} from "./utils.ts";
+import {isMultipleProperty, sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
 import {FieldWrapper} from "../../UI/forms";
@@ -20,7 +20,7 @@ function getInitialValues(
 ): Record<string, unknown> {
     const initialValues: Record<string, unknown> = {};
     template.properties.forEach((prop) => {
-        if (prop.multiple) {
+        if (isMultipleProperty(prop)) {
             initialValues[prop.name] = Array.isArray(data[prop.name]) ? data[prop.name] : [];
         } else {
             initialValues[prop.name] = data[prop.name] !== undefined ? data[prop.name] : prop.value || "";
@@ -49,7 +49,7 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Re
             validator = Yup.mixed();
         }
 
-        if (prop.multiple) {
+        if (isMultipleProperty(prop)) {
             validator = Yup.array();
         }
 

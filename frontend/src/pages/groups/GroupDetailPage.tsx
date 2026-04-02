@@ -58,7 +58,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const deleteTemplate = resourceData._templates?.deleteGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addGroupMember ?? null;
     const inviteMemberTemplate = resourceData._templates?.inviteMember ?? null;
-    const addOwnerTemplate = resourceData._templates?.addOwner ?? null;
+    const addOwnerTemplate = resourceData._templates?.addGroupOwner ?? null;
 
     const handleRemoveMember = (member: GroupMember) => {
         const template = member._templates?.removeGroupMember;
@@ -137,7 +137,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                     <dl>
                         {(resourceData.owners ?? []).map((owner) => {
                             const ownerWithTemplates = owner as typeof owner & {_templates?: Record<string, HalFormsTemplate>; _links: typeof owner._links & {self?: {href: string}}};
-                            const removeOwnerTpl = ownerWithTemplates._templates?.removeOwner;
+                            const removeOwnerTpl = ownerWithTemplates._templates?.removeGroupOwner;
                             const selfHref = ownerWithTemplates._links?.self?.href ?? '';
                             return (
                                 <DetailRow key={owner.memberId} label="">
@@ -312,15 +312,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                 <Modal
                     isOpen={true}
                     onClose={() => setAddOwnerModal(false)}
-                    title={labels.templates.addOwner}
+                    title={labels.templates.addGroupOwner}
                     size="md"
                 >
                     <HalFormDisplay
                         template={addOwnerTemplate}
-                        templateName="addOwner"
+                        templateName="addGroupOwner"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
-                        onClose={() => setAddOwnerModal(false)}
+                        onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>
@@ -330,15 +330,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                 <Modal
                     isOpen={true}
                     onClose={() => setRemoveOwnerModal(null)}
-                    title={labels.templates.removeOwner}
+                    title={labels.templates.removeGroupOwner}
                     size="md"
                 >
                     <HalFormDisplay
                         template={removeOwnerModal.template}
-                        templateName="removeOwner"
+                        templateName="removeGroupOwner"
                         resourceData={{}}
                         pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
-                        onClose={() => setRemoveOwnerModal(null)}
+                        onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>

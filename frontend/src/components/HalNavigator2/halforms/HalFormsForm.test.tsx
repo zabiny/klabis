@@ -148,6 +148,37 @@ describe('createValidationSchema — required field validation', () => {
     });
 });
 
+describe('HalFormsForm — multi: true (backend shorthand for multiple)', () => {
+    it('initializes field with multi:true as empty array when no data provided', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true} as any);
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({memberIds: []})
+        );
+    });
+
+    it('initializes field with multi:true as existing array when data provided', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true} as any);
+        const template = createTemplate([prop]);
+        const existingIds = ['id-1', 'id-2'];
+
+        render(<HalFormsForm data={{memberIds: existingIds}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({memberIds: existingIds})
+        );
+    });
+});
+
 describe('HalFormsForm onSubmit value sanitization', () => {
     it('submits null instead of empty string for unfilled text field', async () => {
         const onSubmit = vi.fn().mockResolvedValue(undefined);

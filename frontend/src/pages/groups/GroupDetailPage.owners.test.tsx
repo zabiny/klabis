@@ -114,7 +114,7 @@ describe('GroupDetailPage — owner management (task 6.3)', () => {
     it('shows "Přidat správce" button when addOwner template exists on resource', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
-            _templates: {addOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
+            _templates: {addGroupOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /přidat správce/i})).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe('GroupDetailPage — owner management (task 6.3)', () => {
     it('clicking "Přidat správce" opens modal', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
-            _templates: {addOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
+            _templates: {addGroupOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
         });
         renderPage(createMockPageData(resourceData));
         fireEvent.click(screen.getByRole('button', {name: /přidat správce/i}));
@@ -138,7 +138,7 @@ describe('GroupDetailPage — owner management (task 6.3)', () => {
     it('shows "Odebrat správce" button per owner when removeOwner template exists on owner', () => {
         const ownerWithTemplate = {
             ...buildOwner(),
-            _templates: {removeOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
+            _templates: {removeGroupOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
         };
         const resourceData = buildGroupDetail({owners: [ownerWithTemplate]});
         renderPage(createMockPageData(resourceData));
@@ -158,7 +158,7 @@ describe('GroupDetailPage — owner management (task 6.3)', () => {
                 member: {href: '/api/members/owner-1'},
                 self: {href: '/api/groups/group-1/owners/owner-1'},
             },
-            _templates: {removeOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
+            _templates: {removeGroupOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
         };
         const resourceData = buildGroupDetail({owners: [ownerWithTemplate]});
         renderPage(createMockPageData(resourceData));

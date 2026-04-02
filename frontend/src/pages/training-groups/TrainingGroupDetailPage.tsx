@@ -34,7 +34,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
     const ageRangeTemplate = resourceData._templates?.updateAgeRange ?? null;
     const deleteTemplate = resourceData._templates?.deleteTrainingGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addTrainingGroupMember ?? null;
-    const addOwnerTemplate = resourceData._templates?.addOwner ?? null;
+    const addOwnerTemplate = resourceData._templates?.addTrainingGroupOwner ?? null;
 
     const owners: TrainingGroupOwner[] = (resourceData.owners as TrainingGroupOwner[] | undefined) ?? [];
     const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
@@ -146,7 +146,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                     <dl>
                         {owners.map((owner) => {
                             const ownerWithTemplates = owner as typeof owner & {_templates?: Record<string, HalFormsTemplate>; _links: typeof owner._links & {self?: {href: string}}};
-                            const removeOwnerTpl = ownerWithTemplates._templates?.removeOwner;
+                            const removeOwnerTpl = ownerWithTemplates._templates?.removeTrainingGroupOwner;
                             const selfHref = ownerWithTemplates._links?.self?.href ?? '';
                             return owner._links.member ? (
                                 <DetailRow key={owner.memberId} label="">
@@ -276,12 +276,12 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 <Modal
                     isOpen={true}
                     onClose={() => setAddOwnerModal(false)}
-                    title={labels.templates.addOwner}
+                    title={labels.templates.addTrainingGroupOwner}
                     size="md"
                 >
                     <HalFormDisplay
                         template={addOwnerTemplate as HalFormsTemplate}
-                        templateName="addOwner"
+                        templateName="addTrainingGroupOwner"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
@@ -294,14 +294,14 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 <Modal
                     isOpen={true}
                     onClose={() => setRemoveOwnerModal(null)}
-                    title={labels.templates.removeOwner}
+                    title={labels.templates.removeTrainingGroupOwner}
                     size="md"
                 >
                     <HalFormDisplay
                         template={removeOwnerModal.template}
-                        templateName="removeOwner"
+                        templateName="removeTrainingGroupOwner"
                         resourceData={{}}
-                        pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
+                        pathname={removeOwnerModal.ownerSelfHref ? '/training-groups/' + removeOwnerModal.ownerSelfHref.split('/training-groups/')[1] : route.pathname}
                         onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />

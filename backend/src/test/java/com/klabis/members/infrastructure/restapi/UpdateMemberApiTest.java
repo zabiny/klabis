@@ -91,6 +91,9 @@ class UpdateMemberApiTest {
     @MockitoBean
     private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
 
+    @MockitoBean
+    private com.klabis.members.FamilyGroupProvider familyGroupProvider;
+
     private final UUID testMemberId = UUID.randomUUID();
 
     static UserDetailsService userDetailsService() {

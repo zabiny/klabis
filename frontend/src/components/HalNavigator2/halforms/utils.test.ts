@@ -1,5 +1,34 @@
 import {describe, expect, it} from 'vitest';
-import {sanitizeFormValues} from './utils.ts';
+import {isMultipleProperty, sanitizeFormValues} from './utils.ts';
+import type {HalFormsProperty} from '../../../api';
+
+const prop = (overrides: Partial<HalFormsProperty>): HalFormsProperty => ({
+    name: 'testField',
+    type: 'text',
+    ...overrides,
+});
+
+describe('isMultipleProperty', () => {
+    it('returns true when multiple is true', () => {
+        expect(isMultipleProperty(prop({multiple: true}))).toBe(true);
+    });
+
+    it('returns true when backend sends multi: true', () => {
+        expect(isMultipleProperty(prop({multi: true}))).toBe(true);
+    });
+
+    it('returns false when both multiple and multi are absent', () => {
+        expect(isMultipleProperty(prop({}))).toBe(false);
+    });
+
+    it('returns false when multiple is false', () => {
+        expect(isMultipleProperty(prop({multiple: false}))).toBe(false);
+    });
+
+    it('returns false when multi is false', () => {
+        expect(isMultipleProperty(prop({multi: false}))).toBe(false);
+    });
+});
 
 describe('sanitizeFormValues', () => {
     it('converts empty string to null for simple optional text field', () => {
