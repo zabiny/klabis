@@ -7,9 +7,11 @@ import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Badge, Button, Modal} from "../../components/UI";
-import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
+import {Pencil, Shield, UserCheck, UserX, Users} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
+import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
+import {FetchError} from "../../api/authorizedFetch.ts";
 
 type MemberSummaryData = EntityModel<{
     id: string,
@@ -39,11 +41,24 @@ export const MembersPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
+    const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
+    const [createFamilyGroupModal, setCreateFamilyGroupModal] = useState(false);
 
     const openActionModal = (member: MemberSummaryData, templateName: string) => {
         const template = member._templates?.[templateName];
         if (!template) return;
         setActionModal({member, templateName, template});
+    };
+
+    const parseSuspensionWarning409 = (error: unknown): AffectedGroup[] | null => {
+        if (!(error instanceof FetchError) || error.responseStatus !== 409) return null;
+        try {
+            const body = JSON.parse(error.responseBody ?? '{}');
+            if (Array.isArray(body.affectedGroups)) return body.affectedGroups as AffectedGroup[];
+        } catch {
+            // not a structured 409
+        }
+        return null;
     };
 
     const openPermissionsDialog = (member: MemberSummaryData) => {
@@ -152,13 +167,24 @@ export const MembersPage = (): ReactElement => {
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.membersList}</h2>
-                    {resourceData?._templates?.registerMember && (
-                        <Link to="/members/new">
-                            <Button variant="primary">
-                                {labels.templates.registerMember}
+                    <div className="flex gap-2">
+                        {resourceData?._templates?.createFamilyGroup && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => setCreateFamilyGroupModal(true)}
+                                startIcon={<Users className="w-4 h-4"/>}
+                            >
+                                {labels.templates.createFamilyGroup}
                             </Button>
-                        </Link>
-                    )}
+                        )}
+                        {resourceData?._templates?.registerMember && (
+                            <Link to="/members/new">
+                                <Button variant="primary">
+                                    {labels.templates.registerMember}
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
                 </div>
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
                                                       defaultOrderBy={"lastName"}
@@ -194,9 +220,39 @@ export const MembersPage = (): ReactElement => {
                         resourceData={actionModal.member as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setActionModal(null)}
+                        onSubmitError={actionModal.templateName === 'suspendMember' ? (error) => {
+                            const groups = parseSuspensionWarning409(error);
+                            if (groups) {
+                                setSuspensionWarning(groups);
+                                return true;
+                            }
+                        } : undefined}
                     />
                 </Modal>
             )}
+            {resourceData?._templates?.createFamilyGroup && createFamilyGroupModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setCreateFamilyGroupModal(false)}
+                    title={labels.templates.createFamilyGroup}
+                    size="2xl"
+                >
+                    <HalFormDisplay
+                        template={resourceData._templates.createFamilyGroup}
+                        templateName="createFamilyGroup"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => setCreateFamilyGroupModal(false)}
+                        successMessage={labels.ui.savedSuccessfully}
+                    />
+                </Modal>
+            )}
+
+            <SuspensionWarningDialog
+                isOpen={suspensionWarning !== null}
+                onClose={() => setSuspensionWarning(null)}
+                affectedGroups={suspensionWarning ?? []}
+            />
         </div>
     );
 };

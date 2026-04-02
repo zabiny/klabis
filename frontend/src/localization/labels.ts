@@ -54,6 +54,9 @@ export const labels = {
         updateAgeRange: 'Změnit věkové rozmezí',
         addTrainingGroupMember: 'Přidat člena',
         removeTrainingGroupMember: 'Odebrat',
+        createFamilyGroup: 'Vytvořit rodinnou skupinu',
+        addOwner: 'Přidat správce',
+        removeOwner: 'Odebrat správce',
     },
 
     dialogTitles: {
@@ -192,6 +195,7 @@ export const labels = {
         permissionsDescription: 'Oprávnění určují, ke kterým funkcím aplikace má uživatel přístup. Změny se projeví okamžitě.',
         permissionsSaved: 'Oprávnění uložena',
         savedSuccessfully: 'Úspěšně uloženo',
+        notAssigned: 'Není přiřazen',
     },
 
     tables: {
@@ -234,6 +238,8 @@ export const labels = {
         trainingGroupsList: 'Tréninkové skupiny',
         trainingGroupMembers: 'ČLENOVÉ',
         trainingGroupOwners: 'SPRÁVCI',
+        trainingGroup: 'TRÉNINKOVÁ SKUPINA',
+        familyGroup: 'RODINNÁ SKUPINA',
     },
 
     dashboard: {
@@ -255,6 +261,17 @@ export const labels = {
         'MEMBERS:PERMISSIONS': {label: 'Správa oprávnění', description: 'Přidělování a odebírání oprávnění uživatelům'},
         'EVENTS:MANAGE': {label: 'Správa akcí', description: 'Vytváření a úprava akcí'},
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
+    },
+
+    suspensionWarning: {
+        title: 'Varování: Správce skupin',
+        description: 'Člen je posledním správcem následujících skupin. Před ukončením členství je nutné určit nástupce nebo skupiny rozpustit.',
+        designateSuccessor: 'Určit nástupce',
+        dissolveGroup: 'Rozpustit skupinu',
+        trainingGroupNote: 'U tréninkové skupiny je nutné určit nástupce.',
+        groupTypeTrainingGroup: 'Tréninková skupina',
+        groupTypeFamilyGroup: 'Rodinná skupina',
+        groupTypeFreeGroup: 'Volná skupina',
     },
 } as const;
 

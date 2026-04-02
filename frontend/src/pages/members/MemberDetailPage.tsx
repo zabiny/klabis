@@ -2,7 +2,7 @@ import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Alert, Badge, Button, DetailRow, Skeleton} from "../../components/UI";
+import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
@@ -13,8 +13,18 @@ import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
+import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
+import {FetchError} from "../../api/authorizedFetch.ts";
 
-type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse & {
+    trainingGroup?: {
+        name: string;
+        owners: Array<{ name: string; email: string }>;
+    } | null;
+    familyGroup?: {
+        name: string;
+    } | null;
+};
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -95,6 +105,8 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isEditing, setIsEditing] = useState(initialEditing);
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+    const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
+    const [suspendMemberModal, setSuspendMemberModal] = useState(false);
     const navigate = useNavigate();
 
     const member = resourceData;
@@ -137,6 +149,17 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         Object.fromEntries(
             Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
         );
+
+    const parseSuspensionWarning409 = (error: unknown): AffectedGroup[] | null => {
+        if (!(error instanceof FetchError) || error.responseStatus !== 409) return null;
+        try {
+            const body = JSON.parse(error.responseBody ?? '{}');
+            if (Array.isArray(body.affectedGroups)) return body.affectedGroups as AffectedGroup[];
+        } catch {
+            // not a structured 409
+        }
+        return null;
+    };
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>
@@ -307,7 +330,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            <HalFormButton name="suspendMember" modal={true} variant="danger" icon={<UserX className="w-4 h-4"/>}/>
+                            {resourceData._templates?.suspendMember && (
+                                <Button
+                                    variant="danger"
+                                    onClick={() => setSuspendMemberModal(true)}
+                                    startIcon={<UserX className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.suspendMember}
+                                </Button>
+                            )}
                             <HalFormButton name="resumeMember" modal={true}/>
                         </div>
                     )}
@@ -333,6 +364,32 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 <DetailRow label="Telefon">{val(guardian?.phone)}</DetailRow>
                             </>
                         )}
+                    </Section>
+                )}
+
+                {'trainingGroup' in member && (
+                    <Section title={labels.sections.trainingGroup}>
+                        {member.trainingGroup ? (
+                            <>
+                                <DetailRow label={labels.fields.name}>{member.trainingGroup.name}</DetailRow>
+                                {member.trainingGroup.owners.map((owner, i) => (
+                                    <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
+                                        <div className="flex flex-col">
+                                            <span>{owner.name}</span>
+                                            {owner.email && <span className="text-text-secondary text-sm">{owner.email}</span>}
+                                        </div>
+                                    </DetailRow>
+                                ))}
+                            </>
+                        ) : (
+                            <span className="text-sm text-text-tertiary">{labels.ui.notAssigned}</span>
+                        )}
+                    </Section>
+                )}
+
+                {member.familyGroup && (
+                    <Section title={labels.sections.familyGroup}>
+                        <DetailRow label={labels.fields.name}>{member.familyGroup.name}</DetailRow>
                     </Section>
                 )}
 
@@ -372,8 +429,38 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
     const permissionsUrl = route.getResourceLink('permissions')?.href ?? '';
 
+    const suspendTemplate = resourceData._templates?.suspendMember ?? null;
+
     return (
         <>
+            <SuspensionWarningDialog
+                isOpen={suspensionWarning !== null}
+                onClose={() => setSuspensionWarning(null)}
+                affectedGroups={suspensionWarning ?? []}
+            />
+            {suspendTemplate && suspendMemberModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setSuspendMemberModal(false)}
+                    title={labels.dialogTitles.suspendMember}
+                    size="2xl"
+                >
+                    <HalFormDisplay
+                        template={suspendTemplate}
+                        templateName="suspendMember"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => setSuspendMemberModal(false)}
+                        onSubmitError={(error) => {
+                            const groups = parseSuspensionWarning409(error);
+                            if (groups) {
+                                setSuspensionWarning(groups);
+                                return true;
+                            }
+                        }}
+                    />
+                </Modal>
+            )}
             <PermissionsDialog
                 isOpen={isPermissionsDialogOpen}
                 onClose={() => setIsPermissionsDialogOpen(false)}

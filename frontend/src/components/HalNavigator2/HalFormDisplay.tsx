@@ -28,6 +28,8 @@ export interface HalFormDisplayProps {
     onClose: () => void;
     /** Optional callback when submission succeeds — receives response data */
     onSubmitSuccess?: (responseData?: unknown) => void;
+    /** Optional callback when submission fails — receives the error, return true to suppress default error display */
+    onSubmitError?: (error: unknown) => boolean | void;
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
     /** Optional transform applied to payload before API submission */
@@ -53,6 +55,7 @@ export const HalFormDisplay = ({
                                    pathname,
                                    onClose,
                                    onSubmitSuccess,
+                                   onSubmitError,
                                    customLayout,
                                    postprocessPayload,
                                    successMessage,
@@ -87,6 +90,10 @@ export const HalFormDisplay = ({
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
                 onClose();
+            },
+            onError: (error: unknown) => {
+                const suppressed = onSubmitError?.(error);
+                if (suppressed) onClose();
             },
         });
     };

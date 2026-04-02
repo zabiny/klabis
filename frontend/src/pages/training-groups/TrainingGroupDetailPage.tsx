@@ -8,7 +8,7 @@ import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Pencil, Sliders, Trash2, UserMinus, UserPlus} from 'lucide-react';
+import {Crown, Pencil, Sliders, Trash2, UserMinus, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupOwner} from './types.ts';
@@ -27,11 +27,14 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
+    const [addOwnerModal, setAddOwnerModal] = useState(false);
+    const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
 
     const editTemplate = resourceData._templates?.updateTrainingGroup ?? null;
     const ageRangeTemplate = resourceData._templates?.updateAgeRange ?? null;
     const deleteTemplate = resourceData._templates?.deleteTrainingGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addTrainingGroupMember ?? null;
+    const addOwnerTemplate = resourceData._templates?.addOwner ?? null;
 
     const owners: TrainingGroupOwner[] = (resourceData.owners as TrainingGroupOwner[] | undefined) ?? [];
     const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
@@ -123,21 +126,49 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 
             <hr className="border-border"/>
 
-            {owners.length > 0 && (
+            {(owners.length > 0 || addOwnerTemplate) && (
                 <Card className="p-6">
-                    <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">
-                        {labels.sections.trainingGroupOwners}
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs uppercase font-semibold text-text-secondary">
+                            {labels.sections.trainingGroupOwners}
+                        </h3>
+                        {addOwnerTemplate && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setAddOwnerModal(true)}
+                                startIcon={<Crown className="w-4 h-4"/>}
+                            >
+                                {labels.templates.addOwner}
+                            </Button>
+                        )}
+                    </div>
                     <dl>
-                        {owners.map((owner) => (
-                            owner._links.member && (
+                        {owners.map((owner) => {
+                            const ownerWithTemplates = owner as typeof owner & {_templates?: Record<string, HalFormsTemplate>; _links: typeof owner._links & {self?: {href: string}}};
+                            const removeOwnerTpl = ownerWithTemplates._templates?.removeOwner;
+                            const selfHref = ownerWithTemplates._links?.self?.href ?? '';
+                            return owner._links.member ? (
                                 <DetailRow key={owner.memberId} label="">
-                                    <HalRouteProvider routeLink={owner._links.member as HalResourceLinks}>
-                                        <MemberNameWithRegNumber/>
-                                    </HalRouteProvider>
+                                    <div className="flex items-center justify-between w-full">
+                                        <HalRouteProvider routeLink={owner._links.member as HalResourceLinks}>
+                                            <MemberNameWithRegNumber/>
+                                        </HalRouteProvider>
+                                        {removeOwnerTpl && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-600"
+                                                aria-label={labels.templates.removeOwner}
+                                                onClick={() => setRemoveOwnerModal({template: removeOwnerTpl, ownerSelfHref: selfHref})}
+                                            >
+                                                <UserMinus className="w-4 h-4"/>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </DetailRow>
-                            )
-                        ))}
+                            ) : null;
+                        })}
                     </dl>
                 </Card>
             )}
@@ -236,6 +267,42 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                         resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
                         pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self!))}
                         onClose={() => { setRemoveMemberModal(null); void route.refetch(); }}
+                        successMessage={labels.ui.savedSuccessfully}
+                    />
+                </Modal>
+            )}
+
+            {addOwnerTemplate && addOwnerModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setAddOwnerModal(false)}
+                    title={labels.templates.addOwner}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={addOwnerTemplate as HalFormsTemplate}
+                        templateName="addOwner"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
+                        successMessage={labels.ui.savedSuccessfully}
+                    />
+                </Modal>
+            )}
+
+            {removeOwnerModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setRemoveOwnerModal(null)}
+                    title={labels.templates.removeOwner}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={removeOwnerModal.template}
+                        templateName="removeOwner"
+                        resourceData={{}}
+                        pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
+                        onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>
