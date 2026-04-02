@@ -48,6 +48,10 @@ class EventManagementE2ETest extends SecurityTestBase {
     @SuppressWarnings("unused")
     private LastOwnershipChecker lastOwnershipChecker;
 
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+
     @Autowired
     private MockMvc mockMvc;
 

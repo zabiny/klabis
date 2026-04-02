@@ -16,9 +16,9 @@ interface SuspensionWarningDialogProps {
 
 const groupTypeLabel = (groupType: string): string => {
     const map: Record<string, string> = {
-        TrainingGroup: labels.suspensionWarning.groupTypeTrainingGroup,
-        FamilyGroup: labels.suspensionWarning.groupTypeFamilyGroup,
-        FreeGroup: labels.suspensionWarning.groupTypeFreeGroup,
+        TRAINING: labels.suspensionWarning.groupTypeTrainingGroup,
+        FAMILY: labels.suspensionWarning.groupTypeFamilyGroup,
+        FREE: labels.suspensionWarning.groupTypeFreeGroup,
     };
     return map[groupType] ?? groupType;
 };
@@ -42,7 +42,7 @@ export const SuspensionWarningDialog = ({isOpen, onClose, affectedGroups}: Suspe
                                 <Button variant="primary" size="sm">
                                     {labels.suspensionWarning.designateSuccessor}
                                 </Button>
-                                {group.groupType !== 'TrainingGroup' && (
+                                {group.groupType !== 'TRAINING' && (
                                     <Button variant="danger" size="sm">
                                         {labels.suspensionWarning.dissolveGroup}
                                     </Button>

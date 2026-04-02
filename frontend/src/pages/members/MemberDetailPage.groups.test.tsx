@@ -137,7 +137,7 @@ describe('MemberDetailPage — group membership sections', () => {
             const data = mockMemberDetailData({
                 trainingGroup: {
                     name: 'Mladí závodníci',
-                    owners: [{name: 'Petr Trenér', email: 'petr@klub.cz'}],
+                    owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
                 },
             });
             renderPage(createMockPageData(data));
@@ -149,7 +149,7 @@ describe('MemberDetailPage — group membership sections', () => {
             const data = mockMemberDetailData({
                 trainingGroup: {
                     name: 'Mladí závodníci',
-                    owners: [{name: 'Petr Trenér', email: 'petr@klub.cz'}],
+                    owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
                 },
             });
             renderPage(createMockPageData(data));
@@ -162,8 +162,8 @@ describe('MemberDetailPage — group membership sections', () => {
                 trainingGroup: {
                     name: 'Elitní tým',
                     owners: [
-                        {name: 'Petr Trenér', email: 'petr@klub.cz'},
-                        {name: 'Jana Koučová', email: 'jana@klub.cz'},
+                        {fullName: 'Petr Trenér', email: 'petr@klub.cz'},
+                        {fullName: 'Jana Koučová', email: 'jana@klub.cz'},
                     ],
                 },
             });

@@ -59,6 +59,9 @@ class BirthNumberAuditControllerTest {
     @MockitoBean
     private RegistrationPort registrationService;
 
+    @MockitoBean
+    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+
     @TestBean
     private EntityLinks entityLinks;
 

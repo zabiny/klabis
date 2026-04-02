@@ -19,7 +19,7 @@ import {FetchError} from "../../api/authorizedFetch.ts";
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse & {
     trainingGroup?: {
         name: string;
-        owners: Array<{ name: string; email: string }>;
+        owners: Array<{ fullName: string; email: string }>;
     } | null;
     familyGroup?: {
         name: string;
@@ -375,7 +375,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 {member.trainingGroup.owners.map((owner, i) => (
                                     <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
                                         <div className="flex flex-col">
-                                            <span>{owner.name}</span>
+                                            <span>{owner.fullName}</span>
                                             {owner.email && <span className="text-text-secondary text-sm">{owner.email}</span>}
                                         </div>
                                     </DetailRow>

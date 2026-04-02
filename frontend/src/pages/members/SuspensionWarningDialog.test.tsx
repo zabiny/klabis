@@ -8,7 +8,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
         isOpen: true,
         onClose: vi.fn(),
         affectedGroups: [
-            {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FreeGroup'},
+            {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
         ],
     };
 
@@ -40,7 +40,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
     it('shows "Určit nástupce" and "Rozpustit skupinu" for FamilyGroup', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FamilyGroup'}],
+            affectedGroups: [{groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FAMILY'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
         expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
     it('shows only "Určit nástupce" for TrainingGroup (no dissolve option)', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-3', groupName: 'U10 Závoďáci', groupType: 'TrainingGroup'}],
+            affectedGroups: [{groupId: 'g-3', groupName: 'U10 Závoďáci', groupType: 'TRAINING'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
         expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
     it('shows human-readable group type label for TrainingGroup', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-3', groupName: 'U10', groupType: 'TrainingGroup'}],
+            affectedGroups: [{groupId: 'g-3', groupName: 'U10', groupType: 'TRAINING'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
         expect(screen.getByText('Tréninková skupina')).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
     it('shows human-readable group type label for FamilyGroup', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Novákovi', groupType: 'FamilyGroup'}],
+            affectedGroups: [{groupId: 'g-2', groupName: 'Novákovi', groupType: 'FAMILY'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
         expect(screen.getByText('Rodinná skupina')).toBeInTheDocument();
@@ -84,9 +84,9 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
         const props = {
             ...baseProps,
             affectedGroups: [
-                {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FreeGroup'},
-                {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FamilyGroup'},
-                {groupId: 'g-3', groupName: 'U10', groupType: 'TrainingGroup'},
+                {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
+                {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FAMILY'},
+                {groupId: 'g-3', groupName: 'U10', groupType: 'TRAINING'},
             ],
         };
         render(<SuspensionWarningDialog {...props}/>);

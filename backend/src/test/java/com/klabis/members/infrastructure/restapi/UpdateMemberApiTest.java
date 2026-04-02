@@ -88,6 +88,9 @@ class UpdateMemberApiTest {
     @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
 
+    @MockitoBean
+    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+
     private final UUID testMemberId = UUID.randomUUID();
 
     static UserDetailsService userDetailsService() {

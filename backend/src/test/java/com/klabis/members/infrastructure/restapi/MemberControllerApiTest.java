@@ -11,6 +11,7 @@ import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.TrainingGroupProvider;
 import com.klabis.members.application.MemberIsLastGroupOwnerException;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.application.RegistrationPort;
@@ -86,6 +87,9 @@ class MemberControllerApiTest {
 
     @MockitoBean
     private RegistrationPort registrationService;
+
+    @MockitoBean
+    private TrainingGroupProvider trainingGroupProvider;
 
     @TestBean
     private EntityLinks entityLinks;

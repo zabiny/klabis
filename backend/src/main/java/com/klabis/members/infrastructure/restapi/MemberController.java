@@ -13,6 +13,8 @@ import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
+import com.klabis.members.TrainingGroupProvider;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.TrainingGroupResponse;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -60,16 +62,19 @@ public class MemberController {
     private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
+    private final TrainingGroupProvider trainingGroupProvider;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
-            MemberMapper memberMapper) {
+            MemberMapper memberMapper,
+            TrainingGroupProvider trainingGroupProvider) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
+        this.trainingGroupProvider = trainingGroupProvider;
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -206,6 +211,16 @@ public class MemberController {
         return ResponseEntity.ok(pagedModel);
     }
 
+    private TrainingGroupResponse buildTrainingGroupResponse(TrainingGroupProvider.TrainingGroupData data) {
+        List<TrainingGroupResponse.OwnerResponse> ownerResponses = memberRepository
+                .findAllByIds(data.ownerIds()).stream()
+                .map(owner -> new TrainingGroupResponse.OwnerResponse(
+                        owner.getFirstName() + " " + owner.getLastName(),
+                        owner.getEmail() != null ? owner.getEmail().value() : null))
+                .toList();
+        return new TrainingGroupResponse(data.groupName(), ownerResponses);
+    }
+
     private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response) {
         UUID memberId = response.id().uuid();
         EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
@@ -269,7 +284,12 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
+        TrainingGroupResponse trainingGroupResponse = trainingGroupProvider.findTrainingGroupForMember(memberId)
+                .map(data -> buildTrainingGroupResponse(data))
+                .orElse(null);
+        MemberDetailsResponse response = MemberDetailsResponseBuilder.builder(memberMapper.toDetailsResponse(member))
+                .trainingGroup(trainingGroupResponse)
+                .build();
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
         buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);

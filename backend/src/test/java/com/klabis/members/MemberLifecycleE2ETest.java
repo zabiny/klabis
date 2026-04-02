@@ -93,6 +93,10 @@ class MemberLifecycleE2ETest {
     @SuppressWarnings("unused")
     private LastOwnershipChecker lastOwnershipChecker;
 
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+
     /**
      * Test configuration to use synchronous task executor.
      * This ensures async event handlers execute synchronously during testing,

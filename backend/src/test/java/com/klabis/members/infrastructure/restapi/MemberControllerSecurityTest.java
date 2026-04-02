@@ -5,6 +5,7 @@ import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.members.LastOwnershipChecker;
+import com.klabis.members.TrainingGroupProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
@@ -28,6 +29,10 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @MockitoBean
     @SuppressWarnings("unused")
     private LastOwnershipChecker lastOwnershipChecker;
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private TrainingGroupProvider trainingGroupProvider;
 
     @Test
     @DisplayName("POST /api/members without authentication should return 401")

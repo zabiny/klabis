@@ -52,6 +52,10 @@ class EventRegistrationE2ETest {
     @SuppressWarnings("unused")
     private LastOwnershipChecker lastOwnershipChecker;
 
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+
     @Autowired
     private MockMvc mockMvc;
 
