@@ -20,6 +20,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -87,6 +88,10 @@ class MemberLifecycleE2ETest {
 
     @TestBean
     private EmailService emailServiceStub;
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private LastOwnershipChecker lastOwnershipChecker;
 
     /**
      * Test configuration to use synchronous task executor.

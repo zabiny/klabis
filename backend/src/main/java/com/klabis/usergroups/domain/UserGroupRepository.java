@@ -16,9 +16,15 @@ public interface UserGroupRepository {
 
     List<UserGroup> findAllByMember(MemberId memberId);
 
+    List<UserGroup> findAllByOwner(MemberId memberId);
+
     List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId);
 
     List<TrainingGroup> findAllTrainingGroups();
+
+    List<FamilyGroup> findAllFamilyGroups();
+
+    Optional<FamilyGroup> findFamilyGroupByMember(MemberId memberId);
 
     void delete(UserGroupId id);
 }

@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
+import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
@@ -13,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class ManagementService implements ManagementPort {
 
@@ -20,12 +23,14 @@ public class ManagementService implements ManagementPort {
 
     private final MemberRepository memberRepository;
     private final UserService userService;
+    private final LastOwnershipChecker lastOwnershipChecker;
     private final ApplicationEventPublisher eventPublisher;
 
     public ManagementService(MemberRepository memberRepository, UserService userService,
-                             ApplicationEventPublisher eventPublisher) {
+                             LastOwnershipChecker lastOwnershipChecker, ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.userService = userService;
+        this.lastOwnershipChecker = lastOwnershipChecker;
         this.eventPublisher = eventPublisher;
     }
 
@@ -43,6 +48,11 @@ public class ManagementService implements ManagementPort {
     @Override
     public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
+
+        List<LastOwnershipChecker.OwnedGroupInfo> lastOwnedGroups = lastOwnershipChecker.findGroupsOwnedSolely(memberId);
+        if (!lastOwnedGroups.isEmpty()) {
+            throw new MemberIsLastGroupOwnerException(lastOwnedGroups);
+        }
 
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());
 

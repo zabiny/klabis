@@ -2,6 +2,7 @@ package com.klabis.usergroups.infrastructure.jdbc;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
@@ -39,6 +40,13 @@ class UserGroupRepositoryAdapter implements UserGroupRepository {
     }
 
     @Override
+    public List<UserGroup> findAllByOwner(MemberId memberId) {
+        return jdbcRepository.findAllByOwnerId(memberId.uuid()).stream()
+                .map(UserGroupMemento::toUserGroup)
+                .toList();
+    }
+
+    @Override
     public List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId) {
         return jdbcRepository.findAllWithPendingInvitationForMember(memberId.uuid()).stream()
                 .map(UserGroupMemento::toUserGroup)
@@ -50,6 +58,20 @@ class UserGroupRepositoryAdapter implements UserGroupRepository {
         return jdbcRepository.findAllTrainingGroups().stream()
                 .map(m -> (TrainingGroup) m.toUserGroup())
                 .toList();
+    }
+
+    @Override
+    public List<FamilyGroup> findAllFamilyGroups() {
+        return jdbcRepository.findAllFamilyGroups().stream()
+                .map(m -> (FamilyGroup) m.toUserGroup())
+                .toList();
+    }
+
+    @Override
+    public Optional<FamilyGroup> findFamilyGroupByMember(MemberId memberId) {
+        return jdbcRepository.findFamilyGroupsByMemberId(memberId.uuid()).stream()
+                .findFirst()
+                .map(m -> (FamilyGroup) m.toUserGroup());
     }
 
     @Override

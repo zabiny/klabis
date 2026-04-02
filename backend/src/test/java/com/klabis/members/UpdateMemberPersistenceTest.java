@@ -9,6 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,6 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UpdateMemberPersistenceTest {
 
     private static final UUID TEST_MEMBER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private LastOwnershipChecker lastOwnershipChecker;
 
     @Autowired
     private MockMvc mockMvc;

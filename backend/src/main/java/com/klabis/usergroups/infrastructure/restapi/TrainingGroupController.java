@@ -111,7 +111,8 @@ class TrainingGroupController {
                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateAgeRange(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null, null)));
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupOwner(id, null, null)));
             }
             model.add(selfLink);
         });
@@ -193,6 +194,35 @@ class TrainingGroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/owners", consumes = "application/json")
+    @Operation(summary = "Add an owner to training group (owner only)")
+    ResponseEntity<Void> addTrainingGroupOwner(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Valid @RequestBody AddOwnerRequest request,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireTrainingAuthority(currentUser);
+
+        UserGroupId groupId = new UserGroupId(id);
+        groupManagementService.addOwnerToGroup(groupId, request.toMemberId(), currentUser.memberId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/owners/{memberId}")
+    @Operation(summary = "Remove an owner from training group (owner only)")
+    ResponseEntity<Void> removeTrainingGroupOwner(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Parameter(description = "Owner member UUID") @PathVariable UUID memberId,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireTrainingAuthority(currentUser);
+
+        UserGroupId groupId = new UserGroupId(id);
+        MemberId ownerToRemove = new MemberId(memberId);
+        groupManagementService.removeOwnerFromGroup(groupId, ownerToRemove, currentUser.memberId());
+        return ResponseEntity.noContent().build();
+    }
+
     private EntityModel<TrainingGroupSummaryResponse> buildTrainingGroupSummaryModel(TrainingGroup group) {
         UUID groupId = group.getId().uuid();
         TrainingGroupSummaryResponse response = new TrainingGroupSummaryResponse(
@@ -209,9 +239,15 @@ class TrainingGroupController {
         Set<MemberId> ownerIds = group.getOwners();
 
         List<EntityModel<OwnerResponse>> ownerModels = ownerIds.stream()
-                .map(id -> {
-                    EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(id.uuid()));
-                    model.add(Link.of("/api/members/" + id.uuid(), "member"));
+                .map(ownerId -> {
+                    EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
+                    model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
+                    if (isOwner && ownerIds.size() > 1) {
+                        klabisLinkTo(methodOn(TrainingGroupController.class).removeTrainingGroupOwner(groupUuid, ownerId.uuid(), null))
+                                .ifPresent(link -> model.add(link.withSelfRel()
+                                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class)
+                                                .removeTrainingGroupOwner(groupUuid, ownerId.uuid(), null)))));
+                    }
                     return model;
                 })
                 .toList();

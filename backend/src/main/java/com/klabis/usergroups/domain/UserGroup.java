@@ -63,6 +63,23 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         }
     }
 
+    public void addOwner(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        owners.add(memberId);
+    }
+
+    public void removeOwner(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        if (isLastOwner(memberId)) {
+            throw new CannotRemoveLastOwnerException(memberId);
+        }
+        owners.remove(memberId);
+    }
+
+    public boolean isLastOwner(MemberId memberId) {
+        return owners.size() == 1 && owners.contains(memberId);
+    }
+
     public boolean isOwner(MemberId memberId) {
         return owners.contains(memberId);
     }
@@ -86,6 +103,12 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
 
     public Set<GroupMembership> getMembers() {
         return Collections.unmodifiableSet(members);
+    }
+
+    public static final class CannotRemoveLastOwnerException extends BusinessRuleViolationException {
+        public CannotRemoveLastOwnerException(MemberId memberId) {
+            super("Member %s is the last owner of this group — designate a successor before removing".formatted(memberId));
+        }
     }
 
     static final class MemberAlreadyInGroupException extends BusinessRuleViolationException {

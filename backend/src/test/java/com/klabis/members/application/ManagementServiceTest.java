@@ -39,13 +39,16 @@ class ManagementServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private LastOwnershipChecker lastOwnershipChecker;
+
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, eventPublisher);
+        testedSubject = new ManagementService(memberRepository, userService, lastOwnershipChecker, eventPublisher);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()

@@ -46,19 +46,19 @@
 
 ## 5. Family Groups (Slice 4)
 
-- [ ] 5.1 Domain model: `FamilyGroup` concrete aggregate extending `UserGroup`
-- [ ] 5.2 Application service: create family group (requires MEMBERS:MANAGE), exclusive membership enforcement (max 1 family group per member), delete family group
-- [ ] 5.3 REST API: family group endpoints — POST create (from member selection), GET list, GET detail, DELETE (require MEMBERS:MANAGE)
+- [x] 5.1 Domain model: `FamilyGroup` concrete aggregate extending `UserGroup`
+- [x] 5.2 Application service: create family group (requires MEMBERS:MANAGE), exclusive membership enforcement (max 1 family group per member), delete family group
+- [x] 5.3 REST API: family group endpoints — POST create (from member selection), GET list, GET detail, DELETE (require MEMBERS:MANAGE)
 - [ ] 5.4 Frontend: create family group from members list page (select members, designate owner), family group info section on member profile page
-- [ ] 5.5 Tests: domain unit tests (exclusive membership), integration tests (authorization, creation from member list)
+- [x] 5.5 Tests: domain unit tests (exclusive membership), integration tests (authorization, creation from member list)
 
 ## 6. Owner Management + Members Integration (Slice 5)
 
-- [ ] 6.1 Domain logic: `addOwner(MemberId)`, `removeOwner(MemberId)` on `UserGroup` with last-owner validation (reject removal of sole owner)
-- [ ] 6.2 REST API: owner management endpoints — POST add owner, DELETE remove owner (HAL+FORMS affordances on group detail)
+- [x] 6.1 Domain logic: `addOwner(MemberId)`, `removeOwner(MemberId)` on `UserGroup` with last-owner validation (reject removal of sole owner)
+- [x] 6.2 REST API: owner management endpoints — POST add owner, DELETE remove owner (HAL+FORMS affordances on group detail)
 - [ ] 6.3 Frontend: owner management UI on group detail pages (add/remove owner, last-owner error display)
-- [ ] 6.4 Public query API: `UserGroups` interface at module root — `findGroupsWhereLastOwner(MemberId)` returning group type + group name
-- [ ] 6.5 Members integration: modify `ManagementService.suspendMember()` to call `UserGroups.findGroupsWhereLastOwner()` before suspension
-- [ ] 6.6 Backend: return warning response when suspending last owner (training: require successor, family/free: successor or dissolve)
+- [x] 6.4 Public query API: `UserGroups` interface at module root — `findGroupsWhereLastOwner(MemberId)` returning group type + group name
+- [x] 6.5 Members integration: modify `ManagementService.suspendMember()` to call `UserGroups.findGroupsWhereLastOwner()` before suspension
+- [x] 6.6 Backend: return warning response when suspending last owner (training: require successor, family/free: successor or dissolve)
 - [ ] 6.7 Frontend: suspension warning dialog showing affected groups with resolution options (designate successor / dissolve group)
-- [ ] 6.8 Tests: domain unit tests (last-owner invariant), integration tests (suspension with group ownership, query API), cross-module Spring Modulith test
+- [x] 6.8 Tests: domain unit tests (last-owner invariant), integration tests (suspension with group ownership, query API), cross-module Spring Modulith test

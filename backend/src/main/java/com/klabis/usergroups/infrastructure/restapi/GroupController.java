@@ -106,7 +106,8 @@ class GroupController {
             if (isOwner) {
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(GroupController.class).updateGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)));
+                        .andAffordances(klabisAfford(methodOn(GroupController.class).deleteGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(GroupController.class).addGroupOwner(id, null, null)));
                 if (group instanceof WithInvitations) {
                     selfLink = selfLink
                             .andAffordances(klabisAfford(methodOn(InvitationController.class).inviteMember(id, null, null)));
@@ -180,6 +181,35 @@ class GroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/owners", consumes = "application/json")
+    @Operation(summary = "Add an owner to group (owner only)")
+    ResponseEntity<Void> addGroupOwner(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Valid @RequestBody AddOwnerRequest request,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireMemberProfile(currentUser);
+
+        UserGroupId groupId = new UserGroupId(id);
+        groupManagementService.addOwnerToGroup(groupId, request.toMemberId(), currentUser.memberId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/owners/{memberId}")
+    @Operation(summary = "Remove an owner from group (owner only)")
+    ResponseEntity<Void> removeGroupOwner(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Parameter(description = "Owner member UUID") @PathVariable UUID memberId,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireMemberProfile(currentUser);
+
+        UserGroupId groupId = new UserGroupId(id);
+        MemberId ownerToRemove = new MemberId(memberId);
+        groupManagementService.removeOwnerFromGroup(groupId, ownerToRemove, currentUser.memberId());
+        return ResponseEntity.noContent().build();
+    }
+
     private EntityModel<GroupSummaryResponse> buildGroupSummaryModel(UserGroup group) {
         UUID groupId = group.getId().uuid();
         EntityModel<GroupSummaryResponse> model = EntityModel.of(toGroupSummaryResponse(group));
@@ -196,7 +226,7 @@ class GroupController {
         Set<MemberId> ownerIds = group.getOwners();
 
         List<EntityModel<OwnerResponse>> ownerModels = ownerIds.stream()
-                .map(id -> buildOwnerModel(id))
+                .map(id -> buildOwnerModel(id, groupUuid, requestingUserIsOwner, ownerIds.size()))
                 .toList();
 
         List<EntityModel<GroupMembershipResponse>> memberModels = group.getMembers().stream()
@@ -213,9 +243,15 @@ class GroupController {
         return new GroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels, pendingInvitationModels);
     }
 
-    private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId) {
+    private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {
         EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
         model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
+        if (requestingUserIsOwner && ownerCount > 1) {
+            klabisLinkTo(methodOn(GroupController.class).removeGroupOwner(groupUuid, ownerId.uuid(), null))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(GroupController.class)
+                                    .removeGroupOwner(groupUuid, ownerId.uuid(), null)))));
+        }
         return model;
     }
 

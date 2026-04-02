@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.Invitation;
@@ -143,6 +144,8 @@ class UserGroupMemento implements Persistable<UUID> {
                 AgeRange ageRange = new AgeRange(this.ageRangeMin, this.ageRangeMax);
                 yield TrainingGroup.reconstruct(groupId, this.name, ownerIds, memberships, ageRange, auditMetadata);
             }
+            case FamilyGroup.TYPE_DISCRIMINATOR ->
+                    FamilyGroup.reconstruct(groupId, this.name, ownerIds, memberships, auditMetadata);
             default -> throw new IllegalStateException("Unknown user group type: " + this.type);
         };
     }
@@ -163,6 +166,9 @@ class UserGroupMemento implements Persistable<UUID> {
         }
         if (group instanceof TrainingGroup) {
             return TrainingGroup.TYPE_DISCRIMINATOR;
+        }
+        if (group instanceof FamilyGroup) {
+            return FamilyGroup.TYPE_DISCRIMINATOR;
         }
         throw new IllegalArgumentException("Unknown UserGroup subtype: " + group.getClass().getSimpleName());
     }

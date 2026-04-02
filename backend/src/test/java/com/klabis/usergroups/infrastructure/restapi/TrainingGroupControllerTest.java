@@ -9,6 +9,7 @@ import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.domain.TrainingGroup;
 import org.junit.jupiter.api.DisplayName;
@@ -28,12 +29,13 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("TrainingGroupController API tests")
-@WebMvcTest(controllers = TrainingGroupController.class)
+@WebMvcTest(controllers = {TrainingGroupController.class, GroupsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class TrainingGroupControllerTest {
 
@@ -216,6 +218,52 @@ class TrainingGroupControllerTest {
                                     .content("""
                                             {"memberId": "%s"}
                                             """.formatted(UUID.randomUUID()))
+                    )
+                    .andExpect(status().is(422));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/training-groups/{id}/owners")
+    class AddTrainingGroupOwnerTests {
+
+        @Test
+        @DisplayName("should return 204 when owner adds another owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn204WhenAddingOwner() throws Exception {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    new com.klabis.usergroups.UserGroupId(GROUP_UUID), "Group", Set.of(new MemberId(UUID.fromString(MEMBER_ID))),
+                    Set.of(), new AgeRange(10, 18), null);
+            when(groupManagementService.addOwnerToGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            post("/api/training-groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(UUID.randomUUID()))
+                    )
+                    .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/training-groups/{id}/owners/{memberId}")
+    class RemoveTrainingGroupOwnerTests {
+
+        @Test
+        @DisplayName("should return 422 when removing last owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn422WhenRemovingLastOwner() throws Exception {
+            MemberId lastOwner = new MemberId(UUID.fromString(MEMBER_ID));
+            when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenThrow(new UserGroup.CannotRemoveLastOwnerException(lastOwner));
+
+            mockMvc.perform(
+                            delete("/api/training-groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().is(422));
         }

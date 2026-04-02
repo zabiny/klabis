@@ -3,6 +3,7 @@ package com.klabis.usergroups.application;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
@@ -26,6 +27,47 @@ class GroupManagementService implements GroupManagementPort {
     public UserGroup createFreeGroup(FreeGroup.CreateFreeGroup command) {
         FreeGroup group = FreeGroup.create(command);
         return userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public FamilyGroup createFamilyGroup(FamilyGroup.CreateFamilyGroup command) {
+        validateNoExistingFamilyGroup(command.owner());
+        command.initialMembers().forEach(this::validateNoExistingFamilyGroup);
+        FamilyGroup group = FamilyGroup.create(command);
+        return (FamilyGroup) userGroupRepository.save(group);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<FamilyGroup> listFamilyGroups() {
+        return userGroupRepository.findAllFamilyGroups();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public FamilyGroup getFamilyGroup(UserGroupId id) {
+        UserGroup group = loadGroup(id);
+        if (!(group instanceof FamilyGroup familyGroup)) {
+            throw new GroupNotFoundException(id);
+        }
+        return familyGroup;
+    }
+
+    @Transactional
+    @Override
+    public void deleteFamilyGroup(UserGroupId id) {
+        UserGroup group = loadGroup(id);
+        if (!(group instanceof FamilyGroup)) {
+            throw new GroupNotFoundException(id);
+        }
+        userGroupRepository.delete(id);
+    }
+
+    private void validateNoExistingFamilyGroup(MemberId memberId) {
+        userGroupRepository.findFamilyGroupByMember(memberId).ifPresent(existing -> {
+            throw new MemberAlreadyInFamilyGroupException(memberId);
+        });
     }
 
     @Transactional
@@ -120,6 +162,24 @@ class GroupManagementService implements GroupManagementPort {
         UserGroup group = loadGroup(id);
         requireOwner(group, requestingMember);
         group.removeMember(memberToRemove);
+        return userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public UserGroup addOwnerToGroup(UserGroupId id, MemberId newOwner, MemberId requestingMember) {
+        UserGroup group = loadGroup(id);
+        requireOwner(group, requestingMember);
+        group.addOwner(newOwner);
+        return userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public UserGroup removeOwnerFromGroup(UserGroupId id, MemberId ownerToRemove, MemberId requestingMember) {
+        UserGroup group = loadGroup(id);
+        requireOwner(group, requestingMember);
+        group.removeOwner(ownerToRemove);
         return userGroupRepository.save(group);
     }
 

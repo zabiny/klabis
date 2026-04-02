@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("GroupController API tests")
-@WebMvcTest(controllers = {GroupController.class, GroupsRootPostprocessor.class})
+@WebMvcTest(controllers = {GroupController.class, GroupsRootPostprocessor.class, GroupsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class GroupControllerTest {
 
@@ -667,6 +667,100 @@ class GroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/groups/{id}/owners")
+    class AddOwnerTests {
+
+        @Test
+        @DisplayName("should return 204 when owner adds another owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn204WhenAddingOwner() throws Exception {
+            UserGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(groupManagementService.addOwnerToGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            post("/api/groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(OTHER_MEMBER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 400 when body is missing memberId")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn400WhenMissingMemberId() throws Exception {
+            mockMvc.perform(
+                            post("/api/groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(
+                            post("/api/groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(OTHER_MEMBER_ID))
+                    )
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/groups/{id}/owners/{memberId}")
+    class RemoveOwnerTests {
+
+        @Test
+        @DisplayName("should return 204 when owner removes another owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn204WhenRemovingOwner() throws Exception {
+            UserGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 422 when attempting to remove last owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn422WhenRemovingLastOwner() throws Exception {
+            MemberId lastOwner = new MemberId(UUID.fromString(MEMBER_ID));
+            when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+                    .thenThrow(new UserGroup.CannotRemoveLastOwnerException(lastOwner));
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().is(422));
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(
+                            delete("/api/groups/{id}/owners/{memberId}", GROUP_UUID, UUID.randomUUID())
+                    )
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

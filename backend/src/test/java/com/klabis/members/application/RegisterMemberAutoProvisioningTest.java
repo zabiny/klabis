@@ -3,6 +3,7 @@ package com.klabis.members.application;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
+import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -30,6 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("Member Auto-Provisioning Integration Tests")
 @Import(TestApplicationConfiguration.class)
 class RegisterMemberAutoProvisioningTest {
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private LastOwnershipChecker lastOwnershipChecker;
 
     @Autowired
     private RegistrationPort memberService;

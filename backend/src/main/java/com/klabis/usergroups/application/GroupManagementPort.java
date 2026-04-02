@@ -3,6 +3,7 @@ package com.klabis.usergroups.application;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
@@ -14,6 +15,14 @@ import java.util.List;
 public interface GroupManagementPort {
 
     UserGroup createFreeGroup(FreeGroup.CreateFreeGroup command);
+
+    FamilyGroup createFamilyGroup(FamilyGroup.CreateFamilyGroup command);
+
+    List<FamilyGroup> listFamilyGroups();
+
+    FamilyGroup getFamilyGroup(UserGroupId id);
+
+    void deleteFamilyGroup(UserGroupId id);
 
     TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command);
 
@@ -34,4 +43,8 @@ public interface GroupManagementPort {
     UserGroup addMemberToGroup(UserGroupId id, MemberId memberToAdd, MemberId requestingMember);
 
     UserGroup removeMemberFromGroup(UserGroupId id, MemberId memberToRemove, MemberId requestingMember);
+
+    UserGroup addOwnerToGroup(UserGroupId id, MemberId newOwner, MemberId requestingMember);
+
+    UserGroup removeOwnerFromGroup(UserGroupId id, MemberId ownerToRemove, MemberId requestingMember);
 }

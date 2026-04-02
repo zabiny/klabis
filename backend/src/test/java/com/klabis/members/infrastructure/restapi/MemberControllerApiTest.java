@@ -8,8 +8,10 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberIsLastGroupOwnerException;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
@@ -65,7 +67,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  */
 @DisplayName("Member Controller API Tests")
-@WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
+@WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
@@ -1482,6 +1484,29 @@ class MemberControllerApiTest {
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.fieldErrors.note").value("Poznámka nesmí přesáhnout 500 znaků"));
+        }
+
+        @Test
+        @DisplayName("should return 409 with affected groups when member is last owner of a group")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WhenMemberIsLastGroupOwner() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            List<LastOwnershipChecker.OwnedGroupInfo> groups = List.of(
+                    new LastOwnershipChecker.OwnedGroupInfo("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FreeGroup")
+            );
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
+                    .thenThrow(new MemberIsLastGroupOwnerException(groups));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.affectedGroups").isArray())
+                    .andExpect(jsonPath("$.affectedGroups[0].groupName").value("Trail Runners"))
+                    .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FreeGroup"));
         }
     }
 
