@@ -1,10 +1,4 @@
-## Non-Goals
-
-- Automatic linking of family groups with existing GuardianInformation during member registration — family groups are created manually by admins in v1
-
 ## ADDED Requirements
-
-<!-- ===== COMMON GROUP SPECS ===== -->
 
 ### Requirement: Group Types
 
@@ -89,7 +83,6 @@ The system SHALL allow group owners to delete groups they own. Training group de
 - **WHEN** user with MEMBERS:MANAGE permission confirms family group deletion
 - **THEN** the system removes the group and all memberships
 
-<!-- ===== FREE GROUP SPECS ===== -->
 
 ### Requirement: Create Free Group
 
@@ -187,7 +180,6 @@ The system SHALL provide a detail page for each free group showing its name, own
 - **THEN** the system displays group name, owners, and members
 - **AND** the system does NOT display invitation management controls
 
-<!-- ===== TRAINING GROUP SPECS ===== -->
 
 ### Requirement: Create Training Group
 
@@ -278,7 +270,6 @@ The system SHALL display the member's training group information on their profil
 - **WHEN** member who does not belong to any training group views their profile page
 - **THEN** the training group section is not displayed or shows "not assigned"
 
-<!-- ===== FAMILY GROUP SPECS ===== -->
 
 ### Requirement: Create Family Group
 
