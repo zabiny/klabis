@@ -6,6 +6,8 @@ import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.FreeGroup;
+import com.klabis.usergroups.domain.GroupFilter;
+import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
@@ -44,7 +46,9 @@ class GroupManagementService implements GroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<FamilyGroup> listFamilyGroups() {
-        return userGroupRepository.findAllFamilyGroups();
+        return userGroupRepository.findAll(GroupFilter.byType(GroupType.FAMILY)).stream()
+                .map(g -> (FamilyGroup) g)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +72,7 @@ class GroupManagementService implements GroupManagementPort {
     }
 
     private void validateNoExistingFamilyGroup(MemberId memberId) {
-        userGroupRepository.findFamilyGroupByMember(memberId).ifPresent(existing -> {
+        userGroupRepository.findOne(GroupFilter.byTypeAndMemberOrOwner(GroupType.FAMILY, memberId)).ifPresent(existing -> {
             throw new MemberAlreadyInFamilyGroupException(memberId);
         });
     }
@@ -100,11 +104,14 @@ class GroupManagementService implements GroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<TrainingGroup> listTrainingGroups() {
-        return userGroupRepository.findAllTrainingGroups();
+        return userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING)).stream()
+                .map(g -> (TrainingGroup) g)
+                .toList();
     }
 
     private void validateNoOverlappingAgeRange(AgeRange ageRange, UserGroupId excludeId) {
-        userGroupRepository.findAllTrainingGroups().stream()
+        userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING)).stream()
+                .map(g -> (TrainingGroup) g)
                 .filter(g -> excludeId == null || !g.getId().equals(excludeId))
                 .filter(g -> g.getAgeRange().overlaps(ageRange))
                 .findFirst()
@@ -133,7 +140,7 @@ class GroupManagementService implements GroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<UserGroup> listGroupsForMember(MemberId memberId) {
-        return userGroupRepository.findAllByMember(memberId);
+        return userGroupRepository.findAll(GroupFilter.byMember(memberId));
     }
 
     @Transactional

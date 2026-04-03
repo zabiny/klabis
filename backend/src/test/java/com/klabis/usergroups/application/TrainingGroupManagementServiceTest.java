@@ -4,7 +4,9 @@ import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.GroupFilter;
 import com.klabis.usergroups.domain.GroupMembership;
+import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +61,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
             TrainingGroup expected = TrainingGroup.create(command);
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(anyInt(), anyInt())).thenReturn(List.of());
             when(userGroupRepository.save(any())).thenReturn(expected);
 
@@ -78,7 +80,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
 
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
                     .thenReturn(List.of(matchingMember1, matchingMember2));
             when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -101,7 +103,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
 
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
             when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -118,7 +120,7 @@ class TrainingGroupManagementServiceTest {
             AgeRange existingRange = new AgeRange(10, 18);
             TrainingGroup existingGroup = TrainingGroup.reconstruct(
                     GROUP_ID, "Existing Group", Set.of(OWNER), Set.of(), existingRange, null);
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of(existingGroup));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(existingGroup));
 
             AgeRange overlappingRange = new AgeRange(15, 25);
             TrainingGroup.CreateTrainingGroup command =
@@ -140,7 +142,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup group = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(OWNER), Set.of(), currentRange, null);
             when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of(group));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group));
             when(userGroupRepository.save(any())).thenReturn(group);
 
             AgeRange newRange = new AgeRange(10, 16);
@@ -163,7 +165,7 @@ class TrainingGroupManagementServiceTest {
                     otherGroupId, "Seniors", Set.of(OWNER), Set.of(), otherRange, null);
 
             when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of(groupToUpdate, otherGroup));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(groupToUpdate, otherGroup));
 
             AgeRange overlappingRange = new AgeRange(18, 25);
 
@@ -184,7 +186,7 @@ class TrainingGroupManagementServiceTest {
             UserGroupId group2Id = new UserGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
             TrainingGroup group2 = TrainingGroup.reconstruct(
                     group2Id, "Seniors", Set.of(OWNER), Set.of(), new AgeRange(19, 30), null);
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of(group1, group2));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group1, group2));
 
             List<TrainingGroup> result = service.listTrainingGroups();
 
@@ -194,7 +196,7 @@ class TrainingGroupManagementServiceTest {
         @Test
         @DisplayName("should return empty list when no training groups exist")
         void shouldReturnEmptyListWhenNoGroups() {
-            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
 
             List<TrainingGroup> result = service.listTrainingGroups();
 

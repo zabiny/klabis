@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @CleanupTestData
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "classpath:/db/cleanup-user-groups.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'TEST001', 'Owner', 'Member', '2000-01-01', 'CZ', 'MALE', 'owner@example.com', '+420111111111', 'Street 1', 'City', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'TEST002', 'Extra', 'Member', '2000-01-01', 'CZ', 'MALE', 'extra@example.com', '+420222222222', 'Street 2', 'City', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"
@@ -111,7 +112,7 @@ class UserGroupPersistenceTest {
     }
 
     @Nested
-    @DisplayName("findAllByMember()")
+    @DisplayName("findAll(GroupFilter.byMember())")
     class FindAllByMember {
 
         @Test
@@ -128,7 +129,7 @@ class UserGroupPersistenceTest {
             FreeGroup group3 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Gamma", OWNER));
             userGroupRepository.save(group3);
 
-            List<UserGroup> result = userGroupRepository.findAllByMember(EXTRA_MEMBER);
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byMember(EXTRA_MEMBER));
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(UserGroup::getName)
@@ -138,7 +139,7 @@ class UserGroupPersistenceTest {
         @Test
         @DisplayName("should return empty list when member belongs to no groups")
         void shouldReturnEmptyListForMemberWithNoGroups() {
-            List<UserGroup> result = userGroupRepository.findAllByMember(EXTRA_MEMBER);
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byMember(EXTRA_MEMBER));
 
             assertThat(result).isEmpty();
         }
@@ -149,7 +150,7 @@ class UserGroupPersistenceTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Owner's Group", OWNER));
             userGroupRepository.save(group);
 
-            List<UserGroup> result = userGroupRepository.findAllByMember(OWNER);
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byMember(OWNER));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Owner's Group");
@@ -312,8 +313,7 @@ class UserGroupPersistenceTest {
             FreeGroup group2 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Without Invite", OWNER));
             userGroupRepository.save(group2);
 
-            GroupFilter filter = new GroupFilter(null, null, null, null, EXTRA_MEMBER);
-            List<UserGroup> result = userGroupRepository.findAll(filter);
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byPendingInvitation(EXTRA_MEMBER));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Group With Invite");
@@ -326,8 +326,7 @@ class UserGroupPersistenceTest {
             addMemberViaInvitation(group, EXTRA_MEMBER);
             userGroupRepository.save(group);
 
-            GroupFilter filter = new GroupFilter(null, null, null, null, EXTRA_MEMBER);
-            List<UserGroup> result = userGroupRepository.findAll(filter);
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byPendingInvitation(EXTRA_MEMBER));
 
             assertThat(result).isEmpty();
         }

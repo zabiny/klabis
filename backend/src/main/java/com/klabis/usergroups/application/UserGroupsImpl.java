@@ -6,7 +6,13 @@ import com.klabis.members.MemberId;
 import com.klabis.members.TrainingGroupProvider;
 import com.klabis.usergroups.UserGroupOwnershipInfo;
 import com.klabis.usergroups.UserGroups;
-import com.klabis.usergroups.domain.*;
+import com.klabis.usergroups.domain.FamilyGroup;
+import com.klabis.usergroups.domain.GroupFilter;
+import com.klabis.usergroups.domain.GroupType;
+import com.klabis.members.LastOwnershipChecker.OwnedGroupInfo;
+import com.klabis.usergroups.domain.TrainingGroup;
+import com.klabis.usergroups.domain.UserGroup;
+import com.klabis.usergroups.domain.UserGroupRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,25 +53,21 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
     @Transactional(readOnly = true)
     @Override
     public Optional<TrainingGroupProvider.TrainingGroupData> findTrainingGroupForMember(MemberId memberId) {
-        return userGroupRepository.findAllByMember(memberId).stream()
-                .filter(group -> group instanceof TrainingGroup)
+        return userGroupRepository.findOne(GroupFilter.byTypeAndMember(GroupType.TRAINING, memberId))
                 .map(group -> (TrainingGroup) group)
-                .findFirst()
                 .map(group -> new TrainingGroupProvider.TrainingGroupData(group.getId().uuid()));
     }
 
     @Transactional(readOnly = true)
     @Override
     public Optional<FamilyGroupProvider.FamilyGroupData> findFamilyGroupForMember(MemberId memberId) {
-        return userGroupRepository.findAllByMember(memberId).stream()
-                .filter(group -> group instanceof FamilyGroup)
+        return userGroupRepository.findOne(GroupFilter.byTypeAndMember(GroupType.FAMILY, memberId))
                 .map(group -> (FamilyGroup) group)
-                .findFirst()
                 .map(group -> new FamilyGroupProvider.FamilyGroupData(group.getId().uuid()));
     }
 
     private List<UserGroup> findSolelyOwnedGroups(MemberId memberId) {
-        return userGroupRepository.findAllByOwner(memberId).stream()
+        return userGroupRepository.findAll(GroupFilter.byOwner(memberId)).stream()
                 .filter(group -> group.isLastOwner(memberId))
                 .toList();
     }

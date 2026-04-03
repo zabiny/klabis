@@ -5,6 +5,8 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
+import com.klabis.usergroups.domain.GroupFilter;
+import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
@@ -81,7 +83,7 @@ class MemberCreatedListenerIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
-        List<UserGroup> groups = userGroupRepository.findAllByMember(NEW_MEMBER_ID);
+        List<UserGroup> groups = userGroupRepository.findAll(GroupFilter.byMember(NEW_MEMBER_ID));
         assertThat(groups).hasSize(1);
         assertThat(groups.get(0)).isInstanceOf(TrainingGroup.class);
         assertThat(groups.get(0).getName()).isEqualTo("Juniors 10-18");
@@ -107,7 +109,7 @@ class MemberCreatedListenerIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
-        List<UserGroup> groups = userGroupRepository.findAllByMember(adultMemberId);
+        List<UserGroup> groups = userGroupRepository.findAll(GroupFilter.byMember(adultMemberId));
         assertThat(groups).isEmpty();
     }
 }

@@ -2,6 +2,8 @@ package com.klabis.usergroups.infrastructure.listeners;
 
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.usergroups.MemberAssignedToTrainingGroupEvent;
+import com.klabis.usergroups.domain.GroupFilter;
+import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -31,7 +33,8 @@ public class MemberCreatedListener {
     void onMemberCreated(MemberCreatedEvent event) {
         log.debug("Processing MemberCreatedEvent for memberId={}", event.memberId());
 
-        userGroupRepository.findAllTrainingGroups().stream()
+        userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING)).stream()
+                .map(group -> (TrainingGroup) group)
                 .filter(group -> group.matchesByAge(event.dateOfBirth()))
                 .findFirst()
                 .ifPresent(group -> assignMemberToGroup(group, event));

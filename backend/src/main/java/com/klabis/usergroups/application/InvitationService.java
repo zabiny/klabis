@@ -2,6 +2,7 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.GroupFilter;
 import com.klabis.usergroups.domain.InvitationId;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
@@ -51,7 +52,7 @@ class InvitationService implements InvitationPort {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends UserGroup & WithInvitations> List<T> getGroupsWithPendingInvitations(MemberId memberId) {
-        return userGroupRepository.findAllWithPendingInvitationForMember(memberId).stream()
+        return userGroupRepository.findAll(GroupFilter.byPendingInvitation(memberId)).stream()
                 .filter(WithInvitations.class::isInstance)
                 .map(g -> (T) g)
                 .toList();

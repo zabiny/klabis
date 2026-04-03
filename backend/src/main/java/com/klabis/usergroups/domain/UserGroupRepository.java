@@ -1,6 +1,5 @@
 package com.klabis.usergroups.domain;
 
-import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import org.jmolecules.ddd.annotation.Repository;
 
@@ -17,18 +16,6 @@ public interface UserGroupRepository {
     List<UserGroup> findAll(GroupFilter filter);
 
     Optional<UserGroup> findOne(GroupFilter filter);
-
-    List<UserGroup> findAllByMember(MemberId memberId);
-
-    List<UserGroup> findAllByOwner(MemberId memberId);
-
-    List<UserGroup> findAllWithPendingInvitationForMember(MemberId memberId);
-
-    List<TrainingGroup> findAllTrainingGroups();
-
-    List<FamilyGroup> findAllFamilyGroups();
-
-    Optional<FamilyGroup> findFamilyGroupByMember(MemberId memberId);
 
     void delete(UserGroupId id);
 }
