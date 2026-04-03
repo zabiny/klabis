@@ -1,152 +1,140 @@
-# events Specification
+# Events Specification
 
 ## Purpose
 
-This specification defines requirements for club event management. It encompasses creating, updating, and managing
-events through their lifecycle (draft, active, cancelled, finished), including automatic completion after the event date
-passes.
+Covers the creation, management, and lifecycle of club events. Defines how event managers create and update events, how events transition through statuses (draft, active, finished, cancelled), how members discover events in the list, and how registration deadlines control when members can sign up.
 
 ## Requirements
 
 ### Requirement: Registration Deadline
 
-The system SHALL support an optional registration deadline for events. When set, the registration deadline determines the last date when members can register for or unregister from the event.
+The system SHALL support an optional registration deadline for events. When set, it determines the last date when members can register or unregister.
 
-#### Scenario: Create event with registration deadline
+#### Scenario: Event created with a registration deadline
 
-- **WHEN** authorized user creates an event with registrationDeadline set to a future date
-- **THEN** the event is created with the specified registration deadline
+- **WHEN** event manager creates an event and sets a registration deadline
+- **THEN** the event is saved with the specified deadline
 
-#### Scenario: Create event without registration deadline
+#### Scenario: Event created without a registration deadline
 
-- **WHEN** authorized user creates an event without registrationDeadline
-- **THEN** the event is created without a registration deadline
-- **AND** registration availability is determined solely by event status and event date
-
-#### Scenario: Update event registration deadline
-
-- **WHEN** authorized user updates registrationDeadline on a DRAFT or ACTIVE event
-- **THEN** the registration deadline is updated
+- **WHEN** event manager creates an event without setting a registration deadline
+- **THEN** registration availability is determined solely by the event status and event date
 
 #### Scenario: Registration deadline must be before or on event date
 
-- **WHEN** authorized user sets registrationDeadline to a date after the event date
-- **THEN** the system rejects the request with a validation error
+- **WHEN** event manager sets a registration deadline to a date after the event date
+- **THEN** the form shows an error that the deadline must be on or before the event date
 
-#### Scenario: Registrations closed after deadline passes
+#### Scenario: Registrations are closed after deadline passes
 
-- **WHEN** an event has registrationDeadline set
-- **AND** the current date is after the registration deadline
-- **THEN** registrations are closed regardless of event status or event date
+- **WHEN** the current date is past the registration deadline
+- **THEN** the registration action is no longer available for that event
 
 #### Scenario: Registrations open before deadline
 
-- **WHEN** an event is ACTIVE with a future event date
-- **AND** the event has registrationDeadline set to a future date
-- **THEN** registrations are open
+- **WHEN** an event is active with a future event date and a future registration deadline
+- **THEN** the registration action is available for members
 
-#### Scenario: No deadline means original behavior
+#### Scenario: No deadline means default open/close behavior
 
-- **WHEN** an event has no registrationDeadline set
-- **THEN** registrations are open when the event is ACTIVE and the event date is in the future
+- **WHEN** an event has no registration deadline
+- **THEN** registrations are open when the event is active and the event date is in the future
 
 ### Requirement: ORIS Import Includes Registration Deadline
 
-The system SHALL import the registration deadline from ORIS when importing an event. The primary entry deadline from ORIS (EntryDate1) SHALL be mapped to the event's registrationDeadline.
+The system SHALL import the registration deadline from ORIS (using EntryDate1 as the primary entry deadline).
 
-#### Scenario: Import event with registration deadline from ORIS
+#### Scenario: Import event with a registration deadline from ORIS
 
-- **WHEN** authorized user imports an event from ORIS
-- **AND** the ORIS event has a primary entry deadline set
-- **THEN** the imported event includes registrationDeadline derived from the ORIS entry deadline date
+- **WHEN** event manager imports an event from ORIS that has a primary entry deadline
+- **THEN** the imported event shows the registration deadline derived from the ORIS entry deadline
 
-#### Scenario: Import event without registration deadline from ORIS
+#### Scenario: Import event without a registration deadline from ORIS
 
-- **WHEN** authorized user imports an event from ORIS
-- **AND** the ORIS event has no primary entry deadline
-- **THEN** the imported event has no registrationDeadline set
+- **WHEN** event manager imports an event from ORIS that has no primary entry deadline
+- **THEN** the imported event has no registration deadline set
 
 ### Requirement: Events Table Display
 
-The application SHALL display the events list as a table with columns providing key information at a glance, enabling users to see event details, navigate to external resources, and register for events without opening the detail page.
+The system SHALL display the events list as a table with key columns. The status column is only shown to users with EVENTS:MANAGE permission.
 
-#### Scenario: Events table columns for regular user
+#### Scenario: Regular member views events table
 
 - **WHEN** a club member views the events list page
-- **THEN** the table displays columns: date, name, location, organizer, website link, registration deadline, coordinator name, and registration action
+- **THEN** the table shows columns: date, name, location, organizer, website link, registration deadline, coordinator name, and registration action
 
-#### Scenario: Events table columns for manager
+#### Scenario: Manager views events table with status column
 
-- **WHEN** a user with EVENTS:MANAGE permission views the events list page
-- **THEN** the table displays all columns visible to regular users plus an additional status column
+- **WHEN** user with EVENTS:MANAGE permission views the events list page
+- **THEN** the table additionally shows the event status column
 
-#### Scenario: Website link column displays clickable icon
+#### Scenario: Website link shown as clickable icon
 
 - **WHEN** an event in the table has an external website URL
-- **THEN** the website column displays a clickable icon that opens the URL in a new tab
+- **THEN** the website column shows a clickable icon that opens the URL in a new tab
 
-#### Scenario: Website link column empty when no URL
+#### Scenario: Website link column empty when no URL set
 
 - **WHEN** an event in the table has no external website URL
 - **THEN** the website column is empty for that row
 
-#### Scenario: Registration deadline column displays formatted date
+#### Scenario: Registration deadline shown as formatted date
 
 - **WHEN** an event in the table has a registration deadline set
-- **THEN** the registration deadline column displays the deadline as a formatted date
+- **THEN** the deadline column displays the date in readable format
 
 #### Scenario: Registration deadline column empty when not set
 
 - **WHEN** an event in the table has no registration deadline
-- **THEN** the registration deadline column is empty for that row
+- **THEN** the deadline column is empty for that row
 
-#### Scenario: Coordinator column displays name with link
+#### Scenario: Coordinator shown as clickable link
 
 - **WHEN** an event in the table has a coordinator assigned
-- **THEN** the coordinator column displays the coordinator's full name as a clickable link to the member detail page
+- **THEN** the coordinator column shows the coordinator's full name as a link to their member detail page
 
 #### Scenario: Coordinator column empty when not assigned
 
 - **WHEN** an event in the table has no coordinator assigned
 - **THEN** the coordinator column is empty for that row
 
-#### Scenario: Action column shows register button
+#### Scenario: Register button shown for open unregistered event
 
-- **WHEN** an event in the table has open registrations
-- **AND** the current user is not registered for the event
-- **THEN** the action column displays a register button
+- **WHEN** an event has open registrations
+- **AND** the current user is not yet registered
+- **THEN** the action column shows a register button
 
-#### Scenario: Action column shows unregister button
+#### Scenario: Unregister button shown for registered event
 
-- **WHEN** an event in the table has open registrations
-- **AND** the current user is already registered for the event
-- **THEN** the action column displays an unregister button
+- **WHEN** an event has open registrations
+- **AND** the current user is already registered
+- **THEN** the action column shows an unregister button
 
 #### Scenario: Action column empty for closed registrations
 
-- **WHEN** an event in the table does not have open registrations
+- **WHEN** an event does not have open registrations
 - **THEN** the action column is empty for that row
 
-#### Scenario: Status column conditionally visible
+#### Scenario: Status column hidden when not returned by API
 
 - **WHEN** the API response does not include the status field (field-level security)
 - **THEN** the status column is not displayed in the table
 
-### Requirement: Event Detail Page Displays Registration Deadline
+### Requirement: Event Detail Page
 
-The application SHALL display the registration deadline on the event detail page when it is set, and allow managers to edit it inline.
+The application SHALL display the event detail page with registration deadline (when set) and allow managers to edit it inline.
 
 #### Scenario: Event detail shows registration deadline
 
-- **WHEN** a user views the detail page for an event with a registration deadline set
-- **THEN** the event information section displays the registration deadline as a formatted date
+- **WHEN** user views the detail page for an event with a registration deadline set
+- **THEN** the event information section shows the registration deadline as a formatted date
 
 #### Scenario: Event detail hides registration deadline when not set
 
-- **WHEN** a user views the detail page for an event without a registration deadline
+- **WHEN** user views the detail page for an event without a registration deadline
 - **THEN** no registration deadline row is shown in the event information section
 
-#### Scenario: Event detail inline edit includes registration deadline
+#### Scenario: Inline edit includes registration deadline field
 
 - **WHEN** a manager edits an event inline on the detail page
 - **THEN** the registration deadline field is editable as a date picker
@@ -158,447 +146,204 @@ The application SHALL display the registration deadline on the event detail page
 
 ### Requirement: Create Event
 
-The system SHALL allow authorized users to create new events with required and optional information.
+The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, location, organizer code. Optional: website URL, coordinator, registration deadline.
 
-**Required fields:**
+#### Scenario: Manager creates an event with all required fields
 
-- Event name (max 200 characters)
-- Event date (date format YYYY-MM-DD)
-- Location description (max 200 characters)
-- Organizer code (max 10 characters, e.g., "ZBM", "ABS")
+- **WHEN** user with EVENTS:MANAGE permission submits the event creation form with all required fields
+- **THEN** the event is created in DRAFT status
+- **AND** appears in the event list
 
-**Optional fields:**
+#### Scenario: Manager creates an event with optional fields
 
-- Website URL (validated http/https URL)
-- Event coordinator (reference to a club member)
-- Registration deadline (date format YYYY-MM-DD, must be on or before event date)
+- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (website URL, coordinator, registration deadline) and submits
+- **THEN** the event is created with all provided data
 
-#### Scenario: Create event with all required fields
+#### Scenario: Create event button not shown without permission
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events with name, eventDate, location, and organizer
-- **THEN** the system creates an event in DRAFT status
-- **AND** returns HTTP 201 Created with Location header
-- **AND** response includes HAL+FORMS links (self, publish, edit)
+- **WHEN** user without EVENTS:MANAGE permission views the events list
+- **THEN** no create event button is shown
 
-#### Scenario: Create event with optional fields
+#### Scenario: Form shows validation errors for invalid data
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events with all required fields plus websiteUrl, eventCoordinator, and registrationDeadline
-- **THEN** the system creates an event with all provided data
-- **AND** eventCoordinator references an existing club member
+- **WHEN** user submits the event form with missing required fields or invalid formats
+- **THEN** the form shows inline validation errors for each issue
 
-#### Scenario: Create event without permission
+#### Scenario: Invalid website URL shows error
 
-- **WHEN** authenticated user without EVENTS:MANAGE permission attempts to create an event
-- **THEN** HTTP 403 Forbidden is returned
-- **AND** response includes error details with problem+json media type
+- **WHEN** user enters a website URL that is not a valid http/https URL
+- **THEN** the form shows an error that the URL must be a valid web address
 
-#### Scenario: Create event with invalid data
+#### Scenario: Non-existent coordinator shows error
 
-- **WHEN** user submits event with missing required fields or invalid format
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** response includes validation errors for each invalid field
+- **WHEN** user references a coordinator member that does not exist
+- **THEN** the form shows an error that the coordinator was not found
 
-#### Scenario: Create event with invalid website URL
+#### Scenario: Registration deadline after event date shows error
 
-- **WHEN** user submits event with websiteUrl that is not a valid http/https URL
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates websiteUrl must be a valid URL
-
-#### Scenario: Create event with non-existent coordinator
-
-- **WHEN** user submits event with eventCoordinator that does not reference an existing member
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates the coordinator member was not found
-
-#### Scenario: Create event with registration deadline after event date
-
-- **WHEN** user submits event with registrationDeadline after eventDate
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates registration deadline must be on or before event date
+- **WHEN** user sets a registration deadline after the event date
+- **THEN** the form shows an error that the deadline must be on or before the event date
 
 ### Requirement: Update Event
 
-The system SHALL allow authorized users to update event information while the event is in DRAFT or ACTIVE status.
+The system SHALL allow users with EVENTS:MANAGE permission to update events in DRAFT or ACTIVE status.
 
-#### Scenario: Update event in DRAFT status
+#### Scenario: Manager updates a DRAFT event
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits PATCH /api/events/{id} for an event in DRAFT status
-- **THEN** the system updates the provided fields (including registrationDeadline)
-- **AND** returns HTTP 200 OK with updated event representation
-- **AND** response includes HAL+FORMS links
-- **AND** EventUpdatedEvent is published with full Event data (eventId, name, eventDate, location, organizer, websiteUrl)
+- **WHEN** user with EVENTS:MANAGE permission edits and saves a DRAFT event
+- **THEN** the event is updated with the new values
 
-#### Scenario: Update event in ACTIVE status
+#### Scenario: Manager updates an ACTIVE event
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits PATCH /api/events/{id} for an event in ACTIVE status
-- **THEN** the system updates the provided fields (including registrationDeadline)
-- **AND** returns HTTP 200 OK with updated event representation
-- **AND** response includes HAL+FORMS links
-- **AND** EventUpdatedEvent is published with full Event data (eventId, name, eventDate, location, organizer, websiteUrl)
+- **WHEN** user with EVENTS:MANAGE permission edits and saves an ACTIVE event
+- **THEN** the event is updated with the new values
 
-#### Scenario: Update event in FINISHED status
+#### Scenario: Finished event cannot be edited
 
-- **WHEN** authenticated user attempts to update an event in FINISHED status
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates finished events cannot be modified
+- **WHEN** user attempts to edit a FINISHED event
+- **THEN** the system shows an error that finished events cannot be modified
 
-#### Scenario: Update event in CANCELLED status
+#### Scenario: Cancelled event cannot be edited
 
-- **WHEN** authenticated user attempts to update an event in CANCELLED status
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates cancelled events cannot be modified
+- **WHEN** user attempts to edit a CANCELLED event
+- **THEN** the system shows an error that cancelled events cannot be modified
 
-#### Scenario: Update event without permission
+#### Scenario: Update action not shown without permission
 
-- **WHEN** authenticated user without EVENTS:MANAGE permission attempts to update an event
-- **THEN** HTTP 403 Forbidden is returned
-
-#### Scenario: EventUpdatedEvent includes all updatable fields
-
-- **WHEN** Event is updated with name, eventDate, location, organizer, or websiteUrl
-- **THEN** EventUpdatedEvent payload includes:
-  - eventId: Event identifier
-  - name: Updated event name
-  - eventDate: Updated event date
-  - location: Updated event location
-  - organizer: Updated event organizer
-  - websiteUrl: Updated website URL (may be null)
-- **AND** Calendar module can use this event to update linked CalendarItem without querying Events repository
+- **WHEN** user without EVENTS:MANAGE permission views an event
+- **THEN** no edit action is available
 
 ### Requirement: Event Status Lifecycle
 
-The system SHALL manage event status transitions according to the defined lifecycle: DRAFT → ACTIVE → FINISHED or
-CANCELLED.
+The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED or CANCELLED.
 
-**Allowed transitions:**
+#### Scenario: Manager publishes a DRAFT event
 
-- DRAFT → ACTIVE (publish)
-- DRAFT → CANCELLED (cancel)
-- ACTIVE → CANCELLED (cancel)
-- ACTIVE → FINISHED (manual finish or automatic after event date)
+- **WHEN** user with EVENTS:MANAGE permission publishes an event in DRAFT status
+- **THEN** the event becomes ACTIVE
+- **AND** members can now register for it
 
-#### Scenario: Publish event (DRAFT to ACTIVE)
+#### Scenario: Manager cancels a DRAFT event
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events/{id}/publish for an event in DRAFT
-  status
-- **THEN** the system changes status to ACTIVE
-- **AND** returns HTTP 200 OK with updated event representation
-- **AND** members can now register for the event
+- **WHEN** user with EVENTS:MANAGE permission cancels a DRAFT event
+- **THEN** the event becomes CANCELLED
 
-#### Scenario: Cancel draft event
+#### Scenario: Manager cancels an ACTIVE event
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events/{id}/cancel for an event in DRAFT
-  status
-- **THEN** the system changes status to CANCELLED
-- **AND** returns HTTP 200 OK with updated event representation
+- **WHEN** user with EVENTS:MANAGE permission cancels an ACTIVE event
+- **THEN** the event becomes CANCELLED
+- **AND** existing registrations are preserved for records
 
-#### Scenario: Cancel active event
+#### Scenario: Manager manually finishes an ACTIVE event
 
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events/{id}/cancel for an event in ACTIVE
-  status
-- **THEN** the system changes status to CANCELLED
-- **AND** returns HTTP 200 OK with updated event representation
-- **AND** existing registrations are preserved for record-keeping
+- **WHEN** user with EVENTS:MANAGE permission marks an ACTIVE event as finished
+- **THEN** the event becomes FINISHED
+- **AND** existing registrations are preserved for records
 
-#### Scenario: Manually finish active event
-
-- **WHEN** authenticated user with EVENTS:MANAGE permission submits POST /api/events/{id}/finish for an event in ACTIVE
-  status
-- **THEN** the system changes status to FINISHED
-- **AND** returns HTTP 200 OK with updated event representation
-- **AND** existing registrations are preserved for record-keeping
-
-#### Scenario: Invalid status transition
+#### Scenario: Invalid status transition shows error
 
 - **WHEN** user attempts an invalid status transition (e.g., FINISHED → ACTIVE)
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates the transition is not allowed
+- **THEN** the system shows an error that the transition is not allowed
 
 ### Requirement: Automatic Event Completion
 
-The system SHALL automatically transition ACTIVE events to FINISHED status after the event date has passed.
+The system SHALL automatically transition ACTIVE events to FINISHED status after the event date has passed. DRAFT events are not automatically finished.
 
-#### Scenario: Automatic transition to FINISHED
+#### Scenario: Past active event is automatically finished
 
-- **GIVEN** an event is in ACTIVE status
-- **AND** the event date has passed (current date > eventDate)
-- **WHEN** the automatic completion process runs
-- **THEN** the event status changes to FINISHED
+- **WHEN** the event date has passed for an ACTIVE event
+- **THEN** the system automatically changes the event status to FINISHED
 - **AND** existing registrations are preserved
 
-#### Scenario: DRAFT events not auto-finished
+#### Scenario: DRAFT event past event date is not auto-finished
 
-- **GIVEN** an event is in DRAFT status
-- **AND** the event date has passed
-- **WHEN** the automatic completion process runs
-- **THEN** the event status remains DRAFT (not automatically finished)
+- **WHEN** the event date has passed for a DRAFT event
+- **THEN** the event remains in DRAFT status
 
 ### Requirement: List Events
 
-The system SHALL provide an API endpoint to retrieve a paginated list of events with filtering capabilities. DRAFT events SHALL only be included in results for users with `EVENTS:MANAGE` permission.
+The system SHALL show a paginated event list. DRAFT events are only visible to users with EVENTS:MANAGE permission. The list can be filtered by status, organizer, date range, and coordinator.
 
-#### Scenario: List all events with default pagination
+#### Scenario: Regular user does not see DRAFT events
 
-- **WHEN** authenticated user makes GET request to /api/events without parameters
-- **THEN** the system returns HTTP 200 OK
-- **AND** response contains first page of events (page 0, size 10)
-- **AND** response includes page metadata (size, totalElements, totalPages, number)
-- **AND** response includes HATEOAS pagination links (self, first, last, next if applicable)
+- **WHEN** user without EVENTS:MANAGE permission views the event list
+- **THEN** no DRAFT events are shown
 
-#### Scenario: Event summary includes extended fields
+#### Scenario: Manager sees all events including DRAFT
 
-- **WHEN** authenticated user lists events
-- **THEN** each event summary includes: name, eventDate, location, organizer, websiteUrl, registrationDeadline
-- **AND** each event summary includes status only for users with EVENTS:MANAGE permission
+- **WHEN** user with EVENTS:MANAGE permission views the event list
+- **THEN** events in all statuses including DRAFT are shown
 
-#### Scenario: Event summary includes coordinator link
+#### Scenario: User can filter events by status
 
-- **WHEN** an event in the list has an event coordinator assigned
-- **THEN** the event summary includes a `coordinator` HATEOAS link pointing to the coordinator's member resource
+- **WHEN** user applies a status filter (e.g., ACTIVE)
+- **THEN** only events with that status are shown
 
-#### Scenario: Event summary includes registration affordance
+#### Scenario: Regular user filtering by DRAFT sees no results
 
-- **WHEN** an event in the list has open registrations
-- **AND** the current user is a member who is not registered for the event
-- **THEN** the event summary self link includes a `registerForEvent` affordance
+- **WHEN** user without EVENTS:MANAGE permission filters events by DRAFT status
+- **THEN** the list is empty and no DRAFT events are disclosed
 
-#### Scenario: Event summary includes unregistration affordance
+#### Scenario: User can filter events by organizer
 
-- **WHEN** an event in the list has open registrations
-- **AND** the current user is a member who is already registered for the event
-- **THEN** the event summary self link includes an `unregisterFromEvent` affordance
+- **WHEN** user filters the event list by organizer code
+- **THEN** only events from that organizer are shown
 
-#### Scenario: Event summary without registration affordance for closed registrations
+#### Scenario: User can filter events by date range
 
-- **WHEN** an event in the list does not have open registrations (past date, past deadline, or non-ACTIVE status)
-- **THEN** the event summary self link does NOT include registration or unregistration affordances
+- **WHEN** user filters the event list by a date range
+- **THEN** only events within that date range are shown
 
-#### Scenario: List events excludes DRAFT for regular users
+#### Scenario: User can filter events by coordinator
 
-- **WHEN** authenticated user without `EVENTS:MANAGE` permission makes GET request to /api/events
-- **THEN** the response SHALL NOT contain events in DRAFT status
-- **AND** page metadata reflects the filtered count (excluding DRAFT events)
+- **WHEN** user filters the event list by a coordinator member
+- **THEN** only events where that member is coordinator are shown
 
-#### Scenario: List events includes DRAFT for managers
+#### Scenario: Event status visible only to manager in list
 
-- **WHEN** authenticated user with `EVENTS:MANAGE` permission makes GET request to /api/events
-- **THEN** the response SHALL include events in all statuses including DRAFT
-
-#### Scenario: Filter events by DRAFT status requires EVENTS:MANAGE
-
-- **WHEN** authenticated user without `EVENTS:MANAGE` permission makes GET request to /api/events?status=DRAFT
-- **THEN** the system returns HTTP 200 OK with empty results
-- **AND** no DRAFT events are disclosed
-
-#### Scenario: Filter events by DRAFT status with permission
-
-- **WHEN** authenticated user with `EVENTS:MANAGE` permission makes GET request to /api/events?status=DRAFT
-- **THEN** the system returns events in DRAFT status
-
-#### Scenario: Filter events by status
-
-- **WHEN** authenticated user makes GET request to /api/events?status=ACTIVE
-- **THEN** the system returns only events with ACTIVE status
-
-#### Scenario: Filter events by organizer
-
-- **WHEN** authenticated user makes GET request to /api/events?organizer=ZBM
-- **THEN** the system returns only events organized by "ZBM"
-
-#### Scenario: Filter events by date range
-
-- **WHEN** authenticated user makes GET request to /api/events?from=2026-03-01&to=2026-03-31
-- **THEN** the system returns only events with eventDate within the specified range
-
-#### Scenario: Filter events by coordinator
-
-- **WHEN** authenticated user makes GET request to /api/events?eventCoordinator={memberId}
-- **THEN** the system returns only events where the specified member is coordinator
-
-#### Scenario: Unauthenticated access to event list
-
-- **WHEN** unauthenticated user attempts to access /api/events
-- **THEN** HTTP 401 Unauthorized is returned
+- **WHEN** user without EVENTS:MANAGE permission views the event list
+- **THEN** the event status is not shown
 
 ### Requirement: Get Event Detail
 
-The system SHALL provide an API endpoint to retrieve detailed information about a specific event. DRAFT events SHALL only be accessible to users with `EVENTS:MANAGE` permission.
+The system SHALL display complete event detail. DRAFT events are only visible to users with EVENTS:MANAGE permission.
 
-#### Scenario: Get existing event
+#### Scenario: User views event detail
 
-- **WHEN** authenticated user makes GET request to /api/events/{id}
-- **THEN** the system returns HTTP 200 OK
-- **AND** response includes all event fields (name, eventDate, location, organizer, status, websiteUrl, eventCoordinator, registrationDeadline)
-- **AND** response includes HAL+FORMS links based on event status and user permissions
+- **WHEN** authenticated user navigates to an event detail page
+- **THEN** all event information is displayed (name, date, location, organizer, website, coordinator, registration deadline)
 
-#### Scenario: Get DRAFT event without permission
+#### Scenario: Regular user cannot access DRAFT event detail
 
-- **WHEN** authenticated user without `EVENTS:MANAGE` permission makes GET request to /api/events/{id} for an event in DRAFT status
-- **THEN** HTTP 404 Not Found is returned
-- **AND** the system SHALL NOT disclose that the event exists
+- **WHEN** user without EVENTS:MANAGE permission navigates to a DRAFT event's detail page
+- **THEN** the page shows not found
 
-#### Scenario: Get DRAFT event with permission
+#### Scenario: Manager views DRAFT event detail
 
-- **WHEN** authenticated user with `EVENTS:MANAGE` permission makes GET request to /api/events/{id} for an event in DRAFT status
-- **THEN** the system returns HTTP 200 OK
-- **AND** response includes all event fields and HAL+FORMS links
+- **WHEN** user with EVENTS:MANAGE permission navigates to a DRAFT event's detail page
+- **THEN** the full event detail is displayed
 
-#### Scenario: Get event includes appropriate links for DRAFT
+#### Scenario: DRAFT event actions available to manager
 
-- **WHEN** user with EVENTS:MANAGE permission views event in DRAFT status
-- **THEN** response includes links: self, edit, publish, cancel, registrations
+- **WHEN** user with EVENTS:MANAGE permission views a DRAFT event
+- **THEN** available actions are: edit, publish, cancel
 
-#### Scenario: Get event includes appropriate links for ACTIVE
+#### Scenario: ACTIVE event actions available to manager
 
-- **WHEN** user with EVENTS:MANAGE permission views event in ACTIVE status
-- **THEN** response includes links: self, edit, cancel, finish, registrations
+- **WHEN** user with EVENTS:MANAGE permission views an ACTIVE event
+- **THEN** available actions are: edit, cancel, finish
 
-#### Scenario: Get event includes appropriate links for FINISHED/CANCELLED
+#### Scenario: FINISHED or CANCELLED event has no management actions
 
-- **WHEN** user views event in FINISHED or CANCELLED status
-- **THEN** response includes links: self, registrations
-- **AND** edit, publish, cancel, finish links are NOT included
+- **WHEN** user views a FINISHED or CANCELLED event
+- **THEN** no edit, publish, cancel, or finish actions are available
 
-#### Scenario: Get non-existent event
+#### Scenario: Event detail shows registration deadline
 
-- **WHEN** authenticated user makes GET request to /api/events/{id} with non-existent ID
-- **THEN** HTTP 404 Not Found is returned
-- **AND** response includes error details with problem+json media type
-
-#### Scenario: Event detail displays registration deadline
-
-- **WHEN** authenticated user views event detail for an event with registrationDeadline set
-- **THEN** the response includes registrationDeadline field with the deadline date
+- **WHEN** user views event detail for an event with a registration deadline
+- **THEN** the registration deadline is displayed
 
 #### Scenario: Event detail without registration deadline
 
-- **WHEN** authenticated user views event detail for an event without registrationDeadline
-- **THEN** the registrationDeadline field is null
-
-### Requirement: EventId Value Object
-
-The system SHALL use EventId as a unique identifier for events. The identifier wraps a UUID and provides type safety.
-
-#### Scenario: EventId wraps UUID value
-
-- **WHEN** an EventId is created with a valid UUID
-- **THEN** the identifier is successfully created
-- **AND** the identifier is immutable
-- **AND** the identifier provides equality based on the wrapped UUID
-
-#### Scenario: EventId prevents null UUID
-
-- **WHEN** an EventId is created with null UUID
-- **THEN** validation fails with error indicating UUID cannot be null
-
-### Requirement: WebsiteUrl Value Object
-
-The system SHALL validate website URLs to ensure they are valid http or https URLs.
-
-#### Scenario: Valid https URL accepted
-
-- **WHEN** websiteUrl "https://example.com/event" is provided
-- **THEN** the WebsiteUrl is created successfully
-
-#### Scenario: Valid http URL accepted
-
-- **WHEN** websiteUrl "http://example.com/event" is provided
-- **THEN** the WebsiteUrl is created successfully
-
-#### Scenario: Invalid URL rejected
-
-- **WHEN** websiteUrl "not-a-url" is provided
-- **THEN** validation fails with error indicating URL format is invalid
-
-#### Scenario: Non-http/https URL rejected
-
-- **WHEN** websiteUrl "ftp://example.com/file" is provided
-- **THEN** validation fails with error indicating only http/https URLs are allowed
-
-#### Scenario: Blank URL rejected
-
-- **WHEN** websiteUrl is blank or empty
-- **THEN** validation fails with error indicating URL is required (when field is provided)
-
-### Requirement: Event Response Format
-
-Event API responses SHALL follow HAL+FORMS specification with proper data serialization.
-
-#### Scenario: Event dates serialized as ISO-8601
-
-- **WHEN** an event with eventDate 2026-03-15 is returned
-- **THEN** the eventDate field is serialized as "2026-03-15" (ISO-8601 format)
-
-#### Scenario: Registration deadline serialized as ISO-8601
-
-- **WHEN** an event with registrationDeadline 2026-03-10 is returned
-- **THEN** the registrationDeadline field is serialized as "2026-03-10" (ISO-8601 format)
-
-#### Scenario: Event response includes coordinator details
-
-- **WHEN** an event with eventCoordinator is returned
-- **THEN** response includes coordinator's name (firstName, lastName)
-- **AND** response includes link to coordinator's member resource
-
-#### Scenario: Event response uses HAL+FORMS media type
-
-- **WHEN** any event endpoint returns a response
-- **THEN** Content-Type is application/prs.hal-forms+json
-- **AND** response includes _links object for hypermedia navigation
-
-#### Scenario: Status field visibility based on permission
-
-- **WHEN** an event is returned to a user without EVENTS:MANAGE permission
-- **THEN** the status field is NOT included in the response
-
-#### Scenario: Status field visible to managers
-
-- **WHEN** an event is returned to a user with EVENTS:MANAGE permission
-- **THEN** the status field IS included in the response
-
-### Requirement: Event Registration with Type-Safe Identifiers
-
-The system SHALL use type-specific identifiers in event registration operations to prevent confusion between different entity types.
-
-#### Scenario: Register for event uses type-specific identifiers
-
-- **WHEN** authenticated member registers for an event via POST /api/events/{eventId}/registrations
-- **THEN** the registration service uses event-specific and member-specific identifiers
-- **AND** the system prevents accidental use of incorrect identifier types
-
-#### Scenario: Unregister from event uses type-specific identifiers
-
-- **WHEN** authenticated member cancels event registration
-- **THEN** the service uses event-specific and member-specific identifiers
-
-#### Scenario: Registration exceptions provide type-safe context
-
-- **WHEN** throwing exceptions for registration issues (duplicate, not found)
-- **THEN** exceptions contain type-specific identifiers for both member and event
-- **AND** error context clearly identifies the entities involved
-
-### Requirement: Type-Safe Event Identification
-
-The system SHALL enforce type-safe event identification to prevent confusion between event identifiers and other entity identifiers.
-
-#### Scenario: Event services require event-specific identifier
-
-- **WHEN** calling event management services (update, publish, cancel, finish, query)
-- **THEN** services require an event-specific identifier
-- **AND** the system prevents accidental use of member or user identifiers where event identifier is required
-
-#### Scenario: Event domain uses event identifier type
-
-- **WHEN** accessing an Event entity's identifier
-- **THEN** the identifier is of event-specific type
-- **AND** implicit conversion to other identifier types is not allowed
-
-### Requirement: Event Identifier Consistency
-
-The system SHALL maintain consistent type-safe identifier usage across all event-related operations.
-
-#### Scenario: Event operations use consistent identifier type
-
-- **WHEN** performing any operation on an event (registration, management, querying)
-- **THEN** all services and methods use the same event-specific identifier type
-- **AND** no generic identifier types are used in the domain or service layer
+- **WHEN** user views event detail for an event without a registration deadline
+- **THEN** no registration deadline row is shown

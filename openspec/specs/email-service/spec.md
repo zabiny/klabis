@@ -1,106 +1,65 @@
-# email-service Specification
+# Email Service Specification
 
 ## Purpose
 
-This specification defines requirements for the email service that delivers transactional emails to Klabis members. The
-service handles asynchronous email delivery for member registration welcome emails and password setup notifications,
-ensuring reliable communication without blocking the main application flow.
+Covers the email service that delivers transactional emails to club members. Handles welcome emails on member registration and password setup notifications, with graceful failure handling and configurable SMTP settings.
 
 ## Requirements
 
 ### Requirement: Email Templates
 
-The system SHALL use template engine for rendering email content with both HTML and plain-text versions.
+The system SHALL use a template engine to render email content in both HTML and plain-text versions. Templates support variable substitution (member name, registration number, activation URL, club name).
 
-The system SHALL:
+#### Scenario: Welcome email contains correct member information
 
-- Provide HTML template for rich email clients
-- Provide plain-text template for text-only clients
-- Support variable substitution (firstName, lastName, registrationNumber, activationUrl, clubName)
-- Externalize templates (not hardcoded in code)
+- **WHEN** a welcome email is generated for member "Jan Novák" with registration number "ZBM2501"
+- **THEN** the email body includes the member's first name, last name, and registration number
+- **AND** the email includes a valid activation URL
 
-#### Scenario: Email rendered with correct variables
-
-- **GIVEN** a member "Jan Novák" with registration number "ZBM2501"
-- **WHEN** a welcome email is generated
-- **THEN** the email body contains "Jan"
-- **AND** the email body contains "Novák"
-- **AND** the email body contains "ZBM2501"
-- **AND** the email body contains a valid activation URL
-
-#### Scenario: Email sent as multipart
+#### Scenario: Welcome email contains both HTML and plain-text parts
 
 - **WHEN** a welcome email is sent
-- **THEN** the email contains both HTML and plain-text parts
+- **THEN** the email contains both an HTML version (for rich email clients) and a plain-text version (for text-only clients)
 
 ### Requirement: Event-Driven Email Sending
 
-Email sending SHALL be triggered by domain events using event-driven architecture with transactional safety.
+Email sending SHALL be triggered by domain events after the transaction commits. Email sending is asynchronous and does not block the API response.
 
-The system SHALL:
+#### Scenario: Email is sent after successful member registration
 
-- Listen for member created events via transactional event listener
-- Process events only after successful transaction commit
-- Execute email sending asynchronously
-- Not block the API response
+- **WHEN** a new member is registered and the transaction commits
+- **THEN** the welcome email is sent asynchronously
+- **AND** the registration response is returned immediately without waiting for email delivery
 
-#### Scenario: Email sent after transaction commits
+#### Scenario: Email is not sent when registration transaction rolls back
 
-- **GIVEN** a member registration request
-- **WHEN** the member is persisted successfully
-- **AND** the transaction commits
-- **THEN** the event handler is invoked
-- **AND** the welcome email is sent asynchronously
-
-#### Scenario: No email sent on transaction rollback
-
-- **GIVEN** a member registration request
-- **WHEN** the transaction is rolled back due to an error
+- **WHEN** the member registration transaction is rolled back due to an error
 - **THEN** no welcome email is sent
 
 ### Requirement: Graceful Failure Handling
 
-Email failures SHALL NOT affect the member registration process.
+Email failures SHALL NOT cause the member registration to fail. Failures are logged without exposing PII.
 
-The system SHALL:
+#### Scenario: SMTP unavailable does not fail the registration
 
-- Log SMTP failures but not throw exceptions to caller
-- Log invalid email addresses and skip sending
-- Fall back to plain-text on template rendering errors
-- Log all failures with registration number only (no PII)
-
-#### Scenario: SMTP server unavailable
-
-- **GIVEN** a user with MEMBERS:CREATE authority
-- **WHEN** they register a member
+- **WHEN** admin registers a member
 - **AND** the SMTP server is unavailable
 - **THEN** the member is created successfully
 - **AND** the email failure is logged
-- **AND** no error is returned to the user
+- **AND** no error is shown to the user
 
-#### Scenario: Template rendering error
+#### Scenario: Template rendering error falls back to plain text
 
-- **GIVEN** a template rendering error occurs
-- **WHEN** attempting to send a welcome email
-- **THEN** the system falls back to plain-text email
+- **WHEN** an HTML template rendering error occurs during email generation
+- **THEN** the system sends the plain-text version instead
 - **AND** the error is logged
 
 ### Requirement: Email Configuration
 
-Email settings SHALL be configurable via system configuration.
+Email settings SHALL be configurable via system configuration (SMTP host, port, credentials, from address, activation token validity, base URL for activation links).
 
-The system SHALL support configuration of:
+#### Scenario: Email service uses configured SMTP settings
 
-- SMTP host, port, and credentials
-- From email address
-- Activation token validity period
-- Base URL for activation links
-
-#### Scenario: Custom email configuration
-
-- **GIVEN** custom email properties in configuration files
-- **WHEN** the application starts
-- **THEN** the email service uses the configured SMTP settings
+- **WHEN** the application starts with custom email configuration
+- **THEN** the email service uses the configured SMTP host, port, and credentials
 - **AND** emails are sent from the configured from address
-
-

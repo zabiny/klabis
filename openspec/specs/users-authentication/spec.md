@@ -1,537 +1,221 @@
-# users-authentication Specification
+# Users Authentication Specification
 
 ## Purpose
 
-This specification defines requirements for OpenID Connect Core 1.0 authentication layer on top of OAuth2. OpenID
-Connect enables:
-
-- ID tokens for user identity verification (authentication vs authorization)
-- Standard discovery mechanism for clients to find provider configuration
-- UserInfo endpoint for retrieving user profile information with membership status detection (`is_member` claim)
-- RP-initiated logout for single sign-out scenarios
-- Federation with external identity providers (future requirement)
-
-OpenID Connect builds on the existing OAuth2 authorization infrastructure, adding identity layer capabilities without
-breaking existing OAuth2 flows. Clients can opt-in to OIDC features by requesting the `openid` scope. The UserInfo
-endpoint determines membership status by checking for the existence of a Member aggregate matching the authenticated
-user's username.
+Covers the OpenID Connect authentication layer on top of OAuth2. Defines OIDC discovery, ID token generation, UserInfo endpoint with membership status detection, RP-initiated logout, account activation tokens, and membership detection.
 
 ## Requirements
 
 ### Requirement: OpenID Connect Discovery
 
-The system SHALL provide an OIDC provider configuration endpoint at `/.well-known/openid-configuration` that returns
-metadata about the OpenID Connect provider.
-
-The discovery endpoint MUST be accessible via HTTP GET without authentication and MUST return JSON metadata containing:
-
-- `issuer`: The issuer identifier for the authorization server
-- `authorization_endpoint`: URL of the OAuth2 authorization endpoint
-- `token_endpoint`: URL of the OAuth2 token endpoint
-- `jwks_uri`: URL of the JSON Web Key Set endpoint
-- `userinfo_endpoint`: URL of the UserInfo endpoint
-- `end_session_endpoint`: URL of the logout endpoint
-- `response_types_supported`: Array of supported OAuth2 response types (e.g., "code", "id_token")
-- `subject_types_supported`: Array of supported subject types (e.g., "public")
-- `id_token_signing_alg_values_supported`: Array of supported JWS signing algorithms (e.g., "RS256")
-- `scopes_supported`: Array of supported OAuth2/OIDC scopes
+The system SHALL provide an OIDC provider configuration endpoint that is publicly accessible without authentication, allowing clients to discover all provider endpoints and capabilities.
 
 #### Scenario: Client discovers OIDC provider configuration
 
-- **WHEN** client sends GET request to `/.well-known/openid-configuration`
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes all required OIDC metadata fields
-- **AND** `issuer` matches the authorization server's issuer URL
-- **AND** all endpoint URLs are absolute HTTPS URLs
-- **AND** response is cacheable with appropriate cache headers
+- **WHEN** client (or frontend application) requests the OIDC discovery endpoint
+- **THEN** the system returns provider metadata including all required endpoint URLs
+- **AND** the endpoint is publicly accessible without authentication
 
-#### Scenario: Discovery endpoint is publicly accessible
+#### Scenario: Discovery endpoint is accessible to unauthenticated clients
 
-- **WHEN** unauthenticated client sends GET request to `/.well-known/openid-configuration`
-- **THEN** system returns HTTP 200 OK without requiring authentication
-- **AND** no WWW-Authenticate header is present
-- **AND** response includes provider configuration metadata
+- **WHEN** an unauthenticated client requests the discovery endpoint
+- **THEN** the system returns the configuration without requiring a login
 
-#### Scenario: Discovery endpoint returns CORS headers for frontend
+#### Scenario: Discovery endpoint allows CORS access for the frontend
 
-- **WHEN** frontend from configured origin sends OPTIONS preflight request to `/.well-known/openid-configuration`
-- **THEN** system returns CORS headers allowing access from configured frontend origins
-- **AND** subsequent GET request from frontend succeeds
-
----
+- **WHEN** the frontend application sends a request to the discovery endpoint
+- **THEN** the system includes CORS headers that allow the frontend origin to access the response
 
 ### Requirement: ID Token Generation
 
-The system SHALL generate ID tokens when clients request authentication with the `openid` scope. ID tokens MUST be JSON
-Web Tokens (JWT) signed with RS256 algorithm and MUST contain standard OIDC claims.
+The system SHALL generate ID tokens (signed JWT, RS256) when clients request authentication with the `openid` scope.
 
-ID tokens MUST include the following claims:
+#### Scenario: Authorization code flow with openid scope returns ID token
 
-- `iss`: Issuer identifier (authorization server URL)
-- `sub`: Subject identifier (user's unique identifier, using registrationNumber)
-- `aud`: Audience (client_id of the OAuth2 client)
-- `exp`: Expiration time (numeric date)
-- `iat`: Issued at time (numeric date)
-- `auth_time`: Time when authentication occurred (numeric date)
-- `nonce`: Nonce value from authorization request (if provided)
-
-ID tokens MAY include additional claims:
-
-- `registrationNumber`: User's registration number
-
-ID tokens MUST have a limited lifetime (typically 5-15 minutes) and MUST be stored in the `oauth2_authorization` table
-for record-keeping.
-
-#### Scenario: Authorization code flow returns ID token
-
-- **GIVEN** client requests authorization with `response_type=code` and `scope=openid`
-- **AND** user successfully authenticates
-- **WHEN** client exchanges authorization code for tokens
-- **THEN** system returns access token, refresh token, and ID token
-- **AND** ID token is signed JWT with RS256
-- **AND** ID token contains standard OIDC claims (iss, sub, aud, exp, iat, auth_time)
-- **AND** ID token `sub` claim equals user's registrationNumber
-- **AND** ID token includes `registrationNumber` claim
-- **AND** ID token does NOT include firstName or lastName (available via UserInfo endpoint)
-
-#### Scenario: Implicit flow returns ID token directly
-
-- **GIVEN** client requests authorization with `response_type=id_token` and `scope=openid`
-- **AND** user successfully authenticates
-- **WHEN** authorization response is returned to client via redirect
-- **THEN** response includes ID token in URL fragment
-- **AND** ID token contains standard OIDC claims
-- **AND** ID token is validated by client using JWKS endpoint
-
-#### Scenario: ID token expires and is rejected
-
-- **GIVEN** client has expired ID token (exp < current time)
-- **WHEN** client attempts to use expired ID token for authentication
-- **THEN** ID token validation fails
-- **AND** system returns authentication error indicating token expired
-- **AND** client must re-authenticate to obtain new ID token
-
-#### Scenario: ID token stored in database after generation
-
-- **GIVEN** user authenticates with `openid` scope
-- **WHEN** ID token is generated
-- **THEN** ID token value is stored in `oauth2_authorization.oidc_id_token_value`
-- **AND** ID token issued time is stored in `oauth2_authorization.oidc_id_token_issued_at`
-- **AND** ID token expiration time is stored in `oauth2_authorization.oidc_id_token_expires_at`
-- **AND** ID token metadata is stored in `oauth2_authorization.oidc_id_token_metadata`
+- **WHEN** user authenticates using authorization code flow with `openid` scope
+- **THEN** the token response includes an access token, refresh token, and ID token
+- **AND** the ID token identifies the user by their registration number
+- **AND** the ID token does not include first name or last name (available via UserInfo endpoint)
 
 #### Scenario: Authorization without openid scope does not return ID token
 
-- **GIVEN** client requests authorization with `scope=profile` (no `openid`)
-- **WHEN** client exchanges authorization code for tokens
-- **THEN** system returns access token and refresh token only
-- **AND** no ID token is generated or returned
+- **WHEN** client authenticates without requesting the `openid` scope
+- **THEN** the token response includes only access token and refresh token
 
----
+#### Scenario: Expired ID token is rejected
+
+- **WHEN** user attempts to authenticate using an expired ID token
+- **THEN** the system shows an authentication error indicating the token has expired
+- **AND** the user must re-authenticate
 
 ### Requirement: UserInfo Endpoint
 
-The system SHALL provide a UserInfo endpoint at `/oauth2/userinfo` that returns claims about the authenticated user. The
-endpoint MUST accept valid access tokens and return user profile information as JSON with scope-based claim filtering.
+The system SHALL provide a UserInfo endpoint that returns profile claims based on the scopes included in the access token.
 
-The UserInfo endpoint MUST:
+#### Scenario: UserInfo with only openid scope returns sub claim
 
-- Require authentication via valid access token (Bearer token)
-- Return claims for the authenticated user (identified by access token `sub` claim)
-- Support both JSON and JWT response formats
-- Return HTTP 401 Unauthorized for invalid or expired access tokens
-- Return HTTP 403 Forbidden if access token lacks required scopes
-- Filter claims based on authorized scopes (scope-based access control)
-- Omit claims when underlying data is unavailable (null-safe)
+- **WHEN** authenticated user requests the UserInfo endpoint with only `openid` scope
+- **THEN** only the `sub` claim is returned
 
-Scope-to-Claims Mapping:
+#### Scenario: UserInfo with profile scope returns profile claims for a member
 
-| Scope | Claims Returned | Condition |
-|-------|----------------|-----------|
-| `openid` | `sub` | Always (required) |
-| `profile` | `user_name`, `is_member`, `given_name`, `family_name`, `updated_at` | Always when profile scope present |
+- **WHEN** authenticated member requests the UserInfo endpoint with `openid` and `profile` scopes
+- **THEN** the response includes: sub, user_name, is_member (true), given_name, family_name, updated_at
 
-OIDC Standard UserInfo claims:
+#### Scenario: UserInfo with profile scope for admin without member profile
 
-- `sub`: Subject identifier (required, matches ID token) - always returned with `openid` scope
-- `given_name`: User's given name - returned with `profile` scope when Member entity exists
-- `family_name`: User's family name - returned with `profile` scope when Member entity exists
-- `updated_at`: Profile last modification timestamp (Instant) - returned with `profile` scope when Member entity exists
-- `email`: User's email address - returned with `email` scope when available
-- `email_verified`: Boolean indicating email verification status - returned with `email` scope (currently always `false`)
+- **WHEN** admin without a member profile requests the UserInfo endpoint with `profile` scope
+- **THEN** the response includes: sub, user_name, is_member (false)
+- **AND** given_name and family_name are not included
 
-Custom domain-specific claims:
+#### Scenario: UserInfo with email scope returns email claims
 
-- `user_name`: User's username (registration number or custom username) - returned with `profile` scope
-- `is_member`: Boolean indicating whether user has an associated Member profile - returned with `profile` scope
+- **WHEN** authenticated user requests the UserInfo endpoint with `openid` and `email` scopes
+- **AND** the user has a member profile with an email address
+- **THEN** the response includes: sub, email, email_verified
 
-#### Scenario: UserInfo endpoint returns only sub claim with openid scope
+#### Scenario: UserInfo omits email claims when member has no email
 
-- **GIVEN** user has valid access token
-- **AND** access token includes only `openid` scope
-- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes only `sub` claim matching user's username
-- **AND** response does NOT include `user_name` claim
-- **AND** response does NOT include `is_member` claim
-- **AND** response does NOT include profile claims (given_name, family_name)
-- **AND** response does NOT include email claims (email, email_verified)
+- **WHEN** authenticated user requests the UserInfo endpoint with `email` scope
+- **AND** the user's member profile has no email (e.g., minor with guardian only)
+- **THEN** email claims are not included in the response
+- **AND** no error is returned
 
-#### Scenario: UserInfo endpoint returns profile claims for member with profile scope
+#### Scenario: UserInfo with expired access token returns error
 
-- **GIVEN** user has valid access token
-- **AND** access token includes `openid` and `profile` scopes
-- **AND** user has associated Member entity
-- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes `sub` claim matching user's username
-- **AND** response includes `user_name` claim (user's username)
-- **AND** response includes `is_member` claim with value `true`
-- **AND** response includes `given_name` claim (user's first name)
-- **AND** response includes `family_name` claim (user's last name)
-- **AND** response includes `updated_at` claim (profile last modification timestamp)
-- **AND** response does NOT include email claims without `email` scope
+- **WHEN** client sends an expired access token to the UserInfo endpoint
+- **THEN** the system returns an authentication error
 
-#### Scenario: UserInfo endpoint returns profile claims for admin with profile scope
+#### Scenario: UserInfo without access token returns error
 
-- **GIVEN** admin user has valid access token
-- **AND** access token includes `openid` and `profile` scopes
-- **AND** admin user has NO associated Member entity
-- **WHEN** admin sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes `sub` claim (admin username)
-- **AND** response includes `user_name` claim (admin username)
-- **AND** response includes `is_member` claim with value `false`
-- **AND** response does NOT include `given_name` claim (no Member entity exists)
-- **AND** response does NOT include `family_name` claim (no Member entity exists)
-- **AND** response does NOT include `updated_at` claim (no Member entity exists)
-- **AND** response does NOT include email claims (no Member entity exists)
+- **WHEN** client sends a request to the UserInfo endpoint without an Authorization header
+- **THEN** the system returns an authentication error
 
-#### Scenario: UserInfo endpoint returns email claims with email scope
+#### Scenario: UserInfo without openid scope returns permission denied
 
-- **GIVEN** user has valid access token
-- **AND** access token includes `openid` and `email` scopes
-- **AND** user has associated Member entity with email address
-- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes `sub` claim
-- **AND** response includes `email` claim (user's email address)
-- **AND** response includes `email_verified` claim (currently `false`)
-- **AND** response does NOT include profile claims without `profile` scope
-
-#### Scenario: UserInfo endpoint combines profile and email scopes for member
-
-- **GIVEN** user has valid access token
-- **AND** access token includes `openid`, `profile`, and `email` scopes
-- **AND** user has associated Member entity with email address
-- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes all claims: `sub`, `user_name`, `is_member` (true), `given_name`, `family_name`, `updated_at`, `email`, `email_verified`
-
-#### Scenario: UserInfo endpoint omits email claims when Member has no email
-
-- **GIVEN** user has valid access token
-- **AND** access token includes `openid`, `profile`, and `email` scopes
-- **AND** user has associated Member entity WITHOUT email address (e.g., minor with guardian)
-- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
-- **THEN** system returns HTTP 200 OK with Content-Type: application/json
-- **AND** response includes profile claims: `sub`, `user_name`, `is_member` (true), `given_name`, `family_name`, `updated_at`
-- **AND** response does NOT include email claims (email is null)
-- **AND** no error is returned (omitting claims is OIDC-compliant)
-
-#### Scenario: UserInfo endpoint rejects expired access token
-
-- **GIVEN** user has expired access token
-- **WHEN** client sends GET request to `/oauth2/userinfo` with expired access token
-- **THEN** system returns HTTP 401 Unauthorized
-- **AND** response indicates token is expired or invalid
-- **AND** no user claims are returned
-
-#### Scenario: UserInfo endpoint rejects request without access token
-
-- **WHEN** client sends GET request to `/oauth2/userinfo` without Authorization header
-- **THEN** system returns HTTP 401 Unauthorized
-- **AND** response includes WWW-Authenticate: Bearer header
-
-#### Scenario: UserInfo endpoint respects token scope
-
-- **GIVEN** user has valid access token without `openid` scope
-- **WHEN** client sends GET request to `/oauth2/userinfo` with access token
-- **THEN** system returns HTTP 403 Forbidden
-- **AND** response indicates insufficient scope
-
----
+- **WHEN** client sends a valid access token without the `openid` scope to UserInfo
+- **THEN** the system returns a permission denied error
 
 ### Requirement: RP-Initiated Logout
 
-The system SHALL provide a logout endpoint at `/oauth2/logout` that enables relying parties to initiate user logout and
-terminate the user's session.
+The system SHALL provide a logout endpoint that terminates the user's session and redirects to a registered post-logout URI.
 
-The logout endpoint MUST:
+#### Scenario: User logs out and is redirected
 
-- Accept POST requests with logout parameters
-- Validate the post-logout redirect URI against registered client URIs
-- Accept optional `state` parameter to maintain session state
-- Accept optional `post_logout_redirect_uri` parameter for redirect after logout
-- Terminate the user's session and invalidate tokens
-- Redirect to post-logout redirect URI upon successful logout
+- **WHEN** user initiates logout with a registered post-logout redirect URI
+- **THEN** the session is terminated and refresh tokens are invalidated
+- **AND** the user is redirected to the post-logout URI
 
-Logout parameters:
+#### Scenario: Logout with unregistered redirect URI is rejected
 
-- `post_logout_redirect_uri`: URI to redirect after logout (optional, must match client registration)
-- `state`: Opaque value to maintain state between request and callback (optional, recommended)
-- `id_token_hint`: ID token previously issued to the client (optional, recommended for verification)
-
-#### Scenario: RP-initiated logout terminates session
-
-- **GIVEN** user has active session with valid tokens
-- **AND** client has registered post-logout redirect URI
-- **WHEN** client sends POST request to `/oauth2/logout` with valid post_logout_redirect_uri
-- **THEN** system terminates user's session
-- **AND** system invalidates refresh tokens
-- **AND** system redirects to post_logout_redirect_uri
-- **AND** session cleanup is logged for audit
-
-#### Scenario: Logout validates post-logout redirect URI
-
-- **GIVEN** client has registered post-logout redirect URIs: `https://client.com/callback`
-- **WHEN** client sends POST request to `/oauth2/logout` with `post_logout_redirect_uri=https://evil.com`
-- **THEN** system rejects logout request
-- **AND** system returns HTTP 400 Bad Request
-- **AND** response indicates invalid redirect URI
-- **AND** user session remains active
+- **WHEN** client initiates logout with a redirect URI not registered for the client
+- **THEN** the logout is rejected and the user's session remains active
 
 #### Scenario: Logout with state parameter returns state
 
-- **GIVEN** client has registered post-logout redirect URI
-- **WHEN** client sends POST request to `/oauth2/logout` with `post_logout_redirect_uri` and `state=abc123`
-- **THEN** system terminates session and redirects
-- **AND** redirect URL includes `state=abc123` parameter
-- **AND** client can verify state matches original value
+- **WHEN** client initiates logout with a state parameter
+- **THEN** the state value is included in the redirect URL after logout
 
-#### Scenario: Logout without redirect URI returns default
+#### Scenario: Logout without redirect URI shows confirmation
 
-- **GIVEN** user has active session
-- **WHEN** client sends POST request to `/oauth2/logout` without post_logout_redirect_uri
-- **THEN** system terminates user's session
-- **AND** system returns HTTP 200 OK with logout confirmation
-- **AND** response indicates successful logout
-
-#### Scenario: Logout with id_token_hint verifies user
-
-- **GIVEN** client has valid ID token for user
-- **WHEN** client sends POST request to `/oauth2/logout` with `id_token_hint=<id_token>`
-- **THEN** system validates ID token signature and claims
-- **AND** system identifies user from ID token `sub` claim
-- **AND** system terminates user's session
-- **AND** system redirects to post_logout_redirect_uri
-
----
+- **WHEN** user initiates logout without a post-logout redirect URI
+- **THEN** the session is terminated and a logout confirmation is shown
 
 ### Requirement: OpenID Scope Support
 
-The system SHALL support the `openid` scope as the indicator that the client intends to use OpenID Connect features.
-When `openid` scope is requested, the system MUST enable OIDC-specific behavior (ID token generation, UserInfo access,
-etc.).
-
-The `openid` scope:
-
-- MUST be included in all OIDC requests
-- Triggers ID token generation in token responses
-- Enables access to UserInfo endpoint
-- Can be combined with other scopes (e.g., `openid profile email`)
-- MUST be registered in OAuth2 client scope configuration
-
-Additional OIDC standard scopes:
-
-- `profile`: Requests access to user profile claims (given_name, family_name, registrationNumber, updated_at)
-- `email`: Requests access to user email claims (email, email_verified)
+The system SHALL support the `openid` scope to enable OIDC features (ID token, UserInfo access).
 
 #### Scenario: Client requests openid scope
 
-- **GIVEN** OAuth2 client is registered with `openid` in allowed scopes
-- **WHEN** client requests authorization with `scope=openid`
-- **THEN** authorization request is accepted
-- **AND** subsequent token request returns ID token along with access token
-- **AND** access token includes `openid` in scope claim
+- **WHEN** client requests authorization with `openid` scope
+- **THEN** the token response includes an ID token
+- **AND** the access token includes `openid` in the scope claim
 
-#### Scenario: OpenID scope combined with other scopes
+#### Scenario: Default OAuth2 client supports openid scope
 
-- **GIVEN** client is registered with `openid`, `profile`, and `members.read` scopes
-- **WHEN** client requests authorization with `scope=openid members.read`
-- **THEN** authorization request is accepted
-- **AND** token response includes ID token
-- **AND** access token includes `openid`, `members.read` in scope claim
-- **AND** user can access UserInfo endpoint and members API
-
-#### Scenario: Client without openid scope cannot get ID token
-
-- **GIVEN** client requests authorization with `scope=profile` (no `openid`)
-- **WHEN** client exchanges authorization code for tokens
-- **THEN** token response does NOT include ID token
-- **AND** client cannot access UserInfo endpoint (insufficient scope error)
-
-#### Scenario: Default OAuth2 client includes openid scope
-
-- **GIVEN** system is initialized with default OAuth2 client
-- **WHEN** default client is registered in database
-- **THEN** client's allowed scopes include `openid`, `profile`, and `email`
-- **AND** client can request OIDC authentication flows
-- **AND** client can use discovery, UserInfo, and logout endpoints
-- **AND** client can request granular access to user profile and email data
-
----
+- **WHEN** the system is initialized
+- **THEN** the default client supports `openid`, `profile`, and `email` scopes out of the box
 
 ### Requirement: OIDC Client Configuration
 
-The system SHALL support OIDC-specific client metadata in OAuth2 client registrations. Client metadata MUST include
-settings for OIDC compliance and interoperability.
-
-Required OIDC client metadata:
-
-- `scope`: MUST include `openid` for OIDC clients
-- `response_types`: Supported OAuth2 response types (e.g., "code", "id_token", "code id_token")
-- `grant_types`: Supported grant types (e.g., "authorization_code", "implicit")
-- `redirect_uris`: Allowed redirect URIs for authorization flow
-- `post_logout_redirect_uris`: Allowed redirect URIs for logout (optional)
-- `token_endpoint_auth_method`: Client authentication method at token endpoint
-
-Client configuration settings:
-
-- `id_token_signed_response_alg`: JWS algorithm for ID token signing (default: RS256)
-- `subject_type`: Subject identifier type (default: "public")
-- `require_auth_time`: Whether `auth_time` claim is required in ID token (default: true)
-
-#### Scenario: OIDC client registered with required metadata
-
-- **GIVEN** system is being configured
-- **WHEN** OAuth2 client is registered with OIDC metadata
-- **THEN** client includes `openid` in allowed scopes
-- **AND** client supports required response types (e.g., "code", "id_token")
-- **AND** client specifies `token_endpoint_auth_method`
-- **AND** client can participate in OIDC authentication flows
-
-#### Scenario: Client configuration specifies ID token algorithm
-
-- **GIVEN** OAuth2 client is registered with `id_token_signed_response_alg=RS256`
-- **WHEN** ID token is generated for this client
-- **THEN** ID token is signed using RS256 algorithm
-- **AND** ID token header includes `"alg": "RS256"`
-- **AND** client can verify ID token signature using JWKS endpoint
-
-#### Scenario: Client with post-logout redirect URIs
-
-- **GIVEN** OAuth2 client is registered with `post_logout_redirect_uris`
-- **WHEN** client initiates logout with `post_logout_redirect_uri`
-- **THEN** system validates redirect URI against registered URIs
-- **AND** redirect is permitted only if URI matches registered value
-- **AND** logout completes successfully
+The system SHALL support OIDC-specific client metadata for OAuth2 client registrations.
 
 #### Scenario: Bootstrap client includes OIDC configuration
 
-- **GIVEN** system is initialized with default OAuth2 client
-- **WHEN** default client is created in database
-- **THEN** client includes `openid` in scopes
-- **AND** client supports `authorization_code` grant type
-- **AND** client supports `code` and `id_token` response types
-- **AND** client can perform OIDC authentication out of the box
+- **WHEN** the system is initialized with the default OAuth2 client
+- **THEN** the client supports `authorization_code` grant type and `openid` scope
+- **AND** the client can perform OIDC authentication flows
 
-### Requirement: Membership status claim in userinfo response
+### Requirement: Membership Status Claim in UserInfo Response
 
-The OIDC userinfo endpoint SHALL include an `is_member` boolean claim when the `profile` scope is authorized, indicating whether the authenticated user has an associated Member profile.
+The OIDC UserInfo endpoint SHALL include an `is_member` boolean claim when the `profile` scope is authorized.
 
-#### Scenario: Member user requests userinfo with profile scope
-- **WHEN** a user with an associated Member profile requests the `/userinfo` endpoint with `profile` scope authorized
-- **THEN** the response SHALL include `"is_member": true` claim
-- **AND** the response SHALL include standard profile claims (`given_name`, `family_name`, `updated_at`)
+#### Scenario: Member user receives is_member true claim
 
-#### Scenario: Admin user requests userinfo with profile scope
-- **WHEN** a user without an associated Member profile requests the `/userinfo` endpoint with `profile` scope authorized
-- **THEN** the response SHALL include `"is_member": false` claim
-- **AND** the response SHALL NOT include Member-specific profile claims (`given_name`, `family_name`, `updated_at`)
+- **WHEN** user with an associated member profile requests UserInfo with `profile` scope
+- **THEN** the response includes `"is_member": true`
+- **AND** standard profile claims (given_name, family_name, updated_at) are included
 
-#### Scenario: User requests userinfo without profile scope
-- **WHEN** a user requests the `/userinfo` endpoint without `profile` scope authorized
-- **THEN** the response SHALL NOT include the `is_member` claim
-- **AND** the response SHALL only include the `sub` claim
+#### Scenario: Admin user without member profile receives is_member false claim
+
+- **WHEN** user without an associated member profile requests UserInfo with `profile` scope
+- **THEN** the response includes `"is_member": false`
+- **AND** member-specific profile claims are not included
+
+#### Scenario: UserInfo without profile scope does not include is_member claim
+
+- **WHEN** user requests UserInfo without `profile` scope
+- **THEN** the `is_member` claim is not included in the response
 
 ### Requirement: Secure Activation Tokens
 
-The system SHALL generate secure, time-limited activation tokens for email-based account activation.
+The system SHALL generate secure, time-limited activation tokens for email-based account activation. Tokens expire after 72 hours and are single-use.
 
-The system SHALL:
+#### Scenario: Member activates account via activation link
 
-- Generate tokens using cryptographically secure random generator
-- Expire tokens after 72 hours
-- Invalidate tokens after single use (activation)
-- Return appropriate error messages for expired or invalid tokens
-
-#### Scenario: Successful account activation
-
-- **GIVEN** a member received a welcome email with activation link
-- **WHEN** they click the activation link within 72 hours
+- **WHEN** member clicks the activation link from their welcome email within 72 hours
 - **THEN** their account is activated
-- **AND** the activation token is invalidated
+- **AND** the activation link can no longer be used
 
-#### Scenario: Expired activation token
+#### Scenario: Expired activation link shows error
 
-- **GIVEN** a member received a welcome email with activation link
-- **WHEN** they click the activation link after 72 hours
-- **THEN** they receive an error message "Activation link has expired"
-- **AND** the account remains inactive
+- **WHEN** member clicks the activation link after 72 hours
+- **THEN** the page shows an error that the activation link has expired
 
-#### Scenario: Already used activation token
+#### Scenario: Already-used activation link shows error
 
-- **GIVEN** a member has already activated their account
-- **WHEN** they click the activation link again
-- **THEN** they receive an error message "Invalid activation link"
+- **WHEN** member who has already activated their account clicks the activation link again
+- **THEN** the page shows an error that the activation link is no longer valid
 
 ### Requirement: Account Activation Endpoint
 
-The system SHALL provide a REST endpoint for account activation via token.
-
-Endpoint: `GET /api/activate?token={token}`
-
-Success response (200 OK):
-
-- Returns JSON with activation confirmation and registration number
-
-Error responses:
-
-- 400 Bad Request for expired tokens (type: activation-token-expired)
-- 400 Bad Request for invalid/used tokens (type: activation-token-invalid)
+The system SHALL provide an account activation endpoint accessible from the welcome email link.
 
 #### Scenario: Successful activation via endpoint
 
-- **GIVEN** a valid, unexpired activation token
-- **WHEN** GET /api/activate?token={valid-token}
-- **THEN** response status is 200 OK
-- **AND** response contains "Account activated successfully"
+- **WHEN** user follows a valid, unexpired activation link
+- **THEN** the page shows a confirmation that the account was activated successfully
 
-#### Scenario: Expired token via endpoint
+#### Scenario: Expired token via activation endpoint
 
-- **GIVEN** an expired activation token
-- **WHEN** GET /api/activate?token={expired-token}
-- **THEN** response status is 400 Bad Request
-- **AND** response type is "activation-token-expired"
+- **WHEN** user follows an expired activation link
+- **THEN** the page shows an error about the expired token
 
----
+### Requirement: Membership Detection Based on Member Aggregate Existence
 
-### Requirement: Membership detection based on Member aggregate existence
+The system SHALL determine membership status by checking whether a Member aggregate exists for the authenticated user's registration number.
 
-The system SHALL determine membership status by checking for the existence of a Member aggregate with a registration number matching the authenticated user's username.
+#### Scenario: User with a matching member record is identified as a member
 
-#### Scenario: Username matches registration number format and Member exists
-- **WHEN** the authenticated username matches the registration number format (XXXYYDD)
-- **AND** a Member aggregate exists with that registration number
-- **THEN** the system SHALL set `is_member` to `true`
+- **WHEN** the authenticated user's registration number matches a member record
+- **THEN** the system identifies the user as a member (`is_member: true`)
 
-#### Scenario: Username matches registration number format but Member does not exist
-- **WHEN** the authenticated username matches the registration number format (XXXYYDD)
-- **AND** no Member aggregate exists with that registration number
-- **THEN** the system SHALL set `is_member` to `false`
+#### Scenario: User without a matching member record is identified as non-member
 
-#### Scenario: Username does not match registration number format
+- **WHEN** the authenticated user's registration number does not match any member record
+- **THEN** the system identifies the user as a non-member (`is_member: false`)
+
+#### Scenario: Admin username not in registration number format is identified as non-member
+
 - **WHEN** the authenticated username does not match the registration number format
-- **THEN** the system SHALL set `is_member` to `false`
-- **AND** the system SHALL NOT query the Member repository
+- **THEN** the system identifies the user as a non-member without querying the member repository

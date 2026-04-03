@@ -1,301 +1,167 @@
-# calendar-items Specification
+# Calendar Items Specification
 
 ## Purpose
 
-This specification defines requirements for managing calendar items. Calendar items display date-based events on a calendar view, including automatic synchronization from Events and manual creation for club activities, reminders, and deadlines.
+Covers the calendar view where members see upcoming club activities. Calendar items are either created automatically from published events or manually by calendar managers. Defines how members browse the calendar, view item details, and how managers create, edit, and delete manual items.
 
 ## Requirements
 
 ### Requirement: View Calendar Items
 
-The system SHALL allow authenticated members to retrieve a list of calendar items for a specified date range.
+The system SHALL allow authenticated members to view calendar items for a specified date range. The default view is the current month. The maximum range is 366 days.
 
-#### Business Rules:
+#### Scenario: Member views calendar for a specific month
 
-- **Maximum Date Range**: Date range must not exceed 366 days (1 year, including leap year)
-- **Default Date Range**: If startDate and endDate are not provided, system defaults to current month
-- **Sorting**: Results are sortable by id, name, startDate, endDate (default: startDate,asc)
-- **No Pagination**: All items within date range are returned (no pagination)
+- **WHEN** authenticated member navigates to the calendar view for a specific month
+- **THEN** all calendar items that intersect with that month are displayed
+- **AND** items are sorted by start date ascending by default
 
-#### Scenario: List calendar items for month view
+#### Scenario: Calendar defaults to current month
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
-- **THEN** system returns HTTP 200 OK
-- **AND** response includes calendar items that intersect with the specified date range
-- **AND** response is sorted by startDate ascending (default)
-- **AND** response includes HATEOAS navigation links (self, next, prev)
-- **AND** Content-Type is application/prs.hal-forms+json
+- **WHEN** authenticated member opens the calendar without specifying a date range
+- **THEN** the calendar shows items for the current month
 
-#### Scenario: List calendar items with default date range
+#### Scenario: Date range exceeding one year shows error
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items (no date parameters)
-- **THEN** system returns HTTP 200 OK
-- **AND** system uses current month as date range (first day to last day)
-- **AND** response includes calendar items for current month
+- **WHEN** user requests a calendar view with a date range exceeding 366 days
+- **THEN** the system shows an error that the date range must not exceed 366 days
 
-#### Scenario: List calendar items exceeds maximum range
+#### Scenario: Calendar can be sorted
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items with date range exceeding 366 days
-- **THEN** system returns HTTP 400 Bad Request
-- **AND** error message indicates "Date range must not exceed 366 days"
+- **WHEN** user changes the sort order (e.g., by name descending)
+- **THEN** the calendar items are reordered accordingly
 
-#### Scenario: List calendar items includes sorting
+#### Scenario: Invalid sort field shows error
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items?sort=name,desc
-- **THEN** system returns HTTP 200 OK
-- **AND** response includes calendar items sorted by name in descending order
+- **WHEN** user attempts to sort by an unsupported field
+- **THEN** the system shows an error listing the allowed sort fields
 
-#### Scenario: Invalid sort field
+#### Scenario: Multi-day events span across month boundaries
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items?sort=invalidField,asc
-- **THEN** system returns HTTP 400 Bad Request
-- **AND** error message indicates "Invalid sort field" and lists allowed fields
+- **WHEN** a calendar item starts in May and ends in June
+- **AND** user views the June calendar
+- **THEN** the item is included in the June view
 
-#### Scenario: List calendar items includes multi-day items
+#### Scenario: Calendar navigation shows next and previous month links
 
-- **GIVEN** calendar item exists with startDate=2026-05-28 and endDate=2026-06-03
-- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
-- **THEN** system includes the item in response
-- **AND** item spans both May and June
-
-#### Scenario: Calendar response includes month navigation links
-
-- **GIVEN** authenticated user requests calendar items for June 2026
-- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
-- **THEN** response includes HATEOAS "next" link with startDate=2026-07-01&endDate=2026-07-31
-- **AND** response includes HATEOAS "prev" link with startDate=2026-05-01&endDate=2026-05-31
-- **AND** links maintain same sort parameter as original request
-
-#### Scenario: Month navigation preserves custom sort
-
-- **GIVEN** authenticated user requests calendar items with custom sort
-- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30&sort=name,asc
-- **THEN** "next" link includes sort=name,asc parameter
-- **AND** "prev" link includes sort=name,asc parameter
-
-#### Scenario: Unauthenticated access to calendar items
-
-- **WHEN** unauthenticated user attempts to access /api/calendar-items
-- **THEN** HTTP 401 Unauthorized is returned
+- **WHEN** user views the June 2026 calendar
+- **THEN** a "next month" link navigates to July 2026
+- **AND** a "previous month" link navigates to May 2026
+- **AND** sort settings are preserved when navigating
 
 ### Requirement: Get Calendar Item Detail
 
-The system SHALL allow authenticated members to retrieve detailed information about a specific calendar item.
+The system SHALL allow authenticated members to view detailed information about a specific calendar item.
 
-#### Scenario: Get existing calendar item
+#### Scenario: Member views calendar item detail
 
-- **GIVEN** authenticated user with ANY MEMBER role
-- **WHEN** user makes GET request to /api/calendar-items/{id}
-- **THEN** system returns HTTP 200 OK
-- **AND** response includes all calendar item fields (name, description, startDate, endDate, eventId)
-- **AND** response includes HATEOAS links based on item type and user permissions
-- **AND** Content-Type is application/prs.hal-forms+json
+- **WHEN** authenticated member opens a calendar item's detail
+- **THEN** all fields are displayed: name, description, start date, end date
 
-#### Scenario: Get event-linked calendar item
+#### Scenario: Event-linked calendar item shows link to event
 
-- **GIVEN** calendar item linked to Event (eventId != null)
-- **WHEN** user views calendar item detail
-- **THEN** response includes link to Event (_links.event.href)
-- **AND** edit/delete links are NOT included (read-only)
+- **WHEN** user views a calendar item that is linked to an event
+- **THEN** a link to the related event is shown
+- **AND** no edit or delete options are available (item is read-only)
 
-#### Scenario: Get manual calendar item
+#### Scenario: Manual calendar item shows edit and delete for authorized user
 
-- **GIVEN** manual calendar item (eventId == null)
-- **WHEN** user with CALENDAR:MANAGE permission views calendar item detail
-- **THEN** response includes links: self, edit, delete
-- **AND** edit/delete links are NOT included for users without CALENDAR:MANAGE
+- **WHEN** user with CALENDAR:MANAGE permission views a manually created calendar item
+- **THEN** edit and delete actions are available
 
-#### Scenario: Get non-existent calendar item
+#### Scenario: Manual calendar item shows no edit/delete without permission
 
-- **WHEN** authenticated user makes GET request to /api/calendar-items/{id} with non-existent ID
-- **THEN** HTTP 404 Not Found is returned
-- **AND** response includes error details with problem+json media type
+- **WHEN** user without CALENDAR:MANAGE permission views a manually created calendar item
+- **THEN** no edit or delete actions are available
 
 ### Requirement: Create Manual Calendar Item
 
-The system SHALL allow authorized users to create manual calendar items.
+The system SHALL allow users with CALENDAR:MANAGE permission to create manual calendar items.
 
-#### Scenario: Create manual calendar item with all required fields
+#### Scenario: Manager creates a calendar item
 
-- **GIVEN** authenticated user with CALENDAR:MANAGE permission
-- **WHEN** user submits POST /api/calendar-items with name, description, startDate, endDate
-- **THEN** system creates a calendar item with eventId=null
-- **AND** returns HTTP 201 Created with Location header
-- **AND** response includes HAL+FORMS links (self, edit, delete)
+- **WHEN** user with CALENDAR:MANAGE permission submits the calendar item creation form with name, description, start date, and end date
+- **THEN** the calendar item is created and appears in the calendar
 
-#### Scenario: Create multi-day calendar item
+#### Scenario: Multi-day calendar item appears across all its dates
 
-- **GIVEN** authenticated user with CALENDAR:MANAGE permission
-- **WHEN** user submits POST /api/calendar-items with startDate=2026-06-01 and endDate=2026-06-05
-- **THEN** system creates a calendar item spanning 5 days
-- **AND** item appears in calendar for all 5 dates
+- **WHEN** user creates a calendar item spanning multiple days
+- **THEN** the item appears in the calendar for all days in its range
 
-#### Scenario: Create calendar item without permission
+#### Scenario: Create button not shown without permission
 
-- **WHEN** authenticated user without CALENDAR:MANAGE permission attempts to create a calendar item
-- **THEN** HTTP 403 Forbidden is returned
-- **AND** response includes error details with problem+json media type
+- **WHEN** user without CALENDAR:MANAGE permission views the calendar
+- **THEN** no create calendar item button is shown
 
-#### Scenario: Create calendar item with invalid data
+#### Scenario: Form shows validation errors for invalid data
 
-- **WHEN** user submits calendar item with missing required fields or invalid format
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** response includes validation errors for each invalid field
+- **WHEN** user submits the calendar item form with missing required fields or invalid dates
+- **THEN** the form shows inline validation errors
 
-#### Scenario: Create calendar item with end before start
+#### Scenario: End date before start date shows error
 
-- **WHEN** user submits calendar item with startDate=2026-06-10 and endDate=2026-06-05
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates endDate must be after or equal to startDate
+- **WHEN** user sets an end date before the start date
+- **THEN** the form shows an error that the end date must be on or after the start date
 
 ### Requirement: Update Manual Calendar Item
 
-The system SHALL allow authorized users to update manual calendar items.
+The system SHALL allow users with CALENDAR:MANAGE permission to update manually created calendar items. Event-linked calendar items cannot be manually edited.
 
-#### Scenario: Update manual calendar item
+#### Scenario: Manager updates a manual calendar item
 
-- **GIVEN** authenticated user with CALENDAR:MANAGE permission
-- **AND** manual calendar item exists (eventId == null)
-- **WHEN** user submits PUT /api/calendar-items/{id} with updated name, description, dates
-- **THEN** system updates the calendar item
-- **AND** returns HTTP 200 OK with updated representation
-- **AND** response includes HAL+FORMS links
+- **WHEN** user with CALENDAR:MANAGE permission edits and saves a manual calendar item
+- **THEN** the calendar item is updated with the new values
 
-#### Scenario: Attempt to update event-linked calendar item
+#### Scenario: Event-linked calendar item cannot be manually edited
 
-- **GIVEN** event-linked calendar item exists (eventId != null)
-- **WHEN** authenticated user with CALENDAR:MANAGE permission attempts to PUT /api/calendar-items/{id}
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates event-linked items cannot be manually edited
+- **WHEN** user with CALENDAR:MANAGE permission attempts to edit an event-linked calendar item
+- **THEN** the system shows an error that event-linked items cannot be manually edited
 
-#### Scenario: Update calendar item without permission
+#### Scenario: Edit action not shown without permission
 
-- **WHEN** authenticated user without CALENDAR:MANAGE permission attempts to update a calendar item
-- **THEN** HTTP 403 Forbidden is returned
+- **WHEN** user without CALENDAR:MANAGE permission views a calendar item
+- **THEN** no edit action is available
 
 ### Requirement: Delete Manual Calendar Item
 
-The system SHALL allow authorized users to delete manual calendar items.
+The system SHALL allow users with CALENDAR:MANAGE permission to delete manually created calendar items. Event-linked calendar items cannot be manually deleted.
 
-#### Scenario: Delete manual calendar item
+#### Scenario: Manager deletes a manual calendar item
 
-- **GIVEN** authenticated user with CALENDAR:MANAGE permission
-- **AND** manual calendar item exists (eventId == null)
-- **WHEN** user submits DELETE /api/calendar-items/{id}
-- **THEN** system deletes the calendar item
-- **AND** returns HTTP 204 No Content
+- **WHEN** user with CALENDAR:MANAGE permission confirms deletion of a manual calendar item
+- **THEN** the item is removed from the calendar
 
-#### Scenario: Attempt to delete event-linked calendar item
+#### Scenario: Event-linked calendar item cannot be manually deleted
 
-- **GIVEN** event-linked calendar item exists (eventId != null)
-- **WHEN** authenticated user with CALENDAR:MANAGE permission attempts to DELETE /api/calendar-items/{id}
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates event-linked items cannot be manually deleted
+- **WHEN** user with CALENDAR:MANAGE permission attempts to delete an event-linked calendar item
+- **THEN** the system shows an error that event-linked items cannot be manually deleted
 
-#### Scenario: Delete calendar item without permission
+#### Scenario: Delete action not shown without permission
 
-- **WHEN** authenticated user without CALENDAR:MANAGE permission attempts to delete a calendar item
-- **THEN** HTTP 403 Forbidden is returned
-
-#### Scenario: Delete non-existent calendar item
-
-- **WHEN** authenticated user submits DELETE /api/calendar-items/{id} with non-existent ID
-- **THEN** HTTP 404 Not Found is returned
+- **WHEN** user without CALENDAR:MANAGE permission views a calendar item
+- **THEN** no delete action is available
 
 ### Requirement: Automatic Synchronization from Events
 
-The system SHALL automatically create, update, and delete calendar items when Events are published, updated, or cancelled.
+The system SHALL automatically create, update, and delete calendar items when events are published, updated, or cancelled.
 
-#### Scenario: Create calendar item on Event publish
+#### Scenario: Calendar item created when event is published
 
-- **GIVEN** Event exists in DRAFT status
-- **WHEN** Event is published (DRAFT → ACTIVE transition)
-- **AND** EventPublishedEvent is fired
-- **THEN** system creates a calendar item with:
-  - name: Event.name
-  - description: Event.location + " - " + Event.organizer + [newline + Event.websiteUrl if present]
-  - startDate: Event.eventDate
-  - endDate: Event.eventDate
-  - eventId: Event.id
-- **AND** calendar item is read-only (eventId != null)
+- **WHEN** an event is published (transitions from DRAFT to ACTIVE)
+- **THEN** a calendar item is automatically created with the event's name, location, organizer, date, and optional website
+- **AND** the calendar item is read-only (cannot be manually edited or deleted)
 
-#### Scenario: Update calendar item on Event update
+#### Scenario: Calendar item updated when event is updated
 
-- **GIVEN** Event exists with linked calendar item
-- **WHEN** Event is updated (name, eventDate, location, or organizer changes)
-- **AND** EventUpdatedEvent is fired with full Event data
-- **THEN** system updates the linked calendar item with new values
-- **AND** eventId remains unchanged
+- **WHEN** an event's name, date, location, or organizer is updated
+- **THEN** the linked calendar item is automatically updated with the new values
 
-#### Scenario: Delete calendar item on Event cancellation
+#### Scenario: Calendar item deleted when event is cancelled
 
-- **GIVEN** Event exists with linked calendar item
-- **WHEN** Event is cancelled
-- **AND** EventCancelledEvent is fired
-- **THEN** system deletes the linked calendar item
-- **AND** no calendar item remains for this Event
+- **WHEN** an event is cancelled
+- **THEN** the linked calendar item is automatically removed from the calendar
 
-#### Scenario: Event completion does not affect calendar item
+#### Scenario: Finishing an event does not affect the calendar item
 
-- **GIVEN** Event exists with linked calendar item
-- **WHEN** Event is finished (ACTIVE → FINISHED transition)
-- **THEN** calendar item remains visible on calendar
-- **AND** EventFinishedEvent does NOT trigger calendar item changes
-
-#### Scenario: Ignore missing calendar item on Event update
-
-- **GIVEN** Event exists
-- **AND** no linked calendar item exists
-- **WHEN** EventUpdatedEvent is fired
-- **THEN** system silently ignores the event
-- **AND** logs warning about missing calendar item
-
-#### Scenario: Ignore deleted calendar item on Event cancellation
-
-- **GIVEN** Event exists with linked calendar item
-- **AND** calendar item was already manually deleted
-- **WHEN** EventCancelledEvent is fired
-- **THEN** system silently ignores the event
-- **AND** logs warning about missing calendar item
-
-### Requirement: CalendarItemId Value Object
-
-The system SHALL use CalendarItemId as a unique identifier for calendar items. The identifier wraps a UUID and provides type safety.
-
-#### Scenario: CalendarItemId wraps UUID value
-
-- **WHEN** a CalendarItemId is created with a valid UUID
-- **THEN** identifier is successfully created
-- **AND** identifier is immutable
-- **AND** identifier provides equality based on the wrapped UUID
-
-#### Scenario: CalendarItemId prevents null UUID
-
-- **WHEN** a CalendarItemId is created with null UUID
-- **THEN** validation fails with error indicating UUID cannot be null
-
-### Requirement: Calendar Item Response Format
-
-Calendar API responses SHALL follow HAL+FORMS specification with proper data serialization.
-
-#### Scenario: Calendar dates serialized as ISO-8601
-
-- **WHEN** a calendar item with startDate=2026-06-01 and endDate=2026-06-05 is returned
-- **THEN** startDate field is serialized as "2026-06-01"
-- **AND** endDate field is serialized as "2026-06-05"
-
-#### Scenario: Calendar item response includes event link
-
-- **WHEN** an event-linked calendar item is returned
-- **THEN** response includes _links.event.href pointing to /api/events/{eventId}
-
-#### Scenario: Calendar item response uses HAL+FORMS media type
-
-- **WHEN** any calendar endpoint returns a response
-- **THEN** Content-Type is application/prs.hal-forms+json
-- **AND** response includes _links object for hypermedia navigation
+- **WHEN** an event transitions from ACTIVE to FINISHED
+- **THEN** the linked calendar item remains visible on the calendar

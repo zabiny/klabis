@@ -1,75 +1,70 @@
-# member-permissions-dialog Specification
+# Member Permissions Dialog Specification
 
 ## Purpose
 
-This specification defines requirements for the member permissions management dialog, which allows ADMIN users to view and modify member permissions directly from the member detail page via a modal dialog.
+Covers the permissions management modal dialog accessible from the member detail page. Allows authorized users to view and modify member permissions through toggle switches.
 
 ## Requirements
 
-### Requirement: Open permissions dialog from member detail
+### Requirement: Open Permissions Dialog from Member Detail
 
-The system SHALL allow ADMIN users to manage member permissions via a modal dialog accessible from the member detail page.
+The system SHALL allow users with MEMBERS:PERMISSIONS authority to manage member permissions via a modal dialog accessible from the member detail page.
 
-#### Scenario: Dialog opens when permissions link is present
+#### Scenario: Permissions button shown when permissions link is available
 
-- **WHEN** ADMIN user views member detail page
-- **AND** member response includes `permissions` HATEOAS link
-- **THEN** "Správa oprávnění" button is displayed
-- **AND** clicking the button opens a modal dialog without navigating away from the page
+- **WHEN** user with MEMBERS:PERMISSIONS authority views a member detail page
+- **AND** the member response includes a permissions link
+- **THEN** the "Správa oprávnění" button is displayed in the page header
 
-#### Scenario: Dialog is not shown without permissions link
+#### Scenario: Permissions button not shown without the permissions link
 
-- **WHEN** authenticated user views member detail page
-- **AND** member response does NOT include `permissions` HATEOAS link
-- **THEN** "Správa oprávnění" button is not displayed
+- **WHEN** user views a member detail page
+- **AND** the member response does not include a permissions link
+- **THEN** the "Správa oprávnění" button is not displayed
 
-### Requirement: Display current permissions in dialog
+### Requirement: Display Current Permissions in Dialog
 
 The system SHALL load and display the user's current permissions when the dialog opens.
 
-#### Scenario: Permissions loaded and displayed as toggles
+#### Scenario: Dialog shows current permissions as toggles
 
-- **WHEN** dialog opens
-- **THEN** system fetches current permissions via GET on the URL from `permissions` HATEOAS link
-- **AND** dialog displays all available authorities as toggle switches
-- **AND** authorities currently assigned to the user are shown as enabled (on)
-- **AND** authorities not assigned to the user are shown as disabled (off)
+- **WHEN** user opens the permissions dialog
+- **THEN** the dialog displays all available authorities as toggle switches
+- **AND** authorities currently assigned to the user are shown as enabled
+- **AND** authorities not assigned are shown as disabled
 - **AND** each authority is displayed with a Czech label and description
 
-#### Scenario: Loading state while fetching permissions
+#### Scenario: Dialog shows loading state while fetching permissions
 
 - **WHEN** dialog opens and permissions are being fetched
-- **THEN** dialog displays a loading indicator
-- **AND** "Uložit oprávnění" button is disabled until data is loaded
+- **THEN** a loading indicator is shown
+- **AND** the "Uložit oprávnění" button is disabled until data is loaded
 
-### Requirement: Save updated permissions
+### Requirement: Save Updated Permissions
 
-The system SHALL allow ADMIN user to modify toggles and save the updated permission set.
+The system SHALL allow user to modify toggles and save the updated permission set.
 
 #### Scenario: Permissions saved successfully
 
-- **WHEN** ADMIN user changes toggle states in the dialog
+- **WHEN** user changes toggle states in the dialog and clicks "Uložit oprávnění"
+- **THEN** the updated permission set is saved
+- **AND** the dialog closes
+- **AND** a success notification "Oprávnění uložena" is shown
+
+#### Scenario: Save fails because last admin would be locked out
+
+- **WHEN** user attempts to remove MEMBERS:PERMISSIONS from the last admin
 - **AND** clicks "Uložit oprávnění"
-- **THEN** system sends PUT request with updated authority list to the URL from HATEOAS affordance
-- **AND** dialog closes
-- **AND** success toast notification "Oprávnění uložena" is displayed
+- **THEN** the dialog remains open
+- **AND** an error message is shown inside the dialog explaining the operation is not allowed
 
-#### Scenario: Save fails with admin lockout error
+#### Scenario: Save fails with unexpected error
 
-- **WHEN** ADMIN user attempts to remove MEMBERS:PERMISSIONS from the last admin
-- **AND** clicks "Uložit oprávnění"
-- **THEN** system receives 409 Conflict from the API
-- **AND** dialog remains open
-- **AND** error message is displayed inside the dialog explaining the operation is not allowed
-
-#### Scenario: Save fails with other error
-
-- **WHEN** PUT request fails with any non-409 error
-- **THEN** dialog remains open
-- **AND** error message is displayed inside the dialog
+- **WHEN** saving permissions fails with an unexpected error
+- **THEN** the dialog remains open
+- **AND** an error message is shown inside the dialog
 
 #### Scenario: Cancel dialog without saving
 
-- **WHEN** ADMIN user clicks "Zrušit"
-- **THEN** dialog closes without sending any API request
-- **AND** no changes are applied
+- **WHEN** user clicks "Zrušit" in the dialog
+- **THEN** the dialog closes without saving any changes
