@@ -1,10 +1,12 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
 import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {useHalRoute} from '../../contexts/HalRouteContext';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -24,6 +26,8 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
         data: undefined,
         isLoading: false,
         error: null,
+        refetch: vi.fn(),
+        status: 'success',
     })),
 }));
 
@@ -66,6 +70,21 @@ vi.mock('../../components/UI/Modal.tsx', () => ({
             </div>
         ) : null
     ),
+}));
+
+vi.mock('../../contexts/HalRouteContext.tsx', () => ({
+    HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+    HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+    useHalRoute: vi.fn(() => ({
+        resourceData: null,
+        navigateToResource: vi.fn(),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+        pathname: '',
+        queryState: 'success',
+        getResourceLink: vi.fn(),
+    })),
 }));
 
 const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
@@ -130,14 +149,39 @@ const renderPage = (pageData: any) => {
 describe('MemberDetailPage — group membership sections', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(useHalRoute).mockReturnValue({
+            resourceData: null,
+            navigateToResource: vi.fn(),
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            pathname: '',
+            queryState: 'success',
+            getResourceLink: vi.fn(),
+        });
     });
 
     describe('Training group section (task 4.4)', () => {
-        it('shows training group section when trainingGroup data is present', () => {
+        it('shows training group section when trainingGroup link is present', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Mladí závodníci',
+                    owners: [],
+                    _links: {self: {href: '/api/training-groups/tg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/training-groups/tg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
             const data = mockMemberDetailData({
-                trainingGroup: {
-                    groupName: 'Mladí závodníci',
-                    owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    trainingGroup: {href: '/api/training-groups/tg1'},
                 },
             });
             renderPage(createMockPageData(data));
@@ -145,48 +189,59 @@ describe('MemberDetailPage — group membership sections', () => {
             expect(screen.getByText('Mladí závodníci')).toBeInTheDocument();
         });
 
-        it('shows owner name and email in training group section', () => {
+        it('shows owner name loaded via HATEOAS in training group section', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Mladí závodníci',
+                    owners: [{memberId: 'owner-1', _links: {member: {href: '/api/members/owner-1'}}}],
+                    _links: {self: {href: '/api/training-groups/tg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/training-groups/tg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
             const data = mockMemberDetailData({
-                trainingGroup: {
-                    groupName: 'Mladí závodníci',
-                    owners: [{fullName: 'Petr Trenér', email: 'petr@klub.cz'}],
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    trainingGroup: {href: '/api/training-groups/tg1'},
                 },
             });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('Petr Trenér')).toBeInTheDocument();
-            expect(screen.getByText('petr@klub.cz')).toBeInTheDocument();
-        });
-
-        it('shows multiple owners in training group section', () => {
-            const data = mockMemberDetailData({
-                trainingGroup: {
-                    name: 'Elitní tým',
-                    owners: [
-                        {fullName: 'Petr Trenér', email: 'petr@klub.cz'},
-                        {fullName: 'Jana Koučová', email: 'jana@klub.cz'},
-                    ],
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('Petr Trenér')).toBeInTheDocument();
-            expect(screen.getByText('Jana Koučová')).toBeInTheDocument();
-        });
-
-        it('shows "Není přiřazen" when trainingGroup is null', () => {
-            const data = mockMemberDetailData({trainingGroup: null});
             renderPage(createMockPageData(data));
             expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Není přiřazen')).toBeInTheDocument();
+            expect(screen.getByText('Správce')).toBeInTheDocument();
         });
 
-        it('does NOT show training group section when trainingGroup field is absent', () => {
+        it('does NOT show training group section when trainingGroup link is absent', () => {
             renderPage(createMockPageData(mockMemberDetailData()));
             expect(screen.queryByText('TRÉNINKOVÁ SKUPINA')).not.toBeInTheDocument();
         });
 
-        it('shows training group section when trainingGroup has no owners', () => {
+        it('shows training group section with group name when no owners', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Bezprizorní',
+                    owners: [],
+                    _links: {self: {href: '/api/training-groups/tg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/training-groups/tg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
             const data = mockMemberDetailData({
-                trainingGroup: {groupName: 'Bezprizorní', owners: []},
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    trainingGroup: {href: '/api/training-groups/tg1'},
+                },
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
@@ -195,23 +250,35 @@ describe('MemberDetailPage — group membership sections', () => {
     });
 
     describe('Family group section (task 5.4)', () => {
-        it('shows family group section when familyGroup data is present', () => {
+        it('shows family group section when familyGroup link is present', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Rodina Novákových',
+                    owners: [],
+                    _links: {self: {href: '/api/family-groups/fg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/family-groups/fg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
             const data = mockMemberDetailData({
-                familyGroup: {groupName: 'Rodina Novákových', owners: []},
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    familyGroup: {href: '/api/family-groups/fg1'},
+                },
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('RODINNÁ SKUPINA')).toBeInTheDocument();
             expect(screen.getByText('Rodina Novákových')).toBeInTheDocument();
         });
 
-        it('does NOT show family group section when familyGroup field is absent', () => {
+        it('does NOT show family group section when familyGroup link is absent', () => {
             renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByText('RODINNÁ SKUPINA')).not.toBeInTheDocument();
-        });
-
-        it('does NOT show family group section when familyGroup is null', () => {
-            const data = mockMemberDetailData({familyGroup: null});
-            renderPage(createMockPageData(data));
             expect(screen.queryByText('RODINNÁ SKUPINA')).not.toBeInTheDocument();
         });
     });

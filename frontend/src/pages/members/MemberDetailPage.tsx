@@ -8,6 +8,7 @@ import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
+import type {HalResourceLinks} from "../../api/types.ts";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
@@ -15,17 +16,40 @@ import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditi
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {FetchError} from "../../api/authorizedFetch.ts";
+import {HalRouteProvider, HalSubresourceProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {MemberNameWithRegNumber} from "../../components/members/MemberNameWithRegNumber.tsx";
 
-type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse & {
-    trainingGroup?: {
-        groupName: string;
-        owners: Array<{ fullName: string; email: string }>;
-    } | null;
-    familyGroup?: {
-        groupName: string;
-        owners: Array<{ fullName: string; email: string }>;
-    } | null;
-};
+type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+
+type GroupOwner = { memberId: string; _links: { member: HalResourceLinks } };
+type GroupData = { name: string; owners: GroupOwner[] };
+
+function TrainingGroupInfo() {
+    const {resourceData} = useHalRoute();
+    if (!resourceData) return null;
+    const group = resourceData as unknown as GroupData;
+    return (
+        <>
+            <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
+            {group.owners.map((owner, i) => (
+                <DetailRow key={owner.memberId} label={i === 0 ? 'Správce' : ''}>
+                    <HalRouteProvider routeLink={owner._links.member}>
+                        <MemberNameWithRegNumber/>
+                    </HalRouteProvider>
+                </DetailRow>
+            ))}
+        </>
+    );
+}
+
+function FamilyGroupInfo() {
+    const {resourceData} = useHalRoute();
+    if (!resourceData) return null;
+    const group = resourceData as unknown as GroupData;
+    return (
+        <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
+    );
+}
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -368,37 +392,19 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     </Section>
                 )}
 
-                {'trainingGroup' in member && (
+                {member._links?.trainingGroup && (
                     <Section title={labels.sections.trainingGroup}>
-                        {member.trainingGroup ? (
-                            <>
-                                <DetailRow label={labels.fields.name}>{member.trainingGroup.groupName}</DetailRow>
-                                {member.trainingGroup.owners.map((owner, i) => (
-                                    <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
-                                        <div className="flex flex-col">
-                                            <span>{owner.fullName}</span>
-                                            {owner.email && <span className="text-text-secondary text-sm">{owner.email}</span>}
-                                        </div>
-                                    </DetailRow>
-                                ))}
-                            </>
-                        ) : (
-                            <span className="text-sm text-text-tertiary">{labels.ui.notAssigned}</span>
-                        )}
+                        <HalSubresourceProvider subresourceLinkName="trainingGroup">
+                            <TrainingGroupInfo/>
+                        </HalSubresourceProvider>
                     </Section>
                 )}
 
-                {member.familyGroup && (
+                {member._links?.familyGroup && (
                     <Section title={labels.sections.familyGroup}>
-                        <DetailRow label={labels.fields.name}>{member.familyGroup.groupName}</DetailRow>
-                        {member.familyGroup.owners.map((owner, i) => (
-                            <DetailRow key={i} label={i === 0 ? 'Správce' : ''}>
-                                <div className="flex flex-col">
-                                    <span>{owner.fullName}</span>
-                                    {owner.email && <span className="text-text-secondary text-sm">{owner.email}</span>}
-                                </div>
-                            </DetailRow>
-                        ))}
+                        <HalSubresourceProvider subresourceLinkName="familyGroup">
+                            <FamilyGroupInfo/>
+                        </HalSubresourceProvider>
                     </Section>
                 )}
 
