@@ -159,9 +159,9 @@ class TrainingGroupControllerTest {
     class GetTrainingGroupTests {
 
         @Test
-        @DisplayName("should return 200 with group details when user has GROUPS:TRAINING")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
-        void shouldReturnGroupDetails() throws Exception {
+        @DisplayName("should return 200 with full group details when user has GROUPS:TRAINING")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.GROUPS_TRAINING})
+        void shouldReturnFullGroupDetailsWithTrainingAuthority() throws Exception {
             TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), MEMBER_ID);
             when(groupManagementService.getTrainingGroup(any(UserGroupId.class))).thenReturn(group);
 
@@ -179,14 +179,23 @@ class TrainingGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
-        @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn403WhenMissingTrainingAuthority() throws Exception {
+        @DisplayName("should return 200 with limited response (id, name, owners only) when user lacks GROUPS:TRAINING")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnLimitedGroupDetailsWithoutTrainingAuthority() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), MEMBER_ID);
+            when(groupManagementService.getTrainingGroup(any(UserGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             get("/api/training-groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value("Juniors"))
+                    .andExpect(jsonPath("$.owners").isArray())
+                    .andExpect(jsonPath("$.minAge").doesNotExist())
+                    .andExpect(jsonPath("$.maxAge").doesNotExist())
+                    .andExpect(jsonPath("$.members").doesNotExist());
         }
 
         @Test

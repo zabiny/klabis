@@ -90,37 +90,66 @@ class TrainingGroupController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get training group details (requires GROUPS:TRAINING)")
+    @HasAuthority(Authority.MEMBERS_READ)
+    @Operation(summary = "Get training group details")
     ResponseEntity<EntityModel<TrainingGroupResponse>> getTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @CurrentUser CurrentUserData currentUser) {
 
-        requireTrainingAuthority(currentUser);
-
         UserGroupId groupId = new UserGroupId(id);
         TrainingGroup group = groupManagementService.getTrainingGroup(groupId);
 
-        boolean isOwner = currentUser.isMember() && group.isOwner(currentUser.memberId());
-        TrainingGroupResponse response = toTrainingGroupResponse(group, id, isOwner);
-        EntityModel<TrainingGroupResponse> model = EntityModel.of(response);
-
-        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(id, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel();
-            if (isOwner) {
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateAgeRange(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupOwner(id, null, null)));
-            }
-            model.add(selfLink);
-        });
+        EntityModel<TrainingGroupResponse> model;
+        if (currentUser.hasAuthority(Authority.GROUPS_TRAINING)) {
+            boolean isOwner = currentUser.isMember() && group.isOwner(currentUser.memberId());
+            model = buildFullGroupModel(group, id, isOwner);
+        } else {
+            model = buildLimitedGroupModel(group, id);
+        }
 
         klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups(null))
                 .ifPresent(link -> model.add(link.withRel("collection")));
 
         return ResponseEntity.ok(model);
+    }
+
+    private EntityModel<TrainingGroupResponse> buildFullGroupModel(TrainingGroup group, UUID groupUuid, boolean isOwner) {
+        TrainingGroupResponse response = toTrainingGroupResponse(group, groupUuid, isOwner);
+        EntityModel<TrainingGroupResponse> model = EntityModel.of(response);
+
+        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(groupUuid, null)).ifPresent(link -> {
+            var selfLink = link.withSelfRel();
+            if (isOwner) {
+                selfLink = selfLink
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(groupUuid, null, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateAgeRange(groupUuid, null, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(groupUuid, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(groupUuid, null, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupOwner(groupUuid, null, null)));
+            }
+            model.add(selfLink);
+        });
+
+        return model;
+    }
+
+    private EntityModel<TrainingGroupResponse> buildLimitedGroupModel(TrainingGroup group, UUID groupUuid) {
+        List<EntityModel<OwnerResponse>> ownerModels = group.getOwners().stream()
+                .map(ownerId -> {
+                    EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
+                    model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
+                    return model;
+                })
+                .toList();
+
+        TrainingGroupResponse response = new TrainingGroupResponse(
+                group.getId().uuid(), group.getName(), null, null, ownerModels, null);
+        EntityModel<TrainingGroupResponse> model = EntityModel.of(response);
+
+        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(groupUuid, null))
+                .ifPresent(link -> model.add(link.withSelfRel()));
+
+        return model;
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
