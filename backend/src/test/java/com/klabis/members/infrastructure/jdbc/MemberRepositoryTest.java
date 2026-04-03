@@ -1061,7 +1061,7 @@ class MemberRepositoryTest {
                     .reason(DeactivationReason.ODHLASKA)
                     .note("Member requested termination")
                     .build();
-            member.handle(suspendCommand);
+            member.suspend(suspendCommand);
 
             // And save to database
             Member savedMember = memberRepository.save(member);

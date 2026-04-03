@@ -32,7 +32,7 @@ class MemberResumedEventTest {
                 .build();
 
         UserId adminUserId = new UserId(UUID.randomUUID());
-        member.handle(MemberSuspendMembershipBuilder.builder()
+        member.suspend(MemberSuspendMembershipBuilder.builder()
                 .suspendedBy(adminUserId)
                 .reason(DeactivationReason.ODHLASKA)
                 .note("Suspension note")

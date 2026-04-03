@@ -542,7 +542,7 @@ class MemberTest {
                     .build();
 
             // Act
-            activeMember.handle(command);
+            activeMember.suspend(command);
 
             // Assert
             assertThat(activeMember.isActive()).isFalse();
@@ -567,7 +567,7 @@ class MemberTest {
             // Act
             // Clear creation event first, then suspend
             activeMember.clearDomainEvents();  // Clear the MemberCreatedEvent from registration
-            activeMember.handle(command);
+            activeMember.suspend(command);
 
             // Assert - should have MemberSuspendedEvent
             assertThat(activeMember.getDomainEvents())
@@ -586,7 +586,7 @@ class MemberTest {
                     .reason(DeactivationReason.ODHLASKA)
                     .note("First termination")
                     .build();
-            activeMember.handle(firstCommand);
+            activeMember.suspend(firstCommand);
 
             UserId anotherAdmin = new UserId(UUID.randomUUID());
             Member.SuspendMembership secondCommand = MemberSuspendMembershipBuilder.builder()
@@ -596,7 +596,7 @@ class MemberTest {
                     .build();
 
             // Act & Assert
-            assertThatThrownBy(() -> activeMember.handle(secondCommand))
+            assertThatThrownBy(() -> activeMember.suspend(secondCommand))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("already suspended");
         }
@@ -609,19 +609,19 @@ class MemberTest {
 
             // Test ODHLASKA
             Member member1 = createActiveMember();
-            member1.handle(MemberSuspendMembershipBuilder.builder()
+            member1.suspend(MemberSuspendMembershipBuilder.builder()
                     .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note("Note 1").build());
             assertThat(member1.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
 
             // Test PRESTUP
             Member member2 = createActiveMember();
-            member2.handle(MemberSuspendMembershipBuilder.builder()
+            member2.suspend(MemberSuspendMembershipBuilder.builder()
                     .suspendedBy(adminUserId).reason(DeactivationReason.PRESTUP).note("Note 2").build());
             assertThat(member2.getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
 
             // Test OTHER
             Member member3 = createActiveMember();
-            member3.handle(MemberSuspendMembershipBuilder.builder()
+            member3.suspend(MemberSuspendMembershipBuilder.builder()
                     .suspendedBy(adminUserId).reason(DeactivationReason.OTHER).note("Note 3").build());
             assertThat(member3.getSuspensionReason()).isEqualTo(DeactivationReason.OTHER);
         }
@@ -635,7 +635,7 @@ class MemberTest {
             var beforeSuspension = System.currentTimeMillis();
 
             // Act
-            activeMember.handle(MemberSuspendMembershipBuilder.builder()
+            activeMember.suspend(MemberSuspendMembershipBuilder.builder()
                     .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note(null).build());
             var afterSuspension = System.currentTimeMillis();
 
@@ -673,7 +673,7 @@ class MemberTest {
                     .reason(DeactivationReason.ODHLASKA)
                     .note("Member requested termination")
                     .build();
-            activeMember.handle(suspendCommand);
+            activeMember.suspend(suspendCommand);
             return activeMember;
         }
 
@@ -687,7 +687,7 @@ class MemberTest {
                     .resumedBy(adminUserId).build();
 
             // Act
-            suspendedMember.handle(command);
+            suspendedMember.resume(command);
 
             // Assert
             assertThat(suspendedMember.isActive()).isTrue();
@@ -708,7 +708,7 @@ class MemberTest {
 
             // Act - clear creation event first, then resume
             suspendedMember.clearDomainEvents();
-            suspendedMember.handle(command);
+            suspendedMember.resume(command);
 
             // Assert - should have MemberResumedEvent
             assertThat(suspendedMember.getDomainEvents())
@@ -726,7 +726,7 @@ class MemberTest {
                     .resumedBy(adminUserId).build();
 
             // Act & Assert
-            assertThatThrownBy(() -> activeMember.handle(command))
+            assertThatThrownBy(() -> activeMember.resume(command))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("already active");
         }
@@ -744,7 +744,7 @@ class MemberTest {
 
             // Act
             suspendedMember.clearDomainEvents();
-            suspendedMember.handle(command);
+            suspendedMember.resume(command);
 
             var afterResume = System.currentTimeMillis();
 
@@ -786,7 +786,7 @@ class MemberTest {
             Member member = createAdultMember();
             EmailAddress newEmail = EmailAddress.of("new@example.com");
 
-            member.handle(MemberUpdateMemberBuilder.builder().email(newEmail).build());
+            member.update(MemberUpdateMemberBuilder.builder().email(newEmail).build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -798,7 +798,7 @@ class MemberTest {
             Member member = createAdultMember();
             PhoneNumber newPhone = PhoneNumber.of("+420999888777");
 
-            member.handle(MemberUpdateMemberBuilder.builder().phone(newPhone).build());
+            member.update(MemberUpdateMemberBuilder.builder().phone(newPhone).build());
 
             assertThat(member.getPhone()).isEqualTo(newPhone);
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
@@ -810,7 +810,7 @@ class MemberTest {
             Member member = createAdultMember();
             Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
 
-            member.handle(MemberUpdateMemberBuilder.builder().address(newAddress).build());
+            member.update(MemberUpdateMemberBuilder.builder().address(newAddress).build());
 
             assertThat(member.getAddress().street()).isEqualTo("Nová 1");
         }
@@ -820,7 +820,7 @@ class MemberTest {
         void shouldUpdateDietaryRestrictionsWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder().dietaryRestrictions("Vegan").build());
+            member.update(MemberUpdateMemberBuilder.builder().dietaryRestrictions("Vegan").build());
 
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
         }
@@ -830,7 +830,7 @@ class MemberTest {
         void shouldPreservePersonalInfoFieldsWhenNotProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("changed@example.com"))
                     .build());
 
@@ -845,7 +845,7 @@ class MemberTest {
         void shouldPreserveExistingValuesWhenNullPassed() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder().build());
+            member.update(MemberUpdateMemberBuilder.builder().build());
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -867,7 +867,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder()
                     .address(Address.of("Nová 5", "Brno", "60200", "CZ"))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -900,7 +900,7 @@ class MemberTest {
         void shouldUpdateFirstNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder().firstName("Petr").build());
+            member.update(MemberUpdateMemberBuilder.builder().firstName("Petr").build());
 
             assertThat(member.getFirstName()).isEqualTo("Petr");
             assertThat(member.getLastName()).isEqualTo("Novák");
@@ -911,7 +911,7 @@ class MemberTest {
         void shouldUpdateLastNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder().lastName("Svoboda").build());
+            member.update(MemberUpdateMemberBuilder.builder().lastName("Svoboda").build());
 
             assertThat(member.getLastName()).isEqualTo("Svoboda");
             assertThat(member.getFirstName()).isEqualTo("Jan");
@@ -923,7 +923,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate newDob = LocalDate.of(1985, 3, 20);
 
-            member.handle(MemberUpdateMemberBuilder.builder().dateOfBirth(newDob).build());
+            member.update(MemberUpdateMemberBuilder.builder().dateOfBirth(newDob).build());
 
             assertThat(member.getDateOfBirth()).isEqualTo(newDob);
         }
@@ -933,7 +933,7 @@ class MemberTest {
         void shouldUpdateGenderWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder().gender(Gender.FEMALE).build());
+            member.update(MemberUpdateMemberBuilder.builder().gender(Gender.FEMALE).build());
 
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
         }
@@ -945,7 +945,7 @@ class MemberTest {
             EmailAddress newEmail = EmailAddress.of("admin.set@example.com");
             PhoneNumber newPhone = PhoneNumber.of("+420111222333");
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .email(newEmail)
                     .phone(newPhone)
                     .build());
@@ -959,7 +959,7 @@ class MemberTest {
         void shouldPreserveUnchangedFieldsWhenUpdatingAdminOnlyFields() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .firstName("Petr")
                     .lastName("Svoboda")
                     .build());
@@ -975,7 +975,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate minorDateOfBirth = LocalDate.now().minusYears(10);
 
-            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder()
                     .dateOfBirth(minorDateOfBirth)
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -997,7 +997,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .birthNumber(BirthNumber.of("9005151234"))
                     .build());
 
@@ -1009,7 +1009,7 @@ class MemberTest {
         void shouldAllowSettingBirthNumberOnCzechMember() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .birthNumber(BirthNumber.of("9005151234"))
                     .build());
 
@@ -1031,7 +1031,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder()
                     .nationality("CZ")
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -1043,7 +1043,7 @@ class MemberTest {
         void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("temp@example.com"))
                     .guardian(new GuardianInformation("Jane", "Doe", "PARENT",
                             EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")))
@@ -1069,7 +1069,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder()
                     .chipNumber("NEW_CHIP")
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -1155,7 +1155,7 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("new@example.com"))
                     .build());
 
@@ -1172,7 +1172,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoEmail.handle(MemberUpdateMemberBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoEmail.update(MemberUpdateMemberBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
@@ -1187,7 +1187,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoPhone.handle(MemberUpdateMemberBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoPhone.update(MemberUpdateMemberBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
@@ -1203,7 +1203,7 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(MemberUpdateMemberBuilder.builder().build());
+            member.update(MemberUpdateMemberBuilder.builder().build());
 
             assertThat(member.getGuardian()).isNotNull();
         }

@@ -38,7 +38,7 @@ public class ManagementService implements ManagementPort {
     @Override
     public Member updateMember(MemberId memberId, Member.UpdateMember command) {
         Member member = loadMember(memberId);
-        member.handle(command);
+        member.update(command);
         Member saved = memberRepository.save(member);
         log.info("Member updated: memberId={}", memberId);
         return saved;
@@ -57,7 +57,7 @@ public class ManagementService implements ManagementPort {
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());
 
         try {
-            member.handle(command);
+            member.suspend(command);
         } catch (BusinessRuleViolationException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
@@ -80,7 +80,7 @@ public class ManagementService implements ManagementPort {
         log.info("Processing membership resume: memberId={}", memberId);
 
         try {
-            member.handle(command);
+            member.resume(command);
         } catch (BusinessRuleViolationException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }

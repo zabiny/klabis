@@ -558,7 +558,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     // ========== Command Handlers (Domain Methods) ==========
 
-    public void handle(UpdateMember command) {
+    public void update(UpdateMember command) {
         EmailAddress newEmail = command.email() != null ? command.email() : this.email;
         PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
         Address newAddress = command.address() != null ? command.address() : this.address;
@@ -623,7 +623,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @param command the suspension command
      * @throws BusinessRuleViolationException if member is already suspended
      */
-    public void handle(SuspendMembership command) {
+    public void suspend(SuspendMembership command) {
         if (!this.active) {
             throw new BusinessRuleViolationException(
                     "Member is already suspended and cannot be suspended again"
@@ -652,7 +652,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @param command the resume command
      * @throws BusinessRuleViolationException if member is already active
      */
-    public void handle(ResumeMembership command) {
+    public void resume(ResumeMembership command) {
         if (this.active) {
             throw new BusinessRuleViolationException(
                     "Member is already active and cannot be resumed"
