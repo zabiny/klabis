@@ -102,17 +102,19 @@ public class FreeGroup extends UserGroup implements WithInvitations {
     }
 
     public void acceptInvitation(AcceptInvitation command) {
-        if (!isInvitedMember(command.invitationId(), command.requestingMember())) {
-            throw new NotInvitedMemberException(command.requestingMember(), command.invitationId());
-        }
+        requireInvitedMember(command.invitationId(), command.requestingMember());
         acceptInvitation(command.invitationId());
     }
 
     public void rejectInvitation(RejectInvitation command) {
-        if (!isInvitedMember(command.invitationId(), command.requestingMember())) {
-            throw new NotInvitedMemberException(command.requestingMember(), command.invitationId());
-        }
+        requireInvitedMember(command.invitationId(), command.requestingMember());
         rejectInvitation(command.invitationId());
+    }
+
+    private void requireInvitedMember(InvitationId invitationId, MemberId memberId) {
+        if (!isInvitedMember(invitationId, memberId)) {
+            throw new NotInvitedMemberException(memberId, invitationId);
+        }
     }
 
     @Override

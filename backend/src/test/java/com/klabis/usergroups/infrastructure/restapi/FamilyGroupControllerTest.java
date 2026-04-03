@@ -313,7 +313,7 @@ class FamilyGroupControllerTest {
         void shouldReturn400WhenNonOwnerAttemptsRemoveOwner() throws Exception {
             UUID otherOwnerUuid = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
             when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
-                    .thenThrow(new com.klabis.usergroups.application.NotGroupOwnerException(
+                    .thenThrow(new com.klabis.usergroups.domain.NotGroupOwnerException(
                             new MemberId(UUID.fromString(MEMBER_ID)), new UserGroupId(GROUP_UUID)));
 
             mockMvc.perform(

@@ -64,12 +64,17 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
 
     public void addOwner(AddOwner command) {
         requireOwner(command.requestingMember());
-        addOwnerInternal(command.newOwner());
+        Assert.notNull(command.newOwner(), "MemberId is required");
+        owners.add(command.newOwner());
     }
 
     public void removeOwner(RemoveOwner command) {
         requireOwner(command.requestingMember());
-        removeOwnerInternal(command.ownerToRemove());
+        Assert.notNull(command.ownerToRemove(), "MemberId is required");
+        if (isLastOwner(command.ownerToRemove())) {
+            throw new CannotRemoveLastOwnerException(command.ownerToRemove());
+        }
+        owners.remove(command.ownerToRemove());
     }
 
     protected void requireOwner(MemberId requestingMember) {
@@ -112,19 +117,11 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
 
     void addOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        addOwnerInternal(memberId);
+        owners.add(memberId);
     }
 
     void removeOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        removeOwnerInternal(memberId);
-    }
-
-    private void addOwnerInternal(MemberId memberId) {
-        owners.add(memberId);
-    }
-
-    private void removeOwnerInternal(MemberId memberId) {
         if (isLastOwner(memberId)) {
             throw new CannotRemoveLastOwnerException(memberId);
         }

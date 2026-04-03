@@ -8,7 +8,7 @@ import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.application.GroupManagementPort;
 import com.klabis.usergroups.application.GroupNotFoundException;
-import com.klabis.usergroups.application.NotGroupOwnerException;
+import com.klabis.usergroups.domain.NotGroupOwnerException;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.usergroups.domain.FreeGroup;
