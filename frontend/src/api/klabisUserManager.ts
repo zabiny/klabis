@@ -1,5 +1,6 @@
 import {User, UserManager, WebStorageStateStore,} from 'oidc-client-ts';
 import {normalizeUrl} from "./hateoas.ts";
+import {hideRenewalOverlay, showRenewalOverlay} from "./tokenRenewalState.ts";
 
 export interface AuthConfig {
     authority: string;
@@ -11,6 +12,57 @@ export interface AuthConfig {
     onUserLoaded?: (user: User) => void;
     onUserUnloaded?: () => void;
 }
+
+const SILENT_RENEW_MAX_ATTEMPTS = 3;
+const SILENT_RENEW_RETRY_DELAY_MS = 5000;
+
+/**
+ * Tracks the active retry promise so concurrent callers share the same cycle
+ * rather than stacking independent retry loops.
+ */
+let activeRetryPromise: Promise<void> | null = null;
+
+const delay = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Attempts signinSilent up to SILENT_RENEW_MAX_ATTEMPTS times with a fixed delay
+ * between attempts. Calls removeUser() only after all attempts are exhausted.
+ *
+ * Exported so authorizedFetch 401 handling can reuse the same strategy.
+ */
+export const silentRenewRetry = (userManager: UserManager): Promise<void> => {
+    if (activeRetryPromise !== null) {
+        return activeRetryPromise;
+    }
+
+    const execute = async (): Promise<void> => {
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= SILENT_RENEW_MAX_ATTEMPTS; attempt++) {
+            try {
+                await userManager.signinSilent();
+                return;
+            } catch (err) {
+                lastError = err;
+                console.warn(`Silent renew attempt ${attempt}/${SILENT_RENEW_MAX_ATTEMPTS} failed`, err);
+                if (attempt < SILENT_RENEW_MAX_ATTEMPTS) {
+                    await delay(SILENT_RENEW_RETRY_DELAY_MS);
+                }
+            }
+        }
+        console.error('All silent renew attempts exhausted, logging out', lastError);
+        await userManager.removeUser();
+        throw lastError;
+    };
+
+    showRenewalOverlay();
+    activeRetryPromise = execute().finally(() => {
+        activeRetryPromise = null;
+        hideRenewalOverlay();
+    });
+
+    return activeRetryPromise;
+};
 
 
 export const authConfig: AuthConfig = {
@@ -39,7 +91,7 @@ export const createUserManager = ({
         automaticSilentRenew: true,
         redirect_uri: normalizeUrl(config.redirect_uri),
         post_logout_redirect_uri: normalizeUrl(config.post_logout_redirect_uri),
-        silent_redirect_uri: normalizeUrl(config.redirect_uri), // Required for silent renew
+        silent_redirect_uri: `${window.location.origin}/silent-renew.html`,
     };
 
     const userManager = new UserManager(userManagerConfig);
@@ -53,15 +105,23 @@ export const createUserManager = ({
 
     userManager.events.addAccessTokenExpired(() => {
         console.warn('Access token expired');
-        userManager.signinSilent().catch((err) => {
-            console.error('Silent renew failed', err);
-            userManager.removeUser();
+        silentRenewRetry(userManager).catch(() => {
+            // removeUser() already called inside silentRenewRetry after exhausting all attempts
         });
     });
 
     userManager.events.addSilentRenewError((err) => {
-        console.error('Silent renew error:', err);
-        userManager.removeUser();
+        // automaticSilentRenew fired and failed — disable it before retrying manually
+        // to prevent oidc-client-ts from stacking its own retries on top of ours
+        console.error('Silent renew error (automatic):', err);
+        userManager.stopSilentRenew();
+        silentRenewRetry(userManager)
+            .then(() => {
+                userManager.startSilentRenew();
+            })
+            .catch(() => {
+                // removeUser() already called inside silentRenewRetry
+            });
     });
 
     userManager.events.addUserSignedOut(() => {

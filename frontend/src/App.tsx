@@ -26,6 +26,7 @@ import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
+import {TokenRenewalOverlay} from "./components/UI/TokenRenewalOverlay.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -65,6 +66,7 @@ const AdminModeAwareRoute = ({ allowedInAdminMode }: { allowedInAdminMode: boole
 function App() {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <TokenRenewalOverlay/>
             <AuthProvider config={authConfig}>
                 <ThemeProvider>
                     <AdminModeProvider>

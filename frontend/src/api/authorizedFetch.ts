@@ -1,4 +1,4 @@
-import {klabisAuthUserManager} from './klabisUserManager';
+import {klabisAuthUserManager, silentRenewRetry} from './klabisUserManager';
 
 /**
  * Fetch with automatic Bearer token injection and /api prefix for relative URLs.
@@ -9,23 +9,27 @@ export async function authorizedFetch(
     options?: RequestInit,
     throwOnError: boolean = true
 ): Promise<Response> {
-    const user = await klabisAuthUserManager.getUser();
+    const response = await executeRequest(url, options);
 
-    // Prepend /api prefix to relative URLs
-    let fetchUrl: string;
-    if (typeof url === 'string') {
-        // If URL is absolute (starts with http:// or https://), use as-is
-        // If URL already starts with /api, use as-is
-        // Otherwise, prepend /api
-        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
-            fetchUrl = url;
-        } else {
-            fetchUrl = `/api${url.startsWith('/') ? '' : '/'}${url}`;
+    if (response.status === 401) {
+        await silentRenewRetry(klabisAuthUserManager);
+        // Retry once after successful token renewal — new token fetched fresh from user manager
+        const retryResponse = await executeRequest(url, options);
+        if (!retryResponse.ok && throwOnError) {
+            throw await buildFetchError(retryResponse);
         }
-    } else {
-        // URL object - convert to string and check if absolute
-        fetchUrl = url.toString();
+        return retryResponse;
     }
+
+    if (!response.ok && throwOnError) {
+        throw await buildFetchError(response);
+    }
+    return response;
+}
+
+async function executeRequest(url: string | URL, options?: RequestInit): Promise<Response> {
+    const user = await klabisAuthUserManager.getUser();
+    const fetchUrl = resolveUrl(url);
 
     const headers: HeadersInit = {
         Accept: "application/prs.hal-forms+json,application/hal+json,application/json",
@@ -33,25 +37,36 @@ export async function authorizedFetch(
         Authorization: `Bearer ${user?.access_token}`,
     };
 
-    const response = await fetch(fetchUrl, {
+    return fetch(fetchUrl, {
         ...options,
         headers,
     });
+}
 
-    if (response.status === 401) {
-        await klabisAuthUserManager.removeUser();
+function resolveUrl(url: string | URL): string {
+    if (typeof url !== 'string') {
+        return url.toString();
     }
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
+        return url;
+    }
+    return `/api${url.startsWith('/') ? '' : '/'}${url}`;
+}
 
-    if (!response.ok && throwOnError) {
-        let errorBody: string | undefined;
-        try {
-            errorBody = await response.clone().text();
-        } catch {
-            // Ignore if we can't read the body
-        }
-        throw new FetchError(`HTTP ${response.status} (${response.statusText})`, response.status, response.statusText, response.headers, errorBody);
+async function buildFetchError(response: Response): Promise<FetchError> {
+    let errorBody: string | undefined;
+    try {
+        errorBody = await response.clone().text();
+    } catch {
+        // Ignore if we can't read the body
     }
-    return response;
+    return new FetchError(
+        `HTTP ${response.status} (${response.statusText})`,
+        response.status,
+        response.statusText,
+        response.headers,
+        errorBody
+    );
 }
 
 

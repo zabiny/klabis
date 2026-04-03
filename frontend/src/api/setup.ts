@@ -1,6 +1,6 @@
 import createFetchClient, {type Middleware} from "openapi-fetch";
 import type {paths} from "./klabisApi";
-import {klabisAuthUserManager} from "./klabisUserManager";
+import {klabisAuthUserManager, silentRenewRetry} from "./klabisUserManager";
 import createClient from "openapi-react-query";
 
 
@@ -20,19 +20,31 @@ const promiseAccessToken = async (): Promise<string | null> => {
 }
 
 // https://openapi-ts.dev/openapi-fetch/middleware-auth#auth
-const authMiddleware: Middleware = {
+export const authMiddleware: Middleware = {
     async onRequest({request}) {
-
         const access_token = await promiseAccessToken();
 
         if (!access_token) {
             throw new Error("No Klabis access_token available!");
         }
 
-        // add Authorization header to every request
         request.headers.set("Authorization", `Bearer ${access_token}`);
-
         return request;
+    },
+
+    async onResponse({request, response}) {
+        if (response.status !== 401) {
+            return undefined;
+        }
+
+        await silentRenewRetry(klabisAuthUserManager);
+
+        // Retry the original request once with the freshly renewed token
+        const renewedUser = await klabisAuthUserManager.getUser();
+        const retryRequest = new Request(request);
+        retryRequest.headers.set("Authorization", `Bearer ${renewedUser?.access_token}`);
+
+        return fetch(retryRequest);
     },
 };
 

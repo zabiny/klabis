@@ -38,6 +38,7 @@ vi.mock('./api/klabisUserManager', () => {
 
     return {
         klabisAuthUserManager: mockUserManager,
+        silentRenewRetry: vi.fn().mockResolvedValue(undefined),
         createUserManager: vi.fn(() => mockUserManager),
         authConfig: {
             authority: '/',

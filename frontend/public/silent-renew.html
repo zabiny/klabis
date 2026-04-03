@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Silent Renew</title>
+</head>
+<body>
+<script>
+    // Notifies the parent window's UserManager that the silent renew iframe has
+    // loaded with the authorization response. This matches the postMessage format
+    // that oidc-client-ts expects in AbstractChildWindow._notifyParent().
+    window.parent.postMessage(
+        { source: "oidc-client", url: window.location.href, keepOpen: false },
+        window.location.origin
+    );
+</script>
+</body>
+</html>
