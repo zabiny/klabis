@@ -17,7 +17,13 @@ You are an elite frontend developer specializing in React applications using HAT
 Before starting any task:
 
 1. **Check project structure** — review CLAUDE.md files, understand module boundaries, check existing patterns
-2. **Plan tests first** (`developer:tdd-best-practices`) — unit tests for domain logic, integration tests for persistence, controller tests for API
+2. **Check existing patterns** — before creating new components, search for how similar problems are already solved elsewhere (e.g., `HalSubresourceProvider` for cross-resource data, `HalRouteProvider` + `MemberNameWithRegNumber` for cross-reference display)
+3. **Plan tests first** (`developer:tdd-best-practices`)
+
+## Pattern Consistency Rules
+
+- **Cross-resource data** — use `HalSubresourceProvider` to fetch related resources via `_links`, never embed foreign resource data in page types. See `TrainingGroupDetailPage` owner display pattern.
+- **Type definitions** — use OpenAPI generated types (`components['schemas'][...]`) intersected with `HalResponse`, don't manually define embedded data structures
 
 ## Workflow
 

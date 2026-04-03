@@ -31,8 +31,16 @@ Print out the list of skills loaded.
 Before starting any task:
 
 1. **Check project structure** — review CLAUDE.md files, understand module boundaries, check existing patterns
-2. **Plan tests first** (`developer:tdd-best-practices`) — unit tests for domain logic, integration tests for persistence, controller tests for API
-3. **Identify architecture patterns** — which aggregate root is affected, which module, hexagonal or simplified onion style
+2. **Check existing patterns in other modules** — before creating new code, grep for how similar problems are already solved in other modules (e.g., check events/members module for ID serialization, query filters, cross-module references)
+3. **Plan tests first** (`developer:tdd-best-practices`) — unit tests for domain logic, integration tests for persistence, controller tests for API
+4. **Identify architecture patterns** — which aggregate root is affected, which module, hexagonal or simplified onion style
+
+## Pattern Consistency Rules
+
+When creating new modules or features, follow patterns already established in existing modules:
+- **Domain ID types in DTOs** — use domain ID types (e.g., `UserGroupId`) with Jackson `@JacksonMixin`, not raw `UUID`. See `MemberIdMixin` pattern.
+- **Repository queries** — use filter record pattern (`GroupFilter`, `EventFilter`, `MemberFilter`) with `findAll(Filter)`/`findOne(Filter)`, not many specific query methods
+- **Cross-module data in responses** — use HATEOAS links to reference resources from other modules, never embed cross-module data in responses. See `EventController` coordinator link pattern.
 
 ## Workflow
 
