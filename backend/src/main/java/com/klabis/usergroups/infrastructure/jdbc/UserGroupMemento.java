@@ -82,7 +82,7 @@ class UserGroupMemento implements Persistable<UUID> {
         UserGroupMemento memento = new UserGroupMemento();
         memento.id = group.getId().uuid();
         memento.name = group.getName();
-        memento.type = discriminatorFor(group);
+        memento.type = group.typeDiscriminator();
 
         memento.owners = group.getOwners().stream()
                 .map(memberId -> new UserGroupOwnerMemento(memberId.uuid()))
@@ -160,16 +160,4 @@ class UserGroupMemento implements Persistable<UUID> {
         return isNew;
     }
 
-    private static String discriminatorFor(UserGroup group) {
-        if (group instanceof FreeGroup) {
-            return FreeGroup.TYPE_DISCRIMINATOR;
-        }
-        if (group instanceof TrainingGroup) {
-            return TrainingGroup.TYPE_DISCRIMINATOR;
-        }
-        if (group instanceof FamilyGroup) {
-            return FamilyGroup.TYPE_DISCRIMINATOR;
-        }
-        throw new IllegalArgumentException("Unknown UserGroup subtype: " + group.getClass().getSimpleName());
-    }
 }

@@ -23,6 +23,11 @@ public class TrainingGroup extends UserGroup {
         this.ageRange = ageRange;
     }
 
+    @Override
+    public String typeDiscriminator() {
+        return TYPE_DISCRIMINATOR;
+    }
+
     public record CreateTrainingGroup(String name, MemberId owner, AgeRange ageRange) {
         public CreateTrainingGroup {
             Assert.hasText(name, "Group name is required");

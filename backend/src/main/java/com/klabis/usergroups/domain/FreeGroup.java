@@ -24,6 +24,11 @@ public class FreeGroup extends UserGroup implements WithInvitations {
         this.invitations = new HashSet<>(invitations);
     }
 
+    @Override
+    public String typeDiscriminator() {
+        return TYPE_DISCRIMINATOR;
+    }
+
     @RecordBuilder
     public record CreateFreeGroup(String name, MemberId creator) {
         public CreateFreeGroup {

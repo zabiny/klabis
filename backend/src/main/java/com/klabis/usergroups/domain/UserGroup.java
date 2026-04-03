@@ -84,6 +84,8 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         return owners.contains(memberId);
     }
 
+    public abstract String typeDiscriminator();
+
     public boolean hasMember(MemberId memberId) {
         return members.stream().anyMatch(m -> m.memberId().equals(memberId));
     }

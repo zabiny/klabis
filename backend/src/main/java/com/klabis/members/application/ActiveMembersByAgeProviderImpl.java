@@ -23,7 +23,6 @@ class ActiveMembersByAgeProviderImpl implements ActiveMembersByAgeProvider {
     @Override
     public List<MemberId> findActiveMemberIdsByAgeRange(int minAge, int maxAge) {
         LocalDate today = LocalDate.now();
-        // TODO: push age range filter to DB query when roster size warrants it
         return memberRepository.findAll(MemberFilter.activeOnly()).stream()
                 .filter(member -> member.getDateOfBirth() != null)
                 .filter(member -> {

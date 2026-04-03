@@ -67,9 +67,9 @@ public record MemberDetailsResponse(
         FamilyGroupResponse familyGroup
 ) {
 
-    public record TrainingGroupResponse(String groupName, java.util.List<OwnerResponse> owners) {
-        public record OwnerResponse(String fullName, String email) {}
-    }
+    public record OwnerResponse(String fullName, String email) {}
 
-    public record FamilyGroupResponse(String groupName, java.util.List<TrainingGroupResponse.OwnerResponse> owners) {}
+    public record TrainingGroupResponse(String groupName, java.util.List<OwnerResponse> owners) {}
+
+    public record FamilyGroupResponse(String groupName, java.util.List<OwnerResponse> owners) {}
 }

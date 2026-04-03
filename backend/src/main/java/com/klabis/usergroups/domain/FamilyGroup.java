@@ -16,6 +16,11 @@ public class FamilyGroup extends UserGroup {
         super(id, name, owners, members);
     }
 
+    @Override
+    public String typeDiscriminator() {
+        return TYPE_DISCRIMINATOR;
+    }
+
     public record CreateFamilyGroup(String name, MemberId owner, Set<MemberId> initialMembers) {
         public CreateFamilyGroup {
             Assert.hasText(name, "Group name is required");

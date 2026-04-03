@@ -29,7 +29,7 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
                 .map(group -> new UserGroupOwnershipInfo(
                         group.getId().uuid(),
                         group.getName(),
-                        typeDiscriminatorFor(group)))
+                        group.typeDiscriminator()))
                 .toList();
     }
 
@@ -40,7 +40,7 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
                 .map(group -> new OwnedGroupInfo(
                         group.getId().uuid().toString(),
                         group.getName(),
-                        typeDiscriminatorFor(group)))
+                        group.typeDiscriminator()))
                 .toList();
     }
 
@@ -70,10 +70,4 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
                 .toList();
     }
 
-    private static String typeDiscriminatorFor(UserGroup group) {
-        if (group instanceof FamilyGroup) return FamilyGroup.TYPE_DISCRIMINATOR;
-        if (group instanceof TrainingGroup) return TrainingGroup.TYPE_DISCRIMINATOR;
-        if (group instanceof FreeGroup) return FreeGroup.TYPE_DISCRIMINATOR;
-        throw new IllegalArgumentException("Unknown UserGroup subtype: " + group.getClass().getSimpleName());
-    }
 }

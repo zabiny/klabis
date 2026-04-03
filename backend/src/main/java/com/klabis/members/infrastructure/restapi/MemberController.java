@@ -16,6 +16,7 @@ import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.FamilyGroupProvider;
 import com.klabis.members.TrainingGroupProvider;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.FamilyGroupResponse;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.OwnerResponse;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.TrainingGroupResponse;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -217,23 +218,19 @@ public class MemberController {
     }
 
     private TrainingGroupResponse buildTrainingGroupResponse(TrainingGroupProvider.TrainingGroupData data) {
-        List<TrainingGroupResponse.OwnerResponse> ownerResponses = memberRepository
-                .findAllByIds(data.ownerIds()).stream()
-                .map(owner -> new TrainingGroupResponse.OwnerResponse(
-                        owner.getFirstName() + " " + owner.getLastName(),
-                        owner.getEmail() != null ? owner.getEmail().value() : null))
-                .toList();
-        return new TrainingGroupResponse(data.groupName(), ownerResponses);
+        return new TrainingGroupResponse(data.groupName(), buildOwnerResponses(data.ownerIds()));
     }
 
     private FamilyGroupResponse buildFamilyGroupResponse(FamilyGroupProvider.FamilyGroupData data) {
-        List<TrainingGroupResponse.OwnerResponse> ownerResponses = memberRepository
-                .findAllByIds(data.ownerIds()).stream()
-                .map(owner -> new TrainingGroupResponse.OwnerResponse(
+        return new FamilyGroupResponse(data.groupName(), buildOwnerResponses(data.ownerIds()));
+    }
+
+    private List<OwnerResponse> buildOwnerResponses(Set<MemberId> ownerIds) {
+        return memberRepository.findAllByIds(ownerIds).stream()
+                .map(owner -> new OwnerResponse(
                         owner.getFirstName() + " " + owner.getLastName(),
                         owner.getEmail() != null ? owner.getEmail().value() : null))
                 .toList();
-        return new FamilyGroupResponse(data.groupName(), ownerResponses);
     }
 
     private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response) {
