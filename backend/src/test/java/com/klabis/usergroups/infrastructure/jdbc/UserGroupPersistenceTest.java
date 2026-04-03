@@ -3,8 +3,13 @@ package com.klabis.usergroups.infrastructure.jdbc;
 import com.klabis.CleanupTestData;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.FamilyGroup;
 import com.klabis.usergroups.domain.FreeGroup;
+import com.klabis.usergroups.domain.GroupFilter;
+import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.InvitationId;
+import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.ddd.annotation.Repository;
@@ -21,6 +26,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -164,6 +170,242 @@ class UserGroupPersistenceTest {
             userGroupRepository.delete(id);
 
             assertThat(userGroupRepository.findById(id)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — filter by type")
+    class FindAllByType {
+
+        @Test
+        @DisplayName("should return only training groups when filtering by TRAINING type")
+        void shouldReturnOnlyTrainingGroups() {
+            userGroupRepository.save(TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, new AgeRange(8, 14))));
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Trail Runners", OWNER)));
+            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Smith Family", OWNER, Set.of())));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).isInstanceOf(TrainingGroup.class);
+            assertThat(result.get(0).getName()).isEqualTo("Juniors");
+        }
+
+        @Test
+        @DisplayName("should return only family groups when filtering by FAMILY type")
+        void shouldReturnOnlyFamilyGroups() {
+            userGroupRepository.save(TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Seniors", OWNER, new AgeRange(18, 60))));
+            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Johnson Family", OWNER, Set.of())));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byType(GroupType.FAMILY));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).isInstanceOf(FamilyGroup.class);
+            assertThat(result.get(0).getName()).isEqualTo("Johnson Family");
+        }
+
+        @Test
+        @DisplayName("should return empty list when no groups of given type exist")
+        void shouldReturnEmptyWhenNoGroupsOfType() {
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Cyclists", OWNER)));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — filter by id")
+    class FindAllById {
+
+        @Test
+        @DisplayName("should return exactly the group matching the given id")
+        void shouldReturnGroupMatchingId() {
+            UserGroup saved = userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Specific Group", OWNER)));
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Other Group", OWNER)));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byId(saved.getId()));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getId()).isEqualTo(saved.getId());
+        }
+
+        @Test
+        @DisplayName("should return empty list when no group matches the given id")
+        void shouldReturnEmptyWhenIdNotFound() {
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byId(new UserGroupId(UUID.randomUUID())));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — filter by owner")
+    class FindAllByOwner {
+
+        @Test
+        @DisplayName("should return groups owned by the given member")
+        void shouldReturnGroupsOwnedByMember() {
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Owner's Group", OWNER)));
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Extra's Group", EXTRA_MEMBER)));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byOwner(OWNER));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Owner's Group");
+        }
+
+        @Test
+        @DisplayName("should return empty list when member owns no groups")
+        void shouldReturnEmptyWhenMemberOwnsNoGroups() {
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Owner's Group", OWNER)));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byOwner(EXTRA_MEMBER));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — filter by member")
+    class FindAllByMemberFilter {
+
+        @Test
+        @DisplayName("should return groups where the given member is a member")
+        void shouldReturnGroupsWhereMemberBelongs() {
+            FreeGroup group1 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Alpha", OWNER));
+            addMemberViaInvitation(group1, EXTRA_MEMBER);
+            userGroupRepository.save(group1);
+
+            FreeGroup group2 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Beta", OWNER));
+            userGroupRepository.save(group2);
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byMember(EXTRA_MEMBER));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Group Alpha");
+        }
+
+        @Test
+        @DisplayName("should return empty list when member belongs to no groups")
+        void shouldReturnEmptyWhenMemberBelongsToNoGroups() {
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Owner's Group", OWNER)));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byMember(EXTRA_MEMBER));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — filter by pendingInvitationForMember")
+    class FindAllByPendingInvitation {
+
+        @Test
+        @DisplayName("should return groups with pending invitation for the given member")
+        void shouldReturnGroupsWithPendingInvitation() {
+            FreeGroup group1 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group With Invite", OWNER));
+            group1.invite(OWNER, EXTRA_MEMBER);
+            userGroupRepository.save(group1);
+
+            FreeGroup group2 = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Without Invite", OWNER));
+            userGroupRepository.save(group2);
+
+            GroupFilter filter = new GroupFilter(null, null, null, null, EXTRA_MEMBER);
+            List<UserGroup> result = userGroupRepository.findAll(filter);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Group With Invite");
+        }
+
+        @Test
+        @DisplayName("should not return group when invitation was accepted")
+        void shouldNotReturnGroupWhenInvitationAccepted() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Group", OWNER));
+            addMemberViaInvitation(group, EXTRA_MEMBER);
+            userGroupRepository.save(group);
+
+            GroupFilter filter = new GroupFilter(null, null, null, null, EXTRA_MEMBER);
+            List<UserGroup> result = userGroupRepository.findAll(filter);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter) — combination of filters")
+    class FindAllWithCombinedFilters {
+
+        @Test
+        @DisplayName("should return only training groups where member belongs (type + member)")
+        void shouldFilterByTypeAndMember() {
+            TrainingGroup training = TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Training Group", OWNER, new AgeRange(8, 14)));
+            training.addMember(EXTRA_MEMBER);
+            userGroupRepository.save(training);
+
+            FreeGroup free = FreeGroup.create(new FreeGroup.CreateFreeGroup("Free Group", OWNER));
+            addMemberViaInvitation(free, EXTRA_MEMBER);
+            userGroupRepository.save(free);
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byTypeAndMember(GroupType.TRAINING, EXTRA_MEMBER));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0)).isInstanceOf(TrainingGroup.class);
+            assertThat(result.get(0).getName()).isEqualTo("Training Group");
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(GroupFilter.all()) — no filter returns all groups")
+    class FindAllNoFilter {
+
+        @Test
+        @DisplayName("should return all groups when no filter is applied")
+        void shouldReturnAllGroupsForEmptyFilter() {
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Group A", OWNER)));
+            userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Group B", OWNER)));
+            userGroupRepository.save(TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Training C", OWNER, new AgeRange(10, 18))));
+
+            List<UserGroup> result = userGroupRepository.findAll(GroupFilter.all());
+
+            assertThat(result).hasSize(3);
+        }
+    }
+
+    @Nested
+    @DisplayName("findOne(GroupFilter)")
+    class FindOneFilter {
+
+        @Test
+        @DisplayName("should return Optional with first match when groups exist")
+        void shouldReturnFirstMatchingGroup() {
+            UserGroup saved = userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Match Group", OWNER)));
+
+            Optional<UserGroup> result = userGroupRepository.findOne(GroupFilter.byId(saved.getId()));
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(saved.getId());
+        }
+
+        @Test
+        @DisplayName("should return empty Optional when no group matches")
+        void shouldReturnEmptyWhenNoMatch() {
+            Optional<UserGroup> result = userGroupRepository.findOne(GroupFilter.byId(new UserGroupId(UUID.randomUUID())));
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return family group when filtering by type and member (type + member)")
+        void shouldReturnFamilyGroupForMember() {
+            FamilyGroup family = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Test Family", OWNER, Set.of(EXTRA_MEMBER)));
+            userGroupRepository.save(family);
+
+            Optional<UserGroup> result = userGroupRepository.findOne(GroupFilter.byTypeAndMember(GroupType.FAMILY, EXTRA_MEMBER));
+
+            assertThat(result).isPresent();
+            assertThat(result.get()).isInstanceOf(FamilyGroup.class);
         }
     }
 

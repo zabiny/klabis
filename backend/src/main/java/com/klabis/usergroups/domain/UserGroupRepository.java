@@ -14,6 +14,10 @@ public interface UserGroupRepository {
 
     Optional<UserGroup> findById(UserGroupId id);
 
+    List<UserGroup> findAll(GroupFilter filter);
+
+    Optional<UserGroup> findOne(GroupFilter filter);
+
     List<UserGroup> findAllByMember(MemberId memberId);
 
     List<UserGroup> findAllByOwner(MemberId memberId);
