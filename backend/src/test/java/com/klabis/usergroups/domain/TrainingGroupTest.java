@@ -279,6 +279,43 @@ class TrainingGroupTest {
         }
     }
 
+    @Nested
+    @DisplayName("updateAgeRange(UpdateAgeRange command)")
+    class UpdateAgeRangeCommandMethod {
+
+        private static final MemberId NON_OWNER = new MemberId(UUID.fromString("99999999-9999-9999-9999-999999999999"));
+
+        private TrainingGroup group;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            group = TrainingGroup.reconstruct(
+                    new UserGroupId(UUID.randomUUID()), "Juniors", Set.of(OWNER), Set.of(),
+                    new AgeRange(10, 18), null);
+        }
+
+        @Test
+        @DisplayName("should update age range when requesting member is owner")
+        void shouldUpdateAgeRangeWhenOwner() {
+            AgeRange newRange = new AgeRange(12, 20);
+            TrainingGroup.UpdateAgeRange command = new TrainingGroup.UpdateAgeRange(OWNER, newRange);
+
+            group.updateAgeRange(command);
+
+            assertThat(group.getAgeRange()).isEqualTo(newRange);
+        }
+
+        @Test
+        @DisplayName("should throw NotGroupOwnerException when requesting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            AgeRange newRange = new AgeRange(12, 20);
+            TrainingGroup.UpdateAgeRange command = new TrainingGroup.UpdateAgeRange(NON_OWNER, newRange);
+
+            assertThatThrownBy(() -> group.updateAgeRange(command))
+                    .isInstanceOf(NotGroupOwnerException.class);
+        }
+    }
+
     private TrainingGroup buildGroup(UUID groupUuid, String name, AgeRange ageRange) {
         return TrainingGroup.reconstruct(
                 new UserGroupId(groupUuid), name, Set.of(OWNER), Set.of(), ageRange, null);

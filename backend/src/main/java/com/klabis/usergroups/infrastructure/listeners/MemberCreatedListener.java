@@ -41,7 +41,7 @@ public class MemberCreatedListener {
     }
 
     private void assignMemberToGroup(TrainingGroup group, MemberCreatedEvent event) {
-        group.addMember(event.memberId());
+        group.assignEligibleMember(event.memberId());
         userGroupRepository.save(group);
 
         eventPublisher.publishEvent(new MemberAssignedToTrainingGroupEvent(

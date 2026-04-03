@@ -3,6 +3,7 @@ package com.klabis.usergroups.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.springframework.util.Assert;
 
 import java.util.Set;
@@ -21,6 +22,7 @@ public class FamilyGroup extends UserGroup {
         return TYPE_DISCRIMINATOR;
     }
 
+    @RecordBuilder
     public record CreateFamilyGroup(String name, MemberId owner, Set<MemberId> initialMembers) {
         public CreateFamilyGroup {
             Assert.hasText(name, "Group name is required");

@@ -340,7 +340,7 @@ class UserGroupPersistenceTest {
         @DisplayName("should return only training groups where member belongs (type + member)")
         void shouldFilterByTypeAndMember() {
             TrainingGroup training = TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Training Group", OWNER, new AgeRange(8, 14)));
-            training.addMember(EXTRA_MEMBER);
+            training.assignEligibleMember(EXTRA_MEMBER);
             userGroupRepository.save(training);
 
             FreeGroup free = FreeGroup.create(new FreeGroup.CreateFreeGroup("Free Group", OWNER));

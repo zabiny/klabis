@@ -4,6 +4,7 @@ import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.GroupFilter;
 import com.klabis.usergroups.domain.InvitationId;
+import com.klabis.usergroups.domain.NotGroupOwnerException;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import com.klabis.usergroups.domain.WithInvitations;
@@ -25,7 +26,9 @@ class InvitationService implements InvitationPort {
     @Override
     public void inviteMember(UserGroupId groupId, MemberId invitedBy, MemberId target) {
         var group = loadGroupWithInvitations(groupId);
-        requireOwner(group, invitedBy);
+        if (!group.isOwner(invitedBy)) {
+            throw new NotGroupOwnerException(invitedBy, group.getId());
+        }
         group.invite(invitedBy, target);
         userGroupRepository.save(group);
     }
@@ -67,12 +70,6 @@ class InvitationService implements InvitationPort {
         @SuppressWarnings("unchecked")
         T result = (T) group;
         return result;
-    }
-
-    private void requireOwner(UserGroup group, MemberId requestingMember) {
-        if (!group.isOwner(requestingMember)) {
-            throw new NotGroupOwnerException(requestingMember, group.getId());
-        }
     }
 
     private void requireInvitedMember(WithInvitations group, InvitationId invitationId, MemberId member) {

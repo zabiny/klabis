@@ -9,6 +9,7 @@ import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupFilter;
 import com.klabis.usergroups.domain.GroupType;
 import com.klabis.usergroups.domain.TrainingGroup;
+import com.klabis.usergroups.domain.NotGroupOwnerException;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -84,7 +85,7 @@ class GroupManagementService implements GroupManagementPort {
         TrainingGroup group = TrainingGroup.create(command);
         activeMembersByAgeProvider
                 .findActiveMemberIdsByAgeRange(command.ageRange().minAge(), command.ageRange().maxAge())
-                .forEach(group::addMember);
+                .forEach(group::assignEligibleMember);
         return (TrainingGroup) userGroupRepository.save(group);
     }
 
@@ -95,9 +96,8 @@ class GroupManagementService implements GroupManagementPort {
         if (!(group instanceof TrainingGroup trainingGroup)) {
             throw new GroupNotFoundException(id);
         }
-        requireOwner(trainingGroup, requestingMember);
         validateNoOverlappingAgeRange(newAgeRange, id);
-        trainingGroup.updateAgeRange(newAgeRange);
+        trainingGroup.updateAgeRange(new TrainingGroup.UpdateAgeRange(requestingMember, newAgeRange));
         return (TrainingGroup) userGroupRepository.save(trainingGroup);
     }
 
@@ -147,8 +147,7 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public UserGroup renameGroup(UserGroupId id, String newName, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
-        group.rename(newName);
+        group.rename(new UserGroup.RenameGroup(requestingMember, newName));
         return userGroupRepository.save(group);
     }
 
@@ -156,7 +155,9 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public void deleteGroup(UserGroupId id, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
+        if (!group.isOwner(requestingMember)) {
+            throw new NotGroupOwnerException(requestingMember, group.getId());
+        }
         userGroupRepository.delete(id);
     }
 
@@ -164,8 +165,7 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public UserGroup addMemberToGroup(UserGroupId id, MemberId memberToAdd, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
-        group.addMember(memberToAdd);
+        group.addMember(new UserGroup.AddMember(requestingMember, memberToAdd));
         return userGroupRepository.save(group);
     }
 
@@ -173,8 +173,7 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public UserGroup removeMemberFromGroup(UserGroupId id, MemberId memberToRemove, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
-        group.removeMember(memberToRemove);
+        group.removeMember(new UserGroup.RemoveMember(requestingMember, memberToRemove));
         return userGroupRepository.save(group);
     }
 
@@ -182,8 +181,7 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public UserGroup addOwnerToGroup(UserGroupId id, MemberId newOwner, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
-        group.addOwner(newOwner);
+        group.addOwner(new UserGroup.AddOwner(requestingMember, newOwner));
         return userGroupRepository.save(group);
     }
 
@@ -191,19 +189,12 @@ class GroupManagementService implements GroupManagementPort {
     @Override
     public UserGroup removeOwnerFromGroup(UserGroupId id, MemberId ownerToRemove, MemberId requestingMember) {
         UserGroup group = loadGroup(id);
-        requireOwner(group, requestingMember);
-        group.removeOwner(ownerToRemove);
+        group.removeOwner(new UserGroup.RemoveOwner(requestingMember, ownerToRemove));
         return userGroupRepository.save(group);
     }
 
     private UserGroup loadGroup(UserGroupId id) {
         return userGroupRepository.findById(id)
                 .orElseThrow(() -> new GroupNotFoundException(id));
-    }
-
-    private void requireOwner(UserGroup group, MemberId requestingMember) {
-        if (!group.isOwner(requestingMember)) {
-            throw new NotGroupOwnerException(requestingMember, group.getId());
-        }
     }
 }

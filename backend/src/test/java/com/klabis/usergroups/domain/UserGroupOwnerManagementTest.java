@@ -56,7 +56,7 @@ class UserGroupOwnerManagementTest {
         void shouldRejectNullMemberId() {
             FreeGroup group = createGroupWithOwner(OWNER);
 
-            assertThatThrownBy(() -> group.addOwner(null))
+            assertThatThrownBy(() -> group.addOwner((MemberId) null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -90,7 +90,7 @@ class UserGroupOwnerManagementTest {
         void shouldRejectNullMemberId() {
             FreeGroup group = createGroupWithOwner(OWNER);
 
-            assertThatThrownBy(() -> group.removeOwner(null))
+            assertThatThrownBy(() -> group.removeOwner((MemberId) null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

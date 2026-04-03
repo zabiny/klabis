@@ -3,6 +3,7 @@ package com.klabis.usergroups.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ public class TrainingGroup extends UserGroup {
         return TYPE_DISCRIMINATOR;
     }
 
+    @RecordBuilder
     public record CreateTrainingGroup(String name, MemberId owner, AgeRange ageRange) {
         public CreateTrainingGroup {
             Assert.hasText(name, "Group name is required");
@@ -49,11 +51,23 @@ public class TrainingGroup extends UserGroup {
         return group;
     }
 
+    @RecordBuilder
+    public record UpdateAgeRange(MemberId requestingMember, AgeRange newAgeRange) {}
+
+    public void assignEligibleMember(MemberId memberId) {
+        addMemberInternal(memberId);
+    }
+
     public AgeRange getAgeRange() {
         return ageRange;
     }
 
-    public void updateAgeRange(AgeRange newAgeRange) {
+    public void updateAgeRange(UpdateAgeRange command) {
+        requireOwner(command.requestingMember());
+        updateAgeRange(command.newAgeRange());
+    }
+
+    void updateAgeRange(AgeRange newAgeRange) {
         Assert.notNull(newAgeRange, "AgeRange is required");
         this.ageRange = newAgeRange;
     }

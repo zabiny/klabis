@@ -4,6 +4,7 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -31,12 +32,58 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         this.members = new HashSet<>(members);
     }
 
-    public void rename(String newName) {
+    @RecordBuilder
+    public record RenameGroup(MemberId requestingMember, String newName) {}
+
+    @RecordBuilder
+    public record AddMember(MemberId requestingMember, MemberId memberToAdd) {}
+
+    @RecordBuilder
+    public record RemoveMember(MemberId requestingMember, MemberId memberToRemove) {}
+
+    @RecordBuilder
+    public record AddOwner(MemberId requestingMember, MemberId newOwner) {}
+
+    @RecordBuilder
+    public record RemoveOwner(MemberId requestingMember, MemberId ownerToRemove) {}
+
+    public void rename(RenameGroup command) {
+        requireOwner(command.requestingMember());
+        rename(command.newName());
+    }
+
+    public void addMember(AddMember command) {
+        requireOwner(command.requestingMember());
+        addMember(command.memberToAdd());
+    }
+
+    public void removeMember(RemoveMember command) {
+        requireOwner(command.requestingMember());
+        removeMember(command.memberToRemove());
+    }
+
+    public void addOwner(AddOwner command) {
+        requireOwner(command.requestingMember());
+        addOwnerInternal(command.newOwner());
+    }
+
+    public void removeOwner(RemoveOwner command) {
+        requireOwner(command.requestingMember());
+        removeOwnerInternal(command.ownerToRemove());
+    }
+
+    protected void requireOwner(MemberId requestingMember) {
+        if (!isOwner(requestingMember)) {
+            throw new NotGroupOwnerException(requestingMember, id);
+        }
+    }
+
+    void rename(String newName) {
         Assert.hasText(newName, "UserGroup name is required");
         this.name = newName;
     }
 
-    public void addMember(MemberId memberId) {
+    void addMember(MemberId memberId) {
         if (this instanceof WithInvitations) {
             throw new DirectMemberAdditionNotAllowedException();
         }
@@ -52,7 +99,7 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         members.add(GroupMembership.of(memberId));
     }
 
-    public void removeMember(MemberId memberId) {
+    void removeMember(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
         if (owners.contains(memberId)) {
             throw new OwnerCannotBeRemovedFromGroupException(memberId);
@@ -63,13 +110,21 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         }
     }
 
-    public void addOwner(MemberId memberId) {
+    void addOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
+        addOwnerInternal(memberId);
+    }
+
+    void removeOwner(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        removeOwnerInternal(memberId);
+    }
+
+    private void addOwnerInternal(MemberId memberId) {
         owners.add(memberId);
     }
 
-    public void removeOwner(MemberId memberId) {
-        Assert.notNull(memberId, "MemberId is required");
+    private void removeOwnerInternal(MemberId memberId) {
         if (isLastOwner(memberId)) {
             throw new CannotRemoveLastOwnerException(memberId);
         }
