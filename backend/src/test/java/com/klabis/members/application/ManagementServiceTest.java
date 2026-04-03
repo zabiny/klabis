@@ -17,6 +17,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -150,6 +151,11 @@ class ManagementServiceTest {
         @DisplayName("Successful Suspension Tests")
         class SuccessfulSuspensionTests {
 
+            @BeforeEach
+            void setUpNested() {
+                when(lastOwnershipChecker.findGroupsOwnedSolely(any())).thenReturn(List.of());
+            }
+
             @Test
             @DisplayName("should suspend active member with ODHLASKA reason")
             void shouldSuspendActiveMemberWithOdhlaskaReason() {
@@ -246,6 +252,60 @@ class ManagementServiceTest {
                 assertThat(suspensionEvent.reason()).isEqualTo(DeactivationReason.OTHER);
                 assertThat(suspensionEvent.suspendedBy()).isEqualTo(new UserId(adminUserId));
                 assertThat(suspensionEvent.note()).isEqualTo("Administrative decision");
+            }
+        }
+
+        @Nested
+        @DisplayName("Last Group Owner Tests")
+        class LastGroupOwnerTests {
+
+            @Test
+            @DisplayName("should throw MemberIsLastGroupOwnerException when member is the sole owner of a group")
+            void shouldThrowWhenMemberIsLastGroupOwner() {
+                var ownedGroups = List.of(
+                        new LastOwnershipChecker.OwnedGroupInfo("group-id-1", "Trail Runners", "FREE"),
+                        new LastOwnershipChecker.OwnedGroupInfo("group-id-2", "Juniors", "TRAINING")
+                );
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(lastOwnershipChecker.findGroupsOwnedSolely(new MemberId(testMemberId))).thenReturn(ownedGroups);
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                        .isInstanceOf(MemberIsLastGroupOwnerException.class)
+                        .satisfies(ex -> {
+                            var e = (MemberIsLastGroupOwnerException) ex;
+                            assertThat(e.getGroups()).hasSize(2);
+                            assertThat(e.getGroups()).extracting(LastOwnershipChecker.OwnedGroupInfo::groupName)
+                                    .containsExactlyInAnyOrder("Trail Runners", "Juniors");
+                        });
+
+                verify(memberRepository, never()).save(any(Member.class));
+                verify(userService, never()).suspendUser(any(UserId.class));
+            }
+
+            @Test
+            @DisplayName("should proceed with suspension when member is not the sole owner of any group")
+            void shouldProceedWhenMemberIsNotLastOwnerOfAnyGroup() {
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(lastOwnershipChecker.findGroupsOwnedSolely(new MemberId(testMemberId))).thenReturn(List.of());
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+
+                assertThat(result.isActive()).isFalse();
+                verify(memberRepository).save(any(Member.class));
+                verify(userService).suspendUser(testActiveMember.getId().toUserId());
             }
         }
 

@@ -1,6 +1,5 @@
 package com.klabis.members;
 
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.WithKlabisMockUser;

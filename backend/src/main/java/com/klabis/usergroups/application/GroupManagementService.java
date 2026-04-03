@@ -1,5 +1,6 @@
 package com.klabis.usergroups.application;
 
+import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
@@ -17,9 +18,11 @@ import java.util.List;
 class GroupManagementService implements GroupManagementPort {
 
     private final UserGroupRepository userGroupRepository;
+    private final ActiveMembersByAgeProvider activeMembersByAgeProvider;
 
-    GroupManagementService(UserGroupRepository userGroupRepository) {
+    GroupManagementService(UserGroupRepository userGroupRepository, ActiveMembersByAgeProvider activeMembersByAgeProvider) {
         this.userGroupRepository = userGroupRepository;
+        this.activeMembersByAgeProvider = activeMembersByAgeProvider;
     }
 
     @Transactional
@@ -75,6 +78,9 @@ class GroupManagementService implements GroupManagementPort {
     public TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command) {
         validateNoOverlappingAgeRange(command.ageRange(), null);
         TrainingGroup group = TrainingGroup.create(command);
+        activeMembersByAgeProvider
+                .findActiveMemberIdsByAgeRange(command.ageRange().minAge(), command.ageRange().maxAge())
+                .forEach(group::addMember);
         return (TrainingGroup) userGroupRepository.save(group);
     }
 

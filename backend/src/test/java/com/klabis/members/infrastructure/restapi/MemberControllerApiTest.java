@@ -1338,9 +1338,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void nonAdminUserReceivesOnlyActiveMembers() throws Exception {
             UUID activeMemberId = UUID.randomUUID();
-            UUID inactiveMemberId = UUID.randomUUID();
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
-            Member inactiveMember = MemberTestDataBuilder.aMemberWithId(inactiveMemberId).withActive(false).build();
 
             when(memberRepository.findAll(eq(MemberFilter.activeOnly()), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember)));
@@ -1374,10 +1372,6 @@ class MemberControllerApiTest {
     @Nested
     @DisplayName("POST /api/members/{id}/suspend")
     class SuspendMemberTests {
-
-        private MockHttpServletRequestBuilder postMemberIdSuspend(MemberId memberId) {
-            return postMemberIdSuspend(memberId.uuid());
-        }
 
         private MockHttpServletRequestBuilder postMemberIdSuspend(UUID memberId) {
             return post("/api/members/" + memberId.toString() + "/suspend")
@@ -1500,7 +1494,7 @@ class MemberControllerApiTest {
         void shouldReturn409WhenMemberIsLastGroupOwner() throws Exception {
             UUID memberId = UUID.randomUUID();
             List<LastOwnershipChecker.OwnedGroupInfo> groups = List.of(
-                    new LastOwnershipChecker.OwnedGroupInfo("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FreeGroup")
+                    new LastOwnershipChecker.OwnedGroupInfo("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
@@ -1514,7 +1508,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.affectedGroups").isArray())
                     .andExpect(jsonPath("$.affectedGroups[0].groupName").value("Trail Runners"))
-                    .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FreeGroup"));
+                    .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FREE"));
         }
     }
 

@@ -147,7 +147,7 @@ public class MemberController {
     @ApiResponse(responseCode = "400", description = "Invalid suspension request (e.g., already suspended)")
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
-    @ApiResponse(responseCode = "409", description = "Conflict - concurrent modification detected")
+    @ApiResponse(responseCode = "409", description = "Member is the sole owner of one or more groups — designate a successor before suspension")
     public ResponseEntity<Void> suspendMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Suspension request")

@@ -1,8 +1,10 @@
 package com.klabis.usergroups.application;
 
+import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
+import com.klabis.usergroups.domain.GroupMembership;
 import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,6 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,11 +38,14 @@ class TrainingGroupManagementServiceTest {
     @Mock
     private UserGroupRepository userGroupRepository;
 
+    @Mock
+    private ActiveMembersByAgeProvider activeMembersByAgeProvider;
+
     private GroupManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new GroupManagementService(userGroupRepository);
+        service = new GroupManagementService(userGroupRepository, activeMembersByAgeProvider);
     }
 
     @Nested
@@ -53,12 +60,56 @@ class TrainingGroupManagementServiceTest {
                     new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
             TrainingGroup expected = TrainingGroup.create(command);
             when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(anyInt(), anyInt())).thenReturn(List.of());
             when(userGroupRepository.save(any())).thenReturn(expected);
 
             TrainingGroup result = service.createTrainingGroup(command);
 
             assertThat(result).isNotNull();
             verify(userGroupRepository).save(any(TrainingGroup.class));
+        }
+
+        @Test
+        @DisplayName("should auto-assign existing active members matching the age range when group is created")
+        void shouldAutoAssignExistingMembersMatchingAgeRange() {
+            AgeRange newRange = new AgeRange(10, 18);
+            MemberId matchingMember1 = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+            MemberId matchingMember2 = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+            TrainingGroup.CreateTrainingGroup command =
+                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
+
+            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
+                    .thenReturn(List.of(matchingMember1, matchingMember2));
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.createTrainingGroup(command);
+
+            ArgumentCaptor<TrainingGroup> captor = ArgumentCaptor.forClass(TrainingGroup.class);
+            verify(userGroupRepository).save(captor.capture());
+            TrainingGroup saved = captor.getValue();
+
+            Set<GroupMembership> members = saved.getMembers();
+            assertThat(members).extracting(GroupMembership::memberId)
+                    .containsExactlyInAnyOrder(matchingMember1, matchingMember2);
+        }
+
+        @Test
+        @DisplayName("should create group with no pre-assigned members when no active members match the age range")
+        void shouldCreateGroupWithNoMembersWhenNoMatchingActiveMembers() {
+            AgeRange newRange = new AgeRange(10, 18);
+            TrainingGroup.CreateTrainingGroup command =
+                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
+
+            when(userGroupRepository.findAllTrainingGroups()).thenReturn(List.of());
+            when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.createTrainingGroup(command);
+
+            ArgumentCaptor<TrainingGroup> captor = ArgumentCaptor.forClass(TrainingGroup.class);
+            verify(userGroupRepository).save(captor.capture());
+            assertThat(captor.getValue().getMembers()).isEmpty();
         }
 
         @Test
