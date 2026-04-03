@@ -37,6 +37,15 @@ public class FreeGroup extends UserGroup implements WithInvitations {
         }
     }
 
+    @RecordBuilder
+    public record Invite(MemberId requestingMember, MemberId target) {}
+
+    @RecordBuilder
+    public record AcceptInvitation(InvitationId invitationId, MemberId requestingMember) {}
+
+    @RecordBuilder
+    public record RejectInvitation(InvitationId invitationId, MemberId requestingMember) {}
+
     public static FreeGroup create(CreateFreeGroup command) {
         UserGroupId id = new UserGroupId(UUID.randomUUID());
         GroupMembership creatorMembership = GroupMembership.of(command.creator());
@@ -85,6 +94,25 @@ public class FreeGroup extends UserGroup implements WithInvitations {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
         invitation.reject();
+    }
+
+    public void inviteMember(Invite command) {
+        requireOwner(command.requestingMember());
+        invite(command.requestingMember(), command.target());
+    }
+
+    public void acceptInvitation(AcceptInvitation command) {
+        if (!isInvitedMember(command.invitationId(), command.requestingMember())) {
+            throw new NotInvitedMemberException(command.requestingMember(), command.invitationId());
+        }
+        acceptInvitation(command.invitationId());
+    }
+
+    public void rejectInvitation(RejectInvitation command) {
+        if (!isInvitedMember(command.invitationId(), command.requestingMember())) {
+            throw new NotInvitedMemberException(command.requestingMember(), command.invitationId());
+        }
+        rejectInvitation(command.invitationId());
     }
 
     @Override

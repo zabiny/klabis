@@ -1,12 +1,15 @@
 package com.klabis.usergroups.application;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.domain.InvitationId;
 
-public class NotInvitedMemberException extends BusinessRuleViolationException {
+/**
+ * @deprecated Moved to domain package. Will be removed in Phase 3. Use {@link com.klabis.usergroups.domain.NotInvitedMemberException} directly.
+ */
+@Deprecated
+public class NotInvitedMemberException extends com.klabis.usergroups.domain.NotInvitedMemberException {
 
     public NotInvitedMemberException(MemberId memberId, InvitationId invitationId) {
-        super("Member %s is not the invited member for invitation %s".formatted(memberId, invitationId));
+        super(memberId, invitationId);
     }
 }

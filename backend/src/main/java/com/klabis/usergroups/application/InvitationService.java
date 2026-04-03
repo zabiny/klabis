@@ -2,9 +2,9 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
+import com.klabis.usergroups.domain.FreeGroup;
 import com.klabis.usergroups.domain.GroupFilter;
 import com.klabis.usergroups.domain.InvitationId;
-import com.klabis.usergroups.domain.NotGroupOwnerException;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.UserGroupRepository;
 import com.klabis.usergroups.domain.WithInvitations;
@@ -25,29 +25,24 @@ class InvitationService implements InvitationPort {
     @Transactional
     @Override
     public void inviteMember(UserGroupId groupId, MemberId invitedBy, MemberId target) {
-        var group = loadGroupWithInvitations(groupId);
-        if (!group.isOwner(invitedBy)) {
-            throw new NotGroupOwnerException(invitedBy, group.getId());
-        }
-        group.invite(invitedBy, target);
+        FreeGroup group = loadGroupWithInvitations(groupId);
+        group.inviteMember(new FreeGroup.Invite(invitedBy, target));
         userGroupRepository.save(group);
     }
 
     @Transactional
     @Override
     public void acceptInvitation(UserGroupId groupId, InvitationId invitationId, MemberId acceptingMember) {
-        var group = loadGroupWithInvitations(groupId);
-        requireInvitedMember(group, invitationId, acceptingMember);
-        group.acceptInvitation(invitationId);
+        FreeGroup group = loadGroupWithInvitations(groupId);
+        group.acceptInvitation(new FreeGroup.AcceptInvitation(invitationId, acceptingMember));
         userGroupRepository.save(group);
     }
 
     @Transactional
     @Override
     public void rejectInvitation(UserGroupId groupId, InvitationId invitationId, MemberId rejectingMember) {
-        var group = loadGroupWithInvitations(groupId);
-        requireInvitedMember(group, invitationId, rejectingMember);
-        group.rejectInvitation(invitationId);
+        FreeGroup group = loadGroupWithInvitations(groupId);
+        group.rejectInvitation(new FreeGroup.RejectInvitation(invitationId, rejectingMember));
         userGroupRepository.save(group);
     }
 
@@ -61,20 +56,12 @@ class InvitationService implements InvitationPort {
                 .toList();
     }
 
-    private <T extends UserGroup & WithInvitations> T loadGroupWithInvitations(UserGroupId groupId) {
+    private FreeGroup loadGroupWithInvitations(UserGroupId groupId) {
         UserGroup group = userGroupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException(groupId));
-        if (!(group instanceof WithInvitations)) {
+        if (!(group instanceof FreeGroup freeGroup)) {
             throw new GroupNotFoundException(groupId);
         }
-        @SuppressWarnings("unchecked")
-        T result = (T) group;
-        return result;
-    }
-
-    private void requireInvitedMember(WithInvitations group, InvitationId invitationId, MemberId member) {
-        if (!group.isInvitedMember(invitationId, member)) {
-            throw new NotInvitedMemberException(member, invitationId);
-        }
+        return freeGroup;
     }
 }

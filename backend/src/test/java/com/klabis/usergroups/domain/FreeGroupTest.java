@@ -318,6 +318,90 @@ class FreeGroupTest {
     }
 
     @Nested
+    @DisplayName("inviteMember(Invite)")
+    class InviteMemberCommand {
+
+        @Test
+        @DisplayName("should create pending invitation when owner sends invite command")
+        void shouldCreatePendingInvitationForOwner() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+
+            group.inviteMember(new FreeGroup.Invite(CREATOR, OTHER_MEMBER));
+
+            List<Invitation> pending = group.getPendingInvitations();
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
+        }
+
+        @Test
+        @DisplayName("should throw NotGroupOwnerException when non-owner sends invite command")
+        void shouldThrowWhenNonOwnerSendsInviteCommand() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+
+            assertThatThrownBy(() -> group.inviteMember(new FreeGroup.Invite(OTHER_MEMBER, ANOTHER_MEMBER)))
+                    .isInstanceOf(NotGroupOwnerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("acceptInvitation(AcceptInvitation)")
+    class AcceptInvitationCommand {
+
+        @Test
+        @DisplayName("should add member to group when invited member accepts")
+        void shouldAddMemberWhenInvitedMemberAccepts() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.acceptInvitation(new FreeGroup.AcceptInvitation(invitationId, OTHER_MEMBER));
+
+            assertThat(group.hasMember(OTHER_MEMBER)).isTrue();
+            assertThat(group.getPendingInvitations()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should throw NotInvitedMemberException when non-invited member tries to accept")
+        void shouldThrowWhenNonInvitedMemberAccepts() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            assertThatThrownBy(() -> group.acceptInvitation(new FreeGroup.AcceptInvitation(invitationId, ANOTHER_MEMBER)))
+                    .isInstanceOf(NotInvitedMemberException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("rejectInvitation(RejectInvitation)")
+    class RejectInvitationCommand {
+
+        @Test
+        @DisplayName("should mark invitation as rejected when invited member rejects")
+        void shouldRejectInvitationWhenInvitedMemberRejects() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.rejectInvitation(new FreeGroup.RejectInvitation(invitationId, OTHER_MEMBER));
+
+            assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
+            assertThat(group.getPendingInvitations()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should throw NotInvitedMemberException when non-invited member tries to reject")
+        void shouldThrowWhenNonInvitedMemberRejects() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            assertThatThrownBy(() -> group.rejectInvitation(new FreeGroup.RejectInvitation(invitationId, ANOTHER_MEMBER)))
+                    .isInstanceOf(NotInvitedMemberException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("isOwner() and hasMember()")
     class QueryMethods {
 
