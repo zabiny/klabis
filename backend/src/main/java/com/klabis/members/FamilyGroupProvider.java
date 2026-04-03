@@ -1,7 +1,7 @@
 package com.klabis.members;
 
 import java.util.Optional;
-import java.util.Set;
+import java.util.UUID;
 
 /**
  * Port for retrieving family group information for a member.
@@ -11,5 +11,5 @@ public interface FamilyGroupProvider {
 
     Optional<FamilyGroupData> findFamilyGroupForMember(MemberId memberId);
 
-    record FamilyGroupData(String groupName, Set<MemberId> ownerIds) {}
+    record FamilyGroupData(UUID groupId) {}
 }

@@ -51,7 +51,7 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
                 .filter(group -> group instanceof TrainingGroup)
                 .map(group -> (TrainingGroup) group)
                 .findFirst()
-                .map(group -> new TrainingGroupProvider.TrainingGroupData(group.getName(), group.getOwners()));
+                .map(group -> new TrainingGroupProvider.TrainingGroupData(group.getId().uuid()));
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +61,7 @@ public class UserGroupsImpl implements UserGroups, LastOwnershipChecker, Trainin
                 .filter(group -> group instanceof FamilyGroup)
                 .map(group -> (FamilyGroup) group)
                 .findFirst()
-                .map(group -> new FamilyGroupProvider.FamilyGroupData(group.getName(), group.getOwners()));
+                .map(group -> new FamilyGroupProvider.FamilyGroupData(group.getId().uuid()));
     }
 
     private List<UserGroup> findSolelyOwnedGroups(MemberId memberId) {

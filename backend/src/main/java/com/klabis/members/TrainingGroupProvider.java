@@ -1,7 +1,7 @@
 package com.klabis.members;
 
 import java.util.Optional;
-import java.util.Set;
+import java.util.UUID;
 
 /**
  * Port for retrieving training group information for a member.
@@ -11,5 +11,5 @@ public interface TrainingGroupProvider {
 
     Optional<TrainingGroupData> findTrainingGroupForMember(MemberId memberId);
 
-    record TrainingGroupData(String groupName, Set<MemberId> ownerIds) {}
+    record TrainingGroupData(UUID groupId) {}
 }

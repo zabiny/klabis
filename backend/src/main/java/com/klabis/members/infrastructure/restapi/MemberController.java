@@ -15,9 +15,6 @@ import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.FamilyGroupProvider;
 import com.klabis.members.TrainingGroupProvider;
-import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.FamilyGroupResponse;
-import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.OwnerResponse;
-import com.klabis.members.infrastructure.restapi.MemberDetailsResponse.TrainingGroupResponse;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -217,22 +214,6 @@ public class MemberController {
         return ResponseEntity.ok(pagedModel);
     }
 
-    private TrainingGroupResponse buildTrainingGroupResponse(TrainingGroupProvider.TrainingGroupData data) {
-        return new TrainingGroupResponse(data.groupName(), buildOwnerResponses(data.ownerIds()));
-    }
-
-    private FamilyGroupResponse buildFamilyGroupResponse(FamilyGroupProvider.FamilyGroupData data) {
-        return new FamilyGroupResponse(data.groupName(), buildOwnerResponses(data.ownerIds()));
-    }
-
-    private List<OwnerResponse> buildOwnerResponses(Set<MemberId> ownerIds) {
-        return memberRepository.findAllByIds(ownerIds).stream()
-                .map(owner -> new OwnerResponse(
-                        owner.getFirstName() + " " + owner.getLastName(),
-                        owner.getEmail() != null ? owner.getEmail().value() : null))
-                .toList();
-    }
-
     private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response) {
         UUID memberId = response.id().uuid();
         EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
@@ -296,15 +277,9 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        TrainingGroupResponse trainingGroupResponse = trainingGroupProvider.findTrainingGroupForMember(memberId)
-                .map(data -> buildTrainingGroupResponse(data))
-                .orElse(null);
-        FamilyGroupResponse familyGroupResponse = familyGroupProvider.findFamilyGroupForMember(memberId)
-                .map(data -> buildFamilyGroupResponse(data))
-                .orElse(null);
         MemberDetailsResponse response = MemberDetailsResponseBuilder.builder(memberMapper.toDetailsResponse(member))
-                .trainingGroup(trainingGroupResponse)
-                .familyGroup(familyGroupResponse)
+                .trainingGroup(null)
+                .familyGroup(null)
                 .build();
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
