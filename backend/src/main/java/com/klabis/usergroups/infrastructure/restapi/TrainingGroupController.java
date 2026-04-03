@@ -143,7 +143,7 @@ class TrainingGroupController {
                 .toList();
 
         TrainingGroupResponse response = new TrainingGroupResponse(
-                group.getId().uuid(), group.getName(), null, null, ownerModels, null);
+                group.getId(), group.getName(), null, null, ownerModels, null);
         EntityModel<TrainingGroupResponse> model = EntityModel.of(response);
 
         klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(groupUuid, null))
@@ -255,7 +255,7 @@ class TrainingGroupController {
     private EntityModel<TrainingGroupSummaryResponse> buildTrainingGroupSummaryModel(TrainingGroup group) {
         UUID groupId = group.getId().uuid();
         TrainingGroupSummaryResponse response = new TrainingGroupSummaryResponse(
-                groupId, group.getName(),
+                group.getId(), group.getName(),
                 group.getAgeRange().minAge(), group.getAgeRange().maxAge(),
                 group.getMembers().size());
         EntityModel<TrainingGroupSummaryResponse> model = EntityModel.of(response);
@@ -286,7 +286,7 @@ class TrainingGroupController {
                 .toList();
 
         return new TrainingGroupResponse(
-                group.getId().uuid(), group.getName(),
+                group.getId(), group.getName(),
                 group.getAgeRange().minAge(), group.getAgeRange().maxAge(),
                 ownerModels, memberModels);
     }

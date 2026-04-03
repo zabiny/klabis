@@ -219,7 +219,7 @@ class GroupController {
     }
 
     private GroupSummaryResponse toGroupSummaryResponse(UserGroup group) {
-        return new GroupSummaryResponse(group.getId().uuid(), group.getName());
+        return new GroupSummaryResponse(group.getId(), group.getName());
     }
 
     private GroupResponse toGroupResponse(UserGroup group, UUID groupUuid, boolean requestingUserIsOwner) {
@@ -240,7 +240,7 @@ class GroupController {
                     .toList();
         }
 
-        return new GroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels, pendingInvitationModels);
+        return new GroupResponse(group.getId(), group.getName(), ownerModels, memberModels, pendingInvitationModels);
     }
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {

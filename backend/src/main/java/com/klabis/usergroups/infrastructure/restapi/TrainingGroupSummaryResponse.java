@@ -1,6 +1,6 @@
 package com.klabis.usergroups.infrastructure.restapi;
 
-import java.util.UUID;
+import com.klabis.usergroups.UserGroupId;
 
-record TrainingGroupSummaryResponse(UUID id, String name, int minAge, int maxAge, int memberCount) {
+record TrainingGroupSummaryResponse(UserGroupId id, String name, int minAge, int maxAge, int memberCount) {
 }

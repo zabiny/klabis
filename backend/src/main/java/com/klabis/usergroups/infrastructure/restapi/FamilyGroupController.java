@@ -175,7 +175,7 @@ class FamilyGroupController {
     private EntityModel<FamilyGroupSummaryResponse> buildFamilyGroupSummaryModel(FamilyGroup group) {
         UUID groupId = group.getId().uuid();
         FamilyGroupSummaryResponse response = new FamilyGroupSummaryResponse(
-                groupId, group.getName(), group.getMembers().size());
+                group.getId(), group.getName(), group.getMembers().size());
         EntityModel<FamilyGroupSummaryResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(groupId, null))
                 .ifPresent(link -> model.add(link.withSelfRel()));
@@ -202,7 +202,7 @@ class FamilyGroupController {
                 .map(m -> buildMemberModel(m, groupUuid))
                 .toList();
 
-        return new FamilyGroupResponse(group.getId().uuid(), group.getName(), ownerModels, memberModels);
+        return new FamilyGroupResponse(group.getId(), group.getName(), ownerModels, memberModels);
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(GroupMembership membership, UUID groupUuid) {
@@ -220,10 +220,10 @@ class FamilyGroupController {
     }
 }
 
-record FamilyGroupSummaryResponse(UUID id, String name, int memberCount) {
+record FamilyGroupSummaryResponse(UserGroupId id, String name, int memberCount) {
 }
 
-record FamilyGroupResponse(UUID id, String name,
+record FamilyGroupResponse(UserGroupId id, String name,
                             List<EntityModel<OwnerResponse>> owners,
                             List<EntityModel<GroupMembershipResponse>> members) {
 }

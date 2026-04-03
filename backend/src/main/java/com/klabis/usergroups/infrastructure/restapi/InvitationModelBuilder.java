@@ -23,7 +23,7 @@ class InvitationModelBuilder {
         UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
 
         PendingInvitationResponse response = new PendingInvitationResponse(
-                groupUuid, group.getName(), invitationUuid, invitedByUuid);
+                group.getId(), group.getName(), invitation.getId(), invitedByUuid);
 
         EntityModel<PendingInvitationResponse> model = EntityModel.of(response);
         model.add(Link.of("/api/members/" + invitedMemberUuid, "invitedMember"));
