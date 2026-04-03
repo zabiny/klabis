@@ -277,13 +277,14 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        MemberDetailsResponse response = MemberDetailsResponseBuilder.builder(memberMapper.toDetailsResponse(member))
-                .trainingGroup(null)
-                .familyGroup(null)
-                .build();
-        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
+        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(memberMapper.toDetailsResponse(member));
 
         buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
+
+        trainingGroupProvider.findTrainingGroupForMember(memberId)
+                .ifPresent(data -> entityModel.add(Link.of("/api/training-groups/" + data.groupId(), "trainingGroup")));
+        familyGroupProvider.findFamilyGroupForMember(memberId)
+                .ifPresent(data -> entityModel.add(Link.of("/api/family-groups/" + data.groupId(), "familyGroup")));
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10), null

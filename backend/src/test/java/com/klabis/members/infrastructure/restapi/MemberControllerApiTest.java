@@ -415,6 +415,67 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(false));
         }
+
+        @Test
+        @DisplayName("should include trainingGroup link when member belongs to a training group")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldIncludeTrainingGroupLinkWhenMemberBelongsToGroup() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID groupId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.of(new TrainingGroupProvider.TrainingGroupData(groupId)));
+            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.empty());
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.trainingGroup.href")
+                            .value("/api/training-groups/" + groupId))
+                    .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include familyGroup link when member belongs to a family group")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldIncludeFamilyGroupLinkWhenMemberBelongsToGroup() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID groupId = UUID.fromString("11111111-2222-3333-4444-555555555555");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.empty());
+            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.of(new FamilyGroupProvider.FamilyGroupData(groupId)));
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
+                    .andExpect(jsonPath("$._links.familyGroup.href")
+                            .value("/api/family-groups/" + groupId));
+        }
+
+        @Test
+        @DisplayName("should not include group links when member belongs to no groups")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldNotIncludeGroupLinksWhenMemberBelongsToNoGroups() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.empty());
+            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.empty());
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
+                    .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
+        }
     }
 
     @Nested

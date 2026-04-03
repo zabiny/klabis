@@ -29,8 +29,6 @@ interface MemberMapper {
     @Mapping(target = "birthNumber", expression = "java(member.getBirthNumber() != null ? member.getBirthNumber().value() : null)")
     @Mapping(target = "bankAccountNumber", expression = "java(member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null)")
     @Mapping(target = "suspendedBy", expression = "java(member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null)")
-    @Mapping(target = "trainingGroup", ignore = true)
-    @Mapping(target = "familyGroup", ignore = true)
     MemberDetailsResponse toDetailsResponse(Member member);
 
     AddressResponse addressToResponse(Address address);
