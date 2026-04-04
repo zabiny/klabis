@@ -19,19 +19,17 @@
 
 ## Quick Start
 
-```bash
-# Start backend (serves API)
-cd backend
-KLABIS_ADMIN_USERNAME='admin' \
-KLABIS_ADMIN_PASSWORD='admin123' \
-KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123' \
-KLABIS_JASYPT_PASSWORD='test-key-123' \
-./gradlew bootRun
+To start application on localhost, use:
 
-# Start modern frontend (React SPA on http://localhost:3000)
-cd frontend
-npm run dev
+```bash
+./runLocalEnvironment.sh
 ```
+
+This will start both backend and frontend. 
+Backend listens on https://localhost:8443. Frontend listens on http://localhost:3000.
+Frontend on port 3000 is updated automatically (VITE dev server). 
+Frontend part on port 8443 is NOT updated automatically - to propagate changes to frontend on port 8443, 'publish-frontend-resources' NPM task needs to be ran and backend needs to be restarted. 
+For frontend testing prefer http://localhost:3000 because of that HMR auto reload. 
 
 ### Available users for testing
 

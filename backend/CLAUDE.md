@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Starting the Development Server
 
-See root `CLAUDE.md` Quick Start for env vars. Additional notes:
+See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additional notes:
 
 - Check if running: `lsof -i :8443` or `ps aux | grep bootRun`
 - Stop: Ctrl+C or `pkill -f "bootRun"`
