@@ -120,3 +120,7 @@ refactor(users): extract password validation to service
 ```
 
 **Common types:** feat, fix, test, docs, refactor, chore, perf, style, ci
+
+
+## Additional instructions
+- dont use Edit/Write/MultiEdit/etc tools when jetbrains MCP alternatives are available (prefer jetbrains tools)
