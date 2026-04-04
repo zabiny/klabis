@@ -42,3 +42,23 @@ Rename owners→parents in FamilyGroup API, explicit parent assignment at creati
 - `UserGroupPersistenceTest`: updated 3 `CreateFamilyGroup` instantiations to use `Set.of(OWNER)` shape
 
 All 1892 tests pass.
+
+### Iteration 2 — 2026-04-04 — REST API (Tasks 3.1–3.6) DONE
+
+**Controller changes (`FamilyGroupController`):**
+- Task 3.1 was already complete from Iteration 1 (`parentIds` field, no automatic owner)
+- `POST /{id}/owners` renamed to `POST /{id}/parents` → delegates to `addParentToFamilyGroup()`
+- `DELETE /{id}/owners/{memberId}` renamed to `DELETE /{id}/parents/{memberId}` → delegates to `removeParentFromFamilyGroup()`
+- `FamilyGroupResponse`: `owners` field renamed to `parents`, `OwnerResponse` replaced by new `ParentResponse` record
+- Authorization: add/remove parent endpoints use `MEMBERS:MANAGE` only — no owner-based check
+- HAL affordance `addFamilyGroupParent` shown only for `hasMembersManage` (was `requestingUserIsOwner`)
+- Per-parent remove affordance shown only when `hasMembersManage && parentIds.size() > 1`
+
+**Test changes (`FamilyGroupControllerTest`):**
+- `AddFamilyGroupOwnerTests` → `AddFamilyGroupParentTests`, endpoint path updated
+- `RemoveFamilyGroupOwnerTests` → `RemoveFamilyGroupParentTests`, endpoint path updated, removed `NotGroupOwnerException` test (no longer applies)
+- Added happy-path 204 test for remove parent
+- `GetFamilyGroupTests`: response field assertion `$.owners` → `$.parents`
+- Mock calls updated: `addOwnerToGroup`/`removeOwnerFromGroup` → `addParentToFamilyGroup`/`removeParentFromFamilyGroup`
+
+All 1893 tests pass.

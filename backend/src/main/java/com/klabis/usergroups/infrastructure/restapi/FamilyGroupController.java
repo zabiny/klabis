@@ -114,17 +114,17 @@ class FamilyGroupController {
 
         UserGroupId groupId = new UserGroupId(id);
         FamilyGroup group = groupManagementService.getFamilyGroup(groupId);
-        boolean requestingUserIsOwner = group.isOwner(currentUser.memberId());
+        boolean hasMembersManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
 
-        FamilyGroupResponse response = toFamilyGroupResponse(group, id, requestingUserIsOwner);
+        FamilyGroupResponse response = toFamilyGroupResponse(group, id, hasMembersManage);
         EntityModel<FamilyGroupResponse> model = EntityModel.of(response);
 
         klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null)).ifPresent(link -> {
             var selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)));
-            if (requestingUserIsOwner) {
+            if (hasMembersManage) {
                 selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupOwner(id, null, null)));
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)));
             }
             model.add(selfLink);
         });
@@ -148,9 +148,9 @@ class FamilyGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/owners", consumes = "application/json")
-    @Operation(summary = "Add an owner to family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> addFamilyGroupOwner(
+    @PostMapping(value = "/{id}/parents", consumes = "application/json")
+    @Operation(summary = "Add a parent to family group (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> addFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddOwnerRequest request,
             @CurrentUser CurrentUserData currentUser) {
@@ -158,22 +158,22 @@ class FamilyGroupController {
         requireMembersManageAuthority(currentUser);
 
         UserGroupId groupId = new UserGroupId(id);
-        groupManagementService.addOwnerToGroup(groupId, request.toMemberId(), currentUser.memberId());
+        groupManagementService.addParentToFamilyGroup(groupId, request.toMemberId());
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/owners/{memberId}")
-    @Operation(summary = "Remove an owner from family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> removeFamilyGroupOwner(
+    @DeleteMapping("/{id}/parents/{memberId}")
+    @Operation(summary = "Remove a parent from family group (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> removeFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Owner member UUID") @PathVariable UUID memberId,
+            @Parameter(description = "Parent member UUID") @PathVariable UUID memberId,
             @CurrentUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
         UserGroupId groupId = new UserGroupId(id);
-        MemberId ownerToRemove = new MemberId(memberId);
-        groupManagementService.removeOwnerFromGroup(groupId, ownerToRemove, currentUser.memberId());
+        MemberId parentToRemove = new MemberId(memberId);
+        groupManagementService.removeParentFromFamilyGroup(groupId, parentToRemove);
         return ResponseEntity.noContent().build();
     }
 
@@ -187,17 +187,17 @@ class FamilyGroupController {
         return model;
     }
 
-    private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, UUID groupUuid, boolean requestingUserIsOwner) {
-        Set<MemberId> ownerIds = group.getOwners();
-        List<EntityModel<OwnerResponse>> ownerModels = ownerIds.stream()
-                .map(ownerId -> {
-                    EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
-                    model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
-                    if (requestingUserIsOwner && ownerIds.size() > 1) {
-                        klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupOwner(groupUuid, ownerId.uuid(), null))
+    private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, UUID groupUuid, boolean hasMembersManage) {
+        Set<MemberId> parentIds = group.getParents();
+        List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
+                .map(parentId -> {
+                    EntityModel<ParentResponse> model = EntityModel.of(new ParentResponse(parentId.uuid()));
+                    model.add(Link.of("/api/members/" + parentId.uuid(), "member"));
+                    if (hasMembersManage && parentIds.size() > 1) {
+                        klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupParent(groupUuid, parentId.uuid(), null))
                                 .ifPresent(link -> model.add(link.withSelfRel()
                                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
-                                                .removeFamilyGroupOwner(groupUuid, ownerId.uuid(), null)))));
+                                                .removeFamilyGroupParent(groupUuid, parentId.uuid(), null)))));
                     }
                     return model;
                 })
@@ -207,7 +207,7 @@ class FamilyGroupController {
                 .map(m -> buildMemberModel(m, groupUuid))
                 .toList();
 
-        return new FamilyGroupResponse(group.getId(), group.getName(), ownerModels, memberModels);
+        return new FamilyGroupResponse(group.getId(), group.getName(), parentModels, memberModels);
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(GroupMembership membership, UUID groupUuid) {
@@ -229,8 +229,11 @@ record FamilyGroupSummaryResponse(UserGroupId id, String name, int memberCount) 
 }
 
 record FamilyGroupResponse(UserGroupId id, String name,
-                            List<EntityModel<OwnerResponse>> owners,
+                            List<EntityModel<ParentResponse>> parents,
                             List<EntityModel<GroupMembershipResponse>> members) {
+}
+
+record ParentResponse(UUID memberId) {
 }
 
 @MvcComponent

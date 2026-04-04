@@ -173,9 +173,9 @@ class FamilyGroupControllerTest {
     class GetFamilyGroupTests {
 
         @Test
-        @DisplayName("should return 200 with group details when user has MEMBERS:MANAGE")
+        @DisplayName("should return 200 with group details including parents field when user has MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturnGroupDetails() throws Exception {
+        void shouldReturnGroupDetailsWithParentsField() throws Exception {
             FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
             when(groupManagementService.getFamilyGroup(any(UserGroupId.class))).thenReturn(group);
 
@@ -186,7 +186,7 @@ class FamilyGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Novákovi"))
                     .andExpect(jsonPath("$.id").exists())
-                    .andExpect(jsonPath("$.owners").isArray())
+                    .andExpect(jsonPath("$.parents").isArray())
                     .andExpect(jsonPath("$.members").isArray());
         }
 
@@ -250,19 +250,19 @@ class FamilyGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/family-groups/{id}/owners")
-    class AddFamilyGroupOwnerTests {
+    @DisplayName("POST /api/family-groups/{id}/parents")
+    class AddFamilyGroupParentTests {
 
         @Test
-        @DisplayName("should return 204 when admin adds an owner")
+        @DisplayName("should return 204 when admin adds a parent")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn204WhenAddingOwner() throws Exception {
+        void shouldReturn204WhenAddingParent() throws Exception {
             FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
-            when(groupManagementService.addOwnerToGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
+            when(groupManagementService.addParentToFamilyGroup(any(UserGroupId.class), any(MemberId.class)))
                     .thenReturn(group);
 
             mockMvc.perform(
-                            post("/api/family-groups/{id}/owners", GROUP_UUID)
+                            post("/api/family-groups/{id}/parents", GROUP_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -277,7 +277,7 @@ class FamilyGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            post("/api/family-groups/{id}/owners", GROUP_UUID)
+                            post("/api/family-groups/{id}/parents", GROUP_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -289,38 +289,48 @@ class FamilyGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/family-groups/{id}/owners/{memberId}")
-    class RemoveFamilyGroupOwnerTests {
+    @DisplayName("DELETE /api/family-groups/{id}/parents/{memberId}")
+    class RemoveFamilyGroupParentTests {
 
         @Test
-        @DisplayName("should return 422 when removing last owner")
+        @DisplayName("should return 204 when admin removes a parent")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn422WhenRemovingLastOwner() throws Exception {
-            MemberId lastOwner = new MemberId(UUID.fromString(MEMBER_ID));
-            when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
-                    .thenThrow(new UserGroup.CannotRemoveLastOwnerException(lastOwner));
+        void shouldReturn204WhenRemovingParent() throws Exception {
+            FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
+            when(groupManagementService.removeParentFromFamilyGroup(any(UserGroupId.class), any(MemberId.class)))
+                    .thenReturn(group);
 
             mockMvc.perform(
-                            delete("/api/family-groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 422 when removing last parent")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn422WhenRemovingLastParent() throws Exception {
+            MemberId lastParent = new MemberId(UUID.fromString(MEMBER_ID));
+            when(groupManagementService.removeParentFromFamilyGroup(any(UserGroupId.class), any(MemberId.class)))
+                    .thenThrow(new UserGroup.CannotRemoveLastOwnerException(lastParent));
+
+            mockMvc.perform(
+                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().is(422));
         }
 
         @Test
-        @DisplayName("should return 400 when requesting user is not an owner of the group")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenNonOwnerAttemptsRemoveOwner() throws Exception {
-            UUID otherOwnerUuid = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-            when(groupManagementService.removeOwnerFromGroup(any(UserGroupId.class), any(MemberId.class), any(MemberId.class)))
-                    .thenThrow(new com.klabis.usergroups.domain.NotGroupOwnerException(
-                            new MemberId(UUID.fromString(MEMBER_ID)), new UserGroupId(GROUP_UUID)));
-
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            delete("/api/family-groups/{id}/owners/{memberId}", GROUP_UUID, otherOwnerUuid)
+                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isForbidden());
         }
     }
 }

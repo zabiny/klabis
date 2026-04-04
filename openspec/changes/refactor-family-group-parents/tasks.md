@@ -15,12 +15,12 @@
 
 ## 3. REST API — přejmenování owners na parents
 
-- [ ] 3.1 Upravit `CreateFamilyGroupRequest` — přidat `parentIds` (povinné, min 1), odebrat automatické přiřazení authenticated user jako owner
-- [ ] 3.2 Přejmenovat endpointy: `POST /parents` místo `/owners`, `DELETE /parents/{id}` místo `/owners/{id}`
-- [ ] 3.3 Upravit response DTO — `parents` pole místo `owners` ve FamilyGroupResponse
-- [ ] 3.4 Změnit autorizaci parent management endpointů na MEMBERS:MANAGE (bez owner check)
-- [ ] 3.5 Upravit HAL affordance — `addFamilyGroupParent`/`removeFamilyGroupParent` jen pro uživatele s MEMBERS:MANAGE
-- [ ] 3.6 Aktualizovat controller testy pro nové endpointy, request/response formáty a autorizaci
+- [x] 3.1 Upravit `CreateFamilyGroupRequest` — přidat `parentIds` (povinné, min 1), odebrat automatické přiřazení authenticated user jako owner
+- [x] 3.2 Přejmenovat endpointy: `POST /parents` místo `/owners`, `DELETE /parents/{id}` místo `/owners/{id}`
+- [x] 3.3 Upravit response DTO — `parents` pole místo `owners` ve FamilyGroupResponse
+- [x] 3.4 Změnit autorizaci parent management endpointů na MEMBERS:MANAGE (bez owner check)
+- [x] 3.5 Upravit HAL affordance — `addFamilyGroupParent`/`removeFamilyGroupParent` jen pro uživatele s MEMBERS:MANAGE
+- [x] 3.6 Aktualizovat controller testy pro nové endpointy, request/response formáty a autorizaci
 
 ## 4. Frontend — parent terminologie a create flow
 
