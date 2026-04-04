@@ -458,6 +458,74 @@ COMMENT ON TABLE invitations IS 'Member invitations for FREE type user groups';
 COMMENT ON COLUMN invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
 
 -- ============================================================================
+-- 14. TRAINING_GROUPS TABLE
+-- Stores training groups as an independent aggregate root in the members module
+-- ============================================================================
+
+CREATE TABLE training_groups
+(
+    id            UUID         PRIMARY KEY,
+    name          VARCHAR(200) NOT NULL,
+    age_range_min INT          NOT NULL,
+    age_range_max INT          NOT NULL,
+
+    -- Audit fields
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by    VARCHAR(100) NOT NULL,
+    modified_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by   VARCHAR(100) NOT NULL,
+    version       BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for training_groups
+CREATE INDEX idx_training_groups_name ON training_groups (name);
+
+-- Comments for training_groups
+COMMENT ON TABLE training_groups IS 'Training groups as independent aggregate root in the members module';
+COMMENT ON COLUMN training_groups.age_range_min IS 'Minimum age for this training group (inclusive)';
+COMMENT ON COLUMN training_groups.age_range_max IS 'Maximum age for this training group (inclusive)';
+
+-- ============================================================================
+-- 15. TRAINING_GROUP_TRAINERS TABLE
+-- Maps trainers (members acting as owners) to training groups
+-- ============================================================================
+
+CREATE TABLE training_group_trainers
+(
+    training_group_id UUID NOT NULL REFERENCES training_groups (id) ON DELETE CASCADE,
+    member_id         UUID NOT NULL,
+    PRIMARY KEY (training_group_id, member_id)
+);
+
+-- Indexes for training_group_trainers
+CREATE INDEX idx_training_group_trainers_group_id ON training_group_trainers (training_group_id);
+CREATE INDEX idx_training_group_trainers_member_id ON training_group_trainers (member_id);
+
+-- Comments for training_group_trainers
+COMMENT ON TABLE training_group_trainers IS 'Maps trainers (members acting as owners) to training groups';
+
+-- ============================================================================
+-- 16. TRAINING_GROUP_MEMBERS TABLE
+-- Maps members to training groups with join timestamp
+-- ============================================================================
+
+CREATE TABLE training_group_members
+(
+    training_group_id UUID      NOT NULL REFERENCES training_groups (id) ON DELETE CASCADE,
+    member_id         UUID      NOT NULL,
+    joined_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (training_group_id, member_id)
+);
+
+-- Indexes for training_group_members
+CREATE INDEX idx_training_group_members_group_id ON training_group_members (training_group_id);
+CREATE INDEX idx_training_group_members_member_id ON training_group_members (member_id);
+
+-- Comments for training_group_members
+COMMENT ON TABLE training_group_members IS 'Maps members to training groups with join timestamp';
+COMMENT ON COLUMN training_group_members.joined_at IS 'Timestamp when member was assigned to the training group';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

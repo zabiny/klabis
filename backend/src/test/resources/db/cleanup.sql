@@ -30,6 +30,11 @@ DELETE FROM calendar_items;
 -- DELETE FROM event_registrations;
 DELETE FROM events;
 
+-- Training groups (members module aggregate root)
+DELETE FROM training_group_members;
+DELETE FROM training_group_trainers;
+DELETE FROM training_groups;
+
 -- Members table
 DELETE FROM members;
 
