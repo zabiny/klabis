@@ -39,7 +39,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 
     const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
         const template = member._templates?.removeTrainingGroupMember;
-        if (!template) return;
+        if (!template || !member._links.self) return;
         setRemoveMemberModal({
             member: member as MemberActionModalState['member'],
             templateName: 'removeTrainingGroupMember',
@@ -128,7 +128,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                                         <HalRouteProvider routeLink={trainer._links.member as HalResourceLinks}>
                                             <MemberNameWithRegNumber/>
                                         </HalRouteProvider>
-                                        {removeTrainerTpl && (
+                                        {removeTrainerTpl && selfHref && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"

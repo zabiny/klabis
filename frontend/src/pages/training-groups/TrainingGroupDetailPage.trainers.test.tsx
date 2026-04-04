@@ -135,9 +135,13 @@ describe('TrainingGroupDetailPage — trainer management', () => {
         expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
     });
 
-    it('shows "Odebrat trenéra" button per trainer when removeTrainer template exists on trainer', () => {
+    it('shows "Odebrat trenéra" button per trainer when removeTrainer template and self link exist on trainer', () => {
         const trainerWithTemplate = {
             ...buildTrainer(),
+            _links: {
+                member: {href: '/api/members/trainer-1'},
+                self: {href: '/api/groups/tg-1/trainers/trainer-1'},
+            },
             _templates: {removeTrainer: mockHalFormsTemplate({title: 'Odebrat trenéra', method: 'DELETE', target: '/api/groups/tg-1/trainers/trainer-1'})},
         };
         const resourceData = buildTrainingGroupDetail({trainers: [trainerWithTemplate]});

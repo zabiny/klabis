@@ -88,7 +88,6 @@ public class TrainingGroup extends UserGroup {
 
     @Override
     public void addMember(AddMember command) {
-        requireOwner(command.requestingMember());
         addMemberInternal(command.memberToAdd());
         registerEvent(new MemberAssignedToTrainingGroupEvent(
                 command.memberToAdd(), getId(), getName(), Instant.now()));

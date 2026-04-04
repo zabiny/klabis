@@ -447,13 +447,17 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("addMember() should throw when requesting member is not a trainer")
-        void shouldThrowWhenNotTrainer() {
+        @DisplayName("addMember() should register event regardless of requestingMember (auth is at controller level)")
+        void shouldRegisterEventForAnyRequestingMember() {
             MemberId nonTrainer = new MemberId(UUID.fromString("55555555-5555-5555-5555-555555555555"));
             UserGroup.AddMember command = new UserGroup.AddMember(nonTrainer, REGULAR_MEMBER);
 
-            assertThatThrownBy(() -> group.addMember(command))
-                    .isInstanceOf(NotGroupOwnerException.class);
+            group.addMember(command);
+
+            assertThat(group.getDomainEvents())
+                    .hasSize(1)
+                    .first()
+                    .isInstanceOf(MemberAssignedToTrainingGroupEvent.class);
         }
     }
 

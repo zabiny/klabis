@@ -13,6 +13,14 @@ record UpdateTrainingGroupRequest(
         PatchField<List<String>> trainers
 ) {
     PatchField<List<UUID>> trainerUuids() {
-        return trainers.map(list -> list.stream().map(UUID::fromString).toList());
+        return trainers.map(list -> list.stream()
+                .map(s -> {
+                    try {
+                        return UUID.fromString(s);
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Invalid trainer UUID: '%s'".formatted(s));
+                    }
+                })
+                .toList());
     }
 }

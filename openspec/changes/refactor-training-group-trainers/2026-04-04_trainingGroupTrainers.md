@@ -99,3 +99,23 @@ Rename owners→trainers in TrainingGroup API, explicit trainer assignment at cr
 - `TrainingGroupDetailPage.trainers.test.tsx`: New test file (9 tests) replacing old owners test file. Covers trainer section label, add/remove trainer button visibility and modal behavior, single edit button existence, absence of separate age-range button.
 
 **All 1029 frontend tests pass.**
+
+### Code Review Fixes — 2026-04-04
+
+**Issues fixed (3 HIGH priority from code review):**
+
+**Fix 1: `UpdateTrainingGroupRequest.trainerUuids()` — improved UUID validation error message**
+
+`PatchFieldDeserializer` uses `getRawClass()` so it cannot handle `PatchField<List<UUID>>` (type erasure loses UUID generic; Jackson would give `List<LinkedHashMap>`). Kept `PatchField<List<String>>` with manual conversion. However, the existing `UUID::fromString` call already results in HTTP 400 via `MvcExceptionHandler.handleIllegalArgumentException()`. Fixed by wrapping conversion to produce a clearer error message: `"Invalid trainer UUID: '<value>'"` instead of the cryptic default `UUID::fromString` message.
+
+**Fix 2: `TrainingGroup.addMember(AddMember)` — removed `requireOwner` check**
+
+Removed `requireOwner(command.requestingMember())` from the `TrainingGroup.addMember()` override. Per design D2, authorization for `TrainingGroup` operations is enforced at the controller level via `GROUPS:TRAINING` permission only — no owner check in the domain. The override now calls `addMemberInternal()` + registers `MemberAssignedToTrainingGroupEvent`, consistent with `assignEligibleMember()`. Updated `TrainingGroupTest.AddMemberEvent.shouldThrowWhenNotTrainer` test (was testing the removed behavior) to verify that `addMember` registers the event for any `requestingMember`.
+
+**Fix 3: Frontend — guarded non-null access and conditional button render**
+
+- `handleRemoveMember`: added `!member._links.self` guard so the remove-member modal is never opened without a valid self link — `toHref(self!)` non-null assertion at call site is now safe.
+- Remove trainer button: changed render condition from `{removeTrainerTpl && ...}` to `{removeTrainerTpl && selfHref && ...}` — button is hidden when trainer has no self link, preventing `setRemoveTrainerModal` with empty `trainerSelfHref`.
+- Updated `TrainingGroupDetailPage.trainers.test.tsx`: test "shows 'Odebrat trenéra' button" now provides a `self` link on the trainer (reflecting the guarded behavior).
+
+**All backend tests pass (64 targeted). All 9 frontend trainer tests pass.**
