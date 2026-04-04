@@ -30,4 +30,4 @@
 
 ## 5. OpenSpec — sync delta specs
 
-- [ ] 5.1 Sync delta spec do hlavního `openspec/specs/user-groups/spec.md`
+- [x] 5.1 Sync delta spec do hlavního `openspec/specs/user-groups/spec.md`
