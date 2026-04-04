@@ -9,7 +9,6 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
-import com.klabis.usergroups.infrastructure.restapi.UserGroupsPostProcessor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -63,7 +62,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
-@Import({MemberMapperImpl.class, HalFormsSupport.class, UserGroupsPostProcessor.class})
+@Import({MemberMapperImpl.class, HalFormsSupport.class,
+        com.klabis.members.traininggroup.infrastructure.restapi.MemberDetailsPostProcessor.class,
+        com.klabis.members.familygroup.infrastructure.restapi.MemberDetailsPostProcessor.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 

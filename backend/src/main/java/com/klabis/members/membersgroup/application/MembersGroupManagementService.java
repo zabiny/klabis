@@ -6,14 +6,11 @@ import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-// Temporary qualifier to avoid bean name conflict with usergroups.GroupManagementService — remove in Phase 5 when old module is deleted
-@Component("membersMembersGroupManagementService")
 class MembersGroupManagementService implements MembersGroupManagementPort {
 
     private final MembersGroupRepository membersGroupRepository;

@@ -7,12 +7,11 @@ import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
-// Temporary qualifier to avoid bean name conflict with usergroups.TrainingGroupManagementService — remove in Phase 5 when old module is deleted
-@Component("membersTrainingGroupManagementService")
 class TrainingGroupManagementService implements TrainingGroupManagementPort {
 
     private final TrainingGroupRepository trainingGroupRepository;
@@ -22,6 +21,18 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
                                    ActiveMembersByAgeProvider activeMembersByAgeProvider) {
         this.trainingGroupRepository = trainingGroupRepository;
         this.activeMembersByAgeProvider = activeMembersByAgeProvider;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TrainingGroup> listTrainingGroups() {
+        return trainingGroupRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public TrainingGroup getTrainingGroup(TrainingGroupId id) {
+        return loadTrainingGroup(id);
     }
 
     @Transactional

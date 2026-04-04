@@ -7,4 +7,8 @@ import java.util.UUID;
 
 @ValueObject
 public record MembersGroupId(UUID value) implements Identifier {
+
+    public UUID uuid() {
+        return this.value;
+    }
 }

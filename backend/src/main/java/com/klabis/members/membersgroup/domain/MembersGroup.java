@@ -28,6 +28,8 @@ import java.util.UUID;
 @AggregateRoot
 public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroupId> implements WithInvitations {
 
+    public static final String TYPE_DISCRIMINATOR = "FREE";
+
     @Identity
     private final MembersGroupId id;
     private final UserGroup userGroup;

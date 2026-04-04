@@ -5,8 +5,14 @@ import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.util.List;
+
 @PrimaryPort
 public interface TrainingGroupManagementPort {
+
+    List<TrainingGroup> listTrainingGroups();
+
+    TrainingGroup getTrainingGroup(TrainingGroupId id);
 
     TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command);
 

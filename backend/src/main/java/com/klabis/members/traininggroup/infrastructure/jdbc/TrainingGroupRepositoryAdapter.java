@@ -1,5 +1,6 @@
 package com.klabis.members.traininggroup.infrastructure.jdbc;
 
+import com.klabis.members.MemberId;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
@@ -28,6 +29,11 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
     @Override
     public Optional<TrainingGroup> findById(TrainingGroupId id) {
         return jdbcRepository.findById(id.value()).map(TrainingGroupMemento::toTrainingGroup);
+    }
+
+    @Override
+    public Optional<TrainingGroup> findGroupForMember(MemberId memberId) {
+        return jdbcRepository.findByMemberId(memberId.uuid()).map(TrainingGroupMemento::toTrainingGroup);
     }
 
     @Override
