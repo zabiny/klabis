@@ -152,7 +152,6 @@ class MembersGroupController {
 
         requireMemberProfile(currentUser);
 
-        // MembersGroup is invitation-only — addMember() always throws DirectMemberAdditionNotAllowedException
         MembersGroupId groupId = new MembersGroupId(id);
         MembersGroup group = membersGroupManagementService.getGroup(groupId);
         group.addMember(new MemberId(request.memberId()));

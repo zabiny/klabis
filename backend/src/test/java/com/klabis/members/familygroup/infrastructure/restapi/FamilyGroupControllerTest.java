@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("FamilyGroupController API tests")
-@WebMvcTest(controllers = {FamilyGroupController.class, FamilyGroupExceptionHandler.class})
+@WebMvcTest(controllers = {FamilyGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class FamilyGroupControllerTest {
 

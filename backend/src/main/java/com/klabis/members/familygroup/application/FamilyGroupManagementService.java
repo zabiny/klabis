@@ -1,5 +1,6 @@
 package com.klabis.members.familygroup.application;
 
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
@@ -36,23 +37,20 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public FamilyGroup getFamilyGroup(FamilyGroupId id) {
-        return familyGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        return loadGroup(id);
     }
 
     @Transactional
     @Override
     public void deleteFamilyGroup(FamilyGroupId id) {
-        familyGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        loadGroup(id);
         familyGroupRepository.delete(id);
     }
 
     @Transactional
     @Override
     public void addParent(FamilyGroupId id, MemberId parent) {
-        FamilyGroup group = familyGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        FamilyGroup group = loadGroup(id);
         group.addParent(parent);
         familyGroupRepository.save(group);
     }
@@ -60,10 +58,14 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public void removeParent(FamilyGroupId id, MemberId parent) {
-        FamilyGroup group = familyGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        FamilyGroup group = loadGroup(id);
         group.removeParent(parent);
         familyGroupRepository.save(group);
+    }
+
+    private FamilyGroup loadGroup(FamilyGroupId id) {
+        return familyGroupRepository.findById(id)
+                .orElseThrow(() -> new GroupNotFoundException("Family", id));
     }
 
     private void validateNoExistingFamilyGroup(MemberId memberId) {

@@ -1,6 +1,7 @@
 package com.klabis.members.familygroup.application;
 
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;

@@ -7,7 +7,7 @@ import java.util.Set;
 
 public interface WithInvitations {
 
-    void invite(UserId invitedUser, UserId invitedBy);
+    void invite(UserId invitedBy, UserId target);
 
     void acceptInvitation(InvitationId invitationId);
 

@@ -35,16 +35,16 @@ class UserGroupWithInvitationsTest {
         }
 
         @Override
-        public void invite(UserId invitedUser, UserId invitedBy) {
-            if (hasMember(invitedUser) || isOwner(invitedUser)) {
-                throw new CannotInviteExistingMemberException(invitedUser);
+        public void invite(UserId invitedBy, UserId target) {
+            if (hasMember(target) || isOwner(target)) {
+                throw new CannotInviteExistingMemberException(target);
             }
             boolean pendingExists = invitations.stream()
-                    .anyMatch(inv -> inv.isForUser(invitedUser) && inv.isPending());
+                    .anyMatch(inv -> inv.isForUser(target) && inv.isPending());
             if (pendingExists) {
-                throw new DuplicatePendingInvitationException(invitedUser);
+                throw new DuplicatePendingInvitationException(target);
             }
-            invitations.add(Invitation.createPending(invitedBy, invitedUser));
+            invitations.add(Invitation.createPending(invitedBy, target));
         }
 
         @Override
@@ -96,7 +96,7 @@ class UserGroupWithInvitationsTest {
         void shouldCreatePendingInvitation() {
             InvitationGroup group = groupWithOwner();
 
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
 
             List<Invitation> pending = group.getPendingInvitations();
             assertThat(pending).hasSize(1);
@@ -109,10 +109,10 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should throw when inviting existing member")
         void shouldThrowWhenInvitingExistingMember() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
 
-            assertThatThrownBy(() -> group.invite(USER_A, OWNER))
+            assertThatThrownBy(() -> group.invite(OWNER, USER_A))
                     .isInstanceOf(CannotInviteExistingMemberException.class)
                     .hasMessageContaining(USER_A.toString());
         }
@@ -131,9 +131,9 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should throw when duplicate pending invitation exists")
         void shouldThrowWhenDuplicatePendingInvitation() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
 
-            assertThatThrownBy(() -> group.invite(USER_A, OWNER))
+            assertThatThrownBy(() -> group.invite(OWNER, USER_A))
                     .isInstanceOf(DuplicatePendingInvitationException.class)
                     .hasMessageContaining(USER_A.toString());
         }
@@ -142,11 +142,11 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should allow re-invite after rejection")
         void shouldAllowReInviteAfterRejection() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
             InvitationId firstId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(firstId);
 
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
 
             assertThat(group.getPendingInvitations()).hasSize(1);
             assertThat(group.getPendingInvitations().get(0).getInvitedUser()).isEqualTo(USER_A);
@@ -161,7 +161,7 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should add user to group and mark invitation accepted")
         void shouldAcceptInvitationAndAddMember() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
             group.acceptInvitation(invitationId);
@@ -194,7 +194,7 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should mark invitation rejected without adding member")
         void shouldRejectInvitationWithoutAddingMember() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
             group.rejectInvitation(invitationId);
@@ -227,7 +227,7 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should return true when user has pending invitation")
         void shouldReturnTrueWhenPendingInvitation() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
 
             assertThat(group.isInvitedMember(USER_A)).isTrue();
         }
@@ -244,7 +244,7 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should return false when invitation was accepted")
         void shouldReturnFalseWhenInvitationAccepted() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
+            group.invite(OWNER, USER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
 
             assertThat(group.isInvitedMember(USER_A)).isFalse();
@@ -259,8 +259,8 @@ class UserGroupWithInvitationsTest {
         @DisplayName("should return only pending invitations")
         void shouldReturnOnlyPendingInvitations() {
             InvitationGroup group = groupWithOwner();
-            group.invite(USER_A, OWNER);
-            group.invite(USER_B, OWNER);
+            group.invite(OWNER, USER_A);
+            group.invite(OWNER, USER_B);
             InvitationId acceptedId = group.getPendingInvitations().stream()
                     .filter(inv -> inv.getInvitedUser().equals(USER_A))
                     .findFirst().orElseThrow().getId();

@@ -109,22 +109,22 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
 
     // WithInvitations interface — controllers verify authorization before calling; no owner check here
     @Override
-    public void invite(UserId invitedUser, UserId invitedBy) {
+    public void invite(UserId invitedBy, UserId target) {
         Assert.notNull(invitedBy, "invitedBy is required");
-        Assert.notNull(invitedUser, "invitedUser is required");
-        if (userGroup.hasMember(invitedUser) || userGroup.isOwner(invitedUser)) {
-            throw new CannotInviteExistingMemberException(invitedUser);
+        Assert.notNull(target, "target is required");
+        if (userGroup.hasMember(target) || userGroup.isOwner(target)) {
+            throw new CannotInviteExistingMemberException(target);
         }
         boolean pendingAlreadyExists = invitations.stream()
-                .anyMatch(inv -> inv.isForUser(invitedUser) && inv.isPending());
+                .anyMatch(inv -> inv.isForUser(target) && inv.isPending());
         if (pendingAlreadyExists) {
-            throw new DuplicatePendingInvitationException(invitedUser);
+            throw new DuplicatePendingInvitationException(target);
         }
-        invitations.add(Invitation.createPending(invitedBy, invitedUser));
+        invitations.add(Invitation.createPending(invitedBy, target));
     }
 
     public void invite(MemberId invitedBy, MemberId target) {
-        invite(target.toUserId(), invitedBy.toUserId());
+        invite(invitedBy.toUserId(), target.toUserId());
     }
 
     @Override

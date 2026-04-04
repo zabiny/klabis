@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("TrainingGroupController API tests")
-@WebMvcTest(controllers = {TrainingGroupController.class, TrainingGroupExceptionHandler.class})
+@WebMvcTest(controllers = {TrainingGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class TrainingGroupControllerTest {
 

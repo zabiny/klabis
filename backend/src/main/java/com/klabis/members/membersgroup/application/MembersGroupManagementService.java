@@ -1,5 +1,6 @@
 package com.klabis.members.membersgroup.application;
 
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.members.MemberId;
 import com.klabis.members.membersgroup.domain.MembersGroup;
@@ -29,8 +30,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public MembersGroup getGroup(MembersGroupId id) {
-        return membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        return loadGroup(id);
     }
 
     @Transactional(readOnly = true)
@@ -42,8 +42,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public MembersGroup renameGroup(MembersGroupId id, String newName) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.rename(newName);
         return membersGroupRepository.save(group);
     }
@@ -51,16 +50,14 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void deleteGroup(MembersGroupId id) {
-        membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        loadGroup(id);
         membersGroupRepository.delete(id);
     }
 
     @Transactional
     @Override
     public void addOwner(MembersGroupId id, MemberId memberId) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.addOwner(memberId);
         membersGroupRepository.save(group);
     }
@@ -68,8 +65,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void removeOwner(MembersGroupId id, MemberId memberId) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.removeOwner(memberId);
         membersGroupRepository.save(group);
     }
@@ -77,8 +73,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void removeMember(MembersGroupId id, MemberId memberId) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.removeMember(memberId);
         membersGroupRepository.save(group);
     }
@@ -86,8 +81,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void inviteMember(MembersGroupId id, MemberId invitedBy, MemberId target) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.invite(invitedBy, target);
         membersGroupRepository.save(group);
     }
@@ -95,8 +89,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void acceptInvitation(MembersGroupId id, InvitationId invitationId, MemberId acceptingMember) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.acceptInvitation(invitationId, acceptingMember);
         membersGroupRepository.save(group);
     }
@@ -104,10 +97,14 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional
     @Override
     public void rejectInvitation(MembersGroupId id, InvitationId invitationId, MemberId rejectingMember) {
-        MembersGroup group = membersGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+        MembersGroup group = loadGroup(id);
         group.rejectInvitation(invitationId, rejectingMember);
         membersGroupRepository.save(group);
+    }
+
+    private MembersGroup loadGroup(MembersGroupId id) {
+        return membersGroupRepository.findById(id)
+                .orElseThrow(() -> new GroupNotFoundException("Members", id));
     }
 
     @Transactional(readOnly = true)

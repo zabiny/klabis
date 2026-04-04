@@ -1,6 +1,7 @@
 package com.klabis.members.membersgroup.application;
 
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;

@@ -94,16 +94,13 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
 
     public void addParent(MemberId parent) {
         Assert.notNull(parent, "Parent MemberId is required");
-        // addMember is called first to enforce the "not already a member" invariant before granting ownership
         userGroup.addMember(parent.toUserId());
         userGroup.addOwner(parent.toUserId());
     }
 
     public void removeParent(MemberId parent) {
         Assert.notNull(parent, "Parent MemberId is required");
-        // removeOwner checks last-owner invariant before removing from owners set
         userGroup.removeOwner(parent.toUserId());
-        // after ownership is removed, removeMember proceeds without the owner guard
         userGroup.removeMember(parent.toUserId());
     }
 }

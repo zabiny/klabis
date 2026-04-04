@@ -2,6 +2,7 @@ package com.klabis.members.traininggroup.application;
 
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
@@ -101,7 +102,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
 
     private TrainingGroup loadTrainingGroup(TrainingGroupId id) {
         return trainingGroupRepository.findById(id)
-                .orElseThrow(() -> new GroupNotFoundException(id));
+                .orElseThrow(() -> new GroupNotFoundException("Training", id));
     }
 
     private void validateNoOverlappingAgeRange(AgeRange ageRange, TrainingGroupId excludeId) {

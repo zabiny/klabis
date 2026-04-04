@@ -1,5 +1,6 @@
 package com.klabis.members.traininggroup.application;
 
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.common.patch.PatchField;

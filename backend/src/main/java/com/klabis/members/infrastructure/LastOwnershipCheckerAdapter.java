@@ -55,7 +55,7 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
         trainingGroupRepository.findGroupsForTrainer(memberId).stream()
                 .filter(group -> group.isLastTrainer(memberId))
                 .map(group -> new OwnedGroupInfo(
-                        group.getId().value().toString(),
+                        group.getId().uuid().toString(),
                         group.getName(),
                         TrainingGroup.TYPE_DISCRIMINATOR))
                 .forEach(result::add);

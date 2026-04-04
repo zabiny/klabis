@@ -11,7 +11,7 @@ import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
-import com.klabis.members.membersgroup.application.GroupNotFoundException;
+import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
@@ -217,7 +217,7 @@ class MembersGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
             when(membersGroupManagementService.getGroup(any(MembersGroupId.class)))
-                    .thenThrow(new GroupNotFoundException(GROUP_ID));
+                    .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
                             get("/api/groups/{id}", GROUP_UUID)
@@ -295,7 +295,7 @@ class MembersGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
             when(membersGroupManagementService.renameGroup(any(MembersGroupId.class), any(String.class)))
-                    .thenThrow(new GroupNotFoundException(GROUP_ID));
+                    .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
                             patch("/api/groups/{id}", GROUP_UUID)
@@ -339,7 +339,7 @@ class MembersGroupControllerTest {
         @DisplayName("should return 404 when group not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException(GROUP_ID))
+            doThrow(new GroupNotFoundException("Members", GROUP_ID))
                     .when(membersGroupManagementService).deleteGroup(any(MembersGroupId.class));
 
             mockMvc.perform(
@@ -418,7 +418,7 @@ class MembersGroupControllerTest {
         @DisplayName("should return 404 when group not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException(GROUP_ID))
+            doThrow(new GroupNotFoundException("Members", GROUP_ID))
                     .when(membersGroupManagementService).removeMember(any(MembersGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
@@ -595,7 +595,7 @@ class MembersGroupControllerTest {
         @DisplayName("should return 404 when group not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException(GROUP_ID))
+            doThrow(new GroupNotFoundException("Members", GROUP_ID))
                     .when(membersGroupManagementService).inviteMember(any(), any(), any());
 
             mockMvc.perform(
