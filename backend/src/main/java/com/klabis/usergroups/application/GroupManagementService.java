@@ -38,7 +38,7 @@ class GroupManagementService implements GroupManagementPort {
     @Transactional
     @Override
     public FamilyGroup createFamilyGroup(FamilyGroup.CreateFamilyGroup command) {
-        validateNoExistingFamilyGroup(command.owner());
+        command.parents().forEach(this::validateNoExistingFamilyGroup);
         command.initialMembers().forEach(this::validateNoExistingFamilyGroup);
         FamilyGroup group = FamilyGroup.create(command);
         return (FamilyGroup) userGroupRepository.save(group);
@@ -191,6 +191,29 @@ class GroupManagementService implements GroupManagementPort {
         UserGroup group = loadGroup(id);
         group.removeOwner(new UserGroup.RemoveOwner(requestingMember, ownerToRemove));
         return userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public FamilyGroup addParentToFamilyGroup(UserGroupId id, MemberId parent) {
+        FamilyGroup group = loadFamilyGroup(id);
+        group.addParent(parent);
+        return (FamilyGroup) userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public FamilyGroup removeParentFromFamilyGroup(UserGroupId id, MemberId parent) {
+        FamilyGroup group = loadFamilyGroup(id);
+        group.removeParent(parent);
+        return (FamilyGroup) userGroupRepository.save(group);
+    }
+
+    private FamilyGroup loadFamilyGroup(UserGroupId id) {
+        return userGroupRepository.findById(id)
+                .filter(g -> g instanceof FamilyGroup)
+                .map(g -> (FamilyGroup) g)
+                .orElseThrow(() -> new GroupNotFoundException(id));
     }
 
     private UserGroup loadGroup(UserGroupId id) {

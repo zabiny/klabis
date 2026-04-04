@@ -47,4 +47,8 @@ public interface GroupManagementPort {
     UserGroup addOwnerToGroup(UserGroupId id, MemberId newOwner, MemberId requestingMember);
 
     UserGroup removeOwnerFromGroup(UserGroupId id, MemberId ownerToRemove, MemberId requestingMember);
+
+    FamilyGroup addParentToFamilyGroup(UserGroupId id, MemberId parent);
+
+    FamilyGroup removeParentFromFamilyGroup(UserGroupId id, MemberId parent);
 }

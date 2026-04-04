@@ -218,7 +218,7 @@ class UserGroupPersistenceTest {
         void shouldReturnOnlyTrainingGroups() {
             userGroupRepository.save(TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, new AgeRange(8, 14))));
             userGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Trail Runners", OWNER)));
-            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Smith Family", OWNER, Set.of())));
+            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Smith Family", Set.of(OWNER), Set.of())));
 
             List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING));
 
@@ -231,7 +231,7 @@ class UserGroupPersistenceTest {
         @DisplayName("should return only family groups when filtering by FAMILY type")
         void shouldReturnOnlyFamilyGroups() {
             userGroupRepository.save(TrainingGroup.create(new TrainingGroup.CreateTrainingGroup("Seniors", OWNER, new AgeRange(18, 60))));
-            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Johnson Family", OWNER, Set.of())));
+            userGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Johnson Family", Set.of(OWNER), Set.of())));
 
             List<UserGroup> result = userGroupRepository.findAll(GroupFilter.byType(GroupType.FAMILY));
 
@@ -433,7 +433,7 @@ class UserGroupPersistenceTest {
         @Test
         @DisplayName("should return family group when filtering by type and member (type + member)")
         void shouldReturnFamilyGroupForMember() {
-            FamilyGroup family = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Test Family", OWNER, Set.of(EXTRA_MEMBER)));
+            FamilyGroup family = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Test Family", Set.of(OWNER), Set.of(EXTRA_MEMBER)));
             userGroupRepository.save(family);
 
             Optional<UserGroup> result = userGroupRepository.findOne(GroupFilter.byTypeAndMember(GroupType.FAMILY, EXTRA_MEMBER));

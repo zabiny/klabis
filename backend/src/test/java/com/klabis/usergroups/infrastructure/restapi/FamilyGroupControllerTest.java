@@ -69,8 +69,8 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "memberIds": []}
-                                            """)
+                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isForbidden());
         }
@@ -88,8 +88,8 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "memberIds": []}
-                                            """)
+                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
@@ -103,8 +103,8 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "memberIds": []}
-                                            """)
+                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isUnauthorized());
         }
@@ -121,8 +121,8 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "memberIds": ["%s"]}
-                                            """.formatted(UUID.randomUUID()))
+                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": ["%s"]}
+                                            """.formatted(MEMBER_ID, UUID.randomUUID()))
                     )
                     .andExpect(status().isBadRequest());
         }

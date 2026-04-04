@@ -1,17 +1,17 @@
 ## 1. Domain — CreateFamilyGroup command refaktoring
 
-- [ ] 1.1 Změnit `CreateFamilyGroup(name, owner, initialMembers)` na `CreateFamilyGroup(name, parents: Set<MemberId>, initialMembers: Set<MemberId>)` s validací min 1 parent
-- [ ] 1.2 Upravit `FamilyGroup.create()` — parents se nastaví jako owners + přidají jako members
-- [ ] 1.3 Přidat doménové metody `addParent`/`removeParent` do FamilyGroup — delegují na addOwner+addMember / removeOwner+removeMember
-- [ ] 1.4 Aktualizovat testy v FamilyGroupTest pro nový CreateFamilyGroup command a parent metody
+- [x] 1.1 Změnit `CreateFamilyGroup(name, owner, initialMembers)` na `CreateFamilyGroup(name, parents: Set<MemberId>, initialMembers: Set<MemberId>)` s validací min 1 parent
+- [x] 1.2 Upravit `FamilyGroup.create()` — parents se nastaví jako owners + přidají jako members
+- [x] 1.3 Přidat doménové metody `addParent`/`removeParent` do FamilyGroup — delegují na addOwner+addMember / removeOwner+removeMember
+- [x] 1.4 Aktualizovat testy v FamilyGroupTest pro nový CreateFamilyGroup command a parent metody
 
 ## 2. Application service — parent management s MEMBERS:MANAGE autorizací
 
-- [ ] 2.1 Upravit `GroupManagementService.createFamilyGroup()` — validovat exclusive membership pro všechny parents, přidat parents jako owners+members
-- [ ] 2.2 Přidat `addParentToFamilyGroup(UserGroupId, MemberId)` metodu — vyžaduje MEMBERS:MANAGE (ne owner check), přidá parent jako owner+member
-- [ ] 2.3 Přidat `removeParentFromFamilyGroup(UserGroupId, MemberId)` metodu — vyžaduje MEMBERS:MANAGE, odebere parent z owners i members
-- [ ] 2.4 Odstranit staré owner-based metody pro family group kontext (addOwnerToGroup/removeOwnerFromGroup se přestanou používat pro family groups)
-- [ ] 2.5 Aktualizovat GroupManagementPort rozhraní s novými metodami
+- [x] 2.1 Upravit `GroupManagementService.createFamilyGroup()` — validovat exclusive membership pro všechny parents, přidat parents jako owners+members
+- [x] 2.2 Přidat `addParentToFamilyGroup(UserGroupId, MemberId)` metodu — vyžaduje MEMBERS:MANAGE (ne owner check), přidá parent jako owner+member
+- [x] 2.3 Přidat `removeParentFromFamilyGroup(UserGroupId, MemberId)` metodu — vyžaduje MEMBERS:MANAGE, odebere parent z owners i members
+- [x] 2.4 Odstranit staré owner-based metody pro family group kontext (addOwnerToGroup/removeOwnerFromGroup se přestanou používat pro family groups)
+- [x] 2.5 Aktualizovat GroupManagementPort rozhraní s novými metodami
 
 ## 3. REST API — přejmenování owners na parents
 

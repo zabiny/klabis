@@ -53,6 +53,7 @@ class FamilyGroupController {
 
     record CreateFamilyGroupRequest(
             @NotBlank @Size(max = 200) String name,
+            @NotNull @Size(min = 1) List<UUID> parentIds,
             @NotNull List<UUID> memberIds
     ) {
     }
@@ -65,12 +66,16 @@ class FamilyGroupController {
 
         requireMembersManageAuthority(currentUser);
 
+        Set<MemberId> parents = request.parentIds().stream()
+                .map(MemberId::new)
+                .collect(Collectors.toSet());
+
         Set<MemberId> initialMembers = request.memberIds().stream()
                 .map(MemberId::new)
                 .collect(Collectors.toSet());
 
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                request.name(), currentUser.memberId(), initialMembers);
+                request.name(), parents, initialMembers);
 
         FamilyGroup group = groupManagementService.createFamilyGroup(command);
 
