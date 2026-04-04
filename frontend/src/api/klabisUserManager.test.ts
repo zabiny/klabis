@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import type {UserManager} from 'oidc-client-ts';
+import type {User, UserManager} from 'oidc-client-ts';
 
 // Bypass the global mock from setupTests.ts — this test exercises the real module
 vi.unmock('./klabisUserManager');
@@ -15,6 +15,7 @@ describe('silentRenewRetry', () => {
     let mockUserManager: {
         signinSilent: ReturnType<typeof vi.fn>;
         removeUser: ReturnType<typeof vi.fn>;
+        getUser: ReturnType<typeof vi.fn>;
     };
 
     beforeEach(() => {
@@ -22,6 +23,7 @@ describe('silentRenewRetry', () => {
         mockUserManager = {
             signinSilent: vi.fn(),
             removeUser: vi.fn().mockResolvedValue(undefined),
+            getUser: vi.fn().mockResolvedValue({access_token: 'existing-token'} as User),
         };
     });
 
@@ -93,6 +95,19 @@ describe('silentRenewRetry', () => {
         // Only 3 attempts total — no doubling from concurrent calls
         expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(MAX_ATTEMPTS);
         expect(mockUserManager.removeUser).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not show overlay or retry when no user exists in storage', async () => {
+        mockUserManager.getUser.mockResolvedValue(null);
+        mockUserManager.signinSilent.mockRejectedValue(new Error('no session'));
+
+        const promise = silentRenewRetry(mockUserManager as unknown as UserManager);
+        await flushMicrotasks();
+
+        await expect(promise).rejects.toThrow();
+
+        expect(mockUserManager.signinSilent).not.toHaveBeenCalled();
+        expect(mockUserManager.removeUser).not.toHaveBeenCalled();
     });
 
     it('allows a new retry cycle after the previous one completes', async () => {

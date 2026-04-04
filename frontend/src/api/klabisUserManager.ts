@@ -37,28 +37,36 @@ export const silentRenewRetry = (userManager: UserManager): Promise<void> => {
     }
 
     const execute = async (): Promise<void> => {
+        const existingUser = await userManager.getUser();
+        if (!existingUser || existingUser.expired) {
+            throw new Error('No active session — silent renew is not applicable');
+        }
+
+        showRenewalOverlay();
         let lastError: unknown;
-        for (let attempt = 1; attempt <= SILENT_RENEW_MAX_ATTEMPTS; attempt++) {
-            try {
-                await userManager.signinSilent();
-                return;
-            } catch (err) {
-                lastError = err;
-                console.warn(`Silent renew attempt ${attempt}/${SILENT_RENEW_MAX_ATTEMPTS} failed`, err);
-                if (attempt < SILENT_RENEW_MAX_ATTEMPTS) {
-                    await delay(SILENT_RENEW_RETRY_DELAY_MS);
+        try {
+            for (let attempt = 1; attempt <= SILENT_RENEW_MAX_ATTEMPTS; attempt++) {
+                try {
+                    await userManager.signinSilent();
+                    return;
+                } catch (err) {
+                    lastError = err;
+                    console.warn(`Silent renew attempt ${attempt}/${SILENT_RENEW_MAX_ATTEMPTS} failed`, err);
+                    if (attempt < SILENT_RENEW_MAX_ATTEMPTS) {
+                        await delay(SILENT_RENEW_RETRY_DELAY_MS);
+                    }
                 }
             }
+            console.error('All silent renew attempts exhausted, logging out', lastError);
+            await userManager.removeUser();
+            throw lastError;
+        } finally {
+            hideRenewalOverlay();
         }
-        console.error('All silent renew attempts exhausted, logging out', lastError);
-        await userManager.removeUser();
-        throw lastError;
     };
 
-    showRenewalOverlay();
     activeRetryPromise = execute().finally(() => {
         activeRetryPromise = null;
-        hideRenewalOverlay();
     });
 
     return activeRetryPromise;

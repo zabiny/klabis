@@ -123,4 +123,4 @@ refactor(users): extract password validation to service
 
 
 ## Additional instructions
-- dont use Edit/Write/MultiEdit/etc tools when jetbrains MCP alternatives are available (prefer jetbrains tools)
+- dont use Edit/Write/MultiEdit/Update/etc tools when jetbrains MCP alternatives are available (prefer jetbrains tools)

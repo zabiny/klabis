@@ -4,6 +4,7 @@ import {Field} from 'formik'
 import {CheckboxGroup} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
+import {getFieldLabel} from '../../../../localization'
 
 /**
  * HalFormsCheckboxGroup component - multiple checkbox selection for HAL+Forms
@@ -19,7 +20,7 @@ export const HalFormsCheckboxGroup = ({prop, errorText, renderMode = 'field'}: H
         <Field name={prop.name} validate={() => undefined}>
             {({field, form}: FieldProps<unknown>) => (
                 <CheckboxGroup
-                    label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
+                    label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                     name={prop.name}
                     required={prop.required}
                     disabled={prop.readOnly || isLoading || false}
