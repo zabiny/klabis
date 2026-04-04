@@ -1,6 +1,7 @@
 package com.klabis.usergroups.application;
 
 import com.klabis.members.ActiveMembersByAgeProvider;
+import com.klabis.members.MemberId;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.GroupFilter;
@@ -52,6 +53,38 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     public void deleteTrainingGroup(UserGroupId id) {
         loadTrainingGroup(id);
         userGroupRepository.delete(id);
+    }
+
+    @Transactional
+    @Override
+    public void addTrainer(UserGroupId id, MemberId trainerId) {
+        TrainingGroup group = loadTrainingGroup(id);
+        group.addTrainer(trainerId);
+        userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void removeTrainer(UserGroupId id, MemberId trainerId) {
+        TrainingGroup group = loadTrainingGroup(id);
+        group.removeTrainer(trainerId);
+        userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void addMemberToTrainingGroup(UserGroupId id, MemberId memberId) {
+        TrainingGroup group = loadTrainingGroup(id);
+        group.assignEligibleMember(memberId);
+        userGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void removeMemberFromTrainingGroup(UserGroupId id, MemberId memberId) {
+        TrainingGroup group = loadTrainingGroup(id);
+        group.removeMember(memberId);
+        userGroupRepository.save(group);
     }
 
     private TrainingGroup loadTrainingGroup(UserGroupId id) {

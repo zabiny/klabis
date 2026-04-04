@@ -113,6 +113,10 @@ public class TrainingGroup extends UserGroup {
         this.ageRange = newAgeRange;
     }
 
+    public void removeMember(MemberId memberId) {
+        super.removeMember(memberId);
+    }
+
     public boolean matchesByAge(LocalDate dateOfBirth) {
         Assert.notNull(dateOfBirth, "Date of birth is required");
         int age = Period.between(dateOfBirth, LocalDate.now()).getYears();

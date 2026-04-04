@@ -59,6 +59,26 @@ Rename owners→trainers in TrainingGroup API, explicit trainer assignment at cr
 
 **All 1132 tests pass.**
 
+### Iteration 3 — 2026-04-04
+
+**Tasks completed:** 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8
+
+**Changes made:**
+
+- `CreateTrainingGroupRequest`: Added `trainerId` (UUID, NotNull). Controller now passes `new MemberId(request.trainerId())` instead of `currentUser.memberId()`.
+- `UpdateTrainingGroupRequest`: New record with `PatchField<String> name`, `PatchField<Integer> minAge`, `PatchField<Integer> maxAge`, `PatchField<List<String>> trainers` (uses `List<String>` internally due to Jackson generic type erasure; `trainerUuids()` helper converts to `List<UUID>`).
+- `TrainerResponse`: New record replacing `OwnerResponse` in training group context (OwnerResponse kept for FamilyGroup/FreeGroup).
+- `TrainingGroupResponse`: Renamed `owners` field to `trainers`, type changed from `List<EntityModel<OwnerResponse>>` to `List<EntityModel<TrainerResponse>>`.
+- `TrainingGroupController`: Rewired to use `TrainingGroupManagementPort` for create/update/delete. Merged PATCH endpoint replaces rename + age-range endpoints. Renamed `/owners` endpoints to `/trainers`. HATEOAS affordances now use `GROUPS:TRAINING` permission for all edit/delete/trainer affordances (no more `isOwner` check). Removed `requireOwner` calls — all operations use `requireTrainingAuthority` only.
+- `TrainingGroupManagementPort` + `TrainingGroupManagementService`: Added `addTrainer`, `removeTrainer`, `addMemberToTrainingGroup`, `removeMemberFromTrainingGroup` methods. Member operations use `assignEligibleMember` (no owner check) for add and direct `removeMember` for remove.
+- `TrainingGroup`: Added public `removeMember(MemberId)` override exposing the package-private parent method — required for service-layer access without owner check.
+- `AddTrainerRequest`: New request record for `POST /api/training-groups/{id}/trainers`.
+
+**Tests updated:**
+- `TrainingGroupControllerTest`: Full rewrite with 22 tests covering create (with trainerId), PATCH (name/age range/trainers), trainer add/remove (with 403/422 cases), member add (422 case), delete (with 403 case), and GET (trainers field in response, no owners field).
+
+**All 1875 tests pass.**
+
 ### Fix: JVM heap exhaustion in full test run — 2026-04-04
 
 **Symptom:** Up to 94 tests failing with `ApplicationContext failure threshold (1) exceeded` cascade when running the full test suite. Root cause was `java.lang.OutOfMemoryError: Java heap space` during parallel Spring context loading — not a code defect in Iteration 2.

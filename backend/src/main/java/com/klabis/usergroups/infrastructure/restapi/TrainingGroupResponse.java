@@ -8,6 +8,6 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record TrainingGroupResponse(UserGroupId id, String name, Integer minAge, Integer maxAge,
-                             List<EntityModel<OwnerResponse>> owners,
+                             List<EntityModel<TrainerResponse>> trainers,
                              List<EntityModel<GroupMembershipResponse>> members) {
 }

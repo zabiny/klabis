@@ -24,14 +24,14 @@
 
 ## 5. API Layer — TrainingGroupController
 
-- [ ] 5.1 Update `CreateTrainingGroupRequest` — add `trainerId` (UUID), remove auto-assignment of current user as owner
-- [ ] 5.2 Create `UpdateTrainingGroupRequest` with `PatchField<String> name`, `PatchField<Integer> minAge`, `PatchField<Integer> maxAge`, `PatchField<List<UUID>> trainers`
-- [ ] 5.3 Merge rename and age range update into single `PATCH /api/training-groups/{id}` endpoint using `UpdateTrainingGroupRequest`. Remove `PATCH /api/training-groups/{id}/age-range` endpoint.
-- [ ] 5.4 Rename owner endpoints to trainer URLs: `POST /api/training-groups/{id}/trainers`, `DELETE /api/training-groups/{id}/trainers/{memberId}`
-- [ ] 5.5 Update `TrainingGroupResponse` and `TrainingGroupSummaryResponse` — rename `owners` field to `trainers`, rename `OwnerResponse` to `TrainerResponse`
-- [ ] 5.6 Update HATEOAS links and affordances — replace owner-based visibility (`isOwner`) with `GROUPS:TRAINING` permission check for all edit/delete/trainer affordances
-- [ ] 5.7 Remove `requireOwner` calls from TrainingGroup operations in controller — all operations use `requireTrainingAuthority` only
-- [ ] 5.8 Add/update controller tests for all changed endpoints
+- [x] 5.1 Update `CreateTrainingGroupRequest` — add `trainerId` (UUID), remove auto-assignment of current user as owner
+- [x] 5.2 Create `UpdateTrainingGroupRequest` with `PatchField<String> name`, `PatchField<Integer> minAge`, `PatchField<Integer> maxAge`, `PatchField<List<UUID>> trainers`
+- [x] 5.3 Merge rename and age range update into single `PATCH /api/training-groups/{id}` endpoint using `UpdateTrainingGroupRequest`. Remove `PATCH /api/training-groups/{id}/age-range` endpoint.
+- [x] 5.4 Rename owner endpoints to trainer URLs: `POST /api/training-groups/{id}/trainers`, `DELETE /api/training-groups/{id}/trainers/{memberId}`
+- [x] 5.5 Update `TrainingGroupResponse` and `TrainingGroupSummaryResponse` — rename `owners` field to `trainers`, rename `OwnerResponse` to `TrainerResponse`
+- [x] 5.6 Update HATEOAS links and affordances — replace owner-based visibility (`isOwner`) with `GROUPS:TRAINING` permission check for all edit/delete/trainer affordances
+- [x] 5.7 Remove `requireOwner` calls from TrainingGroup operations in controller — all operations use `requireTrainingAuthority` only
+- [x] 5.8 Add/update controller tests for all changed endpoints
 
 ## 6. Frontend — Training Groups
 
