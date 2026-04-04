@@ -1,8 +1,8 @@
 package com.klabis.members.traininggroup.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
-import com.klabis.members.TrainingGroupProvider;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
+import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @Component("trainingGroupMemberDetailsPostProcessor")
 public class MemberDetailsPostProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
-    private final TrainingGroupProvider trainingGroupProvider;
+    private final TrainingGroupRepository trainingGroupRepository;
 
-    MemberDetailsPostProcessor(TrainingGroupProvider trainingGroupProvider) {
-        this.trainingGroupProvider = trainingGroupProvider;
+    MemberDetailsPostProcessor(TrainingGroupRepository trainingGroupRepository) {
+        this.trainingGroupRepository = trainingGroupRepository;
     }
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = model.getContent().id();
-        trainingGroupProvider.findTrainingGroupForMember(memberId)
-                .ifPresent(data -> model.add(Link.of("/api/training-groups/" + data.groupId(), "trainingGroup")));
+        trainingGroupRepository.findGroupForMember(memberId)
+                .ifPresent(group -> model.add(Link.of("/api/training-groups/" + group.getId().value(), "trainingGroup")));
         return model;
     }
 }

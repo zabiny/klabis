@@ -4,7 +4,6 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
-import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;

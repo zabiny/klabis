@@ -84,10 +84,10 @@ class MemberControllerApiTest {
     private RegistrationPort registrationService;
 
     @MockitoBean
-    private TrainingGroupProvider trainingGroupProvider;
+    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
-    private FamilyGroupProvider familyGroupProvider;
+    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -419,9 +419,13 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
-                    .thenReturn(java.util.Optional.of(new TrainingGroupProvider.TrainingGroupData(groupId)));
-            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
+            com.klabis.members.traininggroup.domain.TrainingGroup mockTrainingGroup =
+                    Mockito.mock(com.klabis.members.traininggroup.domain.TrainingGroup.class);
+            Mockito.when(mockTrainingGroup.getId())
+                    .thenReturn(new com.klabis.members.traininggroup.domain.TrainingGroupId(groupId));
+            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.of(mockTrainingGroup));
+            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -440,10 +444,14 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
+            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
-                    .thenReturn(java.util.Optional.of(new FamilyGroupProvider.FamilyGroupData(groupId)));
+            com.klabis.members.familygroup.domain.FamilyGroup mockFamilyGroup =
+                    Mockito.mock(com.klabis.members.familygroup.domain.FamilyGroup.class);
+            Mockito.when(mockFamilyGroup.getId())
+                    .thenReturn(new com.klabis.members.familygroup.domain.FamilyGroupId(groupId));
+            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
+                    .thenReturn(java.util.Optional.of(mockFamilyGroup));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -460,9 +468,9 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupProvider.findTrainingGroupForMember(any(MemberId.class)))
+            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupProvider.findFamilyGroupForMember(any(MemberId.class)))
+            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))

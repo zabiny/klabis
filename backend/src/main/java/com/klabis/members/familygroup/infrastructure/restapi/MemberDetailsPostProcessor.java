@@ -1,7 +1,7 @@
 package com.klabis.members.familygroup.infrastructure.restapi;
 
-import com.klabis.members.FamilyGroupProvider;
 import com.klabis.members.MemberId;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @Component("familyGroupMemberDetailsPostProcessor")
 public class MemberDetailsPostProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
-    private final FamilyGroupProvider familyGroupProvider;
+    private final FamilyGroupRepository familyGroupRepository;
 
-    MemberDetailsPostProcessor(FamilyGroupProvider familyGroupProvider) {
-        this.familyGroupProvider = familyGroupProvider;
+    MemberDetailsPostProcessor(FamilyGroupRepository familyGroupRepository) {
+        this.familyGroupRepository = familyGroupRepository;
     }
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = model.getContent().id();
-        familyGroupProvider.findFamilyGroupForMember(memberId)
-                .ifPresent(data -> model.add(Link.of("/api/family-groups/" + data.groupId(), "familyGroup")));
+        familyGroupRepository.findByMemberOrParent(memberId)
+                .ifPresent(group -> model.add(Link.of("/api/family-groups/" + group.getId().uuid(), "familyGroup")));
         return model;
     }
 }

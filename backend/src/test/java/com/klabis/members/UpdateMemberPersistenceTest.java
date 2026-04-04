@@ -30,15 +30,15 @@ class UpdateMemberPersistenceTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private LastOwnershipChecker lastOwnershipChecker;
+    private com.klabis.members.application.LastOwnershipChecker lastOwnershipChecker;
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.FamilyGroupProvider familyGroupProvider;
+    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

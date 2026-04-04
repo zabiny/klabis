@@ -3,7 +3,6 @@ package com.klabis.members.application;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
-import com.klabis.members.LastOwnershipChecker;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
@@ -35,15 +34,15 @@ class RegisterMemberAutoProvisioningTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private LastOwnershipChecker lastOwnershipChecker;
+    private com.klabis.members.application.LastOwnershipChecker lastOwnershipChecker;
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.TrainingGroupProvider trainingGroupProvider;
+    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.FamilyGroupProvider familyGroupProvider;
+    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private RegistrationPort memberService;

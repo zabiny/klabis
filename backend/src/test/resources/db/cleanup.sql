@@ -40,6 +40,12 @@ DELETE FROM family_group_children;
 DELETE FROM family_group_parents;
 DELETE FROM family_groups;
 
+-- Members groups (members module aggregate root)
+DELETE FROM members_group_invitations;
+DELETE FROM members_group_members;
+DELETE FROM members_group_owners;
+DELETE FROM members_groups;
+
 -- Members table
 DELETE FROM members;
 

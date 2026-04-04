@@ -1,7 +1,5 @@
 package com.klabis.members.application;
 
-import com.klabis.members.LastOwnershipChecker;
-
 import java.util.List;
 
 /**
