@@ -2,12 +2,15 @@ package com.klabis.usergroups.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.MemberId;
+import com.klabis.usergroups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.usergroups.UserGroupId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,17 +33,17 @@ public class TrainingGroup extends UserGroup {
     }
 
     @RecordBuilder
-    public record CreateTrainingGroup(String name, MemberId owner, AgeRange ageRange) {
+    public record CreateTrainingGroup(String name, MemberId trainer, AgeRange ageRange) {
         public CreateTrainingGroup {
             Assert.hasText(name, "Group name is required");
-            Assert.notNull(owner, "Owner is required");
+            Assert.notNull(trainer, "Trainer is required");
             Assert.notNull(ageRange, "AgeRange is required");
         }
     }
 
     public static TrainingGroup create(CreateTrainingGroup command) {
         UserGroupId id = new UserGroupId(UUID.randomUUID());
-        return new TrainingGroup(id, command.name(), Set.of(command.owner()), Set.of(), command.ageRange());
+        return new TrainingGroup(id, command.name(), Set.of(command.trainer()), Set.of(), command.ageRange());
     }
 
     public static TrainingGroup reconstruct(UserGroupId id, String name, Set<MemberId> owners,
@@ -54,8 +57,46 @@ public class TrainingGroup extends UserGroup {
     @RecordBuilder
     public record UpdateAgeRange(MemberId requestingMember, AgeRange newAgeRange) {}
 
+    public Set<MemberId> getTrainers() {
+        return getOwners();
+    }
+
+    public void addTrainer(MemberId trainer) {
+        Assert.notNull(trainer, "Trainer MemberId is required");
+        addOwner(trainer);
+    }
+
+    public void removeTrainer(MemberId trainer) {
+        Assert.notNull(trainer, "Trainer MemberId is required");
+        removeOwner(trainer);
+    }
+
+    public void replaceTrainers(Set<MemberId> trainers) {
+        Assert.notEmpty(trainers, "At least one trainer is required");
+        Set<MemberId> current = new HashSet<>(getOwners());
+        for (MemberId toAdd : trainers) {
+            if (!current.contains(toAdd)) {
+                addOwner(toAdd);
+            }
+        }
+        for (MemberId toRemove : current) {
+            if (!trainers.contains(toRemove)) {
+                removeOwner(toRemove);
+            }
+        }
+    }
+
+    @Override
+    public void addMember(AddMember command) {
+        requireOwner(command.requestingMember());
+        addMemberInternal(command.memberToAdd());
+        registerEvent(new MemberAssignedToTrainingGroupEvent(
+                command.memberToAdd(), getId(), getName(), Instant.now()));
+    }
+
     public void assignEligibleMember(MemberId memberId) {
         addMemberInternal(memberId);
+        registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, getId(), getName(), Instant.now()));
     }
 
     public AgeRange getAgeRange() {
@@ -67,7 +108,7 @@ public class TrainingGroup extends UserGroup {
         updateAgeRange(command.newAgeRange());
     }
 
-    void updateAgeRange(AgeRange newAgeRange) {
+    public void updateAgeRange(AgeRange newAgeRange) {
         Assert.notNull(newAgeRange, "AgeRange is required");
         this.ageRange = newAgeRange;
     }

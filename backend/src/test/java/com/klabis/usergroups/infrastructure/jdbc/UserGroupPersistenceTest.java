@@ -2,6 +2,7 @@ package com.klabis.usergroups.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.members.MemberId;
+import com.klabis.usergroups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.FamilyGroup;
@@ -19,11 +20,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.event.EventListener;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @CleanupTestData
+@Import(UserGroupPersistenceTest.DomainEventCapturingConfig.class)
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "classpath:/db/cleanup-user-groups.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'TEST001', 'Owner', 'Member', '2000-01-01', 'CZ', 'MALE', 'owner@example.com', '+420111111111', 'Street 1', 'City', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
@@ -45,8 +52,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class UserGroupPersistenceTest {
 
+    @TestConfiguration
+    static class DomainEventCapturingConfig {
+        @Bean
+        DomainEventCapture domainEventCapture() {
+            return new DomainEventCapture();
+        }
+    }
+
+    static class DomainEventCapture {
+        private final List<Object> capturedEvents = new ArrayList<>();
+
+        @EventListener
+        public void onEvent(MemberAssignedToTrainingGroupEvent event) {
+            capturedEvents.add(event);
+        }
+
+        public List<Object> getCapturedEvents() {
+            return List.copyOf(capturedEvents);
+        }
+
+        public void clear() {
+            capturedEvents.clear();
+        }
+    }
+
     @Autowired
     private UserGroupRepository userGroupRepository;
+
+    @Autowired
+    private DomainEventCapture domainEventCapture;
 
     private static final UUID OWNER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID EXTRA_MEMBER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -405,6 +440,43 @@ class UserGroupPersistenceTest {
 
             assertThat(result).isPresent();
             assertThat(result.get()).isInstanceOf(FamilyGroup.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Domain event publication — UserGroupMemento @DomainEvents delegation")
+    class DomainEventPublication {
+
+        @org.junit.jupiter.api.BeforeEach
+        void clearEvents() {
+            domainEventCapture.clear();
+        }
+
+        @Test
+        @DisplayName("should publish MemberAssignedToTrainingGroupEvent when saving TrainingGroup after assignEligibleMember")
+        void shouldPublishEventWhenSavingTrainingGroupAfterAssignEligibleMember() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, new AgeRange(10, 18)));
+            group.assignEligibleMember(EXTRA_MEMBER);
+
+            userGroupRepository.save(group);
+
+            assertThat(domainEventCapture.getCapturedEvents()).hasSize(1);
+            MemberAssignedToTrainingGroupEvent event =
+                    (MemberAssignedToTrainingGroupEvent) domainEventCapture.getCapturedEvents().get(0);
+            assertThat(event.memberId()).isEqualTo(EXTRA_MEMBER);
+            assertThat(event.groupName()).isEqualTo("Juniors");
+        }
+
+        @Test
+        @DisplayName("should not publish any event when saving TrainingGroup without member changes")
+        void shouldNotPublishEventWhenNoMemberChanges() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Seniors", OWNER, new AgeRange(18, 40)));
+
+            userGroupRepository.save(group);
+
+            assertThat(domainEventCapture.getCapturedEvents()).isEmpty();
         }
     }
 

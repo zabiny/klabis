@@ -83,7 +83,7 @@ public abstract class UserGroup extends KlabisAggregateRoot<UserGroup, UserGroup
         }
     }
 
-    void rename(String newName) {
+    public void rename(String newName) {
         Assert.hasText(newName, "UserGroup name is required");
         this.name = newName;
     }

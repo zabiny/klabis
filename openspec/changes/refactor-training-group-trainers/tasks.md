@@ -1,26 +1,26 @@
 ## 1. Domain Events Infrastructure
 
-- [ ] 1.1 Add `@DomainEvents` and `clearDomainEvents` delegation to `UserGroupMemento` (same pattern as `MemberMemento`)
-- [ ] 1.2 Add test verifying domain events registered in UserGroup aggregate are published on save
+- [x] 1.1 Add `@DomainEvents` and `clearDomainEvents` delegation to `UserGroupMemento` (same pattern as `MemberMemento`)
+- [x] 1.2 Add test verifying domain events registered in UserGroup aggregate are published on save
 
 ## 2. TrainingGroup Domain — Trainer Alias & Event
 
-- [ ] 2.1 Add `getTrainers()`, `addTrainer()`, `removeTrainer()`, `replaceTrainers(Set<MemberId>)` methods to TrainingGroup delegating to owner operations. `replaceTrainers` validates minimum 1 trainer.
-- [ ] 2.2 Override `addMember()` in TrainingGroup to call `addMemberInternal()` + `registerEvent(MemberAssignedToTrainingGroupEvent)`
-- [ ] 2.3 Update `CreateTrainingGroup` command — rename `owner` parameter to `trainer`
-- [ ] 2.4 Add/update domain tests for trainer methods, addMember event registration, and create command
+- [x] 2.1 Add `getTrainers()`, `addTrainer()`, `removeTrainer()`, `replaceTrainers(Set<MemberId>)` methods to TrainingGroup delegating to owner operations. `replaceTrainers` validates minimum 1 trainer.
+- [x] 2.2 Override `addMember()` in TrainingGroup to call `addMemberInternal()` + `registerEvent(MemberAssignedToTrainingGroupEvent)`
+- [x] 2.3 Update `CreateTrainingGroup` command — rename `owner` parameter to `trainer`
+- [x] 2.4 Add/update domain tests for trainer methods, addMember event registration, and create command
 
 ## 3. TrainingGroupManagementService
 
-- [ ] 3.1 Create `TrainingGroupManagementPort` interface with methods: `createTrainingGroup`, `updateTrainingGroup`, `deleteTrainingGroup`
-- [ ] 3.2 Create `TrainingGroupManagementService` implementing the port — no owner-based auth checks, uses domain operations directly
-- [ ] 3.3 Create `UpdateTrainingGroupCommand` with `PatchField` fields (name, minAge, maxAge, trainers). Validate that if minAge or maxAge is provided, both must be provided.
-- [ ] 3.4 Add service tests for create (with trainer), update (all PatchField combinations), and delete
+- [x] 3.1 Create `TrainingGroupManagementPort` interface with methods: `createTrainingGroup`, `updateTrainingGroup`, `deleteTrainingGroup`
+- [x] 3.2 Create `TrainingGroupManagementService` implementing the port — no owner-based auth checks, uses domain operations directly
+- [x] 3.3 Create `UpdateTrainingGroupCommand` with `PatchField` fields (name, minAge, maxAge, trainers). Validate that if minAge or maxAge is provided, both must be provided.
+- [x] 3.4 Add service tests for create (with trainer), update (all PatchField combinations), and delete
 
 ## 4. MemberCreatedListener Simplification
 
-- [ ] 4.1 Remove manual `MemberAssignedToTrainingGroupEvent` publishing from `MemberCreatedListener` — event is now registered by aggregate on `addMember()`
-- [ ] 4.2 Update listener tests
+- [x] 4.1 Remove manual `MemberAssignedToTrainingGroupEvent` publishing from `MemberCreatedListener` — event is now registered by aggregate on `addMember()`
+- [x] 4.2 Update listener tests
 
 ## 5. API Layer — TrainingGroupController
 

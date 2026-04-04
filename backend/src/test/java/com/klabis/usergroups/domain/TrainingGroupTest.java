@@ -1,6 +1,7 @@
 package com.klabis.usergroups.domain;
 
 import com.klabis.members.MemberId;
+import com.klabis.usergroups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.usergroups.UserGroupId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -171,7 +172,7 @@ class TrainingGroupTest {
     class CreateMethod {
 
         @Test
-        @DisplayName("should create group with correct name, owner, and age range")
+        @DisplayName("should create group with correct name, trainer, and age range")
         void shouldCreateGroupWithCorrectProperties() {
             AgeRange ageRange = new AgeRange(10, 18);
             TrainingGroup.CreateTrainingGroup command =
@@ -181,7 +182,7 @@ class TrainingGroupTest {
 
             assertThat(group.getId()).isNotNull();
             assertThat(group.getName()).isEqualTo("Junior Sprint");
-            assertThat(group.getOwners()).containsExactly(OWNER);
+            assertThat(group.getTrainers()).containsExactly(OWNER);
             assertThat(group.getAgeRange()).isEqualTo(ageRange);
             assertThat(group.getMembers()).isEmpty();
         }
@@ -208,8 +209,8 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("should reject null owner")
-        void shouldRejectNullOwner() {
+        @DisplayName("should reject null trainer")
+        void shouldRejectNullTrainer() {
             AgeRange ageRange = new AgeRange(10, 18);
             assertThatThrownBy(() -> new TrainingGroup.CreateTrainingGroup("Junior Sprint", null, ageRange))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -312,6 +313,146 @@ class TrainingGroupTest {
             TrainingGroup.UpdateAgeRange command = new TrainingGroup.UpdateAgeRange(NON_OWNER, newRange);
 
             assertThatThrownBy(() -> group.updateAgeRange(command))
+                    .isInstanceOf(NotGroupOwnerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Trainer methods (alias for owner operations)")
+    class TrainerMethods {
+
+        private static final MemberId SECOND_TRAINER = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+        private static final MemberId THIRD_TRAINER = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+
+        private TrainingGroup group;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            group = TrainingGroup.reconstruct(
+                    new UserGroupId(UUID.randomUUID()), "Juniors", Set.of(OWNER), Set.of(),
+                    new AgeRange(10, 18), null);
+        }
+
+        @Test
+        @DisplayName("getTrainers() should return current owners")
+        void shouldReturnTrainersAsOwners() {
+            assertThat(group.getTrainers()).containsExactly(OWNER);
+        }
+
+        @Test
+        @DisplayName("addTrainer() should add trainer to group")
+        void shouldAddTrainer() {
+            group.addTrainer(SECOND_TRAINER);
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(OWNER, SECOND_TRAINER);
+        }
+
+        @Test
+        @DisplayName("removeTrainer() should remove trainer from group")
+        void shouldRemoveTrainer() {
+            group.addTrainer(SECOND_TRAINER);
+            group.removeTrainer(OWNER);
+
+            assertThat(group.getTrainers()).containsExactly(SECOND_TRAINER);
+        }
+
+        @Test
+        @DisplayName("removeTrainer() should throw when removing last trainer")
+        void shouldThrowWhenRemovingLastTrainer() {
+            assertThatThrownBy(() -> group.removeTrainer(OWNER))
+                    .isInstanceOf(UserGroup.CannotRemoveLastOwnerException.class);
+        }
+
+        @Test
+        @DisplayName("replaceTrainers() should replace all trainers with new set")
+        void shouldReplaceAllTrainers() {
+            Set<MemberId> newTrainers = Set.of(SECOND_TRAINER, THIRD_TRAINER);
+
+            group.replaceTrainers(newTrainers);
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(SECOND_TRAINER, THIRD_TRAINER);
+        }
+
+        @Test
+        @DisplayName("replaceTrainers() should throw when given empty set")
+        void shouldThrowWhenReplacingWithEmptySet() {
+            assertThatThrownBy(() -> group.replaceTrainers(Set.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("addTrainer() should throw on null trainer")
+        void shouldThrowOnNullAddTrainer() {
+            assertThatThrownBy(() -> group.addTrainer(null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("removeTrainer() should throw on null trainer")
+        void shouldThrowOnNullRemoveTrainer() {
+            assertThatThrownBy(() -> group.removeTrainer(null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("addMember() — domain event registration")
+    class AddMemberEvent {
+
+        private static final MemberId REGULAR_MEMBER = new MemberId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
+
+        private TrainingGroup group;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            group = TrainingGroup.reconstruct(
+                    new UserGroupId(UUID.randomUUID()), "Juniors", Set.of(OWNER), Set.of(),
+                    new AgeRange(10, 18), null);
+        }
+
+        @Test
+        @DisplayName("addMember() should register MemberAssignedToTrainingGroupEvent")
+        void shouldRegisterEventOnAddMember() {
+            UserGroup.AddMember command = new UserGroup.AddMember(OWNER, REGULAR_MEMBER);
+
+            group.addMember(command);
+
+            assertThat(group.getDomainEvents())
+                    .hasSize(1)
+                    .first()
+                    .isInstanceOf(MemberAssignedToTrainingGroupEvent.class);
+
+            MemberAssignedToTrainingGroupEvent event =
+                    (MemberAssignedToTrainingGroupEvent) group.getDomainEvents().get(0);
+            assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
+            assertThat(event.groupId()).isEqualTo(group.getId());
+            assertThat(event.groupName()).isEqualTo("Juniors");
+            assertThat(event.occurredAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("assignEligibleMember() should register MemberAssignedToTrainingGroupEvent")
+        void shouldRegisterEventOnAssignEligibleMember() {
+            group.assignEligibleMember(REGULAR_MEMBER);
+
+            assertThat(group.getDomainEvents())
+                    .hasSize(1)
+                    .first()
+                    .isInstanceOf(MemberAssignedToTrainingGroupEvent.class);
+
+            MemberAssignedToTrainingGroupEvent event =
+                    (MemberAssignedToTrainingGroupEvent) group.getDomainEvents().get(0);
+            assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
+            assertThat(event.groupId()).isEqualTo(group.getId());
+        }
+
+        @Test
+        @DisplayName("addMember() should throw when requesting member is not a trainer")
+        void shouldThrowWhenNotTrainer() {
+            MemberId nonTrainer = new MemberId(UUID.fromString("55555555-5555-5555-5555-555555555555"));
+            UserGroup.AddMember command = new UserGroup.AddMember(nonTrainer, REGULAR_MEMBER);
+
+            assertThatThrownBy(() -> group.addMember(command))
                     .isInstanceOf(NotGroupOwnerException.class);
         }
     }

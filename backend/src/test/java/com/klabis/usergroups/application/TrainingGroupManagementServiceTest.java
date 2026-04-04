@@ -2,6 +2,7 @@ package com.klabis.usergroups.application;
 
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
+import com.klabis.common.patch.PatchField;
 import com.klabis.usergroups.UserGroupId;
 import com.klabis.usergroups.domain.AgeRange;
 import com.klabis.usergroups.domain.GroupFilter;
@@ -30,11 +31,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@DisplayName("GroupManagementService — training group operations")
+@DisplayName("TrainingGroupManagementService")
 @ExtendWith(MockitoExtension.class)
 class TrainingGroupManagementServiceTest {
 
-    private static final MemberId OWNER = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MemberId TRAINER = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MemberId TRAINER_2 = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final UserGroupId GROUP_ID = new UserGroupId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
 
     @Mock
@@ -43,11 +45,11 @@ class TrainingGroupManagementServiceTest {
     @Mock
     private ActiveMembersByAgeProvider activeMembersByAgeProvider;
 
-    private GroupManagementService service;
+    private TrainingGroupManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new GroupManagementService(userGroupRepository, activeMembersByAgeProvider);
+        service = new TrainingGroupManagementService(userGroupRepository, activeMembersByAgeProvider);
     }
 
     @Nested
@@ -59,7 +61,7 @@ class TrainingGroupManagementServiceTest {
         void shouldSaveGroupWhenNoOverlappingRangeExists() {
             AgeRange newRange = new AgeRange(10, 18);
             TrainingGroup.CreateTrainingGroup command =
-                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
             TrainingGroup expected = TrainingGroup.create(command);
             when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(anyInt(), anyInt())).thenReturn(List.of());
@@ -72,13 +74,31 @@ class TrainingGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should create group with specified trainer")
+        void shouldCreateGroupWithTrainer() {
+            AgeRange newRange = new AgeRange(10, 18);
+            TrainingGroup.CreateTrainingGroup command =
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
+
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
+            when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.createTrainingGroup(command);
+
+            ArgumentCaptor<TrainingGroup> captor = ArgumentCaptor.forClass(TrainingGroup.class);
+            verify(userGroupRepository).save(captor.capture());
+            assertThat(captor.getValue().getTrainers()).containsExactly(TRAINER);
+        }
+
+        @Test
         @DisplayName("should auto-assign existing active members matching the age range when group is created")
         void shouldAutoAssignExistingMembersMatchingAgeRange() {
             AgeRange newRange = new AgeRange(10, 18);
             MemberId matchingMember1 = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
             MemberId matchingMember2 = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
             TrainingGroup.CreateTrainingGroup command =
-                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
             when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
@@ -101,7 +121,7 @@ class TrainingGroupManagementServiceTest {
         void shouldCreateGroupWithNoMembersWhenNoMatchingActiveMembers() {
             AgeRange newRange = new AgeRange(10, 18);
             TrainingGroup.CreateTrainingGroup command =
-                    new TrainingGroup.CreateTrainingGroup("Juniors", OWNER, newRange);
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
             when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
@@ -119,12 +139,12 @@ class TrainingGroupManagementServiceTest {
         void shouldThrowWhenAgeRangeOverlapsExistingGroup() {
             AgeRange existingRange = new AgeRange(10, 18);
             TrainingGroup existingGroup = TrainingGroup.reconstruct(
-                    GROUP_ID, "Existing Group", Set.of(OWNER), Set.of(), existingRange, null);
+                    GROUP_ID, "Existing Group", Set.of(TRAINER), Set.of(), existingRange, null);
             when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(existingGroup));
 
             AgeRange overlappingRange = new AgeRange(15, 25);
             TrainingGroup.CreateTrainingGroup command =
-                    new TrainingGroup.CreateTrainingGroup("New Group", OWNER, overlappingRange);
+                    new TrainingGroup.CreateTrainingGroup("New Group", TRAINER, overlappingRange);
 
             assertThatThrownBy(() -> service.createTrainingGroup(command))
                     .isInstanceOf(AgeRange.OverlappingAgeRangeException.class);
@@ -132,75 +152,189 @@ class TrainingGroupManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("updateTrainingGroupAgeRange()")
-    class UpdateTrainingGroupAgeRangeMethod {
+    @DisplayName("updateTrainingGroup()")
+    class UpdateTrainingGroupMethod {
 
         @Test
-        @DisplayName("should update age range when new range does not overlap other groups")
-        void shouldUpdateAgeRangeWhenNoOverlap() {
-            AgeRange currentRange = new AgeRange(10, 18);
+        @DisplayName("should update name when name patch field is provided")
+        void shouldUpdateNameWhenProvided() {
             TrainingGroup group = TrainingGroup.reconstruct(
-                    GROUP_ID, "Juniors", Set.of(OWNER), Set.of(), currentRange, null);
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
             when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group));
-            when(userGroupRepository.save(any())).thenReturn(group);
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            AgeRange newRange = new AgeRange(10, 16);
-            TrainingGroup result = service.updateTrainingGroupAgeRange(GROUP_ID, newRange, OWNER);
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.of("Seniors"),
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.notProvided()
+            );
 
-            assertThat(result).isNotNull();
+            TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
+
+            assertThat(result.getName()).isEqualTo("Seniors");
             verify(userGroupRepository).save(group);
         }
 
         @Test
-        @DisplayName("should throw OverlappingAgeRangeException when new range overlaps another group")
-        void shouldThrowWhenNewRangeOverlapsAnotherGroup() {
-            AgeRange currentRange = new AgeRange(10, 18);
+        @DisplayName("should update age range when both minAge and maxAge are provided")
+        void shouldUpdateAgeRangeWhenBothProvided() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group));
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.notProvided(),
+                    PatchField.of(5),
+                    PatchField.of(12),
+                    PatchField.notProvided()
+            );
+
+            TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
+
+            assertThat(result.getAgeRange()).isEqualTo(new AgeRange(5, 12));
+        }
+
+        @Test
+        @DisplayName("should throw OverlappingAgeRangeException when new age range overlaps another group")
+        void shouldThrowWhenNewAgeRangeOverlapsAnotherGroup() {
             TrainingGroup groupToUpdate = TrainingGroup.reconstruct(
-                    GROUP_ID, "Juniors", Set.of(OWNER), Set.of(), currentRange, null);
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
 
             UserGroupId otherGroupId = new UserGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
-            AgeRange otherRange = new AgeRange(20, 30);
             TrainingGroup otherGroup = TrainingGroup.reconstruct(
-                    otherGroupId, "Seniors", Set.of(OWNER), Set.of(), otherRange, null);
+                    otherGroupId, "Seniors", Set.of(TRAINER), Set.of(), new AgeRange(20, 30), null);
 
             when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
             when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(groupToUpdate, otherGroup));
 
-            AgeRange overlappingRange = new AgeRange(18, 25);
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.notProvided(),
+                    PatchField.of(18),
+                    PatchField.of(25),
+                    PatchField.notProvided()
+            );
 
-            assertThatThrownBy(() -> service.updateTrainingGroupAgeRange(GROUP_ID, overlappingRange, OWNER))
+            assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
                     .isInstanceOf(AgeRange.OverlappingAgeRangeException.class);
+        }
+
+        @Test
+        @DisplayName("should replace trainers when trainers patch field is provided")
+        void shouldReplaceTrainersWhenProvided() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.of(Set.of(TRAINER_2))
+            );
+
+            TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
+
+            assertThat(result.getTrainers()).containsExactly(TRAINER_2);
+        }
+
+        @Test
+        @DisplayName("should apply all provided fields atomically")
+        void shouldApplyAllProvidedFieldsAtomically() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group));
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.of("Updated Juniors"),
+                    PatchField.of(8),
+                    PatchField.of(14),
+                    PatchField.of(Set.of(TRAINER_2))
+            );
+
+            TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
+
+            assertThat(result.getName()).isEqualTo("Updated Juniors");
+            assertThat(result.getAgeRange()).isEqualTo(new AgeRange(8, 14));
+            assertThat(result.getTrainers()).containsExactly(TRAINER_2);
+        }
+
+        @Test
+        @DisplayName("should leave group unchanged when no fields are provided")
+        void shouldLeaveGroupUnchangedWhenNoFieldsProvided() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.notProvided()
+            );
+
+            TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
+
+            assertThat(result.getName()).isEqualTo("Juniors");
+            assertThat(result.getAgeRange()).isEqualTo(new AgeRange(10, 18));
+            assertThat(result.getTrainers()).containsExactly(TRAINER);
+        }
+
+        @Test
+        @DisplayName("should throw GroupNotFoundException when training group does not exist")
+        void shouldThrowWhenGroupNotFound() {
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
+
+            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
+                    PatchField.of("New Name"),
+                    PatchField.notProvided(),
+                    PatchField.notProvided(),
+                    PatchField.notProvided()
+            );
+
+            assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
+                    .isInstanceOf(GroupNotFoundException.class);
         }
     }
 
     @Nested
-    @DisplayName("listTrainingGroups()")
-    class ListTrainingGroupsMethod {
+    @DisplayName("deleteTrainingGroup()")
+    class DeleteTrainingGroupMethod {
 
         @Test
-        @DisplayName("should delegate to repository and return all training groups")
-        void shouldDelegateToRepository() {
-            TrainingGroup group1 = TrainingGroup.reconstruct(
-                    GROUP_ID, "Juniors", Set.of(OWNER), Set.of(), new AgeRange(10, 18), null);
-            UserGroupId group2Id = new UserGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
-            TrainingGroup group2 = TrainingGroup.reconstruct(
-                    group2Id, "Seniors", Set.of(OWNER), Set.of(), new AgeRange(19, 30), null);
-            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of(group1, group2));
+        @DisplayName("should delete group when it exists")
+        void shouldDeleteGroupWhenExists() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
-            List<TrainingGroup> result = service.listTrainingGroups();
+            service.deleteTrainingGroup(GROUP_ID);
 
-            assertThat(result).containsExactlyInAnyOrder(group1, group2);
+            verify(userGroupRepository).delete(GROUP_ID);
         }
 
         @Test
-        @DisplayName("should return empty list when no training groups exist")
-        void shouldReturnEmptyListWhenNoGroups() {
-            when(userGroupRepository.findAll(GroupFilter.byType(GroupType.TRAINING))).thenReturn(List.of());
+        @DisplayName("should throw GroupNotFoundException when training group does not exist")
+        void shouldThrowWhenGroupNotFound() {
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            List<TrainingGroup> result = service.listTrainingGroups();
+            assertThatThrownBy(() -> service.deleteTrainingGroup(GROUP_ID))
+                    .isInstanceOf(GroupNotFoundException.class);
+        }
 
-            assertThat(result).isEmpty();
+        @Test
+        @DisplayName("should throw GroupNotFoundException when group is not a training group")
+        void shouldThrowWhenGroupIsNotTrainingGroup() {
+            when(userGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.deleteTrainingGroup(GROUP_ID))
+                    .isInstanceOf(GroupNotFoundException.class);
         }
     }
 }

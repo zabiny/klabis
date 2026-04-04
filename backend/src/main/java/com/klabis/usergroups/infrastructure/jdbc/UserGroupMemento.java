@@ -12,6 +12,8 @@ import com.klabis.usergroups.domain.TrainingGroup;
 import com.klabis.usergroups.domain.UserGroup;
 import com.klabis.usergroups.domain.WithInvitations;
 import org.springframework.data.annotation.*;
+import org.springframework.data.domain.AfterDomainEventPublication;
+import org.springframework.data.domain.DomainEvents;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
@@ -19,7 +21,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.HashSet;
-
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -73,6 +75,9 @@ class UserGroupMemento implements Persistable<UUID> {
     private Long version;
 
     @Transient
+    private UserGroup userGroup;
+
+    @Transient
     private boolean isNew = true;
 
     protected UserGroupMemento() {
@@ -111,8 +116,24 @@ class UserGroupMemento implements Persistable<UUID> {
             memento.version = group.getVersion();
         }
 
+        memento.userGroup = group;
         memento.isNew = (group.getAuditMetadata() == null);
         return memento;
+    }
+
+    @DomainEvents
+    public List<Object> getDomainEvents() {
+        if (this.userGroup != null) {
+            return this.userGroup.getDomainEvents();
+        }
+        return List.of();
+    }
+
+    @AfterDomainEventPublication
+    public void clearDomainEvents() {
+        if (this.userGroup != null) {
+            this.userGroup.clearDomainEvents();
+        }
     }
 
     UserGroup toUserGroup() {
