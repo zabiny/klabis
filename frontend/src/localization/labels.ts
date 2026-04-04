@@ -61,8 +61,8 @@ export const labels = {
         removeGroupOwner: 'Odebrat správce',
         addTrainer: 'Přidat trenéra',
         removeTrainer: 'Odebrat trenéra',
-        addFamilyGroupOwner: 'Přidat správce',
-        removeFamilyGroupOwner: 'Odebrat správce',
+        addFamilyGroupParent: 'Přidat rodiče',
+        removeFamilyGroupParent: 'Odebrat rodiče',
         deleteFamilyGroup: 'Smazat rodinnou skupinu',
     },
 
@@ -100,6 +100,7 @@ export const labels = {
         dietaryRestrictions: 'Stravovací omezení',
         drivingLicenseGroup: 'Řidičský průkaz',
         memberId: 'Člen',
+        parentIds: 'Rodiče',
         minAge: 'Min. věk',
         maxAge: 'Max. věk',
         memberCount: 'Počet členů',
@@ -249,7 +250,7 @@ export const labels = {
         familyGroup: 'RODINNÁ SKUPINA',
         familyGroups: 'Rodinné skupiny',
         familyGroupsList: 'Rodinné skupiny',
-        familyGroupOwners: 'SPRÁVCI',
+        familyGroupParents: 'RODIČE',
         familyGroupMembers: 'ČLENOVÉ',
     },
 

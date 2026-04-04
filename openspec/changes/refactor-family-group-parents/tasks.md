@@ -24,9 +24,9 @@
 
 ## 4. Frontend — parent terminologie a create flow
 
-- [ ] 4.1 Upravit FamilyGroupsPage create modal — přidat `parentIds` pole místo automatického owner
-- [ ] 4.2 Upravit FamilyGroupDetailPage — sekce "Rodiče" místo "Vlastníci", nové HAL template názvy
-- [ ] 4.3 Aktualizovat labels v localization — přejmenování owner-related labels na parent-related pro family group kontext
+- [x] 4.1 Upravit FamilyGroupsPage create modal — přidat `parentIds` pole místo automatického owner
+- [x] 4.2 Upravit FamilyGroupDetailPage — sekce "Rodiče" místo "Vlastníci", nové HAL template názvy
+- [x] 4.3 Aktualizovat labels v localization — přejmenování owner-related labels na parent-related pro family group kontext
 
 ## 5. OpenSpec — sync delta specs
 

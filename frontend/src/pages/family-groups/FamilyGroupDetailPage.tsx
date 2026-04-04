@@ -6,11 +6,11 @@ import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx'
 import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Crown, Trash2, UserMinus} from 'lucide-react';
+import {Trash2, UserMinus, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 
-interface FamilyGroupOwner {
+interface FamilyGroupParent {
     memberId: string;
     _links: {
         member: HalResourceLinks;
@@ -30,7 +30,7 @@ interface FamilyGroupMember {
 interface FamilyGroupDetail extends HalResponse {
     id: string;
     name: string;
-    owners?: FamilyGroupOwner[];
+    parents?: FamilyGroupParent[];
     members?: FamilyGroupMember[];
 }
 
@@ -38,13 +38,13 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
     const {route} = useHalPageData<FamilyGroupDetail>();
     const navigate = useNavigate();
     const [deleteModal, setDeleteModal] = useState(false);
-    const [addOwnerModal, setAddOwnerModal] = useState(false);
-    const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
+    const [addParentModal, setAddParentModal] = useState(false);
+    const [removeParentModal, setRemoveParentModal] = useState<{template: HalFormsTemplate; parentSelfHref: string} | null>(null);
 
     const deleteTemplate = resourceData._templates?.deleteFamilyGroup ?? null;
-    const addOwnerTemplate = resourceData._templates?.addFamilyGroupOwner ?? null;
+    const addParentTemplate = resourceData._templates?.addFamilyGroupParent ?? null;
 
-    const owners: FamilyGroupOwner[] = resourceData.owners ?? [];
+    const parents: FamilyGroupParent[] = resourceData.parents ?? [];
     const members: FamilyGroupMember[] = resourceData.members ?? [];
 
     return (
@@ -73,40 +73,40 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
 
             <hr className="border-border"/>
 
-            {(owners.length > 0 || addOwnerTemplate) && (
+            {(parents.length > 0 || addParentTemplate) && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary">
-                            {labels.sections.familyGroupOwners}
+                            {labels.sections.familyGroupParents}
                         </h3>
-                        {addOwnerTemplate && (
+                        {addParentTemplate && (
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => setAddOwnerModal(true)}
-                                startIcon={<Crown className="w-4 h-4"/>}
+                                onClick={() => setAddParentModal(true)}
+                                startIcon={<UserPlus className="w-4 h-4"/>}
                             >
-                                {labels.templates.addFamilyGroupOwner}
+                                {labels.templates.addFamilyGroupParent}
                             </Button>
                         )}
                     </div>
                     <dl>
-                        {owners.map((owner) => {
-                            const removeOwnerTpl = owner._templates?.removeFamilyGroupOwner;
-                            const selfHref = owner._links?.self?.href ?? '';
+                        {parents.map((parent) => {
+                            const removeParentTpl = parent._templates?.removeFamilyGroupParent;
+                            const selfHref = parent._links?.self?.href ?? '';
                             return (
-                                <DetailRow key={owner.memberId} label="">
+                                <DetailRow key={parent.memberId} label="">
                                     <div className="flex items-center justify-between w-full">
-                                        <HalRouteProvider routeLink={owner._links.member}>
+                                        <HalRouteProvider routeLink={parent._links.member}>
                                             <MemberNameWithRegNumber/>
                                         </HalRouteProvider>
-                                        {removeOwnerTpl && (
+                                        {removeParentTpl && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-red-600"
-                                                aria-label={labels.templates.removeFamilyGroupOwner}
-                                                onClick={() => setRemoveOwnerModal({template: removeOwnerTpl, ownerSelfHref: selfHref})}
+                                                aria-label={labels.templates.removeFamilyGroupParent}
+                                                onClick={() => setRemoveParentModal({template: removeParentTpl, parentSelfHref: selfHref})}
                                             >
                                                 <UserMinus className="w-4 h-4"/>
                                             </Button>
@@ -155,37 +155,37 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
                 )}
             </div>
 
-            {addOwnerTemplate && addOwnerModal && (
+            {addParentTemplate && addParentModal && (
                 <Modal
                     isOpen={true}
-                    onClose={() => setAddOwnerModal(false)}
-                    title={labels.templates.addFamilyGroupOwner}
+                    onClose={() => setAddParentModal(false)}
+                    title={labels.templates.addFamilyGroupParent}
                     size="md"
                 >
                     <HalFormDisplay
-                        template={addOwnerTemplate as HalFormsTemplate}
-                        templateName="addFamilyGroupOwner"
+                        template={addParentTemplate as HalFormsTemplate}
+                        templateName="addFamilyGroupParent"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
-                        onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
+                        onClose={() => { setAddParentModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>
             )}
 
-            {removeOwnerModal && (
+            {removeParentModal && (
                 <Modal
                     isOpen={true}
-                    onClose={() => setRemoveOwnerModal(null)}
-                    title={labels.templates.removeFamilyGroupOwner}
+                    onClose={() => setRemoveParentModal(null)}
+                    title={labels.templates.removeFamilyGroupParent}
                     size="md"
                 >
                     <HalFormDisplay
-                        template={removeOwnerModal.template}
-                        templateName="removeFamilyGroupOwner"
+                        template={removeParentModal.template}
+                        templateName="removeFamilyGroupParent"
                         resourceData={{}}
-                        pathname={removeOwnerModal.ownerSelfHref ? '/family-groups/' + removeOwnerModal.ownerSelfHref.split('/family-groups/')[1] : route.pathname}
-                        onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
+                        pathname={removeParentModal.parentSelfHref ? '/family-groups/' + removeParentModal.parentSelfHref.split('/family-groups/')[1] : route.pathname}
+                        onClose={() => { setRemoveParentModal(null); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>

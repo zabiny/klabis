@@ -62,3 +62,24 @@ All 1892 tests pass.
 - Mock calls updated: `addOwnerToGroup`/`removeOwnerFromGroup` → `addParentToFamilyGroup`/`removeParentFromFamilyGroup`
 
 All 1893 tests pass.
+
+### Iteration 3 — 2026-04-04 — Frontend (Tasks 4.1–4.3) DONE
+
+**Localization (`src/localization/labels.ts`):**
+- Renamed `addFamilyGroupOwner`/`removeFamilyGroupOwner` → `addFamilyGroupParent`/`removeFamilyGroupParent` with Czech labels "Přidat rodiče"/"Odebrat rodiče"
+- Renamed `familyGroupOwners` section → `familyGroupParents` with label "RODIČE"
+- Added `parentIds` field label "Rodiče" for the create form
+
+**FamilyGroupDetailPage (`src/pages/family-groups/FamilyGroupDetailPage.tsx`):**
+- Interface renamed: `FamilyGroupOwner` → `FamilyGroupParent`, field `owners` → `parents`
+- Section heading updated: `familyGroupOwners` → `familyGroupParents` ("SPRÁVCI" → "RODIČE")
+- HAL template lookups: `addFamilyGroupOwner`/`removeFamilyGroupOwner` → `addFamilyGroupParent`/`removeFamilyGroupParent`
+- State variables renamed: `addOwnerModal`/`removeOwnerModal` → `addParentModal`/`removeParentModal`
+- Removed unused `Crown` icon import, using `UserPlus` instead
+
+**FamilyGroupsPage (`src/pages/family-groups/FamilyGroupsPage.tsx`):**
+- No structural change needed — `HalFormButton name="createFamilyGroup"` renders form fields from HAL template automatically; `parentIds` will render with the new label from localization
+
+**Tests:**
+- New test file `FamilyGroupDetailPage.parents.test.tsx` covering parent section display, add/remove button visibility, and modal opening (7 tests)
+- All 1036 frontend tests pass
