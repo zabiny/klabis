@@ -35,7 +35,7 @@
 
 ## 6. Frontend — Training Groups
 
-- [ ] 6.1 Update training group creation form — add trainer selection (member picker), remove auto-assignment of current user
-- [ ] 6.2 Update training group edit form — single form for name, age range, and trainers with optional fields
-- [ ] 6.3 Update training group detail/list views — rename "owners" labels to "trainers" (trenéři)
-- [ ] 6.4 Update API client calls to match new endpoint URLs and request/response shapes
+- [x] 6.1 Update training group creation form — add trainer selection (member picker), remove auto-assignment of current user
+- [x] 6.2 Update training group edit form — single form for name, age range, and trainers with optional fields
+- [x] 6.3 Update training group detail/list views — rename "owners" labels to "trainers" (trenéři)
+- [x] 6.4 Update API client calls to match new endpoint URLs and request/response shapes

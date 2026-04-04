@@ -8,10 +8,10 @@ import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Crown, Pencil, Sliders, Trash2, UserMinus, UserPlus} from 'lucide-react';
+import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
-import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupOwner} from './types.ts';
+import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupTrainer} from './types.ts';
 
 interface MemberActionModalState {
     member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate>; _links: { member?: HalResourceLinks; self?: HalResourceLinks } };
@@ -22,21 +22,19 @@ interface MemberActionModalState {
 const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroupDetail}): ReactElement => {
     const {route} = useHalPageData<TrainingGroupDetail>();
     const navigate = useNavigate();
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [isEditingAgeRange, setIsEditingAgeRange] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
-    const [addOwnerModal, setAddOwnerModal] = useState(false);
-    const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
+    const [addTrainerModal, setAddTrainerModal] = useState(false);
+    const [removeTrainerModal, setRemoveTrainerModal] = useState<{template: HalFormsTemplate; trainerSelfHref: string} | null>(null);
 
     const editTemplate = resourceData._templates?.updateTrainingGroup ?? null;
-    const ageRangeTemplate = resourceData._templates?.updateAgeRange ?? null;
     const deleteTemplate = resourceData._templates?.deleteTrainingGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addTrainingGroupMember ?? null;
-    const addOwnerTemplate = resourceData._templates?.addTrainingGroupOwner ?? null;
+    const addTrainerTemplate = resourceData._templates?.addTrainer ?? null;
 
-    const owners: TrainingGroupOwner[] = (resourceData.owners as TrainingGroupOwner[] | undefined) ?? [];
+    const trainers: TrainingGroupTrainer[] = (resourceData.trainers as TrainingGroupTrainer[] | undefined) ?? [];
     const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
 
     const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
@@ -66,22 +64,13 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 </div>
 
                 <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                    {editTemplate && !isEditingName && (
+                    {editTemplate && !isEditing && (
                         <Button
                             variant="secondary"
-                            onClick={() => setIsEditingName(true)}
+                            onClick={() => setIsEditing(true)}
                             startIcon={<Pencil className="w-4 h-4"/>}
                         >
                             {labels.templates.updateTrainingGroup}
-                        </Button>
-                    )}
-                    {ageRangeTemplate && !isEditingAgeRange && (
-                        <Button
-                            variant="secondary"
-                            onClick={() => setIsEditingAgeRange(true)}
-                            startIcon={<Sliders className="w-4 h-4"/>}
-                        >
-                            {labels.templates.updateAgeRange}
                         </Button>
                     )}
                     {deleteTemplate && (
@@ -96,28 +85,14 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 </div>
             </div>
 
-            {isEditingName && editTemplate && (
+            {isEditing && editTemplate && (
                 <Card className="p-6">
                     <HalFormDisplay
                         template={editTemplate as HalFormsTemplate}
                         templateName="updateTrainingGroup"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
-                        onClose={() => setIsEditingName(false)}
-                        successMessage={labels.ui.savedSuccessfully}
-                        submitButtonLabel={labels.buttons.saveChanges}
-                    />
-                </Card>
-            )}
-
-            {isEditingAgeRange && ageRangeTemplate && (
-                <Card className="p-6">
-                    <HalFormDisplay
-                        template={ageRangeTemplate as HalFormsTemplate}
-                        templateName="updateAgeRange"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setIsEditingAgeRange(false)}
+                        onClose={() => setIsEditing(false)}
                         successMessage={labels.ui.savedSuccessfully}
                         submitButtonLabel={labels.buttons.saveChanges}
                     />
@@ -126,41 +101,40 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 
             <hr className="border-border"/>
 
-            {(owners.length > 0 || addOwnerTemplate) && (
+            {(trainers.length > 0 || addTrainerTemplate) && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary">
-                            {labels.sections.trainingGroupOwners}
+                            {labels.sections.trainingGroupTrainers}
                         </h3>
-                        {addOwnerTemplate && (
+                        {addTrainerTemplate && (
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => setAddOwnerModal(true)}
-                                startIcon={<Crown className="w-4 h-4"/>}
+                                onClick={() => setAddTrainerModal(true)}
+                                startIcon={<UserPlus className="w-4 h-4"/>}
                             >
-                                {labels.templates.addOwner}
+                                {labels.templates.addTrainer}
                             </Button>
                         )}
                     </div>
                     <dl>
-                        {owners.map((owner) => {
-                            const ownerWithTemplates = owner as typeof owner & {_templates?: Record<string, HalFormsTemplate>; _links: typeof owner._links & {self?: {href: string}}};
-                            const removeOwnerTpl = ownerWithTemplates._templates?.removeTrainingGroupOwner;
-                            const selfHref = ownerWithTemplates._links?.self?.href ?? '';
-                            return owner._links.member ? (
-                                <DetailRow key={owner.memberId} label="">
+                        {trainers.map((trainer) => {
+                            const removeTrainerTpl = trainer._templates?.removeTrainer;
+                            const selfHref = trainer._links?.self ? toHref(trainer._links.self) : '';
+                            return trainer._links.member ? (
+                                <DetailRow key={trainer.memberId} label="">
                                     <div className="flex items-center justify-between w-full">
-                                        <HalRouteProvider routeLink={owner._links.member as HalResourceLinks}>
+                                        <HalRouteProvider routeLink={trainer._links.member as HalResourceLinks}>
                                             <MemberNameWithRegNumber/>
                                         </HalRouteProvider>
-                                        {removeOwnerTpl && (
+                                        {removeTrainerTpl && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-red-600"
-                                                aria-label={labels.templates.removeOwner}
-                                                onClick={() => setRemoveOwnerModal({template: removeOwnerTpl, ownerSelfHref: selfHref})}
+                                                aria-label={labels.templates.removeTrainer}
+                                                onClick={() => setRemoveTrainerModal({template: removeTrainerTpl, trainerSelfHref: selfHref})}
                                             >
                                                 <UserMinus className="w-4 h-4"/>
                                             </Button>
@@ -272,37 +246,37 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 </Modal>
             )}
 
-            {addOwnerTemplate && addOwnerModal && (
+            {addTrainerTemplate && addTrainerModal && (
                 <Modal
                     isOpen={true}
-                    onClose={() => setAddOwnerModal(false)}
-                    title={labels.templates.addTrainingGroupOwner}
+                    onClose={() => setAddTrainerModal(false)}
+                    title={labels.templates.addTrainer}
                     size="md"
                 >
                     <HalFormDisplay
-                        template={addOwnerTemplate as HalFormsTemplate}
-                        templateName="addTrainingGroupOwner"
+                        template={addTrainerTemplate as HalFormsTemplate}
+                        templateName="addTrainer"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
-                        onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
+                        onClose={() => { setAddTrainerModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>
             )}
 
-            {removeOwnerModal && (
+            {removeTrainerModal && (
                 <Modal
                     isOpen={true}
-                    onClose={() => setRemoveOwnerModal(null)}
-                    title={labels.templates.removeTrainingGroupOwner}
+                    onClose={() => setRemoveTrainerModal(null)}
+                    title={labels.templates.removeTrainer}
                     size="md"
                 >
                     <HalFormDisplay
-                        template={removeOwnerModal.template}
-                        templateName="removeTrainingGroupOwner"
+                        template={removeTrainerModal.template}
+                        templateName="removeTrainer"
                         resourceData={{}}
-                        pathname={removeOwnerModal.ownerSelfHref ? '/training-groups/' + removeOwnerModal.ownerSelfHref.split('/training-groups/')[1] : route.pathname}
-                        onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
+                        pathname={removeTrainerModal.trainerSelfHref ? extractNavigationPath(removeTrainerModal.trainerSelfHref) : route.pathname}
+                        onClose={() => { setRemoveTrainerModal(null); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
                     />
                 </Modal>

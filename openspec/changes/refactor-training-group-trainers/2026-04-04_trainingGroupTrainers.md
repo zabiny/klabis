@@ -86,3 +86,16 @@ Rename owners→trainers in TrainingGroup API, explicit trainer assignment at cr
 **Fix:** Added `jvmArgs("-Xmx2g")` to `tasks.test` in `/backend/build.gradle.kts`. No code changes to application or test sources.
 
 **Verification:** Full suite runs clean — 1865 tests pass, 15 skipped.
+
+### Iteration 4 — 2026-04-04
+
+**Tasks completed:** 6.1, 6.2, 6.3, 6.4
+
+**Changes made:**
+
+- `types.ts`: Renamed `TrainingGroupOwner` → `TrainingGroupTrainer`. Added `self` link and `_templates` to trainer type (mirrors `TrainingGroupMember`). Changed `TrainingGroupDetail.owners` → `trainers`.
+- `TrainingGroupDetailPage.tsx`: Replaced two separate edit buttons (name + age range) with a single `updateTrainingGroup` button. Replaced owner section (`addTrainingGroupOwner`/`removeTrainingGroupOwner` templates) with trainer section (`addTrainer`/`removeTrainer` templates). Removed `Crown` and `Sliders` icon imports (no longer needed). Used `extractNavigationPath()` for trainer self-href instead of fragile string splitting.
+- `labels.ts`: Updated `templates.updateTrainingGroup` from "Upravit název" to "Upravit skupinu" (merged endpoint). Removed `updateAgeRange`, `addTrainingGroupOwner`, `removeTrainingGroupOwner`. Added `addTrainer`, `removeTrainer`. Renamed `sections.trainingGroupOwners` → `sections.trainingGroupTrainers` with label "TRENÉŘI".
+- `TrainingGroupDetailPage.trainers.test.tsx`: New test file (9 tests) replacing old owners test file. Covers trainer section label, add/remove trainer button visibility and modal behavior, single edit button existence, absence of separate age-range button.
+
+**All 1029 frontend tests pass.**

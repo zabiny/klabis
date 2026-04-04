@@ -16,9 +16,10 @@ export interface TrainingGroupMember {
     _templates?: { [name: string]: HalFormsTemplate };
 }
 
-export interface TrainingGroupOwner {
+export interface TrainingGroupTrainer {
     memberId: string;
-    _links: { member?: HalResourceLinks };
+    _links: { member?: HalResourceLinks; self?: HalResourceLinks };
+    _templates?: { [name: string]: HalFormsTemplate };
 }
 
 export interface TrainingGroupDetail extends HalResponse {
@@ -26,6 +27,6 @@ export interface TrainingGroupDetail extends HalResponse {
     name: string;
     minAge: number;
     maxAge: number;
-    owners?: TrainingGroupOwner[];
+    trainers?: TrainingGroupTrainer[];
     members?: TrainingGroupMember[];
 }
