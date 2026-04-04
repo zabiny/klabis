@@ -588,6 +588,92 @@ COMMENT ON TABLE family_group_children IS 'Maps all members (parents included) t
 COMMENT ON COLUMN family_group_children.joined_at IS 'Timestamp when member was added to the family group';
 
 -- ============================================================================
+-- 20. MEMBERS_GROUPS TABLE
+-- Members groups (invitation-based free groups) as independent aggregate root in the members module
+-- ============================================================================
+
+CREATE TABLE members_groups
+(
+    id          UUID         NOT NULL PRIMARY KEY,
+    name        VARCHAR(200) NOT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for members_groups
+CREATE INDEX idx_members_groups_name ON members_groups (name);
+
+-- Comments for members_groups
+COMMENT ON TABLE members_groups IS 'Invitation-based members groups as independent aggregate root in the members module';
+
+-- ============================================================================
+-- 21. MEMBERS_GROUP_OWNERS TABLE
+-- Maps owners (group admins) to members groups
+-- ============================================================================
+
+CREATE TABLE members_group_owners
+(
+    members_group_id UUID NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
+    member_id        UUID NOT NULL,
+    PRIMARY KEY (members_group_id, member_id)
+);
+
+-- Indexes for members_group_owners
+CREATE INDEX idx_members_group_owners_group_id ON members_group_owners (members_group_id);
+CREATE INDEX idx_members_group_owners_member_id ON members_group_owners (member_id);
+
+-- Comments for members_group_owners
+COMMENT ON TABLE members_group_owners IS 'Maps owners (group admins) to members groups';
+
+-- ============================================================================
+-- 22. MEMBERS_GROUP_MEMBERS TABLE
+-- Maps members to members groups with join timestamp
+-- ============================================================================
+
+CREATE TABLE members_group_members
+(
+    members_group_id UUID      NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
+    member_id        UUID      NOT NULL,
+    joined_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (members_group_id, member_id)
+);
+
+-- Indexes for members_group_members
+CREATE INDEX idx_members_group_members_group_id ON members_group_members (members_group_id);
+CREATE INDEX idx_members_group_members_member_id ON members_group_members (member_id);
+
+-- Comments for members_group_members
+COMMENT ON TABLE members_group_members IS 'Maps members to members groups with join timestamp';
+COMMENT ON COLUMN members_group_members.joined_at IS 'Timestamp when member was added to the group (via accepted invitation)';
+
+-- ============================================================================
+-- 23. MEMBERS_GROUP_INVITATIONS TABLE
+-- Stores membership invitations for members groups
+-- ============================================================================
+
+CREATE TABLE members_group_invitations
+(
+    id                   UUID        PRIMARY KEY,
+    members_group_id     UUID        NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
+    invited_member_id    UUID        NOT NULL,
+    invited_by_member_id UUID        NOT NULL,
+    status               VARCHAR(20) NOT NULL,
+    created_at           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for members_group_invitations
+CREATE INDEX idx_members_group_invitations_group_id ON members_group_invitations (members_group_id);
+CREATE INDEX idx_members_group_invitations_invited_member_id ON members_group_invitations (invited_member_id);
+CREATE INDEX idx_members_group_invitations_status ON members_group_invitations (status);
+
+-- Comments for members_group_invitations
+COMMENT ON TABLE members_group_invitations IS 'Membership invitations for members groups';
+COMMENT ON COLUMN members_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.
