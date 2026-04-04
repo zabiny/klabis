@@ -13,6 +13,8 @@ public interface TrainingGroupRepository {
 
     Optional<TrainingGroup> findGroupForMember(MemberId memberId);
 
+    List<TrainingGroup> findGroupsForTrainer(MemberId trainerId);
+
     List<TrainingGroup> findAll();
 
     void delete(TrainingGroupId id);

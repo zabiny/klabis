@@ -6,6 +6,8 @@ import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
+import com.klabis.members.traininggroup.domain.TrainingGroup;
+import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +21,14 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
 
     private final FamilyGroupRepository familyGroupRepository;
     private final MembersGroupRepository membersGroupRepository;
+    private final TrainingGroupRepository trainingGroupRepository;
 
     LastOwnershipCheckerAdapter(FamilyGroupRepository familyGroupRepository,
-                                MembersGroupRepository membersGroupRepository) {
+                                MembersGroupRepository membersGroupRepository,
+                                TrainingGroupRepository trainingGroupRepository) {
         this.familyGroupRepository = familyGroupRepository;
         this.membersGroupRepository = membersGroupRepository;
+        this.trainingGroupRepository = trainingGroupRepository;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +50,14 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
                         group.getId().uuid().toString(),
                         group.getName(),
                         MembersGroup.TYPE_DISCRIMINATOR))
+                .forEach(result::add);
+
+        trainingGroupRepository.findGroupsForTrainer(memberId).stream()
+                .filter(group -> group.isLastTrainer(memberId))
+                .map(group -> new OwnedGroupInfo(
+                        group.getId().value().toString(),
+                        group.getName(),
+                        TrainingGroup.TYPE_DISCRIMINATOR))
                 .forEach(result::add);
 
         return result;

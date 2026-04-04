@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 @AggregateRoot
 public class TrainingGroup extends KlabisAggregateRoot<TrainingGroup, TrainingGroupId> {
 
+    public static final String TYPE_DISCRIMINATOR = "TRAINING";
+
     @Identity
     private final TrainingGroupId id;
     private final UserGroup userGroup;
@@ -139,6 +141,10 @@ public class TrainingGroup extends KlabisAggregateRoot<TrainingGroup, TrainingGr
     public void updateAgeRange(AgeRange newAgeRange) {
         Assert.notNull(newAgeRange, "AgeRange is required");
         this.ageRange = newAgeRange;
+    }
+
+    public boolean isLastTrainer(MemberId trainerId) {
+        return userGroup.isLastOwner(trainerId.toUserId());
     }
 
     public boolean matchesByAge(LocalDate dateOfBirth) {

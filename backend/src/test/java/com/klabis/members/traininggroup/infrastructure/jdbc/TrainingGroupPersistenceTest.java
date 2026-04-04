@@ -235,6 +235,51 @@ class TrainingGroupPersistenceTest {
     }
 
     @Nested
+    @DisplayName("findGroupsForTrainer()")
+    class FindGroupsForTrainer {
+
+        @Test
+        @DisplayName("should return groups where member is a trainer")
+        void shouldReturnGroupsWhereTrainer() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Seniors", TRAINER, new AgeRange(18, 40))));
+
+            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(TRAINER);
+
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(TrainingGroup::getName)
+                    .containsExactlyInAnyOrder("Juniors", "Seniors");
+        }
+
+        @Test
+        @DisplayName("should return empty list when member is not a trainer in any group")
+        void shouldReturnEmptyWhenNotATrainer() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+
+            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(REGULAR_MEMBER);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should not include groups where member is only a member, not a trainer")
+        void shouldNotIncludeGroupsWhereMemberIsOnlyMember() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.clearDomainEvents();
+            trainingGroupRepository.save(group);
+
+            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(REGULAR_MEMBER);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("update — trainer management")
     class UpdateTrainers {
 

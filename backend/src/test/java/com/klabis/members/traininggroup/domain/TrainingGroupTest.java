@@ -318,6 +318,41 @@ class TrainingGroupTest {
     }
 
     @Nested
+    @DisplayName("isLastTrainer()")
+    class IsLastTrainerMethod {
+
+        @Test
+        @DisplayName("should return true when member is the sole trainer")
+        void shouldReturnTrueWhenSoleTrainer() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER), Set.of(),
+                    new AgeRange(10, 18), null);
+
+            assertThat(group.isLastTrainer(TRAINER)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when there are multiple trainers")
+        void shouldReturnFalseWhenMultipleTrainers() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER, TRAINER_2), Set.of(),
+                    new AgeRange(10, 18), null);
+
+            assertThat(group.isLastTrainer(TRAINER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when member is not a trainer at all")
+        void shouldReturnFalseWhenNotATrainer() {
+            TrainingGroup group = TrainingGroup.reconstruct(
+                    new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER), Set.of(),
+                    new AgeRange(10, 18), null);
+
+            assertThat(group.isLastTrainer(TRAINER_2)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("addMember() null guard")
     class AddMemberNullGuard {
 

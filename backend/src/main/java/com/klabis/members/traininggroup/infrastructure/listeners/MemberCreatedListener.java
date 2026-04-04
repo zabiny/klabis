@@ -25,10 +25,6 @@ class MemberCreatedListener {
 
     @ApplicationModuleListener
     void on(MemberCreatedEvent event) {
-        if (event.dateOfBirth() == null) {
-            return;
-        }
-
         List<TrainingGroup> matchingGroups = trainingGroupRepository.findAll().stream()
                 .filter(group -> group.matchesByAge(event.dateOfBirth()))
                 .toList();

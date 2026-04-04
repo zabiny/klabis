@@ -37,6 +37,13 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
     }
 
     @Override
+    public List<TrainingGroup> findGroupsForTrainer(MemberId trainerId) {
+        return jdbcRepository.findByTrainerId(trainerId.uuid()).stream()
+                .map(TrainingGroupMemento::toTrainingGroup)
+                .toList();
+    }
+
+    @Override
     public List<TrainingGroup> findAll() {
         List<TrainingGroup> result = new ArrayList<>();
         jdbcRepository.findAll().forEach(m -> result.add(m.toTrainingGroup()));
