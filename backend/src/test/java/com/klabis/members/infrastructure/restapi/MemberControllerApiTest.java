@@ -6,17 +6,10 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.members.MemberId;
-import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.LastOwnershipChecker;
-import com.klabis.members.application.InvalidUpdateException;
-import com.klabis.members.application.ManagementPort;
-import com.klabis.members.FamilyGroupProvider;
-import com.klabis.members.TrainingGroupProvider;
-import com.klabis.members.application.MemberIsLastGroupOwnerException;
-import com.klabis.members.application.MemberNotFoundException;
-import com.klabis.members.application.RegistrationPort;
+import com.klabis.members.*;
+import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
+import com.klabis.usergroups.infrastructure.restapi.UserGroupsPostProcessor;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -70,7 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
-@Import({MemberMapperImpl.class, HalFormsSupport.class})
+@Import({MemberMapperImpl.class, HalFormsSupport.class, UserGroupsPostProcessor.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 

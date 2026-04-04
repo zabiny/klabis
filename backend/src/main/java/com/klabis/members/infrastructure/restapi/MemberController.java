@@ -13,8 +13,6 @@ import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
-import com.klabis.members.FamilyGroupProvider;
-import com.klabis.members.TrainingGroupProvider;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,22 +60,16 @@ public class MemberController {
     private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
-    private final TrainingGroupProvider trainingGroupProvider;
-    private final FamilyGroupProvider familyGroupProvider;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
-            MemberMapper memberMapper,
-            TrainingGroupProvider trainingGroupProvider,
-            FamilyGroupProvider familyGroupProvider) {
+            MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
-        this.trainingGroupProvider = trainingGroupProvider;
-        this.familyGroupProvider = familyGroupProvider;
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -280,11 +272,6 @@ public class MemberController {
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(memberMapper.toDetailsResponse(member));
 
         buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
-
-        trainingGroupProvider.findTrainingGroupForMember(memberId)
-                .ifPresent(data -> entityModel.add(Link.of("/api/training-groups/" + data.groupId(), "trainingGroup")));
-        familyGroupProvider.findFamilyGroupForMember(memberId)
-                .ifPresent(data -> entityModel.add(Link.of("/api/family-groups/" + data.groupId(), "familyGroup")));
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10), null
