@@ -526,6 +526,68 @@ COMMENT ON TABLE training_group_members IS 'Maps members to training groups with
 COMMENT ON COLUMN training_group_members.joined_at IS 'Timestamp when member was assigned to the training group';
 
 -- ============================================================================
+-- 17. FAMILY_GROUPS TABLE
+-- Family groups as independent aggregate root in the members module
+-- ============================================================================
+
+CREATE TABLE family_groups
+(
+    id          UUID         NOT NULL PRIMARY KEY,
+    name        VARCHAR(200) NOT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for family_groups
+CREATE INDEX idx_family_groups_name ON family_groups (name);
+
+-- Comments for family_groups
+COMMENT ON TABLE family_groups IS 'Family groups as independent aggregate root in the members module';
+
+-- ============================================================================
+-- 18. FAMILY_GROUP_PARENTS TABLE
+-- Maps parents (members acting as owners) to family groups
+-- ============================================================================
+
+CREATE TABLE family_group_parents
+(
+    family_group_id UUID NOT NULL REFERENCES family_groups (id) ON DELETE CASCADE,
+    member_id       UUID NOT NULL,
+    PRIMARY KEY (family_group_id, member_id)
+);
+
+-- Indexes for family_group_parents
+CREATE INDEX idx_family_group_parents_group_id ON family_group_parents (family_group_id);
+CREATE INDEX idx_family_group_parents_member_id ON family_group_parents (member_id);
+
+-- Comments for family_group_parents
+COMMENT ON TABLE family_group_parents IS 'Maps parents (members acting as owners) to family groups';
+
+-- ============================================================================
+-- 19. FAMILY_GROUP_CHILDREN TABLE
+-- Maps all members (parents and children) to family groups with join timestamp
+-- ============================================================================
+
+CREATE TABLE family_group_children
+(
+    family_group_id UUID      NOT NULL REFERENCES family_groups (id) ON DELETE CASCADE,
+    member_id       UUID      NOT NULL,
+    joined_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (family_group_id, member_id)
+);
+
+-- Indexes for family_group_children
+CREATE INDEX idx_family_group_children_group_id ON family_group_children (family_group_id);
+CREATE INDEX idx_family_group_children_member_id ON family_group_children (member_id);
+
+-- Comments for family_group_children
+COMMENT ON TABLE family_group_children IS 'Maps all members (parents included) to family groups with join timestamp';
+COMMENT ON COLUMN family_group_children.joined_at IS 'Timestamp when member was added to the family group';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.
