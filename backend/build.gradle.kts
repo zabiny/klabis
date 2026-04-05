@@ -137,6 +137,7 @@ byteBuddy {
 tasks.test {
     useJUnitPlatform()
     systemProperty("spring.modulith.test.file-modification-detector", "default")
+    systemProperty("spring.test.context.cache.maxSize", "60")
     jvmArgs("-Xmx2g")
     finalizedBy(tasks.jacocoTestReport)
 }
