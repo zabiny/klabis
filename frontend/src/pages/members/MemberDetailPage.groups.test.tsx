@@ -189,11 +189,11 @@ describe('MemberDetailPage — group membership sections', () => {
             expect(screen.getByText('Mladí závodníci')).toBeInTheDocument();
         });
 
-        it('shows owner name loaded via HATEOAS in training group section', () => {
+        it('shows trainer name loaded via HATEOAS in training group section', () => {
             vi.mocked(useHalRoute).mockReturnValue({
                 resourceData: {
                     name: 'Mladí závodníci',
-                    owners: [{memberId: 'owner-1', _links: {member: {href: '/api/members/owner-1'}}}],
+                    trainers: [{memberId: 'owner-1', _links: {member: {href: '/api/members/owner-1'}}}],
                     _links: {self: {href: '/api/training-groups/tg1'}},
                 } as any,
                 navigateToResource: vi.fn(),
@@ -213,7 +213,7 @@ describe('MemberDetailPage — group membership sections', () => {
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Správce')).toBeInTheDocument();
+            expect(screen.getByText('Trenér')).toBeInTheDocument();
         });
 
         it('does NOT show training group section when trainingGroup link is absent', () => {

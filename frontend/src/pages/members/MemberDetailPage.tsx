@@ -28,12 +28,14 @@ function TrainingGroupInfo() {
     const {resourceData} = useHalRoute();
     if (!resourceData) return null;
     const group = resourceData as unknown as GroupData;
+    const isTrainingGroup = !!group.trainers;
     const owners = group.owners ?? group.trainers ?? [];
+    const ownerLabel = isTrainingGroup ? 'Trenér' : 'Správce';
     return (
         <>
             <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
             {owners.map((owner, i) => (
-                <DetailRow key={owner.memberId} label={i === 0 ? 'Správce' : ''}>
+                <DetailRow key={owner.memberId} label={i === 0 ? ownerLabel : ''}>
                     <HalRouteProvider routeLink={owner._links.member}>
                         <MemberNameWithRegNumber/>
                     </HalRouteProvider>
