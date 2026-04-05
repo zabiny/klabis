@@ -157,12 +157,15 @@ class FamilyGroupTest {
         }
 
         @Test
-        @DisplayName("should throw when adding member already in group")
-        void shouldThrowWhenAddingAlreadyPresentMember() {
+        @DisplayName("should grant owner privileges to existing member without throwing")
+        void shouldGrantOwnerToExistingMemberWithoutThrowing() {
             FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
                     "Novákovi", Set.of(PARENT_A), Set.of(MEMBER_A)));
-            assertThatThrownBy(() -> group.addParent(MEMBER_A))
-                    .isInstanceOf(MemberAlreadyInGroupException.class);
+
+            group.addParent(MEMBER_A);
+
+            assertThat(group.getParents()).containsExactlyInAnyOrder(PARENT_A, MEMBER_A);
+            assertThat(group.hasMember(MEMBER_A)).isTrue();
         }
     }
 

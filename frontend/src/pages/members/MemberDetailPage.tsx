@@ -22,16 +22,17 @@ import {MemberNameWithRegNumber} from "../../components/members/MemberNameWithRe
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
 type GroupOwner = { memberId: string; _links: { member: HalResourceLinks } };
-type GroupData = { name: string; owners: GroupOwner[] };
+type GroupData = { name: string; owners?: GroupOwner[]; trainers?: GroupOwner[] };
 
 function TrainingGroupInfo() {
     const {resourceData} = useHalRoute();
     if (!resourceData) return null;
     const group = resourceData as unknown as GroupData;
+    const owners = group.owners ?? group.trainers ?? [];
     return (
         <>
             <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
-            {group.owners.map((owner, i) => (
+            {owners.map((owner, i) => (
                 <DetailRow key={owner.memberId} label={i === 0 ? 'Správce' : ''}>
                     <HalRouteProvider routeLink={owner._links.member}>
                         <MemberNameWithRegNumber/>

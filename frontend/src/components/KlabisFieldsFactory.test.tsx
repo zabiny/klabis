@@ -387,6 +387,42 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
+    describe('List field type', () => {
+
+        it('should render HalFormsCheckboxGroup for List type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'trainers', prompt: 'Trenéři', type: 'List'},
+            });
+
+            const fieldElement = klabisFieldsFactory('List', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+        });
+
+        it('should configure remote options pointing to /members/options for List type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'trainers', prompt: 'Trenéři', type: 'List'},
+            });
+
+            const fieldElement = klabisFieldsFactory('List', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('checkboxgroup-href')).toHaveTextContent('/members/options');
+        });
+
+        it('should preserve the original prompt for List type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'trainers', prompt: 'Trenéři', type: 'List'},
+            });
+
+            const fieldElement = klabisFieldsFactory('List', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Trenéři');
+        });
+    });
+
     describe('fallback behavior', () => {
 
         it('should return null for unknown field types', () => {

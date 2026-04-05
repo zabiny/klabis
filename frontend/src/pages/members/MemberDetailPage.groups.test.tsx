@@ -247,6 +247,59 @@ describe('MemberDetailPage — group membership sections', () => {
             expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
             expect(screen.getByText('Bezprizorní')).toBeInTheDocument();
         });
+
+        it('does not crash when training group response has trainers array instead of owners', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Skupina bez owners pole',
+                    trainers: [{memberId: 'trainer-1', _links: {member: {href: '/api/members/trainer-1'}}}],
+                    _links: {self: {href: '/api/training-groups/tg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/training-groups/tg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    trainingGroup: {href: '/api/training-groups/tg1'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
+            expect(screen.getByText('Skupina bez owners pole')).toBeInTheDocument();
+        });
+
+        it('does not crash when training group response has neither owners nor trainers', () => {
+            vi.mocked(useHalRoute).mockReturnValue({
+                resourceData: {
+                    name: 'Prázdná skupina',
+                    _links: {self: {href: '/api/training-groups/tg1'}},
+                } as any,
+                navigateToResource: vi.fn(),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                pathname: '/api/training-groups/tg1',
+                queryState: 'success',
+                getResourceLink: vi.fn(),
+            });
+
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    trainingGroup: {href: '/api/training-groups/tg1'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
+            expect(screen.getByText('Prázdná skupina')).toBeInTheDocument();
+        });
     });
 
     describe('Family group section (task 5.4)', () => {

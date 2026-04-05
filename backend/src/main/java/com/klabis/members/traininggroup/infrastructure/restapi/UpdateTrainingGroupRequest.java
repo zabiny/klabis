@@ -13,6 +13,13 @@ record UpdateTrainingGroupRequest(
         PatchField<List<String>> trainers
 ) {
     PatchField<List<UUID>> trainerUuids() {
+        if (!trainers.isProvided()) {
+            return PatchField.notProvided();
+        }
+        List<String> trainerList = trainers.throwIfNotProvided();
+        if (trainerList == null) {
+            return PatchField.notProvided();
+        }
         return trainers.map(list -> list.stream()
                 .map(s -> {
                     try {

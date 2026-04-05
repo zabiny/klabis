@@ -251,6 +251,25 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 204 when name is updated and trainers field is explicitly null (HAL forms sends null for untouched list)")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn204WhenUpdatingNameWithExplicitNullTrainers() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Updated", "trainers": null}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
         @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingTrainingAuthority() throws Exception {
