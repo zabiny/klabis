@@ -69,6 +69,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("oris_id")
     private Integer orisId;
 
+    @Column("categories")
+    private String categories;
+
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
     @MappedCollection(idColumn = "event_id")
@@ -150,6 +153,7 @@ class EventMemento implements Persistable<UUID> {
         memento.registrationDeadline = event.getRegistrationDeadline();
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
+        memento.categories = event.getCategories().isEmpty() ? null : String.join(",", event.getCategories());
     }
 
     /**
@@ -182,6 +186,10 @@ class EventMemento implements Persistable<UUID> {
         MemberId coordinatorId = this.eventCoordinatorId != null ? new MemberId(this.eventCoordinatorId) : null;
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
+        List<String> categoriesList = (this.categories != null && !this.categories.isBlank())
+                ? java.util.Arrays.asList(this.categories.split(","))
+                : java.util.List.of();
+
         return Event.reconstruct(
                 eventId,
                 this.name,
@@ -193,6 +201,7 @@ class EventMemento implements Persistable<UUID> {
                 this.registrationDeadline,
                 eventStatus,
                 this.orisId,
+                categoriesList,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

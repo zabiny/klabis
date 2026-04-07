@@ -10,6 +10,7 @@ import com.klabis.events.domain.EventStatus;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * DTO for event summary in list responses.
@@ -37,6 +38,7 @@ record EventSummaryDto(
         String websiteUrl,
         LocalDate registrationDeadline,
         @HasAuthority(Authority.EVENTS_MANAGE)
-        @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status
+        @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
+        List<String> categories
 ) {
 }

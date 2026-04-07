@@ -26,6 +26,8 @@ public interface EventManagementPort {
 
     void finishExpiredActiveEvents(LocalDate currentDate);
 
+    void syncEventFromOris(EventId eventId);
+
     Event getEvent(EventId eventId, boolean canManageEvents);
 
     Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents);

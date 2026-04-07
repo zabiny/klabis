@@ -643,6 +643,7 @@ class EventTest {
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Test Location", "Test Organizer",
                     null, null, null, EventStatus.ACTIVE, null,
+                    List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -661,6 +662,7 @@ class EventTest {
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Test Location", "Test Organizer",
                     null, null, null, EventStatus.ACTIVE, null,
+                    List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -1089,6 +1091,140 @@ class EventTest {
                     .build());
 
             assertThat(event.getEventCoordinatorId()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("syncFromOris() domain method")
+    class SyncFromOrisMethod {
+
+        private Event.SyncFromOris defaultSyncCommand() {
+            return EventSyncFromOrisBuilder.builder()
+                    .name("Synced Name")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Synced Location")
+                    .organizer("SYN")
+                    .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"))
+                    .registrationDeadline(null)
+                    .categories(List.of("M21", "W35"))
+                    .build();
+        }
+
+        @Test
+        @DisplayName("should overwrite all event fields and publish EventUpdatedEvent for DRAFT event")
+        void shouldOverwriteFieldsAndPublishEventForDraftEvent() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Old Location")
+                    .organizer("OLD")
+                    .build());
+
+            event.syncFromOris(defaultSyncCommand());
+
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getEventDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+            assertThat(event.getLocation()).isEqualTo("Synced Location");
+            assertThat(event.getOrganizer()).isEqualTo("SYN");
+            assertThat(event.getWebsiteUrl()).isEqualTo(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"));
+            assertThat(event.getCategories()).containsExactlyInAnyOrder("M21", "W35");
+            assertThat(event.getDomainEvents()).hasSize(2); // create + sync
+            assertThat(event.getDomainEvents())
+                    .anyMatch(e -> e instanceof com.klabis.events.EventUpdatedEvent);
+        }
+
+        @Test
+        @DisplayName("should overwrite all event fields for ACTIVE event")
+        void shouldOverwriteFieldsForActiveEvent() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Old Location")
+                    .organizer("OLD")
+                    .build());
+            event.publish();
+
+            event.syncFromOris(defaultSyncCommand());
+
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getStatus()).isEqualTo(EventStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when event is FINISHED")
+        void shouldThrowWhenEventIsFinished() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Old Location")
+                    .organizer("OLD")
+                    .build());
+            event.publish();
+            event.finish();
+
+            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("FINISHED");
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when event is CANCELLED")
+        void shouldThrowWhenEventIsCancelled() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Old Location")
+                    .organizer("OLD")
+                    .build());
+            event.cancel();
+
+            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("CANCELLED");
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when event has no orisId")
+        void shouldThrowWhenEventHasNoOrisId() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Manual Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("orisId");
+        }
+
+        @Test
+        @DisplayName("should update registrationDeadline from command")
+        void shouldUpdateRegistrationDeadline() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Location")
+                    .organizer("OLD")
+                    .build());
+
+            Event.SyncFromOris commandWithDeadline = EventSyncFromOrisBuilder.builder()
+                    .name("Updated")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Location")
+                    .organizer("SYN")
+                    .registrationDeadline(LocalDate.of(2026, 9, 5))
+                    .categories(List.of())
+                    .build();
+
+            event.syncFromOris(commandWithDeadline);
+
+            assertThat(event.getRegistrationDeadline()).isEqualTo(LocalDate.of(2026, 9, 5));
         }
     }
 }

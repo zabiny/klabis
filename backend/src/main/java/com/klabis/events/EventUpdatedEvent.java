@@ -6,6 +6,7 @@ import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -35,6 +36,7 @@ public record EventUpdatedEvent(
         String location,
         String organizer,
         WebsiteUrl websiteUrl,
+        List<String> categories,
         Instant occurredAt
 ) {
 
@@ -46,6 +48,7 @@ public record EventUpdatedEvent(
         Objects.requireNonNull(location, "Event location is required");
         Objects.requireNonNull(organizer, "Event organizer is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        categories = categories != null ? List.copyOf(categories) : List.of();
     }
 
     public static EventUpdatedEvent fromAggregate(Event event) {
@@ -57,6 +60,7 @@ public record EventUpdatedEvent(
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
+                event.getCategories(),
                 Instant.now()
         );
     }

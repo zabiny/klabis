@@ -243,6 +243,9 @@ CREATE TABLE events
     -- ORIS integration: source identifier for imported events (null for manually created events)
     oris_id              INTEGER      NULL UNIQUE,
 
+    -- Race categories available at this event (comma-separated, e.g. "M21,W35,D10"; null means no categories defined)
+    categories           VARCHAR(2000) NULL,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,
@@ -582,6 +585,32 @@ CREATE INDEX idx_members_group_invitations_status ON members_group_invitations (
 -- Comments for members_group_invitations
 COMMENT ON TABLE members_group_invitations IS 'Membership invitations for members groups';
 COMMENT ON COLUMN members_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
+
+-- ============================================================================
+-- 24. CATEGORY_PRESETS TABLE
+-- Reusable category preset templates for events
+-- ============================================================================
+
+CREATE TABLE category_presets
+(
+    id          UUID         NOT NULL PRIMARY KEY,
+    name        VARCHAR(200) NOT NULL,
+    categories  VARCHAR(2000) NULL,
+
+    -- Audit fields
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for category_presets
+CREATE INDEX idx_category_presets_name ON category_presets (name);
+
+-- Comments for category_presets
+COMMENT ON TABLE category_presets IS 'Reusable category preset templates for events (copy-on-apply, no link maintained)';
+COMMENT ON COLUMN category_presets.categories IS 'Comma-separated category names (e.g. "M21,W35,D10"; null means empty preset)';
 
 -- ============================================================================
 -- BOOTSTRAP DATA NOTE

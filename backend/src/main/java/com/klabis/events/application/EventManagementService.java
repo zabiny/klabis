@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -96,6 +97,7 @@ public class EventManagementService implements EventManagementPort {
         String organizer = resolveOrganizer(details);
         WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
         LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
+        List<String> categories = extractCategories(details);
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                 .orisId(orisId)
@@ -105,6 +107,7 @@ public class EventManagementService implements EventManagementPort {
                 .organizer(organizer)
                 .websiteUrl(websiteUrl)
                 .registrationDeadline(registrationDeadline)
+                .categories(categories)
                 .build());
 
         try {
@@ -112,6 +115,37 @@ public class EventManagementService implements EventManagementPort {
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateOrisImportException(orisId);
         }
+    }
+
+    @Transactional
+    @Override
+    public void syncEventFromOris(EventId eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        OrisApiClient client = orisApiClient.orElseThrow(() ->
+                new IllegalStateException("ORIS integration is not active"));
+
+        int orisId = event.getOrisId();
+        EventDetails details = client.getEventDetails(orisId).payload()
+                .orElseThrow(() -> new EventNotFoundException(orisId));
+
+        String organizer = resolveOrganizer(details);
+        WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
+        LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
+        List<String> categories = extractCategories(details);
+
+        event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                .name(details.name())
+                .eventDate(details.date())
+                .location(details.place())
+                .organizer(organizer)
+                .websiteUrl(websiteUrl)
+                .registrationDeadline(registrationDeadline)
+                .categories(categories)
+                .build());
+
+        eventRepository.save(event);
     }
 
     private String resolveOrganizer(EventDetails details) {
@@ -122,6 +156,16 @@ public class EventManagementService implements EventManagementPort {
             return details.org2().abbreviation();
         }
         return UNKNOWN_ORGANIZER;
+    }
+
+    private List<String> extractCategories(EventDetails details) {
+        if (details.classes() == null || details.classes().isEmpty()) {
+            return List.of();
+        }
+        return details.classes().values().stream()
+                .filter(c -> c.name() != null && !c.name().isBlank())
+                .map(c -> c.name())
+                .toList();
     }
 
     @Override

@@ -70,7 +70,7 @@ class CalendarEventSyncIntegrationTest {
         ));
 
         // When & Then: CalendarItem should be created automatically
-        scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, EventStatus.ACTIVE, null, List.of(), null)))
+        scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, EventStatus.ACTIVE, null, List.of(), List.of(), null)))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isPresent())
                 .andVerify(isPresent -> {
                     CalendarItem calendarItem = calendarRepository.findByEventId(eventId).orElseThrow();
@@ -107,6 +107,7 @@ class CalendarEventSyncIntegrationTest {
                         "New Loc",
                         "NewOrg",
                         WebsiteUrl.of("https://new-url.com"),
+                        java.util.List.of(),
                         java.time.Instant.now()
                 ))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null),
@@ -131,7 +132,7 @@ class CalendarEventSyncIntegrationTest {
         final CalendarItemId calendarItemId = calendarRepository.findByEventId(eventId).orElseThrow().getId();
 
         // When: Event is cancelled
-        scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, EventStatus.CANCELLED, null, List.of(), null)))
+        scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, EventStatus.CANCELLED, null, List.of(), List.of(), null)))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(calendarItemIsGone -> {
                     assertThat(calendarRepository.findById(calendarItemId)).isEmpty();

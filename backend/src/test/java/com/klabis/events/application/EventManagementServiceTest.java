@@ -774,4 +774,88 @@ class EventManagementServiceTest {
             return details;
         }
     }
+
+    @Nested
+    @DisplayName("syncEventFromOris() method")
+    class SyncEventFromOrisMethod {
+
+        @Test
+        @DisplayName("should fetch event from ORIS and sync all fields")
+        void shouldSyncEventFromOris() {
+            // Given
+            EventId eventId = EventId.generate();
+            int orisId = 9876;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId)
+                    .name("Old Name")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Old Location")
+                    .organizer("OLD")
+                    .build());
+
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "New Name from ORIS", LocalDate.of(2026, 8, 15), "New Location", org1, null);
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            service.syncEventFromOris(eventId);
+
+            // Then
+            assertThat(event.getName()).isEqualTo("New Name from ORIS");
+            assertThat(event.getLocation()).isEqualTo("New Location");
+            assertThat(event.getOrganizer()).isEqualTo("OOB");
+            verify(eventRepository).save(event);
+        }
+
+        @Test
+        @DisplayName("should throw EventNotFoundException when event does not exist")
+        void shouldThrowWhenEventNotFound() {
+            // Given
+            EventId eventId = EventId.generate();
+            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+            // When & Then
+            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
+                    .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when ORIS integration is not active")
+        void shouldThrowWhenOrisNotActive() {
+            // Given
+            EventId eventId = EventId.generate();
+            int orisId = 1234;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId)
+                    .name("Event")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty());
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+            // When & Then
+            assertThatThrownBy(() -> serviceWithoutOris.syncEventFromOris(eventId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("ORIS integration is not active");
+        }
+
+        private EventDetails buildEventDetails(int id, String name, LocalDate date, String place, Organizer org1, Organizer org2) {
+            EventDetails details = Mockito.mock(EventDetails.class);
+            Mockito.when(details.name()).thenReturn(name);
+            Mockito.when(details.date()).thenReturn(date);
+            Mockito.when(details.place()).thenReturn(place);
+            Mockito.when(details.org1()).thenReturn(org1);
+            Mockito.lenient().when(details.org2()).thenReturn(org2);
+            Mockito.lenient().when(details.entryDate1()).thenReturn(null);
+            Mockito.lenient().when(details.classes()).thenReturn(null);
+            return details;
+        }
+    }
 }

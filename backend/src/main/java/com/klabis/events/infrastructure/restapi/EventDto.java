@@ -6,6 +6,7 @@ import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * DTO for event details response.
@@ -30,6 +31,7 @@ record EventDto(
         String websiteUrl,
         MemberId eventCoordinatorId,
         LocalDate registrationDeadline,
-        @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status
+        @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
+        List<String> categories
 ) {
 }

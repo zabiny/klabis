@@ -1,23 +1,23 @@
 ## 1. Event Categories — Backend Domain + Persistence
 
-- [ ] 1.1 Add `categories` field (`List<String>`) to Event aggregate, update `CreateEvent`, `UpdateEvent`, `CreateEventFromOris` command records, private constructor, `reconstruct()`, `update()`, and getter
-- [ ] 1.2 Add `categories VARCHAR(2000)` column to events table in V001 migration
-- [ ] 1.3 Update EventMemento — add `categories` column field, update `copyBasicEventInfo()` (List→comma-separated) and `toEvent()` (comma-separated→List)
-- [ ] 1.4 Add `List<String> categories` to EventCreatedEvent and EventUpdatedEvent domain events, update `fromAggregate()` factories, handle null safely in compact constructors
-- [ ] 1.5 Update EventDto, EventSummaryDto, and EventDtoMapper to include categories
-- [ ] 1.6 Add categories to bootstrap data for test events
+- [x] 1.1 Add `categories` field (`List<String>`) to Event aggregate, update `CreateEvent`, `UpdateEvent`, `CreateEventFromOris` command records, private constructor, `reconstruct()`, `update()`, and getter
+- [x] 1.2 Add `categories VARCHAR(2000)` column to events table in V001 migration
+- [x] 1.3 Update EventMemento — add `categories` column field, update `copyBasicEventInfo()` (List→comma-separated) and `toEvent()` (comma-separated→List)
+- [x] 1.4 Add `List<String> categories` to EventCreatedEvent and EventUpdatedEvent domain events, update `fromAggregate()` factories, handle null safely in compact constructors
+- [x] 1.5 Update EventDto, EventSummaryDto, and EventDtoMapper to include categories
+- [x] 1.6 Add categories to bootstrap data for test events — no event bootstrap data exists, skipped
 
 ## 2. ORIS Import — Extract Categories
 
-- [ ] 2.1 Add `extractCategories(EventDetails)` helper method to EventManagementService — extract `EventClass.name` values from `details.classes()` map
-- [ ] 2.2 Update `importEventFromOris()` to pass extracted categories to `CreateEventFromOris` builder
+- [x] 2.1 Add `extractCategories(EventDetails)` helper method to EventManagementService — extract `EventClass.name` values from `details.classes()` map
+- [x] 2.2 Update `importEventFromOris()` to pass extracted categories to `CreateEventFromOris` builder
 
 ## 3. Sync from ORIS — Backend
 
-- [ ] 3.1 Add `SyncFromOris` command record to Event and `syncFromOris()` domain method (validate DRAFT/ACTIVE status and non-null orisId, overwrite fields, publish EventUpdatedEvent)
-- [ ] 3.2 Add `syncEventFromOris(EventId)` method to EventManagementPort and EventManagementService
-- [ ] 3.3 Add `POST /{id}/sync-from-oris` endpoint to EventController with EVENTS:MANAGE authority
-- [ ] 3.4 Add syncFromOris affordance to event detail links — only for DRAFT/ACTIVE events with orisId when ORIS integration is active
+- [x] 3.1 Add `SyncFromOris` command record to Event and `syncFromOris()` domain method (validate DRAFT/ACTIVE status and non-null orisId, overwrite fields, publish EventUpdatedEvent)
+- [x] 3.2 Add `syncEventFromOris(EventId)` method to EventManagementPort and EventManagementService
+- [x] 3.3 Add `POST /{id}/sync-from-oris` endpoint to EventController with EVENTS:MANAGE authority
+- [x] 3.4 Add syncFromOris affordance to event detail links — only for DRAFT/ACTIVE events with orisId when ORIS integration is active
 
 ## 4. Event Categories — Frontend
 
@@ -28,11 +28,11 @@
 
 ## 5. Category Presets — Backend
 
-- [ ] 5.1 Create CategoryPreset aggregate (name + list of categories) in events module domain layer
-- [ ] 5.2 Create CategoryPreset persistence — CategoryPresetMemento, DB table in V001, repository
-- [ ] 5.3 Create CategoryPresetManagementPort and CategoryPresetManagementService (CRUD operations)
-- [ ] 5.4 Create CategoryPresetController — REST CRUD endpoints with EVENTS:MANAGE authority, HATEOAS links and affordances
-- [ ] 5.5 Add CategoryPreset DTOs and mapper
+- [x] 5.1 Create CategoryPreset aggregate (name + list of categories) in events module domain layer
+- [x] 5.2 Create CategoryPreset persistence — CategoryPresetMemento, DB table in V001, repository
+- [x] 5.3 Create CategoryPresetManagementPort and CategoryPresetManagementService (CRUD operations)
+- [x] 5.4 Create CategoryPresetController — REST CRUD endpoints with EVENTS:MANAGE authority, HATEOAS links and affordances
+- [x] 5.5 Add CategoryPreset DTOs and mapper
 
 ## 6. Category Presets — Frontend
 

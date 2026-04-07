@@ -56,6 +56,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private MemberId eventCoordinatorId;
     private LocalDate registrationDeadline;
     private EventStatus status;
+    private List<String> categories = new ArrayList<>();
 
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
@@ -83,7 +84,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String websiteUrl,
 
             MemberId eventCoordinatorId,
-            LocalDate registrationDeadline
+            LocalDate registrationDeadline,
+            List<String> categories
     ) {
         public static CreateEvent from(Event event) {
             return new CreateEvent(
@@ -93,7 +95,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
                     event.eventCoordinatorId,
-                    event.registrationDeadline
+                    event.registrationDeadline,
+                    event.categories
             );
         }
     }
@@ -120,7 +123,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
             MemberId eventCoordinatorId,
 
-            LocalDate registrationDeadline
+            LocalDate registrationDeadline,
+            List<String> categories
     ) {
         public static UpdateEvent from(Event event) {
             return new UpdateEvent(
@@ -130,7 +134,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
                     event.eventCoordinatorId,
-                    event.registrationDeadline
+                    event.registrationDeadline,
+                    event.categories
             );
         }
     }
@@ -143,7 +148,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            LocalDate registrationDeadline
+            LocalDate registrationDeadline,
+            List<String> categories
     ) {
         public static CreateEventFromOris from(Event event) {
             return new CreateEventFromOris(
@@ -153,7 +159,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.location,
                     event.organizer,
                     event.websiteUrl,
-                    event.registrationDeadline
+                    event.registrationDeadline,
+                    event.categories
             );
         }
     }
@@ -188,6 +195,29 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
     }
 
+    @RecordBuilder
+    public record SyncFromOris(
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            LocalDate registrationDeadline,
+            List<String> categories
+    ) {
+        public static SyncFromOris from(Event event) {
+            return new SyncFromOris(
+                    event.name,
+                    event.eventDate,
+                    event.location,
+                    event.organizer,
+                    event.websiteUrl,
+                    event.registrationDeadline,
+                    event.categories
+            );
+        }
+    }
+
     /**
      * Private constructor for creating new Event instances.
      * <p>
@@ -205,6 +235,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             LocalDate registrationDeadline,
             EventStatus status,
             Integer orisId,
+            List<String> categories,
             AuditMetadata auditMetadata) {
 
         this.id = id;
@@ -217,6 +248,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.registrationDeadline = registrationDeadline;
         this.status = status;
         this.orisId = orisId;
+        this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
         updateAuditMetadata(auditMetadata);
     }
 
@@ -248,6 +280,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             LocalDate registrationDeadline,
             EventStatus status,
             Integer orisId,
+            List<String> categories,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
 
@@ -262,6 +295,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 registrationDeadline,
                 status,
                 orisId,
+                categories,
                 auditMetadata
         );
         event.registrations.addAll(registrations);
@@ -297,6 +331,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.registrationDeadline(),
                 EventStatus.DRAFT,
                 null,
+                command.categories(),
                 null
         );
 
@@ -332,6 +367,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.registrationDeadline(),
                 EventStatus.DRAFT,
                 command.orisId(),
+                command.categories(),
                 null
         );
 
@@ -416,6 +452,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return orisId;
     }
 
+    public List<String> getCategories() {
+        return Collections.unmodifiableList(categories);
+    }
+
     // ========== Domain Methods ==========
 
     /**
@@ -496,6 +536,40 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.websiteUrl = command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null;
         this.eventCoordinatorId = command.eventCoordinatorId();
         this.registrationDeadline = command.registrationDeadline();
+        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+
+        registerEvent(EventUpdatedEvent.fromAggregate(this));
+    }
+
+    /**
+     * Syncs event data from ORIS, overwriting all relevant fields.
+     * <p>
+     * Business rules:
+     * - Only allowed in DRAFT or ACTIVE status
+     * - Event must have a non-null orisId (only events imported from ORIS can be synced)
+     *
+     * @param command sync command with all ORIS-sourced fields
+     * @throws IllegalStateException if event is not in DRAFT or ACTIVE status
+     * @throws IllegalStateException if event has no orisId
+     */
+    public void syncFromOris(SyncFromOris command) {
+        if (orisId == null) {
+            throw new IllegalStateException("Cannot sync from ORIS: event has no orisId");
+        }
+        if (status == EventStatus.FINISHED) {
+            throw new IllegalStateException("Cannot sync from ORIS: event is in FINISHED status");
+        }
+        if (status == EventStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot sync from ORIS: event is in CANCELLED status");
+        }
+
+        this.name = command.name();
+        this.eventDate = command.eventDate();
+        this.location = command.location();
+        this.organizer = command.organizer();
+        this.websiteUrl = command.websiteUrl();
+        this.registrationDeadline = command.registrationDeadline();
+        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }

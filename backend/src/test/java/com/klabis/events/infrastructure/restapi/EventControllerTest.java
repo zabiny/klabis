@@ -809,6 +809,137 @@ class EventControllerTest {
     }
 
     @Nested
+    @DisplayName("POST /api/events/{id}/sync-from-oris")
+    class SyncFromOrisTests {
+
+        @Test
+        @DisplayName("should return 204 No Content on successful sync")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldSyncEventFromOris() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            post("/api/events/{id}/sync-from-oris", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).syncEventFromOris(new EventId(eventId));
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            post("/api/events/{id}/sync-from-oris", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 404 when event not found")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn404WhenEventNotFound() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            doThrow(new EventNotFoundException(new EventId(eventId)))
+                    .when(eventManagementService).syncEventFromOris(any());
+
+            mockMvc.perform(
+                            post("/api/events/{id}/sync-from-oris", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id} — syncFromOris affordance visibility")
+    class SyncFromOrisAffordanceTests {
+
+        @Test
+        @DisplayName("should include syncFromOris affordance for DRAFT event with orisId when oris is active")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeSyncAffordanceForDraftEventWithOrisId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event draftEvent = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withOrisId(100)
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncEventFromOris.target").exists());
+        }
+
+        @Test
+        @DisplayName("should include syncFromOris affordance for ACTIVE event with orisId when oris is active")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeSyncAffordanceForActiveEventWithOrisId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withOrisId(100)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncEventFromOris.target").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include syncFromOris affordance when event has no orisId")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldNotIncludeSyncAffordanceWhenNoOrisId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncEventFromOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should NOT include syncFromOris affordance for FINISHED event")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldNotIncludeSyncAffordanceForFinishedEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event finishedEvent = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withOrisId(100)
+                    .buildFinished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(finishedEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncEventFromOris").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/events — list item extended fields and links (tasks 3.6, 3.7)")
     class ListEventsExtendedFieldsTests {
 

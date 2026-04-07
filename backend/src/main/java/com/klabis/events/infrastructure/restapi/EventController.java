@@ -302,6 +302,20 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/sync-from-oris")
+    @HasAuthority(Authority.EVENTS_MANAGE)
+    @Operation(
+            summary = "Sync event from ORIS",
+            description = "Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and ACTIVE events with an orisId."
+    )
+    @ApiResponse(responseCode = "204", description = "Event synced from ORIS successfully")
+    public ResponseEntity<Void> syncEventFromOris(
+            @Parameter(description = "Event UUID") @PathVariable UUID id) {
+
+        eventManagementService.syncEventFromOris(new EventId(id));
+        return ResponseEntity.noContent().build();
+    }
+
     private void addLinksForEvent(EntityModel<?> entityModel, Event event, CurrentUserData currentUser) {
         UUID eventId = event.getId().value();
 
@@ -313,12 +327,18 @@ public class EventController {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                    if (orisIntegrationActive && event.getOrisId() != null) {
+                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
+                    }
                     break;
 
                 case ACTIVE:
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
+                    if (orisIntegrationActive && event.getOrisId() != null) {
+                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
+                    }
                     if (event.areRegistrationsOpen()) {
                         boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
                         if (isRegistered) {
