@@ -1,0 +1,62 @@
+## 1. Event Categories — Backend Domain + Persistence
+
+- [ ] 1.1 Add `categories` field (`List<String>`) to Event aggregate, update `CreateEvent`, `UpdateEvent`, `CreateEventFromOris` command records, private constructor, `reconstruct()`, `update()`, and getter
+- [ ] 1.2 Add `categories VARCHAR(2000)` column to events table in V001 migration
+- [ ] 1.3 Update EventMemento — add `categories` column field, update `copyBasicEventInfo()` (List→comma-separated) and `toEvent()` (comma-separated→List)
+- [ ] 1.4 Add `List<String> categories` to EventCreatedEvent and EventUpdatedEvent domain events, update `fromAggregate()` factories, handle null safely in compact constructors
+- [ ] 1.5 Update EventDto, EventSummaryDto, and EventDtoMapper to include categories
+- [ ] 1.6 Add categories to bootstrap data for test events
+
+## 2. ORIS Import — Extract Categories
+
+- [ ] 2.1 Add `extractCategories(EventDetails)` helper method to EventManagementService — extract `EventClass.name` values from `details.classes()` map
+- [ ] 2.2 Update `importEventFromOris()` to pass extracted categories to `CreateEventFromOris` builder
+
+## 3. Sync from ORIS — Backend
+
+- [ ] 3.1 Add `SyncFromOris` command record to Event and `syncFromOris()` domain method (validate DRAFT/ACTIVE status and non-null orisId, overwrite fields, publish EventUpdatedEvent)
+- [ ] 3.2 Add `syncEventFromOris(EventId)` method to EventManagementPort and EventManagementService
+- [ ] 3.3 Add `POST /{id}/sync-from-oris` endpoint to EventController with EVENTS:MANAGE authority
+- [ ] 3.4 Add syncFromOris affordance to event detail links — only for DRAFT/ACTIVE events with orisId when ORIS integration is active
+
+## 4. Event Categories — Frontend
+
+- [ ] 4.1 Add `categories` and `syncFromOris` labels to `labels.ts`
+- [ ] 4.2 Update EventDetailPage — add categories display as pills/tags (Badge components), add `HalFormButton` for syncFromOris action
+- [ ] 4.3 Regenerate OpenAPI types (`npm run openapi`)
+- [ ] 4.4 Run `npm run refresh-backend-server-resources`
+
+## 5. Category Presets — Backend
+
+- [ ] 5.1 Create CategoryPreset aggregate (name + list of categories) in events module domain layer
+- [ ] 5.2 Create CategoryPreset persistence — CategoryPresetMemento, DB table in V001, repository
+- [ ] 5.3 Create CategoryPresetManagementPort and CategoryPresetManagementService (CRUD operations)
+- [ ] 5.4 Create CategoryPresetController — REST CRUD endpoints with EVENTS:MANAGE authority, HATEOAS links and affordances
+- [ ] 5.5 Add CategoryPreset DTOs and mapper
+
+## 6. Category Presets — Frontend
+
+- [ ] 6.1 Create CategoryPresetsPage — list presets, create/edit/delete with HAL Forms
+- [ ] 6.2 Add navigation entry for category presets page (EVENTS:MANAGE only)
+- [ ] 6.3 Add preset selection UI to event create/edit form — dropdown to select preset which populates categories field
+
+## 7. Event Registration with Category — Backend
+
+- [ ] 7.1 Add `category` field (optional String) to EventRegistration value object and RegisterCommand
+- [ ] 7.2 Add category validation in `Event.registerMember()` — if event has categories, category MUST be provided and MUST be in event's category list; if no categories, category is ignored
+- [ ] 7.3 Update EventRegistration persistence (EventRegistrationMemento, DB column)
+- [ ] 7.4 Update RegistrationDto and registration list to include category
+- [ ] 7.5 Add WARN logging when ORIS sync removes a category that has registrations
+
+## 8. Event Registration with Category — Frontend
+
+- [ ] 8.1 Update registration form — add category selection dropdown populated from event's categories (conditional: only shown when event has categories)
+- [ ] 8.2 Update registration list table — add category column (conditional: only shown when event has categories)
+- [ ] 8.3 Regenerate OpenAPI types and refresh backend resources
+
+## 9. Spec Updates
+
+- [ ] 9.1 Update `openspec/specs/events/spec.md` with category-related requirements
+- [ ] 9.2 Update `openspec/specs/event-registrations/spec.md` with category selection requirement
+- [ ] 9.3 Create `openspec/specs/event-categories/spec.md` from delta spec
+- [ ] 9.4 Create `openspec/specs/category-presets/spec.md` from delta spec
