@@ -122,7 +122,7 @@ The system SHALL display the events list as a table with key columns. The status
 
 ### Requirement: Event Detail Page
 
-The application SHALL display the event detail page with registration deadline (when set) and allow managers to edit it inline.
+The application SHALL display the event detail page with registration deadline (when set) and categories (when defined), and allow managers to edit them inline.
 
 #### Scenario: Event detail shows registration deadline
 
@@ -144,9 +144,24 @@ The application SHALL display the event detail page with registration deadline (
 - **WHEN** a manager creates or edits an event via the form
 - **THEN** the form includes a registration deadline date picker field
 
+#### Scenario: Event detail shows categories
+
+- **WHEN** user views the detail page for an event with categories defined
+- **THEN** the categories are displayed as individual pills/tags
+
+#### Scenario: Event detail hides categories when not set
+
+- **WHEN** user views the detail page for an event without categories
+- **THEN** no categories row is shown
+
+#### Scenario: Inline edit includes categories field
+
+- **WHEN** a manager edits an event inline on the detail page
+- **THEN** the categories field is editable
+
 ### Requirement: Create Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, location, organizer code. Optional: website URL, coordinator, registration deadline.
+The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, location, organizer code. Optional: website URL, coordinator, registration deadline, categories.
 
 #### Scenario: Manager creates an event with all required fields
 
@@ -156,7 +171,7 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 
 #### Scenario: Manager creates an event with optional fields
 
-- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (website URL, coordinator, registration deadline) and submits
+- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (website URL, coordinator, registration deadline, categories) and submits
 - **THEN** the event is created with all provided data
 
 #### Scenario: Create event button not shown without permission
@@ -186,7 +201,7 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 
 ### Requirement: Update Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to update events in DRAFT or ACTIVE status.
+The system SHALL allow users with EVENTS:MANAGE permission to update events in DRAFT or ACTIVE status. Editable fields include categories.
 
 #### Scenario: Manager updates a DRAFT event
 
@@ -306,12 +321,12 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 
 ### Requirement: Get Event Detail
 
-The system SHALL display complete event detail. DRAFT events are only visible to users with EVENTS:MANAGE permission.
+The system SHALL display complete event detail including categories. DRAFT events are only visible to users with EVENTS:MANAGE permission.
 
 #### Scenario: User views event detail
 
 - **WHEN** authenticated user navigates to an event detail page
-- **THEN** all event information is displayed (name, date, location, organizer, website, coordinator, registration deadline)
+- **THEN** all event information is displayed (name, date, location, organizer, website, coordinator, registration deadline, categories)
 
 #### Scenario: Regular user cannot access DRAFT event detail
 
@@ -326,17 +341,17 @@ The system SHALL display complete event detail. DRAFT events are only visible to
 #### Scenario: DRAFT event actions available to manager
 
 - **WHEN** user with EVENTS:MANAGE permission views a DRAFT event
-- **THEN** available actions are: edit, publish, cancel
+- **THEN** available actions are: edit, publish, cancel, sync from ORIS (if ORIS-imported)
 
 #### Scenario: ACTIVE event actions available to manager
 
 - **WHEN** user with EVENTS:MANAGE permission views an ACTIVE event
-- **THEN** available actions are: edit, cancel, finish
+- **THEN** available actions are: edit, cancel, finish, sync from ORIS (if ORIS-imported)
 
 #### Scenario: FINISHED or CANCELLED event has no management actions
 
 - **WHEN** user views a FINISHED or CANCELLED event
-- **THEN** no edit, publish, cancel, or finish actions are available
+- **THEN** no edit, publish, cancel, finish, or sync actions are available
 
 #### Scenario: Event detail shows registration deadline
 

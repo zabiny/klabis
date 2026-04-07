@@ -56,7 +56,7 @@
 
 ## 9. Spec Updates
 
-- [ ] 9.1 Update `openspec/specs/events/spec.md` with category-related requirements
-- [ ] 9.2 Update `openspec/specs/event-registrations/spec.md` with category selection requirement
-- [ ] 9.3 Create `openspec/specs/event-categories/spec.md` from delta spec
-- [ ] 9.4 Create `openspec/specs/category-presets/spec.md` from delta spec
+- [x] 9.1 Update `openspec/specs/events/spec.md` with category-related requirements
+- [x] 9.2 Update `openspec/specs/event-registrations/spec.md` with category selection requirement
+- [x] 9.3 Create `openspec/specs/event-categories/spec.md` from delta spec
+- [x] 9.4 Create `openspec/specs/category-presets/spec.md` from delta spec
