@@ -24,6 +24,7 @@ import {TrainingGroupsPage} from "./pages/training-groups/TrainingGroupsPage.tsx
 import {TrainingGroupDetailPage} from "./pages/training-groups/TrainingGroupDetailPage.tsx";
 import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
+import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 import {TokenRenewalOverlay} from "./components/UI/TokenRenewalOverlay.tsx";
@@ -102,6 +103,7 @@ function App() {
                                     <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
                                     <Route path="/family-groups" element={<FamilyGroupsPage/>}/>
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
+                                    <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

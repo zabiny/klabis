@@ -7,6 +7,7 @@ export const labels = {
         groups: 'Skupiny',
         'training-groups': 'Tréninkové skupiny',
         'family-groups': 'Rodinné skupiny',
+        'category-presets': 'Šablony kategorií',
     },
 
     buttons: {
@@ -38,6 +39,7 @@ export const labels = {
         publishEvent: 'Publikovat',
         createEvent: 'Přidat akci',
         importEvent: 'Importovat z ORIS',
+        syncFromOris: 'Synchronizovat z ORISu',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
         resumeMember: 'Reaktivovat',
@@ -64,6 +66,9 @@ export const labels = {
         addFamilyGroupParent: 'Přidat rodiče',
         removeFamilyGroupParent: 'Odebrat rodiče',
         deleteFamilyGroup: 'Smazat rodinnou skupinu',
+        createCategoryPreset: 'Přidat šablonu',
+        updateCategoryPreset: 'Upravit šablonu',
+        deleteCategoryPreset: 'Smazat šablonu',
     },
 
     dialogTitles: {
@@ -81,6 +86,7 @@ export const labels = {
         eventCoordinatorId: 'Koordinátor',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
+        categories: 'Kategorie',
         location: 'Místo',
         name: 'Název',
         organizer: 'Pořadatel',
@@ -254,6 +260,8 @@ export const labels = {
         familyGroupsList: 'Rodinné skupiny',
         familyGroupParents: 'RODIČE',
         familyGroupMembers: 'ČLENOVÉ',
+        categoryPresetsList: 'Šablony kategorií',
+        presetsListHeading: 'Seznam šablon',
     },
 
     dashboard: {

@@ -382,5 +382,20 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('columnheader', {name: 'Příjmení'})).toBeInTheDocument();
             expect(screen.getByRole('columnheader', {name: 'Datum přihlášení'})).toBeInTheDocument();
         });
+
+        it('does not show category column when event has no categories', () => {
+            renderPage(createMockPageData(mockEventDetailData({categories: []})));
+            expect(screen.queryByRole('columnheader', {name: /kategorie/i})).not.toBeInTheDocument();
+        });
+
+        it('does not show category column when event categories field is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData({categories: undefined})));
+            expect(screen.queryByRole('columnheader', {name: /kategorie/i})).not.toBeInTheDocument();
+        });
+
+        it('shows category column when event has categories', () => {
+            renderPage(createMockPageData(mockEventDetailData({categories: ['H21', 'D21', 'H35']})));
+            expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
+        });
     });
 });

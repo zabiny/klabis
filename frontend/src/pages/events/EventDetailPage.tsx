@@ -12,7 +12,7 @@ import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
-import {Check, CheckCircle, ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Check, CheckCircle, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 
 interface EventDetail {
@@ -24,6 +24,7 @@ interface EventDetail {
     registrationDeadline?: string;
     eventCoordinatorId?: {value: string};
     status?: string;
+    categories?: string[];
     [key: string]: unknown;
 }
 
@@ -31,6 +32,7 @@ interface RegistrationData extends EntityModel<{
     firstName: string;
     lastName: string;
     registeredAt: string;
+    category?: string;
 }> {}
 
 const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'> = {
@@ -175,6 +177,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
                             <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
                             <HalFormButton name="finishEvent" modal={true} icon={<CheckCircle className="w-4 h-4"/>}/>
+                            <HalFormButton name="syncFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
                             <HalFormButton name="registerForEvent" modal={true} icon={<UserPlus className="w-4 h-4"/>}/>
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
                         </div>
@@ -212,6 +215,17 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {ri('registrationDeadline') ?? (event.registrationDeadline ? formatDate(event.registrationDeadline) : null)}
                             </DetailRow>
                         )}
+                        {(isEditing || (event.categories && event.categories.length > 0)) && (
+                            <DetailRow label={labels.fields.categories}>
+                                {ri('categories') ?? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {event.categories?.map(category => (
+                                            <Badge key={category} variant="info" size="sm">{category}</Badge>
+                                        ))}
+                                    </div>
+                                )}
+                            </DetailRow>
+                        )}
                         {isEditing && (
                             <DetailRow label={labels.fields.eventCoordinatorId}>
                                 {ri('eventCoordinatorId')}
@@ -241,6 +255,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
                         <TableCell column="firstName">{labels.fields.firstName}</TableCell>
                         <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+                        {event.categories && event.categories.length > 0 && (
+                            <TableCell column="category">{labels.fields.categories}</TableCell>
+                        )}
                         <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
                     </HalEmbeddedTable>
                 </div>

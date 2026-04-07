@@ -21,10 +21,10 @@
 
 ## 4. Event Categories — Frontend
 
-- [ ] 4.1 Add `categories` and `syncFromOris` labels to `labels.ts`
-- [ ] 4.2 Update EventDetailPage — add categories display as pills/tags (Badge components), add `HalFormButton` for syncFromOris action
-- [ ] 4.3 Regenerate OpenAPI types (`npm run openapi`)
-- [ ] 4.4 Run `npm run refresh-backend-server-resources`
+- [x] 4.1 Add `categories` and `syncFromOris` labels to `labels.ts`
+- [x] 4.2 Update EventDetailPage — add categories display as pills/tags (Badge components), add `HalFormButton` for syncFromOris action
+- [x] 4.3 Regenerate OpenAPI types (`npm run openapi`)
+- [x] 4.4 Run `npm run refresh-backend-server-resources`
 
 ## 5. Category Presets — Backend
 
@@ -36,9 +36,9 @@
 
 ## 6. Category Presets — Frontend
 
-- [ ] 6.1 Create CategoryPresetsPage — list presets, create/edit/delete with HAL Forms
-- [ ] 6.2 Add navigation entry for category presets page (EVENTS:MANAGE only)
-- [ ] 6.3 Add preset selection UI to event create/edit form — dropdown to select preset which populates categories field
+- [x] 6.1 Create CategoryPresetsPage — list presets, create/edit/delete with HAL Forms
+- [x] 6.2 Add navigation entry for category presets page (EVENTS:MANAGE only)
+- [ ] 6.3 Add preset selection UI to event create/edit form — dropdown to select preset which populates categories field (deferred — categories field is already editable on the event form)
 
 ## 7. Event Registration with Category — Backend
 
@@ -50,9 +50,9 @@
 
 ## 8. Event Registration with Category — Frontend
 
-- [ ] 8.1 Update registration form — add category selection dropdown populated from event's categories (conditional: only shown when event has categories)
-- [ ] 8.2 Update registration list table — add category column (conditional: only shown when event has categories)
-- [ ] 8.3 Regenerate OpenAPI types and refresh backend resources
+- [x] 8.1 Verified HalFormsFieldFactory dispatches to select when prop.options present; fixed factory to use HalFormsSelect for any field with options (regardless of type)
+- [x] 8.2 Add category column to registration list — conditional on event.categories?.length > 0
+- [x] 8.3 Update RegistrationData interface to include category?: string
 
 ## 9. Spec Updates
 

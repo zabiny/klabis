@@ -27,6 +27,10 @@ export const halFormsFieldsFactory = (
         return <HalFormsCollectionField {...conf} />
     }
 
+    if (conf.prop.options) {
+        return <HalFormsSelect {...conf} />
+    }
+
     switch (fieldType) {
         case 'checkboxGroup':
             return <HalFormsCheckboxGroup {...conf} />

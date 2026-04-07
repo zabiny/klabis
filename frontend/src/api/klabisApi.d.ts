@@ -667,6 +667,9 @@ export interface components {
             websiteUrl?: string;
             /** Format: uuid */
             eventCoordinatorId?: string;
+            /** Format: date */
+            registrationDeadline?: string;
+            categories?: string[];
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
             _links?: components["schemas"]["Links"];
