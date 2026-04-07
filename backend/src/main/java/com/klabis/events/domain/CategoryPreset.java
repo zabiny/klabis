@@ -29,11 +29,7 @@ public class CategoryPreset extends KlabisAggregateRoot<CategoryPreset, Category
             @Size(max = 200, message = "Preset name must not exceed 200 characters")
             String name,
             List<String> categories
-    ) {
-        public static CreateCategoryPreset from(CategoryPreset preset) {
-            return new CreateCategoryPreset(preset.name, preset.categories);
-        }
-    }
+    ) {}
 
     @RecordBuilder
     public record UpdateCategoryPreset(
@@ -41,11 +37,7 @@ public class CategoryPreset extends KlabisAggregateRoot<CategoryPreset, Category
             @Size(max = 200, message = "Preset name must not exceed 200 characters")
             String name,
             List<String> categories
-    ) {
-        public static UpdateCategoryPreset from(CategoryPreset preset) {
-            return new UpdateCategoryPreset(preset.name, preset.categories);
-        }
-    }
+    ) {}
 
     private CategoryPreset(CategoryPresetId id, String name, List<String> categories, AuditMetadata auditMetadata) {
         this.id = id;
@@ -70,7 +62,7 @@ public class CategoryPreset extends KlabisAggregateRoot<CategoryPreset, Category
     }
 
     private static void validateName(String name) {
-        if (name == null || name.trim().isBlank()) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Preset name is required");
         }
     }

@@ -89,7 +89,7 @@ class CategoryPresetManagementServiceTest {
 
             service.deletePreset(id);
 
-            verify(categoryPresetRepository).deleteById(id);
+            verify(categoryPresetRepository).deleteById(existing.getId());
         }
 
         @Test

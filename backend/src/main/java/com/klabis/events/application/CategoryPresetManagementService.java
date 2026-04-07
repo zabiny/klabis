@@ -36,18 +36,19 @@ class CategoryPresetManagementService implements CategoryPresetManagementPort {
     @Transactional
     @Override
     public void deletePreset(CategoryPresetId id) {
-        if (categoryPresetRepository.findById(id).isEmpty()) {
-            throw new CategoryPresetNotFoundException(id);
-        }
-        categoryPresetRepository.deleteById(id);
+        CategoryPreset preset = categoryPresetRepository.findById(id)
+                .orElseThrow(() -> new CategoryPresetNotFoundException(id));
+        categoryPresetRepository.deleteById(preset.getId());
     }
 
+    @Transactional(readOnly = true)
     @Override
     public CategoryPreset getPreset(CategoryPresetId id) {
         return categoryPresetRepository.findById(id)
                 .orElseThrow(() -> new CategoryPresetNotFoundException(id));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<CategoryPreset> listAll() {
         return categoryPresetRepository.findAll();

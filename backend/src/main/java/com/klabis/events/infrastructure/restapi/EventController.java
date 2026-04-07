@@ -327,18 +327,12 @@ public class EventController {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                    if (orisIntegrationActive && event.getOrisId() != null) {
-                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
-                    }
                     break;
 
                 case ACTIVE:
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
-                    if (orisIntegrationActive && event.getOrisId() != null) {
-                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
-                    }
                     if (event.areRegistrationsOpen()) {
                         boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
                         if (isRegistered) {
@@ -352,6 +346,10 @@ public class EventController {
                 case FINISHED:
                 case CANCELLED:
                     break;
+            }
+
+            if (orisIntegrationActive && event.getOrisId() != null && (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.ACTIVE)) {
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
             }
 
             entityModel.add(selfLink);

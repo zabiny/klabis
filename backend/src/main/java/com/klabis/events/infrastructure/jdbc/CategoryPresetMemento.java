@@ -10,9 +10,11 @@ import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import static com.klabis.events.infrastructure.jdbc.CsvListConverter.deserialize;
+import static com.klabis.events.infrastructure.jdbc.CsvListConverter.serialize;
 
 @Table("category_presets")
 class CategoryPresetMemento implements Persistable<UUID> {
@@ -59,7 +61,7 @@ class CategoryPresetMemento implements Persistable<UUID> {
         CategoryPresetMemento memento = new CategoryPresetMemento();
         memento.id = preset.getId().value();
         memento.name = preset.getName();
-        memento.categories = preset.getCategories().isEmpty() ? null : String.join(",", preset.getCategories());
+        memento.categories = serialize(preset.getCategories());
 
         memento.createdAt = preset.getCreatedAt();
         memento.createdBy = preset.getCreatedBy();
@@ -72,9 +74,7 @@ class CategoryPresetMemento implements Persistable<UUID> {
     }
 
     CategoryPreset toPreset() {
-        List<String> categoriesList = (this.categories != null && !this.categories.isBlank())
-                ? Arrays.asList(this.categories.split(","))
-                : List.of();
+        List<String> categoriesList = deserialize(this.categories);
 
         return CategoryPreset.reconstruct(
                 new CategoryPresetId(this.id),

@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.events.infrastructure.jdbc.CsvListConverter.deserialize;
+import static com.klabis.events.infrastructure.jdbc.CsvListConverter.serialize;
+
 /**
  * Memento pattern implementation for Event aggregate persistence.
  * <p>
@@ -153,7 +156,7 @@ class EventMemento implements Persistable<UUID> {
         memento.registrationDeadline = event.getRegistrationDeadline();
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
-        memento.categories = event.getCategories().isEmpty() ? null : String.join(",", event.getCategories());
+        memento.categories = serialize(event.getCategories());
     }
 
     /**
@@ -186,9 +189,7 @@ class EventMemento implements Persistable<UUID> {
         MemberId coordinatorId = this.eventCoordinatorId != null ? new MemberId(this.eventCoordinatorId) : null;
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
-        List<String> categoriesList = (this.categories != null && !this.categories.isBlank())
-                ? java.util.Arrays.asList(this.categories.split(","))
-                : java.util.List.of();
+        List<String> categoriesList = deserialize(this.categories);
 
         return Event.reconstruct(
                 eventId,

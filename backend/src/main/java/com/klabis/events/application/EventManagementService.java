@@ -4,6 +4,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
 import com.klabis.oris.apiclient.OrisApiClient;
+import com.klabis.oris.apiclient.dto.EventClass;
 import com.klabis.oris.apiclient.dto.EventDetails;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
@@ -173,7 +174,7 @@ public class EventManagementService implements EventManagementPort {
         }
         return details.classes().values().stream()
                 .filter(c -> c.name() != null && !c.name().isBlank())
-                .map(c -> c.name())
+                .map(EventClass::name)
                 .toList();
     }
 
