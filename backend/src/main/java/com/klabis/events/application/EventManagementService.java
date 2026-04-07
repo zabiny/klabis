@@ -6,6 +6,8 @@ import com.klabis.events.domain.*;
 import com.klabis.oris.apiclient.OrisApiClient;
 import com.klabis.oris.apiclient.dto.EventDetails;
 import org.jmolecules.ddd.annotation.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,10 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class EventManagementService implements EventManagementPort {
+
+    private static final Logger log = LoggerFactory.getLogger(EventManagementService.class);
 
     private final EventRepository eventRepository;
     private final Optional<OrisApiClient> orisApiClient;
@@ -135,6 +142,8 @@ public class EventManagementService implements EventManagementPort {
         LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
         List<String> categories = extractCategories(details);
 
+        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
+
         event.syncFromOris(EventSyncFromOrisBuilder.builder()
                 .name(details.name())
                 .eventDate(details.date())
@@ -166,6 +175,20 @@ public class EventManagementService implements EventManagementPort {
                 .filter(c -> c.name() != null && !c.name().isBlank())
                 .map(c -> c.name())
                 .toList();
+    }
+
+    private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<String> incomingCategories) {
+        if (event.getRegistrations().isEmpty()) {
+            return;
+        }
+        Set<String> incoming = Set.copyOf(incomingCategories);
+        Map<String, Long> affectedCounts = event.getRegistrations().stream()
+                .filter(r -> r.category() != null && !incoming.contains(r.category()))
+                .collect(Collectors.groupingBy(EventRegistration::category, Collectors.counting()));
+        if (!affectedCounts.isEmpty()) {
+            log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
+                    event.getId(), affectedCounts);
+        }
     }
 
     @Override

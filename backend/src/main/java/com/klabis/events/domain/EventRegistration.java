@@ -27,13 +27,15 @@ public class EventRegistration {
     @RecordBuilder
     public record CreateEventRegistration(
             MemberId memberId,
-            SiCardNumber siCardNumber
+            SiCardNumber siCardNumber,
+            String category
     ) {}
 
     private final UUID id;
     @Association
     private final MemberId memberId;
     private final SiCardNumber siCardNumber;
+    private final String category;
     private final Instant registeredAt;
 
     /**
@@ -42,12 +44,14 @@ public class EventRegistration {
      * @param id           unique registration identifier
      * @param memberId     member's user ID
      * @param siCardNumber SI card number for this registration
+     * @param category     selected race category (may be null when event has no categories)
      * @param registeredAt timestamp when registration was created
      */
-    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
+    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, String category, Instant registeredAt) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
+        this.category = category;
         this.registeredAt = registeredAt;
     }
 
@@ -72,6 +76,7 @@ public class EventRegistration {
                 UUID.randomUUID(),
                 command.memberId(),
                 command.siCardNumber(),
+                command.category(),
                 Instant.now()
         );
     }
@@ -87,8 +92,8 @@ public class EventRegistration {
      * @param registeredAt registration timestamp
      * @return reconstructed EventRegistration instance
      */
-    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
-        return new EventRegistration(id, memberId, siCardNumber, registeredAt);
+    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, String category, Instant registeredAt) {
+        return new EventRegistration(id, memberId, siCardNumber, category, registeredAt);
     }
 
     // ========== Getters ==========
@@ -103,6 +108,10 @@ public class EventRegistration {
 
     public SiCardNumber siCardNumber() {
         return siCardNumber;
+    }
+
+    public String category() {
+        return category;
     }
 
     public Instant registeredAt() {
@@ -130,6 +139,7 @@ public class EventRegistration {
                "id=" + id +
                ", memberId=" + memberId +
                ", siCardNumber=" + siCardNumber +
+               ", category='" + category + '\'' +
                ", registeredAt=" + registeredAt +
                '}';
     }

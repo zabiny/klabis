@@ -217,8 +217,8 @@ class EventRegistrationControllerTest {
             MemberId member1Id = new MemberId(UUID.randomUUID());
             MemberId member2Id = new MemberId(UUID.randomUUID());
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), Instant.now()),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
             );
 
             when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
@@ -238,6 +238,29 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0].siCardNumber").doesNotExist())
                     .andExpect(jsonPath("$._embedded.registrationDtoList[1].siCardNumber").doesNotExist());
         }
+
+        @Test
+        @DisplayName("should include category in registration list when registration has category")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldIncludeCategoryInRegistrationList() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), "M21", Instant.now())
+            );
+
+            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("M21"));
+        }
     }
 
     @Nested
@@ -252,7 +275,7 @@ class EventRegistrationControllerTest {
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
             EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistration(registration)
@@ -283,7 +306,7 @@ class EventRegistrationControllerTest {
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
             EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
             Event finishedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
                     .addRegistration(registration)
@@ -323,6 +346,32 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
+        }
+
+        @Test
+        @DisplayName("should include category in own registration response")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldIncludeCategoryInOwnRegistration() throws Exception {
+            final UUID eventId = UUID.randomUUID();
+            final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), "W35", Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "Jane", "Doe", "jane@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/me", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.category").value("W35"));
         }
 
         @Test

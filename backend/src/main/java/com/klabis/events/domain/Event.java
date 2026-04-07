@@ -169,10 +169,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     public record RegisterCommand(
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
-            String siCardNumber
+            String siCardNumber,
+            String category
     ) {
         public static RegisterCommand from(Event event) {
-            return new RegisterCommand(null);
+            return new RegisterCommand(null, null);
         }
     }
 
@@ -590,24 +591,43 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Business rules:
      * - Registration is only allowed for ACTIVE events with open registration window
      * - Member cannot be registered twice for the same event (domain invariant)
+     * - When event has categories, a category MUST be provided and MUST be in the event's category list
+     * - When event has no categories, category is ignored
      *
      * @param memberId     member's user ID (required)
      * @param siCardNumber SI card number (required)
-     * @throws BusinessRuleViolationException    if registrations are not open
+     * @param category     selected race category (required when event has categories, ignored otherwise)
+     * @throws BusinessRuleViolationException    if registrations are not open or category validation fails
      * @throws DuplicateRegistrationException    if member is already registered
      */
-    public void registerMember(MemberId memberId, SiCardNumber siCardNumber) {
+    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, String category) {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
+        String resolvedCategory = resolveCategory(category);
+
         EventRegistration registration = EventRegistration.create(
-                new EventRegistration.CreateEventRegistration(memberId, siCardNumber));
+                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategory));
         registrations.add(registration);
 
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
+    }
+
+    private String resolveCategory(String category) {
+        if (categories.isEmpty()) {
+            return null;
+        }
+        if (category == null || category.isBlank()) {
+            throw new BusinessRuleViolationException("Category is required for this event") {};
+        }
+        if (!categories.contains(category)) {
+            throw new BusinessRuleViolationException(
+                    "Category '" + category + "' is not available for this event") {};
+        }
+        return category;
     }
 
     /**

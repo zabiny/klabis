@@ -547,7 +547,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, siCardNumber, null);
 
             assertThat(event.getRegistrations()).hasSize(1);
             assertThat(event.findRegistration(memberId)).isPresent();
@@ -562,7 +562,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -578,7 +578,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -593,7 +593,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -606,9 +606,9 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, siCardNumber, null);
 
-            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321")))
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321"), null))
                     .isInstanceOf(DuplicateRegistrationException.class)
                     .hasMessageContaining("already registered");
         }
@@ -626,7 +626,7 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, siCardNumber, null);
             assertThat(event.getRegistrations()).hasSize(1);
 
             event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build());
@@ -699,7 +699,7 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, siCardNumber, null);
 
             var foundRegistration = event.findRegistration(memberId);
 
@@ -732,8 +732,8 @@ class EventTest {
             SiCardNumber siCardNumber1 = SiCardNumber.of("123456");
             SiCardNumber siCardNumber2 = SiCardNumber.of("654321");
 
-            event.registerMember(memberId1, siCardNumber1);
-            event.registerMember(memberId2, siCardNumber2);
+            event.registerMember(memberId1, siCardNumber1, null);
+            event.registerMember(memberId2, siCardNumber2, null);
 
             var registrations = event.getRegistrations();
 
@@ -745,6 +745,82 @@ class EventTest {
                             .siCardNumber(SiCardNumber.of("111111"))
                             .build())))
                     .isInstanceOf(UnsupportedOperationException.class);
+        }
+
+        @Test
+        @DisplayName("should register member with category when event has categories")
+        void shouldRegisterMemberWithCategoryWhenEventHasCategories() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of("M21", "W35"))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), "M21");
+
+            assertThat(event.findRegistration(memberId)).isPresent();
+            assertThat(event.findRegistration(memberId).get().category()).isEqualTo("M21");
+        }
+
+        @Test
+        @DisplayName("should throw when category is not provided but event has categories")
+        void shouldThrowWhenCategoryMissingForEventWithCategories() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of("M21", "W35"))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), null))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Category is required");
+        }
+
+        @Test
+        @DisplayName("should throw when category is not in event's category list")
+        void shouldThrowWhenCategoryNotInEventCategoryList() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of("M21", "W35"))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), "H55"))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("not available");
+        }
+
+        @Test
+        @DisplayName("should register without category when event has no categories")
+        void shouldRegisterWithoutCategoryWhenEventHasNoCategories() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+
+            assertThat(event.findRegistration(memberId)).isPresent();
+            assertThat(event.findRegistration(memberId).get().category()).isNull();
+        }
+
+        @Test
+        @DisplayName("should ignore provided category when event has no categories")
+        void shouldIgnoreCategoryWhenEventHasNoCategories() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), "M21");
+
+            assertThat(event.findRegistration(memberId)).isPresent();
+            assertThat(event.findRegistration(memberId).get().category()).isNull();
         }
     }
 

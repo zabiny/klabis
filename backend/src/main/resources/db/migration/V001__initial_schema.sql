@@ -287,6 +287,7 @@ CREATE TABLE event_registrations
     event_id       UUID       NOT NULL REFERENCES events (id) ON DELETE CASCADE,
     member_id      UUID       NOT NULL REFERENCES members (id) ON DELETE CASCADE,
     si_card_number VARCHAR(8) NOT NULL,
+    category       VARCHAR(50) NULL,
     registered_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Unique constraint: one registration per member per event
@@ -302,6 +303,7 @@ COMMENT ON COLUMN event_registrations.id IS 'Unique registration identifier (UUI
 COMMENT ON COLUMN event_registrations.event_id IS 'Reference to the event';
 COMMENT ON COLUMN event_registrations.member_id IS 'Reference to the registered member';
 COMMENT ON COLUMN event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
+COMMENT ON COLUMN event_registrations.category IS 'Selected race category (nullable: null when event has no categories)';
 COMMENT ON COLUMN event_registrations.registered_at IS 'Timestamp when member registered for the event';
 
 -- ============================================================================

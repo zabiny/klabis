@@ -21,6 +21,7 @@ public record OwnRegistrationDto(
         @HalForms(access = HalForms.Access.READ_ONLY) String firstName,
         @HalForms(access = HalForms.Access.READ_ONLY) String lastName,
         String siCardNumber,
+        @HalForms(access = HalForms.Access.READ_ONLY) String category,
         @HalForms(access = HalForms.Access.READ_ONLY) Instant registeredAt
 ) {
 }

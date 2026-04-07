@@ -42,11 +42,11 @@
 
 ## 7. Event Registration with Category — Backend
 
-- [ ] 7.1 Add `category` field (optional String) to EventRegistration value object and RegisterCommand
-- [ ] 7.2 Add category validation in `Event.registerMember()` — if event has categories, category MUST be provided and MUST be in event's category list; if no categories, category is ignored
-- [ ] 7.3 Update EventRegistration persistence (EventRegistrationMemento, DB column)
-- [ ] 7.4 Update RegistrationDto and registration list to include category
-- [ ] 7.5 Add WARN logging when ORIS sync removes a category that has registrations
+- [x] 7.1 Add `category` field (optional String) to EventRegistration value object and RegisterCommand
+- [x] 7.2 Add category validation in `Event.registerMember()` — if event has categories, category MUST be provided and MUST be in event's category list; if no categories, category is ignored
+- [x] 7.3 Update EventRegistration persistence (EventRegistrationMemento, DB column)
+- [x] 7.4 Update RegistrationDto and registration list to include category
+- [x] 7.5 Add WARN logging when ORIS sync removes a category that has registrations
 
 ## 8. Event Registration with Category — Frontend
 

@@ -18,6 +18,7 @@ import java.time.Instant;
 public record RegistrationDto(
         String firstName,
         String lastName,
+        String category,
         Instant registeredAt
 ) {
 }

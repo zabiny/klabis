@@ -115,8 +115,8 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 
-            EventRegistration registration1 = EventRegistration.reconstruct(id, memberId, siCardNumber, registeredAt);
-            EventRegistration registration2 = EventRegistration.reconstruct(id, memberId, siCardNumber, registeredAt);
+            EventRegistration registration1 = EventRegistration.reconstruct(id, memberId, siCardNumber, null, registeredAt);
+            EventRegistration registration2 = EventRegistration.reconstruct(id, memberId, siCardNumber, null, registeredAt);
 
             // Assert
             assertThat(registration1)
@@ -135,10 +135,12 @@ class EventRegistrationTest {
             EventRegistration registration1 = EventRegistration.reconstruct(UUID.randomUUID(),
                     memberId,
                     siCardNumber,
+                    null,
                     registeredAt);
             EventRegistration registration2 = EventRegistration.reconstruct(UUID.randomUUID(),
                     memberId,
                     siCardNumber,
+                    null,
                     registeredAt);
 
             // Assert

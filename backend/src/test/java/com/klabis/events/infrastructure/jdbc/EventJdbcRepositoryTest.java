@@ -178,8 +178,8 @@ class EventJdbcRepositoryTest {
             SiCardNumber siCard1 = new SiCardNumber("123456");
             SiCardNumber siCard2 = new SiCardNumber("789012");
 
-            event.registerMember(member1Id, siCard1);
-            event.registerMember(member2Id, siCard2);
+            event.registerMember(member1Id, siCard1, null);
+            event.registerMember(member2Id, siCard2, null);
 
             // When
             Event savedEvent = eventRepository.save(event);
@@ -531,7 +531,7 @@ class EventJdbcRepositoryTest {
             MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
             SiCardNumber siCard = new SiCardNumber("123456");
 
-            event.registerMember(memberId, siCard);
+            event.registerMember(memberId, siCard, null);
             eventRepository.save(event);
 
             // When - try to register same member again (domain should prevent this)

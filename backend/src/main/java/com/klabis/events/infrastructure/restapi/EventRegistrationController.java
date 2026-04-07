@@ -166,7 +166,7 @@ class EventRegistrationController {
     private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
         MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
-        return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.registeredAt());
+        return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.category(), registration.registeredAt());
     }
 
     @ExceptionHandler(DuplicateRegistrationException.class)

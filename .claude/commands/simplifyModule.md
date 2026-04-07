@@ -18,6 +18,7 @@ disable-model-invocation: true
        - Duplicated logic
        - Unnecessary complexity
        - Code that could be consolidated
+       - Business logic not located in Domain classes 
 
        Be thorough - read all source files in the module.
 

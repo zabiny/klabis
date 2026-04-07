@@ -32,6 +32,9 @@ class EventRegistrationMemento {
     @Column("si_card_number")
     private String siCardNumber;
 
+    @Column("category")
+    private String category;
+
     @Column("registered_at")
     private Instant registeredAt;
 
@@ -54,6 +57,7 @@ class EventRegistrationMemento {
         memento.id = registration.id();
         memento.memberId = registration.memberId().uuid();
         memento.siCardNumber = registration.siCardNumber().value();
+        memento.category = registration.category();
         memento.registeredAt = registration.registeredAt();
 
         return memento;
@@ -69,6 +73,7 @@ class EventRegistrationMemento {
                 this.id,
                 new MemberId(this.memberId),
                 new SiCardNumber(this.siCardNumber),
+                this.category,
                 this.registeredAt
         );
     }
@@ -84,6 +89,10 @@ class EventRegistrationMemento {
 
     String getSiCardNumber() {
         return siCardNumber;
+    }
+
+    String getCategory() {
+        return category;
     }
 
     Instant getRegisteredAt() {

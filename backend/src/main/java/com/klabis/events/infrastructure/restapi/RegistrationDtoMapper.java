@@ -16,7 +16,7 @@ class RegistrationDtoMapper {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.registeredAt());
+        return new RegistrationDto(member.firstName(), member.lastName(), registration.category(), registration.registeredAt());
     }
 
     static List<RegistrationDto> toDtoList(List<EventRegistration> registrations, Members members) {
