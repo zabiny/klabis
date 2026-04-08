@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("EventController — no ORIS integration")
 @WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@TestPropertySource(properties = "oris-integration.enabled=false")
 class EventControllerNoOrisTest {
 
     private static final String ADMIN_USERNAME = "admin";
