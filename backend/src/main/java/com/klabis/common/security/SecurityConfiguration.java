@@ -219,7 +219,13 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .anyRequest().permitAll()
                 )
                 //.csrf(csrf -> csrf.ignoringRequestMatchers(htmlRequestMatcher))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Allow same-origin framing so OAuth2 silent-renew iframe (silent-renew.html)
+                // can load inside the SPA. Default Spring Security X-Frame-Options: DENY
+                // would block the iframe and prevent the postMessage → token exchange flow.
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                );
 
         return http.build();
     }
