@@ -22,7 +22,8 @@ import java.util.Objects;
  * Represents an item on the calendar, either manually created or automatically synchronized from an Event.
  * <p>
  * Business invariants:
- * - Name and description are required (not blank)
+ * - Name is required (not blank)
+ * - Description is optional; null means "no description"
  * - End date must be on or after start date
  * - Event-linked items (eventId != null) are read-only and cannot be updated or deleted manually
  * - Manual items (eventId == null) can be updated and deleted
@@ -43,7 +44,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
             @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
             String name,
 
-            @NotBlank(message = "Calendar item description is required")
             @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
             String description,
 
@@ -64,7 +64,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
             @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
             String name,
 
-            @NotBlank(message = "Calendar item description is required")
             @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
             String description,
 
@@ -195,7 +194,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      */
     public static CalendarItem create(CreateCalendarItem command) {
         validateName(command.name());
-        validateDescription(command.description());
         validateStartDate(command.startDate());
         validateEndDate(command.endDate());
         validateDateRange(command.startDate(), command.endDate());
@@ -245,10 +243,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
     private static void validateName(String name) {
         Assert.hasText(name, "Calendar item name is required");
-    }
-
-    private static void validateDescription(String description) {
-        Assert.hasText(description, "Calendar item description is required");
     }
 
     private static void validateLocation(String location) {
@@ -315,7 +309,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         }
 
         validateName(command.name());
-        validateDescription(command.description());
         validateStartDate(command.startDate());
         validateEndDate(command.endDate());
         validateDateRange(command.startDate(), command.endDate());

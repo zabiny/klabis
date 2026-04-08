@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -286,6 +287,68 @@ class CalendarControllerTest {
         }
 
         @Test
+        @DisplayName("should normalize empty description to null on create")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void shouldNormalizeEmptyDescriptionToNullOnCreate() throws Exception {
+            CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Klubová schůze")
+                    .withDescription(null)
+                    .buildManual();
+
+            when(calendarManagementService.createCalendarItem(any(CalendarItem.CreateCalendarItem.class))).thenAnswer(invocation -> {
+                CalendarItem.CreateCalendarItem cmd = invocation.getArgument(0);
+                assertThat(cmd.description()).isNull();
+                return createdItem;
+            });
+
+            mockMvc.perform(
+                            post("/api/calendar-items")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {
+                                              "name": "Klubová schůze",
+                                              "description": "",
+                                              "startDate": "2026-03-15",
+                                              "endDate": "2026-03-15"
+                                            }
+                                            """)
+                    )
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("should normalize whitespace-only description to null on create")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void shouldNormalizeWhitespaceDescriptionToNullOnCreate() throws Exception {
+            CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Jarní úklid")
+                    .withDescription(null)
+                    .buildManual();
+
+            when(calendarManagementService.createCalendarItem(any(CalendarItem.CreateCalendarItem.class))).thenAnswer(invocation -> {
+                CalendarItem.CreateCalendarItem cmd = invocation.getArgument(0);
+                assertThat(cmd.description()).isNull();
+                return createdItem;
+            });
+
+            mockMvc.perform(
+                            post("/api/calendar-items")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {
+                                              "name": "Jarní úklid",
+                                              "description": "   ",
+                                              "startDate": "2026-03-15",
+                                              "endDate": "2026-03-15"
+                                            }
+                                            """)
+                    )
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
         @DisplayName("should return 403 without CALENDAR:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME)
         void shouldReturn403WithoutCalendarManageAuthority() throws Exception {
@@ -350,6 +413,64 @@ class CalendarControllerTest {
                                             """)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should normalize empty description to null on update")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void shouldNormalizeEmptyDescriptionToNullOnUpdate() throws Exception {
+            UUID calendarItemId = UUID.randomUUID();
+
+            org.mockito.ArgumentCaptor<CalendarItem.UpdateCalendarItem> commandCaptor =
+                    org.mockito.ArgumentCaptor.forClass(CalendarItem.UpdateCalendarItem.class);
+
+            mockMvc.perform(
+                            put("/api/calendar-items/{id}", calendarItemId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {
+                                              "name": "Updated Name",
+                                              "description": "",
+                                              "startDate": "2026-03-20",
+                                              "endDate": "2026-03-20"
+                                            }
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            org.mockito.Mockito.verify(calendarManagementService).updateCalendarItem(
+                    eq(new CalendarItemId(calendarItemId)), commandCaptor.capture());
+            assertThat(commandCaptor.getValue().description()).isNull();
+        }
+
+        @Test
+        @DisplayName("should normalize whitespace-only description to null on update")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void shouldNormalizeWhitespaceDescriptionToNullOnUpdate() throws Exception {
+            UUID calendarItemId = UUID.randomUUID();
+
+            org.mockito.ArgumentCaptor<CalendarItem.UpdateCalendarItem> commandCaptor =
+                    org.mockito.ArgumentCaptor.forClass(CalendarItem.UpdateCalendarItem.class);
+
+            mockMvc.perform(
+                            put("/api/calendar-items/{id}", calendarItemId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {
+                                              "name": "Jarní trénink",
+                                              "description": "   ",
+                                              "startDate": "2026-03-20",
+                                              "endDate": "2026-03-20"
+                                            }
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            org.mockito.Mockito.verify(calendarManagementService).updateCalendarItem(
+                    eq(new CalendarItemId(calendarItemId)), commandCaptor.capture());
+            assertThat(commandCaptor.getValue().description()).isNull();
         }
 
         @Test
@@ -422,6 +543,50 @@ class CalendarControllerTest {
                                             """)
                     )
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("HAL-Forms metadata")
+    class HalFormsMetadataTests {
+
+        @Test
+        @DisplayName("create template should have description as not required")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void createTemplateShouldHaveDescriptionAsNotRequired() throws Exception {
+            CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem().buildManual();
+            when(calendarManagementService.listCalendarItems(any(), any(), any())).thenReturn(List.of(createdItem));
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createCalendarItem.properties[?(@.name=='description')]").value(org.hamcrest.Matchers.hasSize(1)))
+                    .andExpect(jsonPath("$._templates.createCalendarItem.properties[?(@.name=='description')].required").value(
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.contains(true))));
+        }
+
+        @Test
+        @DisplayName("update template should have description as not required")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void updateTemplateShouldHaveDescriptionAsNotRequired() throws Exception {
+            UUID calendarItemId = UUID.randomUUID();
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
+                    .withName("Training Session")
+                    .withDescription("Some description")
+                    .buildManual();
+
+            when(calendarManagementService.getCalendarItem(new CalendarItemId(calendarItemId))).thenReturn(item);
+
+            mockMvc.perform(
+                            get("/api/calendar-items/{id}", calendarItemId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='description')]").value(org.hamcrest.Matchers.hasSize(1)))
+                    .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='description')].required").value(
+                            org.hamcrest.Matchers.not(org.hamcrest.Matchers.contains(true))));
         }
     }
 

@@ -47,8 +47,15 @@ public class CalendarItemAssert extends AbstractAssert<CalendarItemAssert, Calen
 
     public CalendarItemAssert hasDescription(String expected) {
         isNotNull();
-        if (!actual.getDescription().equals(expected)) {
-            failWithMessage("Expected calendar item description to be <%s> but was <%s>", expected, actual.getDescription());
+        String actualDescription = actual.getDescription();
+        if (expected == null) {
+            if (actualDescription != null) {
+                failWithMessage("Expected calendar item description to be null but was <%s>", actualDescription);
+            }
+        } else {
+            if (!expected.equals(actualDescription)) {
+                failWithMessage("Expected calendar item description to be <%s> but was <%s>", expected, actualDescription);
+            }
         }
         return this;
     }

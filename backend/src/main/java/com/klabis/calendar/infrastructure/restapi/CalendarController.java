@@ -171,7 +171,7 @@ class CalendarController {
             @Parameter(description = "Calendar item creation data")
             @Valid @RequestBody CalendarItem.CreateCalendarItem command) {
 
-        CalendarItem created = calendarManagementService.createCalendarItem(command);
+        CalendarItem created = calendarManagementService.createCalendarItem(normalizeDescription(command));
 
         return ResponseEntity
                 .created(linkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value())).toUri())
@@ -193,8 +193,22 @@ class CalendarController {
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id,
             @Parameter(description = "Calendar item update data") @Valid @RequestBody CalendarItem.UpdateCalendarItem command) {
 
-        calendarManagementService.updateCalendarItem(new CalendarItemId(id), command);
+        calendarManagementService.updateCalendarItem(new CalendarItemId(id), normalizeDescription(command));
         return ResponseEntity.noContent().build();
+    }
+
+    private static CalendarItem.CreateCalendarItem normalizeDescription(CalendarItem.CreateCalendarItem command) {
+        if (command.description() != null && command.description().isBlank()) {
+            return new CalendarItem.CreateCalendarItem(command.name(), null, command.startDate(), command.endDate());
+        }
+        return command;
+    }
+
+    private static CalendarItem.UpdateCalendarItem normalizeDescription(CalendarItem.UpdateCalendarItem command) {
+        if (command.description() != null && command.description().isBlank()) {
+            return new CalendarItem.UpdateCalendarItem(command.name(), null, command.startDate(), command.endDate());
+        }
+        return command;
     }
 
     @DeleteMapping("/{id}")

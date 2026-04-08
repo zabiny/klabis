@@ -116,33 +116,76 @@ class CalendarItemTest {
         }
 
         @Test
-        @DisplayName("should fail when description is null")
-        void shouldFailWhenDescriptionIsNull() {
+        @DisplayName("should create calendar item with null description")
+        void shouldCreateCalendarItemWithNullDescription() {
+            LocalDate date = LocalDate.of(2026, 6, 15);
+
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Klubová schůze")
+                    .description(null)
+                    .startDate(date)
+                    .endDate(date)
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasIdNotNull()
+                    .hasName("Klubová schůze")
+                    .hasDescription(null)
+                    .isManual();
+        }
+
+        @Test
+        @DisplayName("should still reject missing name")
+        void shouldStillRejectMissingName() {
             LocalDate date = LocalDate.of(2026, 6, 15);
 
             assertThatThrownBy(() -> CalendarItem.create(builder()
-                    .name("Name")
+                    .name(null)
                     .description(null)
                     .startDate(date)
                     .endDate(date)
                     .build()))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("description");
+                    .hasMessageContaining("name");
         }
 
         @Test
-        @DisplayName("should fail when description is blank")
-        void shouldFailWhenDescriptionIsBlank() {
-            LocalDate date = LocalDate.of(2026, 6, 15);
-
+        @DisplayName("should still reject missing startDate")
+        void shouldStillRejectMissingStartDate() {
             assertThatThrownBy(() -> CalendarItem.create(builder()
                     .name("Name")
-                    .description("   ")
-                    .startDate(date)
-                    .endDate(date)
+                    .description(null)
+                    .startDate(null)
+                    .endDate(LocalDate.of(2026, 6, 15))
                     .build()))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("description");
+                    .hasMessageContaining("Start date");
+        }
+
+        @Test
+        @DisplayName("should still reject missing endDate")
+        void shouldStillRejectMissingEndDate() {
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description(null)
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(null)
+                    .build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("End date");
+        }
+
+        @Test
+        @DisplayName("should still reject endDate before startDate")
+        void shouldStillRejectEndDateBeforeStartDate() {
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description(null)
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 10))
+                    .build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("End date must be on or after start date");
         }
 
         @Test
@@ -308,8 +351,8 @@ class CalendarItemTest {
         }
 
         @Test
-        @DisplayName("should fail to update with null description")
-        void shouldFailToUpdateWithNullDescription() {
+        @DisplayName("should update manual calendar item with null description")
+        void shouldUpdateManualCalendarItemWithNullDescription() {
             CalendarItem calendarItem = CalendarItem.create(builder()
                     .name("Name")
                     .description("Original Description")
@@ -317,34 +360,62 @@ class CalendarItemTest {
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
+            calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
                     .name("Name")
                     .description(null)
                     .startDate(LocalDate.of(2026, 7, 1))
                     .endDate(LocalDate.of(2026, 7, 1))
-                    .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("description");
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasDescription(null);
         }
 
         @Test
-        @DisplayName("should fail to update with blank description")
-        void shouldFailToUpdateWithBlankDescription() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+        @DisplayName("should clear existing description when update command has null description")
+        void shouldClearExistingDescriptionWhenUpdateCommandHasNullDescription() {
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Name",
+                    "Existing description",
+                    LocalDate.of(2026, 6, 15),
+                    LocalDate.of(2026, 6, 15),
+                    null,
+                    null
+            );
+
+            calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
                     .name("Name")
-                    .description("Original Description")
+                    .description(null)
                     .startDate(LocalDate.of(2026, 6, 15))
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasDescription(null);
+        }
+
+        @Test
+        @DisplayName("should still throw CalendarItemReadOnlyException for event-linked items")
+        void shouldStillThrowForEventLinkedItems() {
+            com.klabis.events.EventId eventId = com.klabis.events.EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Event-linked Item",
+                    null,
+                    LocalDate.of(2026, 6, 15),
+                    LocalDate.of(2026, 6, 15),
+                    eventId,
+                    null
+            );
+
             assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
-                    .name("Name")
-                    .description("   ")
+                    .name("New Name")
+                    .description(null)
                     .startDate(LocalDate.of(2026, 7, 1))
                     .endDate(LocalDate.of(2026, 7, 1))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("description");
+                    .isInstanceOf(CalendarItemReadOnlyException.class);
         }
 
         @Test

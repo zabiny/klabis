@@ -123,6 +123,26 @@ class CalendarJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("should save and find manual calendar item with null description")
+        void shouldSaveAndFindManualCalendarItemWithNullDescription() {
+            // Given
+            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+                    .name("Klubová schůze")
+                    .description(null)
+                    .startDate(LocalDate.of(2026, 7, 1))
+                    .endDate(LocalDate.of(2026, 7, 1))
+                    .build());
+
+            // When
+            CalendarItem saved = calendarRepository.save(calendarItem);
+            Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
+
+            // Then
+            assertThat(found).isPresent();
+            assertThat(found.get().getDescription()).isNull();
+        }
+
+        @Test
         @DisplayName("should return empty when calendar item not found")
         void shouldReturnEmptyWhenCalendarItemNotFound() {
             // Given

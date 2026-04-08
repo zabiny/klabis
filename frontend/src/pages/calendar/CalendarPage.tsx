@@ -11,7 +11,7 @@ import {labels} from '../../localization';
 interface CalendarItem {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     startDate: string;
     endDate: string;
     eventId: string | null;
@@ -226,7 +226,7 @@ const CalendarPage = () => {
                                                 key={itemIndex}
                                                 onClick={() => handleItemClick(item)}
                                                 className="text-xs bg-accent/15 text-accent p-1 rounded truncate cursor-pointer hover:bg-accent/25 transition-colors"
-                                                title={`${item.name}\n${item.description}`}
+                                                title={item.description ? `${item.name}\n${item.description}` : item.name}
                                             >
                                                 {item.name}
                                             </div>

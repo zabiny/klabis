@@ -254,7 +254,7 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
                     </thead>
                     <tbody className="divide-y">
                     {Object.entries(data)
-                        .filter(([key]) => !key.startsWith('_'))
+                        .filter(([key, value]) => !key.startsWith('_') && value !== null && value !== undefined)
                         .map(([key, value]: [string, unknown]) => (
                             <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="px-4 py-2 font-mono text-sm text-gray-600 dark:text-gray-400">{key}</td>

@@ -315,7 +315,7 @@ CREATE TABLE calendar_items
 (
     id               UUID PRIMARY KEY,
     name             VARCHAR(200) NOT NULL,
-    description      TEXT         NOT NULL,
+    description      TEXT         NULL,
     start_date       DATE         NOT NULL,
     end_date         DATE         NOT NULL,
     event_id         UUID         NULL, -- REFERENCES events (id) ON DELETE SET NULL,

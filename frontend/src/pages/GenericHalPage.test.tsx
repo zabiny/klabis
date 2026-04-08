@@ -281,6 +281,30 @@ describe('GenericHalPage Component', () => {
             expect(row).toBeInTheDocument();
         });
 
+        it('should not render a row for null fields in single item view', () => {
+            const itemData = mockHalResponse({
+                name: 'Calendar Item',
+                description: null,
+                startDate: '2026-05-01',
+            });
+            useHalRoute.mockReturnValue({
+                resourceData: itemData,
+                isLoading: false,
+                error: null,
+                pathname: '/api/calendar-items/1',
+                refetch: vi.fn(),
+                queryState: 'success',
+                navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
+            });
+
+            renderWithRouter(<GenericHalPage/>);
+
+            expect(screen.queryByText('description')).not.toBeInTheDocument();
+            expect(screen.queryByText('null')).not.toBeInTheDocument();
+            expect(screen.getByText('name')).toBeInTheDocument();
+        });
+
         it('should render HAL sections for single item', () => {
             const itemData = mockHalResponseWithForms();
             useHalRoute.mockReturnValue({

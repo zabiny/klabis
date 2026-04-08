@@ -251,6 +251,30 @@ describe('CalendarPage Component', () => {
 
             expect(screen.getByText('Team Meeting')).toBeInTheDocument();
         });
+
+        it('should not show "null" in tooltip when calendar item has no description', () => {
+            const items = [
+                {
+                    id: '123e4567-e89b-12d3-a456-426614174001',
+                    name: 'Klubová schůze',
+                    description: null,
+                    startDate: '2025-06-15',
+                    endDate: '2025-06-15',
+                    eventId: null,
+                    _links: {
+                        self: {href: '/api/calendar-items/123e4567-e89b-12d3-a456-426614174001'},
+                    },
+                },
+            ];
+
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData(items)));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-06-15');
+
+            const itemEl = screen.getByText('Klubová schůze');
+            expect(itemEl).toBeInTheDocument();
+            expect(itemEl.getAttribute('title')).not.toContain('null');
+        });
     });
 
     describe('Loading and Error States', () => {
