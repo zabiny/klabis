@@ -5,7 +5,7 @@ import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
 import {HalFormsCollectionField} from './HalFormsCollectionField.tsx';
 import {halFormsFieldsFactory} from '../HalFormsFieldFactory.tsx';
-import type {HalFormsInputProps} from '../types.ts';
+import type {HalFormFieldFactory, HalFormsInputProps} from '../types.ts';
 import type {HalFormsProperty} from '../../../../api';
 
 const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty => ({
@@ -20,7 +20,7 @@ const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty
 
 const createProps = (
     prop: HalFormsProperty,
-    fieldFactory = vi.fn().mockReturnValue(null)
+    fieldFactory: HalFormFieldFactory = vi.fn().mockReturnValue(null)
 ): HalFormsInputProps => ({
     prop,
     errorText: undefined,
@@ -256,7 +256,7 @@ describe('HalFormsCollectionField', () => {
 
         it('renders primitive items without per-item label', () => {
             const capturedModes: string[] = [];
-            const trackingFactory = (type: string, conf: HalFormsInputProps) => {
+            const trackingFactory = (_type: string, conf: HalFormsInputProps) => {
                 capturedModes.push(conf.renderMode ?? 'field');
                 return <input data-testid="tracked-input" />;
             };
