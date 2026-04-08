@@ -70,6 +70,18 @@ class CategoryPresetControllerTest {
         }
 
         @Test
+        @DisplayName("should expose createCategoryPreset template name on collection self link")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldExposeCreateCategoryPresetTemplateName() throws Exception {
+            when(categoryPresetManagementService.listAll()).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/category-presets").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createCategoryPreset").exists())
+                    .andExpect(jsonPath("$._templates.createCategoryPreset.method").value("POST"));
+        }
+
+        @Test
         @DisplayName("should return 200 with empty collection when no presets")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturnEmptyCollection() throws Exception {
@@ -123,6 +135,20 @@ class CategoryPresetControllerTest {
 
             mockMvc.perform(get("/api/category-presets/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("should expose updateCategoryPreset and deleteCategoryPreset template names")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldExposeCorrectTemplateNames() throws Exception {
+            UUID id = UUID.randomUUID();
+            CategoryPreset preset = CategoryPreset.create(new CategoryPreset.CreateCategoryPreset("Forest Run", List.of("M21")));
+            when(categoryPresetManagementService.getPreset(any(CategoryPresetId.class))).thenReturn(preset);
+
+            mockMvc.perform(get("/api/category-presets/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateCategoryPreset.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.deleteCategoryPreset.method").value("DELETE"));
         }
     }
 

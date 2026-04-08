@@ -665,6 +665,48 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.registrationDeadline").value("2026-08-10"));
         }
+
+        @Test
+        @DisplayName("registerForEvent template should include category property without inline options")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void shouldIncludeCategoryPropertyInRegisterForEventTemplate() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCategories(List.of("M21", "W21", "M35"))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')]").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("registerForEvent template should have no category options when event has no categories")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void shouldHaveNoCategoryOptionsWhenEventHasNoCategories() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options").doesNotExist());
+        }
     }
 
     @Nested

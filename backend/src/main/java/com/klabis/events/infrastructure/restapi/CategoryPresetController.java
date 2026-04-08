@@ -57,8 +57,8 @@ class CategoryPresetController {
                     EntityModel<CategoryPresetDto> model = EntityModel.of(dto);
                     klabisLinkTo(methodOn(CategoryPresetController.class).getPreset(preset.getId().value()))
                             .ifPresent(link -> model.add(link.withSelfRel()
-                                    .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).updatePreset(preset.getId().value(), null)))
-                                    .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).deletePreset(preset.getId().value())))));
+                                    .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).updateCategoryPreset(preset.getId().value(), null)))
+                                    .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).deleteCategoryPreset(preset.getId().value())))));
                     return model;
                 })
                 .toList();
@@ -66,7 +66,7 @@ class CategoryPresetController {
         CollectionModel<EntityModel<CategoryPresetDto>> collection = CollectionModel.of(items);
         klabisLinkTo(methodOn(CategoryPresetController.class).listPresets()).ifPresent(link ->
                 collection.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).createPreset(null)))));
+                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).createCategoryPreset(null)))));
 
         return ResponseEntity.ok(collection);
     }
@@ -87,8 +87,8 @@ class CategoryPresetController {
         EntityModel<CategoryPresetDto> model = EntityModel.of(dto);
         klabisLinkTo(methodOn(CategoryPresetController.class).getPreset(id)).ifPresent(link ->
                 model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).updatePreset(id, null)))
-                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).deletePreset(id)))));
+                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).updateCategoryPreset(id, null)))
+                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).deleteCategoryPreset(id)))));
         klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("collection")));
 
@@ -102,7 +102,7 @@ class CategoryPresetController {
             description = "Creates a new category preset. Requires EVENTS:MANAGE authority."
     )
     @ApiResponse(responseCode = "201", description = "Category preset created")
-    ResponseEntity<Void> createPreset(
+    ResponseEntity<Void> createCategoryPreset(
             @Parameter(description = "Preset creation data")
             @Valid @RequestBody CategoryPreset.CreateCategoryPreset command) {
 
@@ -120,7 +120,7 @@ class CategoryPresetController {
             description = "Updates an existing category preset. Requires EVENTS:MANAGE authority."
     )
     @ApiResponse(responseCode = "204", description = "Category preset updated")
-    ResponseEntity<Void> updatePreset(
+    ResponseEntity<Void> updateCategoryPreset(
             @Parameter(description = "Preset UUID") @PathVariable UUID id,
             @Parameter(description = "Preset update data") @Valid @RequestBody CategoryPreset.UpdateCategoryPreset command) {
 
@@ -135,7 +135,7 @@ class CategoryPresetController {
             description = "Deletes a category preset. Requires EVENTS:MANAGE authority."
     )
     @ApiResponse(responseCode = "204", description = "Category preset deleted")
-    ResponseEntity<Void> deletePreset(
+    ResponseEntity<Void> deleteCategoryPreset(
             @Parameter(description = "Preset UUID") @PathVariable UUID id) {
 
         categoryPresetManagementService.deletePreset(new CategoryPresetId(id));

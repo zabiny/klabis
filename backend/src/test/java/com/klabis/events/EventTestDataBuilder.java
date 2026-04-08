@@ -23,6 +23,7 @@ public class EventTestDataBuilder {
     private EventId eventId = new EventId(UUID.randomUUID());
     private Integer orisId = null;
     private List<EventRegistration> registrations = new ArrayList<>();
+    private List<String> categories = List.of();
     private AuditMetadata auditMetadata = null;
 
     private EventTestDataBuilder() {
@@ -88,6 +89,11 @@ public class EventTestDataBuilder {
         return this;
     }
 
+    public EventTestDataBuilder withCategories(List<String> categories) {
+        this.categories = categories;
+        return this;
+    }
+
     public Event build() {
         return Event.reconstruct(eventId,
                 name,
@@ -99,7 +105,7 @@ public class EventTestDataBuilder {
                 registrationDeadline,
                 EventStatus.DRAFT,
                 orisId,
-                List.of(),
+                categories,
                 registrations,
                 auditMetadata);
     }
