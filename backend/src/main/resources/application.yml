@@ -139,7 +139,7 @@ klabis:
       id: ${KLABIS_OAUTH2_CLIENT_ID:klabis-web}
       secret: ${KLABIS_OAUTH2_CLIENT_SECRET:}
       uuid: ${KLABIS_OAUTH2_CLIENT_UUID:}
-      redirect-uris: ${KLABIS_OAUTH2_CLIENT_REDIRECT_URIS:http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback}
+      redirect-uris: ${KLABIS_OAUTH2_CLIENT_REDIRECT_URIS:http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback,http://localhost:3000/silent-renew.html,https://localhost:8443/silent-renew.html}
       post-logout-redirect-uris: ${KLABIS_OAUTH2_POST_LOGOUT_REDIRECT_URIS:http://localhost:3000,https://localhost:8443}
       scopes: ${KLABIS_OAUTH2_CLIENT_SCOPES:}
 

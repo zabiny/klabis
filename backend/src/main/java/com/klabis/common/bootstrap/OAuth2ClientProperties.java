@@ -8,7 +8,7 @@ public class OAuth2ClientProperties {
     private String id = "klabis-web";
     private String secret;
     private String uuid;
-    private String redirectUris = "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback";
+    private String redirectUris = "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback,http://localhost:3000/silent-renew.html,https://localhost:8443/silent-renew.html";
     private String postLogoutRedirectUris = "http://localhost:3000,https://localhost:8443";
     private String scopes;
 
