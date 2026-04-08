@@ -252,6 +252,35 @@ class UserGroupWithInvitationsTest {
     }
 
     @Nested
+    @DisplayName("promoteOwner()")
+    class PromoteOwnerMethod {
+
+        @Test
+        @DisplayName("should throw CannotPromoteNonMemberToOwnerException when promoting a non-member")
+        void shouldThrowWhenPromotingNonMember() {
+            InvitationGroup group = groupWithOwner();
+
+            assertThatThrownBy(() -> group.promoteOwner(USER_A))
+                    .isInstanceOf(CannotPromoteNonMemberToOwnerException.class);
+        }
+
+        @Test
+        @DisplayName("should promote existing member to owner without adding them twice to membership")
+        void shouldPromoteExistingMemberWithoutDuplicatingMembership() {
+            InvitationGroup group = groupWithOwner();
+            group.invite(OWNER, USER_A);
+            group.acceptInvitation(group.getPendingInvitations().get(0).getId());
+            int memberCountBefore = group.getMembers().size();
+
+            group.promoteOwner(USER_A);
+
+            assertThat(group.isOwner(USER_A)).isTrue();
+            assertThat(group.hasMember(USER_A)).isTrue();
+            assertThat(group.getMembers()).hasSize(memberCountBefore);
+        }
+    }
+
+    @Nested
     @DisplayName("getPendingInvitations()")
     class GetPendingInvitationsMethod {
 

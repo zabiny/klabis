@@ -1,19 +1,19 @@
 ## 1. Shared building block — owner promotion rule on `WithInvitations` (TDD)
 
-- [ ] 1.1 Add failing unit test (new test class in `common/usergroup`): a `WithInvitations`-backed group rejects promoting a non-member to owner and throws `CannotPromoteNonMemberToOwnerException`
-- [ ] 1.2 Add failing unit test: the same path succeeds when the candidate is already a current member and does not re-add them to the members set
-- [ ] 1.3 Create new exception class `common/usergroup/CannotPromoteNonMemberToOwnerException.java` carrying the offending `UserId`
-- [ ] 1.4 Add owner-promotion validation helper to `common/usergroup/WithInvitations.java` (default method `promoteOwner(UserId)` or a shared static guard) that enforces the "must already be a member" rule and delegates to the underlying `UserGroup.addOwner` without its auto-add side effect
-- [ ] 1.5 Map `CannotPromoteNonMemberToOwnerException` to HTTP 409 (or 400) in the shared `MvcExceptionHandler` / `MembersGroupExceptionHandler`
-- [ ] 1.6 Verify tests 1.1 and 1.2 pass
+- [x] 1.1 Add failing unit test (new test class in `common/usergroup`): a `WithInvitations`-backed group rejects promoting a non-member to owner and throws `CannotPromoteNonMemberToOwnerException`
+- [x] 1.2 Add failing unit test: the same path succeeds when the candidate is already a current member and does not re-add them to the members set
+- [x] 1.3 Create new exception class `common/usergroup/CannotPromoteNonMemberToOwnerException.java` carrying the offending `UserId`
+- [x] 1.4 Add owner-promotion validation helper to `common/usergroup/WithInvitations.java` (default method `promoteOwner(UserId)` or a shared static guard) that enforces the "must already be a member" rule and delegates to the underlying `UserGroup.addOwner` without its auto-add side effect
+- [x] 1.5 Map `CannotPromoteNonMemberToOwnerException` to HTTP 409 (or 400) in the shared `MvcExceptionHandler` / `MembersGroupExceptionHandler`
+- [x] 1.6 Verify tests 1.1 and 1.2 pass
 
 ## 2. MembersGroup uses the shared rule (TDD)
 
-- [ ] 2.1 Add failing `MembersGroupTest` unit test: `addOwner(memberId)` on a non-member throws `CannotPromoteNonMemberToOwnerException` and the member count is unchanged
-- [ ] 2.2 Add failing unit test: `addOwner(memberId)` on an existing member succeeds and the owner count increases without duplicating the member
-- [ ] 2.3 Update `MembersGroup.addOwner(MemberId)` to route through the new `WithInvitations` promotion path instead of calling `userGroup.addOwner` directly
-- [ ] 2.4 Verify tests 2.1 and 2.2 pass
-- [ ] 2.5 Extend the `MembersGroupController` integration test to cover the HTTP error response for "promote non-member" (status code + problem detail shape)
+- [x] 2.1 Add failing `MembersGroupTest` unit test: `addOwner(memberId)` on a non-member throws `CannotPromoteNonMemberToOwnerException` and the member count is unchanged
+- [x] 2.2 Add failing unit test: `addOwner(memberId)` on an existing member succeeds and the owner count increases without duplicating the member
+- [x] 2.3 Update `MembersGroup.addOwner(MemberId)` to route through the new `WithInvitations` promotion path instead of calling `userGroup.addOwner` directly
+- [x] 2.4 Verify tests 2.1 and 2.2 pass
+- [x] 2.5 Extend the `MembersGroupController` integration test to cover the HTTP error response for "promote non-member" (status code + problem detail shape)
 
 ## 3. Family group domain — scalar `CreateFamilyGroup` (TDD)
 

@@ -165,6 +165,30 @@ class MembersGroupTest {
     class OwnerManagement {
 
         @Test
+        @DisplayName("should throw CannotPromoteNonMemberToOwnerException when promoting a non-member to owner")
+        void shouldThrowWhenPromotingNonMemberToOwner() {
+            MembersGroup group = MembersGroup.create(new MembersGroup.CreateMembersGroup("Test Group", CREATOR));
+            int memberCountBefore = group.getMembers().size();
+
+            assertThatThrownBy(() -> group.addOwner(OTHER_MEMBER))
+                    .isInstanceOf(com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException.class);
+            assertThat(group.getMembers()).hasSize(memberCountBefore);
+        }
+
+        @Test
+        @DisplayName("should promote existing member to owner without duplicating membership")
+        void shouldPromoteExistingMemberToOwnerWithoutDuplicatingMembership() {
+            MembersGroup group = MembersGroup.create(new MembersGroup.CreateMembersGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            int memberCountBefore = group.getMembers().size();
+
+            group.addOwner(OTHER_MEMBER);
+
+            assertThat(group.isOwner(OTHER_MEMBER)).isTrue();
+            assertThat(group.getMembers()).hasSize(memberCountBefore);
+        }
+
+        @Test
         @DisplayName("should add owner and make them a member")
         void shouldAddOwner() {
             MembersGroup group = MembersGroup.create(new MembersGroup.CreateMembersGroup("Test Group", CREATOR));

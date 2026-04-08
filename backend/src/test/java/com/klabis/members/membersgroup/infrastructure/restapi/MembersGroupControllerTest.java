@@ -3,6 +3,7 @@ package com.klabis.members.membersgroup.infrastructure.restapi;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.usergroup.InvitationId;
@@ -474,6 +475,26 @@ class MembersGroupControllerTest {
                                             """.formatted(OTHER_MEMBER_ID))
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 409 when promoting a non-member to owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn409WhenPromotingNonMemberToOwner() throws Exception {
+            UserId nonMemberUserId = new UserId(java.util.UUID.fromString(OTHER_MEMBER_ID));
+            doThrow(new CannotPromoteNonMemberToOwnerException(nonMemberUserId))
+                    .when(membersGroupManagementService).addOwner(any(MembersGroupId.class), any(MemberId.class));
+
+            mockMvc.perform(
+                            post("/api/groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(OTHER_MEMBER_ID))
+                    )
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Cannot Promote Non-Member to Owner"));
         }
 
         @Test

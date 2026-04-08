@@ -94,7 +94,7 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
 
     public void addOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        userGroup.addOwner(memberId.toUserId());
+        promoteOwner(memberId.toUserId());
     }
 
     public void removeOwner(MemberId memberId) {
@@ -105,6 +105,17 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
     public void removeMember(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
         userGroup.removeMember(memberId.toUserId());
+    }
+
+    // WithInvitations interface required methods — delegate to composed UserGroup
+    @Override
+    public boolean hasMember(UserId userId) {
+        return userGroup.hasMember(userId);
+    }
+
+    @Override
+    public void addOwner(UserId userId) {
+        userGroup.addOwner(userId);
     }
 
     // WithInvitations interface — controllers verify authorization before calling; no owner check here
