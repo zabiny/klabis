@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
 import {HalFormsCollectionField} from './HalFormsCollectionField.tsx';
+import {halFormsFieldsFactory} from '../HalFormsFieldFactory.tsx';
 import type {HalFormsInputProps} from '../types.ts';
 import type {HalFormsProperty} from '../../../../api';
 
@@ -226,6 +227,44 @@ describe('HalFormsCollectionField', () => {
 
             expect(screen.queryByRole('button', {name: /přidat/i})).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /odebrat/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('item value visibility with real factory', () => {
+        it('shows existing text values in input fields when using real field factory', () => {
+            const prop = createProp({name: 'categories', prompt: 'Kategorie', type: 'text'});
+            const props = createProps(prop, halFormsFieldsFactory);
+            renderWithFormik(props, ['M21', 'W21']);
+
+            const inputs = screen.getAllByRole('textbox');
+            const inputValues = inputs.map(input => (input as HTMLInputElement).value);
+            expect(inputValues).toContain('M21');
+            expect(inputValues).toContain('W21');
+        });
+
+        it('shows empty input for newly added item', async () => {
+            const prop = createProp({name: 'categories', prompt: 'Kategorie', type: 'text'});
+            const props = createProps(prop, halFormsFieldsFactory);
+            renderWithFormik(props, []);
+
+            await userEvent.click(screen.getByRole('button', {name: /přidat/i}));
+
+            const inputs = screen.getAllByRole('textbox');
+            expect(inputs).toHaveLength(1);
+            expect((inputs[0] as HTMLInputElement).value).toBe('');
+        });
+
+        it('renders primitive items without per-item label', () => {
+            const capturedModes: string[] = [];
+            const trackingFactory = (type: string, conf: HalFormsInputProps) => {
+                capturedModes.push(conf.renderMode ?? 'field');
+                return <input data-testid="tracked-input" />;
+            };
+            const prop = createProp({name: 'tags', prompt: 'Tagy', type: 'text'});
+            const props = createProps(prop, trackingFactory);
+            renderWithFormik(props, ['a', 'b']);
+
+            expect(capturedModes).toEqual(['input', 'input']);
         });
     });
 });

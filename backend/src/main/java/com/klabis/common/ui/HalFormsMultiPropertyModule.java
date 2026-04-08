@@ -2,6 +2,7 @@ package com.klabis.common.ui;
 
 import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.hateoas.AffordanceModel;
+import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.SerializationConfig;
@@ -33,7 +34,11 @@ class HalFormsMultiPropertyModule extends SimpleModule {
             }
 
             return beanProperties.stream()
-                    .map(writer -> "multi".equals(writer.getName()) ? new MultiPropertyWriter(writer) : writer)
+                    .map(writer -> switch (writer.getName()) {
+                        case "multi" -> new MultiPropertyWriter(writer);
+                        case "options" -> new OptionsPropertyWriter(writer);
+                        default -> writer;
+                    })
                     .toList();
         }
     }
@@ -54,12 +59,35 @@ class HalFormsMultiPropertyModule extends SimpleModule {
                 super.serializeAsProperty(bean, gen, prov);
             }
         }
+    }
 
-        private static String getHalFormsPropertyName(Object bean) {
-            if (bean instanceof AffordanceModel.Named named) {
-                return named.getName();
-            }
-            return null;
+    private static class OptionsPropertyWriter extends BeanPropertyWriter {
+
+        OptionsPropertyWriter(BeanPropertyWriter delegate) {
+            super(delegate);
         }
+
+        @Override
+        public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
+            String propertyName = getHalFormsPropertyName(bean);
+            List<String> inlineOptions = propertyName != null
+                    ? HalFormsSupport.getInlineOptionsForProperty(propertyName)
+                    : null;
+
+            if (inlineOptions != null && !inlineOptions.isEmpty()) {
+                HalFormsOptions options = HalFormsOptions.inline(inlineOptions.toArray());
+                gen.writeName("options");
+                prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
+            } else {
+                super.serializeAsProperty(bean, gen, prov);
+            }
+        }
+    }
+
+    private static String getHalFormsPropertyName(Object bean) {
+        if (bean instanceof AffordanceModel.Named named) {
+            return named.getName();
+        }
+        return null;
     }
 }

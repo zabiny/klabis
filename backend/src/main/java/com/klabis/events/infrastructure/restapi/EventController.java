@@ -38,9 +38,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -221,7 +223,10 @@ public class EventController {
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
                 } else {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                            Map.of("category", event.getCategories())
+                    ));
                 }
             }
 
@@ -338,7 +343,10 @@ public class EventController {
                         if (isRegistered) {
                             selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
                         } else {
-                            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                            selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                                    methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                                    Map.of("category", event.getCategories())
+                            ));
                         }
                     }
                     break;

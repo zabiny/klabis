@@ -78,7 +78,8 @@ export const HalFormsCollectionField = ({
 
         const indexedInputProps: HalFormsInputProps = {
             prop: indexedProp,
-            renderMode,
+            // Primitive items use 'input' mode — no per-item label (the collection label serves as the heading)
+            renderMode: composite ? renderMode : 'input',
             subElementProps: indexedSubElementProps,
             fieldFactory,
         }

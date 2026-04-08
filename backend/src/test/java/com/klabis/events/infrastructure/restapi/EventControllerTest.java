@@ -667,9 +667,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("registerForEvent template should include category property without inline options")
+        @DisplayName("registerForEvent template should include category property with inline options when event has categories")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
-        void shouldIncludeCategoryPropertyInRegisterForEventTemplate() throws Exception {
+        void shouldIncludeCategoryPropertyWithInlineOptionsInRegisterForEventTemplate() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -685,7 +685,10 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')]").exists())
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options").doesNotExist());
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[0]").value("M21"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[1]").value("W21"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[2]").value("M35"));
         }
 
         @Test

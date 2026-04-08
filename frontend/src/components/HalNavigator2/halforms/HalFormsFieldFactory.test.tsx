@@ -67,5 +67,26 @@ describe('halFormsFieldsFactory', () => {
             expect(screen.getByRole('textbox')).toBeInTheDocument();
             expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
         });
+
+        it('returns null when options.inline is an empty array', () => {
+            const prop: HalFormsProperty = {
+                name: 'category',
+                type: 'text',
+                options: {inline: []},
+            };
+            const element = halFormsFieldsFactory('text', makeProps(prop));
+            expect(element).toBeNull();
+        });
+
+        it('renders select when options.inline has items', () => {
+            const prop: HalFormsProperty = {
+                name: 'category',
+                type: 'text',
+                options: {inline: ['A', 'B']},
+            };
+            const element = halFormsFieldsFactory('text', makeProps(prop));
+            renderInFormik(element);
+            expect(screen.getByRole('combobox')).toBeInTheDocument();
+        });
     });
 });

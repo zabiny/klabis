@@ -27,6 +27,10 @@ export const halFormsFieldsFactory = (
         return <HalFormsCollectionField {...conf} />
     }
 
+    if (conf.prop.options?.inline !== undefined && conf.prop.options.inline.length === 0) {
+        return null
+    }
+
     if (conf.prop.options) {
         return <HalFormsSelect {...conf} />
     }

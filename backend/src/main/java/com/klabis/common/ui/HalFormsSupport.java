@@ -89,6 +89,38 @@ public class HalFormsSupport {
         return List.of(modifiedResult);
     }
 
+    static final ThreadLocal<Map<String, List<String>>> PROPERTY_OPTIONS_CONTEXT = new ThreadLocal<>();
+
+    /**
+     * Returns the inline options for the named property from the current thread-local context, or null if none are set.
+     */
+    static List<String> getInlineOptionsForProperty(String propertyName) {
+        Map<String, List<String>> ctx = PROPERTY_OPTIONS_CONTEXT.get();
+        return ctx != null ? ctx.get(propertyName) : null;
+    }
+
+    /**
+     * Like {@link #klabisAfford}, but injects inline HAL-FORMS options for the given properties.
+     * The map keys are property names; values are the inline option lists.
+     * Set options are applied during affordance building and automatically cleared afterwards.
+     */
+    public static List<Affordance> klabisAffordWithOptions(Object invocation, Map<String, List<String>> propertyOptions) {
+        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
+
+        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+            return Collections.emptyList();
+        }
+
+        PROPERTY_OPTIONS_CONTEXT.set(propertyOptions);
+        try {
+            Affordance result = afford(lastInvocationAware);
+            Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware);
+            return List.of(modifiedResult);
+        } finally {
+            PROPERTY_OPTIONS_CONTEXT.remove();
+        }
+    }
+
     private record MethodAuthMeta(HasAuthority hasAuthority, OwnerVisible ownerVisible, int ownerIdParamIndex) {
         boolean hasSecurityAnnotations() { return hasAuthority != null || ownerVisible != null; }
     }
@@ -277,19 +309,32 @@ public class HalFormsSupport {
     }
 
     /**
-     * InputPayloadMetadata wrapper that modifies PropertyMetadata based on @HalForms annotations
+     * InputPayloadMetadata wrapper that modifies PropertyMetadata based on @HalForms annotations.
+     * Captures inline options from the thread-local context at construction time so they are available
+     * during serialization (when the thread-local is no longer set).
      */
     private static class HalFormsInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata {
         private static final Logger LOG = LoggerFactory.getLogger(KlabisHalFormsPropertyMetadataWrapper.class);
 
         private final AffordanceModel.InputPayloadMetadata inputPayloadMetadata;
+        private final Map<String, List<String>> propertyOptions;
 
         public HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata inputPayloadMetadata) {
             this.inputPayloadMetadata = inputPayloadMetadata;
+            Map<String, List<String>> ctx = PROPERTY_OPTIONS_CONTEXT.get();
+            this.propertyOptions = ctx != null ? Map.copyOf(ctx) : Map.of();
+        }
+
+        private HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata inputPayloadMetadata, Map<String, List<String>> propertyOptions) {
+            this.inputPayloadMetadata = inputPayloadMetadata;
+            this.propertyOptions = propertyOptions;
         }
 
         @Override
         public Stream<AffordanceModel.PropertyMetadata> stream() {
+            if (!propertyOptions.isEmpty()) {
+                PROPERTY_OPTIONS_CONTEXT.set(propertyOptions);
+            }
             // Modify property metadata stream based on @HalForms annotations
             return inputPayloadMetadata.stream()
                     .map(this::wrapPropertyMetadata)
@@ -405,7 +450,7 @@ public class HalFormsSupport {
 
         @Override
         public AffordanceModel.InputPayloadMetadata withMediaTypes(List<MediaType> mediaTypes) {
-            return new HalFormsInputPayloadMetadata(inputPayloadMetadata.withMediaTypes(mediaTypes));
+            return new HalFormsInputPayloadMetadata(inputPayloadMetadata.withMediaTypes(mediaTypes), propertyOptions);
         }
 
         @Override
