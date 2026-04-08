@@ -7,7 +7,7 @@ import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Badge, Button, Modal} from "../../components/UI";
-import {Pencil, Shield, UserCheck, UserX, Users} from "lucide-react";
+import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
@@ -42,7 +42,6 @@ export const MembersPage = (): ReactElement => {
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
-    const [createFamilyGroupModal, setCreateFamilyGroupModal] = useState(false);
 
     const openActionModal = (member: MemberSummaryData, templateName: string) => {
         const template = member._templates?.[templateName];
@@ -168,15 +167,6 @@ export const MembersPage = (): ReactElement => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.membersList}</h2>
                     <div className="flex gap-2">
-                        {resourceData?._templates?.createFamilyGroup && (
-                            <Button
-                                variant="secondary"
-                                onClick={() => setCreateFamilyGroupModal(true)}
-                                startIcon={<Users className="w-4 h-4"/>}
-                            >
-                                {labels.templates.createFamilyGroup}
-                            </Button>
-                        )}
                         {resourceData?._templates?.registerMember && (
                             <Link to="/members/new">
                                 <Button variant="primary">
@@ -230,24 +220,6 @@ export const MembersPage = (): ReactElement => {
                     />
                 </Modal>
             )}
-            {resourceData?._templates?.createFamilyGroup && createFamilyGroupModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setCreateFamilyGroupModal(false)}
-                    title={labels.templates.createFamilyGroup}
-                    size="2xl"
-                >
-                    <HalFormDisplay
-                        template={resourceData._templates.createFamilyGroup}
-                        templateName="createFamilyGroup"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setCreateFamilyGroupModal(false)}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
-            )}
-
             <SuspensionWarningDialog
                 isOpen={suspensionWarning !== null}
                 onClose={() => setSuspensionWarning(null)}

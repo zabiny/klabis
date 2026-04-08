@@ -11,6 +11,8 @@ import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
 import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/ToastContext';
+import {useNavigate} from 'react-router-dom';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
 
 /**
  * Props for HalFormDisplay component
@@ -66,6 +68,7 @@ export const HalFormDisplay = ({
     const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
     const {addToast} = useToast();
+    const navigate = useNavigate();
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
@@ -83,13 +86,18 @@ export const HalFormDisplay = ({
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
         const url = template.target || '/api' + pathname;
         submitForm({url, data: processed}, {
-            onSuccess: async (responseData: unknown) => {
+            onSuccess: async ({data: responseData, location}) => {
                 await invalidateAllCaches();
                 await route.refetch();
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
-                onClose();
+                const willNavigate = template.method?.toUpperCase() === 'POST' && location != null;
+                if (willNavigate) {
+                    navigate(extractNavigationPath(location));
+                } else {
+                    onClose();
+                }
             },
             onError: (error: unknown) => {
                 const suppressed = onSubmitError?.(error);

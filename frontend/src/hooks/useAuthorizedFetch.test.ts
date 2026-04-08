@@ -300,7 +300,7 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            expect(result.current.data).toEqual(responseData);
+            expect(result.current.data).toEqual({data: responseData, location: null});
             expect(result.current.error).toBeNull();
         });
 
@@ -320,7 +320,7 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            expect(result.current.data).toEqual(responseData);
+            expect(result.current.data).toEqual({data: responseData, location: null});
         });
 
         it('should execute DELETE mutation successfully', async () => {
@@ -337,7 +337,7 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            expect(result.current.data).toEqual({});
+            expect(result.current.data).toEqual({data: {}, location: null});
         });
 
         it('should handle mutation with no response data', async () => {
@@ -354,7 +354,7 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            expect(result.current.data).toBeNull();
+            expect(result.current.data).toEqual({data: null, location: null});
         });
     });
 
@@ -442,12 +442,11 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            // onSuccess is called with (data, variables, context, response)
             expect(onSuccess).toHaveBeenCalledWith(
-                responseData,
+                {data: responseData, location: null},
                 expect.objectContaining({url: '/api/items', data: {name: 'New Item'}}),
-                undefined, // context is optional
-                expect.any(Object) // response
+                undefined,
+                expect.any(Object)
             );
         });
 
@@ -477,31 +476,6 @@ describe('useAuthorizedMutation', () => {
             );
         });
 
-        it('should call onSettled callback after mutation completes', async () => {
-            const responseData = {id: 1};
-            fetchSpy.mockResolvedValueOnce(createMockResponse(responseData));
-
-            const onSettled = vi.fn();
-            const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'POST', onSettled}),
-                {wrapper: createWrapper()}
-            );
-
-            result.current.mutate({url: '/api/items', data: {name: 'Test'}});
-
-            await waitFor(() => {
-                expect(result.current.isPending).toBe(false);
-            });
-
-            // onSettled is called with (data, error, variables, context, response) on successful mutation
-            expect(onSettled).toHaveBeenCalledWith(
-                responseData,
-                null,
-                expect.objectContaining({url: '/api/items', data: {name: 'Test'}}),
-                undefined, // context is optional
-                expect.any(Object) // response
-            );
-        });
     });
 
     describe('Request Configuration', () => {
@@ -572,8 +546,80 @@ describe('useAuthorizedMutation', () => {
 
             await waitFor(() => {
                 expect(result.current.isPending).toBe(false);
-                expect(result.current.data).toEqual({id: 1});
+                expect(result.current.data).toEqual({data: {id: 1}, location: null});
             });
+        });
+    });
+
+    describe('Location header in result', () => {
+        it('POST 201 with Location header returns { data: null, location: header value }', async () => {
+            fetchSpy.mockResolvedValueOnce(
+                createMockResponse(null, 201, {'Location': '/api/family-groups/abc'})
+            );
+
+            const onSuccess = vi.fn();
+            const {result} = renderHook(
+                () => useAuthorizedMutation({method: 'POST', onSuccess}),
+                {wrapper: createWrapper()}
+            );
+
+            result.current.mutate({url: '/api/family-groups', data: {}});
+
+            await waitFor(() => expect(result.current.isPending).toBe(false));
+
+            expect(onSuccess).toHaveBeenCalledWith(
+                {data: null, location: '/api/family-groups/abc'},
+                expect.objectContaining({url: '/api/family-groups'}),
+                undefined,
+                expect.any(Object)
+            );
+        });
+
+        it('PUT 204 with no body and no Location returns { data: null, location: null }', async () => {
+            fetchSpy.mockResolvedValueOnce(
+                createMockResponse(null, 204)
+            );
+
+            const onSuccess = vi.fn();
+            const {result} = renderHook(
+                () => useAuthorizedMutation({method: 'PUT', onSuccess}),
+                {wrapper: createWrapper()}
+            );
+
+            result.current.mutate({url: '/api/items/1', data: {}});
+
+            await waitFor(() => expect(result.current.isPending).toBe(false));
+
+            expect(onSuccess).toHaveBeenCalledWith(
+                {data: null, location: null},
+                expect.objectContaining({url: '/api/items/1'}),
+                undefined,
+                expect.any(Object)
+            );
+        });
+
+        it('POST 201 with JSON body and Location header returns { data: <body>, location: <header> }', async () => {
+            const responseBody = {id: 'xyz', name: 'New Group'};
+            fetchSpy.mockResolvedValueOnce(
+                createMockResponse(responseBody, 201, {'Location': '/api/family-groups/xyz'})
+            );
+
+            const onSuccess = vi.fn();
+            const {result} = renderHook(
+                () => useAuthorizedMutation({method: 'POST', onSuccess}),
+                {wrapper: createWrapper()}
+            );
+
+            result.current.mutate({url: '/api/family-groups', data: {}});
+
+            await waitFor(() => expect(result.current.isPending).toBe(false));
+
+            expect(onSuccess).toHaveBeenCalledWith(
+                {data: responseBody, location: '/api/family-groups/xyz'},
+                expect.objectContaining({url: '/api/family-groups'}),
+                undefined,
+                expect.any(Object)
+            );
         });
     });
 });

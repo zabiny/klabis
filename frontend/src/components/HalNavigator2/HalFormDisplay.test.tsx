@@ -11,6 +11,19 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type Mock, vi} from 'vitest';
 import {HalFormsFormField, type RenderFormCallback} from './halforms/HalFormsForm.tsx';
 import {MemoryRouter} from "react-router-dom";
+import type {HalFormsTemplateMethod} from '../../api/types';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
+
+const createMockResponseWithLocation = (data: any, status = 201, location: string | null = null): Response =>
+    createMockResponse(data, status, location ? {'Location': location} : {});
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -34,6 +47,11 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
     })),
 }));
 
+const mockAddToast = vi.fn();
+vi.mock('../../contexts/ToastContext', () => ({
+    useToast: () => ({addToast: mockAddToast}),
+}));
+
 describe('HalFormDisplay Component', () => {
     let queryClient: QueryClient;
     let fetchSpy: Mock;
@@ -45,7 +63,6 @@ describe('HalFormDisplay Component', () => {
             },
         });
         vi.clearAllMocks();
-        mockInvalidateAllCaches.mockClear();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
@@ -507,6 +524,214 @@ describe('HalFormDisplay Component', () => {
 
             await waitFor(() => {
                 expect(onSubmitSuccess).toHaveBeenCalledWith(responseData);
+            });
+        });
+
+        describe('auto-navigation on POST+Location', () => {
+            const renderPostForm = (method: HalFormsTemplateMethod, pageData?: any) => {
+                const template = mockHalFormsTemplate({
+                    title: 'Create Group',
+                    target: '/api/family-groups',
+                    method,
+                    properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
+                });
+                const data = pageData ?? createMockPageData({id: 1});
+                const Wrapper = createWrapper(data);
+                render(
+                    <Wrapper>
+                        <HalFormDisplay
+                            template={template}
+                            templateName="create"
+                            resourceData={{id: 1}}
+                            pathname="/family-groups"
+                            onClose={vi.fn()}
+                        />
+                    </Wrapper>
+                );
+                return template;
+            };
+
+            it('navigates to location path after POST with Location header', async () => {
+                const user = userEvent.setup();
+                const pageData = createMockPageData({id: 1});
+                renderPostForm('POST', pageData);
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'My Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => {
+                    expect(mockNavigate).toHaveBeenCalledWith('/family-groups/xyz');
+                });
+            });
+
+            it('does NOT call onClose after POST+Location (navigation supersedes close)', async () => {
+                const user = userEvent.setup();
+                const mockOnClose = vi.fn();
+                const template = mockHalFormsTemplate({
+                    title: 'Create Group',
+                    target: '/api/family-groups',
+                    method: 'POST',
+                    properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
+                });
+                const pageData = createMockPageData({id: 1});
+                const Wrapper = createWrapper(pageData);
+                render(
+                    <Wrapper>
+                        <HalFormDisplay
+                            template={template}
+                            templateName="create"
+                            resourceData={{id: 1}}
+                            pathname="/family-groups"
+                            onClose={mockOnClose}
+                        />
+                    </Wrapper>
+                );
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'My Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/family-groups/xyz'));
+                expect(mockOnClose).not.toHaveBeenCalled();
+            });
+
+            it('calls onClose after PUT success (no navigation)', async () => {
+                const user = userEvent.setup();
+                const mockOnClose = vi.fn();
+                const template = mockHalFormsTemplate({
+                    title: 'Edit Group',
+                    target: '/api/family-groups/xyz',
+                    method: 'PUT',
+                    properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
+                });
+                const pageData = createMockPageData({id: 1});
+                const Wrapper = createWrapper(pageData);
+                render(
+                    <Wrapper>
+                        <HalFormDisplay
+                            template={template}
+                            templateName="edit"
+                            resourceData={{id: 1}}
+                            pathname="/family-groups/xyz"
+                            onClose={mockOnClose}
+                        />
+                    </Wrapper>
+                );
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'Updated Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => expect(mockOnClose).toHaveBeenCalled());
+                expect(mockNavigate).not.toHaveBeenCalled();
+            });
+
+            it('does NOT navigate after PUT even when Location header is present', async () => {
+                const user = userEvent.setup();
+                const pageData = createMockPageData({id: 1});
+                renderPostForm('PUT', pageData);
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 200, '/api/family-groups/xyz'));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'Updated Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => expect(mockInvalidateAllCaches).toHaveBeenCalled());
+                expect(mockNavigate).not.toHaveBeenCalled();
+            });
+
+            it('does NOT navigate after DELETE', async () => {
+                const user = userEvent.setup();
+                const pageData = createMockPageData({id: 1});
+                renderPostForm('DELETE', pageData);
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 204, '/api/family-groups/xyz'));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => expect(mockInvalidateAllCaches).toHaveBeenCalled());
+                expect(mockNavigate).not.toHaveBeenCalled();
+            });
+
+            it('does NOT navigate after POST when Location header is null', async () => {
+                const user = userEvent.setup();
+                const pageData = createMockPageData({id: 1});
+                renderPostForm('POST', pageData);
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation({id: 42}, 201, null));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'My Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => expect(mockInvalidateAllCaches).toHaveBeenCalled());
+                expect(mockNavigate).not.toHaveBeenCalled();
+            });
+
+            it('navigation happens after invalidateAllCaches, route.refetch, and addToast', async () => {
+                const user = userEvent.setup();
+                const callOrder: string[] = [];
+                const pageData = createMockPageData({id: 1});
+                mockInvalidateAllCaches.mockImplementation(async () => {
+                    callOrder.push('invalidate');
+                });
+                pageData.route.refetch = vi.fn(async () => {
+                    callOrder.push('refetch');
+                });
+                mockAddToast.mockImplementation(() => {
+                    callOrder.push('toast');
+                });
+                mockNavigate.mockImplementation(() => {
+                    callOrder.push('navigate');
+                });
+
+                renderPostForm('POST', pageData);
+
+                fetchSpy
+                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+
+                await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+                const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+                await user.clear(nameInput);
+                await user.type(nameInput, 'My Group');
+                await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+                await waitFor(() => {
+                    expect(mockNavigate).toHaveBeenCalled();
+                });
+                expect(callOrder).toEqual(['invalidate', 'refetch', 'toast', 'navigate']);
             });
         });
 

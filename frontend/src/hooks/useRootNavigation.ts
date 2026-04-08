@@ -10,7 +10,10 @@ export interface NavigationItem {
     href: string;
     label: string;
     rel: string;
+    section: 'main' | 'admin';
 }
+
+const ADMIN_RELS = new Set(['training-groups', 'category-presets', 'family-groups']);
 
 const navLabels = labels.nav as Record<string, string>;
 
@@ -41,6 +44,7 @@ function convertItems(response: HalResponse): NavigationItem[] {
                     href: navigationPath,
                     label,
                     rel,
+                    section: ADMIN_RELS.has(rel) ? 'admin' : 'main',
                 });
             }
         });

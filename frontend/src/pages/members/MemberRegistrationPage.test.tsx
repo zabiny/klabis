@@ -30,12 +30,10 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-let capturedOnSubmitSuccess: ((data: unknown) => void) | undefined;
 let capturedCustomLayout: unknown;
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay', () => ({
-    HalFormDisplay: vi.fn(({onSubmitSuccess, customLayout}: any) => {
-        capturedOnSubmitSuccess = onSubmitSuccess;
+    HalFormDisplay: vi.fn(({customLayout}: any) => {
         capturedCustomLayout = customLayout;
         return <div data-testid="hal-form-display">HalFormDisplay</div>;
     }),
@@ -104,7 +102,6 @@ const renderPage = () => {
 describe('MemberRegistrationPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        capturedOnSubmitSuccess = undefined;
         capturedCustomLayout = undefined;
     });
 
@@ -170,30 +167,13 @@ describe('MemberRegistrationPage', () => {
             mockUseAuthorizedQuery(collectionWithTemplate);
         });
 
-        it('navigates to new member detail page when onSubmitSuccess receives self link', () => {
+        it('does not pass onSubmitSuccess to HalFormDisplay — navigation is handled by HalFormDisplay auto-navigation on POST+Location', () => {
             renderPage();
 
-            capturedOnSubmitSuccess?.({
-                _links: {self: {href: '/api/members/new-member-uuid'}},
-            });
-
-            expect(mockNavigate).toHaveBeenCalledWith('/members/new-member-uuid');
-        });
-
-        it('navigates to /members when onSubmitSuccess receives response without self link', () => {
-            renderPage();
-
-            capturedOnSubmitSuccess?.({});
-
-            expect(mockNavigate).toHaveBeenCalledWith('/members');
-        });
-
-        it('navigates to /members when onSubmitSuccess receives undefined', () => {
-            renderPage();
-
-            capturedOnSubmitSuccess?.(undefined);
-
-            expect(mockNavigate).toHaveBeenCalledWith('/members');
+            expect(vi.mocked(HalFormDisplay)).toHaveBeenCalledWith(
+                expect.not.objectContaining({onSubmitSuccess: expect.any(Function)}),
+                undefined
+            );
         });
     });
 

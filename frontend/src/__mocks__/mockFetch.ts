@@ -7,20 +7,22 @@
  * Creates a mock Response object that mimics real fetch API behavior
  * @param data - The JSON data to be returned by response.json()
  * @param status - HTTP status code (default: 200)
+ * @param headers - Optional response headers (default: empty)
  * @returns Mock Response object
  */
-export const createMockResponse = (data: any, status = 200): Response => {
+export const createMockResponse = (data: any, status = 200, headers: Record<string, string> = {}): Response => {
+    const responseHeaders = new Headers(headers);
     const createResponse = (): Response => ({
         ok: status >= 200 && status < 300,
         status,
         statusText: getStatusText(status),
         json: async () => data,
-        text: async () => JSON.stringify(data),
-        blob: async () => new Blob([JSON.stringify(data)]),
-        arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(data)).buffer,
+        text: async () => data !== null ? JSON.stringify(data) : '',
+        blob: async () => new Blob([]),
+        arrayBuffer: async () => new ArrayBuffer(0),
         formData: async () => new FormData(),
         clone: createResponse,
-        headers: new Headers(),
+        headers: responseHeaders,
         redirected: false,
         type: 'basic' as ResponseType,
         url: '',

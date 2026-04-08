@@ -202,6 +202,7 @@ export const labels = {
         themeLight: 'Světlý',
         menuLoadError: 'Chyba při načítání menu',
         noMenuAvailable: 'Žádné položky menu nejsou dostupné',
+        navAdminSection: 'Administrace',
         calendarSubtitle: 'Kalendář akcí a důležitých dat',
         prevMonth: 'Předchozí měsíc',
         nextMonth: 'Následující měsíc',

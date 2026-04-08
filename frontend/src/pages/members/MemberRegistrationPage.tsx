@@ -1,7 +1,6 @@
 import {type ReactElement} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import type {HalResponse} from '../../api';
-import {toHref} from '../../api/hateoas';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay';
 import type {RenderFormCallback} from '../../components/HalNavigator2/halforms';
@@ -59,16 +58,6 @@ export const MemberRegistrationPage = (): ReactElement => {
     const hasType = (type: string) => fieldTypeSet.has(type);
 
     const hasDocumentFields = hasFields(DOCUMENT_FIELDS) || DOCUMENT_TYPES.some(t => fieldTypeSet.has(t));
-
-    const handleSubmitSuccess = (responseData?: unknown) => {
-        const halData = responseData as HalResponse | undefined;
-        const selfLink = halData?._links?.self;
-        if (selfLink) {
-            navigate(toHref(selfLink).replace(/^\/api/, ''));
-        } else {
-            navigate('/members');
-        }
-    };
 
     const renderForm: RenderFormCallback = ({renderInput, renderField}) => (
         <div className="flex flex-col gap-8">
@@ -160,7 +149,6 @@ export const MemberRegistrationPage = (): ReactElement => {
             resourceData={{}}
             pathname="/members"
             onClose={() => navigate('/members')}
-            onSubmitSuccess={handleSubmitSuccess}
             successMessage="Člen úspěšně zaregistrován"
             customLayout={renderForm}
         />

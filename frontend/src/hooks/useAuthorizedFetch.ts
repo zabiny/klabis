@@ -95,6 +95,15 @@ export function useAuthorizedQuery<T = unknown>(
 }
 
 /**
+ * Result shape returned by the mutation function — carries both the parsed body and
+ * the raw Location response header so callers can navigate to newly-created resources.
+ */
+export interface MutationResult {
+    data: unknown;
+    location: string | null;
+}
+
+/**
  * Options for useAuthorizedMutation hook
  */
 export interface UseAuthorizedMutationOptions {
@@ -111,17 +120,13 @@ export interface UseAuthorizedMutationOptions {
     /**
      * Called when mutation succeeds
      */
-    onSuccess?: (data: unknown) => void;
+    onSuccess?: (result: MutationResult) => void;
 
     /**
      * Called when mutation fails
      */
     onError?: (error: Error) => void;
 
-    /**
-     * Called when mutation settles (succeeds or fails)
-     */
-    onSettled?: () => void;
 }
 
 /**
@@ -162,9 +167,9 @@ export interface UseAuthorizedMutationVariables {
  */
 export function useAuthorizedMutation(
     options: UseAuthorizedMutationOptions
-): UseMutationResult<unknown, Error, UseAuthorizedMutationVariables> {
+): UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables> {
     return useMutation({
-        mutationFn: async ({url, data}: UseAuthorizedMutationVariables) => {
+        mutationFn: async ({url, data}: UseAuthorizedMutationVariables): Promise<MutationResult> => {
             const headers: Record<string, string> = {
                 ...options.headers,
                 'Content-Type': 'application/json',
@@ -181,15 +186,18 @@ export function useAuthorizedMutation(
 
             const response = await authorizedFetch(url, fetchOptions, true);
 
+            const location = response.headers.get('Location');
+
+            let parsedData: unknown = null;
             try {
-                return await response.json();
+                parsedData = await response.json();
             } catch {
-                // If JSON parsing fails, return null
-                return null;
+                // No JSON body — leave as null
             }
+
+            return {data: parsedData, location};
         },
         onSuccess: options.onSuccess,
         onError: options.onError,
-        onSettled: options.onSettled,
     });
 }

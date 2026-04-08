@@ -38,9 +38,9 @@ describe('useIsAdmin', () => {
 
     it('should return isAdmin true when sourceEvents link exists', () => {
         const navigationItems: NavigationItem[] = [
-            {rel: 'members', label: 'Members', href: '/members'},
-            {rel: 'admin', label: 'Admin dashboard', href: '/admin'},
-            {rel: 'events', label: 'Events', href: '/events'},
+            {rel: 'members', label: 'Members', href: '/members', section: 'main'},
+            {rel: 'admin', label: 'Admin dashboard', href: '/admin', section: 'admin'},
+            {rel: 'events', label: 'Events', href: '/events', section: 'main'},
         ];
 
         mockUseRootNavigation.mockReturnValue({
@@ -74,8 +74,8 @@ describe('useIsAdmin', () => {
 
     it('should return isAdmin false when sourceEvents link does not exist', () => {
         const navigationItems: NavigationItem[] = [
-            {rel: 'members', label: 'Members', href: '/members'},
-            {rel: 'events', label: 'Events', href: '/events'},
+            {rel: 'members', label: 'Members', href: '/members', section: 'main'},
+            {rel: 'events', label: 'Events', href: '/events', section: 'main'},
         ];
 
         mockUseRootNavigation.mockReturnValue({

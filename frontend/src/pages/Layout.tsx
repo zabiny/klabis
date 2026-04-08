@@ -54,6 +54,8 @@ const Layout = () => {
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
     const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768)
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
+    const mainItems = menuItems.filter(item => item.section === 'main')
+    const adminItems = menuItems.filter(item => item.section === 'admin')
 
     // Track screen size changes for responsive sidebar
     useEffect(() => {
@@ -194,7 +196,7 @@ const Layout = () => {
                                     <Home className="w-5 h-5" />
                                     <span>{labels.nav.home}</span>
                                 </NavLink>
-                                {menuItems.map((item) => {
+                                {mainItems.map((item) => {
                                     const Icon = getNavIcon(item.rel)
                                     return (
                                         <NavLink key={item.rel} to={item.href} className={bottomNavClassName}>
@@ -230,24 +232,49 @@ const Layout = () => {
                                 {labels.ui.menuLoadError}: {menuError.message}
                             </Alert>
                         ) : menuItems.length > 0 ? (
-                            menuItems.map((item) => {
-                                const Icon = getNavIcon(item.rel)
-                                return (
-                                    <NavLink
-                                        key={item.rel}
-                                        to={item.href}
-                                        className={({isActive}: {isActive: boolean}) => {
-                                            const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
-                                            const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
-                                            const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
-                                            return `${base} ${isActive ? active : inactive}`
-                                        }}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                        <span className="flex-1">{item.label}</span>
-                                    </NavLink>
-                                )
-                            })
+                            <>
+                                {mainItems.map((item) => {
+                                    const Icon = getNavIcon(item.rel)
+                                    return (
+                                        <NavLink
+                                            key={item.rel}
+                                            to={item.href}
+                                            className={({isActive}: {isActive: boolean}) => {
+                                                const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
+                                                const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
+                                                const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
+                                                return `${base} ${isActive ? active : inactive}`
+                                            }}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span className="flex-1">{item.label}</span>
+                                        </NavLink>
+                                    )
+                                })}
+                                {adminItems.length > 0 && (
+                                    <>
+                                        <p className="px-2 pt-4 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">{labels.ui.navAdminSection}</p>
+                                        {adminItems.map((item) => {
+                                            const Icon = getNavIcon(item.rel)
+                                            return (
+                                                <NavLink
+                                                    key={item.rel}
+                                                    to={item.href}
+                                                    className={({isActive}: {isActive: boolean}) => {
+                                                        const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
+                                                        const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
+                                                        const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
+                                                        return `${base} ${isActive ? active : inactive}`
+                                                    }}
+                                                >
+                                                    <Icon className="w-4 h-4" />
+                                                    <span className="flex-1">{item.label}</span>
+                                                </NavLink>
+                                            )
+                                        })}
+                                    </>
+                                )}
+                            </>
                         ) : (
                             <div className="text-text-tertiary text-sm px-4 py-3">
                                 {labels.ui.noMenuAvailable}

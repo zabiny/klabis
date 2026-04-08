@@ -82,8 +82,8 @@ describe('Layout - Responsive Sidebar', () => {
         // Mock useRootNavigation to return menu items
         useRootNavigation.mockReturnValue(
             createMockQueryResult([
-                {rel: 'members', href: '/members', label: 'Members'},
-                {rel: 'events', href: '/events', label: 'Events'},
+                {rel: 'members', href: '/members', label: 'Members', section: 'main'},
+                {rel: 'events', href: '/events', label: 'Events', section: 'main'},
             ])
         )
 
@@ -309,6 +309,145 @@ describe('Layout - Responsive Sidebar', () => {
             fireEvent.click(logoutButtons[0])
 
             expect(mockLogout).toHaveBeenCalled()
+        })
+    })
+
+    describe('Desktop sidebar — two-section rendering', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
+            window.dispatchEvent(new Event('resize'))
+        })
+
+        it('renders both main heading and Administrace heading when both sections are present, and groups items correctly', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
+                    {rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'admin'},
+                    {rel: 'family-groups', href: '/family-groups', label: 'Rodinné skupiny', section: 'admin'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Akce')).toBeInTheDocument()
+            })
+
+            expect(screen.getByText('Administrace')).toBeInTheDocument()
+            expect(screen.getByText('Akce')).toBeInTheDocument()
+            expect(screen.getByText('Tréninkové skupiny')).toBeInTheDocument()
+            expect(screen.getByText('Šablony')).toBeInTheDocument()
+            expect(screen.getByText('Rodinné skupiny')).toBeInTheDocument()
+        })
+
+        it('renders only the main heading and no Administrace heading when there are no admin items', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Akce')).toBeInTheDocument()
+            })
+
+            expect(screen.queryByText('Administrace')).not.toBeInTheDocument()
+        })
+
+        it('renders both main heading (empty) and Administrace heading when only admin items are present', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Tréninkové skupiny')).toBeInTheDocument()
+            })
+
+            expect(screen.getByText('Administrace')).toBeInTheDocument()
+        })
+
+        it('renders items within each section in the order they came from the hook', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'family-groups', href: '/family-groups', label: 'Rodinné skupiny', section: 'admin'},
+                    {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Členové')).toBeInTheDocument()
+            })
+
+            const sidebar = screen.getByRole('complementary')
+            const navLinks = sidebar.querySelectorAll('a')
+            const linkTexts = Array.from(navLinks).map(a => a.textContent?.trim())
+
+            const membersIdx = linkTexts.findIndex(t => t === 'Členové')
+            const eventsIdx = linkTexts.findIndex(t => t === 'Akce')
+            const familyIdx = linkTexts.findIndex(t => t === 'Rodinné skupiny')
+            const trainingIdx = linkTexts.findIndex(t => t === 'Tréninkové skupiny')
+
+            expect(membersIdx).toBeLessThan(eventsIdx)
+            expect(familyIdx).toBeLessThan(trainingIdx)
+            expect(eventsIdx).toBeLessThan(familyIdx)
+        })
+    })
+
+    describe('Mobile bottom nav — main-only filtering', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: MOBILE_WIDTH})
+            window.dispatchEvent(new Event('resize'))
+        })
+
+        it('does not render admin items in the bottom nav when admin items are present', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
+                    {rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'admin'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Akce')).toBeInTheDocument()
+            })
+
+            const bottomNav = screen.getByRole('navigation', {name: /navigace/i})
+            expect(bottomNav).not.toHaveTextContent('Tréninkové skupiny')
+            expect(bottomNav).not.toHaveTextContent('Šablony')
+        })
+
+        it('renders main items exactly in the bottom nav when only main items are present', async () => {
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
+                ])
+            )
+
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Akce')).toBeInTheDocument()
+            })
+
+            const bottomNav = screen.getByRole('navigation', {name: /navigace/i})
+            expect(bottomNav).toHaveTextContent('Akce')
+            expect(bottomNav).toHaveTextContent('Členové')
         })
     })
 })
