@@ -177,7 +177,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
                             <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
                             <HalFormButton name="finishEvent" modal={true} icon={<CheckCircle className="w-4 h-4"/>}/>
-                            <HalFormButton name="syncFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
+                            <HalFormButton name="syncEventFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
                             <HalFormButton name="registerForEvent" modal={true} icon={<UserPlus className="w-4 h-4"/>}/>
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
                         </div>

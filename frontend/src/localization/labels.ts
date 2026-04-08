@@ -39,7 +39,7 @@ export const labels = {
         publishEvent: 'Publikovat',
         createEvent: 'Přidat akci',
         importEvent: 'Importovat z ORIS',
-        syncFromOris: 'Synchronizovat z ORISu',
+        syncEventFromOris: 'Synchronizovat z ORISu',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
         resumeMember: 'Reaktivovat',
