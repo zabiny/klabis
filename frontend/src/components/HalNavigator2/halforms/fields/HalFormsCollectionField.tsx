@@ -54,6 +54,7 @@ export const HalFormsCollectionField = ({
             name: `${prop.name}.${index}`,
             prompt: undefined,
             multiple: false,
+            multi: false,
         }
 
         // Rebuild subElementProps so composite sub-fields resolve relative to the indexed item

@@ -171,6 +171,22 @@ describe('HalFormsCollectionField', () => {
         });
     });
 
+    describe('multi flag handling', () => {
+        it('clears multi flag on indexed props so inner factory does not loop', async () => {
+            const capturedProps: HalFormsInputProps[] = [];
+            const mockFactory = vi.fn().mockImplementation((_, conf: HalFormsInputProps) => {
+                capturedProps.push(conf);
+                return <input data-testid="inner-field" />;
+            });
+            const prop = createProp({multi: true, multiple: false} as Partial<HalFormsProperty>);
+            const props = createProps(prop, mockFactory);
+            renderWithFormik(props, ['M21']);
+
+            expect(capturedProps[0].prop).not.toHaveProperty('multi', true);
+            expect(capturedProps[0].prop.multiple).toBe(false);
+        });
+    });
+
     describe('field name indexing', () => {
         it('passes indexed field name to inner factory for each item', async () => {
             const capturedNames: string[] = [];

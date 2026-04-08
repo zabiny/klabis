@@ -32,6 +32,7 @@ describe('labels', () => {
 
     it('has field labels', () => {
         expect(labels.fields.eventCoordinatorId).toBe('Koordinátor');
+        expect((labels.fields as Record<string, string>).category).toBe('Kategorie');
         expect(labels.fields.eventDate).toBe('Datum konání');
         expect(labels.fields.location).toBe('Místo');
         expect(labels.fields.name).toBe('Název');

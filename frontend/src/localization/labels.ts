@@ -86,6 +86,7 @@ export const labels = {
         eventCoordinatorId: 'Koordinátor',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
+        category: 'Kategorie',
         categories: 'Kategorie',
         location: 'Místo',
         name: 'Název',
