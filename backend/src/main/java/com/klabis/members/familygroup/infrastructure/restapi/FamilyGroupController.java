@@ -16,9 +16,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -50,22 +47,13 @@ class FamilyGroupController {
         this.familyGroupManagementService = familyGroupManagementService;
     }
 
-    record CreateFamilyGroupRequest(
-            @NotBlank @Size(max = 200) String name,
-            @NotNull UUID parentId
-    ) {
-    }
-
     @PostMapping(consumes = "application/json")
     @Operation(summary = "Create a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> createFamilyGroup(
-            @Valid @RequestBody CreateFamilyGroupRequest request,
+            @Valid @RequestBody FamilyGroup.CreateFamilyGroup command,
             @CurrentUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
-
-        FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                request.name(), new MemberId(request.parentId()));
 
         FamilyGroup group = familyGroupManagementService.createFamilyGroup(command);
 
@@ -114,7 +102,8 @@ class FamilyGroupController {
                     .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)));
             if (hasMembersManage) {
                 selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)));
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null, null)));
             }
             model.add(selfLink);
         });
@@ -167,6 +156,34 @@ class FamilyGroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/children", consumes = "application/json")
+    @Operation(summary = "Add a child to family group (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> addFamilyGroupChild(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Valid @RequestBody AddParentRequest request,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireMembersManageAuthority(currentUser);
+
+        FamilyGroupId groupId = new FamilyGroupId(id);
+        familyGroupManagementService.addChild(groupId, new MemberId(request.memberId()));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/children/{memberId}")
+    @Operation(summary = "Remove a child from family group (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> removeFamilyGroupChild(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Parameter(description = "Child member UUID") @PathVariable UUID memberId,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireMembersManageAuthority(currentUser);
+
+        FamilyGroupId groupId = new FamilyGroupId(id);
+        familyGroupManagementService.removeChild(groupId, new MemberId(memberId));
+        return ResponseEntity.noContent().build();
+    }
+
     private EntityModel<FamilyGroupSummaryResponse> buildFamilyGroupSummaryModel(FamilyGroup group) {
         UUID groupId = group.getId().uuid();
         FamilyGroupSummaryResponse response = new FamilyGroupSummaryResponse(
@@ -194,17 +211,24 @@ class FamilyGroupController {
                 .toList();
 
         List<EntityModel<FamilyGroupMembershipResponse>> memberModels = group.getMembers().stream()
-                .map(m -> buildMemberModel(m, groupUuid))
+                .filter(m -> !parentIds.contains(MemberId.fromUserId(m.userId())))
+                .map(m -> buildChildModel(m, groupUuid, hasMembersManage))
                 .toList();
 
         return new FamilyGroupResponse(group.getId(), group.getName(), parentModels, memberModels);
     }
 
-    private EntityModel<FamilyGroupMembershipResponse> buildMemberModel(GroupMembership membership, UUID groupUuid) {
+    private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership membership, UUID groupUuid, boolean hasMembersManage) {
         MemberId memberId = MemberId.fromUserId(membership.userId());
         FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
         model.add(Link.of("/api/members/" + memberId.uuid(), "member"));
+        if (hasMembersManage) {
+            klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupChild(groupUuid, memberId.uuid(), null))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
+                                    .removeFamilyGroupChild(groupUuid, memberId.uuid(), null)))));
+        }
         return model;
     }
 

@@ -45,16 +45,16 @@
 
 ## 6. Family group REST API — simplified create + new child endpoints (TDD)
 
-- [ ] 6.1 Add failing `FamilyGroupControllerTest`: `POST /api/family-groups` with body `{"name":"...","parentId":"<uuid>"}` returns 201 and the new group has exactly one parent and no children
-- [ ] 6.2 Add failing test: `POST /api/family-groups` with missing `parentId` returns 400 with a validation error
-- [ ] 6.3 Add failing test: `POST /api/family-groups/{id}/children` with `{"memberId":"<uuid>"}` adds the child; response is 201 or 204 (match existing `/parents` endpoint style)
-- [ ] 6.4 Add failing test: `POST /api/family-groups/{id}/children` for a member who is already a parent of the same group returns a 4xx with a parent/child conflict error
-- [ ] 6.5 Add failing test: `DELETE /api/family-groups/{id}/children/{memberId}` removes the child
-- [ ] 6.6 Add failing test: HAL-Forms template on the family group detail response includes both `addParent` and `addChild` affordances when the current user has `MEMBERS:MANAGE`, and omits them otherwise
-- [ ] 6.7 Replace `CreateFamilyGroupRequest` with the domain `FamilyGroup.CreateFamilyGroup` record bound via `@RequestBody`; reuse the existing `MemberIdMixin` so `MemberId` deserializes from a UUID string (mirror the `EventController` / `CalendarController` pattern)
-- [ ] 6.8 Add `POST /api/family-groups/{id}/children` handler and `DELETE /api/family-groups/{id}/children/{memberId}` handler; both require `MEMBERS:MANAGE`
-- [ ] 6.9 Update the family group detail HAL-Forms builder to emit `addChild` and `removeChild` affordances (add to the per-child representation; remove goes on each child)
-- [ ] 6.10 Verify tests 6.1–6.6 pass
+- [x] 6.1 Add failing `FamilyGroupControllerTest`: `POST /api/family-groups` with body `{"name":"...","parentId":"<uuid>"}` returns 201 and the new group has exactly one parent and no children
+- [x] 6.2 Add failing test: `POST /api/family-groups` with missing `parentId` returns 400 with a validation error
+- [x] 6.3 Add failing test: `POST /api/family-groups/{id}/children` with `{"memberId":"<uuid>"}` adds the child; response is 201 or 204 (match existing `/parents` endpoint style)
+- [x] 6.4 Add failing test: `POST /api/family-groups/{id}/children` for a member who is already a parent of the same group returns a 4xx with a parent/child conflict error
+- [x] 6.5 Add failing test: `DELETE /api/family-groups/{id}/children/{memberId}` removes the child
+- [x] 6.6 Add failing test: HAL-Forms template on the family group detail response includes both `addParent` and `addChild` affordances when the current user has `MEMBERS:MANAGE`, and omits them otherwise
+- [x] 6.7 Replace `CreateFamilyGroupRequest` with the domain `FamilyGroup.CreateFamilyGroup` record bound via `@RequestBody`; reuse the existing `MemberIdMixin` so `MemberId` deserializes from a UUID string (mirror the `EventController` / `CalendarController` pattern)
+- [x] 6.8 Add `POST /api/family-groups/{id}/children` handler and `DELETE /api/family-groups/{id}/children/{memberId}` handler; both require `MEMBERS:MANAGE`
+- [x] 6.9 Update the family group detail HAL-Forms builder to emit `addChild` and `removeChild` affordances (add to the per-child representation; remove goes on each child)
+- [x] 6.10 Verify tests 6.1–6.6 pass
 
 ## 7. Training group — manual trainee exclusivity (TDD)
 

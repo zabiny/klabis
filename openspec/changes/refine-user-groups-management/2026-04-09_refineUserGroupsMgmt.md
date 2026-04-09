@@ -98,6 +98,35 @@ Reused `MemberAlreadyInGroupException` (from `common.usergroup`). The candidate 
 
 ---
 
+### Iter 3 — 2026-04-09 — FamilyGroup REST API update (tasks 6.x)
+
+**Files modified:**
+- `backend/src/main/java/com/klabis/members/familygroup/infrastructure/restapi/FamilyGroupController.java` — dropped `CreateFamilyGroupRequest` DTO; `@RequestBody` now binds directly onto `FamilyGroup.CreateFamilyGroup` (mirrors `EventController` pattern); added `addFamilyGroupChild` (`POST /{id}/children`) and `removeFamilyGroupChild` (`DELETE /{id}/children/{memberId}`) handlers; `getFamilyGroup` now emits `addFamilyGroupChild` affordance alongside `addFamilyGroupParent` when user has `MEMBERS:MANAGE`; `toFamilyGroupResponse` split into parent and child model builders — children filtered by excluding parent `MemberId`s; `buildChildModel` emits `removeChild` affordance per child when user has `MEMBERS:MANAGE`
+- `backend/src/test/java/com/klabis/members/familygroup/infrastructure/restapi/FamilyGroupControllerTest.java` — updated all existing POST body JSON from `parentId` to `parent` field name (domain record field); added `AddFamilyGroupChildTests` (3 tests), `RemoveFamilyGroupChildTests` (2 tests), `FamilyGroupDetailAffordancesTests` (2 tests); added `shouldReturn400WhenParentIdIsMissing` and `shouldCreateFamilyGroupWithOneParentAndNoChildren` tests
+
+**Tests added (new):**
+- `CreateFamilyGroupTests.shouldReturn400WhenParentIdIsMissing` (6.2)
+- `CreateFamilyGroupTests.shouldCreateFamilyGroupWithOneParentAndNoChildren` (6.1)
+- `AddFamilyGroupChildTests.shouldReturn204WhenAddingChild` (6.3)
+- `AddFamilyGroupChildTests.shouldReturn400WhenChildIsAlreadyParent` (6.4)
+- `AddFamilyGroupChildTests.shouldReturn403WhenMissingAuthority` (6.3)
+- `RemoveFamilyGroupChildTests.shouldReturn204WhenRemovingChild` (6.5)
+- `RemoveFamilyGroupChildTests.shouldReturn403WhenMissingAuthority` (6.5)
+- `FamilyGroupDetailAffordancesTests.shouldIncludeAddParentAndAddChildAffordancesWhenAuthorized` (6.6)
+- `FamilyGroupDetailAffordancesTests.shouldOmitAffordancesWhenNotAuthorized` (6.6)
+
+**Pattern mirrored for @RequestBody + MemberIdMixin:** `EventController` — `@Valid @RequestBody Event.CreateEvent command` binds the domain record directly; `MemberIdMixin` (`@JacksonMixin(MemberId.class)`) is auto-discovered by Spring Boot's Jackson auto-configuration and applies in `@WebMvcTest` without any extra `@Import`.
+
+**HAL-Forms affordance template names:** Spring HATEOAS derives template names from the controller method name with first letter lower-cased. `addFamilyGroupParent` → `addFamilyGroupParent`, `addFamilyGroupChild` → `addFamilyGroupChild`. Initial test used `addParent`/`addChild` which failed; corrected to use full method names.
+
+**JSON field name change:** `CreateFamilyGroup` record has field `parent` (not `parentId`). Existing controller tests that sent `"parentId"` in the JSON body were updated to `"parent"` to match the domain record field name. This is the only breaking API change from the old `CreateFamilyGroupRequest`.
+
+**Child filtering in detail response:** `toFamilyGroupResponse` now filters the members list to exclude parents (owners), so the `members` array in the API response contains only children, not parents who appear in the `parents` array too.
+
+**Result:** 2076/2076 tests pass. All 6.x checkboxes ticked.
+
+---
+
 ### Iter 1 — 2026-04-09 — WithInvitations owner promotion rule (tasks 1.x + 2.x)
 
 **Files created:**
