@@ -260,14 +260,14 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('button', {name: /zrušit akci/i})).toBeInTheDocument();
         });
 
-        it('shows finishEvent button when template exists', () => {
+        it('does not show finishEvent button even when template is present (endpoint removed)', () => {
             const data = mockEventDetailData({
                 _templates: {
                     finishEvent: mockHalFormsTemplate({title: 'Dokončit'}),
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /ukončit akci/i})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /ukončit akci/i})).not.toBeInTheDocument();
         });
 
         it('shows registerForEvent button when template exists', () => {

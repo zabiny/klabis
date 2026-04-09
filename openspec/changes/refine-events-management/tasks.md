@@ -74,32 +74,32 @@
 
 ## 9. Frontend — ORIS import dialog radio buttons
 
-- [ ] 9.1 In `frontend/src/components/events/ImportOrisEventModal.tsx`, change `selectedRegions` state type from `string[]` to `string` and default it to `'JM'`
-- [ ] 9.2 Replace the three checkbox inputs with three radio inputs (same name attribute) for `JM`, `M`, `ČR`
-- [ ] 9.3 Update the `fetchEvents` caller so it passes a single-element array (or refactor `fetchEvents` to accept a single string and build the URL with one `region` param)
-- [ ] 9.4 Update `ImportOrisEventModal.test.tsx` to assert that picking "ČR" clears the "Jihomoravská" selection
-- [ ] 9.5 Verify the test passes
+- [x] 9.1 In `frontend/src/components/events/ImportOrisEventModal.tsx`, change `selectedRegions` state type from `string[]` to `string` and default it to `'JM'`
+- [x] 9.2 Replace the three checkbox inputs with three radio inputs (same name attribute) for `JM`, `M`, `ČR`
+- [x] 9.3 Update the `fetchEvents` caller so it passes a single-element array (or refactor `fetchEvents` to accept a single string and build the URL with one `region` param)
+- [x] 9.4 Update `ImportOrisEventModal.test.tsx` to assert that picking "ČR" clears the "Jihomoravská" selection
+- [x] 9.5 Verify the test passes
 - [ ] 9.6 Manual QA: open the dialog in the running app and confirm the three options behave as radio buttons (exactly one always selected) and the events list refreshes on each change
 
 ## 10. Frontend — events list management actions
 
-- [ ] 10.1 Locate the events list page component and its row-renderer
-- [ ] 10.2 Add an "Akce" column (or extend the existing one) that renders buttons for each HAL-Forms affordance on the row — follow the pattern used by the members table
-- [ ] 10.3 The column should render buttons for `updateEvent`, `cancelEvent`, `syncEventFromOris`, and the existing register/unregister affordances, in that order
+- [x] 10.1 Locate the events list page component and its row-renderer
+- [x] 10.2 Add an "Akce" column (or extend the existing one) that renders buttons for each HAL-Forms affordance on the row — follow the pattern used by the members table
+- [x] 10.3 The column should render buttons for `updateEvent`, `cancelEvent`, `syncEventFromOris`, and the existing register/unregister affordances, in that order
 - [ ] 10.4 Verify via manual QA: as admin (`ZBM9000`), confirm DRAFT rows show Upravit + Publikovat + Zrušit; ACTIVE rows show Upravit + Zrušit + Synchronizovat (if ORIS); FINISHED/CANCELLED rows show no management actions
 - [ ] 10.5 As regular member (`ZBM9500`), confirm rows show only register/unregister where applicable and no management actions
 
 ## 11. Frontend — remove "Ukončit akci" button
 
-- [ ] 11.1 Locate the event detail page component in `frontend/src`
-- [ ] 11.2 Remove the "Ukončit akci" button entirely (both the UI element and the mutation hook it calls)
-- [ ] 11.3 Remove any frontend type or client-code reference to the `finishEvent` affordance
-- [ ] 11.4 Regenerate `klabisApi.d.ts` via `npm run openapi` after the backend endpoint has been deleted, so stale types are gone
+- [x] 11.1 Locate the event detail page component in `frontend/src`
+- [x] 11.2 Remove the "Ukončit akci" button entirely (both the UI element and the mutation hook it calls)
+- [x] 11.3 Remove any frontend type or client-code reference to the `finishEvent` affordance
+- [x] 11.4 Regenerate `klabisApi.d.ts` via `npm run openapi` after the backend endpoint has been deleted, so stale types are gone
 
 ## 12. Frontend — handle missing location in list and detail
 
-- [ ] 12.1 Events list: verify the location cell renders empty (not `null`, not `undefined`) when an event has no location
-- [ ] 12.2 Event detail page: verify the location row is hidden entirely (not shown with an empty value) when the event has no location
+- [x] 12.1 Events list: verify the location cell renders empty (not `null`, not `undefined`) when an event has no location
+- [x] 12.2 Event detail page: verify the location row is hidden entirely (not shown with an empty value) when the event has no location
 - [ ] 12.3 Manually test: import an ORIS event known to have no location, open both list and detail, confirm rendering
 
 ## 13. Regression / QA walkthrough

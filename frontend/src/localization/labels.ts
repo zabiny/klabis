@@ -32,7 +32,6 @@ export const labels = {
 
     templates: {
         cancelEvent: 'Zrušit akci',
-        finishEvent: 'Ukončit akci',
         unregisterFromEvent: 'Odhlásit se z akce',
         updateEvent: 'Upravit',
         registerForEvent: 'Přihlásit se',
@@ -77,7 +76,6 @@ export const labels = {
     dialogTitles: {
         publishEvent: 'Publikování akce',
         cancelEvent: 'Zrušení akce',
-        finishEvent: 'Ukončení akce',
         registerForEvent: 'Přihlásit se na akci',
         unregisterFromEvent: 'Odhlásit se z akce',
         suspendMember: 'Ukončení členství',

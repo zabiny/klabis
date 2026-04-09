@@ -28,19 +28,19 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
     const navigate = useNavigate();
     const [fetchState, setFetchState] = useState<FetchState>('loading');
     const [orisEvents, setOrisEvents] = useState<OrisEvent[]>([]);
-    const [selectedRegions, setSelectedRegions] = useState<string[]>(['JM']);
+    const [selectedRegions, setSelectedRegions] = useState<string>('JM');
     const [selectedId, setSelectedId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const fetchEvents = useCallback((regions: string[]) => {
+    const fetchEvents = useCallback((region: string) => {
         setFetchState('loading');
         setOrisEvents([]);
         setSelectedId('');
         setSubmitError(null);
 
         const params = new URLSearchParams();
-        regions.forEach(r => params.append('region', r));
+        params.append('region', region);
 
         authorizedFetch(`/api/oris/events?${params.toString()}`)
             .then((res) => res.json())
@@ -55,17 +55,13 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
 
     useEffect(() => {
         if (!isOpen) return;
-        setSelectedRegions(['JM']);
-        fetchEvents(['JM']);
+        setSelectedRegions('JM');
+        fetchEvents('JM');
     }, [isOpen, fetchEvents]);
 
-    const handleRegionToggle = (regionValue: string) => {
-        const newRegions = selectedRegions.includes(regionValue)
-            ? selectedRegions.filter(r => r !== regionValue)
-            : [...selectedRegions, regionValue];
-        if (newRegions.length === 0) return;
-        setSelectedRegions(newRegions);
-        fetchEvents(newRegions);
+    const handleRegionChange = (regionValue: string) => {
+        setSelectedRegions(regionValue);
+        fetchEvents(regionValue);
     };
 
     const handleSubmit = async () => {
@@ -129,11 +125,13 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
                 {ORIS_REGION_KEYS.map((key) => (
                     <label key={key} className="flex items-center gap-1.5 text-sm text-text-primary cursor-pointer">
                         <input
-                            type="checkbox"
-                            checked={selectedRegions.includes(key)}
-                            onChange={() => handleRegionToggle(key)}
-                            disabled={isSubmitting || (selectedRegions.length === 1 && selectedRegions.includes(key))}
-                            className="rounded border-border text-accent focus:ring-accent"
+                            type="radio"
+                            name="orisRegion"
+                            value={key}
+                            checked={selectedRegions === key}
+                            onChange={() => handleRegionChange(key)}
+                            disabled={isSubmitting}
+                            className="border-border text-accent focus:ring-accent"
                         />
                         {labels.orisRegions[key]}
                     </label>

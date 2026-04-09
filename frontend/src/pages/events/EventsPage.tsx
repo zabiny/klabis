@@ -13,13 +13,13 @@ import {labels, getEnumLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
 import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
-import {ExternalLink, UserMinus, UserPlus} from "lucide-react";
+import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
 
 type EventListData = EntityModel<{
     id: string,
     name: string,
     eventDate: string,
-    location: string,
+    location: string | null,
     organizer: string,
     websiteUrl?: string,
     registrationDeadline?: string,
@@ -83,12 +83,43 @@ export const EventsPage = (): ReactElement => {
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
-        const hasRegister = !!event._templates?.registerForEvent;
-        const hasUnregister = !!event._templates?.unregisterFromEvent;
+        const t = event._templates ?? {};
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {hasRegister && (
+                {t.updateEvent && (
+                    <Button variant="ghost" size="sm" title={labels.templates.updateEvent} onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'updateEvent');
+                    }}>
+                        <Pencil className="w-4 h-4"/>
+                    </Button>
+                )}
+                {t.publishEvent && (
+                    <Button variant="ghost" size="sm" title={labels.templates.publishEvent} onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'publishEvent');
+                    }}>
+                        <Globe className="w-4 h-4"/>
+                    </Button>
+                )}
+                {t.cancelEvent && (
+                    <Button variant="ghost" size="sm" title={labels.templates.cancelEvent} onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'cancelEvent');
+                    }}>
+                        <XCircle className="w-4 h-4"/>
+                    </Button>
+                )}
+                {t.syncEventFromOris && (
+                    <Button variant="ghost" size="sm" title={labels.templates.syncEventFromOris} onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'syncEventFromOris');
+                    }}>
+                        <RefreshCw className="w-4 h-4"/>
+                    </Button>
+                )}
+                {t.registerForEvent && (
                     <Button variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         openActionModal(event, 'registerForEvent');
@@ -96,7 +127,7 @@ export const EventsPage = (): ReactElement => {
                         <UserPlus className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasUnregister && (
+                {t.unregisterFromEvent && (
                     <Button variant="ghost" size="sm" className="text-red-600" onClick={(e) => {
                         e.stopPropagation();
                         openActionModal(event, 'unregisterFromEvent');
@@ -132,7 +163,8 @@ export const EventsPage = (): ReactElement => {
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
                 <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>
-                <TableCell sortable column={"location"}>{labels.fields.location}</TableCell>
+                <TableCell sortable column={"location"}
+                           dataRender={({value}) => value ? <span>{value as string}</span> : null}>{labels.fields.location}</TableCell>
                 <TableCell sortable column={"organizer"}>{labels.fields.organizer}</TableCell>
                 <TableCell column={"websiteUrl"}
                            dataRender={({value}) => value ? (

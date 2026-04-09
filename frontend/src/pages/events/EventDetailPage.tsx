@@ -12,13 +12,13 @@ import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
-import {Check, CheckCircle, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Check, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 
 interface EventDetail {
     name: string;
     eventDate: string;
-    location?: string;
+    location?: string | null;
     organizer?: string;
     websiteUrl?: string;
     registrationDeadline?: string;
@@ -176,7 +176,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             )}
                             <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
                             <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
-                            <HalFormButton name="finishEvent" modal={true} icon={<CheckCircle className="w-4 h-4"/>}/>
                             <HalFormButton name="syncEventFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
                             <HalFormButton name="registerForEvent" modal={true} icon={<UserPlus className="w-4 h-4"/>}/>
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>

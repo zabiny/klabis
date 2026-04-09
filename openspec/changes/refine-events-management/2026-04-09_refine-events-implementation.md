@@ -98,6 +98,31 @@ All 2100 backend tests pass green.
 
 **Follow-ups:** none
 
+### 2026-04-09 — Iteration 4 (tasks 9–12) — frontend changes
+
+All 1109 frontend tests pass green (1108 pre-existing + 1 new radio-button test, minus 2 removed `finishEvent` tests = net +1 new test added in `ImportOrisEventModal.test.tsx`, pre-existing `finishEvent` button tests converted/removed in `EventDetailPage.test.tsx` and `labels.test.ts`).
+
+**Changes made:**
+
+- `frontend/src/components/events/ImportOrisEventModal.tsx` — changed `selectedRegions` state from `string[]` to `string` (default `'JM'`); replaced three checkbox inputs with three radio inputs sharing `name="orisRegion"`; renamed `fetchEvents(regions: string[])` → `fetchEvents(region: string)` building a single `?region=` param; replaced `handleRegionToggle` with `handleRegionChange`
+- `frontend/src/components/events/ImportOrisEventModal.test.tsx` — added `describe('region picker')` group with 3 tests: radio buttons render, JM selected by default, picking ČR clears Jihomoravská
+- `frontend/src/pages/events/EventsPage.tsx` — extended `renderActionsCell` to render icon buttons for `updateEvent` (Pencil), `publishEvent` (Globe), `cancelEvent` (XCircle), `syncEventFromOris` (RefreshCw) before the existing register/unregister buttons; added `Globe`, `Pencil`, `RefreshCw`, `XCircle` to lucide imports; changed `location` type in `EventListData` from `string` to `string | null`; added `dataRender` to the location `TableCell` to handle explicit `null` (renders empty instead of `"null"`)
+- `frontend/src/pages/events/EventDetailPage.tsx` — removed `HalFormButton name="finishEvent"` line; removed `CheckCircle` from lucide imports; updated `location` type in `EventDetail` interface to `string | null`
+- `frontend/src/pages/events/EventDetailPage.test.tsx` — converted `shows finishEvent button when template exists` test to a negative assertion that the button is NOT rendered even when the template is present
+- `frontend/src/localization/labels.ts` — removed `finishEvent` from `templates` and `dialogTitles`
+- `frontend/src/localization/labels.test.ts` — removed `finishEvent` assertion from `has template labels` test
+- `docs/openapi/klabis-full.json` — removed `/api/events/{id}/finish` path entry
+- `frontend/src/api/klabisApi.d.ts` — regenerated via `npm run openapi` (reads `../docs/openapi/klabis-full.json`); `finishEvent` operation and path are gone
+
+**OpenAPI regeneration command:** `npm run openapi` (in `frontend/`), which runs `npx openapi-typescript ../docs/openapi/klabis-full.json -o ./src/api/klabisApi.d.ts`. The `klabis-full.json` was updated manually first (backend not running) by removing the `/api/events/{id}/finish` path block. The backend source already had the endpoint deleted since iteration 2.
+
+**Manual QA notes (pending — requires running backend):**
+- Tasks 9.6, 10.4, 10.5, 12.3 are manual QA steps; backend was not running during this iteration. These are carried forward to iteration 5's QA walkthrough.
+- Detail page: `location` row condition `(isEditing || event.location)` correctly evaluates to `false` for both `undefined` and explicit JSON `null`, so the row hides with no code change beyond the type annotation.
+- List page: `dataRender` on location cell returns `null` (not rendered) when value is falsy, avoiding the default `String(value)` which would render `"null"`.
+
+**Follow-ups:** None blocking. Manual QA deferred to iteration 5.
+
 ### 2026-04-09 — Iteration 3 (task 8) — row-level list affordances refactor
 
 All 2107 backend tests pass green (2100 pre-existing + 7 new).
@@ -120,3 +145,28 @@ Added `import org.springframework.hateoas.Link` to support the simple type name.
 **Detail page (task 8.10):** all pre-existing `addLinksForEvent` tests (`GetEventTests`, `FinishEventTests`, affordance assertions) pass unchanged.
 
 **Follow-ups:** none
+
+### 2026-04-09 — Iteration 4 (tasks 9–12) — frontend changes
+
+All 1109 frontend tests pass green (1108 pre-existing + 1 new radio-button test, minus 2 removed `finishEvent` tests = net +1 new test added in `ImportOrisEventModal.test.tsx`, pre-existing `finishEvent` button tests converted/removed in `EventDetailPage.test.tsx` and `labels.test.ts`).
+
+**Changes made:**
+
+- `frontend/src/components/events/ImportOrisEventModal.tsx` — changed `selectedRegions` state from `string[]` to `string` (default `'JM'`); replaced three checkbox inputs with three radio inputs sharing `name="orisRegion"`; renamed `fetchEvents(regions: string[])` → `fetchEvents(region: string)` building a single `?region=` param; replaced `handleRegionToggle` with `handleRegionChange`
+- `frontend/src/components/events/ImportOrisEventModal.test.tsx` — added `describe('region picker')` group with 3 tests: radio buttons render, JM selected by default, picking ČR clears Jihomoravská
+- `frontend/src/pages/events/EventsPage.tsx` — extended `renderActionsCell` to render icon buttons for `updateEvent` (Pencil), `publishEvent` (Globe), `cancelEvent` (XCircle), `syncEventFromOris` (RefreshCw) before the existing register/unregister buttons; added `Globe`, `Pencil`, `RefreshCw`, `XCircle` to lucide imports; changed `location` type in `EventListData` from `string` to `string | null`; added `dataRender` to the location `TableCell` to handle explicit `null` (renders empty instead of `"null"`)
+- `frontend/src/pages/events/EventDetailPage.tsx` — removed `HalFormButton name="finishEvent"` line; removed `CheckCircle` from lucide imports; updated `location` type in `EventDetail` interface to `string | null`
+- `frontend/src/pages/events/EventDetailPage.test.tsx` — converted `shows finishEvent button when template exists` test to a negative assertion that the button is NOT rendered even when the template is present
+- `frontend/src/localization/labels.ts` — removed `finishEvent` from `templates` and `dialogTitles`
+- `frontend/src/localization/labels.test.ts` — removed `finishEvent` assertion from `has template labels` test
+- `docs/openapi/klabis-full.json` — removed `/api/events/{id}/finish` path entry
+- `frontend/src/api/klabisApi.d.ts` — regenerated via `npm run openapi` (reads `../docs/openapi/klabis-full.json`); `finishEvent` operation and path are gone
+
+**OpenAPI regeneration command:** `npm run openapi` (in `frontend/`), which runs `npx openapi-typescript ../docs/openapi/klabis-full.json -o ./src/api/klabisApi.d.ts`. The `klabis-full.json` was updated manually first (backend not running) by removing the `/api/events/{id}/finish` path block. The backend source already had the endpoint deleted since iteration 2.
+
+**Manual QA notes (pending — requires running backend):**
+- Tasks 9.6, 10.4, 10.5, 12.3 are manual QA steps; backend was not running during this iteration. These are carried forward to iteration 5's QA walkthrough.
+- Detail page: `location` row condition `(isEditing || event.location)` correctly evaluates to `false` for both `undefined` and explicit JSON `null`, so the row hides with no code change beyond the type annotation.
+- List page: `dataRender` on location cell returns `null` (not rendered) when value is falsy, avoiding the default `String(value)` which would render `"null"`.
+
+**Follow-ups:** None blocking. Manual QA deferred to iteration 5.

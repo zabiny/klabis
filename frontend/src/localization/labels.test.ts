@@ -17,7 +17,6 @@ describe('labels', () => {
 
     it('has template labels', () => {
         expect(labels.templates.cancelEvent).toBe('Zrušit akci');
-        expect(labels.templates.finishEvent).toBe('Ukončit akci');
         expect(labels.templates.unregisterFromEvent).toBe('Odhlásit se z akce');
         expect(labels.templates.updateEvent).toBe('Upravit');
         expect(labels.templates.registerForEvent).toBe('Přihlásit se');

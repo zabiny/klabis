@@ -350,6 +350,47 @@ describe('ImportOrisEventModal', () => {
         });
     });
 
+    describe('region picker', () => {
+        it('renders three radio buttons for JM, M, ČR regions', async () => {
+            mockAuthorizedFetch.mockResolvedValue({
+                ok: true,
+                json: async () => orisEvents,
+            } as Response);
+
+            renderModal();
+
+            expect(screen.getByRole('radio', {name: 'Jihomoravská'})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'Žebříček Morava'})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'ČR'})).toBeInTheDocument();
+        });
+
+        it('JM radio is selected by default', async () => {
+            mockAuthorizedFetch.mockResolvedValue({
+                ok: true,
+                json: async () => orisEvents,
+            } as Response);
+
+            renderModal();
+
+            expect(screen.getByRole('radio', {name: 'Jihomoravská'})).toBeChecked();
+        });
+
+        it('picking ČR clears the prior Jihomoravská selection', async () => {
+            const user = userEvent.setup();
+            mockAuthorizedFetch.mockResolvedValue({
+                ok: true,
+                json: async () => orisEvents,
+            } as Response);
+
+            renderModal();
+
+            await user.click(screen.getByRole('radio', {name: 'ČR'}));
+
+            expect(screen.getByRole('radio', {name: 'ČR'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Jihomoravská'})).not.toBeChecked();
+        });
+    });
+
     describe('cancel/close handling', () => {
         it('calls onClose when Cancel button is clicked without making a request', async () => {
             const user = userEvent.setup();
