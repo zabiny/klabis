@@ -45,7 +45,6 @@ public record EventUpdatedEvent(
         Objects.requireNonNull(eventId, "Event ID is required");
         Objects.requireNonNull(name, "Event name is required");
         Objects.requireNonNull(eventDate, "Event date is required");
-        Objects.requireNonNull(location, "Event location is required");
         Objects.requireNonNull(organizer, "Event organizer is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
         categories = categories != null ? List.copyOf(categories) : List.of();

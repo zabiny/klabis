@@ -27,7 +27,8 @@ import java.util.Optional;
  * This is the aggregate root for the Events bounded context.
  * <p>
  * Business invariants:
- * - Name, event date, location, and organizer are required
+ * - Name, event date, and organizer are required
+ * - Location is optional; null means the location is not known
  * - Website URL and event coordinator are optional
  * - Events start in DRAFT status
  * - Status transitions follow defined lifecycle rules
@@ -72,7 +73,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotNull(message = "Event date is required")
             LocalDate eventDate,
 
-            @NotBlank(message = "Event location is required")
             @Size(max = 100, message = "Event location must not exceed 100 characters")
             String location,
 
@@ -110,7 +110,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotNull(message = "Event date is required")
             LocalDate eventDate,
 
-            @NotBlank(message = "Event location is required")
             @Size(max = 100, message = "Event location must not exceed 100 characters")
             String location,
 
@@ -317,7 +316,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     public static Event create(CreateEvent command) {
         validateName(command.name());
         validateEventDate(command.eventDate());
-        validateLocation(command.location());
         validateOrganizer(command.organizer());
         validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 
@@ -353,7 +351,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     public static Event createFromOris(CreateEventFromOris command) {
         validateName(command.name());
         validateEventDate(command.eventDate());
-        validateLocation(command.location());
         validateOrganizer(command.organizer());
         validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 
@@ -388,12 +385,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private static void validateEventDate(LocalDate eventDate) {
         if (eventDate == null) {
             throw new IllegalArgumentException("eventDate is required");
-        }
-    }
-
-    private static void validateLocation(String location) {
-        if (location == null || location.trim().isBlank()) {
-            throw new IllegalArgumentException("Event location is required");
         }
     }
 
@@ -526,7 +517,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
         validateName(command.name());
         validateEventDate(command.eventDate());
-        validateLocation(command.location());
         validateOrganizer(command.organizer());
         validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 

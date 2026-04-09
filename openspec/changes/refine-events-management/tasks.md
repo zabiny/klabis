@@ -1,50 +1,50 @@
 ## 1. Database schema — relax `events.location`
 
-- [ ] 1.1 In `backend/src/main/resources/db/migration/V001__initial_schema.sql`, change `location VARCHAR(200) NOT NULL` on the `events` table to `location VARCHAR(200) NULL`
-- [ ] 1.2 Restart the backend locally and confirm Flyway re-applies V001 on the in-memory H2; verify via `INFORMATION_SCHEMA.COLUMNS` that `events.location` is nullable
+- [x] 1.1 In `backend/src/main/resources/db/migration/V001__initial_schema.sql`, change `location VARCHAR(200) NOT NULL` on the `events` table to `location VARCHAR(200) NULL`
+- [x] 1.2 Restart the backend locally and confirm Flyway re-applies V001 on the in-memory H2; verify via `INFORMATION_SCHEMA.COLUMNS` that `events.location` is nullable
 
 ## 2. Event domain — location optional (TDD)
 
-- [ ] 2.1 Add failing `EventTest`: `Event.create(...)` succeeds when `location` is `null` and the resulting aggregate has `location == null`
-- [ ] 2.2 Add failing test: `Event.create(...)` succeeds when `location` is an empty string — at the domain level an empty string is accepted (normalization happens at the API boundary if needed; the domain does not reject it)
-- [ ] 2.3 Add failing test: `Event.createFromOris(...)` succeeds when `location` is `null`
-- [ ] 2.4 Add failing test: `Event.update(...)` can set an existing event's location to `null`
-- [ ] 2.5 Remove `@NotBlank` from `location` in `CreateEvent`, `UpdateEvent`, `CreateEventFromOris`, and `SyncFromOris`; keep `@Size(max = 200)`
-- [ ] 2.6 Delete `validateLocation(...)` and its call sites in `Event.create(...)` and `Event.createFromOris(...)`
-- [ ] 2.7 Update the aggregate's class-level Javadoc "Business invariants" block so "location" is no longer listed as required
-- [ ] 2.8 Verify tests 2.1–2.4 pass
+- [x] 2.1 Add failing `EventTest`: `Event.create(...)` succeeds when `location` is `null` and the resulting aggregate has `location == null`
+- [x] 2.2 Add failing test: `Event.create(...)` succeeds when `location` is an empty string — at the domain level an empty string is accepted (normalization happens at the API boundary if needed; the domain does not reject it)
+- [x] 2.3 Add failing test: `Event.createFromOris(...)` succeeds when `location` is `null`
+- [x] 2.4 Add failing test: `Event.update(...)` can set an existing event's location to `null`
+- [x] 2.5 Remove `@NotBlank` from `location` in `CreateEvent`, `UpdateEvent`, `CreateEventFromOris`, and `SyncFromOris`; keep `@Size(max = 200)`
+- [x] 2.6 Delete `validateLocation(...)` and its call sites in `Event.create(...)` and `Event.createFromOris(...)`
+- [x] 2.7 Update the aggregate's class-level Javadoc "Business invariants" block so "location" is no longer listed as required
+- [x] 2.8 Verify tests 2.1–2.4 pass
 
 ## 3. Event persistence — verify null round-trip (TDD)
 
-- [ ] 3.1 Add failing `EventJdbcRepositoryTest`: save and reload an `Event` with `location == null`; verify the loaded event has `location == null`
-- [ ] 3.2 Confirm `EventMemento` already maps `location` as a plain nullable string (no code change expected)
-- [ ] 3.3 Verify test 3.1 passes
+- [x] 3.1 Add failing `EventJdbcRepositoryTest`: save and reload an `Event` with `location == null`; verify the loaded event has `location == null`
+- [x] 3.2 Confirm `EventMemento` already maps `location` as a plain nullable string (no code change expected)
+- [x] 3.3 Verify test 3.1 passes
 
 ## 4. Event REST API — accept null location (TDD)
 
-- [ ] 4.1 Add failing `EventControllerTest`: `POST /api/events` with body missing `location` returns 201 and persists the event with `location == null`
-- [ ] 4.2 Add failing test: `PUT /api/events/{id}` (or the inline edit endpoint used in the UI) can clear an existing location by submitting `null`
-- [ ] 4.3 Add failing `EventControllerNoOrisTest` / `EventManagementE2ETest` assertion: ORIS-import path succeeds when the upstream `EventDetails` has no location
-- [ ] 4.4 Implement any normalization at the controller boundary if the existing code rejects `null` or blank (should be unnecessary after task 2 but verify)
-- [ ] 4.5 Verify tests 4.1–4.3 pass
+- [x] 4.1 Add failing `EventControllerTest`: `POST /api/events` with body missing `location` returns 201 and persists the event with `location == null`
+- [x] 4.2 Add failing test: `PUT /api/events/{id}` (or the inline edit endpoint used in the UI) can clear an existing location by submitting `null`
+- [x] 4.3 Add failing `EventManagementE2ETest` assertion: create + retrieve event without location succeeds end-to-end
+- [x] 4.4 Implement any normalization at the controller boundary if the existing code rejects `null` or blank (should be unnecessary after task 2 but verify)
+- [x] 4.5 Verify tests 4.1–4.3 pass
 
 ## 5. Calendar item description — null-safe join (TDD)
 
-- [ ] 5.1 Add failing `CalendarItemTest` unit test: `buildEventDescription(null, "PBM", null)` returns `"PBM"`
-- [ ] 5.2 Add failing test: `buildEventDescription("Senomaty", "PBM", null)` returns `"Senomaty - PBM"` (behavior preserved)
-- [ ] 5.3 Add failing test: `buildEventDescription("Senomaty", "PBM", "https://example")` returns `"Senomaty - PBM\nhttps://example"` (behavior preserved)
-- [ ] 5.4 Add failing test: `buildEventDescription(null, null, "https://example")` returns `"https://example"` (or the equivalent of "just the URL")
-- [ ] 5.5 Add failing test: `buildEventDescription(null, null, null)` returns `null` (not empty string)
-- [ ] 5.6 Add failing test: `buildEventDescription("", "   ", null)` returns `null` — blank inputs are treated the same as null
-- [ ] 5.7 Rewrite `buildEventDescription(...)` in `CalendarItem.java` as a null-safe join: collect non-blank values from `{location, organizer}`, join with `" - "`, append `"\n" + websiteUrl` when the URL is non-blank, return the result or `null` if the result is empty
-- [ ] 5.8 Verify tests 5.1–5.6 pass
+- [x] 5.1 Add failing `CalendarItemTest` unit test: `buildEventDescription(null, "PBM", null)` returns `"PBM"`
+- [x] 5.2 Add failing test: `buildEventDescription("Senomaty", "PBM", null)` returns `"Senomaty - PBM"` (behavior preserved)
+- [x] 5.3 Add failing test: `buildEventDescription("Senomaty", "PBM", "https://example")` returns `"Senomaty - PBM\nhttps://example"` (behavior preserved)
+- [x] 5.4 Add failing test: `buildEventDescription(null, null, "https://example")` returns `"https://example"` (or the equivalent of "just the URL")
+- [x] 5.5 Add failing test: `buildEventDescription(null, null, null)` returns `null` (not empty string)
+- [x] 5.6 Add failing test: `buildEventDescription("", "   ", null)` returns `null` — blank inputs are treated the same as null
+- [x] 5.7 Rewrite `buildEventDescription(...)` in `CalendarItem.java` as a null-safe join: collect non-blank values from `{location, organizer}`, join with `" - "`, append `"\n" + websiteUrl` when the URL is non-blank, return the result or `null` if the result is empty
+- [x] 5.8 Verify tests 5.1–5.6 pass
 
 ## 6. Calendar sync from events — null location path (TDD)
 
-- [ ] 6.1 Add failing `CalendarEventSyncServiceTest`: when `handleEventPublished(...)` runs for an event with `location == null`, the created calendar item has a description that contains the organizer only (per the new `buildEventDescription` rules)
-- [ ] 6.2 Add failing test: when `handleEventUpdated(...)` runs and the event has `location == null`, the synced calendar item's description is updated accordingly
-- [ ] 6.3 Verify that `CalendarItem.createForEvent(...)` and `synchronizeFromEvent(...)` tolerate a null description produced by `buildEventDescription` (they should, because the calendar-items proposal already made description nullable)
-- [ ] 6.4 Verify tests 6.1 and 6.2 pass
+- [x] 6.1 Add failing `CalendarEventSyncServiceTest`: when `handleEventPublished(...)` runs for an event with `location == null`, the created calendar item has a description that contains the organizer only (per the new `buildEventDescription` rules)
+- [x] 6.2 Add failing test: when `handleEventUpdated(...)` runs and the event has `location == null`, the synced calendar item's description is updated accordingly
+- [x] 6.3 Verify that `CalendarItem.createForEvent(...)` and `synchronizeFromEvent(...)` tolerate a null description produced by `buildEventDescription` (they should, because the calendar-items proposal already made description nullable)
+- [x] 6.4 Verify tests 6.1 and 6.2 pass
 
 ## 7. Remove manual finish endpoint (TDD)
 

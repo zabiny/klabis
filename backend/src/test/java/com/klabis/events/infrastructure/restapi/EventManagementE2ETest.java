@@ -456,6 +456,37 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("should create and retrieve event without a location")
+    void shouldCreateEventWithoutLocation() throws Exception {
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("No Location Event")
+                .eventDate(LocalDate.of(2026, 10, 1))
+                .location(null)
+                .organizer("OOB")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        mockMvc.perform(
+                        get("/api/events/{id}", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("No Location Event"))
+                .andExpect(jsonPath("$.location").isEmpty());
+    }
+
     private String extractEventIdFromLocation(MvcResult result) {
         String location = result.getResponse().getHeader("Location");
         return location.substring(location.lastIndexOf('/') + 1);

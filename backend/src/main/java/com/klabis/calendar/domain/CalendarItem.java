@@ -14,6 +14,8 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -113,9 +115,17 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         }
     }
 
-    private static String buildEventDescription(String location, String organizer, String websiteUrl) {
-        String base = location + " - " + organizer;
-        return websiteUrl != null ? base + "\n" + websiteUrl : base;
+    static String buildEventDescription(String location, String organizer, String websiteUrl) {
+        List<String> parts = new ArrayList<>();
+        if (location != null && !location.isBlank()) parts.add(location);
+        if (organizer != null && !organizer.isBlank()) parts.add(organizer);
+
+        String base = parts.isEmpty() ? null : String.join(" - ", parts);
+
+        if (websiteUrl != null && !websiteUrl.isBlank()) {
+            return base != null ? base + "\n" + websiteUrl : websiteUrl;
+        }
+        return base;
     }
 
     @Identity
@@ -221,7 +231,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      */
     public static CalendarItem createForEvent(CreateCalendarItemForEvent command) {
         validateName(command.name());
-        validateLocation(command.location());
         validateStartDate(command.eventDate());
 
         if (command.eventId() == null) {
@@ -243,10 +252,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
     private static void validateName(String name) {
         Assert.hasText(name, "Calendar item name is required");
-    }
-
-    private static void validateLocation(String location) {
-        Assert.hasText(location, "Calendar item location is required");
     }
 
     private static void validateStartDate(LocalDate startDate) {
@@ -344,7 +349,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      */
     public void synchronizeFromEvent(SynchronizeFromEvent command) {
         validateName(command.name());
-        validateLocation(command.location());
         validateStartDate(command.eventDate());
         validateDateRange(command.eventDate(), command.eventDate());
 

@@ -6,12 +6,17 @@ import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
 import com.klabis.calendar.domain.CalendarItemSynchronizeFromEventBuilder;
+import com.klabis.calendar.domain.CalendarItemCreateCalendarItemForEventBuilder;
 
 import static com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder.builder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -568,8 +573,8 @@ class CalendarItemTest {
         }
 
         @Test
-        @DisplayName("should fail synchronization when location is blank")
-        void shouldFailSynchronizationWhenLocationIsBlank() {
+        @DisplayName("should synchronize with null location — description contains organizer only")
+        void shouldSynchronizeWithNullLocation() {
             EventId eventId = EventId.of(UUID.randomUUID());
             CalendarItem calendarItem = CalendarItem.reconstruct(
                     CalendarItemId.generate(),
@@ -581,16 +586,42 @@ class CalendarItemTest {
                     null
             );
 
-            assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    CalendarItemSynchronizeFromEventBuilder.builder()
-                            .name("Name")
-                            .location("   ")
-                            .organizer("OOB")
-                            .websiteUrl(null)
-                            .eventDate(LocalDate.of(2026, 7, 20))
-                            .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("location");
+            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+                    .name("New Name")
+                    .location(null)
+                    .organizer("OOB")
+                    .websiteUrl(null)
+                    .eventDate(LocalDate.of(2026, 7, 20))
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasDescription("OOB");
+        }
+
+        @Test
+        @DisplayName("should synchronize with blank location — treated as null, description contains organizer only")
+        void shouldSynchronizeWithBlankLocation() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+                    .name("New Name")
+                    .location("   ")
+                    .organizer("OOB")
+                    .websiteUrl(null)
+                    .eventDate(LocalDate.of(2026, 7, 20))
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasDescription("OOB");
         }
 
         @Test
@@ -653,6 +684,72 @@ class CalendarItemTest {
 
             assertThatThrownBy(calendarItem::assertCanBeDeleted)
                     .isInstanceOf(CalendarItemReadOnlyException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("buildEventDescription() — null-safe join")
+    class BuildEventDescription {
+
+        private String descriptionFor(String location, String organizer, String websiteUrl) {
+            return new CalendarItem.CreateCalendarItemForEvent(
+                    "Event Name", location, organizer, websiteUrl,
+                    LocalDate.of(2026, 6, 15), EventId.of(UUID.randomUUID())
+            ).description();
+        }
+
+        @Test
+        @DisplayName("null location + organizer only → organizer alone")
+        void nullLocationOrganizerOnly() {
+            assertThat(descriptionFor(null, "PBM", null)).isEqualTo("PBM");
+        }
+
+        @Test
+        @DisplayName("location + organizer → joined with \" - \"")
+        void locationAndOrganizerJoined() {
+            assertThat(descriptionFor("Senomaty", "PBM", null)).isEqualTo("Senomaty - PBM");
+        }
+
+        @Test
+        @DisplayName("location + organizer + websiteUrl → joined with newline")
+        void locationOrganizerAndWebsiteUrl() {
+            assertThat(descriptionFor("Senomaty", "PBM", "https://example")).isEqualTo("Senomaty - PBM\nhttps://example");
+        }
+
+        @Test
+        @DisplayName("null location + null organizer + websiteUrl → just the URL")
+        void nullLocationNullOrganizerWithUrl() {
+            assertThat(descriptionFor(null, null, "https://example")).isEqualTo("https://example");
+        }
+
+        @Test
+        @DisplayName("all null → null (not empty string)")
+        void allNullReturnsNull() {
+            assertThat(descriptionFor(null, null, null)).isNull();
+        }
+
+        @Test
+        @DisplayName("blank location + blank organizer → null")
+        void blankInputsReturnNull() {
+            assertThat(descriptionFor("", "   ", null)).isNull();
+        }
+
+        @ParameterizedTest(name = "{3}")
+        @MethodSource("cases")
+        @DisplayName("parametrized cases")
+        void parametrizedCases(String location, String organizer, String websiteUrl, String expectedDescription) {
+            assertThat(descriptionFor(location, organizer, websiteUrl)).isEqualTo(expectedDescription);
+        }
+
+        static Stream<Arguments> cases() {
+            return Stream.of(
+                    Arguments.of(null, "PBM", null, "PBM"),
+                    Arguments.of("Senomaty", "PBM", null, "Senomaty - PBM"),
+                    Arguments.of("Senomaty", "PBM", "https://example", "Senomaty - PBM\nhttps://example"),
+                    Arguments.of(null, null, "https://example", "https://example"),
+                    Arguments.of(null, null, null, null),
+                    Arguments.of("", "   ", null, null)
+            );
         }
     }
 

@@ -138,6 +138,23 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should return 201 when location is omitted")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldCreateEventWithoutLocation() throws Exception {
+            Event createdEvent = EventTestDataBuilder.anEvent().withName("Event No Location").build();
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Event No Location\",\"eventDate\":\"2026-08-20\",\"organizer\":\"OOB\"}")
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"));
+        }
+
+        @Test
         @DisplayName("should return 201 when registrationDeadline is provided")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithRegistrationDeadline() throws Exception {
@@ -207,6 +224,27 @@ class EventControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 204 when location is null in update")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldUpdateEventWithNullLocation() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
+                    .name("Updated Event No Location")
+                    .eventDate(LocalDate.of(2026, 5, 15))
+                    .location(null)
+                    .organizer("PRG")
+                    .build();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(updateCommand))
+                    )
+                    .andExpect(status().isNoContent());
         }
 
         @Test

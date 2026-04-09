@@ -152,29 +152,29 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should fail when location is null")
-        void shouldFailWhenLocationIsNull() {
-            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+        @DisplayName("should create event when location is null")
+        void shouldCreateEventWhenLocationIsNull() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Event Name")
                     .eventDate(LocalDate.of(2025, 6, 15))
                     .location(null)
                     .organizer("Organizer")
-                    .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("location");
+                    .build());
+
+            assertThat(event.getLocation()).isNull();
         }
 
         @Test
-        @DisplayName("should fail when location is blank")
-        void shouldFailWhenLocationIsBlank() {
-            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+        @DisplayName("should create event when location is empty string")
+        void shouldCreateEventWhenLocationIsEmptyString() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Event Name")
                     .eventDate(LocalDate.of(2025, 6, 15))
-                    .location("   ")
+                    .location("")
                     .organizer("Organizer")
-                    .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("location");
+                    .build());
+
+            assertThat(event.getLocation()).isEqualTo("");
         }
 
         @Test
@@ -489,25 +489,14 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should fail to update with null location")
-        void shouldFailToUpdateWithNullLocation() {
+        @DisplayName("should update event with null location — location becomes null")
+        void shouldUpdateEventWithNullLocation() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
-                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location(null).organizer("Organizer").build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("location");
-        }
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location(null).organizer("Organizer").build());
 
-        @Test
-        @DisplayName("should fail to update with blank location")
-        void shouldFailToUpdateWithBlankLocation() {
-            Event event = Event.create(defaultCreateEvent());
-
-            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
-                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location("   ").organizer("Organizer").build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("location");
+            assertThat(event.getLocation()).isNull();
         }
 
         @Test
@@ -1167,6 +1156,22 @@ class EventTest {
                     .build());
 
             assertThat(event.getEventCoordinatorId()).isNull();
+        }
+
+        @Test
+        @DisplayName("should create event from ORIS when location is null")
+        void shouldCreateEventFromOrisWhenLocationIsNull() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(7777)
+                    .name("Event Without Location")
+                    .eventDate(LocalDate.of(2026, 11, 1))
+                    .location(null)
+                    .organizer("OOB")
+                    .websiteUrl(null)
+                    .build());
+
+            assertThat(event.getLocation()).isNull();
+            assertThat(event.getStatus()).isEqualTo(EventStatus.DRAFT);
         }
     }
 

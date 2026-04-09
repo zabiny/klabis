@@ -545,4 +545,26 @@ class EventJdbcRepositoryTest {
             assertThat(foundEvent.get().getRegistrations()).hasSize(1);
         }
     }
+
+    @Nested
+    @DisplayName("Null location round-trip")
+    class NullLocationRoundTrip {
+
+        @Test
+        @DisplayName("should save and reload event with null location")
+        void shouldSaveAndReloadEventWithNullLocation() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Without Location")
+                    .eventDate(LocalDate.of(2026, 9, 20))
+                    .location(null)
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Optional<Event> found = eventRepository.findById(saved.getId());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getLocation()).isNull();
+        }
+    }
 }

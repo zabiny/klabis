@@ -231,7 +231,7 @@ CREATE TABLE events
     id                   UUID PRIMARY KEY,
     name                 VARCHAR(200) NOT NULL,
     event_date           DATE         NOT NULL,
-    location             VARCHAR(200) NOT NULL,
+    location             VARCHAR(200) NULL,
     organizer            VARCHAR(10)  NOT NULL,
     website_url          VARCHAR(500) NULL,
     event_coordinator_id UUID         NULL REFERENCES members (id) ON DELETE SET NULL,
@@ -264,7 +264,7 @@ COMMENT ON TABLE events IS 'Stores orienteering event information';
 COMMENT ON COLUMN events.id IS 'Unique event identifier (UUID)';
 COMMENT ON COLUMN events.name IS 'Name of the event';
 COMMENT ON COLUMN events.event_date IS 'Date when the event takes place';
-COMMENT ON COLUMN events.location IS 'Location description (city, venue, etc.)';
+COMMENT ON COLUMN events.location IS 'Location description (city, venue, etc.) — nullable, not all events have a known location';
 COMMENT ON COLUMN events.organizer IS 'Organizer code (e.g., OOB for OOB Zdar nad Sazavou)';
 COMMENT ON COLUMN events.website_url IS 'Optional URL to event website or ORIS';
 COMMENT ON COLUMN events.event_coordinator_id IS 'Optional reference to club member coordinating the event';

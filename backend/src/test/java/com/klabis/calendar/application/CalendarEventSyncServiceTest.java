@@ -230,6 +230,103 @@ class CalendarEventSyncServiceTest {
         verify(eventDataProviderMock, never()).getEventData(any());
     }
 
+    @Test
+    @DisplayName("should create calendar item with organizer-only description when event has no location")
+    void shouldCreateCalendarItemWithOrganizerOnlyWhenEventHasNoLocation() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+
+        EventData eventData = new EventData(
+                "ORIS Event Without Location",
+                LocalDate.of(2024, 5, 10),
+                null,
+                "OOB",
+                null
+        );
+
+        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.empty());
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+        // When
+        testedSubject.handleEventPublished(eventId);
+
+        // Then
+        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
+        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+
+        CalendarItem savedItem = calendarItemCaptor.getValue();
+        assertThat(savedItem.getDescription()).isEqualTo("OOB");
+        assertThat(savedItem.getDescription()).doesNotContain(" - ");
+    }
+
+    @Test
+    @DisplayName("should update calendar item with organizer-only description when event location becomes null")
+    void shouldUpdateCalendarItemWithOrganizerOnlyWhenEventLocationBecomesNull() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+        CalendarItemId calendarItemId = CalendarItemId.generate();
+
+        CalendarItem existingItem = CalendarItem.reconstruct(
+                calendarItemId,
+                "Old Name",
+                "Old Location - OOB",
+                LocalDate.of(2024, 4, 15),
+                LocalDate.of(2024, 4, 15),
+                eventId,
+                null
+        );
+
+        EventData eventData = new EventData(
+                "Updated Event No Location",
+                LocalDate.of(2024, 5, 10),
+                null,
+                "OOB",
+                null
+        );
+
+        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.of(existingItem));
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+        // When
+        testedSubject.handleEventUpdated(eventId);
+
+        // Then
+        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
+        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+
+        CalendarItem updatedItem = calendarItemCaptor.getValue();
+        assertThat(updatedItem.getDescription()).isEqualTo("OOB");
+        assertThat(updatedItem.getDescription()).doesNotContain(" - ");
+    }
+
+    @Test
+    @DisplayName("should create calendar item with null description when event has no location, organizer, or website")
+    void shouldCreateCalendarItemWithNullDescriptionWhenAllFieldsMissing() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+
+        EventData eventData = new EventData(
+                "Minimal Event",
+                LocalDate.of(2024, 6, 1),
+                null,
+                null,
+                null
+        );
+
+        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.empty());
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+        // When
+        testedSubject.handleEventPublished(eventId);
+
+        // Then
+        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
+        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+
+        CalendarItem savedItem = calendarItemCaptor.getValue();
+        assertThat(savedItem.getDescription()).isNull();
+    }
+
     // ===== handleEventCancelled() Tests =====
 
     @Test
