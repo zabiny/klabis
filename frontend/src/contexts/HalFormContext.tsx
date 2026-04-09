@@ -17,6 +17,9 @@ export interface HalFormRequest {
 
     /** Optional title override for the dialog header */
     dialogTitle?: string;
+
+    /** When false, suppresses auto-navigation after POST+Location response */
+    navigateOnSuccess?: boolean;
 }
 
 /**

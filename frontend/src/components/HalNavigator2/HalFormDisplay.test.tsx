@@ -1090,4 +1090,154 @@ describe('HalFormDisplay Component', () => {
             });
         });
     });
+
+    describe('resourceUrl prop — URL resolution fallback', () => {
+        const renderWithResourceUrl = (resourceUrl: string | undefined, templateTarget: string | undefined) => {
+            const template = mockHalFormsTemplate({
+                title: 'Edit Preset',
+                target: templateTarget,
+                method: 'PUT',
+                properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
+            });
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="updatePreset"
+                        resourceData={{id: 1}}
+                        pathname="/category-presets"
+                        resourceUrl={resourceUrl}
+                        onClose={vi.fn()}
+                    />
+                </Wrapper>
+            );
+        };
+
+        it('uses resourceUrl path when template.target is absent and resourceUrl is absolute', async () => {
+            const user = userEvent.setup();
+            fetchSpy.mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
+
+            renderWithResourceUrl('https://localhost:8443/api/category-presets/abc', undefined);
+
+            await waitFor(() => expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument());
+            const nameInput = screen.getByRole('textbox') as HTMLInputElement;
+            await user.type(nameInput, 'Updated');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                const submitCall = fetchSpy.mock.calls.find(call => call[0].includes('category-presets/abc'));
+                expect(submitCall).toBeDefined();
+            });
+        });
+
+        it('prefers template.target over resourceUrl when both are present', async () => {
+            const user = userEvent.setup();
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                .mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
+
+            renderWithResourceUrl(
+                'https://localhost:8443/api/category-presets/other',
+                '/api/category-presets/abc'
+            );
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+            const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'Updated');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                const callUrls = fetchSpy.mock.calls.map(call => call[0]);
+                const submitCall = callUrls.find((url: string) => url.includes('/api/category-presets/abc') && !url.includes('other'));
+                expect(submitCall).toBeDefined();
+            });
+        });
+    });
+
+    describe('navigateOnSuccess prop', () => {
+        const renderPostFormWithNav = (navigateOnSuccess: boolean | undefined, onClose = vi.fn()) => {
+            const template = mockHalFormsTemplate({
+                title: 'Create Preset',
+                target: '/api/category-presets',
+                method: 'POST',
+                properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
+            });
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="createCategoryPreset"
+                        resourceData={{id: 1}}
+                        pathname="/category-presets"
+                        onClose={onClose}
+                        navigateOnSuccess={navigateOnSuccess}
+                    />
+                </Wrapper>
+            );
+            return {onClose};
+        };
+
+        it('does NOT navigate after POST+Location when navigateOnSuccess is false', async () => {
+            const user = userEvent.setup();
+            const mockOnClose = vi.fn();
+            renderPostFormWithNav(false, mockOnClose);
+
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+            const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'New Preset');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(mockInvalidateAllCaches).toHaveBeenCalled());
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(mockOnClose).toHaveBeenCalled();
+        });
+
+        it('navigates after POST+Location when navigateOnSuccess is true (default)', async () => {
+            const user = userEvent.setup();
+            renderPostFormWithNav(true);
+
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+            const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'New Preset');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                expect(mockNavigate).toHaveBeenCalledWith('/category-presets/xyz');
+            });
+        });
+
+        it('navigates after POST+Location when navigateOnSuccess is undefined (backward compat)', async () => {
+            const user = userEvent.setup();
+            renderPostFormWithNav(undefined);
+
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
+                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+            const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'New Preset');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                expect(mockNavigate).toHaveBeenCalledWith('/category-presets/xyz');
+            });
+        });
+    });
 });

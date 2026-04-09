@@ -42,6 +42,9 @@ export interface HalFormButtonProps {
 
     /** Optional title shown in the dialog header (overrides template.title) */
     dialogTitle?: string;
+
+    /** When false, suppresses auto-navigation after POST+Location response */
+    navigateOnSuccess?: boolean;
 }
 
 /**
@@ -64,7 +67,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon, dialogTitle}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -82,7 +85,8 @@ export function HalFormButton({name, modal = true, label, customLayout, classNam
             templateName: name,
             modal: modal,
             customLayout,
-            dialogTitle: resolvedDialogTitle
+            dialogTitle: resolvedDialogTitle,
+            navigateOnSuccess,
         });
     };
 

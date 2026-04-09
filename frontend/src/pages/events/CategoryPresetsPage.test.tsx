@@ -8,6 +8,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {CategoryPresetsPage} from './CategoryPresetsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {HalFormDisplay, type HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -23,7 +24,7 @@ vi.mock('../../contexts/HalFormContext.tsx', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
+    HalFormDisplay: vi.fn(() => <div data-testid="hal-form-display"/>),
 }));
 
 vi.mock('../../components/UI', async (importOriginal) => {
@@ -223,6 +224,24 @@ describe('CategoryPresetsPage', () => {
 
             expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
             expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+        });
+
+        it('passes item self link as resourceUrl to HalFormDisplay when edit button is clicked', () => {
+            const capturedProps: HalFormDisplayProps[] = [];
+            vi.mocked(HalFormDisplay).mockImplementation((props) => {
+                capturedProps.push(props);
+                return <div data-testid="hal-form-display"/>;
+            });
+
+            const preset = buildPresetRow({
+                _links: {self: {href: 'https://localhost:8443/api/category-presets/preset-1'}},
+                _templates: {updateCategoryPreset: mockHalFormsTemplate({method: 'PUT', title: 'Upravit šablonu'})},
+            });
+            renderPageWithPresets([preset]);
+
+            fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
+
+            expect(capturedProps[capturedProps.length - 1].resourceUrl).toBe('https://localhost:8443/api/category-presets/preset-1');
         });
     });
 });

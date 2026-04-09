@@ -5,6 +5,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
+import {toHref} from "../../api/hateoas.ts";
 import {labels} from "../../localization";
 import {Badge, Button, Modal} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
@@ -78,7 +79,7 @@ export const CategoryPresetsPage = (): ReactElement => {
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.presetsListHeading}</h2>
-                    <HalFormButton name="createCategoryPreset" modal={true} label={labels.templates.createCategoryPreset}/>
+                    <HalFormButton name="createCategoryPreset" modal={true} label={labels.templates.createCategoryPreset} navigateOnSuccess={false}/>
                 </div>
                 <HalEmbeddedTable<CategoryPresetListItem>
                     collectionName={"categoryPresetDtoList"}
@@ -113,6 +114,7 @@ export const CategoryPresetsPage = (): ReactElement => {
                         templateName={actionModal.templateName}
                         resourceData={actionModal.item as unknown as Record<string, unknown>}
                         pathname={route.pathname}
+                        resourceUrl={actionModal.item._links?.self ? toHref(actionModal.item._links.self) : undefined}
                         onClose={() => setActionModal(null)}
                     />
                 </Modal>

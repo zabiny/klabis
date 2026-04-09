@@ -48,6 +48,18 @@ export interface HalFormDisplayProps {
     excludeMemberIds?: string[];
     /** When provided, member-picker fields show ONLY these member IDs (used for promote-to-owner) */
     includeOnlyMemberIds?: string[];
+    /**
+     * URL of the specific resource item being acted on.
+     * Used as submission URL fallback when template.target is absent (e.g. embedded item affordances).
+     * Absolute URLs are stripped to path so requests go through the Vite dev proxy.
+     */
+    resourceUrl?: string;
+    /**
+     * When false, suppresses auto-navigation after POST+Location response.
+     * Useful for pages that have no detail route (e.g. CategoryPresetsPage).
+     * Defaults to true for backward compatibility.
+     */
+    navigateOnSuccess?: boolean;
 }
 
 
@@ -70,6 +82,8 @@ export const HalFormDisplay = ({
                                    submitIcon,
                                    excludeMemberIds,
                                    includeOnlyMemberIds,
+                                   resourceUrl,
+                                   navigateOnSuccess = true,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
 
@@ -98,7 +112,17 @@ export const HalFormDisplay = ({
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const url = template.target || '/api' + pathname;
+        const resolvedResourceUrl = resourceUrl
+            ? (() => {
+                try {
+                    const parsed = new URL(resourceUrl);
+                    return parsed.pathname;
+                } catch {
+                    return resourceUrl;
+                }
+            })()
+            : undefined;
+        const url = template.target || resolvedResourceUrl || '/api' + pathname;
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 await invalidateAllCaches();
@@ -106,7 +130,7 @@ export const HalFormDisplay = ({
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
-                const willNavigate = template.method?.toUpperCase() === 'POST' && location != null;
+                const willNavigate = navigateOnSuccess && template.method?.toUpperCase() === 'POST' && location != null;
                 if (willNavigate) {
                     navigate(extractNavigationPath(location));
                 } else {
