@@ -109,28 +109,30 @@ describe('FamilyGroupDetailPage — parent management', () => {
         expect(screen.getByText(/rodiče/i)).toBeInTheDocument();
     });
 
-    it('shows "Přidat rodiče" button when addFamilyGroupParent template exists on resource', () => {
+    it('adding parent is accessible via role picker: "Přidat člena" -> "Rodič"', () => {
         const resourceData = buildFamilyGroupDetail({
             parents: [buildParent()],
             _templates: {addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'})},
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /přidat rodiče/i})).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
+        expect(screen.getByRole('button', {name: /rodič/i})).toBeInTheDocument();
     });
 
-    it('does NOT show "Přidat rodiče" button when addFamilyGroupParent template is absent', () => {
+    it('selecting "Rodič" in role picker shows HalFormDisplay', () => {
+        const resourceData = buildFamilyGroupDetail({
+            parents: [buildParent()],
+            _templates: {addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'})},
+        });
+        renderPage(createMockPageData(resourceData));
+        fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
+        fireEvent.click(screen.getByRole('button', {name: /rodič/i}));
+        expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+    });
+
+    it('does NOT show "Přidat člena" button when addFamilyGroupParent template is absent', () => {
         renderPage(createMockPageData(buildFamilyGroupDetail({parents: [buildParent()]})));
-        expect(screen.queryByRole('button', {name: /přidat rodiče/i})).not.toBeInTheDocument();
-    });
-
-    it('clicking "Přidat rodiče" opens modal', () => {
-        const resourceData = buildFamilyGroupDetail({
-            parents: [buildParent()],
-            _templates: {addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'})},
-        });
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /přidat rodiče/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /přidat člena/i})).not.toBeInTheDocument();
     });
 
     it('shows "Odebrat rodiče" button per parent when removeFamilyGroupParent template and self link exist on parent', () => {

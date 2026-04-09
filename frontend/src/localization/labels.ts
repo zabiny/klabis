@@ -65,6 +65,9 @@ export const labels = {
         removeTrainer: 'Odebrat trenéra',
         addFamilyGroupParent: 'Přidat rodiče',
         removeFamilyGroupParent: 'Odebrat rodiče',
+        addFamilyGroupChild: 'Přidat dítě',
+        removeFamilyGroupChild: 'Odebrat',
+        addFamilyGroupMember: 'Přidat člena',
         deleteFamilyGroup: 'Smazat rodinnou skupinu',
         createCategoryPreset: 'Přidat šablonu',
         updateCategoryPreset: 'Upravit šablonu',
@@ -179,6 +182,11 @@ export const labels = {
         'ČR': 'ČR',
     } as Record<string, string>,
 
+    familyGroupRoles: {
+        parent: 'Rodič',
+        child: 'Dítě',
+    },
+
     ui: {
         hide: 'Skrýt',
         reveal: 'Zobrazit',
@@ -261,6 +269,7 @@ export const labels = {
         familyGroups: 'Rodinné skupiny',
         familyGroupsList: 'Rodinné skupiny',
         familyGroupParents: 'RODIČE',
+        familyGroupChildren: 'DĚTI',
         familyGroupMembers: 'ČLENOVÉ',
         categoryPresetsList: 'Šablony kategorií',
         presetsListHeading: 'Seznam šablon',

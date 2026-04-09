@@ -186,3 +186,36 @@ No new repository method was needed. `TrainingGroupRepository.findGroupForMember
 - Existing `MembersGroupTest.shouldAddOwner` test was already correct (it invites the member first before promoting), so no changes needed to existing tests.
 
 **Result:** 2061/2061 tests pass. All 1.x and 2.x checkboxes ticked.
+
+---
+
+### Iter 5 — 2026-04-09 — Frontend: family group create + add-member button (tasks 9.x + 10.x)
+
+**Files modified:**
+- `frontend/src/localization/labels.ts` — added `templates.addFamilyGroupChild`, `templates.removeFamilyGroupChild`, `templates.addFamilyGroupMember`; added `sections.familyGroupChildren`; added `familyGroupRoles` section (`parent`, `child`)
+- `frontend/src/pages/family-groups/FamilyGroupDetailPage.tsx` — replaced standalone "Add parent" button with unified "Přidat člena" button; replaced single `addParentModal` state with two-step role-picker flow (`addMemberRolePicker` + `addMemberModal`); renamed `FamilyGroupMember` to `FamilyGroupChild` to clarify the backend's members array now contains only non-parent members (children); added children table with per-row "Odebrat" action when `removeFamilyGroupChild` affordance present on the child item; removed the separate parents card shown conditionally on `addFamilyGroupParent` presence — parents section now shows whenever there are parents
+- `frontend/src/pages/family-groups/FamilyGroupDetailPage.parents.test.tsx` — updated tests to reflect unified button: "Přidat rodiče" standalone button tests replaced with role-picker flow assertions
+
+**Tests added (new file):**
+- `FamilyGroupDetailPage.addMember.test.tsx` — 14 tests covering all 10.x tasks:
+  - button visibility based on `addFamilyGroupParent` and/or `addFamilyGroupChild` affordance presence
+  - absence of old standalone "Přidat rodiče" button
+  - role picker opens on click, shows only available role options
+  - selecting a role transitions to HalFormDisplay
+  - children section with "DĚTI" label
+  - "Odebrat" button per child (affordance-gated), opens modal on click
+
+**Block A (9.x) — create dialog:**
+The `FamilyGroupsPage` already delegates entirely to `HalFormButton name="createFamilyGroup"`, which renders the HAL-Forms template returned by the backend. No frontend code change was required because:
+- The form fields come from the backend template (the backend now returns only `name` + `parent` properties in `createFamilyGroup`)
+- The navigate-on-create behavior (POST + Location → navigate) is already implemented generically in `HalFormDisplay`
+- No bespoke "initial members" or "multi-parent" picker ever existed in `FamilyGroupsPage` — the old form was entirely template-driven
+
+**Role picker UX decision:**
+The unified dialog is implemented as a two-step flow: (1) a role picker modal with buttons "Rodič" / "Dítě", each only rendered when the corresponding HAL-Forms affordance is present; (2) a second modal with the HalFormDisplay for the chosen template. This keeps the add-parent and add-child paths entirely template-driven without any client-side routing logic beyond reading the affordance map.
+
+**Rough edges / notes for iter 6:**
+- The member picker within both add-parent and add-child forms currently shows all club members — iteration 6 will add filtering to exclude members already in the group.
+- The `removeFamilyGroupChild` template target URL is used as-is from the child item's `_templates` — no path construction needed since the backend embeds the full target URL in the affordance.
+
+**Result:** 1104/1104 frontend tests pass. TypeScript build clean. All 9.x and 10.x checkboxes ticked.

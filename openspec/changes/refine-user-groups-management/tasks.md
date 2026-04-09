@@ -76,19 +76,19 @@
 
 ## 9. Frontend — simplified family group create dialog
 
-- [ ] 9.1 Locate the family group create dialog component in `frontend/src`
-- [ ] 9.2 Remove the "initial members" picker and the multi-parent selector
-- [ ] 9.3 Replace with a single-parent picker plus the group name field
-- [ ] 9.4 Wire the dialog to the new `POST /api/family-groups` request shape (`{ name, parentId }`)
-- [ ] 9.5 After successful create, navigate to the family group detail page (behavior exists elsewhere; confirm it also applies here)
+- [x] 9.1 Locate the family group create dialog component in `frontend/src`
+- [x] 9.2 Remove the "initial members" picker and the multi-parent selector
+- [x] 9.3 Replace with a single-parent picker plus the group name field
+- [x] 9.4 Wire the dialog to the new `POST /api/family-groups` request shape (`{ name, parentId }`)
+- [x] 9.5 After successful create, navigate to the family group detail page (behavior exists elsewhere; confirm it also applies here)
 
 ## 10. Frontend — unified "Add member" button on family group detail
 
-- [ ] 10.1 Replace the existing "Add parent" button on the family group detail page with a single "Add member" button
-- [ ] 10.2 On click, open a dialog with name field + role picker (parent / child) + member picker
-- [ ] 10.3 On submit, route to `POST /api/family-groups/{id}/parents` or `POST /api/family-groups/{id}/children` based on the selected role
-- [ ] 10.4 Render the button only when the corresponding HAL-Forms affordance is present in the group detail response (i.e. the backend exposed `addParent` or `addChild`)
-- [ ] 10.5 Add a "Remove" action next to each child row, wired to `DELETE /api/family-groups/{id}/children/{memberId}` (shown only if the backend emitted the `removeChild` affordance for that child)
+- [x] 10.1 Replace the existing "Add parent" button on the family group detail page with a single "Add member" button
+- [x] 10.2 On click, open a dialog with name field + role picker (parent / child) + member picker
+- [x] 10.3 On submit, route to `POST /api/family-groups/{id}/parents` or `POST /api/family-groups/{id}/children` based on the selected role
+- [x] 10.4 Render the button only when the corresponding HAL-Forms affordance is present in the group detail response (i.e. the backend exposed `addParent` or `addChild`)
+- [x] 10.5 Add a "Remove" action next to each child row, wired to `DELETE /api/family-groups/{id}/children/{memberId}` (shown only if the backend emitted the `removeChild` affordance for that child)
 
 ## 11. Frontend — filter existing members out of member pickers
 
