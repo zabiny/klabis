@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.klabis.common.users.Authority;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,8 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
@@ -22,10 +25,14 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -193,7 +200,8 @@ public class AuthorizationServerConfiguration {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            RegisteredClientRepository registeredClientRepository) throws Exception {
 
         http
                 .authorizeHttpRequests(authorize -> authorize
@@ -212,14 +220,82 @@ public class AuthorizationServerConfiguration {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 //                // Accept access tokens for User Info and/or Client Registration
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
-                // Redirect to login page when not authenticated for authorization endpoint
+                // Per OIDC spec (section 3.1.2.1), prompt=none MUST return login_required error
+                // to redirect_uri — it MUST NOT redirect to a login page. The prompt=none entry
+                // point is registered first so it takes priority over the login redirect for those
+                // requests. Regular unauthenticated HTML requests still redirect to /login.
                 .exceptionHandling(exceptions -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                promptNoneAuthenticationEntryPoint(registeredClientRepository),
+                                promptNoneRequestMatcher())
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML))
                 );
-;
         return http.build();
+    }
+
+    /**
+     * Matches /oauth2/authorize requests carrying {@code prompt=none}.
+     * Used to register the OIDC-compliant entry point before the login-redirect entry point.
+     */
+    private static RequestMatcher promptNoneRequestMatcher() {
+        return new AndRequestMatcher(
+                new MediaTypeRequestMatcher(MediaType.TEXT_HTML),
+                request -> "none".equals(request.getParameter("prompt"))
+        );
+    }
+
+    /**
+     * Authentication entry point for {@code prompt=none} requests.
+     * <p>
+     * Per OIDC spec (section 3.1.2.1), when {@code prompt=none} is set and the user is not
+     * authenticated, the authorization server MUST redirect back to the {@code redirect_uri}
+     * with {@code error=login_required}. It MUST NOT display any UI (including a login page).
+     * <p>
+     * This entry point handles the case where the request is intercepted by Spring Security's
+     * {@code ExceptionTranslationFilter} before reaching the authorization endpoint filter —
+     * which happens because {@code authorizeHttpRequests(...anyRequest().authenticated())}
+     * rejects unauthenticated requests early in the filter chain.
+     * <p>
+     * The {@code redirect_uri} is validated against registered client URIs before redirecting
+     * to prevent this entry point from being used as an open redirector. Because
+     * {@code ExceptionTranslationFilter} fires before the authorization endpoint's own
+     * {@code redirect_uri} validation, we must perform the check ourselves here.
+     */
+    private static AuthenticationEntryPoint promptNoneAuthenticationEntryPoint(
+            RegisteredClientRepository registeredClientRepository) {
+        return (request, response, authException) -> {
+            String clientId = request.getParameter(OAuth2ParameterNames.CLIENT_ID);
+            String redirectUri = request.getParameter(OAuth2ParameterNames.REDIRECT_URI);
+
+            if (clientId == null || clientId.isBlank()) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "client_id is required for prompt=none");
+                return;
+            }
+
+            var registeredClient = registeredClientRepository.findByClientId(clientId);
+            if (registeredClient == null) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown client_id");
+                return;
+            }
+
+            if (redirectUri == null || redirectUri.isBlank()
+                    || !registeredClient.getRedirectUris().contains(redirectUri)) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "redirect_uri is missing or not registered for this client");
+                return;
+            }
+
+            String state = request.getParameter(OAuth2ParameterNames.STATE);
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectUri)
+                    .queryParam(OAuth2ParameterNames.ERROR, "login_required")
+                    .queryParam(OAuth2ParameterNames.ERROR_DESCRIPTION, "User is not authenticated");
+            if (state != null) {
+                builder.queryParam(OAuth2ParameterNames.STATE, state);
+            }
+            response.sendRedirect(builder.build().toUriString());
+        };
     }
 
     /**
