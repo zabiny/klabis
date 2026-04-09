@@ -413,19 +413,19 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
                 {showDeactivation && (
                     <Section title={labels.sections.deactivation}>
-                        {member.deactivationReason && (
+                        {member.suspensionReason && (
                             <DetailRow label="Důvod">
-                                {getEnumLabel('deactivationReason', member.deactivationReason)}
+                                {getEnumLabel('deactivationReason', member.suspensionReason)}
                             </DetailRow>
                         )}
-                        {member.deactivatedAt && (
-                            <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
+                        {member.suspendedAt && (
+                            <DetailRow label="Datum">{formatDate(member.suspendedAt)}</DetailRow>
                         )}
-                        {member.deactivationNote && (
-                            <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
+                        {member.suspensionNote && (
+                            <DetailRow label="Poznámka">{member.suspensionNote}</DetailRow>
                         )}
-                        {member.deactivatedBy && (
-                            <DetailRow label="Deaktivoval/a">{member.deactivatedBy}</DetailRow>
+                        {member.suspendedBy && (
+                            <DetailRow label="Deaktivoval/a">{member.suspendedBy}</DetailRow>
                         )}
                     </Section>
                 )}

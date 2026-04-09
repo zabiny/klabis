@@ -299,9 +299,9 @@ describe('MemberDetailPage', () => {
     it('shows deactivation section when member is inactive', () => {
         const data = mockMemberDetailData({
             active: false,
-            deactivationReason: 'ODHLASKA',
-            deactivatedAt: '2025-06-15',
-            deactivationNote: 'Osobní důvody',
+            suspensionReason: 'ODHLASKA',
+            suspendedAt: '2025-06-15',
+            suspensionNote: 'Osobní důvody',
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
@@ -313,8 +313,8 @@ describe('MemberDetailPage', () => {
         const deactivatedByUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
         const data = mockMemberDetailData({
             active: false,
-            deactivatedAt: '2025-06-15',
-            deactivatedBy: deactivatedByUuid,
+            suspendedAt: '2025-06-15',
+            suspendedBy: deactivatedByUuid,
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('Deaktivoval/a')).toBeInTheDocument();
@@ -324,8 +324,8 @@ describe('MemberDetailPage', () => {
     it('does NOT show deactivatedBy label when deactivatedBy is absent', () => {
         const data = mockMemberDetailData({
             active: false,
-            deactivatedAt: '2025-06-15',
-            deactivatedBy: undefined,
+            suspendedAt: '2025-06-15',
+            suspendedBy: undefined,
         });
         renderPage(createMockPageData(data));
         expect(screen.queryByText('Deaktivoval/a')).not.toBeInTheDocument();
@@ -334,8 +334,8 @@ describe('MemberDetailPage', () => {
     it('shows deactivation section when member is inactive even without deactivation note', () => {
         const data = mockMemberDetailData({
             active: false,
-            deactivationReason: 'PRESTUP',
-            deactivatedAt: '2025-06-15',
+            suspensionReason: 'PRESTUP',
+            suspendedAt: '2025-06-15',
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
@@ -345,8 +345,8 @@ describe('MemberDetailPage', () => {
     it('shows deactivation section when member is inactive even without deactivation reason', () => {
         const data = mockMemberDetailData({
             active: false,
-            deactivationReason: undefined,
-            deactivatedAt: '2025-06-15',
+            suspensionReason: undefined,
+            suspendedAt: '2025-06-15',
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
