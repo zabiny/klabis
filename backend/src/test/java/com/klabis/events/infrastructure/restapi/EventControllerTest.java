@@ -1198,4 +1198,126 @@ class EventControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/events — list row management affordances (task 8)")
+    class ListRowManagementAffordancesTests {
+
+        @Test
+        @DisplayName("8.4 DRAFT event row carries updateEvent, publishEvent, cancelEvent affordances")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void draftRowCarriesEditPublishCancelAffordances() throws Exception {
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent.target").exists())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent.target").exists());
+        }
+
+        @Test
+        @DisplayName("8.5 ACTIVE event row carries updateEvent, cancelEvent affordances but NOT finishEvent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void activeRowCarriesEditCancelButNotFinishAffordances() throws Exception {
+            Event activeEvent = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent.target").exists())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.finishEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("8.6 ORIS-imported DRAFT row additionally carries syncEventFromOris affordance")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void orisImportedDraftRowCarriesSyncAffordance() throws Exception {
+            Event orisEvent = EventTestDataBuilder.anEvent().withOrisId(42).build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(orisEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris.target").exists());
+        }
+
+        @Test
+        @DisplayName("8.7 Non-ORIS DRAFT row does NOT carry syncEventFromOris affordance")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void nonOrisDraftRowDoesNotCarrySyncAffordance() throws Exception {
+            Event nonOrisEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(nonOrisEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("8.8 FINISHED row carries no management affordances")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void finishedRowCarriesNoManagementAffordances() throws Exception {
+            Event finishedEvent = EventTestDataBuilder.anEvent().withOrisId(10).buildFinished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(finishedEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("8.8 CANCELLED row carries no management affordances")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void cancelledRowCarriesNoManagementAffordances() throws Exception {
+            Event cancelledEvent = EventTestDataBuilder.anEvent().withOrisId(10).buildCancelled();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(cancelledEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("8.9 Regular member (no EVENTS:MANAGE) sees only register/unregister — no management actions")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
+                authorities = {Authority.EVENTS_READ})
+        void regularMemberSeesOnlyRegisterUnregisterNotManagementActions() throws Exception {
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withOrisId(42)
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method").value("POST"))
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+        }
+    }
+
 }

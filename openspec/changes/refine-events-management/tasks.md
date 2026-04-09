@@ -60,17 +60,17 @@
 
 ## 8. Events list — row-level management affordances (refactor + TDD)
 
-- [ ] 8.1 Extract a private helper `addManagementAffordances(WebMvcLinkBuilder selfLink, Event event)` (or equivalent signature) on `EventController` that attaches edit / publish / cancel / sync-from-ORIS affordances according to status + ORIS integration state. The helper intentionally does not touch register/unregister — those stay in the caller because their logic depends on the current user
-- [ ] 8.2 Refactor `addLinksForEvent` (detail) to call the new helper instead of switching on status inline
-- [ ] 8.3 Refactor `addLinksForListItem` (list) to call the same helper before attaching register/unregister affordances
-- [ ] 8.4 Add failing `EventControllerTest`: a DRAFT event row in the list response carries `updateEvent`, `publishEvent`, `cancelEvent` affordances
-- [ ] 8.5 Add failing test: an ACTIVE event row in the list response carries `updateEvent`, `cancelEvent` affordances (and NO `finishEvent`)
-- [ ] 8.6 Add failing test: an ORIS-imported DRAFT row additionally carries the `syncEventFromOris` affordance
-- [ ] 8.7 Add failing test: a non-ORIS DRAFT row does NOT carry the `syncEventFromOris` affordance
-- [ ] 8.8 Add failing test: a FINISHED or CANCELLED row carries no management affordances (neither edit, publish, cancel, nor sync)
-- [ ] 8.9 Add failing test: a regular member (no EVENTS:MANAGE) sees only register/unregister affordances in the list (no management actions) — rely on the existing `@HasAuthority` / affordance visibility mechanism used elsewhere
-- [ ] 8.10 Verify the existing `addLinksForEvent` detail test cases still pass after the refactor (same set of affordances on the detail response)
-- [ ] 8.11 Verify tests 8.4–8.9 pass
+- [x] 8.1 Extract a private helper `addManagementAffordances(WebMvcLinkBuilder selfLink, Event event)` (or equivalent signature) on `EventController` that attaches edit / publish / cancel / sync-from-ORIS affordances according to status + ORIS integration state. The helper intentionally does not touch register/unregister — those stay in the caller because their logic depends on the current user
+- [x] 8.2 Refactor `addLinksForEvent` (detail) to call the new helper instead of switching on status inline
+- [x] 8.3 Refactor `addLinksForListItem` (list) to call the same helper before attaching register/unregister affordances
+- [x] 8.4 Add failing `EventControllerTest`: a DRAFT event row in the list response carries `updateEvent`, `publishEvent`, `cancelEvent` affordances
+- [x] 8.5 Add failing test: an ACTIVE event row in the list response carries `updateEvent`, `cancelEvent` affordances (and NO `finishEvent`)
+- [x] 8.6 Add failing test: an ORIS-imported DRAFT row additionally carries the `syncEventFromOris` affordance
+- [x] 8.7 Add failing test: a non-ORIS DRAFT row does NOT carry the `syncEventFromOris` affordance
+- [x] 8.8 Add failing test: a FINISHED or CANCELLED row carries no management affordances (neither edit, publish, cancel, nor sync)
+- [x] 8.9 Add failing test: a regular member (no EVENTS:MANAGE) sees only register/unregister affordances in the list (no management actions) — rely on the existing `@HasAuthority` / affordance visibility mechanism used elsewhere
+- [x] 8.10 Verify the existing `addLinksForEvent` detail test cases still pass after the refactor (same set of affordances on the detail response)
+- [x] 8.11 Verify tests 8.4–8.9 pass
 
 ## 9. Frontend — ORIS import dialog radio buttons
 

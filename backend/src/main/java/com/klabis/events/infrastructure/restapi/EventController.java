@@ -28,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.RepresentationModel;
@@ -215,7 +216,7 @@ public class EventController {
         UUID eventId = event.getId().value();
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = selfLinkBuilder.withSelfRel();
+            var selfLink = addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
             if (event.areRegistrationsOpen()) {
                 boolean isRegistered = currentUser != null && currentUser.isMember()
@@ -237,6 +238,33 @@ public class EventController {
             klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
                     .ifPresent(link -> model.add(link.withRel("coordinator")));
         }
+    }
+
+    private Link addManagementAffordances(Link selfLink, Event event) {
+        UUID eventId = event.getId().value();
+
+        switch (event.getStatus()) {
+            case DRAFT:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                break;
+
+            case ACTIVE:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                break;
+
+            case FINISHED:
+            case CANCELLED:
+                break;
+        }
+
+        if (orisIntegrationActive && event.getOrisId() != null && (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.ACTIVE)) {
+            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
+        }
+
+        return selfLink;
     }
 
     private boolean hasEventsManageAuthority() {
@@ -311,38 +339,18 @@ public class EventController {
         UUID eventId = event.getId().value();
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = selfLinkBuilder.withSelfRel();
+            var selfLink = addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
-            switch (event.getStatus()) {
-                case DRAFT:
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                    break;
-
-                case ACTIVE:
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                    if (event.areRegistrationsOpen()) {
-                        boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
-                        if (isRegistered) {
-                            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                        } else {
-                            selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                                    methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                                    Map.of("category", event.getCategories())
-                            ));
-                        }
-                    }
-                    break;
-
-                case FINISHED:
-                case CANCELLED:
-                    break;
-            }
-
-            if (orisIntegrationActive && event.getOrisId() != null && (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.ACTIVE)) {
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).syncEventFromOris(eventId)));
+            if (event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen()) {
+                boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
+                if (isRegistered) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                } else {
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                            Map.of("category", event.getCategories())
+                    ));
+                }
             }
 
             entityModel.add(selfLink);

@@ -97,3 +97,26 @@ All 2100 backend tests pass green.
 - `finishExpiredActiveEvents(...)` retained on port and service; `EventCompletionSchedulerTest` (2 tests) passes
 
 **Follow-ups:** none
+
+### 2026-04-09 — Iteration 3 (task 8) — row-level list affordances refactor
+
+All 2107 backend tests pass green (2100 pre-existing + 7 new).
+
+**Helper signature chosen:**
+```java
+private Link addManagementAffordances(Link selfLink, Event event)
+```
+Added `import org.springframework.hateoas.Link` to support the simple type name.
+
+**Changes made:**
+- `EventController.java` — extracted `addManagementAffordances(Link, Event)` private helper containing the status-based switch (DRAFT → update+publish+cancel, ACTIVE → update+cancel, FINISHED/CANCELLED → nothing) plus the conditional `syncEventFromOris` affordance (when `orisIntegrationActive && orisId != null && status in {DRAFT, ACTIVE}`)
+- `addLinksForEvent` (detail) — replaced the inline switch with a call to the helper; kept the ACTIVE registration open/closed block inline since it depends on `currentUser`
+- `addLinksForListItem` (list) — calls `addManagementAffordances` first, then conditionally appends register/unregister; register logic is guarded only by `event.areRegistrationsOpen()` (no status guard needed since that method already returns false for FINISHED/CANCELLED)
+
+**Tests written by previous agent (7):** all passed without modification — they were correct as written.
+
+**Permission filtering (task 8.9):** worked automatically via `klabisAfford()` / `@HasAuthority(Authority.EVENTS_MANAGE)` on `updateEvent`, `publishEvent`, `cancelEvent`, `syncEventFromOris`. A user with only `EVENTS_READ` sees the register affordance but none of the management affordances, exactly as test 8.9 asserts.
+
+**Detail page (task 8.10):** all pre-existing `addLinksForEvent` tests (`GetEventTests`, `FinishEventTests`, affordance assertions) pass unchanged.
+
+**Follow-ups:** none
