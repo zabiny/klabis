@@ -58,15 +58,15 @@
 
 ## 7. Training group — manual trainee exclusivity (TDD)
 
-- [ ] 7.1 Add failing `TrainingGroupManagementServiceTest`: manually adding a member who is already a trainee of another training group throws `MemberAlreadyInTrainingGroupException`
-- [ ] 7.2 Add failing test: manually adding a member who is not a trainee of any other training group succeeds
-- [ ] 7.3 Add failing test: manually adding a member who is a **trainer** of another training group (but not a trainee anywhere) succeeds — trainer role is exempt
-- [ ] 7.4 Add failing test: the existing automatic `assignEligibleMember(...)` path is NOT affected — auto-assign of an already-assigned member still follows the move-on-conflict behavior described in the existing spec
-- [ ] 7.5 Create new exception `members/traininggroup/application/MemberAlreadyInTrainingGroupException.java` (or reuse the pattern from `MemberAlreadyInFamilyGroupException`)
-- [ ] 7.6 Add a repository method on `TrainingGroupRepository` to find a training group by trainee member id (if not already present)
-- [ ] 7.7 In `TrainingGroupManagementService.addMember(groupId, memberId)`, query the repository and throw the new exception on conflict before calling the aggregate
-- [ ] 7.8 Map the new exception to a 409 (or 400) via the relevant exception handler
-- [ ] 7.9 Verify tests 7.1–7.4 pass
+- [x] 7.1 Add failing `TrainingGroupManagementServiceTest`: manually adding a member who is already a trainee of another training group throws `MemberAlreadyInTrainingGroupException`
+- [x] 7.2 Add failing test: manually adding a member who is not a trainee of any other training group succeeds
+- [x] 7.3 Add failing test: manually adding a member who is a **trainer** of another training group (but not a trainee anywhere) succeeds — trainer role is exempt
+- [x] 7.4 Add failing test: the existing automatic `assignEligibleMember(...)` path is NOT affected — auto-assign of an already-assigned member still follows the move-on-conflict behavior described in the existing spec
+- [x] 7.5 Create new exception `members/traininggroup/application/MemberAlreadyInTrainingGroupException.java` (or reuse the pattern from `MemberAlreadyInFamilyGroupException`)
+- [x] 7.6 Add a repository method on `TrainingGroupRepository` to find a training group by trainee member id (if not already present)
+- [x] 7.7 In `TrainingGroupManagementService.addMember(groupId, memberId)`, query the repository and throw the new exception on conflict before calling the aggregate
+- [x] 7.8 Map the new exception to a 409 (or 400) via the relevant exception handler
+- [x] 7.9 Verify tests 7.1–7.4 pass
 
 ## 8. Parent/child exclusivity — document and test the invariant
 

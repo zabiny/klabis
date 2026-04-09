@@ -5,6 +5,8 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
+import com.klabis.members.traininggroup.application.MemberAlreadyInTrainingGroupException;
+import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
@@ -305,6 +307,26 @@ class TrainingGroupControllerTest {
                                             """.formatted(UUID.randomUUID()))
                     )
                     .andExpect(status().is(422));
+        }
+
+        @Test
+        @DisplayName("7.8 should return 409 when member is already a trainee of another training group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn409WhenMemberAlreadyInAnotherTrainingGroup() throws Exception {
+            MemberId conflictMember = new MemberId(UUID.fromString(MEMBER_ID));
+            TrainingGroupId conflictGroup = new TrainingGroupId(UUID.randomUUID());
+            doThrow(new MemberAlreadyInTrainingGroupException(conflictMember, conflictGroup))
+                    .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
+
+            mockMvc.perform(
+                            post("/api/training-groups/{id}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(MEMBER_ID))
+                    )
+                    .andExpect(status().isConflict());
         }
     }
 

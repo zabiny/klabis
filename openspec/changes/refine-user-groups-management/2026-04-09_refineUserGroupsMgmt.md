@@ -127,6 +127,38 @@ Reused `MemberAlreadyInGroupException` (from `common.usergroup`). The candidate 
 
 ---
 
+### Iter 4 — 2026-04-09 — TrainingGroup manual trainee exclusivity (tasks 7.x)
+
+**Files created:**
+- `backend/src/main/java/com/klabis/members/traininggroup/application/MemberAlreadyInTrainingGroupException.java` — new exception carrying `MemberId` and conflicting `TrainingGroupId`
+- `backend/src/main/java/com/klabis/members/traininggroup/infrastructure/restapi/TrainingGroupExceptionHandler.java` — `@RestControllerAdvice` scoped to `TrainingGroupController`, maps new exception to HTTP 409
+
+**Files modified:**
+- `backend/src/main/java/com/klabis/members/traininggroup/application/TrainingGroupManagementService.java` — added `findGroupForMember` call at the top of `addMemberToTrainingGroup` (manual path only); throws before `loadTrainingGroup` on conflict
+- `backend/src/test/java/com/klabis/members/traininggroup/application/TrainingGroupManagementServiceTest.java` — added `AddMemberToTrainingGroupMethod` nested class (4 tests, tasks 7.1–7.4)
+- `backend/src/test/java/com/klabis/members/traininggroup/infrastructure/restapi/TrainingGroupControllerTest.java` — added `shouldReturn409WhenMemberAlreadyInAnotherTrainingGroup` test inside `AddTrainingGroupMemberTests` (task 7.8)
+
+**Tests added (new):**
+- `TrainingGroupManagementServiceTest.AddMemberToTrainingGroupMethod.shouldThrowWhenMemberIsAlreadyTraineeOfAnotherGroup` (7.1)
+- `TrainingGroupManagementServiceTest.AddMemberToTrainingGroupMethod.shouldSucceedWhenMemberIsNotTraineeAnywhere` (7.2)
+- `TrainingGroupManagementServiceTest.AddMemberToTrainingGroupMethod.shouldSucceedWhenMemberIsOnlyTrainerElsewhere` (7.3)
+- `TrainingGroupManagementServiceTest.AddMemberToTrainingGroupMethod.shouldNotApplyExclusivityCheckOnAutoAssignPath` (7.4)
+- `TrainingGroupControllerTest.AddTrainingGroupMemberTests.shouldReturn409WhenMemberAlreadyInAnotherTrainingGroup` (7.8)
+
+**How trainer vs trainee was distinguished:**
+No new repository method was needed. `TrainingGroupRepository.findGroupForMember(MemberId)` already existed and queries `training_group_members` (the trainee/member table), not `training_group_trainers`. Trainers live only in `training_group_trainers`. So the existing method returns `Optional.empty()` for a member who is only a trainer of another group — the trainer exemption is structural, not conditional logic.
+
+**Automatic path (untouched):**
+`createTrainingGroup` calls `assignEligibleMember` in a loop. The guard (`findGroupForMember`) is only in `addMemberToTrainingGroup` (manual path). Test 7.4 verifies `findGroupForMember` is never called during `createTrainingGroup`.
+
+**Surprises / deviations:**
+- Test 7.1 initially included an unnecessary stub for `findById(GROUP_ID)` — removed since the service throws before reaching `loadTrainingGroup`. Mockito strict stubbing detected this immediately.
+- `MemberAlreadyInTrainingGroupException` extends `RuntimeException` directly (not `BusinessRuleViolationException`) because it is mapped to 409 via a dedicated handler. Extending `BusinessRuleViolationException` would have mapped it to 400 via `MvcExceptionHandler` unless overridden, creating ambiguity.
+
+**Result:** 2081/2081 tests pass. All 7.x checkboxes ticked.
+
+---
+
 ### Iter 1 — 2026-04-09 — WithInvitations owner promotion rule (tasks 1.x + 2.x)
 
 **Files created:**

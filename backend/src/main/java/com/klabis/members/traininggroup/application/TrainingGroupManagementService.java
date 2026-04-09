@@ -87,6 +87,9 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     @Transactional
     @Override
     public void addMemberToTrainingGroup(TrainingGroupId id, MemberId memberId) {
+        trainingGroupRepository.findGroupForMember(memberId).ifPresent(existing -> {
+            throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId());
+        });
         TrainingGroup group = loadTrainingGroup(id);
         group.assignEligibleMember(memberId);
         trainingGroupRepository.save(group);

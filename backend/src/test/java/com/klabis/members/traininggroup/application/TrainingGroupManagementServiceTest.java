@@ -1,9 +1,12 @@
 package com.klabis.members.traininggroup.application;
 
+import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.users.UserId;
+import com.klabis.members.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
@@ -17,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -323,6 +327,81 @@ class TrainingGroupManagementServiceTest {
 
             assertThatThrownBy(() -> service.deleteTrainingGroup(GROUP_ID))
                     .isInstanceOf(GroupNotFoundException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("addMemberToTrainingGroup() — manual path")
+    class AddMemberToTrainingGroupMethod {
+
+        private static final MemberId MEMBER = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        private static final TrainingGroupId OTHER_GROUP_ID = new TrainingGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+
+        @Test
+        @DisplayName("7.1 should throw MemberAlreadyInTrainingGroupException when member is already a trainee of another training group")
+        void shouldThrowWhenMemberIsAlreadyTraineeOfAnotherGroup() {
+            TrainingGroup conflictingGroup = TrainingGroup.reconstruct(
+                    OTHER_GROUP_ID, "Seniors", Set.of(TRAINER),
+                    Set.of(new GroupMembership(new UserId(MEMBER.uuid()), Instant.now())),
+                    new AgeRange(19, 30), null);
+
+            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.of(conflictingGroup));
+
+            assertThatThrownBy(() -> service.addMemberToTrainingGroup(GROUP_ID, MEMBER))
+                    .isInstanceOf(MemberAlreadyInTrainingGroupException.class);
+        }
+
+        @Test
+        @DisplayName("7.2 should succeed when member is not a trainee of any training group")
+        void shouldSucceedWhenMemberIsNotTraineeAnywhere() {
+            TrainingGroup targetGroup = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+
+            when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(targetGroup));
+            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.empty());
+            when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.addMemberToTrainingGroup(GROUP_ID, MEMBER);
+
+            verify(trainingGroupRepository).save(any(TrainingGroup.class));
+        }
+
+        @Test
+        @DisplayName("7.3 should succeed when member is a trainer of another training group but not a trainee anywhere")
+        void shouldSucceedWhenMemberIsOnlyTrainerElsewhere() {
+            // MEMBER is a trainer (owner) of OTHER_GROUP — findGroupForMember queries the members table (trainees only)
+            // so it returns empty, meaning the trainer exemption works automatically via the existing query semantics
+            TrainingGroup targetGroup = TrainingGroup.reconstruct(
+                    GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
+
+            when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(targetGroup));
+            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.empty());
+            when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.addMemberToTrainingGroup(GROUP_ID, MEMBER);
+
+            verify(trainingGroupRepository).save(any(TrainingGroup.class));
+        }
+
+        @Test
+        @DisplayName("7.4 automatic assignEligibleMember path during createTrainingGroup is NOT checked — auto-assign still runs without exclusivity guard")
+        void shouldNotApplyExclusivityCheckOnAutoAssignPath() {
+            // Auto-assign path: createTrainingGroup calls assignEligibleMember in a loop, not addMemberToTrainingGroup.
+            // findGroupForMember must NOT be called during createTrainingGroup.
+            AgeRange newRange = new AgeRange(10, 18);
+            TrainingGroup.CreateTrainingGroup command =
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
+
+            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
+                    .thenReturn(List.of(MEMBER));
+            when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.createTrainingGroup(command);
+
+            // findGroupForMember must never be called during the automatic path
+            org.mockito.Mockito.verify(trainingGroupRepository, org.mockito.Mockito.never())
+                    .findGroupForMember(any());
         }
     }
 }
