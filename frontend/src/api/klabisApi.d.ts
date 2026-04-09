@@ -36,7 +36,6 @@ export interface paths {
          * Update a manual calendar item
          * @description Updates calendar item information. Only allowed for manual items (not event-linked).
          *     Event-linked items are read-only and managed automatically.
-         *     Returns HATEOAS links for resource navigation.
          *
          */
         put: operations["updateCalendarItem"];
@@ -51,6 +50,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all training groups (requires GROUPS:TRAINING) */
+        get: operations["listTrainingGroups"];
+        put?: never;
+        /** Create a training group (requires GROUPS:TRAINING) */
+        post: operations["createTrainingGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training-groups/{id}/trainers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a trainer to training group (requires GROUPS:TRAINING) */
+        post: operations["addTrainer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training-groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a member to training group (requires GROUPS:TRAINING) */
+        post: operations["addTrainingGroupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members": {
         parameters: {
             query?: never;
@@ -60,7 +111,7 @@ export interface paths {
         };
         /**
          * List members with pagination and sorting
-         * @description Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort=field,direction). Default: page=0, size=10, sort=lastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev).
+         * @description Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort=field,direction). Default: page=0, size=10, sort=lastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev). Access is restricted to active members only - terminated members will receive 403 Forbidden.
          */
         get: operations["listMembers"];
         put?: never;
@@ -75,7 +126,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/members/{id}/terminate": {
+    "/api/members/{id}/suspend": {
         parameters: {
             query?: never;
             header?: never;
@@ -85,10 +136,185 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Terminate member membership
-         * @description Terminates a member's membership with a specified reason. Requires MEMBERS:UPDATE authority (admin-only). Sets active status to false and records termination details including timestamp and user who performed termination.
+         * Suspend member membership
+         * @description Suspends a member's membership with a specified reason. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to false and records suspension details including timestamp and user who performed suspension.
          */
-        post: operations["terminateMember"];
+        post: operations["suspendMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume suspended member membership
+         * @description Resumes a suspended member's membership. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to true and records resume timestamp and user who performed resume.
+         */
+        post: operations["resumeMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List groups where authenticated member is a member */
+        get: operations["listGroups"];
+        put?: never;
+        /** Create a members group */
+        post: operations["createGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an owner to group (owner only) */
+        post: operations["addGroupOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Direct member addition (always throws — invitation-only group) */
+        post: operations["addGroupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite a member to a members group (owner only) */
+        post: operations["inviteMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/invitations/{invitationId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending invitation */
+        post: operations["rejectInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a pending invitation */
+        post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all family groups (requires MEMBERS:MANAGE) */
+        get: operations["listFamilyGroups"];
+        put?: never;
+        /** Create a family group (requires MEMBERS:MANAGE) */
+        post: operations["createFamilyGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups/{id}/parents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a parent to family group (requires MEMBERS:MANAGE) */
+        post: operations["addFamilyGroupParent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups/{id}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a child to family group (requires MEMBERS:MANAGE) */
+        post: operations["addFamilyGroupChild"];
         delete?: never;
         options?: never;
         head?: never;
@@ -107,16 +333,36 @@ export interface paths {
          * @description Retrieves a paginated list of events.
          *     Supports filtering by status and sorting by various fields.
          *     Default: page=0, size=10, sort=eventDate,desc.
-         *     Allowed sort fields: id, name, eventDate, location, organizer, status.
+         *     Allowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.
          *
          */
         get: operations["listEvents"];
         put?: never;
         /**
          * Create a new event
-         * @description Creates a new event in DRAFT status. Event coordinator ID is optional. Returns HATEOAS links for resource navigation.
+         * @description Creates a new event in DRAFT status. Returns Location header pointing to the created resource.
          */
         post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/{id}/sync-from-oris": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync event from ORIS
+         * @description Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and ACTIVE events with an orisId.
+         */
+        post: operations["syncEventFromOris"];
         delete?: never;
         options?: never;
         head?: never;
@@ -180,7 +426,7 @@ export interface paths {
         put?: never;
         /**
          * Register for an event
-         * @description Register the authenticated member for an event with SI card number. Only allowed for ACTIVE events. Returns HATEOAS links for resource navigation.
+         * @description Register the authenticated member for an event with SI card number. Only allowed for ACTIVE events. Returns Location header pointing to the registration.
          */
         post: operations["registerForEvent"];
         /**
@@ -190,6 +436,50 @@ export interface paths {
          *
          */
         delete: operations["unregisterFromEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import event from ORIS
+         * @description Creates a new event in DRAFT status by importing data from ORIS.
+         */
+        post: operations["importEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/category-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all category presets
+         * @description Returns all category presets. Requires EVENTS:MANAGE authority.
+         */
+        get: operations["listPresets"];
+        put?: never;
+        /**
+         * Create a category preset
+         * @description Creates a new category preset. Requires EVENTS:MANAGE authority.
+         */
+        post: operations["createCategoryPreset"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -214,7 +504,7 @@ export interface paths {
         put?: never;
         /**
          * Create a new manual calendar item
-         * @description Creates a new manual calendar item (not linked to an event). Manual items can be updated and deleted. Returns HATEOAS links for resource navigation.
+         * @description Creates a new manual calendar item (not linked to an event). Manual items can be updated and deleted. Returns Location header pointing to the created resource.
          */
         post: operations["createCalendarItem"];
         delete?: never;
@@ -263,6 +553,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get training group details */
+        get: operations["getTrainingGroup"];
+        put?: never;
+        post?: never;
+        /** Delete a training group (requires GROUPS:TRAINING) */
+        delete: operations["deleteTrainingGroup"];
+        options?: never;
+        head?: never;
+        /** Update a training group (requires GROUPS:TRAINING) */
+        patch: operations["updateTrainingGroup"];
+        trace?: never;
+    };
     "/api/members/{id}": {
         parameters: {
             query?: never;
@@ -282,9 +591,28 @@ export interface paths {
         head?: never;
         /**
          * Update member information (partial update)
-         * @description Updates member information with PATCH semantics (partial update). Supports dual authorization: members can edit their own information (limited fields), users with MEMBERS:UPDATE authority can edit any member (all fields). Only provided fields are updated; null/missing fields keep existing values. Member-editable fields: email, phone, address, dietaryRestrictions. Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup.
+         * @description Updates member information with PATCH semantics (partial update). Admin (MEMBERS:MANAGE) or owner can call this endpoint. Field-level authorization enforces which fields each role may submit. Only provided fields are updated; null/missing fields keep existing values.
          */
         patch: operations["updateMember"];
+        trace?: never;
+    };
+    "/api/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get group details */
+        get: operations["getGroup"];
+        put?: never;
+        post?: never;
+        /** Delete a group (owner only) */
+        delete: operations["deleteGroup"];
+        options?: never;
+        head?: never;
+        /** Rename a group (owner only) */
+        patch: operations["updateGroup"];
         trace?: never;
     };
     "/api/events/{id}": {
@@ -296,7 +624,7 @@ export interface paths {
         };
         /**
          * Get event by ID
-         * @description Retrieves detailed event information by ID. Returns HATEOAS links based on event status.
+         * @description Retrieves detailed event information by ID. Returns HATEOAS links based on event status and includes embedded registrations.
          */
         get: operations["getEvent"];
         put?: never;
@@ -307,10 +635,36 @@ export interface paths {
         /**
          * Update an event
          * @description Updates event information. Only allowed for DRAFT and ACTIVE events.
-         *     Returns HATEOAS links for resource navigation.
-         *
          */
         patch: operations["updateEvent"];
+        trace?: never;
+    };
+    "/api/category-presets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get category preset by ID
+         * @description Returns a single category preset. Requires EVENTS:MANAGE authority.
+         */
+        get: operations["getPreset"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a category preset
+         * @description Deletes a category preset. Requires EVENTS:MANAGE authority.
+         */
+        delete: operations["deleteCategoryPreset"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a category preset
+         * @description Updates an existing category preset. Requires EVENTS:MANAGE authority.
+         */
+        patch: operations["updateCategoryPreset"];
         trace?: never;
     };
     "/api": {
@@ -324,6 +678,77 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/oris/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List upcoming ORIS events
+         * @description Returns events from ORIS available for import. Accepts multiple region parameters to combine results.
+         */
+        get: operations["listOrisEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMemberOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List current user's pending invitations across all groups */
+        get: operations["getPendingInvitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get family group details (requires MEMBERS:MANAGE) */
+        get: operations["getFamilyGroup"];
+        put?: never;
+        post?: never;
+        /** Delete a family group (requires MEMBERS:MANAGE) */
+        delete: operations["deleteFamilyGroup"];
         options?: never;
         head?: never;
         patch?: never;
@@ -471,6 +896,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training-groups/{id}/trainers/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a trainer from training group (requires GROUPS:TRAINING) */
+        delete: operations["removeTrainer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training-groups/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a member from training group (requires GROUPS:TRAINING) */
+        delete: operations["removeTrainingGroupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/owners/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an owner from group (owner only) */
+        delete: operations["removeGroupOwner"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a member from group (owner only) */
+        delete: operations["removeGroupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups/{id}/parents/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a parent from family group (requires MEMBERS:MANAGE) */
+        delete: operations["removeFamilyGroupParent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/family-groups/{id}/children/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a child from family group (requires MEMBERS:MANAGE) */
+        delete: operations["removeFamilyGroupChild"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -489,45 +1016,33 @@ export interface components {
             };
         };
         UpdatePermissionsRequest: {
-            authorities: ("CALENDAR:MANAGE" | "MEMBERS:CREATE" | "MEMBERS:READ" | "MEMBERS:UPDATE" | "MEMBERS:DELETE" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE")[];
-        };
-        Link: {
-            href?: string;
-            hreflang?: string;
-            title?: string;
-            type?: string;
-            deprecation?: string;
-            profile?: string;
-            name?: string;
-            templated?: boolean;
-        };
-        PermissionsResponseModel: {
-            /** Format: uuid */
-            userId?: string;
-            authorities?: string[];
-            _links?: components["schemas"]["Links"];
+            authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "GROUPS:TRAINING")[];
         };
         /** @description Calendar item update data */
-        UpdateCalendarItemCommand: {
+        UpdateCalendarItem: {
             name: string;
-            description: string;
+            description?: string;
             /** Format: date */
             startDate: string;
             /** Format: date */
             endDate: string;
         };
-        EntityModelCalendarItemDto: {
+        CreateTrainingGroupRequest: {
+            name: string;
             /** Format: uuid */
-            id?: string;
-            name?: string;
-            description?: string;
-            /** Format: date */
-            startDate?: string;
-            /** Format: date */
-            endDate?: string;
+            trainerId: string;
+            /** Format: int32 */
+            minAge: number;
+            /** Format: int32 */
+            maxAge: number;
+        };
+        AddTrainerRequest: {
             /** Format: uuid */
-            eventId?: string;
-            _links?: components["schemas"]["Links"];
+            memberId: string;
+        };
+        AddMemberRequest: {
+            /** Format: uuid */
+            memberId: string;
         };
         AddressRequest: {
             street: string;
@@ -583,7 +1098,7 @@ export interface components {
              */
             dateOfBirth: string;
             /**
-             * @description Nationality (ISO 3166-1 alpha-2 or alpha-3 code)
+             * @description Nationality (ISO 3166-1 alpha-2 code)
              * @example CZ
              */
             nationality: string;
@@ -619,54 +1134,63 @@ export interface components {
              */
             bankAccountNumber?: string;
         };
-        /** @description Termination request */
-        TerminateMembershipRequest: {
+        /** @description Suspension request */
+        SuspendMembershipRequest: {
             /** @enum {string} */
-            reason?: "ODHLASKA" | "PRESTUP" | "OTHER";
+            reason: "ODHLASKA" | "PRESTUP" | "OTHER";
             note?: string;
         };
+        CreateGroupRequest: {
+            name: string;
+        };
+        AddOwnerRequest: {
+            /** Format: uuid */
+            memberId: string;
+        };
+        InviteMemberRequest: {
+            /** Format: uuid */
+            memberId: string;
+        };
+        CreateFamilyGroup: {
+            name?: string;
+            parent?: components["schemas"]["MemberId"];
+        };
+        MemberId: {
+            /** Format: uuid */
+            value?: string;
+        };
         /** @description Event creation data */
-        CreateEventCommand: {
+        CreateEvent: {
             name: string;
             /** Format: date */
             eventDate: string;
-            location: string;
+            location?: string;
             organizer: string;
             websiteUrl?: string;
-            /** Format: uuid */
-            eventCoordinatorId?: string;
-        };
-        EntityModelEventDto: {
-            /** Format: uuid */
-            id?: string;
-            name?: string;
+            eventCoordinatorId?: components["schemas"]["MemberId"];
             /** Format: date */
-            eventDate?: string;
-            location?: string;
-            organizer?: string;
-            websiteUrl?: string;
-            /** Format: uuid */
-            eventCoordinatorId?: string;
-            /** @enum {string} */
-            status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-            _links?: components["schemas"]["Links"];
+            registrationDeadline?: string;
+            categories?: string[];
         };
         /** @description Registration data */
-        RegisterForEventCommand: {
+        RegisterCommand: {
             siCardNumber: string;
+            category?: string;
         };
-        EntityModelOwnRegistrationDto: {
-            firstName?: string;
-            lastName?: string;
-            siCardNumber?: string;
-            /** Format: date-time */
-            registeredAt?: string;
-            _links?: components["schemas"]["Links"];
+        /** @description ORIS import command with orisId */
+        ImportCommand: {
+            /** Format: int32 */
+            orisId?: number;
+        };
+        /** @description Preset creation data */
+        CreateCategoryPreset: {
+            name: string;
+            categories?: string[];
         };
         /** @description Calendar item creation data */
-        CreateCalendarItemCommand: {
+        CreateCalendarItem: {
             name: string;
-            description: string;
+            description?: string;
             /** Format: date */
             startDate: string;
             /** Format: date */
@@ -724,66 +1248,168 @@ export interface components {
              */
             registrationNumber?: string;
         };
-        IdentityCardDto: {
-            cardNumber?: string;
-            /** Format: date */
-            validityDate?: string;
+        PatchFieldInteger: {
+            provided?: boolean;
         };
-        MedicalCourseDto: {
-            /** Format: date */
-            completionDate?: string;
-            /** Format: date */
-            validityDate?: string;
+        PatchFieldListString: {
+            provided?: boolean;
         };
-        TrainerLicenseDto: {
-            /** @enum {string} */
-            level?: "T1" | "T2" | "T3";
-            /** Format: date */
-            validityDate?: string;
+        PatchFieldString: {
+            provided?: boolean;
+        };
+        UpdateTrainingGroupRequest: {
+            name?: components["schemas"]["PatchFieldString"];
+            minAge?: components["schemas"]["PatchFieldInteger"];
+            maxAge?: components["schemas"]["PatchFieldInteger"];
+            trainers?: components["schemas"]["PatchFieldListString"];
+        };
+        PatchFieldAddressRequest: {
+            provided?: boolean;
+        };
+        PatchFieldDrivingLicenseGroup: {
+            provided?: boolean;
+        };
+        PatchFieldGender: {
+            provided?: boolean;
+        };
+        PatchFieldGuardianDTO: {
+            provided?: boolean;
+        };
+        PatchFieldIdentityCardDto: {
+            provided?: boolean;
+        };
+        PatchFieldLocalDate: {
+            provided?: boolean;
+        };
+        PatchFieldMedicalCourseDto: {
+            provided?: boolean;
+        };
+        PatchFieldRefereeLicenseDto: {
+            provided?: boolean;
+        };
+        PatchFieldTrainerLicenseDto: {
+            provided?: boolean;
         };
         /** @description Partial update request - only include fields to update */
         UpdateMemberRequest: {
-            email?: string;
-            phone?: string;
-            address?: components["schemas"]["AddressRequest"];
-            firstName?: string;
-            lastName?: string;
-            /** Format: date */
-            dateOfBirth?: string;
-            /** @enum {string} */
-            gender?: "MALE" | "FEMALE";
-            chipNumber?: string;
-            identityCard?: components["schemas"]["IdentityCardDto"];
-            medicalCourse?: components["schemas"]["MedicalCourseDto"];
-            trainerLicense?: components["schemas"]["TrainerLicenseDto"];
-            refereeLicense?: components["schemas"]["RefereeLicenseDto"];
-            /** @enum {string} */
-            drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
-            dietaryRestrictions?: string;
-            birthNumber?: string;
-            bankAccountNumber?: string;
+            email?: components["schemas"]["PatchFieldString"];
+            phone?: components["schemas"]["PatchFieldString"];
+            address?: components["schemas"]["PatchFieldAddressRequest"];
+            firstName: components["schemas"]["PatchFieldString"];
+            lastName: components["schemas"]["PatchFieldString"];
+            dateOfBirth?: components["schemas"]["PatchFieldLocalDate"];
+            gender?: components["schemas"]["PatchFieldGender"];
+            chipNumber?: components["schemas"]["PatchFieldString"];
+            nationality?: components["schemas"]["PatchFieldString"];
+            identityCard?: components["schemas"]["PatchFieldIdentityCardDto"];
+            medicalCourse?: components["schemas"]["PatchFieldMedicalCourseDto"];
+            trainerLicense?: components["schemas"]["PatchFieldTrainerLicenseDto"];
+            refereeLicense?: components["schemas"]["PatchFieldRefereeLicenseDto"];
+            drivingLicenseGroup?: components["schemas"]["PatchFieldDrivingLicenseGroup"];
+            dietaryRestrictions?: components["schemas"]["PatchFieldString"];
+            birthNumber?: components["schemas"]["PatchFieldString"];
+            bankAccountNumber?: components["schemas"]["PatchFieldString"];
+            guardian?: components["schemas"]["PatchFieldGuardianDTO"];
+        };
+        RenameGroupRequest: {
+            name: string;
         };
         /** @description Event update data */
-        UpdateEventCommand: {
+        UpdateEvent: {
             name: string;
             /** Format: date */
             eventDate: string;
-            location: string;
+            location?: string;
             organizer: string;
             websiteUrl?: string;
-            /** Format: uuid */
-            eventCoordinatorId?: string;
+            eventCoordinatorId?: components["schemas"]["MemberId"];
+            /** Format: date */
+            registrationDeadline?: string;
+            categories?: string[];
+        };
+        /** @description Preset update data */
+        UpdateCategoryPreset: {
+            name: string;
+            categories?: string[];
         };
         EntityModelRootModel: {
             _links?: components["schemas"]["Links"];
         };
+        Link: {
+            href?: string;
+            hreflang?: string;
+            title?: string;
+            type?: string;
+            deprecation?: string;
+            profile?: string;
+            name?: string;
+            templated?: boolean;
+        };
+        PermissionsResponseModel: {
+            /** Format: uuid */
+            userId?: string;
+            authorities?: string[];
+            _links?: components["schemas"]["Links"];
+        };
+        CollectionModelEntityModelTrainingGroupSummaryResponse: {
+            _embedded?: {
+                trainingGroupSummaryResponseList?: components["schemas"]["EntityModelTrainingGroupSummaryResponse"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelTrainingGroupSummaryResponse: {
+            id?: components["schemas"]["TrainingGroupId"];
+            name?: string;
+            /** Format: int32 */
+            minAge?: number;
+            /** Format: int32 */
+            maxAge?: number;
+            /** Format: int32 */
+            memberCount?: number;
+            _links?: components["schemas"]["Links"];
+        };
+        TrainingGroupId: {
+            /** Format: uuid */
+            value?: string;
+        };
+        EntityModelGroupMembershipResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            /** Format: date-time */
+            joinedAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelTrainerResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelTrainingGroupResponse: {
+            id?: components["schemas"]["TrainingGroupId"];
+            name?: string;
+            /** Format: int32 */
+            minAge?: number;
+            /** Format: int32 */
+            maxAge?: number;
+            trainers?: components["schemas"]["EntityModelTrainerResponse"][];
+            members?: components["schemas"]["EntityModelGroupMembershipResponse"][];
+            _links?: components["schemas"]["Links"];
+        };
+        OrisEventSummary: {
+            /** Format: int32 */
+            id?: number;
+            name?: string;
+            /** Format: date */
+            date?: string;
+            location?: string;
+            organizer?: string;
+        };
         EntityModelMemberSummaryResponse: {
             /**
-             * Format: uuid
              * @description Unique member identifier (UUID)
              * @example 123e4567-e89b-12d3-a456-426614174000
              */
-            id?: string;
+            id?: components["schemas"]["MemberId"];
             /**
              * @description Member's first name
              * @example Jan
@@ -799,6 +1425,10 @@ export interface components {
              * @example ZBM0501
              */
             registrationNumber?: string;
+            /** @description Member's email address (visible to admins only) */
+            email?: string;
+            /** @description Whether the member is active (visible to admins only) */
+            active?: boolean;
             _links?: components["schemas"]["Links"];
         };
         PageMetadata: {
@@ -825,8 +1455,7 @@ export interface components {
             country?: string;
         };
         EntityModelMemberDetailsResponse: {
-            /** Format: uuid */
-            id?: string;
+            id?: components["schemas"]["MemberId"];
             registrationNumber?: string;
             firstName?: string;
             lastName?: string;
@@ -844,31 +1473,163 @@ export interface components {
             identityCard?: components["schemas"]["IdentityCardDto"];
             medicalCourse?: components["schemas"]["MedicalCourseDto"];
             trainerLicense?: components["schemas"]["TrainerLicenseDto"];
+            refereeLicense?: components["schemas"]["RefereeLicenseDto"];
             /** @enum {string} */
             drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
             dietaryRestrictions?: string;
             birthNumber?: string;
             bankAccountNumber?: string;
             /** @enum {string} */
-            deactivationReason?: "ODHLASKA" | "PRESTUP" | "OTHER";
+            suspensionReason?: "ODHLASKA" | "PRESTUP" | "OTHER";
             /** Format: date-time */
-            deactivatedAt?: string;
-            deactivatedBy?: string;
-            deactivationNote?: string;
+            suspendedAt?: string;
+            suspendedBy?: string;
+            suspensionNote?: string;
             _links?: components["schemas"]["Links"];
-            refereeLicense?: components["schemas"]["RefereeLicenseDto"];
+        };
+        IdentityCardDto: {
+            cardNumber?: string;
+            /** Format: date */
+            validityDate?: string;
+        };
+        MedicalCourseDto: {
+            /** Format: date */
+            completionDate?: string;
+            /** Format: date */
+            validityDate?: string;
+        };
+        RefereeLicenseDto: {
+            /** @enum {string} */
+            level?: "R1" | "R2" | "R3";
+            /** Format: date */
+            validityDate?: string;
+        };
+        TrainerLicenseDto: {
+            /** @enum {string} */
+            level?: "T1" | "T2" | "T3";
+            /** Format: date */
+            validityDate?: string;
+        };
+        /** @description Member option for select components */
+        MemberOptionResponse: {
+            /**
+             * @description Member UUID
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            value?: string;
+            /**
+             * @description Display name with registration number
+             * @example Jan Novák (ZBM0001)
+             */
+            prompt?: string;
+        };
+        CollectionModelEntityModelPendingInvitationResponse: {
+            _embedded?: {
+                pendingInvitationResponseList?: components["schemas"]["EntityModelPendingInvitationResponse"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelPendingInvitationResponse: {
+            groupId?: components["schemas"]["MembersGroupId"];
+            groupName?: string;
+            invitationId?: components["schemas"]["InvitationId"];
+            /** Format: uuid */
+            invitedBy?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        InvitationId: {
+            /** Format: uuid */
+            value?: string;
+        };
+        MembersGroupId: {
+            /** Format: uuid */
+            value?: string;
+        };
+        CollectionModelEntityModelGroupSummaryResponse: {
+            _embedded?: {
+                groupSummaryResponseList?: components["schemas"]["EntityModelGroupSummaryResponse"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelGroupSummaryResponse: {
+            id?: components["schemas"]["MembersGroupId"];
+            name?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelGroupResponse: {
+            id?: components["schemas"]["MembersGroupId"];
+            name?: string;
+            owners?: components["schemas"]["EntityModelOwnerResponse"][];
+            members?: components["schemas"]["EntityModelMembersGroupMembershipResponse"][];
+            pendingInvitations?: components["schemas"]["EntityModelPendingInvitationResponse"][];
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelMembersGroupMembershipResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            /** Format: date-time */
+            joinedAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelOwnerResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        CollectionModelEntityModelFamilyGroupSummaryResponse: {
+            _embedded?: {
+                familyGroupSummaryResponseList?: components["schemas"]["EntityModelFamilyGroupSummaryResponse"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelFamilyGroupSummaryResponse: {
+            id?: components["schemas"]["FamilyGroupId"];
+            name?: string;
+            /** Format: int32 */
+            memberCount?: number;
+            _links?: components["schemas"]["Links"];
+        };
+        FamilyGroupId: {
+            /** Format: uuid */
+            value?: string;
+        };
+        EntityModelFamilyGroupMembershipResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            /** Format: date-time */
+            joinedAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelFamilyGroupResponse: {
+            id?: components["schemas"]["FamilyGroupId"];
+            name?: string;
+            parents?: components["schemas"]["EntityModelParentResponse"][];
+            members?: components["schemas"]["EntityModelFamilyGroupMembershipResponse"][];
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelParentResponse: {
+            /** Format: uuid */
+            memberId?: string;
+            _links?: components["schemas"]["Links"];
         };
         EntityModelEventSummaryDto: {
-            /** Format: uuid */
-            id?: string;
+            id?: components["schemas"]["EventId"];
             name?: string;
             /** Format: date */
             eventDate?: string;
             location?: string;
             organizer?: string;
+            websiteUrl?: string;
+            /** Format: date */
+            registrationDeadline?: string;
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+            categories?: string[];
             _links?: components["schemas"]["Links"];
+        };
+        EventId: {
+            /** Format: uuid */
+            value?: string;
         };
         PagedModelEntityModelEventSummaryDto: {
             _embedded?: {
@@ -876,6 +1637,9 @@ export interface components {
             };
             _links?: components["schemas"]["Links"];
             page?: components["schemas"]["PageMetadata"];
+        };
+        RepresentationModelObject: {
+            _links?: components["schemas"]["Links"];
         };
         CollectionModelRegistrationDto: {
             _embedded?: {
@@ -886,13 +1650,54 @@ export interface components {
         RegistrationDto: {
             firstName?: string;
             lastName?: string;
+            category?: string;
             /** Format: date-time */
             registeredAt?: string;
+        };
+        EntityModelOwnRegistrationDto: {
+            firstName?: string;
+            lastName?: string;
+            siCardNumber?: string;
+            category?: string;
+            /** Format: date-time */
+            registeredAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        CategoryPresetId: {
+            /** Format: uuid */
+            value?: string;
+        };
+        CollectionModelEntityModelCategoryPresetDto: {
+            _embedded?: {
+                categoryPresetDtoList?: components["schemas"]["EntityModelCategoryPresetDto"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelCategoryPresetDto: {
+            id?: components["schemas"]["CategoryPresetId"];
+            name?: string;
+            categories?: string[];
+            _links?: components["schemas"]["Links"];
+        };
+        CalendarItemId: {
+            /** Format: uuid */
+            value?: string;
         };
         CollectionModelEntityModelCalendarItemDto: {
             _embedded?: {
                 calendarItemDtoList?: components["schemas"]["EntityModelCalendarItemDto"][];
             };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelCalendarItemDto: {
+            id?: components["schemas"]["CalendarItemId"];
+            name?: string;
+            description?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            eventId?: components["schemas"]["EventId"];
             _links?: components["schemas"]["Links"];
         };
         /** @description Response for token validation */
@@ -911,12 +1716,6 @@ export interface components {
         };
         Links: {
             [key: string]: components["schemas"]["Link"];
-        };
-        RefereeLicenseDto: {
-            /** @enum {string} */
-            level?: "R1" | "R2" | "R3";
-            /** Format: date */
-            validityDate?: string;
         };
     };
     responses: never;
@@ -947,7 +1746,7 @@ export interface operations {
                     "*/*": components["schemas"]["PermissionsResponseModel"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -983,8 +1782,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1014,11 +1822,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["PermissionsResponseModel"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1054,8 +1860,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1086,7 +1901,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1122,8 +1937,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1145,18 +1969,16 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateCalendarItemCommand"];
+                "application/json": components["schemas"]["UpdateCalendarItem"];
             };
         };
         responses: {
             /** @description Calendar item successfully updated */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
-                };
+                content?: never;
             };
             /** @description Cannot update event-linked calendar item */
             400: {
@@ -1194,8 +2016,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1260,8 +2091,325 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listTrainingGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelTrainingGroupSummaryResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createTrainingGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTrainingGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addTrainer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTrainerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addTrainingGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1296,7 +2444,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMemberSummaryResponse"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1314,7 +2462,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            /** @description Forbidden - user is not an active member */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1332,8 +2480,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1363,7 +2520,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1399,8 +2556,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1410,7 +2576,7 @@ export interface operations {
             };
         };
     };
-    terminateMember: {
+    suspendMember: {
         parameters: {
             query?: never;
             header?: never;
@@ -1422,18 +2588,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TerminateMembershipRequest"];
+                "application/json": components["schemas"]["SuspendMembershipRequest"];
             };
         };
         responses: {
-            /** @description Membership terminated successfully */
+            /** @description Membership suspended successfully */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Invalid termination request (e.g., already terminated) */
+            /** @description Invalid suspension request (e.g., already suspended) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1451,7 +2617,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - user lacks MEMBERS:UPDATE authority */
+            /** @description Forbidden - user lacks MEMBERS:MANAGE authority */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1469,8 +2635,941 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent modification detected */
+            /** @description Member is the sole owner of one or more groups — designate a successor before suspension */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    resumeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership resumed successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid resume request (e.g., member is already active) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - user lacks MEMBERS:MANAGE authority */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelGroupSummaryResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addGroupOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddOwnerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    inviteMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    rejectInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Invitation UUID */
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    acceptInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Invitation UUID */
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listFamilyGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFamilyGroupSummaryResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createFamilyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFamilyGroup"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addFamilyGroupParent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    addFamilyGroupChild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1507,7 +3606,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventSummaryDto"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1543,8 +3642,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1563,7 +3671,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateEventCommand"];
+                "application/json": components["schemas"]["CreateEvent"];
             };
         };
         responses: {
@@ -1572,11 +3680,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1612,8 +3718,92 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    syncEventFromOris: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event synced from ORIS successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1636,15 +3826,13 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Event published successfully */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1680,8 +3868,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1704,15 +3901,13 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Event cancelled successfully */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1748,8 +3943,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1780,7 +3984,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelRegistrationDto"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1816,8 +4020,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1839,7 +4052,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RegisterForEventCommand"];
+                "application/json": components["schemas"]["RegisterCommand"];
             };
         };
         responses: {
@@ -1848,11 +4061,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1897,6 +4108,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     unregisterFromEvent: {
@@ -1918,7 +4138,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1954,8 +4174,243 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    importEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportCommand"];
+            };
+        };
+        responses: {
+            /** @description Event imported successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of category presets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCategoryPresetDto"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createCategoryPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCategoryPreset"];
+            };
+        };
+        responses: {
+            /** @description Category preset created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2026,8 +4481,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2046,7 +4510,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateCalendarItemCommand"];
+                "application/json": components["schemas"]["CreateCalendarItem"];
             };
         };
         responses: {
@@ -2055,11 +4519,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2095,8 +4557,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2128,7 +4599,7 @@ export interface operations {
                     "*/*": components["schemas"]["TokenRequestResponse"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2164,7 +4635,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2175,6 +4646,15 @@ export interface operations {
             };
             /** @description Token expired or already used */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2206,7 +4686,7 @@ export interface operations {
                     "*/*": components["schemas"]["PasswordSetupResponse"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2242,7 +4722,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2253,6 +4733,246 @@ export interface operations {
             };
             /** @description Token expired or already used */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getTrainingGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelTrainingGroupResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteTrainingGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateTrainingGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTrainingGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2283,7 +5003,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberDetailsResponse"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2319,8 +5039,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2353,7 +5082,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2389,8 +5118,248 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelGroupResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2418,10 +5387,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelObject"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2457,8 +5426,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2480,20 +5458,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateEventCommand"];
+                "application/json": components["schemas"]["UpdateEvent"];
             };
         };
         responses: {
             /** @description Event successfully updated */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
-                };
+                content?: never;
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2529,8 +5505,248 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Preset UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Category preset found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCategoryPresetDto"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteCategoryPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Preset UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Category preset deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateCategoryPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Preset UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCategoryPreset"];
+            };
+        };
+        responses: {
+            /** @description Category preset updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2559,7 +5775,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelRootModel"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2595,8 +5811,394 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listOrisEvents: {
+        parameters: {
+            query?: {
+                region?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrisEventSummary"][];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listMemberOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOptionResponse"][];
+                    "application/prs.hal-forms+json": components["schemas"]["MemberOptionResponse"][];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getPendingInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPendingInvitationResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getFamilyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelFamilyGroupResponse"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteFamilyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2627,7 +6229,7 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2663,8 +6265,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2698,7 +6309,7 @@ export interface operations {
                     "*/*": components["schemas"]["ValidateTokenResponse"];
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2734,7 +6345,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2745,6 +6356,15 @@ export interface operations {
             };
             /** @description Token expired or already used */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2786,7 +6406,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2822,8 +6442,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2853,7 +6482,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2889,8 +6518,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2920,7 +6558,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2956,8 +6594,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2991,7 +6638,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3025,8 +6672,17 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3056,7 +6712,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3092,8 +6748,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3123,7 +6788,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation error - business rule violated */
+            /** @description Bad request - invalid argument */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3159,8 +6824,479 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - concurrent update (optimistic locking failure) */
+            /** @description Conflict - cannot promote a non-member to owner */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeTrainer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Trainer member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeTrainingGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeGroupOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Owner member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeFamilyGroupParent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Parent member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    removeFamilyGroupChild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Child member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
