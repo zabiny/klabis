@@ -25,7 +25,7 @@ To start application on localhost, use:
 ./runLocalEnvironment.sh
 ```
 
-This will start both backend and frontend. 
+This will start both backend and frontend. Script je blocking - skonci az ve chvili kdy bud oba backend a frontend bezi (pak vrati PIDs nastartovanych casti) nebo vrati chybovy stav (pokud se neco nepovede nastartovat - obvykle protoze BE nebo FE uz bezi). V takovem pripade zkontroluj PIDs bezicih procesu na portu 8443 a 3000 a pokud jde o BE a FE, tak je zabij (kill)
 Backend listens on https://localhost:8443. Frontend listens on http://localhost:3000.
 Frontend on port 3000 is updated automatically (VITE dev server). 
 Frontend part on port 8443 is NOT updated automatically - to propagate changes to frontend on port 8443, 'publish-frontend-resources' NPM task needs to be ran and backend needs to be restarted. 
