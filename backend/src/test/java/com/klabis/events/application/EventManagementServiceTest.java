@@ -314,43 +314,6 @@ class EventManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("finishEvent() method")
-    class FinishEventMethod {
-
-        @Test
-        @DisplayName("should finish event in ACTIVE status")
-        void shouldFinishActiveEvent() {
-            // Given
-            EventId eventId = EventId.generate();
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
-                    .location("Location").organizer("OOB").build());
-            event.publish();
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(eventRepository.save(any(Event.class))).thenReturn(event);
-
-            // When
-            service.finishEvent(eventId);
-
-            // Then
-            verify(eventRepository).save(any(Event.class));
-        }
-
-        @Test
-        @DisplayName("should throw EventNotFoundException when event does not exist")
-        void shouldThrowExceptionWhenEventNotFound() {
-            // Given
-            UUID eventId = UUID.randomUUID();
-            when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
-
-            // When & Then
-            assertThatThrownBy(() -> service.finishEvent(new EventId(eventId)))
-                    .isInstanceOf(EventNotFoundException.class);
-        }
-    }
-
-    @Nested
     @DisplayName("getEvent() method")
     class GetEventMethod {
 

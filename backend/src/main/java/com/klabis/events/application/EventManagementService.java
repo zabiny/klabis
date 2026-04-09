@@ -74,16 +74,6 @@ public class EventManagementService implements EventManagementPort {
 
     @Transactional
     @Override
-    public void finishEvent(EventId eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException(eventId));
-
-        event.finish();
-        eventRepository.save(event);
-    }
-
-    @Transactional
-    @Override
     public void finishExpiredActiveEvents(LocalDate currentDate) {
         eventRepository.findAll(EventFilter.activeEventsWithDateBefore(currentDate), Pageable.unpaged()).getContent().forEach(event -> {
             event.finish();

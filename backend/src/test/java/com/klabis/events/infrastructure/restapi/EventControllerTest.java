@@ -787,20 +787,44 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/events/{id}/finish")
+    @DisplayName("POST /api/events/{id}/finish — endpoint removed")
     class FinishEventTests {
 
         @Test
-        @DisplayName("should return 204 No Content")
+        @DisplayName("should return 404 or 405 — manual finish endpoint is removed")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void shouldFinishEvent() throws Exception {
+        void shouldReturnNotFoundOrMethodNotAllowed() throws Exception {
             UUID eventId = UUID.randomUUID();
 
             mockMvc.perform(
                             post("/api/events/{id}/finish", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isNoContent());
+                    .andExpect(result -> {
+                        int status = result.getResponse().getStatus();
+                        org.assertj.core.api.Assertions.assertThat(status).isIn(404, 405);
+                    });
+        }
+
+        @Test
+        @DisplayName("ACTIVE event detail should NOT contain finishEvent affordance")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void activeEventDetailShouldNotContainFinishEventAffordance() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.finishEvent").doesNotExist());
         }
     }
 

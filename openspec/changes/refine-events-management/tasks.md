@@ -48,15 +48,15 @@
 
 ## 7. Remove manual finish endpoint (TDD)
 
-- [ ] 7.1 Add failing `EventControllerTest` negative test: `POST /api/events/{id}/finish` returns 404 or 405 (endpoint removed)
-- [ ] 7.2 Add failing test: the detail representation for an ACTIVE event does NOT contain a `finishEvent` affordance
-- [ ] 7.3 Delete the `@PostMapping("/{id}/finish")` handler in `EventController.java`
-- [ ] 7.4 Remove the `finishEvent` affordance line from the ACTIVE branch of `addLinksForEvent`
-- [ ] 7.5 Remove `finishEvent(EventId)` from `EventManagementPort` and its implementation in `EventManagementService`
-- [ ] 7.6 Delete any existing tests that exercised the manual-finish endpoint or the port method (or convert them to the negative tests from 7.1/7.2)
-- [ ] 7.7 Verify `EventCompletionScheduler` and `finishExpiredActiveEvents(...)` still work: re-run the scheduler test and confirm an ACTIVE past-date event still transitions to FINISHED via `Event.finish()`
-- [ ] 7.8 Verify `Event.finish()` retains its `status.validateTransition(EventStatus.FINISHED)` guard (no change, just confirm)
-- [ ] 7.9 Verify tests 7.1 and 7.2 pass
+- [x] 7.1 Add failing `EventControllerTest` negative test: `POST /api/events/{id}/finish` returns 404 or 405 (endpoint removed)
+- [x] 7.2 Add failing test: the detail representation for an ACTIVE event does NOT contain a `finishEvent` affordance
+- [x] 7.3 Delete the `@PostMapping("/{id}/finish")` handler in `EventController.java`
+- [x] 7.4 Remove the `finishEvent` affordance line from the ACTIVE branch of `addLinksForEvent`
+- [x] 7.5 Remove `finishEvent(EventId)` from `EventManagementPort` and its implementation in `EventManagementService`
+- [x] 7.6 Delete any existing tests that exercised the manual-finish endpoint or the port method (or convert them to the negative tests from 7.1/7.2)
+- [x] 7.7 Verify `EventCompletionScheduler` and `finishExpiredActiveEvents(...)` still work: re-run the scheduler test and confirm an ACTIVE past-date event still transitions to FINISHED via `Event.finish()`
+- [x] 7.8 Verify `Event.finish()` retains its `status.validateTransition(EventStatus.FINISHED)` guard (no change, just confirm)
+- [x] 7.9 Verify tests 7.1 and 7.2 pass
 
 ## 8. Events list — row-level management affordances (refactor + TDD)
 

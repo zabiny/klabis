@@ -22,8 +22,6 @@ public interface EventManagementPort {
 
     void cancelEvent(EventId eventId);
 
-    void finishEvent(EventId eventId);
-
     void finishExpiredActiveEvents(LocalDate currentDate);
 
     void syncEventFromOris(EventId eventId);

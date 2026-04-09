@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.restapi;
 import tools.jackson.databind.ObjectMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.SecurityTestBase;
+import com.klabis.events.application.EventManagementPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import com.klabis.members.application.LastOwnershipChecker;
@@ -62,13 +63,17 @@ class EventManagementE2ETest extends SecurityTestBase {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private EventManagementPort eventManagementPort;
+
     @Test
-    @DisplayName("Complete event lifecycle: create → publish → finish")
+    @DisplayName("Complete event lifecycle: create → publish → finish (via scheduler)")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
-        // Given: Create an event
+        // Given: Create an event with a past date so the scheduler will finish it
+        LocalDate pastEventDate = LocalDate.now().minusDays(1);
         Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Spring Cup 2026")
-                .eventDate(LocalDate.of(2026, 3, 15))
+                .eventDate(pastEventDate)
                 .location("Forest Park")
                 .organizer("OOB")
                 .build();
@@ -106,13 +111,8 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
-        // When: Finish the event (ACTIVE → FINISHED)
-        mockMvc.perform(
-                        post("/api/events/{id}/finish", eventId)
-                                .contentType("application/json")
-                )
-                .andDo(print())
-                .andExpect(status().isNoContent());
+        // When: Finish the event via the scheduler path (ACTIVE → FINISHED)
+        eventManagementPort.finishExpiredActiveEvents(LocalDate.now());
 
         // Then: Verify final state
         mockMvc.perform(
@@ -386,7 +386,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                 .andExpect(jsonPath("$._templates.cancelEvent").exists())
-                .andExpect(jsonPath("$._templates.finishEvent").exists())
+                .andExpect(jsonPath("$._templates.finishEvent").doesNotExist())
                 .andExpect(jsonPath("$._links.registrations.href").exists());
     }
 
@@ -410,10 +410,11 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event update should be rejected for FINISHED events")
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
-        // Given: Create and finish an event
+        // Given: Create and finish an event via the scheduler path
+        LocalDate pastEventDate = LocalDate.now().minusDays(1);
         Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Immutable Event")
-                .eventDate(LocalDate.of(2026, 9, 5))
+                .eventDate(pastEventDate)
                 .location("Immutable Location")
                 .organizer("OOB")
                 .build();
@@ -433,10 +434,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         .contentType("application/json")
         ).andExpect(status().isNoContent());
 
-        mockMvc.perform(
-                post("/api/events/{id}/finish", eventId)
-                        .contentType("application/json")
-        ).andExpect(status().isNoContent());
+        eventManagementPort.finishExpiredActiveEvents(LocalDate.now());
 
         // When: Try to update finished event
         Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()

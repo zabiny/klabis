@@ -293,20 +293,6 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/finish")
-    @HasAuthority(Authority.EVENTS_MANAGE)
-    @Operation(
-            summary = "Finish an event",
-            description = "Transitions event from ACTIVE to FINISHED status."
-    )
-    @ApiResponse(responseCode = "204", description = "Event finished successfully")
-    public ResponseEntity<Void> finishEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id) {
-
-        eventManagementService.finishEvent(new EventId(id));
-        return ResponseEntity.noContent().build();
-    }
-
     @PostMapping("/{id}/sync-from-oris")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
@@ -337,7 +323,6 @@ public class EventController {
                 case ACTIVE:
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
                     if (event.areRegistrationsOpen()) {
                         boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
                         if (isRegistered) {

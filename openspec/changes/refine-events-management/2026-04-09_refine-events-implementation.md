@@ -79,3 +79,21 @@ Implemented the full location-optional change end-to-end in the backend followin
 **Follow-up notes:**
 - Task 4.3 — no dedicated ORIS-import controller test was added for a missing-location `EventDetails` fixture; the `EventManagementE2ETest.shouldCreateEventWithoutLocation` covers the manual create path end-to-end and the domain path covers ORIS. A dedicated ORIS fixture test can be added in a later iteration if desired.
 - `EventSummaryDto` (list response) — `location` field is a plain nullable `String` with no `@JsonInclude(NON_NULL)`, so it serializes as `"location": null` when absent. Frontend null-location rendering (task 12) will need to handle this explicitly.
+
+### 2026-04-09 — Iteration 2 (task 7) — remove manual finish endpoint
+
+All 2100 backend tests pass green.
+
+**Changes made:**
+- `EventManagementPort.java` — removed `finishEvent(EventId)` method
+- `EventManagementService.java` — removed `finishEvent(EventId)` implementation
+- `EventController.java` — deleted `@PostMapping("/{id}/finish")` handler; removed `finishEvent` affordance from ACTIVE branch of `addLinksForEvent`
+- `EventControllerTest.java` — converted `FinishEventTests.shouldFinishEvent` to a negative test asserting 404/405; added second test asserting ACTIVE event detail has no `finishEvent` affordance
+- `EventManagementServiceTest.java` — deleted `FinishEventMethod` nested class (both `shouldFinishActiveEvent` and `shouldThrowExceptionWhenEventNotFound`)
+- `EventManagementE2ETest.java` — imported `EventManagementPort`; replaced `POST /api/events/{id}/finish` HTTP call in lifecycle test and update-rejection test with `eventManagementPort.finishExpiredActiveEvents(LocalDate.now())` using a past event date; updated affordance assertion to `doesNotExist()` for `finishEvent`
+
+**Invariants confirmed:**
+- `Event.finish()` retained with `status.validateTransition(EventStatus.FINISHED)` guard and `EventFinishedEvent` publication (no change)
+- `finishExpiredActiveEvents(...)` retained on port and service; `EventCompletionSchedulerTest` (2 tests) passes
+
+**Follow-ups:** none
