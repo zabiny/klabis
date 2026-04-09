@@ -26,8 +26,8 @@ public interface WithInvitations {
     /**
      * Promotes an existing member to owner. Enforces the invitation-group invariant:
      * only members who have already joined through the invitation flow may become owners.
-     * Delegates to {@link UserGroup#addOwner} once the check passes; that method is
-     * idempotent — it will not add a duplicate membership entry.
+     * Delegates to {@code addOwner} once the check passes. Because the caller already
+     * asserted the user is a member, this path never needs to add a membership entry.
      */
     default void promoteOwner(UserId userId) {
         if (!hasMember(userId)) {

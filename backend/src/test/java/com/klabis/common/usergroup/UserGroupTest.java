@@ -174,14 +174,14 @@ class UserGroupTest {
         }
 
         @Test
-        @DisplayName("should also make promoted user a member when they are not already one")
-        void shouldAddNonMemberToMembersWhenPromotedToOwner() {
+        @DisplayName("should add to owners only — does not auto-add as member")
+        void shouldAddToOwnersOnlyWithoutAutoMembership() {
             UserGroup group = groupWithOwner(OWNER);
 
             group.addOwner(SECOND_OWNER);
 
             assertThat(group.isOwner(SECOND_OWNER)).isTrue();
-            assertThat(group.hasMember(SECOND_OWNER)).isTrue();
+            assertThat(group.hasMember(SECOND_OWNER)).isFalse();
         }
 
         @Test

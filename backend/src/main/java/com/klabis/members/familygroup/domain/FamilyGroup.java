@@ -87,6 +87,9 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
     public void addParent(MemberId parent) {
         Assert.notNull(parent, "Parent MemberId is required");
         userGroup.addOwner(parent.toUserId());
+        if (!userGroup.hasMember(parent.toUserId())) {
+            userGroup.addMember(parent.toUserId());
+        }
     }
 
     public void removeParent(MemberId parent) {

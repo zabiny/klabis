@@ -353,6 +353,75 @@ class TrainingGroupTest {
     }
 
     @Nested
+    @DisplayName("Trainer membership isolation invariant")
+    class TrainerMembershipIsolation {
+
+        @Test
+        @DisplayName("create() produces trainer as owner-only with empty members set")
+        void shouldCreateWithTrainerAsOwnerOnlyAndEmptyMembers() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            assertThat(group.getTrainers()).containsExactly(TRAINER);
+            assertThat(group.getMembers()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("addTrainer() adds new trainer as owner-only and does not add them to members")
+        void shouldAddTrainerAsOwnerOnlyNotAsMember() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            group.addTrainer(TRAINER_2);
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(TRAINER, TRAINER_2);
+            assertThat(group.getMembers()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("addTrainer() on existing member keeps them in both trainers and members")
+        void shouldKeepExistingMemberInMembersAfterPromotion() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.clearDomainEvents();
+
+            group.addTrainer(REGULAR_MEMBER);
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(TRAINER, REGULAR_MEMBER);
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+        }
+
+        @Test
+        @DisplayName("replaceTrainers() leaves members set unchanged when new trainers are not existing members")
+        void shouldNotAddNewTrainersToMembersOnReplace() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.clearDomainEvents();
+            int memberCountBefore = group.getMembers().size();
+
+            group.replaceTrainers(Set.of(TRAINER_2, TRAINER_3));
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(TRAINER_2, TRAINER_3);
+            assertThat(group.getMembers()).hasSize(memberCountBefore);
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+        }
+
+        @Test
+        @DisplayName("assignEligibleMember() adds trainee as member without granting trainer role")
+        void shouldAddTraineeAsMemberOnly() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            group.assignEligibleMember(REGULAR_MEMBER);
+
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+            assertThat(group.getTrainers()).doesNotContain(REGULAR_MEMBER);
+        }
+    }
+
+    @Nested
     @DisplayName("addMember() null guard")
     class AddMemberNullGuard {
 
