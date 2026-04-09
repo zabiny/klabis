@@ -1,4 +1,4 @@
-import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
+import {expandHalFormsFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import React, {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
@@ -100,6 +100,21 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
     } as HalFormsInputProps;
 }
 
+const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
+    const propWithMemberOptions = {
+        ...conf.prop,
+        options: {
+            link: {
+                href: "/members/options"
+            }
+        }
+    };
+    if (isMultipleProperty(conf.prop)) {
+        return <HalFormsCheckboxGroup {...conf} prop={propWithMemberOptions}/>;
+    }
+    return <HalFormsMemberId {...conf} prop={propWithMemberOptions} {...extraProps}/>;
+};
+
 export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
@@ -116,18 +131,7 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
         }
         case "MemberId":
         case "UUID": {
-            const propWithMemberOptions = {
-                ...conf.prop,
-                options: {
-                    link: {
-                        href: "/members/options"
-                    }
-                }
-            };
-            if (isMultipleProperty(conf.prop)) {
-                return <HalFormsCheckboxGroup {...conf} prop={propWithMemberOptions}/>;
-            }
-            return <HalFormsMemberId {...conf} prop={propWithMemberOptions}/>;
+            return memberIdFieldRenderer(conf);
         }
         case "Gender": {
             const propWithGenderOptions = {
@@ -191,3 +195,26 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             return null;
     }
 });
+
+/**
+ * Creates a variant of klabisFieldsFactory that applies member-ID filtering.
+ * Use when the caller already holds the group's current member/owner list and wants
+ * to prevent the user from picking someone already in the group.
+ *
+ * @param excludeIds - IDs to hide from the picker (already-in-group members)
+ * @param includeIds - When set, only these IDs are shown (whitelist for promote-to-owner)
+ */
+export const createMemberFilteredFactory = (
+    excludeIds?: string[],
+    includeIds?: string[]
+): HalFormFieldFactory => {
+    const hasFilter = (excludeIds && excludeIds.length > 0) || includeIds !== undefined;
+    if (!hasFilter) return klabisFieldsFactory;
+
+    return expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
+        if (fieldType === 'MemberId' || fieldType === 'UUID') {
+            return memberIdFieldRenderer(conf, {excludeIds, includeIds});
+        }
+        return null;
+    });
+};

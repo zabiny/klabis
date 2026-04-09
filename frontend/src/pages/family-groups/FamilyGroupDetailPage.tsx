@@ -61,6 +61,11 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
     const parents: FamilyGroupParent[] = resourceData.parents ?? [];
     const children: FamilyGroupChild[] = resourceData.members ?? [];
 
+    const allCurrentMemberIds = [
+        ...parents.map(p => p.memberId),
+        ...children.map(c => c.memberId),
+    ];
+
     const openAddMemberRolePicker = () => setAddMemberRolePicker(true);
     const closeAddMember = () => {
         setAddMemberRolePicker(false);
@@ -239,6 +244,7 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
                         pathname={route.pathname}
                         onClose={() => { closeAddMember(); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
+                        excludeMemberIds={allCurrentMemberIds}
                     />
                 </Modal>
             )}

@@ -54,7 +54,61 @@ _(none at team-leader level — all decisions captured in design.md)_
 
 ## Iteration log
 
+### Iter 6 — 2026-04-09 — Frontend: member picker filtering (tasks 11.x)
+
+**Component identified (11.1):**
+`HalFormsMemberId` (`frontend/src/components/HalNavigator2/halforms/fields/HalFormsMemberId.tsx`) is the single member-picker component used across all group dialogs. It is rendered generically by `KlabisFieldsFactory` for fields of type `MemberId` or `UUID`. No standalone member picker outside HAL-Forms was found.
+
+**How filtering was threaded through HAL-Forms (11.2):**
+- Added `excludeIds?: string[]` and `includeIds?: string[]` props directly to `HalFormsMemberId`. These filter `rawOptions` after the `useHalFormOptions` fetch returns. `includeIds` takes precedence if both are provided (whitelist semantics).
+- `KlabisFieldsFactory` was refactored: extracted `memberIdFieldRenderer(conf, extraProps?)` to avoid code duplication, and added `createMemberFilteredFactory(excludeIds?, includeIds?): HalFormFieldFactory` — a factory creator that, when called for `MemberId`/`UUID` fields, passes the filter props to `HalFormsMemberId`. For all other field types it falls through to the standard `klabisFieldsFactory`.
+- `HalFormDisplay` gained two optional props: `excludeMemberIds?: string[]` and `includeOnlyMemberIds?: string[]`. When either is set, it replaces the default `klabisFieldsFactory` with the output of `createMemberFilteredFactory(...)` via a `useMemo`. The caller-provided `fieldsFactory` prop still takes full precedence over both filter props.
+
+**Wiring from each caller (11.3):**
+- `FamilyGroupDetailPage` — computes `allCurrentMemberIds = [...parents.map(p=>p.memberId), ...children.map(c=>c.memberId)]`; passes `excludeMemberIds={allCurrentMemberIds}` to both add-parent and add-child `HalFormDisplay` instances.
+- `TrainingGroupDetailPage` — computes `trainerIds` and `memberIds` from the response arrays; passes `excludeMemberIds={memberIds}` to the add-trainee form and `excludeMemberIds={trainerIds}` to the add-trainer form.
+- `GroupDetailPage` — computes `currentMemberIds` from `resourceData.members`; passes `excludeMemberIds={currentMemberIds}` to the add-member form.
+
+**Promote-to-owner picker restriction (11.4):**
+The `addGroupOwner` form on `GroupDetailPage` now receives `includeOnlyMemberIds={currentMemberIds}`. This causes `HalFormsMemberId` to show only current members in the picker — consistent with the backend rule (iteration 1) that rejects promoting non-members. The `includeIds` whitelist approach was chosen over `excludeIds` because the complement (everyone-minus-members) would require fetching the full member list, which is not available on the detail page. Whitelisting the members already in hand is the correct approach here.
+
+**Files modified:**
+- `frontend/src/components/HalNavigator2/halforms/fields/HalFormsMemberId.tsx` — added `HalFormsMemberIdProps` interface with `excludeIds`/`includeIds`; filter applied after `useHalFormOptions`
+- `frontend/src/components/HalNavigator2/halforms/fields/HalFormsMemberId.test.tsx` — fixed pre-existing wrong mock path (`../../../` → `../../../../`); added 2 new tests for exclude/include filtering
+- `frontend/src/components/KlabisFieldsFactory.tsx` — extracted `memberIdFieldRenderer`; added `createMemberFilteredFactory` export
+- `frontend/src/components/HalNavigator2/HalFormDisplay.tsx` — added `excludeMemberIds`/`includeOnlyMemberIds` props; `useMemo` selects effective factory
+- `frontend/src/pages/family-groups/FamilyGroupDetailPage.tsx` — computed `allCurrentMemberIds`; wired `excludeMemberIds`
+- `frontend/src/pages/training-groups/TrainingGroupDetailPage.tsx` — computed `trainerIds`/`memberIds`; wired `excludeMemberIds` on both add-trainee and add-trainer forms
+- `frontend/src/pages/groups/GroupDetailPage.tsx` — computed `currentMemberIds`; wired `excludeMemberIds` on add-member, `includeOnlyMemberIds` on add-owner
+
+**Pre-existing bug fixed (incidental):**
+`HalFormsMemberId.test.tsx` had the wrong relative path for its `vi.mock('useHalFormOptions')` — three levels up instead of four. This meant the mock was silently not applied, so options were never rendered in those tests. All 5 original tests happened to pass because they tested Formik value state and label presence, not options rendering. The fix was part of this iteration since the new tests require the mock to work correctly.
+
+**Tests:**
+- 2 new tests in `HalFormsMemberId.test.tsx` (exclude filtering, include filtering)
+- 1106/1106 frontend tests pass; TypeScript build clean
+
+**Result:** All 11.x checkboxes ticked.
+
+---
+
 _(Subagents append entries below as they complete work.)_
+
+---
+
+### Iter 6 correction — 2026-04-09 — TypeScript compiler verification
+
+**What was reported:** The previous Iter 6 agent declared "build clean, 1106/1106 tests pass" but a subsequent IDE diagnostic scan showed a large number of TypeScript errors (unused imports, missing exports, unused variables in caller pages).
+
+**What was found:** Running `npx tsc --noEmit` in `frontend/` reported **zero errors** (exit code 0). The code as committed is TypeScript-clean. Specifically:
+- `createMemberFilteredFactory` IS exported from `KlabisFieldsFactory.tsx` (line 207) and IS imported in `HalFormDisplay.tsx` (line 8) — the "no exported member" IDE diagnostic was stale.
+- `effectiveFieldsFactory` IS consumed — it is passed to `HalFormsForm` at line 158 — the "declared but never read" IDE diagnostic was stale.
+- All caller pages (`FamilyGroupDetailPage`, `TrainingGroupDetailPage`, `GroupDetailPage`) DO pass `excludeMemberIds` / `includeOnlyMemberIds` to their respective `HalFormDisplay` usages — the "unused variable" IDE diagnostics were stale.
+- The `HalFormsMemberId.tsx` line 26 diagnostic ("Argument of type 'string | number' is not assignable to 'string'") was also stale — `String(opt.value)` always produces `string`, and the array parameter to `.includes()` is `string[]`.
+
+**Root cause of false alarms:** JetBrains IDE caches diagnostics between file saves and can show errors for code that no longer exists or has already been corrected. The IDE was showing an earlier broken state of the files.
+
+**Actual verification result:** `npx tsc --noEmit` → exit code 0, no errors. `run-frontend-tests.sh` → 1106/1106 passed.
 
 ---
 

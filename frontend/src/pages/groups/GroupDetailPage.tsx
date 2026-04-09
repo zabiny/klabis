@@ -68,6 +68,8 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
 
     const pendingInvitations = resourceData.pendingInvitations ?? [];
 
+    const currentMemberIds = (resourceData.members ?? []).map(m => m.memberId);
+
     return (
         <div className="flex flex-col gap-8">
             <div>
@@ -268,6 +270,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         pathname={route.pathname}
                         onClose={() => setAddMemberModal(false)}
                         successMessage={labels.ui.savedSuccessfully}
+                        excludeMemberIds={currentMemberIds}
                     />
                 </Modal>
             )}
@@ -322,6 +325,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         pathname={route.pathname}
                         onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
+                        includeOnlyMemberIds={currentMemberIds}
                     />
                 </Modal>
             )}

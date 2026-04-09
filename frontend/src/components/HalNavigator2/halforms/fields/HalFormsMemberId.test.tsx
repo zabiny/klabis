@@ -7,7 +7,7 @@ import {HalFormsMemberId} from './HalFormsMemberId.tsx';
 import type {HalFormsInputProps} from '../types.ts';
 
 // Mock useHalFormOptions at module level to provide test member data
-vi.mock('../../../hooks/useHalFormOptions', () => ({
+vi.mock('../../../../hooks/useHalFormOptions', () => ({
     useHalFormOptions: () => ({
         options: [
             {value: '1', label: 'John Smith (ZBM9000)'},
@@ -128,6 +128,58 @@ describe('HalFormsMemberId', () => {
         // Assert - clear button should not show for read-only fields
         const clearButton = screen.queryByTestId('clear-member-button');
         expect(clearButton).not.toBeInTheDocument();
+    });
+
+    it('should filter out excluded member ids from options', () => {
+        const queryClient = new QueryClient({
+            defaultOptions: {queries: {retry: false, gcTime: 0}},
+        });
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <Formik initialValues={{coordinator: ''}} onSubmit={vi.fn()}>
+                    {() => (
+                        <Form>
+                            <HalFormsMemberId
+                                prop={{name: 'coordinator', prompt: 'Vedoucí', type: 'MemberId'}}
+                                errorText={undefined}
+                                subElementProps={vi.fn()}
+                                excludeIds={['1']}
+                            />
+                        </Form>
+                    )}
+                </Formik>
+            </QueryClientProvider>
+        );
+
+        expect(screen.queryByRole('option', {name: /John Smith/})).not.toBeInTheDocument();
+        expect(screen.getByRole('option', {name: /Jane Doe/})).toBeInTheDocument();
+    });
+
+    it('should show only included member ids when includeIds is provided', () => {
+        const queryClient = new QueryClient({
+            defaultOptions: {queries: {retry: false, gcTime: 0}},
+        });
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <Formik initialValues={{coordinator: ''}} onSubmit={vi.fn()}>
+                    {() => (
+                        <Form>
+                            <HalFormsMemberId
+                                prop={{name: 'coordinator', prompt: 'Vedoucí', type: 'MemberId'}}
+                                errorText={undefined}
+                                subElementProps={vi.fn()}
+                                includeIds={['2']}
+                            />
+                        </Form>
+                    )}
+                </Formik>
+            </QueryClientProvider>
+        );
+
+        expect(screen.queryByRole('option', {name: /John Smith/})).not.toBeInTheDocument();
+        expect(screen.getByRole('option', {name: /Jane Doe/})).toBeInTheDocument();
     });
 
     it('should use provided label and member options', () => {

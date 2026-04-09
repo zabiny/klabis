@@ -37,6 +37,9 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
     const trainers: TrainingGroupTrainer[] = (resourceData.trainers as TrainingGroupTrainer[] | undefined) ?? [];
     const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
 
+    const trainerIds = trainers.map(t => t.memberId);
+    const memberIds = members.map(m => m.memberId);
+
     const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
         const template = member._templates?.removeTrainingGroupMember;
         if (!template || !member._links.self) return;
@@ -224,6 +227,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                         pathname={route.pathname}
                         onClose={() => { setAddMemberModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
+                        excludeMemberIds={memberIds}
                     />
                 </Modal>
             )}
@@ -260,6 +264,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                         pathname={route.pathname}
                         onClose={() => { setAddTrainerModal(false); void route.refetch(); }}
                         successMessage={labels.ui.savedSuccessfully}
+                        excludeMemberIds={trainerIds}
                     />
                 </Modal>
             )}

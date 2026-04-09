@@ -1,11 +1,11 @@
-import {type ReactElement, type ReactNode} from 'react';
+import {type ReactElement, type ReactNode, useMemo} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
 import {HalFormsForm, type HalFormFieldFactory, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
-import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
+import {klabisFieldsFactory, createMemberFilteredFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
@@ -44,6 +44,10 @@ export interface HalFormDisplayProps {
     submitButtonLabel?: string;
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
+    /** Member IDs to exclude from member-picker fields (already in group) */
+    excludeMemberIds?: string[];
+    /** When provided, member-picker fields show ONLY these member IDs (used for promote-to-owner) */
+    includeOnlyMemberIds?: string[];
 }
 
 
@@ -64,8 +68,18 @@ export const HalFormDisplay = ({
                                    fieldsFactory,
                                    submitButtonLabel,
                                    submitIcon,
+                                   excludeMemberIds,
+                                   includeOnlyMemberIds,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
+
+    const effectiveFieldsFactory = useMemo(() => {
+        if (fieldsFactory) return fieldsFactory;
+        if (excludeMemberIds || includeOnlyMemberIds) {
+            return createMemberFilteredFactory(excludeMemberIds, includeOnlyMemberIds);
+        }
+        return klabisFieldsFactory;
+    }, [fieldsFactory, excludeMemberIds, includeOnlyMemberIds]);
     const {invalidateAllCaches} = useFormCacheInvalidation();
     const {addToast} = useToast();
     const navigate = useNavigate();
@@ -140,7 +154,7 @@ export const HalFormDisplay = ({
                     onSubmit={handleSubmit}
                     onCancel={onClose}
                     isSubmitting={isSubmitting}
-                    fieldsFactory={fieldsFactory ?? klabisFieldsFactory}
+                    fieldsFactory={effectiveFieldsFactory}
                     serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
                     submitButtonLabel={submitButtonLabel}
                     submitIcon={submitIcon}

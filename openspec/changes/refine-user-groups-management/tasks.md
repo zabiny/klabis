@@ -92,10 +92,10 @@
 
 ## 11. Frontend — filter existing members out of member pickers
 
-- [ ] 11.1 Identify the member-picker component used across family, training, and free group dialogs
-- [ ] 11.2 Add a prop for "exclude these member ids" that filters the rendered options
-- [ ] 11.3 Pass the current group's member and owner ids from each caller (family group detail, training group detail, free group detail)
-- [ ] 11.4 For the "promote to owner" picker on free groups, additionally restrict to current members (consistent with the new spec rule)
+- [x] 11.1 Identify the member-picker component used across family, training, and free group dialogs
+- [x] 11.2 Add a prop for "exclude these member ids" that filters the rendered options
+- [x] 11.3 Pass the current group's member and owner ids from each caller (family group detail, training group detail, free group detail)
+- [x] 11.4 For the "promote to owner" picker on free groups, additionally restrict to current members (consistent with the new spec rule)
 
 ## 12. Frontend QA walkthrough
 

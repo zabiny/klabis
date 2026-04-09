@@ -6,14 +6,28 @@ import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
 
+interface HalFormsMemberIdProps extends HalFormsInputProps {
+    /** Member IDs to exclude from the picker options */
+    excludeIds?: string[];
+    /** When provided, only these member IDs will be shown (whitelist — used for "promote to owner" where only current members are valid) */
+    includeIds?: string[];
+}
+
 /**
  * HalFormsMemberId component - dropdown selection for member ID with clear button
  *
  * Displays a select dropdown for member selection with a clear button (X icon)
  * that appears only when a value is selected. Clicking the X clears the selection.
  */
-export const HalFormsMemberId = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
-    const {options, isLoading} = useHalFormOptions(prop.options)
+export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', excludeIds, includeIds}: HalFormsMemberIdProps): ReactElement => {
+    const {options: rawOptions, isLoading} = useHalFormOptions(prop.options)
+
+    const options = rawOptions.filter(opt => {
+        const id = String(opt.value);
+        if (includeIds !== undefined) return includeIds.includes(id);
+        if (excludeIds !== undefined) return !excludeIds.includes(id);
+        return true;
+    });
 
     return (
         <Field name={prop.name} validate={() => undefined}>
