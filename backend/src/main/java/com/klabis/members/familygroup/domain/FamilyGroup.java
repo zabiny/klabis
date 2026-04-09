@@ -3,6 +3,7 @@ package com.klabis.members.familygroup.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.common.usergroup.MemberAlreadyInGroupException;
 import com.klabis.common.usergroup.UserGroup;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -11,7 +12,6 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,25 +36,17 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
     // parent = owner + member: adding a parent grants ownership and membership,
     // removing a parent withdraws both ownership and membership entirely.
     @RecordBuilder
-    public record CreateFamilyGroup(String name, Set<MemberId> parents, Set<MemberId> initialMembers) {
+    public record CreateFamilyGroup(String name, MemberId parent) {
         public CreateFamilyGroup {
             Assert.hasText(name, "Group name is required");
-            Assert.notNull(parents, "Parents set is required");
-            Assert.notEmpty(parents, "At least one parent is required");
-            Assert.notNull(initialMembers, "Initial members set is required");
+            Assert.notNull(parent, "Parent is required");
         }
     }
 
     public static FamilyGroup create(CreateFamilyGroup command) {
         FamilyGroupId id = new FamilyGroupId(UUID.randomUUID());
-        Set<UserId> ownerIds = command.parents().stream()
-                .map(MemberId::toUserId)
-                .collect(Collectors.toSet());
-        // Parents are owners AND members; initial members are members only
-        Set<GroupMembership> memberships = new HashSet<>();
-        command.parents().forEach(p -> memberships.add(GroupMembership.of(p.toUserId())));
-        command.initialMembers().forEach(m -> memberships.add(GroupMembership.of(m.toUserId())));
-        UserGroup userGroup = UserGroup.reconstruct(command.name(), ownerIds, memberships);
+        UserId ownerId = command.parent().toUserId();
+        UserGroup userGroup = UserGroup.create(command.name(), ownerId);
         return new FamilyGroup(id, userGroup);
     }
 
@@ -101,5 +93,21 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
         Assert.notNull(parent, "Parent MemberId is required");
         userGroup.removeOwner(parent.toUserId());
         userGroup.removeMember(parent.toUserId());
+    }
+
+    public void addChild(MemberId child) {
+        Assert.notNull(child, "Child MemberId is required");
+        // Explicit guard: a parent (owner) cannot be added as a child (non-owner member)
+        if (userGroup.isOwner(child.toUserId())) {
+            throw new MemberAlreadyInGroupException(child.toUserId());
+        }
+        userGroup.addMember(child.toUserId());
+    }
+
+    public void removeChild(MemberId child) {
+        Assert.notNull(child, "Child MemberId is required");
+        // Delegates to UserGroup which guards owners via OwnerCannotBeRemovedFromGroupException
+        // and non-members via MemberNotInGroupException
+        userGroup.removeMember(child.toUserId());
     }
 }

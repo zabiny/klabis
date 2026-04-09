@@ -3,6 +3,8 @@ package com.klabis.members.familygroup.domain;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.MemberAlreadyInGroupException;
+import com.klabis.common.usergroup.MemberNotInGroupException;
+import com.klabis.common.usergroup.OwnerCannotBeRemovedFromGroupException;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,10 +29,9 @@ class FamilyGroupTest {
     class CreateMethod {
 
         @Test
-        @DisplayName("should create group with correct name and parents as owners and members")
-        void shouldCreateGroupWithNameAndParentsAsOwnersAndMembers() {
-            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of());
+        @DisplayName("should create group with scalar parent as owner and member")
+        void shouldCreateGroupWithScalarParentAsOwnerAndMember() {
+            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A);
 
             FamilyGroup group = FamilyGroup.create(command);
 
@@ -38,40 +39,20 @@ class FamilyGroupTest {
             assertThat(group.getName()).isEqualTo("Novákovi");
             assertThat(group.getParents()).containsExactly(PARENT_A);
             assertThat(group.hasMember(PARENT_A)).isTrue();
+            assertThat(group.getMembers()).hasSize(1);
         }
 
         @Test
-        @DisplayName("should create group with multiple parents")
-        void shouldCreateGroupWithMultipleParents() {
-            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A, PARENT_B), Set.of());
-
-            FamilyGroup group = FamilyGroup.create(command);
-
-            assertThat(group.getParents()).containsExactlyInAnyOrder(PARENT_A, PARENT_B);
-            assertThat(group.hasMember(PARENT_A)).isTrue();
-            assertThat(group.hasMember(PARENT_B)).isTrue();
-        }
-
-        @Test
-        @DisplayName("should create group with initial members — members set includes parents and children")
-        void shouldCreateGroupWithInitialMembers() {
-            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of(MEMBER_A, MEMBER_B));
-
-            FamilyGroup group = FamilyGroup.create(command);
-
-            assertThat(group.getMembers()).hasSize(3);
-            assertThat(group.hasMember(PARENT_A)).isTrue();
-            assertThat(group.hasMember(MEMBER_A)).isTrue();
-            assertThat(group.hasMember(MEMBER_B)).isTrue();
+        @DisplayName("should reject null parent")
+        void shouldRejectNullParent() {
+            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("Novákovi", null))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("should generate unique IDs for different groups")
         void shouldGenerateUniqueIds() {
-            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of());
+            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A);
 
             FamilyGroup group1 = FamilyGroup.create(command);
             FamilyGroup group2 = FamilyGroup.create(command);
@@ -82,31 +63,7 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should reject blank group name")
         void shouldRejectBlankName() {
-            Set<MemberId> parents = Set.of(PARENT_A);
-            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("", parents, Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        @DisplayName("should reject null parents")
-        void shouldRejectNullParents() {
-            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("Novákovi", null, Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        @DisplayName("should reject empty parents set")
-        void shouldRejectEmptyParents() {
-            Set<MemberId> emptyParents = Set.of();
-            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("Novákovi", emptyParents, Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        @DisplayName("should reject null initial members")
-        void shouldRejectNullInitialMembers() {
-            Set<MemberId> parents = Set.of(PARENT_A);
-            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("Novákovi", parents, null))
+            assertThatThrownBy(() -> new FamilyGroup.CreateFamilyGroup("", PARENT_A))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -137,8 +94,7 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should add parent as both owner and member")
         void shouldAddParentAsOwnerAndMember() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
 
             group.addParent(PARENT_B);
 
@@ -149,18 +105,17 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should throw when adding null parent")
         void shouldThrowWhenAddingNullParent() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
 
             assertThatThrownBy(() -> group.addParent(null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        @DisplayName("should grant owner privileges to existing member without throwing")
-        void shouldGrantOwnerToExistingMemberWithoutThrowing() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of(MEMBER_A)));
+        @DisplayName("should grant owner privileges to existing child without throwing")
+        void shouldGrantOwnerToExistingChildWithoutThrowing() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(MEMBER_A);
 
             group.addParent(MEMBER_A);
 
@@ -176,8 +131,8 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should remove parent from both owners and members")
         void shouldRemoveParentFromOwnersAndMembers() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A, PARENT_B), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addParent(PARENT_B);
 
             group.removeParent(PARENT_B);
 
@@ -188,8 +143,7 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should throw CannotRemoveLastOwnerException when removing last parent")
         void shouldThrowWhenRemovingLastParent() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
 
             assertThatThrownBy(() -> group.removeParent(PARENT_A))
                     .isInstanceOf(CannotRemoveLastOwnerException.class);
@@ -198,11 +152,109 @@ class FamilyGroupTest {
         @Test
         @DisplayName("should throw when removing null parent")
         void shouldThrowWhenRemovingNullParent() {
-            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup(
-                    "Novákovi", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
 
             assertThatThrownBy(() -> group.removeParent(null))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("FamilyGroup.addChild()")
+    class AddChildMethod {
+
+        @Test
+        @DisplayName("should add child as non-owner member")
+        void shouldAddChildAsNonOwnerMember() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            group.addChild(MEMBER_A);
+
+            assertThat(group.hasMember(MEMBER_A)).isTrue();
+            assertThat(group.getParents()).doesNotContain(MEMBER_A);
+            assertThat(group.getMembers()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should reject adding a member who is already a parent of the same group")
+        void shouldRejectChildWhoIsAlreadyParent() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThatThrownBy(() -> group.addChild(PARENT_A))
+                    .isInstanceOf(MemberAlreadyInGroupException.class);
+        }
+
+        @Test
+        @DisplayName("should reject adding a child who is already a child of the same group")
+        void shouldRejectDuplicateChild() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(MEMBER_A);
+
+            assertThatThrownBy(() -> group.addChild(MEMBER_A))
+                    .isInstanceOf(MemberAlreadyInGroupException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("FamilyGroup.removeChild()")
+    class RemoveChildMethod {
+
+        @Test
+        @DisplayName("should remove an existing child")
+        void shouldRemoveExistingChild() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(MEMBER_A);
+
+            group.removeChild(MEMBER_A);
+
+            assertThat(group.hasMember(MEMBER_A)).isFalse();
+            assertThat(group.getMembers()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should throw OwnerCannotBeRemovedFromGroupException when removing a parent via removeChild")
+        void shouldThrowWhenRemovingParentViaRemoveChild() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThatThrownBy(() -> group.removeChild(PARENT_A))
+                    .isInstanceOf(OwnerCannotBeRemovedFromGroupException.class);
+        }
+
+        @Test
+        @DisplayName("should throw MemberNotInGroupException when removing a non-member")
+        void shouldThrowWhenRemovingNonMember() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThatThrownBy(() -> group.removeChild(MEMBER_A))
+                    .isInstanceOf(MemberNotInGroupException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Parent/child exclusivity invariant")
+    class ParentChildExclusivityInvariant {
+
+        @Test
+        @DisplayName("addChild rejects the parent of the same group — cannot be both parent and child")
+        void shouldRejectAddingParentAsChild() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThatThrownBy(() -> group.addChild(PARENT_A))
+                    .isInstanceOf(MemberAlreadyInGroupException.class);
+        }
+
+        @Test
+        @DisplayName("addParent on existing child promotes them to parent without duplicating membership")
+        void shouldPromoteChildToParentWithoutDuplicatingMembership() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(MEMBER_A);
+            int membersBefore = group.getMembers().size();
+
+            group.addParent(MEMBER_A);
+
+            assertThat(group.getParents()).containsExactlyInAnyOrder(PARENT_A, MEMBER_A);
+            assertThat(group.hasMember(MEMBER_A)).isTrue();
+            assertThat(group.getMembers()).hasSize(membersBefore);
         }
     }
 

@@ -19,7 +19,6 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,8 +51,7 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should save and retrieve family group with parent")
         void shouldSaveAndRetrieveFamilyGroup() {
-            FamilyGroup group = FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
 
             FamilyGroup saved = familyGroupRepository.save(group);
             Optional<FamilyGroup> found = familyGroupRepository.findById(saved.getId());
@@ -68,26 +66,10 @@ class FamilyGroupPersistenceTest {
         }
 
         @Test
-        @DisplayName("should save and retrieve family group with multiple parents")
-        void shouldSaveAndRetrieveFamilyGroupWithMultipleParents() {
-            FamilyGroup group = FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A, PARENT_B), Set.of()));
-
-            FamilyGroup saved = familyGroupRepository.save(group);
-            Optional<FamilyGroup> found = familyGroupRepository.findById(saved.getId());
-
-            assertThat(found).isPresent();
-            FamilyGroup retrieved = found.get();
-            assertThat(retrieved.getParents()).containsExactlyInAnyOrder(PARENT_A, PARENT_B);
-            assertThat(retrieved.hasMember(PARENT_A)).isTrue();
-            assertThat(retrieved.hasMember(PARENT_B)).isTrue();
-        }
-
-        @Test
-        @DisplayName("should save and retrieve family group with a child member")
+        @DisplayName("should save and retrieve family group with a child member added after creation")
         void shouldSaveAndRetrieveFamilyGroupWithChild() {
-            FamilyGroup group = FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of(CHILD_A)));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(CHILD_A);
 
             FamilyGroup saved = familyGroupRepository.save(group);
             Optional<FamilyGroup> found = familyGroupRepository.findById(saved.getId());
@@ -107,8 +89,7 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should persist audit metadata after save")
         void shouldPersistAuditMetadataAfterSave() {
-            FamilyGroup group = FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Audit Test", Set.of(PARENT_A), Set.of()));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Audit Test", PARENT_A));
 
             FamilyGroup saved = familyGroupRepository.save(group);
 
@@ -124,10 +105,8 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should return all saved family groups")
         void shouldReturnAllGroups() {
-            familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of())));
-            familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Svobodovi", Set.of(PARENT_B), Set.of())));
+            familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
+            familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Svobodovi", PARENT_B)));
 
             List<FamilyGroup> result = familyGroupRepository.findAll();
 
@@ -152,8 +131,7 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should find group by parent")
         void shouldFindGroupByParent() {
-            familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of())));
+            familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
             Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);
 
@@ -164,8 +142,9 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should find group by child member")
         void shouldFindGroupByChildMember() {
-            familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of(CHILD_A))));
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(CHILD_A);
+            familyGroupRepository.save(group);
 
             Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(CHILD_A);
 
@@ -189,8 +168,8 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should delete group so it can no longer be found")
         void shouldDeleteGroup() {
-            FamilyGroup group = familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("To Be Deleted", Set.of(PARENT_A), Set.of())));
+            FamilyGroup group = familyGroupRepository.save(
+                    FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("To Be Deleted", PARENT_A)));
             FamilyGroupId id = group.getId();
 
             familyGroupRepository.delete(id);
@@ -206,8 +185,8 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should persist added parent after save")
         void shouldPersistAddedParent() {
-            FamilyGroup group = familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of())));
+            FamilyGroup group = familyGroupRepository.save(
+                    FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
             group.addParent(PARENT_B);
             familyGroupRepository.save(group);
@@ -220,8 +199,10 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should persist removed parent — removed from both parents and members tables")
         void shouldPersistRemovedParent() {
-            FamilyGroup group = familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A, PARENT_B), Set.of())));
+            FamilyGroup group = familyGroupRepository.save(
+                    FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
+            group.addParent(PARENT_B);
+            group = familyGroupRepository.save(group);
 
             group.removeParent(PARENT_B);
             familyGroupRepository.save(group);
@@ -240,8 +221,7 @@ class FamilyGroupPersistenceTest {
         @DisplayName("should return single result when member is also a parent (present in both tables)")
         void shouldReturnSingleResultWhenParentIsAlsoInChildrenTable() {
             // PARENT_A is stored in both family_group_parents and family_group_children
-            familyGroupRepository.save(FamilyGroup.create(
-                    new FamilyGroup.CreateFamilyGroup("Novákovi", Set.of(PARENT_A), Set.of())));
+            familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
             Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);
 

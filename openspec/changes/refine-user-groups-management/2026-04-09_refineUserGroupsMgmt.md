@@ -58,6 +58,46 @@ _(Subagents append entries below as they complete work.)_
 
 ---
 
+### Iter 2 — 2026-04-09 — FamilyGroup scalar create + addChild/removeChild (tasks 3.x, 4.x, 5.x, 8.x)
+
+**Files modified:**
+- `backend/src/main/java/com/klabis/members/familygroup/domain/FamilyGroup.java` — `CreateFamilyGroup` record collapsed to `(String name, MemberId parent)`; `create()` uses `UserGroup.create(name, ownerId)` (single parent = single owner + single member); added `addChild(MemberId)` and `removeChild(MemberId)` methods
+- `backend/src/main/java/com/klabis/members/familygroup/application/FamilyGroupManagementPort.java` — added `addChild(FamilyGroupId, MemberId)` and `removeChild(FamilyGroupId, MemberId)`
+- `backend/src/main/java/com/klabis/members/familygroup/application/FamilyGroupManagementService.java` — `createFamilyGroup` validates only the single parent; added `addChild` and `removeChild` implementations (addChild calls `validateNoExistingFamilyGroup` first)
+- `backend/src/main/java/com/klabis/members/familygroup/infrastructure/restapi/FamilyGroupController.java` — minimal compile fix: `CreateFamilyGroupRequest` collapsed to `(name, parentId UUID)`; removed unused `Collectors` import
+- `backend/src/test/java/com/klabis/members/familygroup/domain/FamilyGroupTest.java` — rewrote `CreateMethod` for new scalar signature; updated `AddParentMethod` and `RemoveParentMethod` to use new constructor; added `AddChildMethod` (3 tests), `RemoveChildMethod` (3 tests), `ParentChildExclusivityInvariant` (2 tests)
+- `backend/src/test/java/com/klabis/members/familygroup/application/FamilyGroupManagementServiceTest.java` — updated `createFamilyGroup` tests for scalar signature; added `AddChildMethod` (2 tests) and `RemoveChildMethod` (2 tests) nested classes
+- `backend/src/test/java/com/klabis/members/familygroup/infrastructure/restapi/FamilyGroupControllerTest.java` — updated POST request body to `{"name":..., "parentId":...}` in all four existing create tests
+- `backend/src/test/java/com/klabis/members/familygroup/infrastructure/jdbc/FamilyGroupPersistenceTest.java` — updated all `CreateFamilyGroup` usages to new signature; replaced inline `Set.of(PARENT_A,PARENT_B)` group creation with `create(PARENT_A) + addParent(PARENT_B)` pattern; fixed `shouldPersistRemovedParent` to capture the saved entity before mutating
+
+**Tests added (new):**
+- `FamilyGroupTest.CreateMethod.shouldCreateGroupWithScalarParentAsOwnerAndMember` (3.1)
+- `FamilyGroupTest.CreateMethod.shouldRejectNullParent` (3.2)
+- `FamilyGroupTest.AddChildMethod.shouldAddChildAsNonOwnerMember` (4.1)
+- `FamilyGroupTest.AddChildMethod.shouldRejectChildWhoIsAlreadyParent` (4.2)
+- `FamilyGroupTest.AddChildMethod.shouldRejectDuplicateChild` (4.3)
+- `FamilyGroupTest.RemoveChildMethod.shouldRemoveExistingChild` (4.4)
+- `FamilyGroupTest.RemoveChildMethod.shouldThrowWhenRemovingParentViaRemoveChild` (4.4)
+- `FamilyGroupTest.RemoveChildMethod.shouldThrowWhenRemovingNonMember` (4.5)
+- `FamilyGroupTest.ParentChildExclusivityInvariant.shouldRejectAddingParentAsChild` (8.1)
+- `FamilyGroupTest.ParentChildExclusivityInvariant.shouldPromoteChildToParentWithoutDuplicatingMembership` (8.2)
+- `FamilyGroupManagementServiceTest.AddChildMethod.shouldAddChildAndSave` (5.1)
+- `FamilyGroupManagementServiceTest.AddChildMethod.shouldThrowWhenChildAlreadyInAnotherFamilyGroup` (5.2)
+- `FamilyGroupManagementServiceTest.RemoveChildMethod.shouldRemoveChildAndSave` (5.1)
+- `FamilyGroupManagementServiceTest.RemoveChildMethod.shouldThrowWhenGroupNotFound` (5.1)
+
+**Decision made: exception for `addChild` parent-conflict**
+Reused `MemberAlreadyInGroupException` (from `common.usergroup`). The candidate IS already in the group (as an owner/member), so the message "User X is already in the group" is accurate. Tasks.md explicitly offered this as a valid choice. Avoids introducing a new exception class for a nuance that the existing type already covers.
+
+**Surprises / deviations:**
+- `FamilyGroup.create()` was simplified to use `UserGroup.create(name, ownerId)` which correctly initialises both the owner set and the membership set with a single entry — no manual set construction needed.
+- The multi-parent persistence test (`shouldSaveAndRetrieveFamilyGroupWithMultipleParents`) was removed since multiple parents at creation time is no longer supported — two-parent scenarios now go through `create + addParent`.
+- `shouldPersistRemovedParent` required capturing the return value from the first `save` before calling `addParent` on a second save, because Spring Data JDBC uses `auditMetadata != null` to detect `isNew`.
+
+**Result:** 2067/2067 tests pass. All 3.x, 4.x, 5.x, 8.x checkboxes ticked.
+
+---
+
 ### Iter 1 — 2026-04-09 — WithInvitations owner promotion rule (tasks 1.x + 2.x)
 
 **Files created:**

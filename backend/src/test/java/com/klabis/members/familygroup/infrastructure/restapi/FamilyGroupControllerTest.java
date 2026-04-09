@@ -70,7 +70,7 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            {"name": "Novákovi", "parentId": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isForbidden());
@@ -89,7 +89,7 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            {"name": "Novákovi", "parentId": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isCreated())
@@ -104,14 +104,14 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": []}
+                                            {"name": "Novákovi", "parentId": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("should return 400 when a member is already in a family group")
+        @DisplayName("should return 400 when parent is already in a family group")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenMemberAlreadyInFamilyGroup() throws Exception {
             when(familyGroupManagementService.createFamilyGroup(any(FamilyGroup.CreateFamilyGroup.class)))
@@ -122,8 +122,8 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name": "Novákovi", "parentIds": ["%s"], "memberIds": ["%s"]}
-                                            """.formatted(MEMBER_ID, UUID.randomUUID()))
+                                            {"name": "Novákovi", "parentId": "%s"}
+                                            """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isBadRequest());
         }

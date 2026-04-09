@@ -17,31 +17,31 @@
 
 ## 3. Family group domain — scalar `CreateFamilyGroup` (TDD)
 
-- [ ] 3.1 Add failing `FamilyGroupTest`: `FamilyGroup.create(new CreateFamilyGroup(name, parentId))` produces a group with the single parent listed as owner and member
-- [ ] 3.2 Add failing test: `CreateFamilyGroup` with `null` or missing parent fails fast with `IllegalArgumentException`
-- [ ] 3.3 Change the `CreateFamilyGroup` record signature to `(String name, MemberId parent)`; drop `initialMembers`
-- [ ] 3.4 Update `FamilyGroup.create(...)` to build the `UserGroup` from a single parent owner and a single-element membership set
-- [ ] 3.5 Update any in-project callers of the old signature (persistence, tests, memento) to compile against the new record
-- [ ] 3.6 Verify tests 3.1 and 3.2 pass
+- [x] 3.1 Add failing `FamilyGroupTest`: `FamilyGroup.create(new CreateFamilyGroup(name, parentId))` produces a group with the single parent listed as owner and member
+- [x] 3.2 Add failing test: `CreateFamilyGroup` with `null` or missing parent fails fast with `IllegalArgumentException`
+- [x] 3.3 Change the `CreateFamilyGroup` record signature to `(String name, MemberId parent)`; drop `initialMembers`
+- [x] 3.4 Update `FamilyGroup.create(...)` to build the `UserGroup` from a single parent owner and a single-element membership set
+- [x] 3.5 Update any in-project callers of the old signature (persistence, tests, memento) to compile against the new record
+- [x] 3.6 Verify tests 3.1 and 3.2 pass
 
 ## 4. Family group domain — `addChild` / `removeChild` (TDD)
 
-- [ ] 4.1 Add failing `FamilyGroupTest`: `addChild(childId)` on a fresh group (one parent) adds the child as a non-owner member
-- [ ] 4.2 Add failing test: `addChild` rejects a member who is already a parent of the same group (throws `MemberAlreadyInGroupException` or equivalent typed exception with a clear message)
-- [ ] 4.3 Add failing test: `addChild` rejects a member who is already a child of the same group (duplicate membership)
-- [ ] 4.4 Add failing test: `removeChild(childId)` removes a current child; `removeChild` on a parent throws `OwnerCannotBeRemovedFromGroupException` (reuses existing behavior)
-- [ ] 4.5 Add failing test: `removeChild` on a member who is not in the group throws `MemberNotInGroupException`
-- [ ] 4.6 Implement `FamilyGroup.addChild(MemberId)` — calls `userGroup.addMember(...)` after an explicit "not an owner of this group" check
-- [ ] 4.7 Implement `FamilyGroup.removeChild(MemberId)` — calls `userGroup.removeMember(...)` and relies on the built-in guard against removing owners
-- [ ] 4.8 Verify tests 4.1–4.5 pass
+- [x] 4.1 Add failing `FamilyGroupTest`: `addChild(childId)` on a fresh group (one parent) adds the child as a non-owner member
+- [x] 4.2 Add failing test: `addChild` rejects a member who is already a parent of the same group (throws `MemberAlreadyInGroupException` or equivalent typed exception with a clear message)
+- [x] 4.3 Add failing test: `addChild` rejects a member who is already a child of the same group (duplicate membership)
+- [x] 4.4 Add failing test: `removeChild(childId)` removes a current child; `removeChild` on a parent throws `OwnerCannotBeRemovedFromGroupException` (reuses existing behavior)
+- [x] 4.5 Add failing test: `removeChild` on a member who is not in the group throws `MemberNotInGroupException`
+- [x] 4.6 Implement `FamilyGroup.addChild(MemberId)` — calls `userGroup.addMember(...)` after an explicit "not an owner of this group" check
+- [x] 4.7 Implement `FamilyGroup.removeChild(MemberId)` — calls `userGroup.removeMember(...)` and relies on the built-in guard against removing owners
+- [x] 4.8 Verify tests 4.1–4.5 pass
 
 ## 5. Family group application service — new ports (TDD)
 
-- [ ] 5.1 Add failing `FamilyGroupManagementServiceTest`: `addChild(groupId, memberId)` persists the new child; `removeChild` removes it
-- [ ] 5.2 Add failing test: `addChild` for a member who is already in another family group throws `MemberAlreadyInFamilyGroupException` (uses existing `validateNoExistingFamilyGroup` helper)
-- [ ] 5.3 Add `addChild(FamilyGroupId, MemberId)` and `removeChild(FamilyGroupId, MemberId)` to `FamilyGroupManagementPort`
-- [ ] 5.4 Implement both methods in `FamilyGroupManagementService` — call `validateNoExistingFamilyGroup(memberId)` on add, then delegate to the aggregate and save
-- [ ] 5.5 Verify tests 5.1 and 5.2 pass
+- [x] 5.1 Add failing `FamilyGroupManagementServiceTest`: `addChild(groupId, memberId)` persists the new child; `removeChild` removes it
+- [x] 5.2 Add failing test: `addChild` for a member who is already in another family group throws `MemberAlreadyInFamilyGroupException` (uses existing `validateNoExistingFamilyGroup` helper)
+- [x] 5.3 Add `addChild(FamilyGroupId, MemberId)` and `removeChild(FamilyGroupId, MemberId)` to `FamilyGroupManagementPort`
+- [x] 5.4 Implement both methods in `FamilyGroupManagementService` — call `validateNoExistingFamilyGroup(memberId)` on add, then delegate to the aggregate and save
+- [x] 5.5 Verify tests 5.1 and 5.2 pass
 
 ## 6. Family group REST API — simplified create + new child endpoints (TDD)
 
@@ -70,9 +70,9 @@
 
 ## 8. Parent/child exclusivity — document and test the invariant
 
-- [ ] 8.1 Add failing `FamilyGroupTest` that explicitly asserts the invariant: "a single `FamilyGroup` aggregate cannot end up with the same `MemberId` present both as a parent and as a non-parent member through any legal sequence of domain operations"
-- [ ] 8.2 The test should cover: `create` → `addChild(parent)` rejection; `create(child)` → `addParent(child)` legitimately promotes in place without duplicating the member
-- [ ] 8.3 Verify the test passes (this should already be the case given the existing `UserGroup` data model, plus the `addChild` check from section 4)
+- [x] 8.1 Add failing `FamilyGroupTest` that explicitly asserts the invariant: "a single `FamilyGroup` aggregate cannot end up with the same `MemberId` present both as a parent and as a non-parent member through any legal sequence of domain operations"
+- [x] 8.2 The test should cover: `create` → `addChild(parent)` rejection; `create(child)` → `addParent(child)` legitimately promotes in place without duplicating the member
+- [x] 8.3 Verify the test passes (this should already be the case given the existing `UserGroup` data model, plus the `addChild` check from section 4)
 
 ## 9. Frontend — simplified family group create dialog
 

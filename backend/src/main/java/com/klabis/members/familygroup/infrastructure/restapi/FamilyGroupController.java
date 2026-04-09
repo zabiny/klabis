@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -53,8 +52,7 @@ class FamilyGroupController {
 
     record CreateFamilyGroupRequest(
             @NotBlank @Size(max = 200) String name,
-            @NotNull @Size(min = 1) List<UUID> parentIds,
-            @NotNull List<UUID> memberIds
+            @NotNull UUID parentId
     ) {
     }
 
@@ -66,16 +64,8 @@ class FamilyGroupController {
 
         requireMembersManageAuthority(currentUser);
 
-        Set<MemberId> parents = request.parentIds().stream()
-                .map(MemberId::new)
-                .collect(Collectors.toSet());
-
-        Set<MemberId> initialMembers = request.memberIds().stream()
-                .map(MemberId::new)
-                .collect(Collectors.toSet());
-
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                request.name(), parents, initialMembers);
+                request.name(), new MemberId(request.parentId()));
 
         FamilyGroup group = familyGroupManagementService.createFamilyGroup(command);
 

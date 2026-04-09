@@ -22,8 +22,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public FamilyGroup createFamilyGroup(FamilyGroup.CreateFamilyGroup command) {
-        command.parents().forEach(this::validateNoExistingFamilyGroup);
-        command.initialMembers().forEach(this::validateNoExistingFamilyGroup);
+        validateNoExistingFamilyGroup(command.parent());
         FamilyGroup group = FamilyGroup.create(command);
         return familyGroupRepository.save(group);
     }
@@ -60,6 +59,23 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     public void removeParent(FamilyGroupId id, MemberId parent) {
         FamilyGroup group = loadGroup(id);
         group.removeParent(parent);
+        familyGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void addChild(FamilyGroupId id, MemberId child) {
+        validateNoExistingFamilyGroup(child);
+        FamilyGroup group = loadGroup(id);
+        group.addChild(child);
+        familyGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void removeChild(FamilyGroupId id, MemberId child) {
+        FamilyGroup group = loadGroup(id);
+        group.removeChild(child);
         familyGroupRepository.save(group);
     }
 

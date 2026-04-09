@@ -21,4 +21,8 @@ public interface FamilyGroupManagementPort {
     void addParent(FamilyGroupId id, MemberId parent);
 
     void removeParent(FamilyGroupId id, MemberId parent);
+
+    void addChild(FamilyGroupId id, MemberId child);
+
+    void removeChild(FamilyGroupId id, MemberId child);
 }
