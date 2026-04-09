@@ -8,51 +8,15 @@ import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
-import type {HalResourceLinks} from "../../api/types.ts";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
+import {Check, Dumbbell, Heart, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {FetchError} from "../../api/authorizedFetch.ts";
-import {HalRouteProvider, HalSubresourceProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
-import {MemberNameWithRegNumber} from "../../components/members/MemberNameWithRegNumber.tsx";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
-
-type GroupOwner = { memberId: string; _links: { member: HalResourceLinks } };
-type GroupData = { name: string; owners?: GroupOwner[]; trainers?: GroupOwner[] };
-
-function TrainingGroupInfo() {
-    const {resourceData} = useHalRoute();
-    if (!resourceData) return null;
-    const group = resourceData as unknown as GroupData;
-    const isTrainingGroup = !!group.trainers;
-    const owners = group.owners ?? group.trainers ?? [];
-    const ownerLabel = isTrainingGroup ? 'Trenér' : 'Správce';
-    return (
-        <>
-            <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
-            {owners.map((owner, i) => (
-                <DetailRow key={owner.memberId} label={i === 0 ? ownerLabel : ''}>
-                    <HalRouteProvider routeLink={owner._links.member}>
-                        <MemberNameWithRegNumber/>
-                    </HalRouteProvider>
-                </DetailRow>
-            ))}
-        </>
-    );
-}
-
-function FamilyGroupInfo() {
-    const {resourceData} = useHalRoute();
-    if (!resourceData) return null;
-    const group = resourceData as unknown as GroupData;
-    return (
-        <DetailRow label={labels.fields.name}>{group.name}</DetailRow>
-    );
-}
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -334,22 +298,36 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
                     </div>
 
-                    {!isEditing && hasEditTemplate && (
+                    {!isEditing && (
                         <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                            <Button
-                                variant="primary"
-                                onClick={startEditing}
-                                startIcon={<Pencil className="w-4 h-4"/>}
-                            >
-                                {labels.templates.updateMember}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                startIcon={<Banknote className="w-4 h-4 text-green-600"/>}
-                            >
-                                Vložit / Vybrat
-                            </Button>
-                            {hasLink('permissions') && (
+                            {hasEditTemplate && (
+                                <Button
+                                    variant="primary"
+                                    onClick={startEditing}
+                                    startIcon={<Pencil className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.updateMember}
+                                </Button>
+                            )}
+                            {hasLink('trainingGroup') && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => route.navigateToResource(route.getResourceLink('trainingGroup')!)}
+                                    startIcon={<Dumbbell className="w-4 h-4"/>}
+                                >
+                                    {labels.links.trainingGroup}
+                                </Button>
+                            )}
+                            {hasLink('familyGroup') && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => route.navigateToResource(route.getResourceLink('familyGroup')!)}
+                                    startIcon={<Heart className="w-4 h-4"/>}
+                                >
+                                    {labels.links.familyGroup}
+                                </Button>
+                            )}
+                            {hasEditTemplate && hasLink('permissions') && (
                                 <Button
                                     variant="secondary"
                                     onClick={() => setIsPermissionsDialogOpen(true)}
@@ -358,7 +336,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            {resourceData._templates?.suspendMember && (
+                            {hasEditTemplate && resourceData._templates?.suspendMember && (
                                 <Button
                                     variant="danger"
                                     onClick={() => setSuspendMemberModal(true)}
@@ -367,7 +345,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.templates.suspendMember}
                                 </Button>
                             )}
-                            <HalFormButton name="resumeMember" modal={true}/>
+                            {hasEditTemplate && <HalFormButton name="resumeMember" modal={true}/>}
                         </div>
                     )}
                 </div>
@@ -392,22 +370,6 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 <DetailRow label="Telefon">{val(guardian?.phone)}</DetailRow>
                             </>
                         )}
-                    </Section>
-                )}
-
-                {member._links?.trainingGroup && (
-                    <Section title={labels.sections.trainingGroup}>
-                        <HalSubresourceProvider subresourceLinkName="trainingGroup">
-                            <TrainingGroupInfo/>
-                        </HalSubresourceProvider>
-                    </Section>
-                )}
-
-                {member._links?.familyGroup && (
-                    <Section title={labels.sections.familyGroup}>
-                        <HalSubresourceProvider subresourceLinkName="familyGroup">
-                            <FamilyGroupInfo/>
-                        </HalSubresourceProvider>
                     </Section>
                 )}
 

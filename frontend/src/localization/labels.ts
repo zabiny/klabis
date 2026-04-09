@@ -294,6 +294,11 @@ export const labels = {
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
     },
 
+    links: {
+        trainingGroup: 'Tréninková skupina',
+        familyGroup: 'Rodina',
+    },
+
     suspensionWarning: {
         title: 'Varování: Správce skupin',
         description: 'Člen je posledním správcem následujících skupin. Před ukončením členství je nutné určit nástupce nebo skupiny rozpustit.',

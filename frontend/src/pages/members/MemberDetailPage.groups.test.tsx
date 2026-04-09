@@ -1,15 +1,14 @@
 import '@testing-library/jest-dom';
-import React from 'react';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
 import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useHalRoute} from '../../contexts/HalRouteContext';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
-import type {HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResponse} from '../../api';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -72,20 +71,16 @@ vi.mock('../../components/UI/Modal.tsx', () => ({
     ),
 }));
 
-vi.mock('../../contexts/HalRouteContext.tsx', () => ({
-    HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
-    HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
-    useHalRoute: vi.fn(() => ({
-        resourceData: null,
-        navigateToResource: vi.fn(),
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-        pathname: '',
-        queryState: 'success',
-        getResourceLink: vi.fn(),
-    })),
-}));
+const adminEditTemplate: HalFormsTemplate = {
+    method: 'PUT',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno'},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení'},
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+    ],
+};
+
 
 const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -115,7 +110,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: '/api/members/123e4567-e89b-12d3-a456-426614174000'}),
+        getResourceLink: vi.fn().mockImplementation((rel: string) =>
+            resourceData?._links?.[rel as keyof typeof resourceData._links] ?? null
+        ),
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -123,7 +120,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     hasEmbedded: vi.fn(() => false),
     getEmbeddedItems: vi.fn(() => []),
     isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
+    hasLink: vi.fn((rel: string) => !!(resourceData?._links?.[rel as keyof typeof resourceData._links])),
     hasTemplate: vi.fn(() => false),
     hasForms: vi.fn(() => false),
     getPageMetadata: vi.fn(() => undefined),
@@ -146,193 +143,117 @@ const renderPage = (pageData: any) => {
     );
 };
 
-describe('MemberDetailPage — group membership sections', () => {
+describe('MemberDetailPage — group navigation buttons', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useHalRoute).mockReturnValue({
-            resourceData: null,
-            navigateToResource: vi.fn(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '',
-            queryState: 'success',
-            getResourceLink: vi.fn(),
-        });
     });
 
-    describe('Training group section (task 4.4)', () => {
-        it('shows training group section when trainingGroup link is present', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Mladí závodníci',
-                    owners: [],
-                    _links: {self: {href: '/api/training-groups/tg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/training-groups/tg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    trainingGroup: {href: '/api/training-groups/tg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Mladí závodníci')).toBeInTheDocument();
+    it('renders "Tréninková skupina" button when trainingGroup link is present', () => {
+        const data = mockMemberDetailData({
+            _links: {
+                self: {href: '/api/members/123'},
+                trainingGroup: {href: '/api/training-groups/tg-uuid'},
+            },
+            _templates: {updateMember: adminEditTemplate},
         });
-
-        it('shows trainer name loaded via HATEOAS in training group section', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Mladí závodníci',
-                    trainers: [{memberId: 'owner-1', _links: {member: {href: '/api/members/owner-1'}}}],
-                    _links: {self: {href: '/api/training-groups/tg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/training-groups/tg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    trainingGroup: {href: '/api/training-groups/tg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Trenér')).toBeInTheDocument();
-        });
-
-        it('does NOT show training group section when trainingGroup link is absent', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByText('TRÉNINKOVÁ SKUPINA')).not.toBeInTheDocument();
-        });
-
-        it('shows training group section with group name when no owners', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Bezprizorní',
-                    owners: [],
-                    _links: {self: {href: '/api/training-groups/tg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/training-groups/tg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    trainingGroup: {href: '/api/training-groups/tg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Bezprizorní')).toBeInTheDocument();
-        });
-
-        it('does not crash when training group response has trainers array instead of owners', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Skupina bez owners pole',
-                    trainers: [{memberId: 'trainer-1', _links: {member: {href: '/api/members/trainer-1'}}}],
-                    _links: {self: {href: '/api/training-groups/tg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/training-groups/tg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    trainingGroup: {href: '/api/training-groups/tg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Skupina bez owners pole')).toBeInTheDocument();
-        });
-
-        it('does not crash when training group response has neither owners nor trainers', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Prázdná skupina',
-                    _links: {self: {href: '/api/training-groups/tg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/training-groups/tg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    trainingGroup: {href: '/api/training-groups/tg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('TRÉNINKOVÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Prázdná skupina')).toBeInTheDocument();
-        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByRole('button', {name: /tréninková skupina/i})).toBeInTheDocument();
     });
 
-    describe('Family group section (task 5.4)', () => {
-        it('shows family group section when familyGroup link is present', () => {
-            vi.mocked(useHalRoute).mockReturnValue({
-                resourceData: {
-                    name: 'Rodina Novákových',
-                    owners: [],
-                    _links: {self: {href: '/api/family-groups/fg1'}},
-                } as any,
-                navigateToResource: vi.fn(),
-                isLoading: false,
-                error: null,
-                refetch: vi.fn(),
-                pathname: '/api/family-groups/fg1',
-                queryState: 'success',
-                getResourceLink: vi.fn(),
-            });
-
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    familyGroup: {href: '/api/family-groups/fg1'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('RODINNÁ SKUPINA')).toBeInTheDocument();
-            expect(screen.getByText('Rodina Novákových')).toBeInTheDocument();
+    it('clicking "Tréninková skupina" button calls navigateToResource with the trainingGroup link', async () => {
+        const user = userEvent.setup();
+        const navigateToResource = vi.fn();
+        const trainingGroupLink = {href: '/api/training-groups/tg-uuid'};
+        const data = mockMemberDetailData({
+            _links: {
+                self: {href: '/api/members/123'},
+                trainingGroup: trainingGroupLink,
+            },
+            _templates: {updateMember: adminEditTemplate},
         });
-
-        it('does NOT show family group section when familyGroup link is absent', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByText('RODINNÁ SKUPINA')).not.toBeInTheDocument();
+        const pageData = createMockPageData(data, {
+            route: {
+                pathname: '/members/123',
+                navigateToResource,
+                refetch: async () => {},
+                queryState: 'success' as const,
+                getResourceLink: vi.fn().mockImplementation((rel: string) =>
+                    rel === 'trainingGroup' ? trainingGroupLink : null
+                ),
+            },
         });
+        renderPage(pageData);
+
+        await user.click(screen.getByRole('button', {name: /tréninková skupina/i}));
+
+        expect(navigateToResource).toHaveBeenCalledWith(trainingGroupLink);
     });
+
+    it('renders "Rodina" button when familyGroup link is present', () => {
+        const data = mockMemberDetailData({
+            _links: {
+                self: {href: '/api/members/123'},
+                familyGroup: {href: '/api/family-groups/fg-uuid'},
+            },
+            _templates: {updateMember: adminEditTemplate},
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByRole('button', {name: /rodina/i})).toBeInTheDocument();
+    });
+
+    it('clicking "Rodina" button calls navigateToResource with the familyGroup link', async () => {
+        const user = userEvent.setup();
+        const navigateToResource = vi.fn();
+        const familyGroupLink = {href: '/api/family-groups/fg-uuid'};
+        const data = mockMemberDetailData({
+            _links: {
+                self: {href: '/api/members/123'},
+                familyGroup: familyGroupLink,
+            },
+            _templates: {updateMember: adminEditTemplate},
+        });
+        const pageData = createMockPageData(data, {
+            route: {
+                pathname: '/members/123',
+                navigateToResource,
+                refetch: async () => {},
+                queryState: 'success' as const,
+                getResourceLink: vi.fn().mockImplementation((rel: string) =>
+                    rel === 'familyGroup' ? familyGroupLink : null
+                ),
+            },
+        });
+        renderPage(pageData);
+
+        await user.click(screen.getByRole('button', {name: /rodina/i}));
+
+        expect(navigateToResource).toHaveBeenCalledWith(familyGroupLink);
+    });
+
+    it('renders neither group button when both links are absent', () => {
+        const data = mockMemberDetailData({
+            _templates: {updateMember: adminEditTemplate},
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.queryByRole('button', {name: /tréninková skupina/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /rodina/i})).not.toBeInTheDocument();
+    });
+
+    it('renders group navigation buttons even without an edit template (other-member view)', () => {
+        // The backend emits trainingGroup/familyGroup links for any reader of the member detail,
+        // regardless of whether the reader has edit permissions. Buttons must render on HAL link
+        // presence alone — no _templates.updateMember required.
+        const data = mockMemberDetailData({
+            _links: {
+                self: {href: '/api/members/123'},
+                trainingGroup: {href: '/api/training-groups/tg-uuid'},
+                familyGroup: {href: '/api/family-groups/fg-uuid'},
+            },
+            // deliberately no _templates
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByRole('button', {name: /tréninková skupina/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /rodina/i})).toBeInTheDocument();
+    });
+
 });
