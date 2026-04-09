@@ -1,3 +1,11 @@
+
+spring:
+  web:
+    error:
+      include-binding-errors: always
+      include-message: always
+      include-stacktrace: always
+
 logging:
   level:
     com.klabis: DEBUG

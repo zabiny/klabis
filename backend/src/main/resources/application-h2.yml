@@ -2,6 +2,10 @@ spring:
   datasource:
     url: jdbc:h2:mem:klabis;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 2
+      connection-timeout: 10000
 
   h2:
     console:

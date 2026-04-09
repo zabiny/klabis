@@ -44,7 +44,7 @@ import static org.awaitility.Awaitility.await;
  */
 @DisplayName("Framework: Spring Modulith Custom Metrics")
 @ApplicationModuleTest
-@ActiveProfiles("test")
+@ActiveProfiles({"metrics", "test"})
 class CustomMetricsIntegrationTest {
 
     @Autowired

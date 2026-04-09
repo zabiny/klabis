@@ -10,11 +10,3 @@ spring:
       connection-timeout: ${KLABIS_DB_CONNECTION_TIMEOUT:30000}
       idle-timeout: ${KLABIS_DB_IDLE_TIMEOUT:300000}
       max-lifetime: ${KLABIS_DB_MAX_LIFETIME:1800000}
-
-  h2:
-    console:
-      enabled: false
-
-klabis:
-  frontend:
-    allowed-origins: ${KLABIS_FRONTEND_ALLOWED_ORIGINS:https://your-frontend-domain.com}
