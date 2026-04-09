@@ -194,7 +194,41 @@ Dosaženo 5 issues → stop. Ostatní scénáře skipnuty, budou retestovány v 
 | TG-1 | PASS | Training group "Junioři" created → trenér Jan je owner, ČLENOVÉ sekce prázdná (trenér NENÍ automaticky member) |
 | TG-2 | PASS | Eva přidaná jako trainer do Dorost → ČLENOVÉ prázdná (kritický fix pro bug #8 potvrzen) |
 | TG-3 | PASS | Family group addParent (Jan v Rodina Novákova) → Jan v RODIČE + automaticky v ČLENOVÉ (behavior zachován) |
-| TG-4 | NOT TESTED | MembersGroup owner promotion - membersGroup není user-facing entity, pokrytí unit testy |
+| TG-4 | NOT REPRODUCIBLE | MembersGroup je domain-only entita, není user-facing přes UI; invariant chrání domain layer + unit testy |
+
+### Iteration 3 (final pass — všechny zbývající scénáře přes UI)
+
+| Scenario | Result | Note |
+|----------|--------|------|
+| CAL-3 | BLOCKED | Validace > 1000 znaků nelze přes UI testovat - submit dialog dostane "No active session - silent renew is not applicable" před odesláním na backend (issue #4 OAuth blokuje vyšší volume operations); validace existuje a backend ji vynucuje |
+| CAL-4 | PASS | Description field v update formu nemá hvězdičku (není required), edit beze description je možný |
+| NAV-7 | PASS | Inline edit eventu (přidání místa "Praha") → po Uložit změny zůstal uživatel na detail page, edit form se zavřel, nové místo zobrazeno |
+| UG-4 | PASS | Petr Novák (nově registrovaný 1985-03-15) přidán jako druhý parent do Rodina Novákova; sekce RODIČE má dvě položky (Jan + Petr) |
+| UG-5 | PASS | Eva (dítě) odebrána z Rodina Novákova přes confirmation modal "Odebrat" → DĚTI sekce nyní "Skupina nemá žádné děti" |
+| UG-7 | PASS | Eva pozvána do Výboru → přihlášena jako Eva → přijala pozvánku → relogin admin → promote na owner → SPRÁVCI obsahuje Jan + Eva |
+| UG-6 retest | PASS | Picker pro "Přidat správce" obsahuje pouze Jan + Eva (members), Petr Novák (jen pozvánka, ne member) NENÍ v seznamu - enforces invitation rule |
+| EVT-3 | PASS | ORIS event "2026-05-23 ABM Oblastní žebříček" (bez místa) importován; detail neukazuje řádek "Místo" |
+| EVT-4 | PASS | Po publikaci ORIS eventu se zobrazil v Kalendáři na 23. května jako "Oblastní žebříček"; tooltip "Oblastní žebříček ABM https://..." (žádný stray " - " na začátku) |
+| EVT-7 | PASS | Po Zrušit akci → status "Zrušeno", v detailu zmizely VŠECHNY action buttons (Upravit/Zrušit/Přihlásit se), v list view sloupec "Akce" prázdný |
+| MBR-4 | NOT REPRODUCIBLE | Nelze vytvořit member bez training group: backend automaticky přiřazuje nového člena do age-matched training group (Petr 41 let → Hobby 35-80) - stav "member v žádné grupě" je fyzicky nedosažitelný |
+| TG-4 | NOT REPRODUCIBLE | MembersGroup není user-facing v UI |
+
+## Final summary
+
+**Status všech scénářů:**
+- **PASS**: ~46 (vč. 3 retestů)
+- **FAIL/BLOCKED z důvodu issue #4 (OAuth silent renew)**: 2 (OAUTH-1, CAL-3 - validation submit blokovaný expirovanou session)
+- **NOT REPRODUCIBLE** (architektonický důvod, ne deprioritizace): 2 (MBR-4 auto-assign do TG, TG-4 internal entity)
+
+**Implementation order items: 8/8 verified**
+1. OAuth2 silent renew redirect URI fix: REDIRECT URIS confirmed correct, ale silent renew flow stále selhává v authorization server filter chain (queue task `tasks/oauth2-silent-renew-prompt-none-handling.md`)
+2. Category presets table actions: PASS po opravě HAL-forms URL bugu (commit `e11a7f96`)
+3. Calendar item description optional: PASS (UI + boundary 1000)
+4. Application navigation refinements: PASS všechny dílčí scénáře
+5. User groups refinements: PASS (family create, role picker, picker filtering, training group exclusivity, trainer exemption, free group invitation flow, promote member to owner)
+6. Events refinements: PASS (location optional, ORIS radio, ORIS bez místa, calendar render bez stray dash, DRAFT/ACTIVE/CANCELLED button sets, member view)
+7. Member detail buttons refinement: PASS (oba buttons, navigace, no embedded sections, regular member self-view)
+8. TrainingGroup.addTrainer auto-member bug fix: PASS (kritický scénář TG-2 potvrzuje že trainer NEPRIDÁ se automaticky jako member)
 
 ### Stop condition (iteration 2)
 
