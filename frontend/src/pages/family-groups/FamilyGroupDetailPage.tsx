@@ -1,4 +1,4 @@
-import {type ReactElement, useState} from 'react';
+import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
@@ -61,10 +61,10 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
     const parents: FamilyGroupParent[] = resourceData.parents ?? [];
     const children: FamilyGroupChild[] = resourceData.members ?? [];
 
-    const allCurrentMemberIds = [
-        ...parents.map(p => p.memberId),
-        ...children.map(c => c.memberId),
-    ];
+    const allCurrentMemberIds = useMemo(
+        () => [...parents.map(p => p.memberId), ...children.map(c => c.memberId)],
+        [parents, children]
+    );
 
     const openAddMemberRolePicker = () => setAddMemberRolePicker(true);
     const closeAddMember = () => {

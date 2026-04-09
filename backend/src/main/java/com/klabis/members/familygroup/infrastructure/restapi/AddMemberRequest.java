@@ -4,5 +4,5 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-record AddParentRequest(@NotNull UUID memberId) {
+record AddMemberRequest(@NotNull UUID memberId) {
 }

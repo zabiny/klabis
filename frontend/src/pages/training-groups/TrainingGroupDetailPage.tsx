@@ -1,4 +1,4 @@
-import {type ReactElement, useState} from 'react';
+import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
@@ -37,8 +37,8 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
     const trainers: TrainingGroupTrainer[] = (resourceData.trainers as TrainingGroupTrainer[] | undefined) ?? [];
     const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
 
-    const trainerIds = trainers.map(t => t.memberId);
-    const memberIds = members.map(m => m.memberId);
+    const trainerIds = useMemo(() => trainers.map(t => t.memberId), [trainers]);
+    const memberIds = useMemo(() => members.map(m => m.memberId), [members]);
 
     const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
         const template = member._templates?.removeTrainingGroupMember;

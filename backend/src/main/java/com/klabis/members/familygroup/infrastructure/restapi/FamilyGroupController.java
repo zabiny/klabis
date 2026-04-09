@@ -3,8 +3,8 @@ package com.klabis.members.familygroup.infrastructure.restapi;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.users.Authority;
 import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.common.users.Authority;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -131,7 +131,7 @@ class FamilyGroupController {
     @Operation(summary = "Add a parent to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddParentRequest request,
+            @Valid @RequestBody AddMemberRequest request,
             @CurrentUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
@@ -160,7 +160,7 @@ class FamilyGroupController {
     @Operation(summary = "Add a child to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddParentRequest request,
+            @Valid @RequestBody AddMemberRequest request,
             @CurrentUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);

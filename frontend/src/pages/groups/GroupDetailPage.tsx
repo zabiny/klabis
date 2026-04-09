@@ -1,4 +1,4 @@
-import {type ReactElement, useState} from 'react';
+import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
@@ -68,7 +68,10 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
 
     const pendingInvitations = resourceData.pendingInvitations ?? [];
 
-    const currentMemberIds = (resourceData.members ?? []).map(m => m.memberId);
+    const currentMemberIds = useMemo(
+        () => (resourceData.members ?? []).map(m => m.memberId),
+        [resourceData.members]
+    );
 
     return (
         <div className="flex flex-col gap-8">

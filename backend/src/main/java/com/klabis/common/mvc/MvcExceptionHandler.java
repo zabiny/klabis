@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.AuthorizationException;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.exceptions.InvalidDataException;
 import com.klabis.common.exceptions.ResourceNotFoundException;
+import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -94,6 +95,21 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     )
     public ErrorResponse handleBusinessRuleViolationException(BusinessRuleViolationException ex) {
         return ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
+    }
+
+    @ExceptionHandler(CannotPromoteNonMemberToOwnerException.class)
+    @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - cannot promote a non-member to owner",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    public ErrorResponse handleCannotPromoteNonMemberToOwner(CannotPromoteNonMemberToOwnerException ex) {
+        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(409), ex.getMessage())
+                .title("Cannot Promote Non-Member to Owner")
+                .build();
     }
 
     @ExceptionHandler(InvalidDataException.class)

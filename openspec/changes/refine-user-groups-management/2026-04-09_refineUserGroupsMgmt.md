@@ -96,6 +96,45 @@ _(Subagents append entries below as they complete work.)_
 
 ---
 
+### Backend simplify polish — 2026-04-09 — 5 code review fixes (backend only)
+
+**Fix 1 — `MemberAlreadyInTrainingGroupException` extends `BusinessRuleViolationException`**
+Changed from `RuntimeException` to `BusinessRuleViolationException`. Added `memberId` and `conflictingGroupId` accessors to match convention. The per-controller `TrainingGroupExceptionHandler` still maps it to 409, overriding the global 400 handler — same pattern as existing per-module handlers.
+
+**Fix 2 — `CannotPromoteNonMemberToOwnerException` handler moved to global `MvcExceptionHandler`**
+Removed `@ExceptionHandler(CannotPromoteNonMemberToOwnerException.class)` from `MembersGroupExceptionHandler` (members-module scoped). Added equivalent 409 mapping to `MvcExceptionHandler` (global). The exception lives in `common.usergroup` and can be thrown by any group type; the global handler is the correct home. Spring picks the most-specific subclass, so the new handler takes precedence over the `BusinessRuleViolationException` → 400 handler.
+
+**Fix 3 — Removed WHAT-comments from `FamilyGroup.addChild` and `removeChild`**
+Two comments describing what the code does (not why) were removed per project convention in CLAUDE.md.
+
+**Fix 4 — Filter same-group case in `TrainingGroupManagementService.addMemberToTrainingGroup`**
+Added `.filter(existing -> !existing.getId().equals(id))` to the `findGroupForMember` call. Without this, a member already in the target group would trigger `MemberAlreadyInTrainingGroupException` with `conflictingGroupId == id` — a confusing error. The aggregate's own duplicate check handles the same-group case correctly.
+
+**Fix 5 — Renamed `AddParentRequest` to `AddMemberRequest`**
+The record was reused for both `POST /parents` and `POST /children` endpoints. The name `AddParentRequest` was misleading on the child path. Renamed via JetBrains refactoring — 2 usages updated in `FamilyGroupController.java`; test files build raw JSON bodies and were not affected.
+
+**Result:** 2081/2081 backend tests pass. No new tests added.
+
+---
+
+### Simplify fixes — 2026-04-09 — useMemo for id-list derivations + guard verification
+
+**Fix 1 — Memoize id-list derivations (4 sites):**
+All three group detail pages were computing id arrays unconditionally on every render, passing unstable array references as `excludeMemberIds`/`includeOnlyMemberIds` to `HalFormDisplay`. Because `HalFormDisplay` has an internal `useMemo` on `effectiveFieldsFactory` that depends on those props, the new reference on every parent render defeated that memo and caused the filtered factory to be recreated unnecessarily.
+
+- `FamilyGroupDetailPage`: `allCurrentMemberIds` wrapped in `useMemo([parents, children])`
+- `GroupDetailPage`: `currentMemberIds` wrapped in `useMemo([resourceData.members])`
+- `TrainingGroupDetailPage`: `trainerIds` wrapped in `useMemo([trainers])`, `memberIds` wrapped in `useMemo([members])`
+
+`useMemo` imported from React in all three files (was not previously imported).
+
+**Fix 2 — Guard in `createMemberFilteredFactory` verified correct:**
+The existing guard `(excludeIds && excludeIds.length > 0) || includeIds !== undefined` correctly uses strict `=== undefined` for the whitelist check. Passing `includeIds = []` (empty whitelist) correctly falls through to the filtered factory path. No change required.
+
+**Verification:** `npx tsc --noEmit` → exit 0. `run-frontend-tests.sh` → 1106/1106 passed.
+
+---
+
 ### Iter 6 correction — 2026-04-09 — TypeScript compiler verification
 
 **What was reported:** The previous Iter 6 agent declared "build clean, 1106/1106 tests pass" but a subsequent IDE diagnostic scan showed a large number of TypeScript errors (unused imports, missing exports, unused variables in caller pages).

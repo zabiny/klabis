@@ -97,7 +97,6 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
 
     public void addChild(MemberId child) {
         Assert.notNull(child, "Child MemberId is required");
-        // Explicit guard: a parent (owner) cannot be added as a child (non-owner member)
         if (userGroup.isOwner(child.toUserId())) {
             throw new MemberAlreadyInGroupException(child.toUserId());
         }
@@ -106,8 +105,6 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
 
     public void removeChild(MemberId child) {
         Assert.notNull(child, "Child MemberId is required");
-        // Delegates to UserGroup which guards owners via OwnerCannotBeRemovedFromGroupException
-        // and non-members via MemberNotInGroupException
         userGroup.removeMember(child.toUserId());
     }
 }
