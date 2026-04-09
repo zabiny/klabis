@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Modal} from '../UI/Modal';
 import {Button} from '../UI/Button';
+import {RadioGroup} from '../UI/forms';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {labels} from '../../localization';
 import {extractNavigationPath} from '../../utils/navigationPath';
@@ -28,7 +29,7 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
     const navigate = useNavigate();
     const [fetchState, setFetchState] = useState<FetchState>('loading');
     const [orisEvents, setOrisEvents] = useState<OrisEvent[]>([]);
-    const [selectedRegions, setSelectedRegions] = useState<string>('JM');
+    const [selectedRegion, setSelectedRegion] = useState<string>('JM');
     const [selectedId, setSelectedId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -55,13 +56,14 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
 
     useEffect(() => {
         if (!isOpen) return;
-        setSelectedRegions('JM');
+        setSelectedRegion('JM');
         fetchEvents('JM');
     }, [isOpen, fetchEvents]);
 
-    const handleRegionChange = (regionValue: string) => {
-        setSelectedRegions(regionValue);
-        fetchEvents(regionValue);
+    const handleRegionChange = (regionValue: string | number) => {
+        const region = String(regionValue);
+        setSelectedRegion(region);
+        fetchEvents(region);
     };
 
     const handleSubmit = async () => {
@@ -121,21 +123,15 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
             footer={footer}
             closeOnBackdropClick={!isSubmitting}
         >
-            <div className="mb-3 flex flex-wrap gap-3">
-                {ORIS_REGION_KEYS.map((key) => (
-                    <label key={key} className="flex items-center gap-1.5 text-sm text-text-primary cursor-pointer">
-                        <input
-                            type="radio"
-                            name="orisRegion"
-                            value={key}
-                            checked={selectedRegions === key}
-                            onChange={() => handleRegionChange(key)}
-                            disabled={isSubmitting}
-                            className="border-border text-accent focus:ring-accent"
-                        />
-                        {labels.orisRegions[key]}
-                    </label>
-                ))}
+            <div className="mb-3">
+                <RadioGroup
+                    name="orisRegion"
+                    options={ORIS_REGION_KEYS.map(k => ({value: k, label: labels.orisRegions[k]}))}
+                    value={selectedRegion}
+                    onChange={handleRegionChange}
+                    direction="horizontal"
+                    disabled={isSubmitting}
+                />
             </div>
 
             {fetchState === 'loading' && (

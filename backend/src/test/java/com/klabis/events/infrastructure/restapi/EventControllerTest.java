@@ -748,6 +748,27 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options").doesNotExist());
         }
+
+        @Test
+        @DisplayName("ACTIVE event detail should NOT contain finishEvent affordance")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void activeEventDetailShouldNotContainFinishEventAffordance() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.finishEvent").doesNotExist());
+        }
     }
 
     @Nested
@@ -783,48 +804,6 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
-        }
-    }
-
-    @Nested
-    @DisplayName("POST /api/events/{id}/finish — endpoint removed")
-    class FinishEventTests {
-
-        @Test
-        @DisplayName("should return 404 or 405 — manual finish endpoint is removed")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void shouldReturnNotFoundOrMethodNotAllowed() throws Exception {
-            UUID eventId = UUID.randomUUID();
-
-            mockMvc.perform(
-                            post("/api/events/{id}/finish", eventId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andExpect(result -> {
-                        int status = result.getResponse().getStatus();
-                        org.assertj.core.api.Assertions.assertThat(status).isIn(404, 405);
-                    });
-        }
-
-        @Test
-        @DisplayName("ACTIVE event detail should NOT contain finishEvent affordance")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void activeEventDetailShouldNotContainFinishEventAffordance() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            Event activeEvent = EventTestDataBuilder.anEvent()
-                    .withDate(LocalDate.now().plusDays(30))
-                    .build();
-            activeEvent.publish();
-
-            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
-            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
-
-            mockMvc.perform(
-                            get("/api/events/{id}", eventId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.finishEvent").doesNotExist());
         }
     }
 
@@ -1199,11 +1178,15 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/events — list row management affordances (task 8)")
+    @DisplayName("GET /api/events — list row management affordances")
     class ListRowManagementAffordancesTests {
 
+        private static String tpl(String name) {
+            return "$._embedded.eventSummaryDtoList[0]._templates." + name;
+        }
+
         @Test
-        @DisplayName("8.4 DRAFT event row carries updateEvent, publishEvent, cancelEvent affordances")
+        @DisplayName("DRAFT event row carries updateEvent, publishEvent, cancelEvent affordances")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void draftRowCarriesEditPublishCancelAffordances() throws Exception {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
@@ -1213,13 +1196,13 @@ class EventControllerTest {
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent.method").value("PATCH"))
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent.target").exists())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent.target").exists());
+                    .andExpect(jsonPath(tpl("updateEvent.method")).value("PATCH"))
+                    .andExpect(jsonPath(tpl("publishEvent.target")).exists())
+                    .andExpect(jsonPath(tpl("cancelEvent.target")).exists());
         }
 
         @Test
-        @DisplayName("8.5 ACTIVE event row carries updateEvent, cancelEvent affordances but NOT finishEvent")
+        @DisplayName("ACTIVE event row carries updateEvent, cancelEvent affordances but NOT finishEvent")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void activeRowCarriesEditCancelButNotFinishAffordances() throws Exception {
             Event activeEvent = EventTestDataBuilder.anEvent().buildPublished();
@@ -1229,14 +1212,14 @@ class EventControllerTest {
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent.method").value("PATCH"))
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent.target").exists())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.finishEvent").doesNotExist());
+                    .andExpect(jsonPath(tpl("updateEvent.method")).value("PATCH"))
+                    .andExpect(jsonPath(tpl("cancelEvent.target")).exists())
+                    .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("finishEvent")).doesNotExist());
         }
 
         @Test
-        @DisplayName("8.6 ORIS-imported DRAFT row additionally carries syncEventFromOris affordance")
+        @DisplayName("ORIS-imported DRAFT row additionally carries syncEventFromOris affordance")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void orisImportedDraftRowCarriesSyncAffordance() throws Exception {
             Event orisEvent = EventTestDataBuilder.anEvent().withOrisId(42).build();
@@ -1246,11 +1229,11 @@ class EventControllerTest {
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris.target").exists());
+                    .andExpect(jsonPath(tpl("syncEventFromOris.target")).exists());
         }
 
         @Test
-        @DisplayName("8.7 Non-ORIS DRAFT row does NOT carry syncEventFromOris affordance")
+        @DisplayName("Non-ORIS DRAFT row does NOT carry syncEventFromOris affordance")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void nonOrisDraftRowDoesNotCarrySyncAffordance() throws Exception {
             Event nonOrisEvent = EventTestDataBuilder.anEvent().build();
@@ -1260,45 +1243,45 @@ class EventControllerTest {
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
         }
 
         @Test
-        @DisplayName("8.8 FINISHED row carries no management affordances")
+        @DisplayName("FINISHED row carries no management affordances")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void finishedRowCarriesNoManagementAffordances() throws Exception {
-            Event finishedEvent = EventTestDataBuilder.anEvent().withOrisId(10).buildFinished();
+            Event finishedEvent = EventTestDataBuilder.anEvent().buildFinished();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
                     .thenReturn(new PageImpl<>(List.of(finishedEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+                    .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
         }
 
         @Test
-        @DisplayName("8.8 CANCELLED row carries no management affordances")
+        @DisplayName("CANCELLED row carries no management affordances")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void cancelledRowCarriesNoManagementAffordances() throws Exception {
-            Event cancelledEvent = EventTestDataBuilder.anEvent().withOrisId(10).buildCancelled();
+            Event cancelledEvent = EventTestDataBuilder.anEvent().buildCancelled();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
                     .thenReturn(new PageImpl<>(List.of(cancelledEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+                    .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
         }
 
         @Test
-        @DisplayName("8.9 Regular member (no EVENTS:MANAGE) sees only register/unregister — no management actions")
+        @DisplayName("Regular member (no EVENTS:MANAGE) sees only register/unregister — no management actions")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
                 authorities = {Authority.EVENTS_READ})
         void regularMemberSeesOnlyRegisterUnregisterNotManagementActions() throws Exception {
@@ -1312,11 +1295,11 @@ class EventControllerTest {
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.updateEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.publishEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.cancelEvent").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.syncEventFromOris").doesNotExist());
+                    .andExpect(jsonPath(tpl("registerForEvent.method")).value("POST"))
+                    .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
         }
     }
 

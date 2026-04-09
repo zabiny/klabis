@@ -115,7 +115,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         }
     }
 
-    static String buildEventDescription(String location, String organizer, String websiteUrl) {
+    private static String buildEventDescription(String location, String organizer, String websiteUrl) {
         List<String> parts = new ArrayList<>();
         if (location != null && !location.isBlank()) parts.add(location);
         if (organizer != null && !organizer.isBlank()) parts.add(organizer);

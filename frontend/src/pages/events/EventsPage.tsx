@@ -34,6 +34,15 @@ interface EventActionModalState {
     template: HalFormsTemplate;
 }
 
+const ROW_ACTION_BUTTONS = [
+    {name: 'updateEvent', icon: Pencil, label: labels.templates.updateEvent},
+    {name: 'publishEvent', icon: Globe, label: labels.templates.publishEvent},
+    {name: 'cancelEvent', icon: XCircle, label: labels.templates.cancelEvent},
+    {name: 'syncEventFromOris', icon: RefreshCw, label: labels.templates.syncEventFromOris},
+    {name: 'registerForEvent', icon: UserPlus, label: labels.templates.registerForEvent},
+    {name: 'unregisterFromEvent', icon: UserMinus, label: labels.templates.unregisterFromEvent},
+];
+
 interface CoordinatorCellProps {
     coordinatorLink: Link;
 }
@@ -83,58 +92,18 @@ export const EventsPage = (): ReactElement => {
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
-        const t = event._templates ?? {};
+        const templates = event._templates;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {t.updateEvent && (
-                    <Button variant="ghost" size="sm" title={labels.templates.updateEvent} onClick={(e) => {
+                {ROW_ACTION_BUTTONS.map(({name, icon: Icon, label}) => templates?.[name] && (
+                    <Button key={name} variant="ghost" size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
-                        openActionModal(event, 'updateEvent');
+                        openActionModal(event, name);
                     }}>
-                        <Pencil className="w-4 h-4"/>
+                        <Icon className="w-4 h-4"/>
                     </Button>
-                )}
-                {t.publishEvent && (
-                    <Button variant="ghost" size="sm" title={labels.templates.publishEvent} onClick={(e) => {
-                        e.stopPropagation();
-                        openActionModal(event, 'publishEvent');
-                    }}>
-                        <Globe className="w-4 h-4"/>
-                    </Button>
-                )}
-                {t.cancelEvent && (
-                    <Button variant="ghost" size="sm" title={labels.templates.cancelEvent} onClick={(e) => {
-                        e.stopPropagation();
-                        openActionModal(event, 'cancelEvent');
-                    }}>
-                        <XCircle className="w-4 h-4"/>
-                    </Button>
-                )}
-                {t.syncEventFromOris && (
-                    <Button variant="ghost" size="sm" title={labels.templates.syncEventFromOris} onClick={(e) => {
-                        e.stopPropagation();
-                        openActionModal(event, 'syncEventFromOris');
-                    }}>
-                        <RefreshCw className="w-4 h-4"/>
-                    </Button>
-                )}
-                {t.registerForEvent && (
-                    <Button variant="ghost" size="sm" onClick={(e) => {
-                        e.stopPropagation();
-                        openActionModal(event, 'registerForEvent');
-                    }}>
-                        <UserPlus className="w-4 h-4"/>
-                    </Button>
-                )}
-                {t.unregisterFromEvent && (
-                    <Button variant="ghost" size="sm" className="text-red-600" onClick={(e) => {
-                        e.stopPropagation();
-                        openActionModal(event, 'unregisterFromEvent');
-                    }}>
-                        <UserMinus className="w-4 h-4"/>
-                    </Button>
-                )}
+                ))}
             </div>
         );
     };
@@ -164,7 +133,7 @@ export const EventsPage = (): ReactElement => {
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
                 <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>
                 <TableCell sortable column={"location"}
-                           dataRender={({value}) => value ? <span>{value as string}</span> : null}>{labels.fields.location}</TableCell>
+                           dataRender={({value}) => (value as string | null) ?? null}>{labels.fields.location}</TableCell>
                 <TableCell sortable column={"organizer"}>{labels.fields.organizer}</TableCell>
                 <TableCell column={"websiteUrl"}
                            dataRender={({value}) => value ? (

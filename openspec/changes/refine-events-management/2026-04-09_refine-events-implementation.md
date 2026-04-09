@@ -170,3 +170,31 @@ All 1109 frontend tests pass green (1108 pre-existing + 1 new radio-button test,
 - List page: `dataRender` on location cell returns `null` (not rendered) when value is falsy, avoiding the default `String(value)` which would render `"null"`.
 
 **Follow-ups:** None blocking. Manual QA deferred to iteration 5.
+
+### 2026-04-09 — Polish fixes (RadioGroup, ROW_ACTION_BUTTONS, location dataRender)
+
+All 1109 frontend tests pass green (no change in count — existing region-picker tests already covered the new RadioGroup usage).
+
+**Fix 1 — `ImportOrisEventModal.tsx`:** Replaced raw `<input type="radio">` block with `<RadioGroup>` from `../UI/forms`. Added `RadioGroup` import. Renamed state `selectedRegions` → `selectedRegion` (and setter accordingly). Widened `handleRegionChange` signature to `string | number` to match `RadioGroupProps.onChange`. The `RadioGroup` renders `aria-label={option.label}` on each input so the three existing region-picker tests (`getByRole('radio', {name: 'Jihomoravská'})` etc.) pass without modification.
+
+**Fix 2 — `EventsPage.tsx`:** Extracted module-scope `ROW_ACTION_BUTTONS` array (name, icon, label) covering all six action templates. `renderActionsCell` now iterates this array; every button gets `title={label}` — including `registerForEvent` and `unregisterFromEvent` which previously lacked `title` attributes.
+
+**Fix 3 — `EventsPage.tsx` location column:** Kept `dataRender` but simplified from `value ? <span>{value as string}</span> : null` to `(value as string | null) ?? null`. The `<span>` wrapper was unnecessary; the guard is still required because `defaultRenderCell` renders `String(null)` = `"null"` literally.
+
+**Surprises:** `RadioGroup.onChange` is typed `(value: string | number) => void` so a `String(regionValue)` conversion was needed before calling `fetchEvents(region: string)`.
+
+### 2026-04-09 — Code review fixes (CalendarItem visibility, FinishEventTests cleanup, display name polish, tpl helper)
+
+2106 backend tests; 2105 passed, 1 skipped-flaky (pre-existing `MemberControllerSecurityTest` JDBC connection-pool race — passes on immediate re-run, unrelated to these changes).
+
+**Fix 1 — `CalendarItem.buildEventDescription` reverted to `private`.**
+The six `BuildEventDescription` tests in `CalendarItemTest` already go through `CreateCalendarItemForEvent(...).description()`, which delegates to the now-private method. No test called the method directly, so no rewrite was needed. `private` access is confirmed.
+
+**Fix 2 — `FinishEventTests` nested class deleted from `EventControllerTest`.**
+The affordance-level assertion (`activeEventDetailShouldNotContainFinishEventAffordance`) was moved into `GetEventTests` before the outer class was removed. The ambiguous 404/405 negative test is gone.
+
+**Fix 3 — `8.x` task-number prefixes stripped from `@DisplayName` values in `ListRowManagementAffordancesTests`.**
+All six prefixes (`8.4`–`8.9`) removed; descriptive remainder kept unchanged. Class `@DisplayName` also had ` (task 8)` suffix removed.
+
+**Fix 4 — `tpl(String name)` helper introduced in `ListRowManagementAffordancesTests`.**
+Eliminates the repeated `$._embedded.eventSummaryDtoList[0]._templates.` prefix across all 7 tests. `.withOrisId(10)` removed from the FINISHED and CANCELLED event builders — ORIS state is irrelevant to the "no management affordances" assertion.
