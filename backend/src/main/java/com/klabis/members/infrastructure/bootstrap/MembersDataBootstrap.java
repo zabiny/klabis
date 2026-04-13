@@ -63,7 +63,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "marie.horakova@example.com", "+420 603 002 002",
                 "Lipová 7", "Plzeň", "30100",
                 passwordHash, Authority.withStandard(Set.of(Authority.EVENTS_MANAGE)), Gender.FEMALE,
-                BirthNumber.of("926918/2222"));
+                BirthNumber.of("925918/2222"));
 
         createMember("Pavel", "Dvořák", LocalDate.of(1985, 11, 25),
                 "pavel.dvorak@example.com", "+420 603 003 003",
@@ -75,7 +75,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "lucie.prochazkova@example.com", "+420 603 004 004",
                 "Lesní 2", "Liberec", "46001",
                 passwordHash, Authority.withStandard(Set.of(Authority.GROUPS_TRAINING)), Gender.FEMALE,
-                BirthNumber.of("974408/4444"));
+                BirthNumber.of("975408/4444"));
 
         createMember("Martin", "Krejčí", LocalDate.of(1986, 2, 14),
                 "martin.krejci@example.com", "+420 603 005 005",
@@ -87,7 +87,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "petra.novackova@example.com", "+420 603 006 006",
                 "Průmyslová 4", "Hradec Králové", "50002",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
-                BirthNumber.of("006630/6666"));
+                BirthNumber.of("005630/6666"));
 
         createMember("Jakub", "Blažek", LocalDate.of(1999, 1, 5),
                 "jakub.blazek@example.com", "+420 603 007 007",
@@ -99,7 +99,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "tereza.simkova@example.com", "+420 603 008 008",
                 "Zahradní 1", "Zlín", "76001",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
-                BirthNumber.of("016812/8888"));
+                BirthNumber.of("015812/8888"));
 
         createMember("Ondřej", "Kratochvíl", LocalDate.of(1994, 12, 3),
                 "ondrej.kratochvil@example.com", "+420 603 009 009",
@@ -111,7 +111,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "katerina.vesela@example.com", "+420 603 010 010",
                 "Okružní 15", "Kladno", "27201",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
-                BirthNumber.of("986327/1010"));
+                BirthNumber.of("985327/1010"));
 
         createMember("Radek", "Horák", LocalDate.of(1991, 10, 19),
                 "radek.horak@example.com", "+420 603 011 011",
@@ -123,7 +123,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "zuzana.kolarova@example.com", "+420 603 012 012",
                 "Vinohradská 22", "Teplice", "41501",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
-                BirthNumber.of("026506/1212"));
+                BirthNumber.of("025506/1212"));
 
         createMember("Filip", "Musil", LocalDate.of(1996, 7, 14),
                 "filip.musil@example.com", "+420 603 013 013",
@@ -135,7 +135,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 "alzbeta.cermakova@example.com", "+420 603 014 014",
                 "Nákladní 3", "Karviná", "73301",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
-                BirthNumber.of("936902/1414"));
+                BirthNumber.of("935902/1414"));
 
         createMember("Michal", "Pospíšil", LocalDate.of(1987, 6, 21),
                 "michal.pospisil@example.com", "+420 603 015 015",
