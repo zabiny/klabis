@@ -45,3 +45,11 @@ Two changes:
 - Updated existing test `shouldNotIncludeRegisterAffordanceForDraftEvent` → renamed to `shouldNotIncludeRegistrationsLinkForDraftEvent`, changed assertion from `exists()` to `doesNotExist()` for `_links.registrations`
 - Tasks 1.3 and 1.4 were already covered by existing tests (`shouldIncludeRegisterAffordanceForActiveEvent` checks ACTIVE link exists; `shouldNotIncludeRegisterAffordanceForFinishedEvent` checks FINISHED link exists)
 - All 62 EventControllerTest tests pass
+
+### Iteration 2 — Frontend: Hide registrations section for DRAFT events (DONE)
+
+- Frontend was NOT HAL-link driven for the registrations section — it rendered unconditionally
+- Modified `EventDetailPage.tsx`: wrapped registrations section in `{resourceData._links?.registrations && (...)}` guard
+- Updated existing registrations section tests to include `registrations` link in mock data (required now)
+- Added new test: "hides registrations section when registrations link is absent (DRAFT event)"
+- All 31 EventDetailPage frontend tests pass

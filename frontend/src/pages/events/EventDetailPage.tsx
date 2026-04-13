@@ -249,17 +249,19 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     </div>
                 )}
 
-                <div className="flex flex-col gap-4">
-                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
-                    <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
-                        <TableCell column="firstName">{labels.fields.firstName}</TableCell>
-                        <TableCell column="lastName">{labels.fields.lastName}</TableCell>
-                        {event.categories && event.categories.length > 0 && (
-                            <TableCell column="category">{labels.fields.categories}</TableCell>
-                        )}
-                        <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
-                    </HalEmbeddedTable>
-                </div>
+                {resourceData._links?.registrations && (
+                    <div className="flex flex-col gap-4">
+                        <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
+                        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
+                            <TableCell column="firstName">{labels.fields.firstName}</TableCell>
+                            <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+                            {event.categories && event.categories.length > 0 && (
+                                <TableCell column="category">{labels.fields.categories}</TableCell>
+                            )}
+                            <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
+                        </HalEmbeddedTable>
+                    </div>
+                )}
             </div>
         );
     };

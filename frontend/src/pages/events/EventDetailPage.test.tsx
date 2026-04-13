@@ -370,13 +370,26 @@ describe('EventDetailPage', () => {
     });
 
     describe('registrations section', () => {
-        it('shows registrations section heading', () => {
-            renderPage(createMockPageData(mockEventDetailData()));
+        const mockEventWithRegistrationsLink = (overrides?: Partial<any>) => mockEventDetailData({
+            _links: {
+                self: {href: 'http://localhost:8443/api/events/1'},
+                registrations: {href: 'http://localhost:8443/api/events/1/registrations'},
+            },
+            ...overrides,
+        });
+
+        it('shows registrations section heading when registrations link is present', () => {
+            renderPage(createMockPageData(mockEventWithRegistrationsLink()));
             expect(screen.getByRole('heading', {name: /přihlášky/i})).toBeInTheDocument();
         });
 
-        it('shows registrations table with correct columns', () => {
-            renderPage(createMockPageData(mockEventDetailData()));
+        it('hides registrations section when registrations link is absent (DRAFT event)', () => {
+            renderPage(createMockPageData(mockEventDetailData({status: 'DRAFT'})));
+            expect(screen.queryByRole('heading', {name: /přihlášky/i})).not.toBeInTheDocument();
+        });
+
+        it('shows registrations table with correct columns when registrations link is present', () => {
+            renderPage(createMockPageData(mockEventWithRegistrationsLink()));
             expect(screen.getByRole('table')).toBeInTheDocument();
             expect(screen.getByRole('columnheader', {name: 'Jméno'})).toBeInTheDocument();
             expect(screen.getByRole('columnheader', {name: 'Příjmení'})).toBeInTheDocument();
@@ -384,17 +397,17 @@ describe('EventDetailPage', () => {
         });
 
         it('does not show category column when event has no categories', () => {
-            renderPage(createMockPageData(mockEventDetailData({categories: []})));
+            renderPage(createMockPageData(mockEventWithRegistrationsLink({categories: []})));
             expect(screen.queryByRole('columnheader', {name: /kategorie/i})).not.toBeInTheDocument();
         });
 
         it('does not show category column when event categories field is absent', () => {
-            renderPage(createMockPageData(mockEventDetailData({categories: undefined})));
+            renderPage(createMockPageData(mockEventWithRegistrationsLink({categories: undefined})));
             expect(screen.queryByRole('columnheader', {name: /kategorie/i})).not.toBeInTheDocument();
         });
 
         it('shows category column when event has categories', () => {
-            renderPage(createMockPageData(mockEventDetailData({categories: ['H21', 'D21', 'H35']})));
+            renderPage(createMockPageData(mockEventWithRegistrationsLink({categories: ['H21', 'D21', 'H35']})));
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
         });
     });

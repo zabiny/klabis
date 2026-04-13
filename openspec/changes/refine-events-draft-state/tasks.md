@@ -7,8 +7,8 @@
 
 ## 2. Frontend: Hide Registrations Section for DRAFT Events
 
-- [ ] 2.1 Verify frontend hides registrations section when HAL link for registrations is absent (HAL-driven — verify existing behavior covers this, add test if needed)
-- [ ] 2.2 Write test: registrations section is not rendered on event detail page when event is in DRAFT status
+- [x] 2.1 Verify frontend hides registrations section when HAL link for registrations is absent (HAL-driven — verify existing behavior covers this, add test if needed)
+- [x] 2.2 Write test: registrations section is not rendered on event detail page when event is in DRAFT status
 
 ## 3. Frontend: Category Preset Picker in Event Form
 
