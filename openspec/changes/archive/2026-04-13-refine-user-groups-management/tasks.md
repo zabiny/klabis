@@ -99,16 +99,16 @@
 
 ## 12. Frontend QA walkthrough
 
-- [ ] 12.1 Log in as admin (`ZBM9000`). Go to Členové, create a new family group with only a name and one parent → detail page opens automatically
-- [ ] 12.2 On the family group detail page, click "Přidat člena", pick "Dítě", select a candidate → child appears in the list
-- [ ] 12.3 Open the picker again — the already-added child and the parent do NOT appear in the candidate list
-- [ ] 12.4 Click "Přidat člena", pick "Rodič", select another candidate → new parent is added
-- [ ] 12.5 Remove the child via its row action → child disappears
-- [ ] 12.6 Go to Skupiny (free groups), create a group, try to promote a non-member to owner → error is shown and no membership is created
-- [ ] 12.7 Promote an existing member to owner → succeeds
-- [ ] 12.8 Go to Tréninkové skupiny, create a training group, manually add a member → success. Try to add the same member to another training group manually → error "already trainee of another training group"
-- [ ] 12.9 Assign the same member as trainer to a second training group → succeeds (trainer exemption)
-- [ ] 12.10 Confirm existing backend and frontend test suites still pass via the `test-runner` agent
+- [x] 12.1 Log in as admin (`ZBM9000`). Go to Členové, create a new family group with only a name and one parent → detail page opens automatically
+- [x] 12.2 On the family group detail page, click "Přidat člena", pick "Dítě", select a candidate → child appears in the list
+- [x] 12.3 Open the picker again — the already-added child and the parent do NOT appear in the candidate list
+- [x] 12.4 Click "Přidat člena", pick "Rodič", select another candidate → new parent is added
+- [x] 12.5 Remove the child via its row action → child disappears
+- [x] 12.6 Go to Skupiny (free groups), create a group, try to promote a non-member to owner → error is shown and no membership is created
+- [x] 12.7 Promote an existing member to owner → succeeds
+- [x] 12.8 Go to Tréninkové skupiny, create a training group, manually add a member → success. Try to add the same member to another training group manually → error "already trainee of another training group"
+- [x] 12.9 Assign the same member as trainer to a second training group → succeeds (trainer exemption)
+- [x] 12.10 Confirm existing backend and frontend test suites still pass via the `test-runner` agent
 
 ## 13. Follow-up task queue item (out of scope for this change)
 
