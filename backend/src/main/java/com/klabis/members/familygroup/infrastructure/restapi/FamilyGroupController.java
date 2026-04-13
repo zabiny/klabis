@@ -106,10 +106,10 @@ class FamilyGroupController {
         EntityModel<FamilyGroupResponse> model = EntityModel.of(response);
 
         klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)));
+            var selfLink = link.withSelfRel();
             if (hasMembersManage) {
                 selfLink = selfLink
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)))
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null, null)));
             }

@@ -495,12 +495,13 @@ class FamilyGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.deleteFamilyGroup").exists())
                     .andExpect(jsonPath("$._templates.addFamilyGroupParent").exists())
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild").exists());
         }
 
         @Test
-        @DisplayName("should omit addParent and addChild affordances when user is group member but lacks MEMBERS:MANAGE")
+        @DisplayName("should omit delete, addParent and addChild affordances when user is group member but lacks MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
         void shouldOmitAffordancesWhenMemberButNotAdmin() throws Exception {
             FamilyGroup group = buildFamilyGroupWithChild(GROUP_UUID, "Novákovi", "dddddddd-dddd-dddd-dddd-dddddddddddd", MEMBER_ID);
@@ -511,6 +512,7 @@ class FamilyGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.deleteFamilyGroup").doesNotExist())
                     .andExpect(jsonPath("$._templates.addFamilyGroupParent").doesNotExist())
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild").doesNotExist());
         }
