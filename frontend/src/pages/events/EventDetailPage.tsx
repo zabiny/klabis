@@ -14,6 +14,7 @@ import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
 import {Check, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
+import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 
 interface EventDetail {
     name: string;
@@ -279,6 +280,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                 submitButtonLabel={labels.buttons.saveChanges}
                 submitIcon={<Check className="w-4 h-4"/>}
                 customLayout={renderContent}
+                fieldsFactory={eventFormFieldsFactory}
             />
         );
     }

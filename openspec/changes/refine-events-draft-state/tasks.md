@@ -12,9 +12,9 @@
 
 ## 3. Frontend: Category Preset Picker in Event Form
 
-- [ ] 3.1 Fetch available Category Presets when event create/edit form is opened (via HAL link)
-- [ ] 3.2 Render "Select from templates" button next to categories field only when presets are available
-- [ ] 3.3 Implement preset picker dialog/dropdown showing available presets by name
-- [ ] 3.4 On preset selection, populate the categories field with the preset's categories
-- [ ] 3.5 Allow manual editing of categories after preset is applied
-- [ ] 3.6 Write tests for preset picker: button shown when presets exist, hidden when none exist, categories populated on selection
+- [x] 3.1 Fetch available Category Presets when event create/edit form is opened (via HAL link)
+- [x] 3.2 Render "Select from templates" button next to categories field only when presets are available
+- [x] 3.3 Implement preset picker dialog/dropdown showing available presets by name
+- [x] 3.4 On preset selection, populate the categories field with the preset's categories
+- [x] 3.5 Allow manual editing of categories after preset is applied
+- [x] 3.6 Write tests for preset picker: button shown when presets exist, hidden when none exist, categories populated on selection
