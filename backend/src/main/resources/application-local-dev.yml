@@ -1,0 +1,4 @@
+klabis:
+  oauth2:
+    client:
+      local-secret: ${KLABIS_OAUTH2_LOCAL_CLIENT_SECRET:local-dev-secret-please-change-nothing}

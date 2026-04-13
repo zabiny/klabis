@@ -133,10 +133,24 @@ Key utilities in `src/api/hateoas.ts`: `getLink()`, `getLinkHref()`, `followLink
 
 OAuth2 client configured in `src/api/klabisUserManager.ts`:
 
-- **Flow:** Authorization Code with PKCE (public client, no client_secret)
+- **Flow:** Authorization Code with PKCE
 - **Authority:** `/` (proxied to `https://localhost:8443` in dev)
-- **Scopes:** `openid profile MEMBERS EVENTS`
-- **Client ID:** `klabis-web`
+- **Client ID / Secret / Scopes:** read from Vite env vars `VITE_OAUTH_CLIENT_ID`, `VITE_OAUTH_CLIENT_SECRET`, `VITE_OAUTH_SCOPE`
+- **Production defaults** (in `frontend/.env`): `klabis-web` public client, no secret — matches the deployed configuration
+
+### Vite environment variables for OAuth2
+
+| Variable | Default (`.env`) | Local-dev (`.env.development.local`) |
+|---|---|---|
+| `VITE_OAUTH_CLIENT_ID` | `klabis-web` | `klabis-web-local` |
+| `VITE_OAUTH_CLIENT_SECRET` | _(empty — public client)_ | `local-dev-secret-please-change-nothing` |
+| `VITE_OAUTH_SCOPE` | `openid profile MEMBERS EVENTS` | `openid profile MEMBERS EVENTS` |
+
+**Local development:** Copy `frontend/.env.development.local.example` to `frontend/.env.development.local` (gitignored via `*.local`). `runLocalEnvironment.sh` does this automatically on first run.
+
+When `VITE_OAUTH_CLIENT_SECRET` is non-empty, `oidc-client-ts` uses `client_secret_post` authentication at the token endpoint, and the backend returns a `refresh_token`. This enables refresh-token-based silent renewal at `http://localhost:3000` (cross-origin from `:8443` where iframe-based renewal cannot carry the session cookie).
+
+**Production** builds use the public `klabis-web` client (empty secret). Silent renewal in production works via the iframe path because the SPA runs same-origin with the backend on `:8443`.
 
 ### Usage
 

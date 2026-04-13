@@ -12,6 +12,10 @@ public class OAuth2ClientProperties {
     private String postLogoutRedirectUris = "http://localhost:3000,https://localhost:8443";
     private String scopes;
 
+    private String localId = "klabis-web-local";
+    private String localSecret = "local-dev-secret-please-change-nothing";
+    private String localRedirectUris = "http://localhost:3000/auth/callback,http://localhost:3000/silent-renew.html";
+
     public String getId() {
         return id;
     }
@@ -58,5 +62,29 @@ public class OAuth2ClientProperties {
 
     public void setScopes(String scopes) {
         this.scopes = scopes;
+    }
+
+    public String getLocalId() {
+        return localId;
+    }
+
+    public void setLocalId(String localId) {
+        this.localId = localId;
+    }
+
+    public String getLocalSecret() {
+        return localSecret;
+    }
+
+    public void setLocalSecret(String localSecret) {
+        this.localSecret = localSecret;
+    }
+
+    public String getLocalRedirectUris() {
+        return localRedirectUris;
+    }
+
+    public void setLocalRedirectUris(String localRedirectUris) {
+        this.localRedirectUris = localRedirectUris;
     }
 }

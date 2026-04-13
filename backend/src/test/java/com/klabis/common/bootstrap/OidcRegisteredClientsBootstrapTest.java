@@ -51,4 +51,14 @@ class OidcRegisteredClientsBootstrapTest {
                 .as("klabis-web client must allow post-logout redirect to both frontend dev server and backend")
                 .containsExactlyInAnyOrder("http://localhost:3000", "https://localhost:8443");
     }
+
+    @Test
+    @DisplayName("should NOT register klabis-web-local when local-dev profile is not active")
+    void shouldNotRegisterLocalDevClientWithoutLocalDevProfile() {
+        RegisteredClient localClient = registeredClientRepository.findByClientId("klabis-web-local");
+
+        assertThat(localClient)
+                .as("klabis-web-local must not be registered when local-dev profile is inactive")
+                .isNull();
+    }
 }

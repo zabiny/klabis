@@ -123,6 +123,11 @@ klabis:
       password: ${KLABIS_ADMIN_PASSWORD:}
 
   oauth2:
+    # Profile 'local-dev': activates a second confidential OAuth2 client 'klabis-web-local'
+    # with CLIENT_SECRET_POST + PKCE + REFRESH_TOKEN grant. Enables silent token renewal
+    # on the Vite dev server (localhost:3000) without the silent-renew iframe workaround.
+    # Override the client secret via KLABIS_OAUTH2_LOCAL_CLIENT_SECRET env var.
+    # WARNING: never activate this profile in staging or production environments.
     client:
       id: ${KLABIS_OAUTH2_CLIENT_ID:klabis-web}
       secret: ${KLABIS_OAUTH2_CLIENT_SECRET:}

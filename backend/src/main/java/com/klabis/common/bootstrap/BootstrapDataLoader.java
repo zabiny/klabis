@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -63,17 +65,25 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(OidcRegisteredClientsBootstrap.class);
     private final PasswordEncoder passwordEncoder;
     private final PasswordGenerator passwordGenerator;
+    private final Environment environment;
 
-    OidcRegisteredClientsBootstrap(RegisteredClientRepository registeredClientRepository, OAuth2ClientProperties clientProperties, PasswordEncoder passwordEncoder, PasswordGenerator passwordGenerator) {
+    OidcRegisteredClientsBootstrap(RegisteredClientRepository registeredClientRepository, OAuth2ClientProperties clientProperties, PasswordEncoder passwordEncoder, PasswordGenerator passwordGenerator, Environment environment) {
         this.registeredClientRepository = registeredClientRepository;
         this.clientProperties = clientProperties;
         this.passwordEncoder = passwordEncoder;
         this.passwordGenerator = passwordGenerator;
+        this.environment = environment;
     }
 
     @Override
     public boolean requiresBootstrap() {
-        return registeredClientRepository.findByClientId(clientProperties.getId()) == null;
+        if (registeredClientRepository.findByClientId(clientProperties.getId()) == null) {
+            return true;
+        }
+        if (isLocalDevProfileActive() && registeredClientRepository.findByClientId(clientProperties.getLocalId()) == null) {
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -87,12 +97,31 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
-        createPublicWebClient(clientUuid, clientId, redirectUris, postLogoutRedirectUris);
-        createOAuth2Client("apispec",
-                "apispec",
-                "apispec",
-                Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"),
-                Set.of());
+        if (registeredClientRepository.findByClientId(clientId) == null) {
+            createPublicWebClient(clientUuid, clientId, redirectUris, postLogoutRedirectUris);
+            createOAuth2Client("apispec",
+                    "apispec",
+                    "apispec",
+                    Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"),
+                    Set.of());
+        }
+
+        if (isLocalDevProfileActive() && registeredClientRepository.findByClientId(clientProperties.getLocalId()) == null) {
+            warnIfNotLocalhost();
+            createLocalDevConfidentialClient();
+        }
+    }
+
+    private boolean isLocalDevProfileActive() {
+        return environment.acceptsProfiles(Profiles.of("local-dev"));
+    }
+
+    private void warnIfNotLocalhost() {
+        String issuer = environment.getProperty("spring.security.oauth2.authorizationserver.issuer");
+        if (StringUtils.isNotBlank(issuer) && !issuer.contains("localhost")) {
+            LOG.warn("local-dev profile is active but the authorization server issuer '{}' is not localhost-based. " +
+                    "The klabis-web-local confidential client is intended for local development only.", issuer);
+        }
     }
 
     private static final TokenSettings DEFAULT_TOKEN_SETTINGS = TokenSettings.builder()
@@ -172,6 +201,38 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
         registeredClientRepository.save(c);
 
         LOG.info("Created OAuth2 client: {}", clientId);
+    }
+
+    private void createLocalDevConfidentialClient() {
+        String clientId = clientProperties.getLocalId();
+        String clientSecret = clientProperties.getLocalSecret();
+        Set<String> redirectUris = Arrays.stream(clientProperties.getLocalRedirectUris().split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        String clientSecretHash = passwordEncoder.encode(clientSecret);
+
+        RegisteredClient c = RegisteredClient.withId(clientId + "-id")
+                .clientId(clientId)
+                .clientSecret(clientSecretHash)
+                .clientName("Klabis Web application (local dev)")
+                .clientAuthenticationMethods(items -> items.add(ClientAuthenticationMethod.CLIENT_SECRET_POST))
+                .authorizationGrantTypes(items -> {
+                    items.add(AuthorizationGrantType.AUTHORIZATION_CODE);
+                    items.add(AuthorizationGrantType.REFRESH_TOKEN);
+                })
+                .redirectUris(items -> items.addAll(redirectUris))
+                .postLogoutRedirectUris(items -> items.add("http://localhost:3000"))
+                .scopes(items -> items.addAll(resolveScopes()))
+                .clientSettings(ClientSettings.builder()
+                        .requireProofKey(true)
+                        .build())
+                .tokenSettings(DEFAULT_TOKEN_SETTINGS)
+                .build();
+
+        registeredClientRepository.save(c);
+
+        LOG.info("Created local-dev confidential OAuth2 client with PKCE and refresh token: {}", clientId);
     }
 
 }

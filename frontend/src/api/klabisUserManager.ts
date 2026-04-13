@@ -75,11 +75,11 @@ export const silentRenewRetry = (userManager: UserManager): Promise<void> => {
 
 export const authConfig: AuthConfig = {
     authority: '/',
-    client_id: 'klabis-web',
+    client_id: import.meta.env.VITE_OAUTH_CLIENT_ID ?? 'klabis-web',
     redirect_uri: '/auth/callback', // must match OIDC config
     post_logout_redirect_uri: window.location.origin,
     response_type: 'code',
-    scope: 'openid profile MEMBERS EVENTS'
+    scope: import.meta.env.VITE_OAUTH_SCOPE ?? 'openid profile MEMBERS EVENTS'
 };
 
 export const createUserManager = ({
@@ -89,6 +89,8 @@ export const createUserManager = ({
                                       },
                                       ...config
                                   }: AuthConfig): UserManager => {
+
+    const clientSecret = import.meta.env.VITE_OAUTH_CLIENT_SECRET;
 
     const userManagerConfig = {
         ...config,
@@ -100,6 +102,7 @@ export const createUserManager = ({
         redirect_uri: normalizeUrl(config.redirect_uri),
         post_logout_redirect_uri: normalizeUrl(config.post_logout_redirect_uri),
         silent_redirect_uri: `${window.location.origin}/silent-renew.html`,
+        ...(clientSecret ? {client_secret: clientSecret} : {}),
     };
 
     const userManager = new UserManager(userManagerConfig);

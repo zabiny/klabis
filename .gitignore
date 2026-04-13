@@ -2,6 +2,8 @@
 # environment variables
 .env
 .env.production
+!frontend/.env
+!frontend/.env.development.local.example
 
 # jetbrains
 .idea/

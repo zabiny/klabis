@@ -134,8 +134,10 @@ Feature-based profiles (composable independently):
 - **email** — activates real email sending via JavaMailSender (requires `KLABIS_SMTP_HOST` env var; without this profile, `LoggingEmailService` is used)
 - **metrics** — enables custom Klabis metrics (Modulith event counters, listener latency)
 - **test** — for integration tests, isolated H2 database (auto-includes `h2` and `metrics` via profile group)
+- **local-dev** — **local developer machines only**. Registers a second OAuth2 client `klabis-web-local` (confidential, `CLIENT_SECRET_POST`, PKCE required, `AUTHORIZATION_CODE` + `REFRESH_TOKEN` grants). This enables refresh-token-based silent token renewal when the frontend runs on `http://localhost:3000` (cross-origin from the backend on `:8443`). Spring AS refuses to issue refresh tokens to public clients, so this profile adds a confidential workaround client that stays out of production entirely. See `openspec/changes/enable-refresh-tokens-for-local-dev` for full rationale. **Never activate in any deployed environment.**
 
 Default active profiles: `h2,ssl,debug,metrics` (zero-config local dev, HTTPS on 8443, H2 database)
+`runLocalEnvironment.sh` adds `local-dev` automatically, so developers get refresh-token-based silent renew out of the box.
 
 Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 
