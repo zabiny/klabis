@@ -53,3 +53,12 @@ Two changes:
 - Updated existing registrations section tests to include `registrations` link in mock data (required now)
 - Added new test: "hides registrations section when registrations link is absent (DRAFT event)"
 - All 31 EventDetailPage frontend tests pass
+
+### Iteration 3 — Frontend: Category Preset Picker in Event Form (DONE)
+
+- `CategoryPresetPickerButton.tsx` and `eventFormFieldsFactory.tsx` were already implemented
+- `EventsPage.tsx` already wired `eventFormFieldsFactory` for `createEvent` and modal `updateEvent`
+- Fixed gap: added `fieldsFactory={eventFormFieldsFactory}` to `HalFormDisplay` in `EventDetailPage.tsx` inline edit block
+- Added import of `eventFormFieldsFactory` in `EventDetailPage.tsx`
+- Created `CategoryPresetPickerButton.test.tsx` with 8 tests covering: button shown/hidden based on presets, dialog opens with preset names, dialog closes after selection, categories field populated on selection
+- All 39 tests pass (8 new + 31 existing EventDetailPage)
