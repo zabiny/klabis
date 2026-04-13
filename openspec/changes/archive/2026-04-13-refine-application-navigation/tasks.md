@@ -78,18 +78,18 @@
 
 ## 9. Manual QA walkthrough
 
-- [ ] 9.1 Start the app with `./runLocalEnvironment.sh`. Log in as admin (`ZBM9000`) on desktop
-- [ ] 9.2 Confirm the sidebar shows two sections: "NAVIGACE" with everyday items (Kalendář, Akce, Členové, Skupiny) and a new "Administrace" heading below with Šablony kategorií, Rodinné skupiny, Tréninkové skupiny
-- [ ] 9.3 Click each admin item and confirm navigation works
-- [ ] 9.4 Log out. Log in as a regular member (`ZBM9500`) on desktop
-- [ ] 9.5 Confirm the sidebar shows only "NAVIGACE" with main items and no "Administrace" heading at all
-- [ ] 9.6 Resize the browser to mobile width (or open in a mobile viewport)
-- [ ] 9.7 Confirm the bottom nav shows only main items and no admin items, regardless of which user is logged in
-- [ ] 9.8 Back on desktop as admin, open the Rodinné skupiny page and create a new family group
-- [ ] 9.9 Confirm the user is navigated to the detail page of the newly created family group immediately after submit, and a success toast is visible
-- [ ] 9.10 Go to Tréninkové skupiny and create a new training group. Confirm the user lands on its detail page
-- [ ] 9.11 Go to Skupiny (free groups) and create a new free group. Confirm the user lands on its detail page
-- [ ] 9.12 Edit an existing event via the inline edit on the detail page — confirm the user stays on the detail page after save (no unwanted navigation)
-- [ ] 9.13 Delete a category preset via its row action — confirm the user stays on the list page
-- [ ] 9.14 Go to Členové and confirm there is no "Create family group" button on the members list — the dead wiring is gone
-- [ ] 9.15 Run the full backend and frontend test suites via `test-runner` and confirm all green
+- [x] 9.1 Start the app with `./runLocalEnvironment.sh`. Log in as admin (`ZBM9000`) on desktop
+- [x] 9.2 Confirm the sidebar shows two sections: "NAVIGACE" with everyday items (Kalendář, Akce, Členové, Skupiny) and a new "Administrace" heading below with Šablony kategorií, Rodinné skupiny, Tréninkové skupiny
+- [x] 9.3 Click each admin item and confirm navigation works
+- [x] 9.4 Log out. Log in as a regular member (`ZBM9500`) on desktop
+- [x] 9.5 Confirm the sidebar shows only "NAVIGACE" with main items and no "Administrace" heading at all
+- [x] 9.6 Resize the browser to mobile width (or open in a mobile viewport)
+- [x] 9.7 Confirm the bottom nav shows only main items and no admin items, regardless of which user is logged in
+- [x] 9.8 Back on desktop as admin, open the Rodinné skupiny page and create a new family group
+- [x] 9.9 Confirm the user is navigated to the detail page of the newly created family group immediately after submit, and a success toast is visible
+- [x] 9.10 Go to Tréninkové skupiny and create a new training group. Confirm the user lands on its detail page
+- [x] 9.11 Go to Skupiny (free groups) and create a new free group. Confirm the user lands on its detail page
+- [x] 9.12 Edit an existing event via the inline edit on the detail page — confirm the user stays on the detail page after save (no unwanted navigation)
+- [x] 9.13 Delete a category preset via its row action — confirm the user stays on the list page
+- [x] 9.14 Go to Členové and confirm there is no "Create family group" button on the members list — the dead wiring is gone
+- [x] 9.15 Run the full backend and frontend test suites via `test-runner` and confirm all green

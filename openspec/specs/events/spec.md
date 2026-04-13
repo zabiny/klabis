@@ -54,6 +54,65 @@ The system SHALL import the registration deadline from ORIS (using EntryDate1 as
 - **WHEN** event manager imports an event from ORIS that has no primary entry deadline
 - **THEN** the imported event has no registration deadline set
 
+### Requirement: ORIS Import Tolerates Missing Location
+
+The system SHALL import events from ORIS even when the upstream ORIS event has no location. The imported event is created with an empty location and the import flow does not reject the event on account of the missing field.
+
+#### Scenario: Manager imports an ORIS event without a location
+
+- **WHEN** event manager imports an event from ORIS that has no location
+- **THEN** the event is created successfully in DRAFT status with no location
+- **AND** the imported event appears in the events list with an empty location cell
+
+#### Scenario: Manager imports an ORIS event with a location
+
+- **WHEN** event manager imports an event from ORIS that has a location
+- **THEN** the event is created with the location from ORIS
+
+### Requirement: Row-Level Management Actions in Events Table
+
+The system SHALL expose row-level management actions for events directly in the events list for users with EVENTS:MANAGE permission. The available actions for each row depend on the event status and whether the event was imported from ORIS. The actions are driven by HAL-Forms affordances attached to each row and render only when the current user is authorized.
+
+#### Scenario: Manager sees Upravit and Zrušit actions for a DRAFT event in the list
+
+- **WHEN** user with EVENTS:MANAGE permission views the events list
+- **THEN** each DRAFT event row shows "Upravit" and "Zrušit" actions
+
+#### Scenario: Manager sees Upravit and Zrušit actions for an ACTIVE event in the list
+
+- **WHEN** user with EVENTS:MANAGE permission views the events list
+- **THEN** each ACTIVE event row shows "Upravit" and "Zrušit" actions
+
+#### Scenario: Manager sees Synchronizovat action for an ORIS-imported DRAFT or ACTIVE event
+
+- **WHEN** user with EVENTS:MANAGE permission views the events list
+- **AND** an event row is in DRAFT or ACTIVE status and was imported from ORIS
+- **THEN** the row additionally shows a "Synchronizovat" action
+
+#### Scenario: Non-ORIS event does not show Synchronizovat action in the list
+
+- **WHEN** user with EVENTS:MANAGE permission views the events list
+- **AND** an event row was not imported from ORIS
+- **THEN** the row does NOT show a "Synchronizovat" action
+
+#### Scenario: FINISHED or CANCELLED event has no management actions in the list
+
+- **WHEN** user with EVENTS:MANAGE permission views the events list
+- **AND** an event row is in FINISHED or CANCELLED status
+- **THEN** the row shows no management actions (no edit, cancel, or sync)
+
+#### Scenario: Regular member sees only the register action in the list
+
+- **WHEN** user without EVENTS:MANAGE permission views the events list
+- **THEN** event rows show only the register or unregister action (when applicable)
+- **AND** no management actions are shown
+
+#### Scenario: Register action in the list is preserved
+
+- **WHEN** user views the events list
+- **AND** an event has open registrations
+- **THEN** the row shows the register or unregister action as described by the existing events table scenarios
+
 ### Requirement: Events Table Display
 
 The system SHALL display the events list as a table with key columns. The status column is only shown to users with EVENTS:MANAGE permission.
@@ -77,6 +136,11 @@ The system SHALL display the events list as a table with key columns. The status
 
 - **WHEN** an event in the table has no external website URL
 - **THEN** the website column is empty for that row
+
+#### Scenario: Location column empty when not set
+
+- **WHEN** an event in the table has no location
+- **THEN** the location column is empty for that row
 
 #### Scenario: Registration deadline shown as formatted date
 
@@ -110,9 +174,10 @@ The system SHALL display the events list as a table with key columns. The status
 - **AND** the current user is already registered
 - **THEN** the action column shows an unregister button
 
-#### Scenario: Action column empty for closed registrations
+#### Scenario: Action column empty for closed registrations and no management actions
 
 - **WHEN** an event does not have open registrations
+- **AND** the current user has no management actions available for that row
 - **THEN** the action column is empty for that row
 
 #### Scenario: Status column hidden when not returned by API
@@ -122,7 +187,17 @@ The system SHALL display the events list as a table with key columns. The status
 
 ### Requirement: Event Detail Page
 
-The application SHALL display the event detail page with registration deadline (when set) and categories (when defined), and allow managers to edit them inline.
+The application SHALL display the event detail page with location and registration deadline (when set) and categories (when defined), and allow managers to edit them inline.
+
+#### Scenario: Event detail shows location when set
+
+- **WHEN** user views the detail page for an event with a location
+- **THEN** the event information section shows the location
+
+#### Scenario: Event detail hides location when not set
+
+- **WHEN** user views the detail page for an event without a location
+- **THEN** no location row is shown in the event information section
 
 #### Scenario: Event detail shows registration deadline
 
@@ -161,18 +236,23 @@ The application SHALL display the event detail page with registration deadline (
 
 ### Requirement: Create Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, location, organizer code. Optional: website URL, coordinator, registration deadline, categories.
+The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, organizer code. Optional: location, website URL, coordinator, registration deadline, categories.
 
 #### Scenario: Manager creates an event with all required fields
 
-- **WHEN** user with EVENTS:MANAGE permission submits the event creation form with all required fields
+- **WHEN** user with EVENTS:MANAGE permission submits the event creation form with name, event date, and organizer code
 - **THEN** the event is created in DRAFT status
 - **AND** appears in the event list
 
 #### Scenario: Manager creates an event with optional fields
 
-- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (website URL, coordinator, registration deadline, categories) and submits
+- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (location, website URL, coordinator, registration deadline, categories) and submits
 - **THEN** the event is created with all provided data
+
+#### Scenario: Manager creates an event without a location
+
+- **WHEN** user with EVENTS:MANAGE permission submits the event creation form without a location
+- **THEN** the event is created successfully with no location
 
 #### Scenario: Create event button not shown without permission
 
@@ -230,7 +310,7 @@ The system SHALL allow users with EVENTS:MANAGE permission to update events in D
 
 ### Requirement: Event Status Lifecycle
 
-The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED or CANCELLED.
+The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED or CANCELLED. The transition from ACTIVE to FINISHED is performed exclusively by the automatic completion process; there is no manual "finish" action available to managers.
 
 #### Scenario: Manager publishes a DRAFT event
 
@@ -247,12 +327,6 @@ The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED 
 
 - **WHEN** user with EVENTS:MANAGE permission cancels an ACTIVE event
 - **THEN** the event becomes CANCELLED
-- **AND** existing registrations are preserved for records
-
-#### Scenario: Manager manually finishes an ACTIVE event
-
-- **WHEN** user with EVENTS:MANAGE permission marks an ACTIVE event as finished
-- **THEN** the event becomes FINISHED
 - **AND** existing registrations are preserved for records
 
 #### Scenario: Invalid status transition shows error
@@ -326,7 +400,7 @@ The system SHALL display complete event detail including categories. DRAFT event
 #### Scenario: User views event detail
 
 - **WHEN** authenticated user navigates to an event detail page
-- **THEN** all event information is displayed (name, date, location, organizer, website, coordinator, registration deadline, categories)
+- **THEN** all available event information is displayed (name, date, location when set, organizer, website, coordinator, registration deadline, categories)
 
 #### Scenario: Regular user cannot access DRAFT event detail
 
@@ -346,12 +420,12 @@ The system SHALL display complete event detail including categories. DRAFT event
 #### Scenario: ACTIVE event actions available to manager
 
 - **WHEN** user with EVENTS:MANAGE permission views an ACTIVE event
-- **THEN** available actions are: edit, cancel, finish, sync from ORIS (if ORIS-imported)
+- **THEN** available actions are: edit, cancel, sync from ORIS (if ORIS-imported)
 
 #### Scenario: FINISHED or CANCELLED event has no management actions
 
 - **WHEN** user views a FINISHED or CANCELLED event
-- **THEN** no edit, publish, cancel, finish, or sync actions are available
+- **THEN** no edit, publish, cancel, or sync actions are available
 
 #### Scenario: Event detail shows registration deadline
 

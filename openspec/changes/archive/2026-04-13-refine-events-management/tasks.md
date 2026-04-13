@@ -79,15 +79,15 @@
 - [x] 9.3 Update the `fetchEvents` caller so it passes a single-element array (or refactor `fetchEvents` to accept a single string and build the URL with one `region` param)
 - [x] 9.4 Update `ImportOrisEventModal.test.tsx` to assert that picking "ČR" clears the "Jihomoravská" selection
 - [x] 9.5 Verify the test passes
-- [ ] 9.6 Manual QA: open the dialog in the running app and confirm the three options behave as radio buttons (exactly one always selected) and the events list refreshes on each change
+- [x] 9.6 Manual QA: open the dialog in the running app and confirm the three options behave as radio buttons (exactly one always selected) and the events list refreshes on each change
 
 ## 10. Frontend — events list management actions
 
 - [x] 10.1 Locate the events list page component and its row-renderer
 - [x] 10.2 Add an "Akce" column (or extend the existing one) that renders buttons for each HAL-Forms affordance on the row — follow the pattern used by the members table
 - [x] 10.3 The column should render buttons for `updateEvent`, `cancelEvent`, `syncEventFromOris`, and the existing register/unregister affordances, in that order
-- [ ] 10.4 Verify via manual QA: as admin (`ZBM9000`), confirm DRAFT rows show Upravit + Publikovat + Zrušit; ACTIVE rows show Upravit + Zrušit + Synchronizovat (if ORIS); FINISHED/CANCELLED rows show no management actions
-- [ ] 10.5 As regular member (`ZBM9500`), confirm rows show only register/unregister where applicable and no management actions
+- [x] 10.4 Verify via manual QA: as admin (`ZBM9000`), confirm DRAFT rows show Upravit + Publikovat + Zrušit; ACTIVE rows show Upravit + Zrušit + Synchronizovat (if ORIS); FINISHED/CANCELLED rows show no management actions
+- [x] 10.5 As regular member (`ZBM9500`), confirm rows show only register/unregister where applicable and no management actions
 
 ## 11. Frontend — remove "Ukončit akci" button
 
@@ -100,16 +100,16 @@
 
 - [x] 12.1 Events list: verify the location cell renders empty (not `null`, not `undefined`) when an event has no location
 - [x] 12.2 Event detail page: verify the location row is hidden entirely (not shown with an empty value) when the event has no location
-- [ ] 12.3 Manually test: import an ORIS event known to have no location, open both list and detail, confirm rendering
+- [x] 12.3 Manually test: import an ORIS event known to have no location, open both list and detail, confirm rendering
 
 ## 13. Regression / QA walkthrough
 
-- [ ] 13.1 Run the backend test suite via the `test-runner` agent; all green
-- [ ] 13.2 Run the frontend test suite via the `test-runner` agent; all green
-- [ ] 13.3 Log in as admin, create a manual event without a location → success; detail page hides the location row
-- [ ] 13.4 Open the ORIS import dialog; confirm the region picker is a radio group; pick each of the three options and confirm the list reloads
-- [ ] 13.5 Import an ORIS event that has no location (or, if none is available in the current ORIS sandbox, mock one in the integration test fixture) → success
-- [ ] 13.6 Confirm the calendar shows the newly created event as a calendar item with a description that does not start with a stray `" - "`
-- [ ] 13.7 Confirm the event detail page no longer shows "Ukončit akci"
-- [ ] 13.8 Verify the scheduled completion path still works: create an ACTIVE event with an event date of yesterday (or tweak the test clock) and confirm the scheduler transitions it to FINISHED
-- [ ] 13.9 Verify the events list shows the expected Actions column with context-sensitive buttons for admin and only register/unregister for regular members
+- [x] 13.1 Run the backend test suite via the `test-runner` agent; all green
+- [x] 13.2 Run the frontend test suite via the `test-runner` agent; all green
+- [x] 13.3 Log in as admin, create a manual event without a location → success; detail page hides the location row
+- [x] 13.4 Open the ORIS import dialog; confirm the region picker is a radio group; pick each of the three options and confirm the list reloads
+- [x] 13.5 Import an ORIS event that has no location (or, if none is available in the current ORIS sandbox, mock one in the integration test fixture) → success
+- [x] 13.6 Confirm the calendar shows the newly created event as a calendar item with a description that does not start with a stray `" - "`
+- [x] 13.7 Confirm the event detail page no longer shows "Ukončit akci"
+- [x] 13.8 Verify the scheduled completion path still works: create an ACTIVE event with an event date of yesterday (or tweak the test clock) and confirm the scheduler transitions it to FINISHED
+- [x] 13.9 Verify the events list shows the expected Actions column with context-sensitive buttons for admin and only register/unregister for regular members

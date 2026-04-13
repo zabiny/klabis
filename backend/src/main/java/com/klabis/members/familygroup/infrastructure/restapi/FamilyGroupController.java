@@ -2,6 +2,7 @@ package com.klabis.members.familygroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.users.HasAuthority;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.users.Authority;
@@ -50,11 +51,13 @@ class FamilyGroupController {
     @PostMapping(consumes = "application/json")
     @Operation(summary = "Create a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> createFamilyGroup(
-            @Valid @RequestBody FamilyGroup.CreateFamilyGroup command,
+            @Valid @RequestBody CreateFamilyGroupRequest request,
             @CurrentUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
+        FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
+                request.name(), new MemberId(request.parent()));
         FamilyGroup group = familyGroupManagementService.createFamilyGroup(command);
 
         return ResponseEntity.created(
@@ -63,6 +66,7 @@ class FamilyGroupController {
     }
 
     @GetMapping
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "List all family groups (requires MEMBERS:MANAGE)")
     ResponseEntity<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> listFamilyGroups(
             @CurrentUser CurrentUserData currentUser) {

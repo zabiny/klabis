@@ -46,11 +46,11 @@
 
 ## 7. Manual QA walkthrough
 
-- [ ] 7.1 Start the app with `./runLocalEnvironment.sh`
-- [ ] 7.2 Log in as admin (`ZBM9000`). Open the detail of a member who is a trainee of a training group — confirm the "Tréninková skupina" button appears in the action bar. Click it and confirm navigation to the correct training group detail page
-- [ ] 7.3 As the same admin, open a member who is a parent or child of a family group — confirm the "Rodina" button appears and navigates to the correct family group detail page
-- [ ] 7.4 Open a member in both a training group and a family group — confirm both buttons appear side by side and each navigates correctly
-- [ ] 7.5 Open a member in neither group — confirm no group navigation button appears, and the rest of the action bar is unchanged
-- [ ] 7.6 Confirm there is no "Vložit / Vybrat" button on any member detail view (admin, self, other)
-- [ ] 7.7 Log out and log in as a regular member (`ZBM9500`). Open **your own profile** — if you belong to a training group or family group, confirm the corresponding button appears in the action bar and navigates correctly. This verifies the "both views" rule from the spec scenario
-- [ ] 7.8 Confirm the embedded "Tréninková skupina" and "Rodinná skupina" sections no longer appear anywhere below the two-column main content
+- [x] 7.1 Start the app with `./runLocalEnvironment.sh`
+- [x] 7.2 Log in as admin (`ZBM9000`). Open the detail of a member who is a trainee of a training group — confirm the "Tréninková skupina" button appears in the action bar. Click it and confirm navigation to the correct training group detail page
+- [x] 7.3 As the same admin, open a member who is a parent or child of a family group — confirm the "Rodina" button appears and navigates to the correct family group detail page
+- [x] 7.4 Open a member in both a training group and a family group — confirm both buttons appear side by side and each navigates correctly
+- [~] 7.5 Open a member in neither group — confirm no group navigation button appears, and the rest of the action bar is unchanged (partial: no zero-group bootstrap member exists; conditional rendering verified via Tomáš Král who has familyGroup but no trainingGroup — training button correctly absent)
+- [x] 7.6 Confirm there is no "Vložit / Vybrat" button on any member detail view (admin, self, other)
+- [x] 7.7 Log out and log in as a regular member (`ZBM9500`). Open **your own profile** — if you belong to a training group or family group, confirm the corresponding button appears in the action bar and navigates correctly. This verifies the "both views" rule from the spec scenario
+- [x] 7.8 Confirm the embedded "Tréninková skupina" and "Rodinná skupina" sections no longer appear anywhere below the two-column main content

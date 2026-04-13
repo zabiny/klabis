@@ -26,7 +26,7 @@
 ## 4. Database schema
 
 - [x] 4.1 In `backend/src/main/resources/db/migration/V001__initial_schema.sql`, change `description TEXT NOT NULL` to `description TEXT NULL` on the `calendar_items` table
-- [ ] 4.2 Restart the backend locally and confirm Flyway re-applies V001 (in-memory H2 reset); verify the schema has `description` nullable (H2 console or `SELECT` on `INFORMATION_SCHEMA.COLUMNS`)
+- [x] 4.2 Restart the backend locally and confirm Flyway re-applies V001 (in-memory H2 reset); verify the schema has `description` nullable (H2 console or `SELECT` on `INFORMATION_SCHEMA.COLUMNS`)
 
 ## 5. Repository round-trip verification (TDD)
 
@@ -44,16 +44,16 @@
 
 - [x] 7.1 Locate the calendar item detail page component (search `frontend/src` for usage of `CalendarItemDto.description`)
 - [x] 7.2 Ensure the component renders nothing (no label, no empty value) when `description` is `null` or missing
-- [ ] 7.3 Verify manually in the running app: create a calendar item without description via the form, open its detail, confirm no stray label or `null` text
+- [x] 7.3 Verify manually in the running app: create a calendar item without description via the form, open its detail, confirm no stray label or `null` text
 
 ## 8. Frontend QA walkthrough
 
-- [ ] 8.1 Log in as admin (`ZBM9000`), open the calendar page, click create
-- [ ] 8.2 Submit the create form with only name, start date, end date → calendar item appears in the calendar
-- [ ] 8.3 Open the detail of the new item → description is not shown
-- [ ] 8.4 Edit an existing item: clear its description, save → detail view no longer shows the description
-- [ ] 8.5 Attempt to submit a description > 1000 characters → inline validation error
-- [ ] 8.6 Confirm existing tests (`./gradlew test` via test-runner agent, `npm test` via test-runner agent) still pass
+- [x] 8.1 Log in as admin (`ZBM9000`), open the calendar page, click create
+- [x] 8.2 Submit the create form with only name, start date, end date → calendar item appears in the calendar
+- [x] 8.3 Open the detail of the new item → description is not shown
+- [x] 8.4 Edit an existing item: clear its description, save → detail view no longer shows the description
+- [x] 8.5 Attempt to submit a description > 1000 characters → inline validation error
+- [x] 8.6 Confirm existing tests (`./gradlew test` via test-runner agent, `npm test` via test-runner agent) still pass
 
 ## 9. Spec housekeeping
 
