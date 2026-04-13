@@ -214,6 +214,24 @@ class MembersGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 200 when non-owner group member views group detail")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturnGroupDetailsForNonOwnerMember() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Sprint Team"))
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.owners").isArray())
+                    .andExpect(jsonPath("$.members").isArray());
+        }
+
+        @Test
         @DisplayName("should return 404 when group not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {

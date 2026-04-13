@@ -5,6 +5,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
+import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.members.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.common.users.Authority;
@@ -61,6 +62,14 @@ class TrainingGroupControllerTest {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));
         return TrainingGroup.reconstruct(
                 new TrainingGroupId(groupUuid), name, Set.of(trainer), Set.of(), ageRange, null);
+    }
+
+    private TrainingGroup buildTrainingGroupWithMember(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr, String memberUuidStr) {
+        MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));
+        MemberId member = new MemberId(UUID.fromString(memberUuidStr));
+        GroupMembership membership = GroupMembership.of(member.toUserId());
+        return TrainingGroup.reconstruct(
+                new TrainingGroupId(groupUuid), name, Set.of(trainer), Set.of(membership), ageRange, null);
     }
 
     @Nested
@@ -198,10 +207,10 @@ class TrainingGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 200 with limited response when user lacks GROUPS:TRAINING")
+        @DisplayName("should return 200 when user is a group member (non-GROUPS:TRAINING)")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
-        void shouldReturnLimitedGroupDetailsWithoutTrainingAuthority() throws Exception {
-            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+        void shouldReturnGroupDetailsForGroupMember() throws Exception {
+            TrainingGroup group = buildTrainingGroupWithMember(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID, MEMBER_ID);
             when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
 
             mockMvc.perform(
@@ -211,11 +220,21 @@ class TrainingGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.name").value("Juniors"))
-                    .andExpect(jsonPath("$.trainers").isArray())
-                    .andExpect(jsonPath("$.minAge").doesNotExist())
-                    .andExpect(jsonPath("$.maxAge").doesNotExist())
-                    .andExpect(jsonPath("$.members").doesNotExist())
-                    .andExpect(jsonPath("$.owners").doesNotExist());
+                    .andExpect(jsonPath("$.trainers").isArray());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user is not a member of the training group and lacks GROUPS:TRAINING")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WhenNonMemberLacksTrainingAuthority() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test

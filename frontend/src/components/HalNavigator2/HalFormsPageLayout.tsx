@@ -89,6 +89,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         onClose={handleCloseForm}
                         onSubmitSuccess={closeForm}
                         customLayout={currentFormRequest.customLayout}
+                        fieldsFactory={currentFormRequest.fieldsFactory}
                         navigateOnSuccess={currentFormRequest.navigateOnSuccess}
                     />
                 </Modal>
@@ -107,6 +108,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                     onClose={handleCloseForm}
                     onSubmitSuccess={handleSubmitSuccess}
                     customLayout={customLayouts?.[currentFormRequest.templateName]}
+                    fieldsFactory={currentFormRequest.fieldsFactory}
                     navigateOnSuccess={currentFormRequest.navigateOnSuccess}
                 />
             </div>

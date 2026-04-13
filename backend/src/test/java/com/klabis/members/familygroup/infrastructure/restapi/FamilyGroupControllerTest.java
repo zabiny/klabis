@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.MemberAlreadyInGroupException;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -57,6 +58,13 @@ class FamilyGroupControllerTest {
     private FamilyGroup buildFamilyGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
         return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(), null);
+    }
+
+    private FamilyGroup buildFamilyGroupWithChild(UUID groupUuid, String name, String ownerUuidStr, String childUuidStr) {
+        MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
+        MemberId child = new MemberId(UUID.fromString(childUuidStr));
+        GroupMembership childMembership = GroupMembership.of(child.toUserId());
+        return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(childMembership), null);
     }
 
     @Nested
@@ -210,6 +218,8 @@ class FamilyGroupControllerTest {
     @DisplayName("GET /api/family-groups/{id}")
     class GetFamilyGroupTests {
 
+        private static final String PARENT_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+
         @Test
         @DisplayName("should return 200 with group details including parents field when user has MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
@@ -229,9 +239,28 @@ class FamilyGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
-        @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn403WhenMissingMembersManageAuthority() throws Exception {
+        @DisplayName("should return 200 when user is a child member of the family group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnGroupDetailsForFamilyGroupMember() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithChild(GROUP_UUID, "Novákovi", PARENT_ID, MEMBER_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Novákovi"))
+                    .andExpect(jsonPath("$.id").exists());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user is not a member of the family group and lacks MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WhenNonMemberLacksMembersManageAuthority() throws Exception {
+            FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", PARENT_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             get("/api/family-groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -471,14 +500,54 @@ class FamilyGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should omit addParent and addChild affordances when user lacks MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldOmitAffordancesWhenNotAuthorized() throws Exception {
+        @DisplayName("should omit addParent and addChild affordances when user is group member but lacks MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldOmitAffordancesWhenMemberButNotAdmin() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithChild(GROUP_UUID, "Novákovi", "dddddddd-dddd-dddd-dddd-dddddddddddd", MEMBER_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             get("/api/family-groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent").doesNotExist())
+                    .andExpect(jsonPath("$._templates.addFamilyGroupChild").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("Family groups navigation HAL link visibility")
+    class FamilyGroupsNavigationLinkTests {
+
+        @Test
+        @DisplayName("should include family-groups collection link in detail response for MEMBERS:MANAGE user")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeCollectionLinkForAdmin() throws Exception {
+            FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.collection").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include family-groups collection link in detail response for non-admin member")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldNotIncludeCollectionLinkForNonAdmin() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithChild(GROUP_UUID, "Novákovi", "dddddddd-dddd-dddd-dddd-dddddddddddd", MEMBER_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.collection").doesNotExist());
         }
     }
 }

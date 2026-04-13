@@ -28,6 +28,7 @@ export const labels = {
         removeItem: 'Odebrat',
         accept: 'Přijmout',
         reject: 'Odmítnout',
+        selectFromTemplates: 'Vybrat ze šablon',
     },
 
     templates: {
@@ -74,6 +75,7 @@ export const labels = {
     },
 
     dialogTitles: {
+        selectCategoryPreset: 'Vybrat šablonu kategorií',
         publishEvent: 'Publikování akce',
         cancelEvent: 'Zrušení akce',
         registerForEvent: 'Přihlásit se na akci',
@@ -292,6 +294,7 @@ export const labels = {
         'MEMBERS:PERMISSIONS': {label: 'Správa oprávnění', description: 'Přidělování a odebírání oprávnění uživatelům'},
         'EVENTS:MANAGE': {label: 'Správa akcí', description: 'Vytváření a úprava akcí'},
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
+        'GROUPS:TRAINING': {label: 'Správa tréninkových skupin', description: 'Umožňuje vytvářet a spravovat tréninkové skupiny a jejich členy.'},
     },
 
     links: {

@@ -93,6 +93,10 @@ public class TrainingGroup extends KlabisAggregateRoot<TrainingGroup, TrainingGr
         return userGroup.hasMember(memberId.toUserId());
     }
 
+    public boolean hasTrainer(MemberId memberId) {
+        return userGroup.isOwner(memberId.toUserId());
+    }
+
     public void rename(String newName) {
         userGroup.rename(newName);
     }

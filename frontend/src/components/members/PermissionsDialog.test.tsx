@@ -106,6 +106,35 @@ describe('PermissionsDialog', () => {
             expect(membersPermissionsToggle).toHaveAttribute('aria-checked', 'false');
         });
 
+        it('renders a toggle for GROUPS:TRAINING permission', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa tréninkových skupin/i});
+            expect(toggle).toBeInTheDocument();
+        });
+
+        it('reflects current state for GROUPS:TRAINING when assigned', () => {
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: {
+                    authorities: ['GROUPS:TRAINING'],
+                    _links: {self: {href: '/api/users/1/permissions'}},
+                },
+                isLoading: false,
+            });
+
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa tréninkových skupin/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'true');
+        });
+
+        it('reflects current state for GROUPS:TRAINING when not assigned', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa tréninkových skupin/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'false');
+        });
+
         it('toggles permission on click', async () => {
             const user = userEvent.setup();
             renderDialog();

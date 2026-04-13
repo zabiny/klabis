@@ -91,7 +91,6 @@ class TrainingGroupController {
     }
 
     @GetMapping("/{id}")
-    @HasAuthority(Authority.MEMBERS_READ)
     @Operation(summary = "Get training group details")
     ResponseEntity<EntityModel<TrainingGroupResponse>> getTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
@@ -100,8 +99,16 @@ class TrainingGroupController {
         TrainingGroupId groupId = new TrainingGroupId(id);
         TrainingGroup group = trainingGroupManagementService.getTrainingGroup(groupId);
 
+        boolean hasTrainingAuthority = currentUser.hasAuthority(Authority.GROUPS_TRAINING);
+        boolean isMember = currentUser.isMemberOf(group::hasMember);
+        boolean isTrainer = currentUser.isMemberOf(group::hasTrainer);
+
+        if (!hasTrainingAuthority && !isMember && !isTrainer) {
+            throw new InsufficientAuthorityException("GROUPS:TRAINING or group membership required");
+        }
+
         EntityModel<TrainingGroupResponse> model;
-        if (currentUser.hasAuthority(Authority.GROUPS_TRAINING)) {
+        if (hasTrainingAuthority) {
             model = buildFullGroupModel(group, id);
         } else {
             model = buildLimitedGroupModel(group, id);

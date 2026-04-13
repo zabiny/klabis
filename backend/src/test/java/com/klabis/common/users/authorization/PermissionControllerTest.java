@@ -28,6 +28,8 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -266,6 +268,49 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"authorities\":[\"MEMBERS:READ\",\"EVENTS:READ\"]}"))
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should accept GROUPS:TRAINING and return 204 when enabled")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldAcceptGroupsTrainingWhenEnabled() throws Exception {
+            // Given
+            PermissionController.UpdatePermissionsRequest request =
+                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ));
+
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ)));
+
+            // When & Then
+            mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should remove GROUPS:TRAINING when disabled (not in request authorities)")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldRemoveGroupsTrainingWhenDisabled() throws Exception {
+            // Given
+            PermissionController.UpdatePermissionsRequest request =
+                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ));
+
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
+
+            // When & Then
+            mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNoContent());
+
+            verify(permissionService).updateUserPermissions(
+                    any(UserId.class),
+                    argThat(authorities -> !authorities.contains(Authority.GROUPS_TRAINING))
+            );
         }
     }
 }

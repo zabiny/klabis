@@ -1,6 +1,6 @@
 import {createContext, type ReactElement, type ReactNode, useContext, useEffect, useState} from 'react';
 import {useLocation, useNavigate, useSearchParams as useSearchParamsRouter} from 'react-router-dom';
-import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
+import type {HalFormFieldFactory, RenderFormCallback} from '../components/HalNavigator2/halforms';
 
 /**
  * Represents a request to display a form
@@ -14,6 +14,9 @@ export interface HalFormRequest {
 
     /** Optional custom form layout */
     customLayout?: ReactNode | RenderFormCallback;
+
+    /** Optional custom field factory for overriding individual field rendering */
+    fieldsFactory?: HalFormFieldFactory;
 
     /** Optional title override for the dialog header */
     dialogTitle?: string;

@@ -15,4 +15,8 @@ public record CurrentUserData(@NonNull String userName, @NonNull UserId userId, 
     public boolean hasAuthority(Authority authority) {
         return authorities.contains(authority);
     }
+
+    public boolean isMemberOf(java.util.function.Predicate<MemberId> membershipCheck) {
+        return isMember() && membershipCheck.test(memberId());
+    }
 }

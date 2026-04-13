@@ -83,4 +83,17 @@ describe('useRootNavigation — section assignment', () => {
         expect(items.every(i => i.section === 'admin')).toBe(true);
         expect(items.some(i => i.section === 'main')).toBe(false);
     });
+
+    it('does NOT include family-groups navigation item when HAL link is absent', async () => {
+        // Backend omits the family-groups link for users without MEMBERS:MANAGE permission.
+        // Frontend hook should simply not include the item — no family-groups nav item appears.
+        mockFetchWithResponse(buildHalResponse(['events', 'members', 'groups']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data!;
+        expect(items.find(i => i.rel === 'family-groups')).toBeUndefined();
+    });
 });

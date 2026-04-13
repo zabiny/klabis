@@ -12,7 +12,7 @@ import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
-import type {RenderFormCallback} from './halforms';
+import type {HalFormFieldFactory, RenderFormCallback} from './halforms';
 import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 
 /**
@@ -30,6 +30,9 @@ export interface HalFormButtonProps {
 
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
+
+    /** Optional custom field factory for overriding individual field rendering */
+    fieldsFactory?: HalFormFieldFactory;
 
     /** Optional additional CSS classes passed to the button */
     className?: string;
@@ -67,7 +70,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -85,6 +88,7 @@ export function HalFormButton({name, modal = true, label, customLayout, classNam
             templateName: name,
             modal: modal,
             customLayout,
+            fieldsFactory,
             dialogTitle: resolvedDialogTitle,
             navigateOnSuccess,
         });

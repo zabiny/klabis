@@ -11,6 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
+import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
 import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
@@ -120,7 +121,7 @@ export const EventsPage = (): ReactElement => {
                             {labels.templates.importEvent}
                         </Button>
                     )}
-                    <HalFormButton name="createEvent" modal={true} label={labels.templates.createEvent}/>
+                    <HalFormButton name="createEvent" modal={true} label={labels.templates.createEvent} fieldsFactory={eventFormFieldsFactory}/>
                 </div>
             </div>
             <HalEmbeddedTable<EventListData>
@@ -180,6 +181,7 @@ export const EventsPage = (): ReactElement => {
                     resourceData={actionModal.event as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setActionModal(null)}
+                    fieldsFactory={actionModal.templateName === 'updateEvent' ? eventFormFieldsFactory : undefined}
                 />
             </Modal>
         )}

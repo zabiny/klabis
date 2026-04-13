@@ -87,16 +87,20 @@ class FamilyGroupController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get family group details (requires MEMBERS:MANAGE)")
+    @Operation(summary = "Get family group details")
     ResponseEntity<EntityModel<FamilyGroupResponse>> getFamilyGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @CurrentUser CurrentUserData currentUser) {
 
-        requireMembersManageAuthority(currentUser);
-
         FamilyGroupId groupId = new FamilyGroupId(id);
         FamilyGroup group = familyGroupManagementService.getFamilyGroup(groupId);
+
         boolean hasMembersManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
+        boolean isMember = currentUser.isMemberOf(group::hasMember);
+
+        if (!hasMembersManage && !isMember) {
+            throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
+        }
 
         FamilyGroupResponse response = toFamilyGroupResponse(group, id, hasMembersManage);
         EntityModel<FamilyGroupResponse> model = EntityModel.of(response);
