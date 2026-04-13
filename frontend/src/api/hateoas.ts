@@ -21,11 +21,10 @@ function toFormValidationError(error: unknown): Error {
         return error instanceof Error ? error : new Error(String(error));
     }
 
-    // Check for 400 + application/problem+json
-    if (
-        error.responseStatus === 400 &&
-        error.responseHeaders.get('Content-Type') === 'application/problem+json'
-    ) {
+    const contentType = error.responseHeaders.get('Content-Type') ?? '';
+    const isProblemJson = contentType.includes('application/problem+json');
+
+    if (error.responseStatus === 400 && isProblemJson) {
         try {
             const problemJson = JSON.parse(error.responseBody || '{}');
             return {
@@ -36,6 +35,18 @@ function toFormValidationError(error: unknown): Error {
         } catch {
             // If parsing fails, return original error
             return error;
+        }
+    }
+
+    // For other error statuses with problem+json, surface the detail message when available
+    if (isProblemJson && error.responseBody) {
+        try {
+            const problemJson = JSON.parse(error.responseBody);
+            if (problemJson.detail) {
+                return new Error(problemJson.detail);
+            }
+        } catch {
+            // If parsing fails, return original error
         }
     }
 

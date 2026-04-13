@@ -45,6 +45,16 @@
 - **Očekáváno:** Tlačítko mazání se zobrazí jen uživatelům s MEMBERS:MANAGE (backend by neměl emitovat `deleteFamilyGroup` affordanci pro non-admin).
 - **Komponenta:** Backend — FamilyGroupController, HAL-Forms affordance pro `deleteFamilyGroup`
 
+### ISSUE-2: Picker "Pozvat člena" ve free skupině zobrazuje stávající členy
+- **Popis:** Dialog "Pozvat člena" zobrazuje Jana Nováka (ZBM9000), který je již členem skupiny.
+- **Očekáváno:** Picker by neměl zobrazovat členy, kteří jsou již v skupině.
+- **Komponenta:** Backend — FreeGroupController / UserGroupController, candidates endpoint
+
+### ISSUE-3: Chybová zpráva při duplicate trainee 409 je generická
+- **Popis:** Po odmítnutí přidání cvičence do druhé skupiny (HTTP 409) se zobrazí jen "HTTP 409 ()" bez srozumitelné zprávy.
+- **Očekáváno:** Zpráva "member is already a trainee of another training group" dle spec.
+- **Komponenta:** Backend — chybová zpráva nebo Frontend — zobrazení chybové zprávy
+
 ---
 
 ## Results
@@ -74,3 +84,49 @@
 | FG-3 | SKIP | přerušeno |
 | MP-1 | SKIP | přerušeno |
 | MP-2 | SKIP | přerušeno |
+
+### Iteration 2
+| Scénář | Výsledek | Poznámka |
+|--------|----------|----------|
+| FC-1 | PASS | Formulář jen Název + parent (scalar) |
+| FC-2 | PASS | Po vytvoření přesměrování na detail |
+| FC-3 | PASS | Tvůrce v sekci RODIČE, DĚTI prázdné |
+| FCC-1 | PASS | Dialog s výběrem Rodič/Dítě |
+| FCC-2 | PASS | Dialog "Přidat dítě" s comboboxem |
+| FCC-3 | PASS | Po výběru "Dítě" formulář správně zobrazen |
+| FCC-4 | PASS | Dítě přidáno, zobrazeno v sekci DĚTI s datem |
+| FCC-5 | PASS | Tlačítko "Odebrat" u dítěte (admin) |
+| FCC-6 | PASS | Po odebrání dítě zmizí, sekce zobrazí "Skupina nemá žádné děti." |
+| FCC-7 | PASS | Picker pro dítě neobsahuje rodiče skupiny |
+| FCC-8 | PASS | Dialog "Přidat rodiče" s comboboxem |
+| FCC-9 | PASS | Picker pro rodiče neobsahuje stávající rodiče |
+| FA-1 | PASS | ZBM9500 vidí detail skupiny, kde je dítětem |
+| FA-2 | PASS | **ISSUE-1 opraveno** — Eva nevidí admin tlačítka |
+| TG-1 | PASS | Detail skupiny zobrazuje sekce TRENÉŘI a ČLENOVÉ |
+| TG-2 | PASS | Picker pro přidání cvičence skrývá stávající cvičence skupiny |
+| TG-3 | PARTIAL | Backend správně odmítne 409; chybová zpráva generická — ISSUE-3 |
+| FG-1 | PASS | Skupina vytvořena, tvůrce je správce i člen |
+| FG-2 | PASS | Picker "Přidat správce" zobrazuje jen členy skupiny (ne čekající pozvánky) |
+| FG-3 | PASS | Picker "Přidat správce" vylučuje ne-členy skupiny |
+| MP-1 | PASS | Picker "Přidat dítě" nevypisuje stávající rodiče |
+| MP-2 | PASS | Picker "Přidat cvičence" nevypisuje stávající cvičence |
+| MP-FAIL | FAIL | **ISSUE-2**: Picker "Pozvat člena" (free skupiny) zobrazuje stávající členy |
+
+### Iteration 3
+| Scénář | Výsledek | Poznámka |
+|--------|----------|----------|
+| FC-1 | PASS | Beze změny |
+| FC-2 | PASS | Beze změny |
+| FC-3 | PASS | Beze změny |
+| FCC-1..9 | PASS | Beze změny |
+| FA-1 | PASS | Beze změny |
+| FA-2 | PASS | Beze změny |
+| TG-1 | PASS | Beze změny |
+| TG-2 | PASS | Beze změny |
+| TG-3 | PASS | **ISSUE-3 opraveno** — zpráva "member is already a trainee of another training group" zobrazena |
+| FG-1 | PASS | Beze změny |
+| FG-2 | PASS | Beze změny |
+| FG-3 | PASS | Beze změny |
+| MP-1 | PASS | Beze změny |
+| MP-2 | PASS | Beze změny |
+| MP-FAIL | PASS | **ISSUE-2 opraveno** — Picker "Pozvat člena" nyní vylučuje stávající členy skupiny |

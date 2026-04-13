@@ -292,6 +292,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         pathname={route.pathname}
                         onClose={() => setInviteMemberModal(false)}
                         successMessage={labels.ui.savedSuccessfully}
+                        excludeMemberIds={currentMemberIds}
                     />
                 </Modal>
             )}

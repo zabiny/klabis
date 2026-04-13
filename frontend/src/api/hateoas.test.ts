@@ -104,7 +104,7 @@ describe('toFormValidationError', () => {
             expect(isFormValidationError(error)).toBeFalsy();
         });
 
-        it('should return original FetchError for non-400 status', () => {
+        it('should return original FetchError for non-400/non-409 status', () => {
             const headers = new Headers({'Content-Type': 'application/problem+json'});
             const fetchError = new FetchError(
                 'HTTP 500: Server Error',
@@ -117,6 +117,28 @@ describe('toFormValidationError', () => {
             const error = toFormValidationError(fetchError);
 
             expect(error).toEqual(fetchError);
+            expect(isFormValidationError(error)).toBeFalsy();
+        });
+
+        it('should extract detail message from 409 + problem+json conflict response', () => {
+            const headers = new Headers({'Content-Type': 'application/problem+json'});
+            const responseBody = JSON.stringify({
+                title: 'Member Already In Training Group',
+                detail: 'Member abc123 is already a trainee of training group xyz456',
+                status: 409,
+            });
+
+            const fetchError = new FetchError(
+                'HTTP 409 ()',
+                409,
+                '',
+                headers,
+                responseBody
+            );
+
+            const error = toFormValidationError(fetchError);
+
+            expect(error.message).toBe('Member abc123 is already a trainee of training group xyz456');
             expect(isFormValidationError(error)).toBeFalsy();
         });
 
