@@ -359,8 +359,10 @@ public class EventController {
         klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null))
                 .ifPresent(link -> entityModel.add(link.withRel("collection")));
 
-        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
-                .ifPresent(link -> entityModel.add(link.withRel("registrations")));
+        if (event.getStatus() != EventStatus.DRAFT) {
+            klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
+                    .ifPresent(link -> entityModel.add(link.withRel("registrations")));
+        }
 
         if (event.getEventCoordinatorId() != null) {
             klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))

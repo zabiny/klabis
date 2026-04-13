@@ -504,9 +504,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should not include POST affordance on registrations link for DRAFT event")
+        @DisplayName("should not include registrations link for DRAFT event")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldNotIncludeRegisterAffordanceForDraftEvent() throws Exception {
+        void shouldNotIncludeRegistrationsLinkForDraftEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event draftEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -519,7 +519,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._links.registrations").doesNotExist())
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
