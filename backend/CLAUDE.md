@@ -54,10 +54,6 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 
-**Jackson 3 Annotation Packages**
-- `@JsonCreator`, `@JsonValue`, `@JsonInclude` stay in `com.fasterxml.jackson.annotation` — NOT moved to `tools.jackson`
-- Only core (`tools.jackson.core`) and databind (`tools.jackson.databind`) packages changed
-- `@JsonComponent` → `@JacksonComponent`, `@JsonMixin` → `@JacksonMixin` (Spring Boot annotations, not Jackson)
 
 **Gradle Optimization**
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)
@@ -105,9 +101,9 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 
 - **`KlabisAuthorizationServerCustomizer`** (`members.infrastructure.authorizationserver`) — Spring AS customizer that wires Klabis-specific behaviour into the authorization server chain (registered clients, token customizers).
 - **JWT custom claims** — access tokens carry `registrationNumber`, `memberIdUuid`, and the user's `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
-- **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim).
+- **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
 - **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
-- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. `OwnershipResolver` is **lazy-resolved** from `ApplicationContext` (eager injection causes `No ServletContext set` startup error). See `backend-patterns` skill.
+- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
 

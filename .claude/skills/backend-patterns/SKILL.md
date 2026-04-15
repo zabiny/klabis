@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.2.1
+version: 0.3.0
 ---
 
 # Klabis Backend Patterns
@@ -82,9 +82,15 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 }
 ```
 
+### Audit Metadata
+
+All aggregates inherit `AuditMetadata` from `KlabisAggregateRoot` — populated by the persistence layer after save via `updateAuditMetadata()`. The aggregate itself never sets it. Fields: `createdAt`, `createdBy`, `lastModifiedAt`, `lastModifiedBy`, `version` (optimistic locking).
+
+In `reconstruct()`, pass the stored `AuditMetadata` and call `group.updateAuditMetadata(auditMetadata)`. For new aggregates (factory method), leave it null — the Memento sets it after the first save.
+
 Key rules:
-- No Spring annotations in domain classes
-- Commands are nested records in the aggregate. Every command as `.from(Aggregate domain)` factory method. 
+- No Spring annotations in domain classes (exception: `org.springframework.util.Assert` is allowed in command records for validation)
+- Commands are nested records in the aggregate. Patch commands typically include a `.from(Aggregate)` factory method to populate from current state.
 - Separate business factory method (`register()`, `create()`, etc) methods (with validations) and `reconstruct()` (bypass validation, used for loading from DB) factory methods
 - Domain events registered via `registerEvent()` inherited from `KlabisAggregateRoot`
 
@@ -158,8 +164,19 @@ class RegistrationService implements RegistrationPort {
 Key rules:
 - `@Transactional` on implementation methods
 - Cross-aggregate coordination in the same transaction inside service
-- Convert domain exceptions (`BusinessRuleViolationException`) → application exceptions (`InvalidUpdateException`)
 - Constructor injection only — no field injection
+
+### Exception Hierarchy
+
+Domain and application exceptions extend `BusinessRuleViolationException` (abstract, unchecked):
+
+```java
+// Domain exception — thrown inside aggregate or domain service
+public class MemberNotFoundException extends BusinessRuleViolationException { ... }
+public class DuplicateRegistrationException extends BusinessRuleViolationException { ... }
+```
+
+`MvcExceptionHandler` catches `BusinessRuleViolationException` globally → HTTP 400. Individual subclasses can be caught separately for different HTTP status codes (e.g., 404, 409). No manual conversion in service layer — exceptions propagate naturally.
 
 ## REST API Layer
 
@@ -263,6 +280,19 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 ```
 
 `RepresentationModelProcessor` follows the same HATEOAS rules — no affordances to POST endpoints.
+
+### Current User Parameter (`@CurrentUser`)
+
+`CurrentUserArgumentResolver` resolves `@CurrentUser Member` parameters in controller methods from the JWT `memberIdUuid` claim (via `MemberIdToUuidConverter`):
+
+```java
+@GetMapping("/me")
+ResponseEntity<EntityModel<MemberDetailsResponse>> getMyProfile(@CurrentUser Member member) {
+    // member is resolved from the authenticated JWT token
+}
+```
+
+Use `@CurrentUser Member` when the controller needs the currently authenticated member. Falls back gracefully when no member is associated with the user (e.g., admin-only users).
 
 ### DTO → Command Mapping
 
@@ -457,6 +487,7 @@ In collections (`GET /members`), each item is evaluated independently — owner 
 
 ### Key rules
 
+- `OwnershipResolver` is lazy-resolved from `ApplicationContext` — eager injection causes `No ServletContext set` startup error
 - `@JsonInclude(NON_NULL)` on the record — denied fields (handled by `NullDeniedHandler`) disappear from JSON
 - Class-level `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` sets default deny behavior
 - Per-field override with `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` for masked fields
@@ -513,8 +544,18 @@ If an unauthorized user sends a provided `PatchField` for a protected field, `Fi
 
 ## Coding Conventions
 
+### Jackson 3 Annotation Changes (Spring Boot 4)
+
+Spring Boot 4 uses Jackson 3, which moved some packages — but Spring Boot wrapper annotations changed names too:
+- `@JsonComponent` → `@JacksonComponent` (Spring Boot annotation)
+- `@JsonMixin` → `@JacksonMixin` (Spring Boot annotation)
+- Core/databind packages: `tools.jackson.core`, `tools.jackson.databind`
+- **Exception**: `@JsonCreator`, `@JsonValue`, `@JsonInclude` stay in `com.fasterxml.jackson.annotation` — NOT moved
+
+### General
+
 - Use package-protected visibility as default for new classes — make public only when accessed from another package
-- Use `org.springframework.util.Assert` for parameter validation inside methods (not raw `if` throws)
+- Use `org.springframework.util.Assert` for parameter validation inside methods and command record compact constructors (not raw `if` throws)
 - Use `@NonNull` (from `org.jspecify`) on required service parameters; handle defaults in controller before delegating
 - Refactor methods with more than 4 parameters — introduce parameter objects or command records
 - Use `@MvcComponent` annotation on components in the presentation (restapi) layer

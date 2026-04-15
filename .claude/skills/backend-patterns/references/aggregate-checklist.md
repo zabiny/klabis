@@ -20,7 +20,7 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
 ## 2. Application Layer
 
 - [ ] Create service interface with `@PrimaryPort`
-- [ ] Create nested command redord(s) in interface if service operation can't use command from AggregateRoot (usually when service needs to update multiple aggregate roots) 
+- [ ] Create nested command record(s) in interface if service operation coordinates across multiple aggregates or crosses module boundary (e.g., creating both User and Member atomically)
 - [ ] Create `@Service` implementation
   - [ ] Constructor injection only
   - [ ] `@Transactional` on implementation
