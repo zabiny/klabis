@@ -100,11 +100,6 @@ KLABIS_SMTP_PASSWORD=your-smtp-password
 KLABIS_EMAIL_FROM=noreply@klabis.cz
 ```
 
-**For complete configuration reference, see:**
-
-- [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md#email-configuration) - SMTP configuration
-- [docs/SPRING_SECURITY_ARCHITECTURE.md](docs/SPRING_SECURITY_ARCHITECTURE.md) - OAuth2 and security
-
 ### Running the Application
 
 **Development Mode (H2 in-memory database):**
@@ -177,19 +172,32 @@ The API uses **OAuth2** with JWT tokens.
 
 ### Quick Authentication Example
 
-```bash
-# Get access token
-TOKEN=$(curl -s -k -X POST https://localhost:8443/oauth2/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "klabis-web:test-secret-123" \
-  -d "grant_type=client_credentials&scope=MEMBERS" \
-  | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+The authorization server only advertises the `authorization_code` flow with PKCE — tokens
+cannot be fetched non-interactively via curl. Obtain an access token from the browser
+(frontend at `http://localhost:3000` → DevTools → Application → session storage →
+`oidc.user:...`) and export it:
 
-# Use token
+```bash
+export TOKEN=eyJhbGciOi...
+
 curl -k -X POST https://localhost:8443/api/members \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"firstName":"Jan","lastName":"Novak","gender":"MALE","nationality":"CZ","dateOfBirth":"1990-01-15","address":{"street":"Test 123","city":"Praha","zipCode":"11000","country":"CZ"},"contact":{"email":"jan@test.cz","phone":"+420123456789"}}'
+  -d '{
+    "firstName": "Jan",
+    "lastName": "Novak",
+    "gender": "MALE",
+    "nationality": "CZ",
+    "dateOfBirth": "1990-01-15",
+    "email": "jan@test.cz",
+    "phone": "+420123456789",
+    "address": {
+      "street": "Test 123",
+      "city": "Praha",
+      "postalCode": "11000",
+      "country": "CZ"
+    }
+  }'
 ```
 
 ### Main Endpoints
@@ -204,33 +212,15 @@ curl -k -X POST https://localhost:8443/api/members \
 | `/api/auth/password-setup/validate` | GET    | Public   | Validate token           |
 | `/api/auth/password-setup/complete` | POST   | Public   | Complete password setup  |
 
-**For complete API documentation, see:**
-
-- [docs/API.md](docs/API.md) - Complete API reference with examples
-- [docs/HATEOAS-GUIDE.md](docs/HATEOAS-GUIDE.md) - Understanding HAL+FORMS hypermedia
+**For complete API specification, see** [../docs/openapi/klabis-full.json](../docs/openapi/klabis-full.json).
 
 ## Documentation
 
-### Architecture & Design
-
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - High-level system architecture overview
-- **[docs/DOMAIN-MODEL.md](docs/DOMAIN-MODEL.md)** - Bounded contexts, aggregates, value objects
-- **[docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)** - Spring Modulith and outbox pattern
-- **[docs/SPRING_SECURITY_ARCHITECTURE.md](docs/SPRING_SECURITY_ARCHITECTURE.md)** - Security, OAuth2, JWT
-
-### Integration & Implementation
-
-- **[docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md)** - Email, events, external integrations
-- **[docs/HATEOAS-GUIDE.md](docs/HATEOAS-GUIDE.md)** - HATEOAS implementation with HAL+FORMS
-
-### API & Operations
-
-- **[docs/API.md](docs/API.md)** - Complete API reference with examples
-- **[docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)** - Monitoring and troubleshooting
-
-### Documentation Index
-
-- **[docs/README.md](docs/README.md)** - Complete documentation index with role-based guides
+- **[docs/README.md](docs/README.md)** - Documentation index + curated external references
+- **[docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)** - Spring Modulith event flows and outbox pattern
+- **[../docs/openapi/klabis-full.json](../docs/openapi/klabis-full.json)** - OpenAPI specification
+- **[CLAUDE.md](CLAUDE.md)** - Build, test, run, security extension points, profiles
+- Day-to-day backend conventions (aggregates, controllers, HATEOAS, JDBC mementos, field-level auth, testing) live in the `backend-patterns` skill, not in this repo
 
 ## Troubleshooting
 
@@ -274,7 +264,6 @@ echo $KLABIS_OAUTH2_CLIENT_SECRET
 - Check SMTP configuration in `.env`
 - Verify SMTP server is accessible
 - Email failures don't break business operations (graceful degradation)
-- See [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md#email-service) for SMTP troubleshooting
 
 **Local email testing with MailHog:**
 
@@ -291,14 +280,10 @@ Start the backend with the `email` profile — sent emails are captured and visi
 ```bash
 # Check event publication status
 curl -k https://localhost:8443/actuator/modulith
-
-# Check for incomplete events in database
-# See: docs/OPERATIONS_RUNBOOK.md
 ```
 
 **For more troubleshooting:**
 
-- [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) - Event monitoring and troubleshooting
 - [CLAUDE.md](CLAUDE.md) - Development guidelines and common pitfalls
 
 ## Development Guidelines

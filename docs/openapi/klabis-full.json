@@ -2166,7 +2166,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateFamilyGroup"
+                "$ref": "#/components/schemas/CreateFamilyGroupRequest"
               }
             }
           },
@@ -5621,7 +5621,7 @@
         "tags": [
           "FamilyGroups"
         ],
-        "summary": "Get family group details (requires MEMBERS:MANAGE)",
+        "summary": "Get family group details",
         "operationId": "getFamilyGroup",
         "parameters": [
           {
@@ -7566,25 +7566,22 @@
           "memberId"
         ]
       },
-      "CreateFamilyGroup": {
+      "CreateFamilyGroupRequest": {
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "parent": {
-            "$ref": "#/components/schemas/MemberId"
-          }
-        }
-      },
-      "MemberId": {
-        "type": "object",
-        "properties": {
-          "value": {
             "type": "string",
             "format": "uuid"
           }
-        }
+        },
+        "required": [
+          "name",
+          "parent"
+        ]
       },
       "CreateEvent": {
         "type": "object",
@@ -7631,6 +7628,15 @@
           "name",
           "organizer"
         ]
+      },
+      "MemberId": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
       },
       "RegisterCommand": {
         "type": "object",

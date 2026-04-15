@@ -66,38 +66,15 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 ## Documentation Index
 
-### Architecture & Design
-
-- **High-level architecture** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Domain model** → [docs/DOMAIN-MODEL.md](docs/DOMAIN-MODEL.md)
-- **Package structure** → [docs/PACKAGE-STRUCTURE.md](docs/PACKAGE-STRUCTURE.md)
-- **Event-driven architecture** → [docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)
-
-### API & Integration
-
-- **API reference** → [docs/API.md](docs/API.md)
-- **HATEOAS guide** → [docs/HATEOAS-GUIDE.md](docs/HATEOAS-GUIDE.md)
-- **Integration guide** → [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md)
-- **Examples** → [docs/examples/README.md](docs/examples/README.md)
-
-### Security
-
-- **OAuth2 & JWT** → [docs/SPRING_SECURITY_ARCHITECTURE.md](docs/SPRING_SECURITY_ARCHITECTURE.md)
-
-### Operations
-
-- **Monitoring & troubleshooting** → [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-
-### User Documentation
-
+- **Backend conventions** (aggregates, controllers, HATEOAS affordances, JDBC mementos, field-level authorization, testing) → load **`backend-patterns`** skill — single source of truth
+- **Event flows & module dependencies** → [docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)
+- **External resources** (Spring Boot/Modulith/HATEOAS/Security reference, RFCs, DDD/outbox patterns) → [docs/README.md](docs/README.md)
 - **Getting started** → [README.md](README.md)
-- **Documentation index** → [docs/README.md](docs/README.md)
 
 ## Development Guidelines
 
 ### Spring Security 7 Notes
 - Authorization Server uses `http.oauth2AuthorizationServer(...)` DSL (not `new OAuth2AuthorizationServerConfigurer()`)
-- `DaoAuthenticationProvider` auto-adds `FACTOR_PASSWORD` authority (MFA framework) — filtered out in JWT token customizer via `Authority.isKnownAuthority()`
 - Auth server chain (`securityMatcher(getEndpointsMatcher())`) cannot include `/login` — login requires separate filter chain
 
 ### Test-Driven Development
@@ -116,11 +93,23 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 ### Common Module Changes
 
-When making code changes in the `common` module, update the appropriate project documentation (e.g., `docs/` files, skills, or CLAUDE.md) to reflect the new or changed functionality.
+The `common` package is a shared kernel used by every module (security primitives, HATEOAS helpers, value-object converters, validation, GDPR encryption, rate limiting). When you change anything in `common`, update the `backend-patterns` skill (and this file if behaviour changes) so future sessions stay accurate.
 
 ### Domain Type Safety Pattern
 
 See `backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
+
+## Security Extension Points
+
+These are the Klabis-specific hooks on top of Spring Security / Spring Authorization Server. The mainline filter-chain / JWT theory lives in the Spring docs (see [docs/README.md](docs/README.md)).
+
+- **`KlabisAuthorizationServerCustomizer`** (`members.infrastructure.authorizationserver`) — Spring AS customizer that wires Klabis-specific behaviour into the authorization server chain (registered clients, token customizers).
+- **JWT custom claims** — access tokens carry `registrationNumber`, `memberIdUuid`, and the user's `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
+- **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim).
+- **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
+- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. `OwnershipResolver` is **lazy-resolved** from `ApplicationContext` (eager injection causes `No ServletContext set` startup error). See `backend-patterns` skill.
+- **`KlabisUserDetailsService`** — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
+- **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
 
 ## Application Profiles
 
@@ -150,7 +139,7 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 
 - **Java 17+**
 - **Spring Boot 4.0.5**
-- **Spring Modulith 2.0.5** - Event-driven modular application using hexagonal architecture
+- **Spring Modulith 2.0.0** - Event-driven modular application using hexagonal architecture
 - **Spring Security 7** - OAuth2 Authorization Server + Resource Server
 - **Spring Data JDBC** - Lightweight JDBC-based persistence
 - **Spring HATEOAS** - HAL+FORMS hypermedia

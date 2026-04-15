@@ -1,8 +1,8 @@
 ---
 name: backend-patterns
-description: Klabis-specific backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured. Even if the user doesn't mention "Klabis" explicitly, use this skill for any backend implementation task in this codebase — it overrides generic Spring/DDD skills with project-specific conventions.
+description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Klabis Backend Patterns
@@ -174,6 +174,26 @@ Key rules:
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class MemberController { ... }
 ```
+
+### `@HasAuthority` Method/Class-Level Authorization
+
+`@HasAuthority(Authority.X)` is the type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for **single-authority global checks**. Use `@PreAuthorize` only when you need boolean logic, parameter access, or context-specific rules.
+
+Class-level applies to all methods; method-level overrides it:
+
+```java
+@RestController
+@HasAuthority(Authority.MEMBERS_READ)         // default for all endpoints
+class MemberController {
+    @GetMapping ResponseEntity<?> list() { ... }            // requires MEMBERS:READ
+
+    @PostMapping
+    @HasAuthority(Authority.MEMBERS_CREATE)   // overrides class-level
+    ResponseEntity<?> create() { ... }
+}
+```
+
+Enforcement: `HasAuthorityMethodInterceptor` (AuthorizationAdvisor). Failure throws `AccessDeniedException` → 403. Apply at controller layer only, not service layer.
 
 ### Field-Level Authorization on Controller Methods
 
