@@ -36,13 +36,13 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
 
     @Override
     public Optional<TrainingGroup> findGroupForMember(MemberId memberId) {
-        return jdbcRepository.findByMemberIdAndType(memberId.uuid(), TrainingGroup.TYPE_DISCRIMINATOR)
+        return jdbcRepository.findByMemberIdAndType(memberId.value(), TrainingGroup.TYPE_DISCRIMINATOR)
                 .map(GroupMemento::toTrainingGroup);
     }
 
     @Override
     public List<TrainingGroup> findGroupsForTrainer(MemberId trainerId) {
-        return jdbcRepository.findByTrainerIdAndType(trainerId.uuid(), TrainingGroup.TYPE_DISCRIMINATOR)
+        return jdbcRepository.findByTrainerIdAndType(trainerId.value(), TrainingGroup.TYPE_DISCRIMINATOR)
                 .stream().map(GroupMemento::toTrainingGroup).toList();
     }
 

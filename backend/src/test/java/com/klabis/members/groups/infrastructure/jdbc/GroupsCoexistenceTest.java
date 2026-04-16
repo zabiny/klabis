@@ -101,6 +101,17 @@ class GroupsCoexistenceTest {
         assertThat(result).isEmpty();
     }
 
+    @Test
+    @DisplayName("delete on MembersGroupRepository with a TrainingGroup UUID does not remove the TrainingGroup row")
+    void deleteCrossTypeIsNoOp() {
+        TrainingGroup training = saveTrainingGroupWithMember();
+        MembersGroupId trainingIdAsFreeLookup = new MembersGroupId(training.getId().value());
+
+        membersGroupRepository.delete(trainingIdAsFreeLookup);
+
+        assertThat(trainingGroupRepository.findById(training.getId())).isPresent();
+    }
+
     private void saveMembersGroupWithMember() {
         MembersGroup group = MembersGroup.create(new MembersGroup.CreateMembersGroup("Free Group", OWNER));
         group.invite(OWNER, SHARED_MEMBER);

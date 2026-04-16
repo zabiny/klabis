@@ -391,12 +391,15 @@ CREATE TABLE user_groups
     created_by    VARCHAR(100) NOT NULL,
     modified_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_by   VARCHAR(100) NOT NULL,
-    version       BIGINT       NOT NULL DEFAULT 0
+    version       BIGINT       NOT NULL DEFAULT 0,
+
+    CONSTRAINT chk_user_groups_type CHECK (type IN ('FREE', 'TRAINING', 'FAMILY'))
 );
 
 -- Indexes for user_groups
 CREATE INDEX idx_user_groups_type ON user_groups (type);
 CREATE INDEX idx_user_groups_name ON user_groups (name);
+CREATE INDEX idx_user_groups_training_age ON user_groups (type, age_range_min, age_range_max);
 
 -- Comments for user_groups
 COMMENT ON TABLE user_groups IS 'Unified table for all group aggregate types: FREE (MembersGroup), TRAINING (TrainingGroup), FAMILY (FamilyGroup)';
@@ -461,8 +464,7 @@ CREATE TABLE user_group_invitations
 
 -- Indexes for user_group_invitations
 CREATE INDEX idx_user_group_invitations_group_id ON user_group_invitations (user_group_id);
-CREATE INDEX idx_user_group_invitations_invited_member_id ON user_group_invitations (invited_member_id);
-CREATE INDEX idx_user_group_invitations_status ON user_group_invitations (status);
+CREATE INDEX idx_user_group_invitations_invited_member_status ON user_group_invitations (invited_member_id, status);
 
 -- Comments for user_group_invitations
 COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (MembersGroup) groups';

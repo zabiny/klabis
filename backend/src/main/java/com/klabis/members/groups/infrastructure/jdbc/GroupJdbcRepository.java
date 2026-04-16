@@ -21,8 +21,6 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     @Modifying
     void deleteByIdAndType(@Param("id") UUID id, @Param("type") String type);
 
-    // --- MembersGroup (type = 'FREE') queries ---
-
     @Query("""
             SELECT ug.* FROM user_groups ug
             WHERE ug.type = :type
@@ -46,8 +44,6 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
               AND ugi.status = 'PENDING'
             """)
     List<GroupMemento> findWithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
-
-    // --- TrainingGroup (type = 'TRAINING') queries ---
 
     @Query("""
             SELECT ug.* FROM user_groups ug
@@ -81,8 +77,6 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
 
     @Query("SELECT * FROM user_groups WHERE type = :type")
     List<GroupMemento> findAllByType(@Param("type") String type);
-
-    // --- FamilyGroup (type = 'FAMILY') queries ---
 
     @Query("""
             SELECT ug.* FROM user_groups ug

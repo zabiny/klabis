@@ -1,6 +1,7 @@
 package com.klabis.members.groups.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
@@ -78,7 +79,7 @@ public class GroupMemento implements Persistable<UUID> {
     private Long version;
 
     @Transient
-    private Object aggregate;
+    private KlabisAggregateRoot<?, ?> aggregate;
 
     @Transient
     private boolean isNew = true;
@@ -87,19 +88,9 @@ public class GroupMemento implements Persistable<UUID> {
     }
 
     public static GroupMemento fromMembersGroup(MembersGroup group) {
-        GroupMemento memento = new GroupMemento();
-        memento.id = group.getId().value();
-        memento.type = MembersGroup.TYPE_DISCRIMINATOR;
-        memento.name = group.getName();
-
-        memento.owners = group.getOwners().stream()
-                .map(memberId -> new GroupOwnerMemento(memberId.value()))
-                .collect(Collectors.toSet());
-
-        memento.members = group.getMembers().stream()
-                .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
-                .collect(Collectors.toSet());
-
+        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), MembersGroup.TYPE_DISCRIMINATOR);
+        memento.owners = mapOwners(group.getOwners());
+        memento.members = mapMembershipsToMementa(group.getMembers());
         memento.invitations = group.getInvitations().stream()
                 .map(inv -> new GroupInvitationMemento(
                         inv.getId().value(),
@@ -108,64 +99,26 @@ public class GroupMemento implements Persistable<UUID> {
                         inv.getStatus().name(),
                         inv.getCreatedAt()))
                 .collect(Collectors.toSet());
-
-        memento.applyAudit(group.getAuditMetadata());
-        memento.aggregate = group;
-        memento.isNew = (group.getAuditMetadata() == null);
         return memento;
     }
 
     public static GroupMemento fromTrainingGroup(TrainingGroup group) {
-        GroupMemento memento = new GroupMemento();
-        memento.id = group.getId().value();
-        memento.type = TrainingGroup.TYPE_DISCRIMINATOR;
-        memento.name = group.getName();
+        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), TrainingGroup.TYPE_DISCRIMINATOR);
         memento.ageRangeMin = group.getAgeRange().minAge();
         memento.ageRangeMax = group.getAgeRange().maxAge();
-
-        memento.owners = group.getTrainers().stream()
-                .map(memberId -> new GroupOwnerMemento(memberId.uuid()))
-                .collect(Collectors.toSet());
-
-        memento.members = group.getMembers().stream()
-                .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
-                .collect(Collectors.toSet());
-
-        memento.applyAudit(group.getAuditMetadata());
-        memento.aggregate = group;
-        memento.isNew = (group.getAuditMetadata() == null);
+        memento.owners = mapOwners(group.getTrainers());
+        memento.members = mapMembershipsToMementa(group.getMembers());
         return memento;
     }
 
     public static GroupMemento fromFamilyGroup(FamilyGroup group) {
-        GroupMemento memento = new GroupMemento();
-        memento.id = group.getId().value();
-        memento.type = FamilyGroup.TYPE_DISCRIMINATOR;
-        memento.name = group.getName();
-
-        memento.owners = group.getParents().stream()
-                .map(memberId -> new GroupOwnerMemento(memberId.value()))
-                .collect(Collectors.toSet());
-
-        memento.members = group.getMembers().stream()
-                .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
-                .collect(Collectors.toSet());
-
-        memento.applyAudit(group.getAuditMetadata());
-        memento.aggregate = group;
-        memento.isNew = (group.getAuditMetadata() == null);
+        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FamilyGroup.TYPE_DISCRIMINATOR);
+        memento.owners = mapOwners(group.getParents());
+        memento.members = mapMembershipsToMementa(group.getMembers());
         return memento;
     }
 
     public MembersGroup toMembersGroup() {
-        Set<MemberId> ownerIds = owners.stream()
-                .map(o -> new MemberId(o.getMemberId()))
-                .collect(Collectors.toSet());
-
-        Set<GroupMembership> memberships = members.stream()
-                .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
-                .collect(Collectors.toSet());
-
         Set<Invitation> invitationSet = invitations.stream()
                 .map(inv -> Invitation.reconstruct(
                         new InvitationId(inv.getId()),
@@ -175,59 +128,30 @@ public class GroupMemento implements Persistable<UUID> {
                         inv.getCreatedAt()))
                 .collect(Collectors.toSet());
 
-        AuditMetadata auditMetadata = buildAuditMetadata();
-        return MembersGroup.reconstruct(new MembersGroupId(this.id), this.name, ownerIds, memberships, invitationSet, auditMetadata);
+        return MembersGroup.reconstruct(new MembersGroupId(this.id), this.name,
+                mapOwnerIds(), mapMemberships(), invitationSet, buildAuditMetadata());
     }
 
     public TrainingGroup toTrainingGroup() {
-        Set<MemberId> trainerIds = owners.stream()
-                .map(o -> new MemberId(o.getMemberId()))
-                .collect(Collectors.toSet());
-
-        Set<GroupMembership> memberships = members.stream()
-                .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
-                .collect(Collectors.toSet());
-
-        AuditMetadata auditMetadata = buildAuditMetadata();
-        return TrainingGroup.reconstruct(new TrainingGroupId(this.id), this.name, trainerIds, memberships,
-                new AgeRange(this.ageRangeMin, this.ageRangeMax), auditMetadata);
+        return TrainingGroup.reconstruct(new TrainingGroupId(this.id), this.name,
+                mapOwnerIds(), mapMemberships(),
+                new AgeRange(this.ageRangeMin, this.ageRangeMax), buildAuditMetadata());
     }
 
     public FamilyGroup toFamilyGroup() {
-        Set<MemberId> parentIds = owners.stream()
-                .map(o -> new MemberId(o.getMemberId()))
-                .collect(Collectors.toSet());
-
-        Set<GroupMembership> memberships = members.stream()
-                .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
-                .collect(Collectors.toSet());
-
-        AuditMetadata auditMetadata = buildAuditMetadata();
-        return FamilyGroup.reconstruct(new FamilyGroupId(this.id), this.name, parentIds, memberships, auditMetadata);
+        return FamilyGroup.reconstruct(new FamilyGroupId(this.id), this.name,
+                mapOwnerIds(), mapMemberships(), buildAuditMetadata());
     }
 
     @DomainEvents
     public List<Object> getDomainEvents() {
-        if (aggregate instanceof MembersGroup membersGroup) {
-            return membersGroup.getDomainEvents();
-        }
-        if (aggregate instanceof TrainingGroup trainingGroup) {
-            return trainingGroup.getDomainEvents();
-        }
-        if (aggregate instanceof FamilyGroup familyGroup) {
-            return familyGroup.getDomainEvents();
-        }
-        return List.of();
+        return aggregate != null ? aggregate.getDomainEvents() : List.of();
     }
 
     @AfterDomainEventPublication
     public void clearDomainEvents() {
-        if (aggregate instanceof MembersGroup membersGroup) {
-            membersGroup.clearDomainEvents();
-        } else if (aggregate instanceof TrainingGroup trainingGroup) {
-            trainingGroup.clearDomainEvents();
-        } else if (aggregate instanceof FamilyGroup familyGroup) {
-            familyGroup.clearDomainEvents();
+        if (aggregate != null) {
+            aggregate.clearDomainEvents();
         }
     }
 
@@ -239,6 +163,41 @@ public class GroupMemento implements Persistable<UUID> {
     @Override
     public boolean isNew() {
         return isNew;
+    }
+
+    private static GroupMemento initCommon(KlabisAggregateRoot<?, ?> group, UUID id, String name, String type) {
+        GroupMemento memento = new GroupMemento();
+        memento.id = id;
+        memento.name = name;
+        memento.type = type;
+        memento.aggregate = group;
+        memento.isNew = (group.getAuditMetadata() == null);
+        memento.applyAudit(group.getAuditMetadata());
+        return memento;
+    }
+
+    private Set<MemberId> mapOwnerIds() {
+        return owners.stream()
+                .map(o -> new MemberId(o.getMemberId()))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<GroupMembership> mapMemberships() {
+        return members.stream()
+                .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<GroupOwnerMemento> mapOwners(Set<MemberId> source) {
+        return source.stream()
+                .map(memberId -> new GroupOwnerMemento(memberId.value()))
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<GroupMemberMemento> mapMembershipsToMementa(Set<GroupMembership> source) {
+        return source.stream()
+                .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
+                .collect(Collectors.toSet());
     }
 
     private void applyAudit(AuditMetadata auditMetadata) {
