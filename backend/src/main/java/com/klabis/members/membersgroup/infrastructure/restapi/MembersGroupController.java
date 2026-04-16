@@ -1,12 +1,12 @@
 package com.klabis.members.membersgroup.infrastructure.restapi;
 
-import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingMember;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
@@ -52,11 +52,9 @@ class MembersGroupController {
     @Operation(summary = "Create a members group")
     ResponseEntity<Void> createGroup(
             @Valid @RequestBody CreateGroupRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
-        requireMemberProfile(currentUser);
-
-        MembersGroup group = membersGroupManagementService.createGroup(request.name(), currentUser.memberId());
+        MembersGroup group = membersGroupManagementService.createGroup(request.name(), actingMember);
 
         return ResponseEntity.created(
                 linkTo(methodOn(MembersGroupController.class).getGroup(group.getId().uuid(), null)).toUri()
@@ -66,11 +64,9 @@ class MembersGroupController {
     @GetMapping
     @Operation(summary = "List groups where authenticated member is a member")
     ResponseEntity<CollectionModel<EntityModel<GroupSummaryResponse>>> listGroups(
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
-        requireMemberProfile(currentUser);
-
-        List<MembersGroup> groups = membersGroupManagementService.listGroupsForMember(currentUser.memberId());
+        List<MembersGroup> groups = membersGroupManagementService.listGroupsForMember(actingMember);
         List<EntityModel<GroupSummaryResponse>> items = groups.stream()
                 .map(this::buildGroupSummaryModel)
                 .toList();
@@ -87,7 +83,7 @@ class MembersGroupController {
     @Operation(summary = "Get group details")
     ResponseEntity<EntityModel<GroupResponse>> getGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         MembersGroup group = membersGroupManagementService.getGroup(groupId);
@@ -121,9 +117,7 @@ class MembersGroupController {
     ResponseEntity<Void> updateGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody RenameGroupRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         membersGroupManagementService.renameGroup(groupId, request.name());
@@ -134,9 +128,7 @@ class MembersGroupController {
     @Operation(summary = "Delete a group (owner only)")
     ResponseEntity<Void> deleteGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         membersGroupManagementService.deleteGroup(groupId);
@@ -148,9 +140,7 @@ class MembersGroupController {
     ResponseEntity<Void> addGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         MembersGroup group = membersGroupManagementService.getGroup(groupId);
@@ -163,9 +153,7 @@ class MembersGroupController {
     ResponseEntity<Void> removeGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         MemberId memberToRemove = new MemberId(memberId);
@@ -178,9 +166,7 @@ class MembersGroupController {
     ResponseEntity<Void> addGroupOwner(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddOwnerRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()));
@@ -192,9 +178,7 @@ class MembersGroupController {
     ResponseEntity<Void> removeGroupOwner(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Owner member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         MemberId ownerToRemove = new MemberId(memberId);
@@ -208,12 +192,10 @@ class MembersGroupController {
     ResponseEntity<Void> inviteMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody InviteMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        membersGroupManagementService.inviteMember(groupId, currentUser.memberId(), new MemberId(request.memberId()));
+        membersGroupManagementService.inviteMember(groupId, actingMember, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
@@ -223,13 +205,11 @@ class MembersGroupController {
     ResponseEntity<Void> acceptInvitation(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
-        membersGroupManagementService.acceptInvitation(groupId, invId, currentUser.memberId());
+        membersGroupManagementService.acceptInvitation(groupId, invId, actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -239,13 +219,11 @@ class MembersGroupController {
     ResponseEntity<Void> rejectInvitation(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireMemberProfile(currentUser);
+            @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
-        membersGroupManagementService.rejectInvitation(groupId, invId, currentUser.memberId());
+        membersGroupManagementService.rejectInvitation(groupId, invId, actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -315,11 +293,6 @@ class MembersGroupController {
         return InvitationModelBuilder.build(group, invitation);
     }
 
-    private void requireMemberProfile(CurrentUserData currentUser) {
-        if (!currentUser.isMember()) {
-            throw new MemberProfileRequiredException();
-        }
-    }
 }
 
 @MvcComponent

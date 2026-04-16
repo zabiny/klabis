@@ -1,8 +1,7 @@
 package com.klabis.members.membersgroup.infrastructure.restapi;
 
-import com.klabis.common.exceptions.MemberProfileRequiredException;
-import com.klabis.members.CurrentUser;
-import com.klabis.members.CurrentUserData;
+import com.klabis.members.ActingMember;
+import com.klabis.members.MemberId;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,14 +37,12 @@ class PendingInvitationsController {
     @GetMapping("/pending")
     @Operation(summary = "List current user's pending invitations across all groups")
     ResponseEntity<CollectionModel<EntityModel<PendingInvitationResponse>>> getPendingInvitations(
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
-        requireMemberProfile(currentUser);
-
-        List<MembersGroup> groups = membersGroupManagementService.getGroupsWithPendingInvitations(currentUser.memberId());
+        List<MembersGroup> groups = membersGroupManagementService.getGroupsWithPendingInvitations(actingMember);
         List<EntityModel<PendingInvitationResponse>> items = groups.stream()
                 .flatMap(group -> group.getPendingInvitations().stream()
-                        .filter(inv -> inv.isForUser(currentUser.memberId().toUserId()))
+                        .filter(inv -> inv.isForUser(actingMember.toUserId()))
                         .map(inv -> InvitationModelBuilder.build(group, inv)))
                 .toList();
 
@@ -54,11 +51,5 @@ class PendingInvitationsController {
                 .ifPresent(link -> model.add(link.withSelfRel()));
 
         return ResponseEntity.ok(model);
-    }
-
-    private void requireMemberProfile(CurrentUserData currentUser) {
-        if (!currentUser.isMember()) {
-            throw new MemberProfileRequiredException();
-        }
     }
 }

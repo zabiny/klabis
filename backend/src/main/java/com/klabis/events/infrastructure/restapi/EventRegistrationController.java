@@ -9,7 +9,7 @@ import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
@@ -75,7 +75,7 @@ class EventRegistrationController {
     public ResponseEntity<Void> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Registration data") @Valid @RequestBody Event.RegisterCommand command,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         if (currentUser.memberId() == null) {
             throw new MemberProfileRequiredException();
@@ -98,7 +98,7 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "204", description = "Successfully unregistered")
     public ResponseEntity<Void> unregisterFromEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         if (currentUser.memberId() == null) {
             throw new MemberProfileRequiredException();
@@ -140,7 +140,7 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "200", description = "Own registration retrieved successfully")
     public ResponseEntity<EntityModel<OwnRegistrationDto>> getOwnRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         Event event = eventManagementService.getEvent(new EventId(eventId), true);
         EventRegistration registration = event.findRegistration(currentUser.memberId())

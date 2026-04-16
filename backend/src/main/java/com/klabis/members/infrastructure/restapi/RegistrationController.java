@@ -3,7 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingUser;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,7 +67,7 @@ class RegistrationController {
     public ResponseEntity<Void> registerMember(
             @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
             @Valid @RequestBody RegisterMemberRequest request,
-            @CurrentUser UserId currentUserId) {
+            @ActingUser UserId currentUserId) {
 
         RegistrationPort.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
         Member member = registrationService.registerMember(serviceCommand);

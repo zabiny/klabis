@@ -2,11 +2,11 @@ package com.klabis.members.familygroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.users.Authority;
-import com.klabis.members.CurrentUser;
+import com.klabis.common.users.HasAuthority;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.application.FamilyGroupManagementPort;
@@ -52,7 +52,7 @@ class FamilyGroupController {
     @Operation(summary = "Create a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> createFamilyGroup(
             @Valid @RequestBody CreateFamilyGroupRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -69,7 +69,7 @@ class FamilyGroupController {
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "List all family groups (requires MEMBERS:MANAGE)")
     ResponseEntity<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> listFamilyGroups(
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -90,7 +90,7 @@ class FamilyGroupController {
     @Operation(summary = "Get family group details")
     ResponseEntity<EntityModel<FamilyGroupResponse>> getFamilyGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         FamilyGroup group = familyGroupManagementService.getFamilyGroup(groupId);
@@ -126,7 +126,7 @@ class FamilyGroupController {
     @Operation(summary = "Delete a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> deleteFamilyGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -140,7 +140,7 @@ class FamilyGroupController {
     ResponseEntity<Void> addFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -154,7 +154,7 @@ class FamilyGroupController {
     ResponseEntity<Void> removeFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Parent member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -169,7 +169,7 @@ class FamilyGroupController {
     ResponseEntity<Void> addFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 
@@ -183,7 +183,7 @@ class FamilyGroupController {
     ResponseEntity<Void> removeFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Child member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireMembersManageAuthority(currentUser);
 

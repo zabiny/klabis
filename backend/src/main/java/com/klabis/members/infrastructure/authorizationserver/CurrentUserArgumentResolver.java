@@ -1,17 +1,15 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
+import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingMember;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import org.springframework.core.MethodParameter;
-
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
@@ -20,14 +18,20 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @MvcComponent
 class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.hasParameterAnnotation(CurrentUser.class)
-               && (parameter.getParameterType().equals(UserId.class) || parameter.getParameterType()
-                .equals(CurrentUserData.class));
+        boolean isActingUser = parameter.hasParameterAnnotation(ActingUser.class)
+                               && (parameter.getParameterType().equals(UserId.class)
+                                   || parameter.getParameterType().equals(CurrentUserData.class));
+        boolean isActingMember = parameter.hasParameterAnnotation(ActingMember.class)
+                                 && parameter.getParameterType().equals(MemberId.class);
+        return isActingUser || isActingMember;
     }
 
     @Override
@@ -39,6 +43,12 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
         Authentication authentication = getAuthentication();
         KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) authentication;
+
+        if (parameter.hasParameterAnnotation(ActingMember.class)) {
+            return token.getMemberIdUuid()
+                    .map(MemberId::new)
+                    .orElseThrow(MemberProfileRequiredException::new);
+        }
 
         Class<?> parameterType = parameter.getParameterType();
 
@@ -54,7 +64,7 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
         }
 
         throw new IllegalArgumentException(
-                "Unsupported parameter type for @CurrentUser: " + parameterType);
+                "Unsupported parameter type for @ActingUser: " + parameterType);
     }
 
     private Authentication getAuthentication() {

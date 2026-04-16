@@ -7,7 +7,7 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
@@ -87,7 +87,7 @@ public class MemberController {
             @Parameter(description = "Member UUID") @OwnerId @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
         var command = UpdateMemberRequestMapper.toCommand(request, currentUser.userId());
@@ -116,7 +116,7 @@ public class MemberController {
     @ApiResponse(responseCode = "404", description = "Member not found")
     public ResponseEntity<Void> resumeMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @CurrentUser UserId currentUserId) {
+            @ActingUser UserId currentUserId) {
 
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
@@ -142,7 +142,7 @@ public class MemberController {
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Suspension request")
             @Valid @RequestBody @NotNull SuspendMembershipRequest request,
-            @CurrentUser UserId currentUserId) {
+            @ActingUser UserId currentUserId) {
 
         var command = new Member.SuspendMembership(
                 currentUserId,
@@ -186,7 +186,7 @@ public class MemberController {
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
@@ -263,7 +263,7 @@ public class MemberController {
     @ApiResponse(responseCode = "200", description = "Member found")
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),

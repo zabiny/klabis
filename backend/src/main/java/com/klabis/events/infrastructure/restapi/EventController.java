@@ -10,7 +10,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MemberController;
@@ -27,11 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.PagedModel;
-import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
@@ -42,9 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -142,7 +136,7 @@ public class EventController {
     @ApiResponse(responseCode = "200", description = "Event found")
     public ResponseEntity<RepresentationModel<?>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         Event event = eventManagementService.getEvent(new EventId(id), hasEventsManageAuthority());
 
@@ -182,7 +176,7 @@ public class EventController {
             @RequestParam(required = false) EventStatus status,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 

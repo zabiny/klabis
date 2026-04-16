@@ -6,7 +6,7 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.members.CurrentUser;
+import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.traininggroup.application.TrainingGroupManagementPort;
@@ -55,7 +55,7 @@ class TrainingGroupController {
     @Operation(summary = "Create a training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> createTrainingGroup(
             @Valid @RequestBody CreateTrainingGroupRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -73,7 +73,7 @@ class TrainingGroupController {
     @HasAuthority(Authority.GROUPS_TRAINING)
     @Operation(summary = "List all training groups (requires GROUPS:TRAINING)")
     ResponseEntity<CollectionModel<EntityModel<TrainingGroupSummaryResponse>>> listTrainingGroups(
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -94,7 +94,7 @@ class TrainingGroupController {
     @Operation(summary = "Get training group details")
     ResponseEntity<EntityModel<TrainingGroupResponse>> getTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         TrainingGroup group = trainingGroupManagementService.getTrainingGroup(groupId);
@@ -160,7 +160,7 @@ class TrainingGroupController {
     ResponseEntity<Void> updateTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody UpdateTrainingGroupRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -181,7 +181,7 @@ class TrainingGroupController {
     @Operation(summary = "Delete a training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> deleteTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -195,7 +195,7 @@ class TrainingGroupController {
     ResponseEntity<Void> addTrainingGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -209,7 +209,7 @@ class TrainingGroupController {
     ResponseEntity<Void> removeTrainingGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -224,7 +224,7 @@ class TrainingGroupController {
     ResponseEntity<Void> addTrainer(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Valid @RequestBody AddTrainerRequest request,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
@@ -238,7 +238,7 @@ class TrainingGroupController {
     ResponseEntity<Void> removeTrainer(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
             @Parameter(description = "Trainer member UUID") @PathVariable UUID memberId,
-            @CurrentUser CurrentUserData currentUser) {
+            @ActingUser CurrentUserData currentUser) {
 
         requireTrainingAuthority(currentUser);
 
