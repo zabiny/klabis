@@ -281,18 +281,31 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
 `RepresentationModelProcessor` follows the same HATEOAS rules — no affordances to POST endpoints.
 
-### Current User Parameter (`@CurrentUser`)
+### Current User Parameters (`@ActingUser` / `@ActingMember`)
 
-`CurrentUserArgumentResolver` resolves `@CurrentUser Member` parameters in controller methods from the JWT `memberIdUuid` claim (via `MemberIdToUuidConverter`):
+`CurrentUserArgumentResolver` resolves two annotations in controller method parameters:
+
+**`@ActingUser CurrentUserData`** — resolves the authenticated user from the JWT token. Falls back gracefully when no member is associated with the user (e.g., admin-only users):
 
 ```java
 @GetMapping("/me")
-ResponseEntity<EntityModel<MemberDetailsResponse>> getMyProfile(@CurrentUser Member member) {
-    // member is resolved from the authenticated JWT token
+ResponseEntity<EntityModel<MemberDetailsResponse>> getMyProfile(@ActingUser CurrentUserData currentUser) {
+    // currentUser is resolved from the authenticated JWT token
 }
 ```
 
-Use `@CurrentUser Member` when the controller needs the currently authenticated member. Falls back gracefully when no member is associated with the user (e.g., admin-only users).
+**`@ActingMember MemberId`** — resolves the authenticated user's `MemberId` from the JWT `memberIdUuid` claim. Throws `MemberProfileRequiredException` (HTTP 403) if the user has no member profile. Use this instead of manually calling `requireMemberProfile(currentUser)`:
+
+```java
+@PostMapping("/{id}/invite")
+ResponseEntity<Void> inviteMember(@PathVariable UUID id,
+                                  @ActingMember MemberId actingMember,
+                                  @RequestBody InviteRequest request) {
+    // actingMember is guaranteed to be a member — throws 403 otherwise
+}
+```
+
+Use `@ActingUser` when the endpoint is accessible to non-member users (admins). Use `@ActingMember` when the endpoint requires a member profile.
 
 ### DTO → Command Mapping
 
