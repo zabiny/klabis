@@ -1,24 +1,24 @@
 package com.klabis.events.infrastructure.restapi;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.SecurityTestBase;
-import com.klabis.events.application.EventManagementPort;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import com.klabis.members.application.LastOwnershipChecker;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.hateoas.MediaTypes;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
+import com.klabis.members.application.LastOwnershipChecker;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -369,7 +369,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                 .andExpect(jsonPath("$._templates.publishEvent").exists())
                 .andExpect(jsonPath("$._templates.cancelEvent").exists())
-                .andExpect(jsonPath("$._links.registrations.href").exists());
+                .andExpect(jsonPath("$._links.registrations.href").doesNotExist()); // registrations shouldnt be displayed on DRAFT event.
 
         // When: Publish to ACTIVE and check links
         mockMvc.perform(
