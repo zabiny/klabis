@@ -15,8 +15,8 @@ interface FamilyGroupJdbcRepository extends CrudRepository<FamilyGroupMemento, U
                 SELECT 1 FROM family_group_parents fgp
                 WHERE fgp.family_group_id = fg.id AND fgp.member_id = :memberId
             ) OR EXISTS (
-                SELECT 1 FROM family_group_children fgc
-                WHERE fgc.family_group_id = fg.id AND fgc.member_id = :memberId
+                SELECT 1 FROM family_group_members fgm
+                WHERE fgm.family_group_id = fg.id AND fgm.member_id = :memberId
             )
             LIMIT 1
             """)

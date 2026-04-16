@@ -37,7 +37,7 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
         List<OwnedGroupInfo> result = new ArrayList<>();
 
         familyGroupRepository.findByMemberOrParent(memberId)
-                .filter(group -> isSoleParent(group, memberId))
+                .filter(group -> group.isLastParent(memberId))
                 .map(group -> new OwnedGroupInfo(
                         group.getId().uuid().toString(),
                         group.getName(),
@@ -61,9 +61,5 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
                 .forEach(result::add);
 
         return result;
-    }
-
-    private boolean isSoleParent(FamilyGroup group, MemberId memberId) {
-        return group.getParents().size() == 1 && group.getParents().contains(memberId);
     }
 }

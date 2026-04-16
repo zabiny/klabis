@@ -15,7 +15,7 @@
 -- 7. calendar_items (FK → events)
 -- 8. birth_number_audit_log (no FK)
 -- 9. training_groups + training_group_trainers + training_group_members
--- 10. family_groups + family_group_parents + family_group_children
+-- 10. family_groups + family_group_parents + family_group_members
 -- 11. members_groups + members_group_owners + members_group_members + members_group_invitations
 --
 -- OAuth2 infrastructure tables created in V002 migration
@@ -482,11 +482,11 @@ CREATE INDEX idx_family_group_parents_member_id ON family_group_parents (member_
 COMMENT ON TABLE family_group_parents IS 'Maps parents (members acting as owners) to family groups';
 
 -- ============================================================================
--- 19. FAMILY_GROUP_CHILDREN TABLE
+-- 19. FAMILY_GROUP_MEMBERS TABLE
 -- Maps all members (parents and children) to family groups with join timestamp
 -- ============================================================================
 
-CREATE TABLE family_group_children
+CREATE TABLE family_group_members
 (
     family_group_id UUID      NOT NULL REFERENCES family_groups (id) ON DELETE CASCADE,
     member_id       UUID      NOT NULL,
@@ -494,13 +494,13 @@ CREATE TABLE family_group_children
     PRIMARY KEY (family_group_id, member_id)
 );
 
--- Indexes for family_group_children
-CREATE INDEX idx_family_group_children_group_id ON family_group_children (family_group_id);
-CREATE INDEX idx_family_group_children_member_id ON family_group_children (member_id);
+-- Indexes for family_group_members
+CREATE INDEX idx_family_group_members_group_id ON family_group_members (family_group_id);
+CREATE INDEX idx_family_group_members_member_id ON family_group_members (member_id);
 
--- Comments for family_group_children
-COMMENT ON TABLE family_group_children IS 'Maps all members (parents included) to family groups with join timestamp';
-COMMENT ON COLUMN family_group_children.joined_at IS 'Timestamp when member was added to the family group';
+-- Comments for family_group_members
+COMMENT ON TABLE family_group_members IS 'Maps all members (parents included) to family groups with join timestamp';
+COMMENT ON COLUMN family_group_members.joined_at IS 'Timestamp when member was added to the family group';
 
 -- ============================================================================
 -- 20. MEMBERS_GROUPS TABLE

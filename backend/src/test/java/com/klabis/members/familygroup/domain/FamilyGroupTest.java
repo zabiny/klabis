@@ -259,6 +259,74 @@ class FamilyGroupTest {
     }
 
     @Nested
+    @DisplayName("FamilyGroup.getChildren()")
+    class GetChildrenMethod {
+
+        @Test
+        @DisplayName("should return empty set when group has only parents and no children")
+        void shouldReturnEmptyWhenOnlyParents() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThat(group.getChildren()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return children (non-parent members)")
+        void shouldReturnNonParentMembers() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(MEMBER_A);
+            group.addChild(MEMBER_B);
+
+            assertThat(group.getChildren())
+                    .extracting(m -> MemberId.fromUserId(m.userId()))
+                    .containsExactlyInAnyOrder(MEMBER_A, MEMBER_B);
+        }
+
+        @Test
+        @DisplayName("should exclude parents from children result")
+        void shouldExcludeParents() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addParent(PARENT_B);
+            group.addChild(MEMBER_A);
+
+            assertThat(group.getChildren())
+                    .extracting(m -> MemberId.fromUserId(m.userId()))
+                    .containsExactly(MEMBER_A)
+                    .doesNotContain(PARENT_A, PARENT_B);
+        }
+    }
+
+    @Nested
+    @DisplayName("FamilyGroup.isLastParent()")
+    class IsLastParentMethod {
+
+        @Test
+        @DisplayName("should return true when member is the only parent")
+        void shouldReturnTrueWhenSoleParent() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThat(group.isLastParent(PARENT_A)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when there are multiple parents")
+        void shouldReturnFalseWhenMultipleParents() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addParent(PARENT_B);
+
+            assertThat(group.isLastParent(PARENT_A)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when member is not a parent")
+        void shouldReturnFalseWhenNotAParent() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+
+            assertThat(group.isLastParent(MEMBER_A)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("TYPE_DISCRIMINATOR")
     class TypeDiscriminatorTest {
 

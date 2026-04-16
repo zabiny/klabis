@@ -218,8 +218,7 @@ class FamilyGroupController {
                 })
                 .toList();
 
-        List<EntityModel<FamilyGroupMembershipResponse>> memberModels = group.getMembers().stream()
-                .filter(m -> !parentIds.contains(MemberId.fromUserId(m.userId())))
+        List<EntityModel<FamilyGroupMembershipResponse>> memberModels = group.getChildren().stream()
                 .map(m -> buildChildModel(m, groupUuid, hasMembersManage))
                 .toList();
 

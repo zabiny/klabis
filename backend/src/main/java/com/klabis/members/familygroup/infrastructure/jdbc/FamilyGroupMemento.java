@@ -36,7 +36,7 @@ class FamilyGroupMemento implements Persistable<UUID> {
 
     // Stores all members (parents included, as parents are owners + members in this model)
     @MappedCollection(idColumn = "family_group_id")
-    private Set<FamilyGroupChildMemento> children = new HashSet<>();
+    private Set<FamilyGroupMemberMemento> members = new HashSet<>();
 
     @CreatedDate
     @Column("created_at")
@@ -76,8 +76,8 @@ class FamilyGroupMemento implements Persistable<UUID> {
                 .map(memberId -> new FamilyGroupParentMemento(memberId.value()))
                 .collect(Collectors.toSet());
 
-        memento.children = group.getMembers().stream()
-                .map(m -> new FamilyGroupChildMemento(m.userId().uuid(), m.joinedAt()))
+        memento.members = group.getMembers().stream()
+                .map(m -> new FamilyGroupMemberMemento(m.userId().uuid(), m.joinedAt()))
                 .collect(Collectors.toSet());
 
         if (group.getAuditMetadata() != null) {
@@ -100,7 +100,7 @@ class FamilyGroupMemento implements Persistable<UUID> {
                 .map(p -> new MemberId(p.getMemberId()))
                 .collect(Collectors.toSet());
 
-        Set<GroupMembership> memberships = children.stream()
+        Set<GroupMembership> memberships = members.stream()
                 .map(c -> new GroupMembership(new UserId(c.getMemberId()), c.getJoinedAt()))
                 .collect(Collectors.toSet());
 

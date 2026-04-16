@@ -36,7 +36,7 @@ DELETE FROM training_group_trainers;
 DELETE FROM training_groups;
 
 -- Family groups (members module aggregate root)
-DELETE FROM family_group_children;
+DELETE FROM family_group_members;
 DELETE FROM family_group_parents;
 DELETE FROM family_groups;
 

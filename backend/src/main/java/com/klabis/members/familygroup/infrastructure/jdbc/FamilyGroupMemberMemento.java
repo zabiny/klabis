@@ -6,7 +6,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("family_group_children")
+@Table("family_group_members")
 class FamilyGroupMemberMemento {
 
     @Column("member_id")

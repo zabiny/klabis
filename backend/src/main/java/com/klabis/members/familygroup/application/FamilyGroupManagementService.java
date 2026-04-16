@@ -49,6 +49,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public void addParent(FamilyGroupId id, MemberId parent) {
+        validateNoExistingFamilyGroup(parent);
         FamilyGroup group = loadGroup(id);
         group.addParent(parent);
         familyGroupRepository.save(group);

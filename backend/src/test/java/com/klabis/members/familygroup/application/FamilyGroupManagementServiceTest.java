@@ -186,6 +186,18 @@ class FamilyGroupManagementServiceTest {
             assertThatThrownBy(() -> service.addParent(GROUP_ID, PARENT_B))
                     .isInstanceOf(GroupNotFoundException.class);
         }
+
+        @Test
+        @DisplayName("should reject parent already in another family group")
+        void shouldRejectParentAlreadyInAnotherFamilyGroup() {
+            FamilyGroup existingGroup = FamilyGroup.reconstruct(
+                    new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
+                    "Jiní", Set.of(PARENT_A), Set.of(), null);
+            when(familyGroupRepository.findByMemberOrParent(PARENT_B)).thenReturn(Optional.of(existingGroup));
+
+            assertThatThrownBy(() -> service.addParent(GROUP_ID, PARENT_B))
+                    .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
+        }
     }
 
     @Nested

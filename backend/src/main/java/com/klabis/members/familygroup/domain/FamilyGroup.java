@@ -80,8 +80,18 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
         return userGroup.getMembers();
     }
 
+    public Set<GroupMembership> getChildren() {
+        return getMembers().stream()
+                .filter(m -> !getParents().contains(MemberId.fromUserId(m.userId())))
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     public boolean hasMember(MemberId memberId) {
         return userGroup.hasMember(memberId.toUserId());
+    }
+
+    public boolean isLastParent(MemberId memberId) {
+        return userGroup.isLastOwner(memberId.toUserId());
     }
 
     public void addParent(MemberId parent) {
