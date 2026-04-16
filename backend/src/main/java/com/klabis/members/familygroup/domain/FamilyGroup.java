@@ -81,8 +81,9 @@ public class FamilyGroup extends KlabisAggregateRoot<FamilyGroup, FamilyGroupId>
     }
 
     public Set<GroupMembership> getChildren() {
+        Set<MemberId> parents = getParents();
         return getMembers().stream()
-                .filter(m -> !getParents().contains(MemberId.fromUserId(m.userId())))
+                .filter(m -> !parents.contains(MemberId.fromUserId(m.userId())))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

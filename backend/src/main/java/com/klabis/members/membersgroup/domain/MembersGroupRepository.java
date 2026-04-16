@@ -15,5 +15,7 @@ public interface MembersGroupRepository {
 
     List<MembersGroup> findGroupsWithPendingInvitationsForMember(MemberId memberId);
 
+    boolean existsById(MembersGroupId id);
+
     void delete(MembersGroupId id);
 }

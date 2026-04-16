@@ -2,6 +2,7 @@ package com.klabis.members.membersgroup.application;
 
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupNotFoundException;
+import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
@@ -129,10 +130,21 @@ class MembersGroupManagementServiceTest {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(membersGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            MembersGroup result = service.renameGroup(GROUP_ID, "New Name");
+            MembersGroup result = service.renameGroup(GROUP_ID, "New Name", CREATOR);
 
             assertThat(result.getName()).isEqualTo("New Name");
             verify(membersGroupRepository).save(any(MembersGroup.class));
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Old Name", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
+            when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name", OTHER_MEMBER))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -140,7 +152,7 @@ class MembersGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name"))
+            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name", CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -150,15 +162,26 @@ class MembersGroupManagementServiceTest {
     class DeleteGroupMethod {
 
         @Test
-        @DisplayName("should delete group when it exists")
+        @DisplayName("should delete group when owner requests deletion")
         void shouldDeleteGroupWhenExists() {
             MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
-            service.deleteGroup(GROUP_ID);
+            service.deleteGroup(GROUP_ID, CREATOR);
 
             verify(membersGroupRepository).delete(GROUP_ID);
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
+            when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID, OTHER_MEMBER))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -166,7 +189,7 @@ class MembersGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID))
+            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID, CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -184,7 +207,7 @@ class MembersGroupManagementServiceTest {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(membersGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            service.addOwner(GROUP_ID, OTHER_MEMBER);
+            service.addOwner(GROUP_ID, OTHER_MEMBER, CREATOR);
 
             ArgumentCaptor<MembersGroup> captor = ArgumentCaptor.forClass(MembersGroup.class);
             verify(membersGroupRepository).save(captor.capture());
@@ -192,11 +215,23 @@ class MembersGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId()), GroupMembership.of(OTHER_MEMBER.toUserId())),
+                    Set.of(), null);
+            when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER, OTHER_MEMBER))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
+        }
+
+        @Test
         @DisplayName("should throw GroupNotFoundException when group does not exist")
         void shouldThrowWhenGroupNotFound() {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER))
+            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER, CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -215,11 +250,24 @@ class MembersGroupManagementServiceTest {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(membersGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            service.removeOwner(GROUP_ID, OTHER_MEMBER);
+            service.removeOwner(GROUP_ID, OTHER_MEMBER, CREATOR);
 
             ArgumentCaptor<MembersGroup> captor = ArgumentCaptor.forClass(MembersGroup.class);
             verify(membersGroupRepository).save(captor.capture());
             assertThat(captor.getValue().isOwner(OTHER_MEMBER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group",
+                    Set.of(CREATOR, OTHER_MEMBER),
+                    Set.of(GroupMembership.of(CREATOR.toUserId()), GroupMembership.of(OTHER_MEMBER.toUserId())),
+                    Set.of(), null);
+            when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, OTHER_MEMBER, ANOTHER_MEMBER))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -229,7 +277,7 @@ class MembersGroupManagementServiceTest {
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
-            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR))
+            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR, CREATOR))
                     .isInstanceOf(CannotRemoveLastOwnerException.class);
         }
 
@@ -238,7 +286,7 @@ class MembersGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR))
+            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR, CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -256,7 +304,7 @@ class MembersGroupManagementServiceTest {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(membersGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            service.removeMember(GROUP_ID, OTHER_MEMBER);
+            service.removeMember(GROUP_ID, OTHER_MEMBER, CREATOR);
 
             ArgumentCaptor<MembersGroup> captor = ArgumentCaptor.forClass(MembersGroup.class);
             verify(membersGroupRepository).save(captor.capture());
@@ -264,11 +312,23 @@ class MembersGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
+        void shouldThrowWhenNotOwner() {
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId()), GroupMembership.of(OTHER_MEMBER.toUserId())),
+                    Set.of(), null);
+            when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.removeMember(GROUP_ID, OTHER_MEMBER, OTHER_MEMBER))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
+        }
+
+        @Test
         @DisplayName("should throw GroupNotFoundException when group does not exist")
         void shouldThrowWhenGroupNotFound() {
             when(membersGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.removeMember(GROUP_ID, OTHER_MEMBER))
+            assertThatThrownBy(() -> service.removeMember(GROUP_ID, OTHER_MEMBER, CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }

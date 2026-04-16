@@ -47,6 +47,11 @@ class MembersGroupRepositoryAdapter implements MembersGroupRepository {
     }
 
     @Override
+    public boolean existsById(MembersGroupId id) {
+        return jdbcRepository.existsById(id.value());
+    }
+
+    @Override
     public void delete(MembersGroupId id) {
         jdbcRepository.deleteById(id.value());
     }

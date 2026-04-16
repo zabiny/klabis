@@ -111,13 +111,12 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
         userGroup.removeMember(memberId.toUserId());
     }
 
-    // WithInvitations interface required methods — delegate to composed UserGroup
     @Override
     public boolean hasMember(UserId userId) {
         return userGroup.hasMember(userId);
     }
 
-    // WithInvitations interface — controllers verify authorization before calling; no owner check here
+    // authorization enforced at port layer; no additional owner check here
     @Override
     public void invite(UserId invitedBy, UserId target) {
         Assert.notNull(invitedBy, "invitedBy is required");
@@ -180,7 +179,6 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
         return Collections.unmodifiableSet(invitations);
     }
 
-    // WithInvitations.isInvitedMember(UserId) — checks if user has any invitation for this group
     @Override
     public boolean isInvitedMember(UserId userId) {
         return invitations.stream().anyMatch(inv -> inv.isForUser(userId));

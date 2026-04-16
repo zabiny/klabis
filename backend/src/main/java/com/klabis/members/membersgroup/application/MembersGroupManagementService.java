@@ -3,6 +3,7 @@ package com.klabis.members.membersgroup.application;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.members.MemberId;
+import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
@@ -41,39 +42,44 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
 
     @Transactional
     @Override
-    public MembersGroup renameGroup(MembersGroupId id, String newName) {
+    public MembersGroup renameGroup(MembersGroupId id, String newName, MemberId actingMember) {
         MembersGroup group = loadGroup(id);
+        requireOwnership(group, actingMember);
         group.rename(newName);
         return membersGroupRepository.save(group);
     }
 
     @Transactional
     @Override
-    public void deleteGroup(MembersGroupId id) {
-        loadGroup(id);
+    public void deleteGroup(MembersGroupId id, MemberId actingMember) {
+        MembersGroup group = loadGroup(id);
+        requireOwnership(group, actingMember);
         membersGroupRepository.delete(id);
     }
 
     @Transactional
     @Override
-    public void addOwner(MembersGroupId id, MemberId memberId) {
+    public void addOwner(MembersGroupId id, MemberId memberId, MemberId actingMember) {
         MembersGroup group = loadGroup(id);
+        requireOwnership(group, actingMember);
         group.addOwner(memberId);
         membersGroupRepository.save(group);
     }
 
     @Transactional
     @Override
-    public void removeOwner(MembersGroupId id, MemberId memberId) {
+    public void removeOwner(MembersGroupId id, MemberId memberId, MemberId actingMember) {
         MembersGroup group = loadGroup(id);
+        requireOwnership(group, actingMember);
         group.removeOwner(memberId);
         membersGroupRepository.save(group);
     }
 
     @Transactional
     @Override
-    public void removeMember(MembersGroupId id, MemberId memberId) {
+    public void removeMember(MembersGroupId id, MemberId memberId, MemberId actingMember) {
         MembersGroup group = loadGroup(id);
+        requireOwnership(group, actingMember);
         group.removeMember(memberId);
         membersGroupRepository.save(group);
     }
@@ -105,6 +111,12 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     private MembersGroup loadGroup(MembersGroupId id) {
         return membersGroupRepository.findById(id)
                 .orElseThrow(() -> new GroupNotFoundException("Members", id));
+    }
+
+    private void requireOwnership(MembersGroup group, MemberId actingMember) {
+        if (!group.isOwner(actingMember)) {
+            throw new GroupOwnershipRequiredException(actingMember, group.getId());
+        }
     }
 
     @Transactional(readOnly = true)

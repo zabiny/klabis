@@ -17,15 +17,15 @@ public interface MembersGroupManagementPort {
 
     List<MembersGroup> listGroupsForMember(MemberId memberId);
 
-    MembersGroup renameGroup(MembersGroupId id, String newName);
+    MembersGroup renameGroup(MembersGroupId id, String newName, MemberId actingMember);
 
-    void deleteGroup(MembersGroupId id);
+    void deleteGroup(MembersGroupId id, MemberId actingMember);
 
-    void addOwner(MembersGroupId id, MemberId memberId);
+    void addOwner(MembersGroupId id, MemberId memberId, MemberId actingMember);
 
-    void removeOwner(MembersGroupId id, MemberId memberId);
+    void removeOwner(MembersGroupId id, MemberId memberId, MemberId actingMember);
 
-    void removeMember(MembersGroupId id, MemberId memberId);
+    void removeMember(MembersGroupId id, MemberId memberId, MemberId actingMember);
 
     void inviteMember(MembersGroupId id, MemberId invitedBy, MemberId target);
 

@@ -10,7 +10,6 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
-import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -121,8 +120,7 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
-        membersGroupManagementService.renameGroup(groupId, request.name());
+        membersGroupManagementService.renameGroup(groupId, request.name(), actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -133,8 +131,7 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
-        membersGroupManagementService.deleteGroup(groupId);
+        membersGroupManagementService.deleteGroup(groupId, actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -146,8 +143,7 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
-        membersGroupManagementService.removeMember(groupId, new MemberId(memberId));
+        membersGroupManagementService.removeMember(groupId, new MemberId(memberId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -159,8 +155,7 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
-        membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()));
+        membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()), actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -172,8 +167,7 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
-        membersGroupManagementService.removeOwner(groupId, new MemberId(memberId));
+        membersGroupManagementService.removeOwner(groupId, new MemberId(memberId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -186,7 +180,6 @@ class MembersGroupController {
             @ActingMember MemberId actingMember) {
 
         MembersGroupId groupId = new MembersGroupId(id);
-        requireOwnership(groupId, actingMember);
         membersGroupManagementService.inviteMember(groupId, actingMember, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
@@ -217,13 +210,6 @@ class MembersGroupController {
         InvitationId invId = new InvitationId(invitationId);
         membersGroupManagementService.rejectInvitation(groupId, invId, actingMember);
         return ResponseEntity.noContent().build();
-    }
-
-    private void requireOwnership(MembersGroupId groupId, MemberId actingMember) {
-        MembersGroup group = membersGroupManagementService.getGroup(groupId);
-        if (!group.isOwner(actingMember)) {
-            throw new GroupOwnershipRequiredException(actingMember, groupId);
-        }
     }
 
     private EntityModel<GroupSummaryResponse> buildGroupSummaryModel(MembersGroup group) {
