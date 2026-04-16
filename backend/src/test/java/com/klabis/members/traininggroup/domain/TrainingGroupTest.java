@@ -178,10 +178,10 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("replaceTrainers() should throw when given empty set")
+        @DisplayName("replaceTrainers() should throw CannotRemoveLastOwnerException when given empty set")
         void shouldThrowWhenReplacingWithEmptySet() {
             assertThatThrownBy(() -> group.replaceTrainers(Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(CannotRemoveLastOwnerException.class);
         }
 
         @Test
@@ -231,7 +231,7 @@ class TrainingGroupTest {
     }
 
     @Nested
-    @DisplayName("addMember() and assignEligibleMember() — domain event registration")
+    @DisplayName("assignEligibleMember() — domain event registration")
     class MemberEventRegistration {
 
         private TrainingGroup group;
@@ -241,24 +241,6 @@ class TrainingGroupTest {
             group = TrainingGroup.reconstruct(
                     new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER), Set.of(),
                     new AgeRange(10, 18), null);
-        }
-
-        @Test
-        @DisplayName("addMember() should register MemberAssignedToTrainingGroupEvent")
-        void shouldRegisterEventOnAddMember() {
-            group.addMember(REGULAR_MEMBER);
-
-            assertThat(group.getDomainEvents())
-                    .hasSize(1)
-                    .first()
-                    .isInstanceOf(MemberAssignedToTrainingGroupEvent.class);
-
-            MemberAssignedToTrainingGroupEvent event =
-                    (MemberAssignedToTrainingGroupEvent) group.getDomainEvents().get(0);
-            assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
-            assertThat(event.groupId()).isEqualTo(group.getId());
-            assertThat(event.groupName()).isEqualTo("Juniors");
-            assertThat(event.occurredAt()).isNotNull();
         }
 
         @Test
@@ -275,6 +257,8 @@ class TrainingGroupTest {
                     (MemberAssignedToTrainingGroupEvent) group.getDomainEvents().get(0);
             assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
             assertThat(event.groupId()).isEqualTo(group.getId());
+            assertThat(event.groupName()).isEqualTo("Juniors");
+            assertThat(event.occurredAt()).isNotNull();
         }
     }
 
@@ -421,24 +405,4 @@ class TrainingGroupTest {
         }
     }
 
-    @Nested
-    @DisplayName("addMember() null guard")
-    class AddMemberNullGuard {
-
-        private TrainingGroup group;
-
-        @BeforeEach
-        void setUp() {
-            group = TrainingGroup.reconstruct(
-                    new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER), Set.of(),
-                    new AgeRange(10, 18), null);
-        }
-
-        @Test
-        @DisplayName("addMember() should throw on null memberId")
-        void shouldThrowOnNullAddMember() {
-            assertThatThrownBy(() -> group.addMember(null))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-    }
 }

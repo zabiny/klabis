@@ -19,4 +19,12 @@ interface TrainingGroupJdbcRepository extends CrudRepository<TrainingGroupMement
            "JOIN training_group_trainers tgt ON tg.id = tgt.training_group_id " +
            "WHERE tgt.member_id = :trainerId")
     List<TrainingGroupMemento> findByTrainerId(@Param("trainerId") UUID trainerId);
+
+    @Query("SELECT EXISTS (" +
+           "  SELECT 1 FROM training_groups " +
+           "  WHERE (:excludeId IS NULL OR id != :excludeId) " +
+           "    AND age_range_min <= :maxAge AND age_range_max >= :minAge" +
+           ")")
+    boolean existsOverlappingAgeRange(@Param("minAge") int minAge, @Param("maxAge") int maxAge,
+                                      @Param("excludeId") UUID excludeId);
 }

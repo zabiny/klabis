@@ -52,11 +52,10 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     public TrainingGroup updateTrainingGroup(TrainingGroupId id, UpdateTrainingGroupCommand command) {
         TrainingGroup group = loadTrainingGroup(id);
         command.name().ifProvided(group::rename);
-        if (command.minAge().isProvided()) {
-            AgeRange newAgeRange = new AgeRange(command.minAge().throwIfNotProvided(), command.maxAge().throwIfNotProvided());
+        command.ageRange().ifProvided(newAgeRange -> {
             validateNoOverlappingAgeRange(newAgeRange, id);
             group.updateAgeRange(newAgeRange);
-        }
+        });
         command.trainers().ifProvided(group::replaceTrainers);
         return trainingGroupRepository.save(group);
     }
@@ -111,12 +110,8 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     }
 
     private void validateNoOverlappingAgeRange(AgeRange ageRange, TrainingGroupId excludeId) {
-        trainingGroupRepository.findAll().stream()
-                .filter(g -> excludeId == null || !g.getId().equals(excludeId))
-                .filter(g -> g.getAgeRange().overlaps(ageRange))
-                .findFirst()
-                .ifPresent(g -> {
-                    throw new AgeRange.OverlappingAgeRangeException(g.getAgeRange());
-                });
+        if (trainingGroupRepository.existsOverlappingAgeRange(ageRange.minAge(), ageRange.maxAge(), excludeId)) {
+            throw new AgeRange.OverlappingAgeRangeException(ageRange);
+        }
     }
 }

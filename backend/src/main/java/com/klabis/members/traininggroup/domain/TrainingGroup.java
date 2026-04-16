@@ -2,6 +2,7 @@ package com.klabis.members.traininggroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.UserGroup;
 import com.klabis.members.MemberAssignedToTrainingGroupEvent;
@@ -112,7 +113,9 @@ public class TrainingGroup extends KlabisAggregateRoot<TrainingGroup, TrainingGr
     }
 
     public void replaceTrainers(Set<MemberId> trainers) {
-        Assert.notEmpty(trainers, "At least one trainer is required");
+        if (trainers == null || trainers.isEmpty()) {
+            throw new CannotRemoveLastOwnerException();
+        }
         Set<MemberId> current = getTrainers();
         for (MemberId toAdd : trainers) {
             if (!current.contains(toAdd)) {
@@ -124,12 +127,6 @@ public class TrainingGroup extends KlabisAggregateRoot<TrainingGroup, TrainingGr
                 userGroup.removeOwner(toRemove.toUserId());
             }
         }
-    }
-
-    public void addMember(MemberId memberId) {
-        Assert.notNull(memberId, "MemberId is required");
-        userGroup.addMember(memberId.toUserId());
-        registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
     }
 
     public void removeMember(MemberId memberId) {

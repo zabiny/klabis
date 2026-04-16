@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Table("family_group_children")
-class FamilyGroupChildMemento {
+class FamilyGroupMemberMemento {
 
     @Column("member_id")
     private UUID memberId;
@@ -15,10 +15,10 @@ class FamilyGroupChildMemento {
     @Column("joined_at")
     private Instant joinedAt;
 
-    protected FamilyGroupChildMemento() {
+    protected FamilyGroupMemberMemento() {
     }
 
-    FamilyGroupChildMemento(UUID memberId, Instant joinedAt) {
+    FamilyGroupMemberMemento(UUID memberId, Instant joinedAt) {
         this.memberId = memberId;
         this.joinedAt = joinedAt;
     }

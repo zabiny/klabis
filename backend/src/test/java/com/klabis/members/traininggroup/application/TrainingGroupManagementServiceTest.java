@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,7 +66,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
             TrainingGroup expected = TrainingGroup.create(command);
-            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(anyInt(), anyInt())).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenReturn(expected);
 
@@ -82,7 +83,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -102,7 +103,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
                     .thenReturn(List.of(matchingMember1, matchingMember2));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -124,7 +125,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -138,10 +139,7 @@ class TrainingGroupManagementServiceTest {
         @Test
         @DisplayName("should throw OverlappingAgeRangeException when existing group has overlapping range")
         void shouldThrowWhenAgeRangeOverlapsExistingGroup() {
-            AgeRange existingRange = new AgeRange(10, 18);
-            TrainingGroup existingGroup = TrainingGroup.reconstruct(
-                    GROUP_ID, "Existing Group", Set.of(TRAINER), Set.of(), existingRange, null);
-            when(trainingGroupRepository.findAll()).thenReturn(List.of(existingGroup));
+            when(trainingGroupRepository.existsOverlappingAgeRange(15, 25, null)).thenReturn(true);
 
             AgeRange overlappingRange = new AgeRange(15, 25);
             TrainingGroup.CreateTrainingGroup command =
@@ -167,7 +165,6 @@ class TrainingGroupManagementServiceTest {
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.of("Seniors"),
                     PatchField.notProvided(),
-                    PatchField.notProvided(),
                     PatchField.notProvided()
             );
 
@@ -183,13 +180,12 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup group = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(trainingGroupRepository.findAll()).thenReturn(List.of(group));
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), any())).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.notProvided(),
-                    PatchField.of(5),
-                    PatchField.of(12),
+                    PatchField.of(new AgeRange(5, 12)),
                     PatchField.notProvided()
             );
 
@@ -204,17 +200,12 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup groupToUpdate = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
 
-            TrainingGroupId otherGroupId = new TrainingGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
-            TrainingGroup otherGroup = TrainingGroup.reconstruct(
-                    otherGroupId, "Seniors", Set.of(TRAINER), Set.of(), new AgeRange(20, 30), null);
-
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
-            when(trainingGroupRepository.findAll()).thenReturn(List.of(groupToUpdate, otherGroup));
+            when(trainingGroupRepository.existsOverlappingAgeRange(18, 25, GROUP_ID)).thenReturn(true);
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.notProvided(),
-                    PatchField.of(18),
-                    PatchField.of(25),
+                    PatchField.of(new AgeRange(18, 25)),
                     PatchField.notProvided()
             );
 
@@ -233,7 +224,6 @@ class TrainingGroupManagementServiceTest {
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.notProvided(),
                     PatchField.notProvided(),
-                    PatchField.notProvided(),
                     PatchField.of(Set.of(TRAINER_2))
             );
 
@@ -248,13 +238,12 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup group = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(trainingGroupRepository.findAll()).thenReturn(List.of(group));
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), any())).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.of("Updated Juniors"),
-                    PatchField.of(8),
-                    PatchField.of(14),
+                    PatchField.of(new AgeRange(8, 14)),
                     PatchField.of(Set.of(TRAINER_2))
             );
 
@@ -276,7 +265,6 @@ class TrainingGroupManagementServiceTest {
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.notProvided(),
                     PatchField.notProvided(),
-                    PatchField.notProvided(),
                     PatchField.notProvided()
             );
 
@@ -294,7 +282,6 @@ class TrainingGroupManagementServiceTest {
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.of("New Name"),
-                    PatchField.notProvided(),
                     PatchField.notProvided(),
                     PatchField.notProvided()
             );
@@ -392,7 +379,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.findAll()).thenReturn(List.of());
+            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
                     .thenReturn(List.of(MEMBER));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));

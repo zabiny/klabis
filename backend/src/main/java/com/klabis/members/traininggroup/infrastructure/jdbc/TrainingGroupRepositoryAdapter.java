@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @SecondaryAdapter
 @Repository
@@ -48,6 +49,12 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
         List<TrainingGroup> result = new ArrayList<>();
         jdbcRepository.findAll().forEach(m -> result.add(m.toTrainingGroup()));
         return result;
+    }
+
+    @Override
+    public boolean existsOverlappingAgeRange(int minAge, int maxAge, TrainingGroupId excludeId) {
+        UUID excludeUuid = excludeId != null ? excludeId.value() : null;
+        return jdbcRepository.existsOverlappingAgeRange(minAge, maxAge, excludeUuid);
     }
 
     @Override

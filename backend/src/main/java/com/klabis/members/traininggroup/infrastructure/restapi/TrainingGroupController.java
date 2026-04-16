@@ -167,8 +167,7 @@ class TrainingGroupController {
         TrainingGroupId groupId = new TrainingGroupId(id);
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                 request.name(),
-                request.minAge(),
-                request.maxAge(),
+                request.ageRangeDomain(),
                 request.trainerUuids().map(uuids -> uuids.stream()
                         .map(MemberId::new)
                         .collect(Collectors.toSet()))
