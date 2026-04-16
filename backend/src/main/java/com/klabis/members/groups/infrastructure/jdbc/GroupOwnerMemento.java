@@ -1,20 +1,20 @@
-package com.klabis.members.membersgroup.infrastructure.jdbc;
+package com.klabis.members.groups.infrastructure.jdbc;
 
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-@Table("members_group_owners")
-class MembersGroupOwnerMemento {
+@Table("user_group_owners")
+class GroupOwnerMemento {
 
     @Column("member_id")
     private UUID memberId;
 
-    protected MembersGroupOwnerMemento() {
+    protected GroupOwnerMemento() {
     }
 
-    MembersGroupOwnerMemento(UUID memberId) {
+    GroupOwnerMemento(UUID memberId) {
         this.memberId = memberId;
     }
 

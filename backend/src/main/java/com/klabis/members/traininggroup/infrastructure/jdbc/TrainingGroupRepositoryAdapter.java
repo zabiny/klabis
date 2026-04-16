@@ -1,13 +1,14 @@
 package com.klabis.members.traininggroup.infrastructure.jdbc;
 
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.infrastructure.jdbc.GroupJdbcRepository;
+import com.klabis.members.groups.infrastructure.jdbc.GroupMemento;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
-import org.springframework.stereotype.Repository;
+import org.jmolecules.ddd.annotation.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,49 +17,49 @@ import java.util.UUID;
 @Repository
 class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
 
-    private final TrainingGroupJdbcRepository jdbcRepository;
+    private final GroupJdbcRepository jdbcRepository;
 
-    TrainingGroupRepositoryAdapter(TrainingGroupJdbcRepository jdbcRepository) {
+    TrainingGroupRepositoryAdapter(GroupJdbcRepository jdbcRepository) {
         this.jdbcRepository = jdbcRepository;
     }
 
     @Override
     public TrainingGroup save(TrainingGroup group) {
-        return jdbcRepository.save(TrainingGroupMemento.from(group)).toTrainingGroup();
+        return jdbcRepository.save(GroupMemento.fromTrainingGroup(group)).toTrainingGroup();
     }
 
     @Override
     public Optional<TrainingGroup> findById(TrainingGroupId id) {
-        return jdbcRepository.findById(id.value()).map(TrainingGroupMemento::toTrainingGroup);
+        return jdbcRepository.findByIdAndType(id.value(), TrainingGroup.TYPE_DISCRIMINATOR)
+                .map(GroupMemento::toTrainingGroup);
     }
 
     @Override
     public Optional<TrainingGroup> findGroupForMember(MemberId memberId) {
-        return jdbcRepository.findByMemberId(memberId.uuid()).map(TrainingGroupMemento::toTrainingGroup);
+        return jdbcRepository.findByMemberIdAndType(memberId.uuid(), TrainingGroup.TYPE_DISCRIMINATOR)
+                .map(GroupMemento::toTrainingGroup);
     }
 
     @Override
     public List<TrainingGroup> findGroupsForTrainer(MemberId trainerId) {
-        return jdbcRepository.findByTrainerId(trainerId.uuid()).stream()
-                .map(TrainingGroupMemento::toTrainingGroup)
-                .toList();
+        return jdbcRepository.findByTrainerIdAndType(trainerId.uuid(), TrainingGroup.TYPE_DISCRIMINATOR)
+                .stream().map(GroupMemento::toTrainingGroup).toList();
     }
 
     @Override
     public List<TrainingGroup> findAll() {
-        List<TrainingGroup> result = new ArrayList<>();
-        jdbcRepository.findAll().forEach(m -> result.add(m.toTrainingGroup()));
-        return result;
+        return jdbcRepository.findAllByType(TrainingGroup.TYPE_DISCRIMINATOR)
+                .stream().map(GroupMemento::toTrainingGroup).toList();
     }
 
     @Override
     public boolean existsOverlappingAgeRange(int minAge, int maxAge, TrainingGroupId excludeId) {
         UUID excludeUuid = excludeId != null ? excludeId.value() : null;
-        return jdbcRepository.existsOverlappingAgeRange(minAge, maxAge, excludeUuid);
+        return jdbcRepository.existsOverlappingAgeRangeForType(minAge, maxAge, excludeUuid, TrainingGroup.TYPE_DISCRIMINATOR);
     }
 
     @Override
     public void delete(TrainingGroupId id) {
-        jdbcRepository.deleteById(id.value());
+        jdbcRepository.deleteByIdAndType(id.value(), TrainingGroup.TYPE_DISCRIMINATOR);
     }
 }

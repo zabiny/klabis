@@ -1,4 +1,4 @@
-package com.klabis.members.membersgroup.infrastructure.jdbc;
+package com.klabis.members.groups.infrastructure.jdbc;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
@@ -7,8 +7,8 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("members_group_invitations")
-class MembersGroupInvitationMemento {
+@Table("user_group_invitations")
+class GroupInvitationMemento {
 
     @Id
     @Column("id")
@@ -26,11 +26,11 @@ class MembersGroupInvitationMemento {
     @Column("created_at")
     private Instant createdAt;
 
-    protected MembersGroupInvitationMemento() {
+    protected GroupInvitationMemento() {
     }
 
-    MembersGroupInvitationMemento(UUID id, UUID invitedMemberId, UUID invitedByMemberId,
-                                   String status, Instant createdAt) {
+    GroupInvitationMemento(UUID id, UUID invitedMemberId, UUID invitedByMemberId,
+                           String status, Instant createdAt) {
         this.id = id;
         this.invitedMemberId = invitedMemberId;
         this.invitedByMemberId = invitedByMemberId;

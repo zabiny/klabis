@@ -220,7 +220,7 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should return single result when member is also a parent (present in both tables)")
         void shouldReturnSingleResultWhenParentIsAlsoInChildrenTable() {
-            // PARENT_A is stored in both family_group_parents and family_group_children
+            // PARENT_A is stored in both user_group_owners and user_group_members
             familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
             Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);

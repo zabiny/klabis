@@ -30,21 +30,12 @@ DELETE FROM calendar_items;
 -- DELETE FROM event_registrations;
 DELETE FROM events;
 
--- Training groups (members module aggregate root)
-DELETE FROM training_group_members;
-DELETE FROM training_group_trainers;
-DELETE FROM training_groups;
-
--- Family groups (members module aggregate root)
-DELETE FROM family_group_members;
-DELETE FROM family_group_parents;
-DELETE FROM family_groups;
-
--- Members groups (members module aggregate root)
-DELETE FROM members_group_invitations;
-DELETE FROM members_group_members;
-DELETE FROM members_group_owners;
-DELETE FROM members_groups;
+-- User groups — unified table covering FREE (MembersGroup), TRAINING, FAMILY aggregate types
+-- Child tables cascade on user_groups delete, but explicit deletes preserve order clarity
+DELETE FROM user_group_invitations;
+DELETE FROM user_group_members;
+DELETE FROM user_group_owners;
+DELETE FROM user_groups;
 
 -- Members table
 DELETE FROM members;

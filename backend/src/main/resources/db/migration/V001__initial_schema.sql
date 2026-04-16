@@ -14,9 +14,8 @@
 -- 6. event_registrations (FK → events, members)
 -- 7. calendar_items (FK → events)
 -- 8. birth_number_audit_log (no FK)
--- 9. training_groups + training_group_trainers + training_group_members
--- 10. family_groups + family_group_parents + family_group_members
--- 11. members_groups + members_group_owners + members_group_members + members_group_invitations
+-- 9. user_groups (unified table: type discriminator FREE/TRAINING/FAMILY)
+-- 10. user_group_owners + user_group_members + user_group_invitations (FK → user_groups)
 --
 -- OAuth2 infrastructure tables created in V002 migration
 -- Spring Modulith infrastructure tables created in V003 migration
@@ -373,16 +372,19 @@ COMMENT ON COLUMN birth_number_audit_log.action IS 'Action type: VIEW_BIRTH_NUMB
 COMMENT ON COLUMN birth_number_audit_log.occurred_at IS 'Timestamp when the action occurred';
 
 -- ============================================================================
--- 14. TRAINING_GROUPS TABLE
--- Stores training groups as an independent aggregate root in the members module
+-- 14. USER_GROUPS TABLE
+-- Unified table for all group types (FREE = MembersGroup, TRAINING = TrainingGroup, FAMILY = FamilyGroup)
+-- The type column acts as a discriminator to separate groups by their aggregate type.
+-- age_range_min/max are used only by TRAINING groups; NULL for FREE and FAMILY groups.
 -- ============================================================================
 
-CREATE TABLE training_groups
+CREATE TABLE user_groups
 (
-    id            UUID         PRIMARY KEY,
+    id            UUID         NOT NULL PRIMARY KEY,
+    type          VARCHAR(20)  NOT NULL,
     name          VARCHAR(200) NOT NULL,
-    age_range_min INT          NOT NULL,
-    age_range_max INT          NOT NULL,
+    age_range_min INT          NULL,
+    age_range_max INT          NULL,
 
     -- Audit fields
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -392,201 +394,79 @@ CREATE TABLE training_groups
     version       BIGINT       NOT NULL DEFAULT 0
 );
 
--- Indexes for training_groups
-CREATE INDEX idx_training_groups_name ON training_groups (name);
+-- Indexes for user_groups
+CREATE INDEX idx_user_groups_type ON user_groups (type);
+CREATE INDEX idx_user_groups_name ON user_groups (name);
 
--- Comments for training_groups
-COMMENT ON TABLE training_groups IS 'Training groups as independent aggregate root in the members module';
-COMMENT ON COLUMN training_groups.age_range_min IS 'Minimum age for this training group (inclusive)';
-COMMENT ON COLUMN training_groups.age_range_max IS 'Maximum age for this training group (inclusive)';
+-- Comments for user_groups
+COMMENT ON TABLE user_groups IS 'Unified table for all group aggregate types: FREE (MembersGroup), TRAINING (TrainingGroup), FAMILY (FamilyGroup)';
+COMMENT ON COLUMN user_groups.type IS 'Discriminator: FREE = invitation-based members group, TRAINING = age-range training group, FAMILY = family group';
+COMMENT ON COLUMN user_groups.age_range_min IS 'Minimum age (inclusive) — populated only for TRAINING groups';
+COMMENT ON COLUMN user_groups.age_range_max IS 'Maximum age (inclusive) — populated only for TRAINING groups';
 
 -- ============================================================================
--- 15. TRAINING_GROUP_TRAINERS TABLE
--- Maps trainers (members acting as owners) to training groups
+-- 15. USER_GROUP_OWNERS TABLE
+-- Maps owners/trainers/parents to their group (role depends on the group type).
 -- ============================================================================
 
-CREATE TABLE training_group_trainers
+CREATE TABLE user_group_owners
 (
-    training_group_id UUID NOT NULL REFERENCES training_groups (id) ON DELETE CASCADE,
-    member_id         UUID NOT NULL,
-    PRIMARY KEY (training_group_id, member_id)
+    user_group_id UUID NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
+    member_id     UUID NOT NULL,
+    PRIMARY KEY (user_group_id, member_id)
 );
 
--- Indexes for training_group_trainers
-CREATE INDEX idx_training_group_trainers_group_id ON training_group_trainers (training_group_id);
-CREATE INDEX idx_training_group_trainers_member_id ON training_group_trainers (member_id);
+-- Indexes for user_group_owners
+CREATE INDEX idx_user_group_owners_group_id ON user_group_owners (user_group_id);
+CREATE INDEX idx_user_group_owners_member_id ON user_group_owners (member_id);
 
--- Comments for training_group_trainers
-COMMENT ON TABLE training_group_trainers IS 'Maps trainers (members acting as owners) to training groups';
+-- Comments for user_group_owners
+COMMENT ON TABLE user_group_owners IS 'Owners/trainers/parents per group — interpretation depends on the group type';
 
 -- ============================================================================
--- 16. TRAINING_GROUP_MEMBERS TABLE
--- Maps members to training groups with join timestamp
+-- 16. USER_GROUP_MEMBERS TABLE
+-- Maps members to groups with join timestamp, shared across all group types.
 -- ============================================================================
 
-CREATE TABLE training_group_members
+CREATE TABLE user_group_members
 (
-    training_group_id UUID      NOT NULL REFERENCES training_groups (id) ON DELETE CASCADE,
-    member_id         UUID      NOT NULL,
-    joined_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (training_group_id, member_id)
+    user_group_id UUID      NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
+    member_id     UUID      NOT NULL,
+    joined_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_group_id, member_id)
 );
 
--- Indexes for training_group_members
-CREATE INDEX idx_training_group_members_group_id ON training_group_members (training_group_id);
-CREATE INDEX idx_training_group_members_member_id ON training_group_members (member_id);
+-- Indexes for user_group_members
+CREATE INDEX idx_user_group_members_group_id ON user_group_members (user_group_id);
+CREATE INDEX idx_user_group_members_member_id ON user_group_members (member_id);
 
--- Comments for training_group_members
-COMMENT ON TABLE training_group_members IS 'Maps members to training groups with join timestamp';
-COMMENT ON COLUMN training_group_members.joined_at IS 'Timestamp when member was assigned to the training group';
+-- Comments for user_group_members
+COMMENT ON TABLE user_group_members IS 'Members of any group type with join timestamp';
+COMMENT ON COLUMN user_group_members.joined_at IS 'Timestamp when the member was added to the group';
 
 -- ============================================================================
--- 17. FAMILY_GROUPS TABLE
--- Family groups as independent aggregate root in the members module
+-- 17. USER_GROUP_INVITATIONS TABLE
+-- Membership invitations — used only by FREE (MembersGroup) groups.
 -- ============================================================================
 
-CREATE TABLE family_groups
+CREATE TABLE user_group_invitations
 (
-    id          UUID         NOT NULL PRIMARY KEY,
-    name        VARCHAR(200) NOT NULL,
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by  VARCHAR(100) NOT NULL,
-    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_by VARCHAR(100) NOT NULL,
-    version     BIGINT       NOT NULL DEFAULT 0
-);
-
--- Indexes for family_groups
-CREATE INDEX idx_family_groups_name ON family_groups (name);
-
--- Comments for family_groups
-COMMENT ON TABLE family_groups IS 'Family groups as independent aggregate root in the members module';
-
--- ============================================================================
--- 18. FAMILY_GROUP_PARENTS TABLE
--- Maps parents (members acting as owners) to family groups
--- ============================================================================
-
-CREATE TABLE family_group_parents
-(
-    family_group_id UUID NOT NULL REFERENCES family_groups (id) ON DELETE CASCADE,
-    member_id       UUID NOT NULL,
-    PRIMARY KEY (family_group_id, member_id)
-);
-
--- Indexes for family_group_parents
-CREATE INDEX idx_family_group_parents_group_id ON family_group_parents (family_group_id);
-CREATE INDEX idx_family_group_parents_member_id ON family_group_parents (member_id);
-
--- Comments for family_group_parents
-COMMENT ON TABLE family_group_parents IS 'Maps parents (members acting as owners) to family groups';
-
--- ============================================================================
--- 19. FAMILY_GROUP_MEMBERS TABLE
--- Maps all members (parents and children) to family groups with join timestamp
--- ============================================================================
-
-CREATE TABLE family_group_members
-(
-    family_group_id UUID      NOT NULL REFERENCES family_groups (id) ON DELETE CASCADE,
-    member_id       UUID      NOT NULL,
-    joined_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (family_group_id, member_id)
-);
-
--- Indexes for family_group_members
-CREATE INDEX idx_family_group_members_group_id ON family_group_members (family_group_id);
-CREATE INDEX idx_family_group_members_member_id ON family_group_members (member_id);
-
--- Comments for family_group_members
-COMMENT ON TABLE family_group_members IS 'Maps all members (parents included) to family groups with join timestamp';
-COMMENT ON COLUMN family_group_members.joined_at IS 'Timestamp when member was added to the family group';
-
--- ============================================================================
--- 20. MEMBERS_GROUPS TABLE
--- Members groups (invitation-based free groups) as independent aggregate root in the members module
--- ============================================================================
-
-CREATE TABLE members_groups
-(
-    id          UUID         NOT NULL PRIMARY KEY,
-    name        VARCHAR(200) NOT NULL,
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by  VARCHAR(100) NOT NULL,
-    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_by VARCHAR(100) NOT NULL,
-    version     BIGINT       NOT NULL DEFAULT 0
-);
-
--- Indexes for members_groups
-CREATE INDEX idx_members_groups_name ON members_groups (name);
-
--- Comments for members_groups
-COMMENT ON TABLE members_groups IS 'Invitation-based members groups as independent aggregate root in the members module';
-
--- ============================================================================
--- 21. MEMBERS_GROUP_OWNERS TABLE
--- Maps owners (group admins) to members groups
--- ============================================================================
-
-CREATE TABLE members_group_owners
-(
-    members_group_id UUID NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
-    member_id        UUID NOT NULL,
-    PRIMARY KEY (members_group_id, member_id)
-);
-
--- Indexes for members_group_owners
-CREATE INDEX idx_members_group_owners_group_id ON members_group_owners (members_group_id);
-CREATE INDEX idx_members_group_owners_member_id ON members_group_owners (member_id);
-
--- Comments for members_group_owners
-COMMENT ON TABLE members_group_owners IS 'Maps owners (group admins) to members groups';
-
--- ============================================================================
--- 22. MEMBERS_GROUP_MEMBERS TABLE
--- Maps members to members groups with join timestamp
--- ============================================================================
-
-CREATE TABLE members_group_members
-(
-    members_group_id UUID      NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
-    member_id        UUID      NOT NULL,
-    joined_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (members_group_id, member_id)
-);
-
--- Indexes for members_group_members
-CREATE INDEX idx_members_group_members_group_id ON members_group_members (members_group_id);
-CREATE INDEX idx_members_group_members_member_id ON members_group_members (member_id);
-
--- Comments for members_group_members
-COMMENT ON TABLE members_group_members IS 'Maps members to members groups with join timestamp';
-COMMENT ON COLUMN members_group_members.joined_at IS 'Timestamp when member was added to the group (via accepted invitation)';
-
--- ============================================================================
--- 23. MEMBERS_GROUP_INVITATIONS TABLE
--- Stores membership invitations for members groups
--- ============================================================================
-
-CREATE TABLE members_group_invitations
-(
-    id                   UUID        PRIMARY KEY,
-    members_group_id     UUID        NOT NULL REFERENCES members_groups (id) ON DELETE CASCADE,
+    id                   UUID        NOT NULL PRIMARY KEY,
+    user_group_id        UUID        NOT NULL REFERENCES user_groups (id) ON DELETE CASCADE,
     invited_member_id    UUID        NOT NULL,
     invited_by_member_id UUID        NOT NULL,
     status               VARCHAR(20) NOT NULL,
     created_at           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for members_group_invitations
-CREATE INDEX idx_members_group_invitations_group_id ON members_group_invitations (members_group_id);
-CREATE INDEX idx_members_group_invitations_invited_member_id ON members_group_invitations (invited_member_id);
-CREATE INDEX idx_members_group_invitations_status ON members_group_invitations (status);
+-- Indexes for user_group_invitations
+CREATE INDEX idx_user_group_invitations_group_id ON user_group_invitations (user_group_id);
+CREATE INDEX idx_user_group_invitations_invited_member_id ON user_group_invitations (invited_member_id);
+CREATE INDEX idx_user_group_invitations_status ON user_group_invitations (status);
 
--- Comments for members_group_invitations
-COMMENT ON TABLE members_group_invitations IS 'Membership invitations for members groups';
-COMMENT ON COLUMN members_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
+-- Comments for user_group_invitations
+COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (MembersGroup) groups';
+COMMENT ON COLUMN user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
 
 -- ============================================================================
 -- 24. CATEGORY_PRESETS TABLE

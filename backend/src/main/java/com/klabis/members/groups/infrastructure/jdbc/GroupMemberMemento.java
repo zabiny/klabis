@@ -1,4 +1,4 @@
-package com.klabis.members.traininggroup.infrastructure.jdbc;
+package com.klabis.members.groups.infrastructure.jdbc;
 
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -6,8 +6,8 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("training_group_members")
-class TrainingGroupMemberMemento {
+@Table("user_group_members")
+class GroupMemberMemento {
 
     @Column("member_id")
     private UUID memberId;
@@ -15,10 +15,10 @@ class TrainingGroupMemberMemento {
     @Column("joined_at")
     private Instant joinedAt;
 
-    protected TrainingGroupMemberMemento() {
+    protected GroupMemberMemento() {
     }
 
-    TrainingGroupMemberMemento(UUID memberId, Instant joinedAt) {
+    GroupMemberMemento(UUID memberId, Instant joinedAt) {
         this.memberId = memberId;
         this.joinedAt = joinedAt;
     }
