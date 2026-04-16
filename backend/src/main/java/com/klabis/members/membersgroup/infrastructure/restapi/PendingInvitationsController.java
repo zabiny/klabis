@@ -3,7 +3,7 @@ package com.klabis.members.membersgroup.infrastructure.restapi;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
-import com.klabis.members.membersgroup.domain.MembersGroup;
+import com.klabis.members.membersgroup.application.PendingInvitationView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,11 +39,9 @@ class PendingInvitationsController {
     ResponseEntity<CollectionModel<EntityModel<PendingInvitationResponse>>> getPendingInvitations(
             @ActingMember MemberId actingMember) {
 
-        List<MembersGroup> groups = membersGroupManagementService.getGroupsWithPendingInvitations(actingMember);
-        List<EntityModel<PendingInvitationResponse>> items = groups.stream()
-                .flatMap(group -> group.getPendingInvitations().stream()
-                        .filter(inv -> inv.isForUser(actingMember.toUserId()))
-                        .map(inv -> InvitationModelBuilder.build(group, inv)))
+        List<PendingInvitationView> views = membersGroupManagementService.getPendingInvitationsForMember(actingMember);
+        List<EntityModel<PendingInvitationResponse>> items = views.stream()
+                .map(InvitationModelBuilder::buildFromView)
                 .toList();
 
         CollectionModel<EntityModel<PendingInvitationResponse>> model = CollectionModel.of(items);

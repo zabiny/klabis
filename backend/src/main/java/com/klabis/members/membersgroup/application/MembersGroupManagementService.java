@@ -112,4 +112,14 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     public List<MembersGroup> getGroupsWithPendingInvitations(MemberId memberId) {
         return membersGroupRepository.findGroupsWithPendingInvitationsForMember(memberId);
     }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PendingInvitationView> getPendingInvitationsForMember(MemberId memberId) {
+        return membersGroupRepository.findGroupsWithPendingInvitationsForMember(memberId).stream()
+                .flatMap(group -> group.getPendingInvitations().stream()
+                        .filter(inv -> inv.isForUser(memberId.toUserId()))
+                        .map(inv -> new PendingInvitationView(group.getId(), group.getName(), inv)))
+                .toList();
+    }
 }

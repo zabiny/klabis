@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -416,6 +417,57 @@ class MembersGroupManagementServiceTest {
                     .thenReturn(List.of());
 
             List<MembersGroup> result = service.getGroupsWithPendingInvitations(OTHER_MEMBER);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getPendingInvitationsForMember()")
+    class GetPendingInvitationsForMemberMethod {
+
+        @Test
+        @DisplayName("should return flat list of pending invitations for member across groups")
+        void shouldReturnFlatListOfPendingInvitations() {
+            InvitationId invitationId = InvitationId.newId();
+            Invitation invitation = Invitation.reconstruct(
+                    invitationId, OTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(invitation), null);
+            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+                    .thenReturn(List.of(group));
+
+            List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).groupId()).isEqualTo(GROUP_ID);
+            assertThat(result.get(0).groupName()).isEqualTo("Test Group");
+            assertThat(result.get(0).invitation().getId()).isEqualTo(invitationId);
+        }
+
+        @Test
+        @DisplayName("should filter out invitations not addressed to the requesting member")
+        void shouldFilterInvitationsForOtherMembers() {
+            InvitationId invForOther = InvitationId.newId();
+            Invitation otherInvitation = Invitation.reconstruct(
+                    invForOther, ANOTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
+            MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(otherInvitation), null);
+            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+                    .thenReturn(List.of(group));
+
+            List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return empty list when no groups have pending invitations")
+        void shouldReturnEmptyListWhenNoGroups() {
+            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+                    .thenReturn(List.of());
+
+            List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);
 
             assertThat(result).isEmpty();
         }

@@ -5,7 +5,6 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
@@ -14,6 +13,8 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.membersgroup.application.MembersGroupManagementPort;
+import com.klabis.members.membersgroup.application.PendingInvitationView;
+import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import org.junit.jupiter.api.DisplayName;
@@ -261,9 +262,11 @@ class MembersGroupControllerTest {
     class RenameGroupTests {
 
         @Test
-        @DisplayName("should return 204 when member renames group")
+        @DisplayName("should return 204 when owner renames group")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldRenameGroupAndReturn204() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Old Name", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
             MembersGroup renamedGroup = buildGroup(GROUP_UUID, "New Name", MEMBER_ID);
             when(membersGroupManagementService.renameGroup(any(MembersGroupId.class), any(String.class)))
                     .thenReturn(renamedGroup);
@@ -277,6 +280,24 @@ class MembersGroupControllerTest {
                                             """)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "New Name"}
+                                            """)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -310,10 +331,10 @@ class MembersGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 404 when group not found")
+        @DisplayName("should return 404 when group not found during ownership check")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            when(membersGroupManagementService.renameGroup(any(MembersGroupId.class), any(String.class)))
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class)))
                     .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
@@ -333,14 +354,31 @@ class MembersGroupControllerTest {
     class DeleteGroupTests {
 
         @Test
-        @DisplayName("should return 204 when member deletes group")
+        @DisplayName("should return 204 when owner deletes group")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldDeleteGroupAndReturn204() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             delete("/api/groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -355,11 +393,11 @@ class MembersGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 404 when group not found")
+        @DisplayName("should return 404 when group not found during ownership check")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException("Members", GROUP_ID))
-                    .when(membersGroupManagementService).deleteGroup(any(MembersGroupId.class));
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class)))
+                    .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
                             delete("/api/groups/{id}", GROUP_UUID)
@@ -370,16 +408,13 @@ class MembersGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/groups/{id}/members")
+    @DisplayName("POST /api/groups/{id}/members (removed endpoint)")
     class AddMemberTests {
 
         @Test
-        @DisplayName("should return 422 when adding member directly (invitation-only group)")
+        @DisplayName("should return 404 — endpoint was removed, membership is invitation-only")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn422WhenAddingMemberDirectly() throws Exception {
-            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
-            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
-
+        void shouldReturn404BecauseEndpointWasRemoved() throws Exception {
             mockMvc.perform(
                             post("/api/groups/{id}/members", GROUP_UUID)
                                     .contentType("application/json")
@@ -388,22 +423,7 @@ class MembersGroupControllerTest {
                                             {"memberId": "%s"}
                                             """.formatted(UUID.randomUUID()))
                     )
-                    .andExpect(status().is(422));
-        }
-
-        @Test
-        @DisplayName("should return 403 when user has no member profile")
-        @WithKlabisMockUser
-        void shouldReturn403WhenNoMemberProfile() throws Exception {
-            mockMvc.perform(
-                            post("/api/groups/{id}/members", GROUP_UUID)
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("""
-                                            {"memberId": "%s"}
-                                            """.formatted(UUID.randomUUID()))
-                    )
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isNotFound());
         }
     }
 
@@ -415,11 +435,28 @@ class MembersGroupControllerTest {
         @DisplayName("should return 204 when owner removes member")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldRemoveMemberAndReturn204() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -434,11 +471,11 @@ class MembersGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 404 when group not found")
+        @DisplayName("should return 404 when group not found during ownership check")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException("Members", GROUP_ID))
-                    .when(membersGroupManagementService).removeMember(any(MembersGroupId.class), any(MemberId.class));
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class)))
+                    .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
                             delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.randomUUID())
@@ -456,6 +493,9 @@ class MembersGroupControllerTest {
         @DisplayName("should return 204 when owner adds another owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn204WhenAddingOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             post("/api/groups/{id}/owners", GROUP_UUID)
                                     .contentType("application/json")
@@ -465,6 +505,24 @@ class MembersGroupControllerTest {
                                             """.formatted(OTHER_MEMBER_ID))
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            post("/api/groups/{id}/owners", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(OTHER_MEMBER_ID))
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -499,6 +557,8 @@ class MembersGroupControllerTest {
         @DisplayName("should return 409 when promoting a non-member to owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn409WhenPromotingNonMemberToOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
             UserId nonMemberUserId = new UserId(java.util.UUID.fromString(OTHER_MEMBER_ID));
             doThrow(new CannotPromoteNonMemberToOwnerException(nonMemberUserId))
                     .when(membersGroupManagementService).addOwner(any(MembersGroupId.class), any(MemberId.class));
@@ -537,6 +597,9 @@ class MembersGroupControllerTest {
         @DisplayName("should return 204 when owner removes another owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn204WhenRemovingOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             delete("/api/groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -545,9 +608,25 @@ class MembersGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/owners/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
         @DisplayName("should return 422 when attempting to remove last owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn422WhenRemovingLastOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
             UserId lastOwnerUserId = new UserId(UUID.fromString(MEMBER_ID));
             doThrow(new CannotRemoveLastOwnerException(lastOwnerUserId))
                     .when(membersGroupManagementService).removeOwner(any(MembersGroupId.class), any(MemberId.class));
@@ -577,6 +656,9 @@ class MembersGroupControllerTest {
         @DisplayName("should return 204 when owner invites a member")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldInviteMemberAndReturn204() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
             mockMvc.perform(
                             post("/api/groups/{id}/invitations", GROUP_UUID)
                                     .contentType("application/json")
@@ -586,6 +668,24 @@ class MembersGroupControllerTest {
                                             """.formatted(OTHER_MEMBER_ID))
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwner() throws Exception {
+            MembersGroup group = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            post("/api/groups/{id}/invitations", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(OTHER_MEMBER_ID))
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -631,11 +731,11 @@ class MembersGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 404 when group not found")
+        @DisplayName("should return 404 when group not found during ownership check")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenGroupNotFound() throws Exception {
-            doThrow(new GroupNotFoundException("Members", GROUP_ID))
-                    .when(membersGroupManagementService).inviteMember(any(), any(), any());
+            when(membersGroupManagementService.getGroup(any(MembersGroupId.class)))
+                    .thenThrow(new GroupNotFoundException("Members", GROUP_ID));
 
             mockMvc.perform(
                             post("/api/groups/{id}/invitations", GROUP_UUID)
@@ -773,10 +873,9 @@ class MembersGroupControllerTest {
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
                     INVITATION_ID, invitedMember.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now());
-            MembersGroup group = MembersGroup.reconstruct(
-                    GROUP_ID, "Trail Runners", Set.of(owner), Set.of(), Set.of(invitation), null);
-            when(membersGroupManagementService.getGroupsWithPendingInvitations(any(MemberId.class)))
-                    .thenReturn(List.of(group));
+            PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation);
+            when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
+                    .thenReturn(List.of(view));
 
             mockMvc.perform(
                             get("/api/invitations/pending")
@@ -790,7 +889,7 @@ class MembersGroupControllerTest {
         @DisplayName("should return 200 with empty list when no pending invitations")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnEmptyListWhenNoPendingInvitations() throws Exception {
-            when(membersGroupManagementService.getGroupsWithPendingInvitations(any(MemberId.class)))
+            when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of());
 
             mockMvc.perform(

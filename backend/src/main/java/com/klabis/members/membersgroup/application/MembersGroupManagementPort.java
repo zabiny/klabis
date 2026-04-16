@@ -34,4 +34,6 @@ public interface MembersGroupManagementPort {
     void rejectInvitation(MembersGroupId id, InvitationId invitationId, MemberId rejectingMember);
 
     List<MembersGroup> getGroupsWithPendingInvitations(MemberId memberId);
+
+    List<PendingInvitationView> getPendingInvitationsForMember(MemberId memberId);
 }
