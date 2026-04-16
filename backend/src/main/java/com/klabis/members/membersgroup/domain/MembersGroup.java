@@ -3,6 +3,7 @@ package com.klabis.members.membersgroup.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.usergroup.CannotInviteExistingMemberException;
+import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.usergroup.DuplicatePendingInvitationException;
 import com.klabis.common.usergroup.GroupMembership;
@@ -94,7 +95,10 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
 
     public void addOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        promoteOwner(memberId.toUserId());
+        if (!userGroup.hasMember(memberId.toUserId())) {
+            throw new CannotPromoteNonMemberToOwnerException(memberId.toUserId());
+        }
+        userGroup.addOwner(memberId.toUserId());
     }
 
     public void removeOwner(MemberId memberId) {
@@ -111,11 +115,6 @@ public class MembersGroup extends KlabisAggregateRoot<MembersGroup, MembersGroup
     @Override
     public boolean hasMember(UserId userId) {
         return userGroup.hasMember(userId);
-    }
-
-    @Override
-    public void addOwner(UserId userId) {
-        userGroup.addOwner(userId);
     }
 
     // WithInvitations interface — controllers verify authorization before calling; no owner check here
