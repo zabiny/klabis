@@ -60,7 +60,7 @@ class BirthNumberAuditControllerTest {
     private RegistrationPort registrationService;
 
     @MockitoBean
-    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
+    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
     private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;

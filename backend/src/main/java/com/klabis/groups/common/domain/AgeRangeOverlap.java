@@ -1,7 +1,7 @@
 package com.klabis.groups.common.domain;
 
-import com.klabis.members.traininggroup.domain.AgeRange;
-import com.klabis.members.traininggroup.domain.TrainingGroupId;
+import com.klabis.groups.traininggroup.TrainingGroupId;
+import com.klabis.groups.traininggroup.domain.AgeRange;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.springframework.util.Assert;
 

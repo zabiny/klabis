@@ -6,6 +6,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
+import com.klabis.groups.LastOwnershipChecker;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;

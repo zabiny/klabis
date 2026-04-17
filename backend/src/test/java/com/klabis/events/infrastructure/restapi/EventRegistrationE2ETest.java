@@ -8,7 +8,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegisterCommandBuilder;
-import com.klabis.members.application.LastOwnershipChecker;
+import com.klabis.groups.LastOwnershipChecker;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ class EventRegistrationE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
+    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
     @SuppressWarnings("unused")

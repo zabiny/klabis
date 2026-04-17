@@ -9,6 +9,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
+import com.klabis.groups.LastOwnershipChecker;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import org.junit.jupiter.api.Disabled;
@@ -65,7 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
-        com.klabis.members.traininggroup.infrastructure.restapi.MemberDetailsPostProcessor.class,
+        com.klabis.groups.traininggroup.infrastructure.restapi.MemberDetailsPostProcessor.class,
         com.klabis.groups.familygroup.infrastructure.restapi.MemberDetailsPostProcessor.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
@@ -86,7 +87,7 @@ class MemberControllerApiTest {
     private RegistrationPort registrationService;
 
     @MockitoBean
-    private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
+    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
     private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
@@ -421,10 +422,10 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            com.klabis.members.traininggroup.domain.TrainingGroup mockTrainingGroup =
-                    Mockito.mock(com.klabis.members.traininggroup.domain.TrainingGroup.class);
+            com.klabis.groups.traininggroup.domain.TrainingGroup mockTrainingGroup =
+                    Mockito.mock(com.klabis.groups.traininggroup.domain.TrainingGroup.class);
             Mockito.when(mockTrainingGroup.getId())
-                    .thenReturn(new com.klabis.members.traininggroup.domain.TrainingGroupId(groupId));
+                    .thenReturn(new com.klabis.groups.traininggroup.TrainingGroupId(groupId));
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))

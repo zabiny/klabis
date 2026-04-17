@@ -1,0 +1,30 @@
+package com.klabis.groups.traininggroup.application;
+
+import com.klabis.groups.traininggroup.TrainingGroupId;
+import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.members.MemberId;
+import org.jmolecules.architecture.hexagonal.PrimaryPort;
+
+import java.util.List;
+
+@PrimaryPort
+public interface TrainingGroupManagementPort {
+
+    List<TrainingGroup> listTrainingGroups();
+
+    TrainingGroup getTrainingGroup(TrainingGroupId id);
+
+    TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command);
+
+    TrainingGroup updateTrainingGroup(TrainingGroupId id, UpdateTrainingGroupCommand command);
+
+    void deleteTrainingGroup(TrainingGroupId id);
+
+    void addTrainer(TrainingGroupId id, MemberId trainerId);
+
+    void removeTrainer(TrainingGroupId id, MemberId trainerId);
+
+    void addMemberToTrainingGroup(TrainingGroupId id, MemberId memberId);
+
+    void removeMemberFromTrainingGroup(TrainingGroupId id, MemberId memberId);
+}
