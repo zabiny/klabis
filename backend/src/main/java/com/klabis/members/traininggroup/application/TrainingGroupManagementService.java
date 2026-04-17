@@ -3,6 +3,8 @@ package com.klabis.members.traininggroup.application;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
+import com.klabis.members.groups.domain.AgeRangeOverlap;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
@@ -27,7 +29,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<TrainingGroup> listTrainingGroups() {
-        return trainingGroupRepository.findAll();
+        return trainingGroupRepository.findAll(TrainingGroupFilter.all());
     }
 
     @Transactional(readOnly = true)
@@ -86,7 +88,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     @Transactional
     @Override
     public void addMemberToTrainingGroup(TrainingGroupId id, MemberId memberId) {
-        trainingGroupRepository.findGroupForMember(memberId)
+        trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
                     throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId());
@@ -110,7 +112,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     }
 
     private void validateNoOverlappingAgeRange(AgeRange ageRange, TrainingGroupId excludeId) {
-        if (trainingGroupRepository.existsOverlappingAgeRange(ageRange.minAge(), ageRange.maxAge(), excludeId)) {
+        if (trainingGroupRepository.exists(TrainingGroupFilter.all().withOverlap(new AgeRangeOverlap(ageRange, excludeId)))) {
             throw new AgeRange.OverlappingAgeRangeException(ageRange);
         }
     }

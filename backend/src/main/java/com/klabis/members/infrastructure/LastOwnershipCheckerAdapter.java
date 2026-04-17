@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import com.klabis.members.groups.domain.MembersGroupFilter;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
@@ -53,7 +54,7 @@ class LastOwnershipCheckerAdapter implements LastOwnershipChecker {
                         MembersGroup.TYPE_DISCRIMINATOR))
                 .forEach(result::add);
 
-        trainingGroupRepository.findGroupsForTrainer(memberId).stream()
+        trainingGroupRepository.findAll(TrainingGroupFilter.all().withTrainerIs(memberId)).stream()
                 .filter(group -> group.isLastTrainer(memberId))
                 .map(group -> new OwnedGroupInfo(
                         group.getId().uuid().toString(),

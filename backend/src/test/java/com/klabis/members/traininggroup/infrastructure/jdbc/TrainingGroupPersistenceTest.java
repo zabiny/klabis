@@ -3,6 +3,8 @@ package com.klabis.members.traininggroup.infrastructure.jdbc;
 import com.klabis.CleanupTestData;
 import com.klabis.members.MemberAssignedToTrainingGroupEvent;
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.AgeRangeOverlap;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
@@ -27,10 +29,10 @@ import org.springframework.test.context.jdbc.Sql;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("TrainingGroup JDBC Persistence Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -157,18 +159,18 @@ class TrainingGroupPersistenceTest {
     }
 
     @Nested
-    @DisplayName("findAll()")
+    @DisplayName("findAll(TrainingGroupFilter)")
     class FindAll {
 
         @Test
-        @DisplayName("should return all saved training groups")
+        @DisplayName("should return all saved training groups when filter is all()")
         void shouldReturnAllGroups() {
             trainingGroupRepository.save(TrainingGroup.create(
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
             trainingGroupRepository.save(TrainingGroup.create(
                     new TrainingGroup.CreateTrainingGroup("Seniors", TRAINER, new AgeRange(18, 40))));
 
-            List<TrainingGroup> result = trainingGroupRepository.findAll();
+            List<TrainingGroup> result = trainingGroupRepository.findAll(TrainingGroupFilter.all());
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(TrainingGroup::getName)
@@ -178,9 +180,134 @@ class TrainingGroupPersistenceTest {
         @Test
         @DisplayName("should return empty list when no groups exist")
         void shouldReturnEmptyListWhenNoGroups() {
-            List<TrainingGroup> result = trainingGroupRepository.findAll();
+            List<TrainingGroup> result = trainingGroupRepository.findAll(TrainingGroupFilter.all());
 
             assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return only groups where given member is a trainer when withTrainerIs filter is used")
+        void shouldReturnGroupsWhereMemberIsTrainer() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Seniors", TRAINER, new AgeRange(18, 40))));
+
+            List<TrainingGroup> result = trainingGroupRepository.findAll(
+                    TrainingGroupFilter.all().withTrainerIs(TRAINER));
+
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(TrainingGroup::getName)
+                    .containsExactlyInAnyOrder("Juniors", "Seniors");
+        }
+
+        @Test
+        @DisplayName("should return empty list when member is not a trainer in any group")
+        void shouldReturnEmptyWhenNotATrainer() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+
+            List<TrainingGroup> result = trainingGroupRepository.findAll(
+                    TrainingGroupFilter.all().withTrainerIs(REGULAR_MEMBER));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findOne(TrainingGroupFilter)")
+    class FindOne {
+
+        @Test
+        @DisplayName("should return the training group the member is assigned to when withMemberIs filter is used")
+        void shouldReturnGroupForMember() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.clearDomainEvents();
+            trainingGroupRepository.save(group);
+
+            Optional<TrainingGroup> result = trainingGroupRepository.findOne(
+                    TrainingGroupFilter.all().withMemberIs(REGULAR_MEMBER));
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getName()).isEqualTo("Juniors");
+        }
+
+        @Test
+        @DisplayName("should return empty when member is not in any training group")
+        void shouldReturnEmptyWhenMemberNotInAnyGroup() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+
+            Optional<TrainingGroup> result = trainingGroupRepository.findOne(
+                    TrainingGroupFilter.all().withMemberIs(REGULAR_MEMBER));
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findOne(filter) invariant — throws when multiple rows match")
+    class FindOneContract {
+
+        @Test
+        @DisplayName("should throw IllegalStateException when withMemberIs matches more than one group (invariant violation)")
+        void shouldThrowWhenMemberAppearsInTwoGroups() {
+            TrainingGroup group1 = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Group A", TRAINER, new AgeRange(8, 14)));
+            group1.assignEligibleMember(REGULAR_MEMBER);
+            group1.clearDomainEvents();
+            trainingGroupRepository.save(group1);
+
+            TrainingGroup group2 = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Group B", TRAINER, new AgeRange(15, 25)));
+            group2.assignEligibleMember(REGULAR_MEMBER);
+            group2.clearDomainEvents();
+            trainingGroupRepository.save(group2);
+
+            assertThatThrownBy(() ->
+                    trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(REGULAR_MEMBER)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("findOne expected at most 1 result");
+        }
+    }
+
+    @Nested
+    @DisplayName("exists(TrainingGroupFilter) — overlap check")
+    class ExistsOverlap {
+
+        @Test
+        @DisplayName("should detect overlap when another group covers the same age range")
+        void shouldDetectOverlappingAgeRange() {
+            trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+
+            boolean result = trainingGroupRepository.exists(
+                    TrainingGroupFilter.all().withOverlap(new AgeRangeOverlap(new AgeRange(10, 18), null)));
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not detect overlap when excludeId is the only matching group")
+        void shouldNotDetectOverlapWhenExcluded() {
+            TrainingGroup saved = trainingGroupRepository.save(TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
+
+            boolean result = trainingGroupRepository.exists(
+                    TrainingGroupFilter.all().withOverlap(new AgeRangeOverlap(new AgeRange(8, 14), saved.getId())));
+
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when no groups exist")
+        void shouldReturnFalseWhenNoGroups() {
+            boolean result = trainingGroupRepository.exists(
+                    TrainingGroupFilter.all().withOverlap(new AgeRangeOverlap(new AgeRange(10, 18), null)));
+
+            assertThat(result).isFalse();
         }
     }
 
@@ -231,51 +358,6 @@ class TrainingGroupPersistenceTest {
             trainingGroupRepository.save(group);
 
             assertThat(domainEventCapture.getCapturedEvents()).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("findGroupsForTrainer()")
-    class FindGroupsForTrainer {
-
-        @Test
-        @DisplayName("should return groups where member is a trainer")
-        void shouldReturnGroupsWhereTrainer() {
-            trainingGroupRepository.save(TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
-            trainingGroupRepository.save(TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Seniors", TRAINER, new AgeRange(18, 40))));
-
-            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(TRAINER);
-
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(TrainingGroup::getName)
-                    .containsExactlyInAnyOrder("Juniors", "Seniors");
-        }
-
-        @Test
-        @DisplayName("should return empty list when member is not a trainer in any group")
-        void shouldReturnEmptyWhenNotATrainer() {
-            trainingGroupRepository.save(TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14))));
-
-            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(REGULAR_MEMBER);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should not include groups where member is only a member, not a trainer")
-        void shouldNotIncludeGroupsWhereMemberIsOnlyMember() {
-            TrainingGroup group = TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(8, 14)));
-            group.assignEligibleMember(REGULAR_MEMBER);
-            group.clearDomainEvents();
-            trainingGroupRepository.save(group);
-
-            List<TrainingGroup> result = trainingGroupRepository.findGroupsForTrainer(REGULAR_MEMBER);
-
-            assertThat(result).isEmpty();
         }
     }
 

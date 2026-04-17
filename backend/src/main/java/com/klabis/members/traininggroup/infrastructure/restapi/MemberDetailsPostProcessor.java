@@ -1,6 +1,7 @@
 package com.klabis.members.traininggroup.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.springframework.hateoas.EntityModel;
@@ -20,7 +21,7 @@ public class MemberDetailsPostProcessor implements RepresentationModelProcessor<
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = model.getContent().id();
-        trainingGroupRepository.findGroupForMember(memberId)
+        trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
                 .ifPresent(group -> model.add(Link.of("/api/training-groups/" + group.getId().value(), "trainingGroup")));
         return model;
     }

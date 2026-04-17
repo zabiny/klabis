@@ -82,11 +82,29 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
 
     @Query("""
             SELECT ug.* FROM user_groups ug
+            JOIN user_group_members ugm ON ug.id = ugm.user_group_id
+            WHERE ug.type = :type
+              AND ugm.member_id = :memberId
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2ByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM user_groups ug
             JOIN user_group_owners ugo ON ug.id = ugo.user_group_id
             WHERE ug.type = :type
               AND ugo.member_id = :trainerId
             """)
     List<GroupMemento> findByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM user_groups ug
+            JOIN user_group_owners ugo ON ug.id = ugo.user_group_id
+            WHERE ug.type = :type
+              AND ugo.member_id = :trainerId
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2ByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
 
     @Query("""
             SELECT EXISTS (

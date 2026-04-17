@@ -9,6 +9,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -423,7 +424,7 @@ class MemberControllerApiTest {
                     Mockito.mock(com.klabis.members.traininggroup.domain.TrainingGroup.class);
             Mockito.when(mockTrainingGroup.getId())
                     .thenReturn(new com.klabis.members.traininggroup.domain.TrainingGroupId(groupId));
-            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
             when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -444,7 +445,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
             com.klabis.members.familygroup.domain.FamilyGroup mockFamilyGroup =
                     Mockito.mock(com.klabis.members.familygroup.domain.FamilyGroup.class);
@@ -468,7 +469,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findGroupForMember(any(MemberId.class)))
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
             when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());

@@ -1,10 +1,9 @@
 package com.klabis.members.traininggroup.domain;
 
-import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface TrainingGroupRepository {
 
@@ -12,13 +11,11 @@ public interface TrainingGroupRepository {
 
     Optional<TrainingGroup> findById(TrainingGroupId id);
 
-    Optional<TrainingGroup> findGroupForMember(MemberId memberId);
+    List<TrainingGroup> findAll(TrainingGroupFilter filter);
 
-    List<TrainingGroup> findGroupsForTrainer(MemberId trainerId);
+    Optional<TrainingGroup> findOne(TrainingGroupFilter filter);
 
-    List<TrainingGroup> findAll();
-
-    boolean existsOverlappingAgeRange(int minAge, int maxAge, TrainingGroupId excludeId);
+    boolean exists(TrainingGroupFilter filter);
 
     void delete(TrainingGroupId id);
 }

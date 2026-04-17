@@ -1,15 +1,33 @@
 package com.klabis.members.groups.domain;
 
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
  * Filter criteria for querying {@code TrainingGroup} aggregates.
- * Stub — full implementation comes in Phase 2.
+ * All fields are optional — null means no restriction on that dimension.
+ * Multiple non-null fields are combined with AND.
  */
 @ValueObject
-public record TrainingGroupFilter() implements GroupFilter {
+public record TrainingGroupFilter(
+        MemberId memberIs,
+        MemberId trainerIs,
+        AgeRangeOverlap overlap
+) implements GroupFilter {
 
     public static TrainingGroupFilter all() {
-        return new TrainingGroupFilter();
+        return new TrainingGroupFilter(null, null, null);
+    }
+
+    public TrainingGroupFilter withMemberIs(MemberId memberId) {
+        return new TrainingGroupFilter(memberId, this.trainerIs, this.overlap);
+    }
+
+    public TrainingGroupFilter withTrainerIs(MemberId trainerId) {
+        return new TrainingGroupFilter(this.memberIs, trainerId, this.overlap);
+    }
+
+    public TrainingGroupFilter withOverlap(AgeRangeOverlap overlap) {
+        return new TrainingGroupFilter(this.memberIs, this.trainerIs, overlap);
     }
 }

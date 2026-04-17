@@ -6,7 +6,7 @@ import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.UserId;
-import com.klabis.members.traininggroup.application.MemberAlreadyInTrainingGroupException;
+import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
@@ -30,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -66,7 +65,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
             TrainingGroup expected = TrainingGroup.create(command);
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(anyInt(), anyInt())).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenReturn(expected);
 
@@ -83,7 +82,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -103,7 +102,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
                     .thenReturn(List.of(matchingMember1, matchingMember2));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -125,7 +124,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18)).thenReturn(List.of());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -139,7 +138,7 @@ class TrainingGroupManagementServiceTest {
         @Test
         @DisplayName("should throw OverlappingAgeRangeException when existing group has overlapping range")
         void shouldThrowWhenAgeRangeOverlapsExistingGroup() {
-            when(trainingGroupRepository.existsOverlappingAgeRange(15, 25, null)).thenReturn(true);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(true);
 
             AgeRange overlappingRange = new AgeRange(15, 25);
             TrainingGroup.CreateTrainingGroup command =
@@ -180,7 +179,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup group = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), any())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
@@ -201,7 +200,7 @@ class TrainingGroupManagementServiceTest {
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
 
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
-            when(trainingGroupRepository.existsOverlappingAgeRange(18, 25, GROUP_ID)).thenReturn(true);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(true);
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                     PatchField.notProvided(),
@@ -238,7 +237,7 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup group = TrainingGroup.reconstruct(
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), any())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
@@ -332,7 +331,7 @@ class TrainingGroupManagementServiceTest {
                     Set.of(new GroupMembership(new UserId(MEMBER.uuid()), Instant.now())),
                     new AgeRange(19, 30), null);
 
-            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.of(conflictingGroup));
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class))).thenReturn(Optional.of(conflictingGroup));
 
             assertThatThrownBy(() -> service.addMemberToTrainingGroup(GROUP_ID, MEMBER))
                     .isInstanceOf(MemberAlreadyInTrainingGroupException.class);
@@ -345,7 +344,7 @@ class TrainingGroupManagementServiceTest {
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
 
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(targetGroup));
-            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.empty());
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class))).thenReturn(Optional.empty());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.addMemberToTrainingGroup(GROUP_ID, MEMBER);
@@ -362,7 +361,7 @@ class TrainingGroupManagementServiceTest {
                     GROUP_ID, "Juniors", Set.of(TRAINER), Set.of(), new AgeRange(10, 18), null);
 
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(targetGroup));
-            when(trainingGroupRepository.findGroupForMember(MEMBER)).thenReturn(Optional.empty());
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class))).thenReturn(Optional.empty());
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.addMemberToTrainingGroup(GROUP_ID, MEMBER);
@@ -379,16 +378,16 @@ class TrainingGroupManagementServiceTest {
             TrainingGroup.CreateTrainingGroup command =
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, newRange);
 
-            when(trainingGroupRepository.existsOverlappingAgeRange(anyInt(), anyInt(), isNull())).thenReturn(false);
+            when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(activeMembersByAgeProvider.findActiveMemberIdsByAgeRange(10, 18))
                     .thenReturn(List.of(MEMBER));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.createTrainingGroup(command);
 
-            // findGroupForMember must never be called during the automatic path
+            // findOne(filter.withMemberIs(...)) must never be called during the automatic path
             org.mockito.Mockito.verify(trainingGroupRepository, org.mockito.Mockito.never())
-                    .findGroupForMember(any());
+                    .findOne(any(TrainingGroupFilter.class));
         }
     }
 }
