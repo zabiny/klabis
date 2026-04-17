@@ -39,7 +39,7 @@ We choose **Option 2**. The reasoning — along with the conditions under which 
 <!-- none -->
 
 ### Modified Capabilities
-- `users-authentication`: add a new requirement **"Local development OAuth2 client"** describing the conditionally-registered `klabis-web-local` confidential client, the profile that gates it, and the constraint that it must not be registered in any non-local profile.
+- `non-functional-requirements`: add a new requirement **"Local Development OAuth2 Client"** describing the conditionally-registered `klabis-web-local` confidential client, the profile that gates it, and the constraint that it must not be registered in any non-local profile.
 
 ## Impact
 
@@ -65,7 +65,7 @@ We choose **Option 2**. The reasoning — along with the conditions under which 
 **Documentation:**
 - `backend/CLAUDE.md` — new subsection under "Application Profiles" describing `local-dev` and its rationale (one paragraph + link to this change).
 - `frontend/CLAUDE.md` — new subsection under "Authentication" describing the env-var contract and the local-dev client.
-- `openspec/specs/users-authentication/spec.md` — new requirement added via the delta in `specs/users-authentication/spec.md`.
+- `openspec/specs/non-functional-requirements/spec.md` — new requirement added via the delta in `specs/non-functional-requirements/spec.md`.
 
 **Production / deployed environments:**
 - **Zero impact.** The `local-dev` profile is never activated in any deployed environment. Production continues to use the public `klabis-web` client exactly as before. This change is additive, not a migration.

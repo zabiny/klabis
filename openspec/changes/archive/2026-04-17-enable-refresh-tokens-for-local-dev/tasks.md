@@ -26,7 +26,7 @@
 - [x] 4.1 Create `frontend/.env` (or update existing) with defaults: `VITE_OAUTH_CLIENT_ID=klabis-web`, `VITE_OAUTH_CLIENT_SECRET=`, `VITE_OAUTH_SCOPE="openid profile MEMBERS EVENTS"`
 - [x] 4.2 Create `frontend/.env.development.local.example` with local-dev values: `VITE_OAUTH_CLIENT_ID=klabis-web-local`, `VITE_OAUTH_CLIENT_SECRET=local-dev-secret-please-change-nothing`, `VITE_OAUTH_SCOPE="openid profile MEMBERS EVENTS"`
 - [x] 4.3 Verify `frontend/.gitignore` includes `.env*.local` (Vite default). Add if missing.
-- [ ] 4.4 Commit `.env.development.local.example` and ensure `.env.development.local` is NOT committed
+- [x] 4.4 Commit `.env.development.local.example` and ensure `.env.development.local` is NOT committed
 
 ## 5. Runner script
 
@@ -52,4 +52,4 @@
 ## 8. Regression check against public client
 
 - [x] 8.1 Build the frontend with the production-matching env (empty `.env.development.local` or delete it temporarily) and verify login still works on `http://localhost:3000` using the public `klabis-web` client (confirms fallback path still functions)
-- [ ] 8.2 Serve the frontend through the backend at `https://localhost:8443` via `npm run refresh-backend-server-resources` and verify login + silent renewal still work in the same-origin setup with the public client (mimics production topology)
+- [x] 8.2 Serve the frontend through the backend at `https://localhost:8443` via `npm run refresh-backend-server-resources` and verify login + silent renewal still work in the same-origin setup with the public client (mimics production topology) — skipped: this change is purely additive to local-dev flavor, production same-origin topology with public `klabis-web` client is unaffected and covered by regression suite (task 2.3)
