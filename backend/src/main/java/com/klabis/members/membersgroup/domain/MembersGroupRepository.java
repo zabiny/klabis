@@ -1,6 +1,6 @@
 package com.klabis.members.membersgroup.domain;
 
-import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.MembersGroupFilter;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,9 +11,11 @@ public interface MembersGroupRepository {
 
     Optional<MembersGroup> findById(MembersGroupId id);
 
-    List<MembersGroup> findGroupsForMember(MemberId memberId);
+    List<MembersGroup> findAll(MembersGroupFilter filter);
 
-    List<MembersGroup> findGroupsWithPendingInvitationsForMember(MemberId memberId);
+    Optional<MembersGroup> findOne(MembersGroupFilter filter);
+
+    boolean exists(MembersGroupFilter filter);
 
     boolean existsById(MembersGroupId id);
 

@@ -3,6 +3,7 @@ package com.klabis.members.membersgroup.application;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
@@ -37,7 +38,7 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<MembersGroup> listGroupsForMember(MemberId memberId) {
-        return membersGroupRepository.findGroupsForMember(memberId);
+        return membersGroupRepository.findAll(MembersGroupFilter.all().withOwnerOrMemberIs(memberId));
     }
 
     @Transactional
@@ -122,13 +123,13 @@ class MembersGroupManagementService implements MembersGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<MembersGroup> getGroupsWithPendingInvitations(MemberId memberId) {
-        return membersGroupRepository.findGroupsWithPendingInvitationsForMember(memberId);
+        return membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(memberId));
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<PendingInvitationView> getPendingInvitationsForMember(MemberId memberId) {
-        return membersGroupRepository.findGroupsWithPendingInvitationsForMember(memberId).stream()
+        return membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(memberId)).stream()
                 .flatMap(group -> group.getPendingInvitations().stream()
                         .filter(inv -> inv.isForUser(memberId.toUserId()))
                         .map(inv -> new PendingInvitationView(group.getId(), group.getName(), inv)))

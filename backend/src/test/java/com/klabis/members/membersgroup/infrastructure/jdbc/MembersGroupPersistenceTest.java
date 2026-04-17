@@ -6,6 +6,7 @@ import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("MembersGroup JDBC Persistence Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -226,8 +228,8 @@ class MembersGroupPersistenceTest {
     }
 
     @Nested
-    @DisplayName("findGroupsForMember()")
-    class FindGroupsForMember {
+    @DisplayName("findAll(MembersGroupFilter) — owner or member filter")
+    class FindAllWithOwnerOrMemberFilter {
 
         @Test
         @DisplayName("should find groups where member is owner")
@@ -235,7 +237,8 @@ class MembersGroupPersistenceTest {
             membersGroupRepository.save(
                     MembersGroup.create(new MembersGroup.CreateMembersGroup("Creator's Group", CREATOR)));
 
-            List<MembersGroup> result = membersGroupRepository.findGroupsForMember(CREATOR);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(CREATOR));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Creator's Group");
@@ -250,7 +253,8 @@ class MembersGroupPersistenceTest {
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             membersGroupRepository.save(group);
 
-            List<MembersGroup> result = membersGroupRepository.findGroupsForMember(MEMBER_A);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(MEMBER_A));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Test Group");
@@ -259,15 +263,16 @@ class MembersGroupPersistenceTest {
         @Test
         @DisplayName("should return empty list when member is not in any group")
         void shouldReturnEmptyWhenMemberNotInAnyGroup() {
-            List<MembersGroup> result = membersGroupRepository.findGroupsForMember(INVITED_MEMBER);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(INVITED_MEMBER));
 
             assertThat(result).isEmpty();
         }
     }
 
     @Nested
-    @DisplayName("findGroupsWithPendingInvitationsForMember()")
-    class FindGroupsWithPendingInvitations {
+    @DisplayName("findAll(MembersGroupFilter) — pending invitation filter")
+    class FindAllWithPendingInvitationFilter {
 
         @Test
         @DisplayName("should find groups with pending invitations for member")
@@ -277,7 +282,8 @@ class MembersGroupPersistenceTest {
             group.invite(CREATOR, INVITED_MEMBER);
             membersGroupRepository.save(group);
 
-            List<MembersGroup> result = membersGroupRepository.findGroupsWithPendingInvitationsForMember(INVITED_MEMBER);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withPendingInvitationFor(INVITED_MEMBER));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Test Group");
@@ -292,7 +298,8 @@ class MembersGroupPersistenceTest {
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             membersGroupRepository.save(group);
 
-            List<MembersGroup> result = membersGroupRepository.findGroupsWithPendingInvitationsForMember(INVITED_MEMBER);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withPendingInvitationFor(INVITED_MEMBER));
 
             assertThat(result).isEmpty();
         }
@@ -300,9 +307,50 @@ class MembersGroupPersistenceTest {
         @Test
         @DisplayName("should return empty list when no pending invitations for member")
         void shouldReturnEmptyWhenNoPendingInvitations() {
-            List<MembersGroup> result = membersGroupRepository.findGroupsWithPendingInvitationsForMember(MEMBER_A);
+            List<MembersGroup> result = membersGroupRepository.findAll(
+                    MembersGroupFilter.all().withPendingInvitationFor(MEMBER_A));
 
             assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findOne(MembersGroupFilter) — contract")
+    class FindOneContract {
+
+        @Test
+        @DisplayName("should return empty when no groups match filter")
+        void shouldReturnEmptyWhenNoMatch() {
+            Optional<MembersGroup> result = membersGroupRepository.findOne(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(INVITED_MEMBER));
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return single group when exactly one matches filter")
+        void shouldReturnGroupWhenExactlyOneMatch() {
+            membersGroupRepository.save(
+                    MembersGroup.create(new MembersGroup.CreateMembersGroup("Solo Group", CREATOR)));
+
+            Optional<MembersGroup> result = membersGroupRepository.findOne(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(CREATOR));
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getName()).isEqualTo("Solo Group");
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when filter matches more than one group")
+        void shouldThrowWhenFilterMatchesMultipleGroups() {
+            membersGroupRepository.save(
+                    MembersGroup.create(new MembersGroup.CreateMembersGroup("Group One", CREATOR)));
+            membersGroupRepository.save(
+                    MembersGroup.create(new MembersGroup.CreateMembersGroup("Group Two", CREATOR)));
+
+            assertThatThrownBy(() -> membersGroupRepository.findOne(
+                    MembersGroupFilter.all().withOwnerOrMemberIs(CREATOR)))
+                    .isInstanceOf(IllegalStateException.class);
         }
     }
 }

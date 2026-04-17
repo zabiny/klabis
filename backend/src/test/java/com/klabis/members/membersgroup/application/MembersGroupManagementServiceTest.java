@@ -9,6 +9,7 @@ import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.members.MemberId;
+import com.klabis.members.groups.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
@@ -109,7 +110,7 @@ class MembersGroupManagementServiceTest {
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
             MembersGroup group2 = MembersGroup.reconstruct(otherId, "Group B", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
-            when(membersGroupRepository.findGroupsForMember(CREATOR)).thenReturn(List.of(group1, group2));
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withOwnerOrMemberIs(CREATOR))).thenReturn(List.of(group1, group2));
 
             List<MembersGroup> result = service.listGroupsForMember(CREATOR);
 
@@ -462,7 +463,7 @@ class MembersGroupManagementServiceTest {
         void shouldReturnGroupsWithPendingInvitations() {
             MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(), null);
-            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));
 
             List<MembersGroup> result = service.getGroupsWithPendingInvitations(OTHER_MEMBER);
@@ -473,7 +474,7 @@ class MembersGroupManagementServiceTest {
         @Test
         @DisplayName("should return empty list when no pending invitations")
         void shouldReturnEmptyListWhenNoPendingInvitations() {
-            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of());
 
             List<MembersGroup> result = service.getGroupsWithPendingInvitations(OTHER_MEMBER);
@@ -494,7 +495,7 @@ class MembersGroupManagementServiceTest {
                     invitationId, OTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
             MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(invitation), null);
-            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));
 
             List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);
@@ -513,7 +514,7 @@ class MembersGroupManagementServiceTest {
                     invForOther, ANOTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
             MembersGroup group = MembersGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(otherInvitation), null);
-            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));
 
             List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);
@@ -524,7 +525,7 @@ class MembersGroupManagementServiceTest {
         @Test
         @DisplayName("should return empty list when no groups have pending invitations")
         void shouldReturnEmptyListWhenNoGroups() {
-            when(membersGroupRepository.findGroupsWithPendingInvitationsForMember(OTHER_MEMBER))
+            when(membersGroupRepository.findAll(MembersGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of());
 
             List<PendingInvitationView> result = service.getPendingInvitationsForMember(OTHER_MEMBER);

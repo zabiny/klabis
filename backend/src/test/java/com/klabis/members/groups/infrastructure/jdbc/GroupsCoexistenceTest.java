@@ -4,6 +4,7 @@ import com.klabis.CleanupTestData;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;
@@ -52,13 +53,14 @@ class GroupsCoexistenceTest {
     private static final MemberId SHARED_MEMBER = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Test
-    @DisplayName("findGroupsForMember returns only MembersGroup (FREE) — not TRAINING or FAMILY rows")
+    @DisplayName("findAll with ownerOrMemberIs filter returns only MembersGroup (FREE) — not TRAINING or FAMILY rows")
     void membersGroupRepositoryFindsOnlyFreeType() {
         saveMembersGroupWithMember();
         saveTrainingGroupWithMember();
         saveFamilyGroupWithMember();
 
-        List<MembersGroup> result = membersGroupRepository.findGroupsForMember(SHARED_MEMBER);
+        List<MembersGroup> result = membersGroupRepository.findAll(
+                MembersGroupFilter.all().withOwnerOrMemberIs(SHARED_MEMBER));
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Free Group");

@@ -47,6 +47,32 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
 
     @Query("""
             SELECT ug.* FROM user_groups ug
+            WHERE ug.type = :type
+              AND (
+                EXISTS (
+                    SELECT 1 FROM user_group_owners ugo
+                    WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
+                ) OR EXISTS (
+                    SELECT 1 FROM user_group_members ugm
+                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
+                )
+              )
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2OwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT DISTINCT ug.* FROM user_groups ug
+            JOIN user_group_invitations ugi ON ugi.user_group_id = ug.id
+            WHERE ug.type = :type
+              AND ugi.invited_member_id = :memberId
+              AND ugi.status = 'PENDING'
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2WithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM user_groups ug
             JOIN user_group_members ugm ON ug.id = ugm.user_group_id
             WHERE ug.type = :type
               AND ugm.member_id = :memberId
