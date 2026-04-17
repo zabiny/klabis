@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Klabis Backend" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" value="h2,ssl,debug,oris" />
+    <option name="ACTIVE_PROFILES" value="h2,ssl,debug,oris,local-dev" />
     <additionalParameters>
       <param>
         <option name="enabled" value="true" />
