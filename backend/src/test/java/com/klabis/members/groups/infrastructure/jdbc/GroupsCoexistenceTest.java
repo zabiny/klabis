@@ -4,6 +4,7 @@ import com.klabis.CleanupTestData;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import com.klabis.members.groups.domain.MembersGroupFilter;
 import com.klabis.members.groups.domain.TrainingGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
@@ -81,13 +82,14 @@ class GroupsCoexistenceTest {
     }
 
     @Test
-    @DisplayName("findByMemberOrParent returns only FamilyGroup (FAMILY) — not FREE or TRAINING rows")
+    @DisplayName("findOne(withMemberOrParentIs) returns only FamilyGroup (FAMILY) — not FREE or TRAINING rows")
     void familyGroupRepositoryFindsOnlyFamilyType() {
         saveMembersGroupWithMember();
         saveTrainingGroupWithMember();
         saveFamilyGroupWithMember();
 
-        var result = familyGroupRepository.findByMemberOrParent(SHARED_MEMBER);
+        var result = familyGroupRepository.findOne(
+                FamilyGroupFilter.all().withMemberOrParentIs(SHARED_MEMBER));
 
         assertThat(result).isPresent();
         assertThat(result.get().getName()).isEqualTo("Family Group");

@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<FamilyGroup> listFamilyGroups() {
-        return familyGroupRepository.findAll();
+        return familyGroupRepository.findAll(FamilyGroupFilter.all());
     }
 
     @Transactional(readOnly = true)
@@ -86,7 +87,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     }
 
     private void validateNoExistingFamilyGroup(MemberId memberId) {
-        familyGroupRepository.findByMemberOrParent(memberId).ifPresent(existing -> {
+        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId)).ifPresent(existing -> {
             throw new MemberAlreadyInFamilyGroupException(memberId);
         });
     }

@@ -2,6 +2,7 @@ package com.klabis.members.familygroup.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -20,7 +21,7 @@ public class MemberDetailsPostProcessor implements RepresentationModelProcessor<
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = model.getContent().id();
-        familyGroupRepository.findByMemberOrParent(memberId)
+        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
                 .ifPresent(group -> model.add(Link.of("/api/family-groups/" + group.getId().uuid(), "familyGroup")));
         return model;
     }

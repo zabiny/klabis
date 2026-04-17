@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("FamilyGroup JDBC Persistence Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -99,16 +101,16 @@ class FamilyGroupPersistenceTest {
     }
 
     @Nested
-    @DisplayName("findAll()")
+    @DisplayName("findAll(FamilyGroupFilter)")
     class FindAll {
 
         @Test
-        @DisplayName("should return all saved family groups")
+        @DisplayName("should return all saved family groups when filter is all()")
         void shouldReturnAllGroups() {
             familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
             familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Svobodovi", PARENT_B)));
 
-            List<FamilyGroup> result = familyGroupRepository.findAll();
+            List<FamilyGroup> result = familyGroupRepository.findAll(FamilyGroupFilter.all());
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(FamilyGroup::getName)
@@ -118,22 +120,23 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should return empty list when no groups exist")
         void shouldReturnEmptyListWhenNoGroups() {
-            List<FamilyGroup> result = familyGroupRepository.findAll();
+            List<FamilyGroup> result = familyGroupRepository.findAll(FamilyGroupFilter.all());
 
             assertThat(result).isEmpty();
         }
     }
 
     @Nested
-    @DisplayName("findByMemberOrParent()")
-    class FindByMemberOrParent {
+    @DisplayName("findOne(FamilyGroupFilter.withMemberOrParentIs)")
+    class FindOneWithMemberOrParent {
 
         @Test
         @DisplayName("should find group by parent")
         void shouldFindGroupByParent() {
             familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
-            Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);
+            Optional<FamilyGroup> found = familyGroupRepository.findOne(
+                    FamilyGroupFilter.all().withMemberOrParentIs(PARENT_A));
 
             assertThat(found).isPresent();
             assertThat(found.get().getName()).isEqualTo("Novákovi");
@@ -146,7 +149,8 @@ class FamilyGroupPersistenceTest {
             group.addChild(CHILD_A);
             familyGroupRepository.save(group);
 
-            Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(CHILD_A);
+            Optional<FamilyGroup> found = familyGroupRepository.findOne(
+                    FamilyGroupFilter.all().withMemberOrParentIs(CHILD_A));
 
             assertThat(found).isPresent();
             assertThat(found.get().getName()).isEqualTo("Novákovi");
@@ -155,7 +159,8 @@ class FamilyGroupPersistenceTest {
         @Test
         @DisplayName("should return empty when member is not in any group")
         void shouldReturnEmptyWhenMemberNotInAnyGroup() {
-            Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);
+            Optional<FamilyGroup> found = familyGroupRepository.findOne(
+                    FamilyGroupFilter.all().withMemberOrParentIs(PARENT_A));
 
             assertThat(found).isEmpty();
         }
@@ -214,8 +219,8 @@ class FamilyGroupPersistenceTest {
     }
 
     @Nested
-    @DisplayName("findByMemberOrParent() — deduplication")
-    class FindByMemberOrParentDeduplication {
+    @DisplayName("findOne(FamilyGroupFilter) — deduplication")
+    class FindOneDeduplication {
 
         @Test
         @DisplayName("should return single result when member is also a parent (present in both tables)")
@@ -223,10 +228,31 @@ class FamilyGroupPersistenceTest {
             // PARENT_A is stored in both user_group_owners and user_group_members
             familyGroupRepository.save(FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
 
-            Optional<FamilyGroup> found = familyGroupRepository.findByMemberOrParent(PARENT_A);
+            Optional<FamilyGroup> found = familyGroupRepository.findOne(
+                    FamilyGroupFilter.all().withMemberOrParentIs(PARENT_A));
 
             assertThat(found).isPresent();
             assertThat(found.get().getName()).isEqualTo("Novákovi");
+        }
+    }
+
+    @Nested
+    @DisplayName("findOne(FamilyGroupFilter) — contract")
+    class FindOneContract {
+
+        @Test
+        @DisplayName("should throw IllegalStateException when filter matches more than one group (invariant violation)")
+        void shouldThrowWhenMemberAppearsInTwoFamilyGroups() {
+            familyGroupRepository.save(
+                    FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family One", PARENT_A)));
+            FamilyGroup group2 = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family Two", PARENT_B));
+            group2.addChild(PARENT_A);
+            familyGroupRepository.save(group2);
+
+            assertThatThrownBy(() ->
+                    familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(PARENT_A)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("findOne expected at most 1 result");
         }
     }
 }

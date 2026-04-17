@@ -9,6 +9,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import com.klabis.members.groups.domain.TrainingGroupFilter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -426,7 +427,7 @@ class MemberControllerApiTest {
                     .thenReturn(new com.klabis.members.traininggroup.domain.TrainingGroupId(groupId));
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
-            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -451,7 +452,7 @@ class MemberControllerApiTest {
                     Mockito.mock(com.klabis.members.familygroup.domain.FamilyGroup.class);
             Mockito.when(mockFamilyGroup.getId())
                     .thenReturn(new com.klabis.members.familygroup.domain.FamilyGroupId(groupId));
-            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockFamilyGroup));
 
             mockMvc.perform(getMemberById(memberId))
@@ -471,7 +472,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupRepository.findByMemberOrParent(any(MemberId.class)))
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))

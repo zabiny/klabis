@@ -106,35 +106,4 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
             """)
     List<GroupMemento> findFirst2ByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
 
-    @Query("""
-            SELECT EXISTS (
-                SELECT 1 FROM user_groups
-                WHERE type = :type
-                  AND (:excludeId IS NULL OR id != :excludeId)
-                  AND age_range_min <= :maxAge
-                  AND age_range_max >= :minAge
-            )
-            """)
-    boolean existsOverlappingAgeRangeForType(@Param("minAge") int minAge, @Param("maxAge") int maxAge,
-                                             @Param("excludeId") UUID excludeId,
-                                             @Param("type") String type);
-
-    @Query("SELECT * FROM user_groups WHERE type = :type")
-    List<GroupMemento> findAllByType(@Param("type") String type);
-
-    @Query("""
-            SELECT ug.* FROM user_groups ug
-            WHERE ug.type = :type
-              AND (
-                EXISTS (
-                    SELECT 1 FROM user_group_owners ugo
-                    WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
-                ) OR EXISTS (
-                    SELECT 1 FROM user_group_members ugm
-                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
-                )
-              )
-            LIMIT 1
-            """)
-    Optional<GroupMemento> findByMemberOrParentAndType(@Param("memberId") UUID memberId, @Param("type") String type);
 }

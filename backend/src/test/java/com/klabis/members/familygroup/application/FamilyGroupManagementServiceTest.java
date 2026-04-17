@@ -7,6 +7,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.groups.domain.FamilyGroupFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +55,7 @@ class FamilyGroupManagementServiceTest {
         @DisplayName("should create group and save it")
         void shouldCreateGroupAndSaveIt() {
             FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A);
-            when(familyGroupRepository.findByMemberOrParent(any())).thenReturn(Optional.empty());
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             FamilyGroup result = service.createFamilyGroup(command);
@@ -70,7 +71,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A);
             FamilyGroup existingGroup = FamilyGroup.reconstruct(
                     GROUP_ID, "Existující", Set.of(PARENT_A), Set.of(), null);
-            when(familyGroupRepository.findByMemberOrParent(PARENT_A)).thenReturn(Optional.of(existingGroup));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(existingGroup));
 
             assertThatThrownBy(() -> service.createFamilyGroup(command))
                     .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
@@ -87,7 +88,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup group1 = FamilyGroup.reconstruct(GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
             FamilyGroupId otherId = new FamilyGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
             FamilyGroup group2 = FamilyGroup.reconstruct(otherId, "Svobodovi", Set.of(PARENT_B), Set.of(), null);
-            when(familyGroupRepository.findAll()).thenReturn(List.of(group1, group2));
+            when(familyGroupRepository.findAll(any(FamilyGroupFilter.class))).thenReturn(List.of(group1, group2));
 
             List<FamilyGroup> result = service.listFamilyGroups();
 
@@ -98,7 +99,7 @@ class FamilyGroupManagementServiceTest {
         @Test
         @DisplayName("should return empty list when no groups exist")
         void shouldReturnEmptyListWhenNoGroups() {
-            when(familyGroupRepository.findAll()).thenReturn(List.of());
+            when(familyGroupRepository.findAll(any(FamilyGroupFilter.class))).thenReturn(List.of());
 
             List<FamilyGroup> result = service.listFamilyGroups();
 
@@ -167,6 +168,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.addParent(GROUP_ID, PARENT_B);
@@ -193,7 +195,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup existingGroup = FamilyGroup.reconstruct(
                     new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
                     "Jiní", Set.of(PARENT_A), Set.of(), null);
-            when(familyGroupRepository.findByMemberOrParent(PARENT_B)).thenReturn(Optional.of(existingGroup));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(existingGroup));
 
             assertThatThrownBy(() -> service.addParent(GROUP_ID, PARENT_B))
                     .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
@@ -210,7 +212,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A.toUserId())), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(familyGroupRepository.findByMemberOrParent(MEMBER_A)).thenReturn(Optional.empty());
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.addChild(GROUP_ID, MEMBER_A);
@@ -227,7 +229,7 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup existingGroup = FamilyGroup.reconstruct(
                     new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
                     "Jiní", Set.of(PARENT_B), Set.of(), null);
-            when(familyGroupRepository.findByMemberOrParent(MEMBER_A)).thenReturn(Optional.of(existingGroup));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(existingGroup));
 
             assertThatThrownBy(() -> service.addChild(GROUP_ID, MEMBER_A))
                     .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
