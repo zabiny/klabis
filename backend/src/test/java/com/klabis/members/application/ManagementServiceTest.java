@@ -274,7 +274,7 @@ class ManagementServiceTest {
                         .satisfies(ex -> {
                             var e = (MemberIsLastGroupOwnerException) ex;
                             assertThat(e.getGroups()).hasSize(2);
-                            assertThat(e.getGroups()).extracting(MemberSuspensionRequestedEvent.BlockingGroup::groupName)
+                            assertThat(e.getGroups()).extracting(OwnedGroup::groupName)
                                     .containsExactlyInAnyOrder("Trail Runners", "Juniors");
                         });
 

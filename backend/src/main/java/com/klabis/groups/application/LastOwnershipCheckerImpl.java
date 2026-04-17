@@ -11,12 +11,11 @@ import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspensionRequestedEvent;
-import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-@SecondaryAdapter
+@PrimaryAdapter
 @Component
 public class LastOwnershipCheckerImpl {
 
@@ -33,7 +32,6 @@ public class LastOwnershipCheckerImpl {
     }
 
     @EventListener
-    @Transactional(readOnly = true)
     void onMemberSuspensionRequested(MemberSuspensionRequestedEvent event) {
         MemberId memberId = event.memberId();
 

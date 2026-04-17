@@ -26,7 +26,7 @@ class TrainingGroupDataBootstrap implements BootstrapDataInitializer {
 
     @Override
     public boolean requiresBootstrap() {
-        return trainingGroupRepository.findAll(TrainingGroupFilter.all()).isEmpty();
+        return !trainingGroupRepository.exists(TrainingGroupFilter.all());
     }
 
     @Override

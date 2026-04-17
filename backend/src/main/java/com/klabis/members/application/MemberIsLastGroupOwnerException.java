@@ -1,6 +1,6 @@
 package com.klabis.members.application;
 
-import com.klabis.members.MemberSuspensionRequestedEvent;
+import com.klabis.members.OwnedGroup;
 
 import java.util.List;
 
@@ -10,14 +10,14 @@ import java.util.List;
  */
 public class MemberIsLastGroupOwnerException extends RuntimeException {
 
-    private final List<MemberSuspensionRequestedEvent.BlockingGroup> groups;
+    private final List<OwnedGroup> groups;
 
-    public MemberIsLastGroupOwnerException(List<MemberSuspensionRequestedEvent.BlockingGroup> groups) {
+    public MemberIsLastGroupOwnerException(List<OwnedGroup> groups) {
         super("Member is the last owner of %d group(s) — designate a successor before suspension".formatted(groups.size()));
         this.groups = groups;
     }
 
-    public List<MemberSuspensionRequestedEvent.BlockingGroup> getGroups() {
+    public List<OwnedGroup> getGroups() {
         return groups;
     }
 }

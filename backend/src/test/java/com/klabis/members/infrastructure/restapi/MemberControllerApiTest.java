@@ -9,7 +9,6 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
-import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import org.junit.jupiter.api.Disabled;
@@ -1559,8 +1558,8 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn409WhenMemberIsLastGroupOwner() throws Exception {
             UUID memberId = UUID.randomUUID();
-            List<MemberSuspensionRequestedEvent.BlockingGroup> groups = List.of(
-                    new MemberSuspensionRequestedEvent.BlockingGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+            List<OwnedGroup> groups = List.of(
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
