@@ -42,7 +42,7 @@ class RegisterMemberAutoProvisioningTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private RegistrationPort memberService;

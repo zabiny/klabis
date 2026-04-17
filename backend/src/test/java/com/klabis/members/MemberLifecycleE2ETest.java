@@ -98,7 +98,7 @@ class MemberLifecycleE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     /**
      * Test configuration to use synchronous task executor.

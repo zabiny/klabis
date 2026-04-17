@@ -66,7 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.members.traininggroup.infrastructure.restapi.MemberDetailsPostProcessor.class,
-        com.klabis.members.familygroup.infrastructure.restapi.MemberDetailsPostProcessor.class})
+        com.klabis.groups.familygroup.infrastructure.restapi.MemberDetailsPostProcessor.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 
@@ -89,7 +89,7 @@ class MemberControllerApiTest {
     private com.klabis.members.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
-    private com.klabis.members.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -448,10 +448,10 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            com.klabis.members.familygroup.domain.FamilyGroup mockFamilyGroup =
-                    Mockito.mock(com.klabis.members.familygroup.domain.FamilyGroup.class);
+            com.klabis.groups.familygroup.domain.FamilyGroup mockFamilyGroup =
+                    Mockito.mock(com.klabis.groups.familygroup.domain.FamilyGroup.class);
             Mockito.when(mockFamilyGroup.getId())
-                    .thenReturn(new com.klabis.members.familygroup.domain.FamilyGroupId(groupId));
+                    .thenReturn(new com.klabis.groups.familygroup.FamilyGroupId(groupId));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockFamilyGroup));
 

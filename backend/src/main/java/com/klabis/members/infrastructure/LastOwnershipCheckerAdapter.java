@@ -2,8 +2,8 @@ package com.klabis.members.infrastructure;
 
 import com.klabis.members.application.LastOwnershipChecker;
 import com.klabis.members.MemberId;
-import com.klabis.members.familygroup.domain.FamilyGroup;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.MembersGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;

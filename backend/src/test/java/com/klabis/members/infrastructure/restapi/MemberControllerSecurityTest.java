@@ -5,7 +5,7 @@ import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.members.application.LastOwnershipChecker;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
