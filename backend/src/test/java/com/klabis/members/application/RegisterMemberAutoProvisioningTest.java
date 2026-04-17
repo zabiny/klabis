@@ -34,7 +34,7 @@ class RegisterMemberAutoProvisioningTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.LastOwnershipChecker lastOwnershipChecker;
+    private com.klabis.groups.application.LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @MockitoBean
     @SuppressWarnings("unused")

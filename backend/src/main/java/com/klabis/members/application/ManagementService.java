@@ -5,8 +5,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberSuspensionRequestedEvent;
 import com.klabis.members.domain.Member;
-import com.klabis.groups.LastOwnershipChecker;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
@@ -23,14 +23,12 @@ public class ManagementService implements ManagementPort {
 
     private final MemberRepository memberRepository;
     private final UserService userService;
-    private final LastOwnershipChecker lastOwnershipChecker;
     private final ApplicationEventPublisher eventPublisher;
 
     public ManagementService(MemberRepository memberRepository, UserService userService,
-                             LastOwnershipChecker lastOwnershipChecker, ApplicationEventPublisher eventPublisher) {
+                             ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.userService = userService;
-        this.lastOwnershipChecker = lastOwnershipChecker;
         this.eventPublisher = eventPublisher;
     }
 
@@ -49,9 +47,10 @@ public class ManagementService implements ManagementPort {
     public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
 
-        List<LastOwnershipChecker.OwnedGroupInfo> lastOwnedGroups = lastOwnershipChecker.findGroupsOwnedSolely(memberId);
-        if (!lastOwnedGroups.isEmpty()) {
-            throw new MemberIsLastGroupOwnerException(lastOwnedGroups);
+        MemberSuspensionRequestedEvent event = new MemberSuspensionRequestedEvent(memberId);
+        eventPublisher.publishEvent(event);
+        if (!event.blockingGroups().isEmpty()) {
+            throw new MemberIsLastGroupOwnerException(event.blockingGroups());
         }
 
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());

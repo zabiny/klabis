@@ -4,7 +4,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.domain.*;
-import com.klabis.groups.LastOwnershipChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,16 +40,13 @@ class ManagementServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Mock
-    private LastOwnershipChecker lastOwnershipChecker;
-
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, lastOwnershipChecker, eventPublisher);
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -152,10 +148,6 @@ class ManagementServiceTest {
         @DisplayName("Successful Suspension Tests")
         class SuccessfulSuspensionTests {
 
-            @BeforeEach
-            void setUpNested() {
-                when(lastOwnershipChecker.findGroupsOwnedSolely(any())).thenReturn(List.of());
-            }
 
             @Test
             @DisplayName("should suspend active member with ODHLASKA reason")
@@ -263,12 +255,13 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should throw MemberIsLastGroupOwnerException when member is the sole owner of a group")
             void shouldThrowWhenMemberIsLastGroupOwner() {
-                var ownedGroups = List.of(
-                        new LastOwnershipChecker.OwnedGroupInfo("group-id-1", "Trail Runners", "FREE"),
-                        new LastOwnershipChecker.OwnedGroupInfo("group-id-2", "Juniors", "TRAINING")
-                );
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(lastOwnershipChecker.findGroupsOwnedSolely(new MemberId(testMemberId))).thenReturn(ownedGroups);
+                doAnswer(inv -> {
+                    MemberSuspensionRequestedEvent event = inv.getArgument(0);
+                    event.addBlockingGroup("group-id-1", "Trail Runners", "FREE");
+                    event.addBlockingGroup("group-id-2", "Juniors", "TRAINING");
+                    return null;
+                }).when(eventPublisher).publishEvent(any(MemberSuspensionRequestedEvent.class));
 
                 var command = MemberSuspendMembershipBuilder.builder()
                         .suspendedBy(new UserId(adminUserId))
@@ -281,7 +274,7 @@ class ManagementServiceTest {
                         .satisfies(ex -> {
                             var e = (MemberIsLastGroupOwnerException) ex;
                             assertThat(e.getGroups()).hasSize(2);
-                            assertThat(e.getGroups()).extracting(LastOwnershipChecker.OwnedGroupInfo::groupName)
+                            assertThat(e.getGroups()).extracting(MemberSuspensionRequestedEvent.BlockingGroup::groupName)
                                     .containsExactlyInAnyOrder("Trail Runners", "Juniors");
                         });
 
@@ -293,7 +286,6 @@ class ManagementServiceTest {
             @DisplayName("should proceed with suspension when member is not the sole owner of any group")
             void shouldProceedWhenMemberIsNotLastOwnerOfAnyGroup() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(lastOwnershipChecker.findGroupsOwnedSolely(new MemberId(testMemberId))).thenReturn(List.of());
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = MemberSuspendMembershipBuilder.builder()

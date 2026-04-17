@@ -1,6 +1,5 @@
 package com.klabis.groups.application;
 
-import com.klabis.groups.LastOwnershipChecker;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.MembersGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
@@ -11,16 +10,15 @@ import com.klabis.groups.membersgroup.domain.MembersGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberSuspensionRequestedEvent;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @SecondaryAdapter
 @Component
-class LastOwnershipCheckerImpl implements LastOwnershipChecker {
+public class LastOwnershipCheckerImpl {
 
     private final FamilyGroupRepository familyGroupRepository;
     private final MembersGroupRepository membersGroupRepository;
@@ -34,35 +32,30 @@ class LastOwnershipCheckerImpl implements LastOwnershipChecker {
         this.trainingGroupRepository = trainingGroupRepository;
     }
 
+    @EventListener
     @Transactional(readOnly = true)
-    @Override
-    public List<OwnedGroupInfo> findGroupsOwnedSolely(MemberId memberId) {
-        List<OwnedGroupInfo> result = new ArrayList<>();
+    void onMemberSuspensionRequested(MemberSuspensionRequestedEvent event) {
+        MemberId memberId = event.memberId();
 
         familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
                 .filter(group -> group.isLastParent(memberId))
-                .map(group -> new OwnedGroupInfo(
+                .ifPresent(group -> event.addBlockingGroup(
                         group.getId().uuid().toString(),
                         group.getName(),
-                        FamilyGroup.TYPE_DISCRIMINATOR))
-                .ifPresent(result::add);
+                        FamilyGroup.TYPE_DISCRIMINATOR));
 
         membersGroupRepository.findAll(MembersGroupFilter.all().withOwnerOrMemberIs(memberId)).stream()
                 .filter(group -> group.isLastOwner(memberId))
-                .map(group -> new OwnedGroupInfo(
+                .forEach(group -> event.addBlockingGroup(
                         group.getId().uuid().toString(),
                         group.getName(),
-                        MembersGroup.TYPE_DISCRIMINATOR))
-                .forEach(result::add);
+                        MembersGroup.TYPE_DISCRIMINATOR));
 
         trainingGroupRepository.findAll(TrainingGroupFilter.all().withTrainerIs(memberId)).stream()
                 .filter(group -> group.isLastTrainer(memberId))
-                .map(group -> new OwnedGroupInfo(
+                .forEach(group -> event.addBlockingGroup(
                         group.getId().uuid().toString(),
                         group.getName(),
-                        TrainingGroup.TYPE_DISCRIMINATOR))
-                .forEach(result::add);
-
-        return result;
+                        TrainingGroup.TYPE_DISCRIMINATOR));
     }
 }

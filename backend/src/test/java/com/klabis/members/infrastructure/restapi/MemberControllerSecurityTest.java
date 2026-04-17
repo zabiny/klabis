@@ -4,7 +4,7 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.groups.LastOwnershipChecker;
+import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +29,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private LastOwnershipChecker lastOwnershipChecker;
+    private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @MockitoBean
     @SuppressWarnings("unused")

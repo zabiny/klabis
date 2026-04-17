@@ -8,7 +8,7 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
-import com.klabis.groups.LastOwnershipChecker;
+import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private LastOwnershipChecker lastOwnershipChecker;
+    private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @MockitoBean
     @SuppressWarnings("unused")
