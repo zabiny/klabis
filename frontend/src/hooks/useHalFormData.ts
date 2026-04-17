@@ -1,32 +1,24 @@
 /**
- * Custom hook for fetching HAL Forms data from target endpoints
+ * Custom hook for fetching HAL Forms data from target endpoints.
  *
- * Automatically fetches data from the template's target if it differs from the current resource.
- * Uses React Query for caching and request deduplication. Returns a custom interface for
- * convenient form-specific state management.
+ * Flow: OPTIONS probe → (if GET allowed) GET prefill request.
+ *
+ * First probes the target URL via OPTIONS to check whether GET is supported.
+ * Only if the Allow header includes GET does this hook issue the actual GET
+ * request for form pre-fill data. This avoids speculative GETs on write-only
+ * endpoints and removes the need to swallow 404/405 errors.
  *
  * Query Key Convention: ['hal-form-data', targetUrl]
- * Cache Time: 1 minute (forms often have related data that changes together)
- * Stale Time: 0 (always fetch fresh form data on mount)
+ * GET Cache Time: 1 minute (forms often have related data that changes together)
+ * GET Stale Time: 0 (always fetch fresh form data on mount)
+ * OPTIONS Cache / Stale Time: 10 minutes (assumed stable per server config lifecycle)
  */
 
 import {useMemo} from 'react';
 import type {HalFormsTemplate} from '../api';
 import {normalizeKlabisApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
-import {FetchError} from "../api/authorizedFetch.ts";
-
-/**
- * Check if error is a fetch error with specific HTTP status
- * @internal
- */
-function isFetchErrorWithStatus(error: unknown, statuses: number[]): boolean {
-    if (error && error instanceof FetchError) {
-        const status = (error as FetchError).responseStatus;
-        return statuses.includes(status);
-    }
-    return false;
-}
+import {useHalFormGetAvailability} from "./useHalFormGetAvailability.ts";
 
 /**
  * Result object returned by useHalFormData hook
@@ -39,30 +31,34 @@ export interface UseHalFormDataReturn {
     formData: Record<string, unknown> | null;
 
     /**
-     * True while fetching target form data (only if shouldFetch is true)
+     * True while the OPTIONS probe OR the GET prefill request is in flight.
      */
     isLoadingTargetData: boolean;
 
     /**
-     * Error from target fetch, if applicable (only if shouldFetch is true)
+     * Error from the OPTIONS probe or the GET request, if applicable.
+     * OPTIONS error is preferred since it gates the GET. Null when no error.
      */
     targetFetchError: Error | null;
 
     /**
-     * Manual refetch function for target data
+     * Manual refetch function for the GET prefill data.
+     * The OPTIONS result is considered stable (cached 10 minutes) and is not re-probed.
      */
     refetchTargetData: () => void;
 }
 
 /**
- * Hook to manage form data fetching from target endpoints
+ * Hook to manage form data fetching from target endpoints.
  *
- * When a form template's target differs from the current resource, this hook will fetch
- * data from that target using React Query. If the target is the same as the current resource,
- * it returns the current resource data immediately.
+ * When a form template's target differs from the current resource, this hook:
+ * 1. Probes the target URL via OPTIONS to check if GET is supported.
+ * 2. If GET is allowed, fetches prefill data from that target.
+ * 3. If GET is not allowed, returns current resource data with no error.
+ * 4. If the OPTIONS probe fails, surfaces the error through targetFetchError.
  *
- * Handles common HTTP errors (404, 405) by returning empty data, allowing forms to display
- * with blank fields. Other errors are propagated through the error state.
+ * When the target equals the current resource path, returns the current resource
+ * data immediately without any network requests.
  *
  * @param selectedTemplate - The currently selected HAL Forms template (null if no template selected)
  * @param currentResourceData - The current resource data to use as fallback
@@ -102,40 +98,39 @@ export function useHalFormData(
 
     const targetUrl = selectedTemplate?.target && normalizeKlabisApiPath(selectedTemplate?.target);
 
-    // Fetch data from target using React Query
-    // Stale Time: 0 - Always fetch fresh form data on mount
-    // Cache Time (gcTime): 1 minute - Forms often have related data that changes together
-    // Retry: false - Don't auto-retry; let the form display with empty values on 404/405 (or with error on other statuses)
+    // Phase 1: Probe the target via OPTIONS to determine whether GET is supported.
+    // Only fires when shouldFetch is true so we don't probe same-resource targets.
+    const probeResult = useHalFormGetAvailability(targetUrl || undefined, shouldFetch);
+
+    // Phase 2: Fetch prefill data only when the OPTIONS probe confirmed GET is supported.
+    // Stale Time: 0 — always fetch fresh form data on mount
+    // Cache Time (gcTime): 1 minute — forms often have related data that changes together
+    // Retry: false — GET errors after a positive probe are genuine failures
     const {
         data: fetchedData,
-        isLoading,
-        error,
+        isLoading: isGetLoading,
+        error: getError,
         refetch
     } = useAuthorizedQuery<Record<string, unknown>>(targetUrl || '', {
-        enabled: !!targetUrl,
+        enabled: shouldFetch && probeResult.isGetAllowed === true,
         staleTime: 0,
         gcTime: 60000,
         retry: false
-    })
+    });
 
     const formData = fetchedData ? fetchedData : currentResourceData ?? null;
 
-    const filteredError = isErrorForUndefinedGetMethod(error) ? null : error;
+    // OPTIONS error takes precedence since it gates the entire prefill flow.
+    const targetFetchError = (probeResult.error ?? getError) as Error | null;
 
     return {
         formData,
-        isLoadingTargetData: isLoading,
-        targetFetchError: filteredError,
+        isLoadingTargetData: probeResult.isLoading || isGetLoading,
+        targetFetchError,
         refetchTargetData: async () => {
             if (shouldFetch) {
                 await refetch();
             }
         },
     };
-}
-
-
-function isErrorForUndefinedGetMethod(error: unknown): boolean {
-    // Hal+Forms POST/PUT/DELETE endpoints doesn't need GET endpoint - if GET endpoint is not defined, form shall be initialized with empty data.
-    return isFetchErrorWithStatus(error, [404, 405]);
 }
