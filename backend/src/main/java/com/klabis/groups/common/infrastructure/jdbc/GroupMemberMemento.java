@@ -1,4 +1,4 @@
-package com.klabis.members.groups.infrastructure.jdbc;
+package com.klabis.groups.common.infrastructure.jdbc;
 
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;

@@ -1,4 +1,4 @@
-package com.klabis.members.groups.infrastructure.jdbc;
+package com.klabis.groups.common.infrastructure.jdbc;
 
 import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;

@@ -2,7 +2,7 @@ package com.klabis.members.familygroup.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
-import com.klabis.members.groups.domain.FamilyGroupFilter;
+import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;

@@ -1,4 +1,4 @@
-package com.klabis.members.groups.domain;
+package com.klabis.groups.common.domain;
 
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;

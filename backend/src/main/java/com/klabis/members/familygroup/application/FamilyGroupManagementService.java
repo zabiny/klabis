@@ -5,7 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
-import com.klabis.members.groups.domain.FamilyGroupFilter;
+import com.klabis.groups.common.domain.FamilyGroupFilter;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 

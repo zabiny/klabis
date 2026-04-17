@@ -1,8 +1,8 @@
 package com.klabis.members.membersgroup.infrastructure.jdbc;
 
-import com.klabis.members.groups.domain.MembersGroupFilter;
-import com.klabis.members.groups.infrastructure.jdbc.GroupJdbcRepository;
-import com.klabis.members.groups.infrastructure.jdbc.GroupMemento;
+import com.klabis.groups.common.domain.MembersGroupFilter;
+import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
+import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;

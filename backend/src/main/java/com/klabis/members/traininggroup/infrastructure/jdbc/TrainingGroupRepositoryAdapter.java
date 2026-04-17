@@ -1,9 +1,9 @@
 package com.klabis.members.traininggroup.infrastructure.jdbc;
 
-import com.klabis.members.groups.domain.AgeRangeOverlap;
-import com.klabis.members.groups.domain.TrainingGroupFilter;
-import com.klabis.members.groups.infrastructure.jdbc.GroupJdbcRepository;
-import com.klabis.members.groups.infrastructure.jdbc.GroupMemento;
+import com.klabis.groups.common.domain.AgeRangeOverlap;
+import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
+import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupId;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;

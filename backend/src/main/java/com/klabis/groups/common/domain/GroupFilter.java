@@ -1,4 +1,4 @@
-package com.klabis.members.groups.domain;
+package com.klabis.groups.common.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
 

@@ -1,7 +1,7 @@
 package com.klabis.members.traininggroup.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
-import com.klabis.members.groups.domain.TrainingGroupFilter;
+import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.springframework.hateoas.EntityModel;

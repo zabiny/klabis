@@ -1,6 +1,6 @@
 package com.klabis.members.traininggroup.domain;
 
-import com.klabis.members.groups.domain.TrainingGroupFilter;
+import com.klabis.groups.common.domain.TrainingGroupFilter;
 
 import java.util.List;
 import java.util.Optional;

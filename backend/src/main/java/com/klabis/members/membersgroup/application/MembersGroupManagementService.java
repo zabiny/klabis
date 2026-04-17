@@ -3,7 +3,7 @@ package com.klabis.members.membersgroup.application;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.members.MemberId;
-import com.klabis.members.groups.domain.MembersGroupFilter;
+import com.klabis.groups.common.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.GroupOwnershipRequiredException;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;

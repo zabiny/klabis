@@ -9,7 +9,7 @@ import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.members.MemberId;
-import com.klabis.members.groups.domain.MembersGroupFilter;
+import com.klabis.groups.common.domain.MembersGroupFilter;
 import com.klabis.members.membersgroup.domain.MembersGroup;
 import com.klabis.members.membersgroup.domain.MembersGroupId;
 import com.klabis.members.membersgroup.domain.MembersGroupRepository;

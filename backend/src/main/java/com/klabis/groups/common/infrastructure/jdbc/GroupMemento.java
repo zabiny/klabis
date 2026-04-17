@@ -1,4 +1,4 @@
-package com.klabis.members.groups.infrastructure.jdbc;
+package com.klabis.groups.common.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;

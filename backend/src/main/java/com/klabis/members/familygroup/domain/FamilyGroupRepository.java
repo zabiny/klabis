@@ -1,6 +1,6 @@
 package com.klabis.members.familygroup.domain;
 
-import com.klabis.members.groups.domain.FamilyGroupFilter;
+import com.klabis.groups.common.domain.FamilyGroupFilter;
 
 import java.util.List;
 import java.util.Optional;

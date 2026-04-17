@@ -1,7 +1,7 @@
 package com.klabis.members.traininggroup.infrastructure.listeners;
 
 import com.klabis.members.MemberCreatedEvent;
-import com.klabis.members.groups.domain.TrainingGroupFilter;
+import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;

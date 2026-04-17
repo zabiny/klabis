@@ -4,7 +4,7 @@ import com.klabis.common.bootstrap.BootstrapDataInitializer;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.members.groups.domain.TrainingGroupFilter;
+import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.members.traininggroup.domain.AgeRange;
 import com.klabis.members.traininggroup.domain.TrainingGroup;
 import com.klabis.members.traininggroup.domain.TrainingGroupRepository;

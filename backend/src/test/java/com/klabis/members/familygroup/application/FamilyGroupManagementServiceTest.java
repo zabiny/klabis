@@ -7,7 +7,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.domain.FamilyGroup;
 import com.klabis.members.familygroup.domain.FamilyGroupId;
 import com.klabis.members.familygroup.domain.FamilyGroupRepository;
-import com.klabis.members.groups.domain.FamilyGroupFilter;
+import com.klabis.groups.common.domain.FamilyGroupFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
