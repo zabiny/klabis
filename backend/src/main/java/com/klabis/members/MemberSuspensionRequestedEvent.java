@@ -1,5 +1,7 @@
 package com.klabis.members;
 
+import org.jmolecules.event.annotation.DomainEvent;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
  * ({@code SimpleApplicationEventMulticaster}). An async multicaster would break
  * the contract silently.
  */
+@DomainEvent
 public final class MemberSuspensionRequestedEvent {
 
     private final MemberId memberId;
