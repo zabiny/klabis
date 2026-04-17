@@ -156,9 +156,9 @@ class FamilyGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when parent is already in a family group")
+        @DisplayName("should return 409 when parent is already in a family group")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenMemberAlreadyInFamilyGroup() throws Exception {
+        void shouldReturn409WhenMemberAlreadyInFamilyGroup() throws Exception {
             when(familyGroupManagementService.createFamilyGroup(any(FamilyGroup.CreateFamilyGroup.class)))
                     .thenThrow(new MemberAlreadyInFamilyGroupException(new MemberId(UUID.randomUUID())));
 
@@ -170,7 +170,7 @@ class FamilyGroupControllerTest {
                                             {"name": "Novákovi", "parent": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isConflict());
         }
     }
 
