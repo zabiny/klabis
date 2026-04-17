@@ -116,8 +116,7 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
                     "Combining memberIs and trainerIs in a single filter is not supported");
         }
         if (filter.memberIs() != null) {
-            return jdbcRepository.findByMemberIdAndType(filter.memberIs().value(), TrainingGroup.TYPE_DISCRIMINATOR)
-                    .map(List::of).orElseGet(List::of);
+            return jdbcRepository.findByMemberIdAndType(filter.memberIs().value(), TrainingGroup.TYPE_DISCRIMINATOR);
         }
         if (filter.trainerIs() != null) {
             return jdbcRepository.findByTrainerIdAndType(filter.trainerIs().value(), TrainingGroup.TYPE_DISCRIMINATOR);

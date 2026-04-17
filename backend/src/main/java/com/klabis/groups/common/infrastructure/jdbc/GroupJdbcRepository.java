@@ -76,9 +76,8 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
             JOIN user_group_members ugm ON ug.id = ugm.user_group_id
             WHERE ug.type = :type
               AND ugm.member_id = :memberId
-            LIMIT 1
             """)
-    Optional<GroupMemento> findByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
+    List<GroupMemento> findByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
             SELECT ug.* FROM user_groups ug
