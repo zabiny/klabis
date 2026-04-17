@@ -66,7 +66,7 @@ public class UserGroup {
      * Adds the user to the owners set only. Callers that also want the user to be a member
      * must call {@link #addMember(UserId)} separately (with a {@link #hasMember(UserId)} guard
      * if the user may already be a member). {@code FamilyGroup} does this; {@code TrainingGroup}
-     * and {@code MembersGroup} do not.
+     * and {@code FreeGroup} do not.
      */
     public void addOwner(UserId userId) {
         Assert.notNull(userId, "UserId is required");

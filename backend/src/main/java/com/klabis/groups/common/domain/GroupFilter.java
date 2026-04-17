@@ -7,5 +7,5 @@ import org.jmolecules.ddd.annotation.ValueObject;
  * Each subtype carries only the filter fields that back an actual caller — YAGNI.
  */
 @ValueObject
-public sealed interface GroupFilter permits MembersGroupFilter, TrainingGroupFilter, FamilyGroupFilter {
+public sealed interface GroupFilter permits FreeGroupFilter, TrainingGroupFilter, FamilyGroupFilter {
 }

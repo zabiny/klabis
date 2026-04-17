@@ -5,11 +5,11 @@ import com.klabis.members.MemberId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
-import com.klabis.groups.common.domain.MembersGroupFilter;
+import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
-import com.klabis.groups.membersgroup.domain.MembersGroup;
-import com.klabis.groups.membersgroup.MembersGroupId;
-import com.klabis.groups.membersgroup.domain.MembersGroupRepository;
+import com.klabis.groups.freegroup.domain.FreeGroup;
+import com.klabis.groups.freegroup.FreeGroupId;
+import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GroupsCoexistenceTest {
 
     @Autowired
-    private MembersGroupRepository membersGroupRepository;
+    private FreeGroupRepository freeGroupRepository;
 
     @Autowired
     private TrainingGroupRepository trainingGroupRepository;
@@ -55,14 +55,14 @@ class GroupsCoexistenceTest {
     private static final MemberId SHARED_MEMBER = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Test
-    @DisplayName("findAll with ownerOrMemberIs filter returns only MembersGroup (FREE) — not TRAINING or FAMILY rows")
-    void membersGroupRepositoryFindsOnlyFreeType() {
-        saveMembersGroupWithMember();
+    @DisplayName("findAll with ownerOrMemberIs filter returns only FreeGroup (FREE) — not TRAINING or FAMILY rows")
+    void freeGroupRepositoryFindsOnlyFreeType() {
+        saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
         saveFamilyGroupWithMember();
 
-        List<MembersGroup> result = membersGroupRepository.findAll(
-                MembersGroupFilter.all().withOwnerOrMemberIs(SHARED_MEMBER));
+        List<FreeGroup> result = freeGroupRepository.findAll(
+                FreeGroupFilter.all().withOwnerOrMemberIs(SHARED_MEMBER));
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Free Group");
@@ -71,7 +71,7 @@ class GroupsCoexistenceTest {
     @Test
     @DisplayName("findOne(withMemberIs) returns only TrainingGroup (TRAINING) — not FREE or FAMILY rows")
     void trainingGroupRepositoryFindsOnlyTrainingType() {
-        saveMembersGroupWithMember();
+        saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
         saveFamilyGroupWithMember();
 
@@ -84,7 +84,7 @@ class GroupsCoexistenceTest {
     @Test
     @DisplayName("findOne(withMemberOrParentIs) returns only FamilyGroup (FAMILY) — not FREE or TRAINING rows")
     void familyGroupRepositoryFindsOnlyFamilyType() {
-        saveMembersGroupWithMember();
+        saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
         saveFamilyGroupWithMember();
 
@@ -96,32 +96,32 @@ class GroupsCoexistenceTest {
     }
 
     @Test
-    @DisplayName("findById on MembersGroupRepository with a TrainingGroup UUID returns empty")
+    @DisplayName("findById on FreeGroupRepository with a TrainingGroup UUID returns empty")
     void findByIdCrossTypeLookupReturnsEmpty() {
         TrainingGroup training = saveTrainingGroupWithMember();
-        MembersGroupId trainingIdAsFreeLookup = new MembersGroupId(training.getId().value());
+        FreeGroupId trainingIdAsFreeLookup = new FreeGroupId(training.getId().value());
 
-        var result = membersGroupRepository.findById(trainingIdAsFreeLookup);
+        var result = freeGroupRepository.findById(trainingIdAsFreeLookup);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("delete on MembersGroupRepository with a TrainingGroup UUID does not remove the TrainingGroup row")
+    @DisplayName("delete on FreeGroupRepository with a TrainingGroup UUID does not remove the TrainingGroup row")
     void deleteCrossTypeIsNoOp() {
         TrainingGroup training = saveTrainingGroupWithMember();
-        MembersGroupId trainingIdAsFreeLookup = new MembersGroupId(training.getId().value());
+        FreeGroupId trainingIdAsFreeLookup = new FreeGroupId(training.getId().value());
 
-        membersGroupRepository.delete(trainingIdAsFreeLookup);
+        freeGroupRepository.delete(trainingIdAsFreeLookup);
 
         assertThat(trainingGroupRepository.findById(training.getId())).isPresent();
     }
 
-    private void saveMembersGroupWithMember() {
-        MembersGroup group = MembersGroup.create(new MembersGroup.CreateMembersGroup("Free Group", OWNER));
+    private void saveFreeGroupWithMember() {
+        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Free Group", OWNER));
         group.invite(OWNER, SHARED_MEMBER);
         group.acceptInvitation(group.getPendingInvitations().get(0).getId());
-        membersGroupRepository.save(group);
+        freeGroupRepository.save(group);
     }
 
     private TrainingGroup saveTrainingGroupWithMember() {

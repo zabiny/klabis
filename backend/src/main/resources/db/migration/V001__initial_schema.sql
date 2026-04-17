@@ -373,7 +373,7 @@ COMMENT ON COLUMN birth_number_audit_log.occurred_at IS 'Timestamp when the acti
 
 -- ============================================================================
 -- 14. USER_GROUPS TABLE
--- Unified table for all group types (FREE = MembersGroup, TRAINING = TrainingGroup, FAMILY = FamilyGroup)
+-- Unified table for all group types (FREE = FreeGroup, TRAINING = TrainingGroup, FAMILY = FamilyGroup)
 -- The type column acts as a discriminator to separate groups by their aggregate type.
 -- age_range_min/max are used only by TRAINING groups; NULL for FREE and FAMILY groups.
 -- ============================================================================
@@ -402,7 +402,7 @@ CREATE INDEX idx_user_groups_name ON user_groups (name);
 CREATE INDEX idx_user_groups_training_age ON user_groups (type, age_range_min, age_range_max);
 
 -- Comments for user_groups
-COMMENT ON TABLE user_groups IS 'Unified table for all group aggregate types: FREE (MembersGroup), TRAINING (TrainingGroup), FAMILY (FamilyGroup)';
+COMMENT ON TABLE user_groups IS 'Unified table for all group aggregate types: FREE (FreeGroup), TRAINING (TrainingGroup), FAMILY (FamilyGroup)';
 COMMENT ON COLUMN user_groups.type IS 'Discriminator: FREE = invitation-based members group, TRAINING = age-range training group, FAMILY = family group';
 COMMENT ON COLUMN user_groups.age_range_min IS 'Minimum age (inclusive) — populated only for TRAINING groups';
 COMMENT ON COLUMN user_groups.age_range_max IS 'Maximum age (inclusive) — populated only for TRAINING groups';
@@ -449,7 +449,7 @@ COMMENT ON COLUMN user_group_members.joined_at IS 'Timestamp when the member was
 
 -- ============================================================================
 -- 17. USER_GROUP_INVITATIONS TABLE
--- Membership invitations — used only by FREE (MembersGroup) groups.
+-- Membership invitations — used only by FREE (FreeGroup) groups.
 -- ============================================================================
 
 CREATE TABLE user_group_invitations
@@ -467,7 +467,7 @@ CREATE INDEX idx_user_group_invitations_group_id ON user_group_invitations (user
 CREATE INDEX idx_user_group_invitations_invited_member_status ON user_group_invitations (invited_member_id, status);
 
 -- Comments for user_group_invitations
-COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (MembersGroup) groups';
+COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (FreeGroup) groups';
 COMMENT ON COLUMN user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
 
 -- ============================================================================

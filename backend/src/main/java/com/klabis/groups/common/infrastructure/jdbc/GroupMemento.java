@@ -10,8 +10,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
-import com.klabis.groups.membersgroup.MembersGroupId;
-import com.klabis.groups.membersgroup.domain.MembersGroup;
+import com.klabis.groups.freegroup.FreeGroupId;
+import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
@@ -87,8 +87,8 @@ public class GroupMemento implements Persistable<UUID> {
     protected GroupMemento() {
     }
 
-    public static GroupMemento fromMembersGroup(MembersGroup group) {
-        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), MembersGroup.TYPE_DISCRIMINATOR);
+    public static GroupMemento fromFreeGroup(FreeGroup group) {
+        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR);
         memento.owners = mapOwners(group.getOwners());
         memento.members = mapMembershipsToMementa(group.getMembers());
         memento.invitations = group.getInvitations().stream()
@@ -118,7 +118,7 @@ public class GroupMemento implements Persistable<UUID> {
         return memento;
     }
 
-    public MembersGroup toMembersGroup() {
+    public FreeGroup toFreeGroup() {
         Set<Invitation> invitationSet = invitations.stream()
                 .map(inv -> Invitation.reconstruct(
                         new InvitationId(inv.getId()),
@@ -128,7 +128,7 @@ public class GroupMemento implements Persistable<UUID> {
                         inv.getCreatedAt()))
                 .collect(Collectors.toSet());
 
-        return MembersGroup.reconstruct(new MembersGroupId(this.id), this.name,
+        return FreeGroup.reconstruct(new FreeGroupId(this.id), this.name,
                 mapOwnerIds(), mapMemberships(), invitationSet, buildAuditMetadata());
     }
 
