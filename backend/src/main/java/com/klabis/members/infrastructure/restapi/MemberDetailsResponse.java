@@ -7,6 +7,7 @@ import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberResource;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
@@ -63,5 +64,10 @@ public record MemberDetailsResponse(
         String suspendedBy,
         @HasAuthority(Authority.MEMBERS_MANAGE)
         String suspensionNote
-) {
+) implements MemberResource {
+
+    @Override
+    public MemberId memberId() {
+        return id;
+    }
 }
