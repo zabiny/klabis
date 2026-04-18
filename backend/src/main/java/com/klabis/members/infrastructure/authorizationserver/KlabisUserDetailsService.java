@@ -1,4 +1,4 @@
-package com.klabis.common.users.infrastructure.restapi;
+package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
