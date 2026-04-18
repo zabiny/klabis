@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("EventController API tests")
-@WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class})
+@WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class, EventDetailsPostprocessor.class, EventSummaryPostprocessor.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class EventControllerTest {
 

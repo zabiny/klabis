@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -65,18 +67,21 @@ public class EventController {
     private final Members members;
     private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
     private final boolean orisIntegrationActive;
+    private final EventDetailsPostprocessor eventDetailsPostprocessor;
 
     public EventController(
             EventManagementPort eventManagementService,
             EventRegistrationPort eventRegistrationService,
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
-            java.util.Optional<OrisEventImportPort> orisEventImportPort) {
+            java.util.Optional<OrisEventImportPort> orisEventImportPort,
+            EventDetailsPostprocessor eventDetailsPostprocessor) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.orisIntegrationActive = orisEventImportPort.isPresent();
+        this.eventDetailsPostprocessor = eventDetailsPostprocessor;
     }
 
     @PostMapping(consumes = "application/json")
@@ -130,8 +135,8 @@ public class EventController {
 
         List<RegistrationDto> registrationDtos = buildRegistrationDtos(new EventId(id));
 
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, event, currentUser);
+        EntityModel<EventDto> entityModel = entityModelWithDomain(eventDto, event);
+        eventDetailsPostprocessor.process(entityModel, event);
 
         RepresentationModel<?> model = HalModelBuilder.halModelOf(entityModel)
                 .embed(registrationDtos, RegistrationDto.class)
@@ -171,11 +176,7 @@ public class EventController {
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
-                event -> {
-                    EntityModel<EventSummaryDto> model = EntityModel.of(EventDtoMapper.toSummaryDto(event));
-                    addLinksForListItem(model, event, currentUser);
-                    return model;
-                }
+                event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
         );
 
         klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable, null)).ifPresent(link -> {
@@ -188,63 +189,6 @@ public class EventController {
         });
 
         return ResponseEntity.ok(pagedModel);
-    }
-
-    private void addLinksForListItem(EntityModel<EventSummaryDto> model, Event event, CurrentUserData currentUser) {
-        UUID eventId = event.getId().value();
-
-        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
-
-            if (event.areRegistrationsOpen()) {
-                boolean isRegistered = currentUser != null && currentUser.isMember()
-                        && event.findRegistration(currentUser.memberId()).isPresent();
-                if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                } else {
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                            Map.of("category", event.getCategories())
-                    ));
-                }
-            }
-
-            model.add(selfLink);
-        });
-
-        if (event.getEventCoordinatorId() != null) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> model.add(link.withRel("coordinator")));
-        }
-    }
-
-    private Link addManagementAffordances(Link selfLink, Event event) {
-        UUID eventId = event.getId().value();
-
-        switch (event.getStatus()) {
-            case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
-                }
-                break;
-
-            case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
-                }
-                break;
-
-            case FINISHED:
-            case CANCELLED:
-                break;
-        }
-
-        return selfLink;
     }
 
     private boolean hasEventsManageAuthority() {
@@ -301,14 +245,31 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    private void addLinksForEvent(EntityModel<?> entityModel, Event event, CurrentUserData currentUser) {
+}
+
+@MvcComponent
+class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
+
+    private final boolean orisIntegrationActive;
+
+    EventDetailsPostprocessor(java.util.Optional<OrisEventImportPort> orisEventImportPort) {
+        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    }
+
+    @Override
+    public void process(EntityModel<EventDto> dtoModel, Event event) {
         UUID eventId = event.getId().value();
+
+        org.springframework.security.core.Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
+        com.klabis.members.MemberId currentMemberId = resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
             if (event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen()) {
-                boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
+                boolean isRegistered = currentMemberId != null
+                        && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
                 } else {
@@ -319,23 +280,145 @@ public class EventController {
                 }
             }
 
-            entityModel.add(selfLink);
+            dtoModel.add(selfLink);
         });
 
         klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null))
-                .ifPresent(link -> entityModel.add(link.withRel("collection")));
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         if (event.getStatus() != EventStatus.DRAFT) {
             klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
-                    .ifPresent(link -> entityModel.add(link.withRel("registrations")));
+                    .ifPresent(link -> dtoModel.add(link.withRel("registrations")));
         }
 
         if (event.getEventCoordinatorId() != null) {
             klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> entityModel.add(link.withRel("coordinator")));
+                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
         }
     }
 
+    private Link addManagementAffordances(Link selfLink, Event event) {
+        UUID eventId = event.getId().value();
+
+        switch (event.getStatus()) {
+            case DRAFT:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
+                break;
+
+            case ACTIVE:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
+                break;
+
+            case FINISHED:
+            case CANCELLED:
+                break;
+        }
+
+        return selfLink;
+    }
+
+    @Nullable
+    private static com.klabis.members.MemberId resolveMemberId(
+            org.springframework.security.core.Authentication auth) {
+        if (auth instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token) {
+            return token.getMemberIdUuid()
+                    .map(com.klabis.members.MemberId::new)
+                    .orElse(null);
+        }
+        return null;
+    }
+}
+
+@MvcComponent
+class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummaryDto, Event> {
+
+    private final boolean orisIntegrationActive;
+
+    EventSummaryPostprocessor(java.util.Optional<OrisEventImportPort> orisEventImportPort) {
+        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    }
+
+    @Override
+    public void process(EntityModel<EventSummaryDto> dtoModel, Event event) {
+        UUID eventId = event.getId().value();
+
+        org.springframework.security.core.Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
+        com.klabis.members.MemberId currentMemberId = resolveMemberId(auth);
+
+        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
+            var selfLink = addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
+
+            if (event.areRegistrationsOpen()) {
+                boolean isRegistered = currentMemberId != null
+                        && event.findRegistration(currentMemberId).isPresent();
+                if (isRegistered) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                } else {
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                            Map.of("category", event.getCategories())
+                    ));
+                }
+            }
+
+            dtoModel.add(selfLink);
+        });
+
+        if (event.getEventCoordinatorId() != null) {
+            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
+                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
+        }
+    }
+
+    private Link addManagementAffordances(Link selfLink, Event event) {
+        UUID eventId = event.getId().value();
+
+        switch (event.getStatus()) {
+            case DRAFT:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
+                break;
+
+            case ACTIVE:
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
+                break;
+
+            case FINISHED:
+            case CANCELLED:
+                break;
+        }
+
+        return selfLink;
+    }
+
+    @Nullable
+    private static com.klabis.members.MemberId resolveMemberId(
+            org.springframework.security.core.Authentication auth) {
+        if (auth instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token) {
+            return token.getMemberIdUuid()
+                    .map(com.klabis.members.MemberId::new)
+                    .orElse(null);
+        }
+        return null;
+    }
 }
 
 @MvcComponent
