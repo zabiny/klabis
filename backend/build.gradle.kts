@@ -28,6 +28,19 @@ java {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://gitlab.polach.cloud/api/v4/groups/zbm/-/packages/maven")
+        name = "gitlab-zbm"
+        credentials(HttpHeaderCredentials::class) {
+            name = "Private-Token"
+            value = providers.gradleProperty("gitlabZbmToken")
+                .orElse(providers.environmentVariable("GITLAB_ZBM_TOKEN"))
+                .get()
+        }
+        authentication {
+            create<HttpHeaderAuthentication>("header")
+        }
+    }
 }
 
 val mapstructVersion = "1.6.3"
@@ -53,6 +66,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-aspectj")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
+
+    // ORIS API client
+    implementation("com.dpolach.api:oris-client:0.1.0")
 
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core:$springModulithVersion")

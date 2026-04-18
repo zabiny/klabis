@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
+### Prerequisites
+
+The backend depends on `com.dpolach.api:oris-client` hosted in a private GitLab Maven registry (`gitlab.polach.cloud`). Gradle needs a read token:
+
+```properties
+# ~/.gradle/gradle.properties
+gitlabZbmToken=<your-personal-token>
+```
+
+Alternatively, set env var `GITLAB_ZBM_TOKEN`. CI injects it via the same-named repository secret.
+
 ### Building
 
 ```bash

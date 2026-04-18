@@ -28,6 +28,8 @@ jobs:
 
       - name: Run tests with Gradle
         working-directory: backend
+        env:
+          GITLAB_ZBM_TOKEN: ${{ secrets.GITLAB_ZBM_TOKEN }}
         run: ./gradlew test
 
       - name: Upload test results
