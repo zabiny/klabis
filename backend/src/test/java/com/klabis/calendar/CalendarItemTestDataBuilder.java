@@ -97,4 +97,17 @@ public class CalendarItemTestDataBuilder {
                 CalendarItemKind.EVENT_DATE,
                 auditMetadata);
     }
+
+    public EventCalendarItem buildRegistrationDeadlineLinked(UUID eventIdUuid) {
+        EventId eid = new EventId(eventIdUuid);
+        return EventCalendarItem.reconstruct(
+                calendarItemId,
+                name,
+                description,
+                startDate,
+                endDate,
+                eid,
+                CalendarItemKind.EVENT_REGISTRATION_DATE,
+                auditMetadata);
+    }
 }

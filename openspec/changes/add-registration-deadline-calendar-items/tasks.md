@@ -52,12 +52,12 @@
 
 ## 7. Integration
 
-- [ ] 7.1 Extend `CalendarEventSyncIntegrationTest` with end-to-end scenarios that publish and update events with and without registration deadlines, asserting the expected set of calendar items after each transaction.
-- [ ] 7.2 Adjust any existing assertions in the calendar or events modules that counted items per event and implicitly assumed "one event = one calendar item".
+- [x] 7.1 Extend `CalendarEventSyncIntegrationTest` with end-to-end scenarios that publish and update events with and without registration deadlines, asserting the expected set of calendar items after each transaction.
+- [x] 7.2 Adjust any existing assertions in the calendar or events modules that counted items per event and implicitly assumed "one event = one calendar item".
 
 ## 8. Controller & DTO verification
 
-- [ ] 8.1 Verify `CalendarController` and `CalendarItemDto` unchanged — the deadline item is returned by the list endpoint identically to an event-date item (HAL self + event link, no edit/delete affordance). Add a MockMvc assertion that a list containing both kinds returns both with the correct self + event links.
+- [x] 8.1 Verify `CalendarController` and `CalendarItemDto` unchanged — the deadline item is returned by the list endpoint identically to an event-date item (HAL self + event link, no edit/delete affordance). Add a MockMvc assertion that a list containing both kinds returns both with the correct self + event links.
 
 ## 9. Verification
 

@@ -132,6 +132,11 @@ Tests:
 
 **6.1 Verification:** `EventsEventListener` is unchanged — it still delegates `EventPublishedEvent` → `handleEventPublished`, `EventUpdatedEvent` → `handleEventUpdated`, `EventCancelledEvent` → `handleEventCancelled`. Port interface signatures unchanged.
 
+**Handoff for Iter 7 (final verification):**
+- Full suite: 2209/2209 green. Iter 6 added 7 net new tests (5 integration + 1 controller list + 1 builder method).
+- No production code was changed.
+- `tasks.md` sections 7 and 8 ticked.
+
 **Handoff for Iter 6 (integration tests + controller/DTO):**
 - `CalendarEventSyncIntegrationTest` needs new end-to-end scenarios for the full reconcile path. Key scenarios to cover:
   1. Publish event with deadline → assert 2 DB rows for that eventId (one per kind).
@@ -142,3 +147,21 @@ Tests:
   6. `findByEventId` ordering: if the test asserts list order, note that order is not guaranteed — use `containsExactlyInAnyOrder` not `containsExactly`.
   7. Any existing assertion counting "one item per event" must be extended to handle two items.
 - `CalendarController` / `CalendarItemDto` are unchanged; MockMvc test (8.1) should assert that a list containing both kinds returns both items with correct self + event links, and that neither has edit/delete affordances (read-only constraint).
+
+---
+
+### 2026-04-18 — Iteration 6
+
+**Files touched:**
+- `backend/src/test/java/com/klabis/calendar/application/CalendarEventSyncIntegrationTest.java` — added `RegistrationDeadlineScenarios` nested class with 5 end-to-end scenarios: publish without deadline (1 item), publish with deadline (2 items), update to add deadline (2 items), update to clear deadline (1 item + deadline row gone), rename event updates both labels, cancel with two items removes both.
+- `backend/src/test/java/com/klabis/calendar/CalendarItemTestDataBuilder.java` — added `buildRegistrationDeadlineLinked(UUID)` method for constructing `EVENT_REGISTRATION_DATE` test fixtures.
+- `backend/src/test/java/com/klabis/calendar/infrastructure/restapi/CalendarControllerTest.java` — added `EventLinkedBothKindsTests` nested class with one MockMvc test: seeds one `EVENT_DATE` + one `EVENT_REGISTRATION_DATE` item for the same eventId; asserts both appear in the list response; each has `self` and `event` links pointing to the same event; neither has `updateCalendarItem` or `deleteCalendarItem` affordances.
+
+**Test result:** 2209/2209 passed (full backend suite; 7 net new tests).
+
+**7.2 scan:** No existing assertion in the codebase implicitly assumed "one event = one calendar item" in a way that breaks. The only `findByEventId().hasSize(1)` assertion in `CalendarJdbcRepositoryTest` is isolated — it saves exactly one item in a clean test and queries by its unique eventId. No adjustment needed.
+
+**Production code changes:** None. `CalendarController`, `CalendarItemDto`, and all production classes are untouched.
+
+**Handoff for Iter 7 (final verification):**
+- Run full suite one final time, smoke test locally, run `openspec validate add-registration-deadline-calendar-items --strict`.

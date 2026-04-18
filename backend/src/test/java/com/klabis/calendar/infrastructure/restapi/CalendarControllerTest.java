@@ -591,6 +591,59 @@ class CalendarControllerTest {
     }
 
     @Nested
+    @DisplayName("Event-linked items — both kinds in list")
+    class EventLinkedBothKindsTests {
+
+        @Test
+        @DisplayName("should return both EVENT_DATE and EVENT_REGISTRATION_DATE items with self and event links, no edit/delete affordances")
+        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        void shouldReturnBothKindsWithCorrectHateoasLinks() throws Exception {
+            LocalDate startDate = LocalDate.of(2025, 6, 1);
+            LocalDate endDate = LocalDate.of(2025, 6, 30);
+
+            UUID sharedEventId = UUID.randomUUID();
+
+            CalendarItem eventDateItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Jarní sprint")
+                    .withDescription("Les Brdy - OOB")
+                    .withStartDate(LocalDate.of(2025, 6, 14))
+                    .withEndDate(LocalDate.of(2025, 6, 14))
+                    .buildEventLinked(sharedEventId);
+
+            CalendarItem deadlineItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Přihlášky - Jarní sprint")
+                    .withDescription(null)
+                    .withStartDate(LocalDate.of(2025, 6, 7))
+                    .withEndDate(LocalDate.of(2025, 6, 7))
+                    .buildRegistrationDeadlineLinked(sharedEventId);
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any()))
+                    .thenReturn(List.of(eventDateItem, deadlineItem));
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2025-06-01")
+                                    .param("endDate", "2025-06-30")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList.length()").value(2))
+                    // both items have a self link
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.self.href").exists())
+                    // both items link to the same event
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.event.href").value("/api/events/" + sharedEventId))
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value("/api/events/" + sharedEventId))
+                    // neither item has edit/delete affordances (event-linked items are read-only)
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._templates.updateCalendarItem").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._templates.deleteCalendarItem").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._templates.updateCalendarItem").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._templates.deleteCalendarItem").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("DELETE /api/calendar-items/{id}")
     class DeleteCalendarItemTests {
 
