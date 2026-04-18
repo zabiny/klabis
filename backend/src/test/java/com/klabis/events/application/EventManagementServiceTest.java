@@ -1,12 +1,13 @@
 package com.klabis.events.application;
 
+import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.OrisWebUrls;
+import com.dpolach.api.orisclient.dto.EventDetails;
+import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
-import com.klabis.oris.apiclient.OrisApiClient;
-import com.klabis.oris.apiclient.dto.EventDetails;
-import com.klabis.oris.apiclient.dto.Organizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,11 +49,14 @@ class EventManagementServiceTest {
     @Mock
     private OrisApiClient orisApiClient;
 
+    @Mock
+    private OrisWebUrls orisWebUrls;
+
     private EventManagementPort service;
 
     @BeforeEach
     void setUp() {
-        service = new EventManagementService(eventRepository, Optional.of(orisApiClient));
+        service = new EventManagementService(eventRepository, Optional.of(orisApiClient), Optional.of(orisWebUrls));
     }
 
     @Nested
@@ -557,7 +561,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -584,7 +588,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class)))
                     .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate oris_id"));
 
@@ -617,7 +621,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -638,7 +642,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -652,7 +656,7 @@ class EventManagementServiceTest {
         @DisplayName("should throw IllegalStateException when ORIS integration is not active")
         void shouldThrowWhenOrisNotActive() {
             // Given
-            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty());
+            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty(), Optional.empty());
 
             // When & Then
             assertThatThrownBy(() -> serviceWithoutOris.importEventFromOris(9876))
@@ -673,7 +677,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -697,7 +701,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             // When & Then
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -716,7 +720,7 @@ class EventManagementServiceTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -762,7 +766,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // When
@@ -800,7 +804,7 @@ class EventManagementServiceTest {
                     .location("Location")
                     .organizer("OOB")
                     .build());
-            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty());
+            EventManagementPort serviceWithoutOris = new EventManagementService(eventRepository, Optional.empty(), Optional.empty());
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When & Then

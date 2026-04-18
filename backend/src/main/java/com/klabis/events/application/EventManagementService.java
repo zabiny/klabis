@@ -1,11 +1,12 @@
 package com.klabis.events.application;
 
+import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.OrisWebUrls;
+import com.dpolach.api.orisclient.dto.EventClass;
+import com.dpolach.api.orisclient.dto.EventDetails;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
-import com.klabis.oris.apiclient.OrisApiClient;
-import com.klabis.oris.apiclient.dto.EventClass;
-import com.klabis.oris.apiclient.dto.EventDetails;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +29,14 @@ public class EventManagementService implements EventManagementPort {
 
     private final EventRepository eventRepository;
     private final Optional<OrisApiClient> orisApiClient;
+    private final Optional<OrisWebUrls> orisWebUrls;
 
-    EventManagementService(EventRepository eventRepository, Optional<OrisApiClient> orisApiClient) {
+    EventManagementService(EventRepository eventRepository,
+                           Optional<OrisApiClient> orisApiClient,
+                           Optional<OrisWebUrls> orisWebUrls) {
         this.eventRepository = eventRepository;
         this.orisApiClient = orisApiClient;
+        this.orisWebUrls = orisWebUrls;
     }
 
     @Transactional
@@ -93,7 +98,8 @@ public class EventManagementService implements EventManagementPort {
                 .orElseThrow(() -> new EventNotFoundException(orisId));
 
         String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
+        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.orElseThrow(() ->
+                new IllegalStateException("ORIS integration is not active")).eventUrl(orisId));
         LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
         List<String> categories = extractCategories(details);
 
@@ -129,7 +135,8 @@ public class EventManagementService implements EventManagementPort {
                 .orElseThrow(() -> new EventNotFoundException(orisId));
 
         String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
+        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.orElseThrow(() ->
+                new IllegalStateException("ORIS integration is not active")).eventUrl(orisId));
         LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
         List<String> categories = extractCategories(details);
 
