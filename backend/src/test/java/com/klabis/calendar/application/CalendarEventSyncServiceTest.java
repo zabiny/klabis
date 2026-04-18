@@ -53,7 +53,8 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 3, 15),
                 "Prague Conference Center",
                 "OOB",
-                "https://example.com/workshop");
+                "https://example.com/workshop",
+                null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
         when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
@@ -82,6 +83,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 4, 20),
                 "Brno Tech Hub",
                 "OOB",
+                null,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
@@ -141,7 +143,8 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 3, 15),
                 "New Prague Center",
                 "OOB",
-                "https://example.com/updated");
+                "https://example.com/updated",
+                null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
         when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
@@ -180,6 +183,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 4, 20),
                 "Brno Tech Hub",
                 "OOB",
+                null,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
@@ -218,6 +222,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 5, 10),
                 null,
                 "OOB",
+                null,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
@@ -253,6 +258,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 5, 10),
                 null,
                 "OOB",
+                null,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
@@ -276,6 +282,7 @@ class CalendarEventSyncServiceTest {
         EventData eventData = new EventData(
                 "Minimal Event",
                 LocalDate.of(2024, 6, 1),
+                null,
                 null,
                 null,
                 null);

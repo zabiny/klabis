@@ -10,11 +10,12 @@ import java.time.LocalDate;
  * This record encapsulates the event properties required to create and update
  * calendar items during event-driven synchronization.
  *
- * @param name        event name
- * @param eventDate   event date
- * @param location    event location
- * @param organizer   event organizer
- * @param websiteUrl  event website URL (may be null)
+ * @param name                 event name
+ * @param eventDate            event date
+ * @param location             event location
+ * @param organizer            event organizer
+ * @param websiteUrl           event website URL (may be null)
+ * @param registrationDeadline registration deadline (may be null when not set)
  */
 @RecordBuilder
 public record EventData(
@@ -22,6 +23,7 @@ public record EventData(
         LocalDate eventDate,
         String location,
         String organizer,
-        String websiteUrl
+        String websiteUrl,
+        LocalDate registrationDeadline
 ) {
 }

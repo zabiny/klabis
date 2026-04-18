@@ -67,7 +67,8 @@ class CalendarEventSyncIntegrationTest {
                 LocalDate.of(2024, 3, 15),
                 "Prague CC",
                 "OOB",
-                "https://example.com/workshop"
+                "https://example.com/workshop",
+                null
         ));
 
         // When & Then: CalendarItem should be created automatically
@@ -101,7 +102,8 @@ class CalendarEventSyncIntegrationTest {
                 LocalDate.of(2024, 5, 21),
                 "New Loc",
                 "NewOrg",
-                "https://new-url.com"
+                "https://new-url.com",
+                null
         ));
         scenario.publish(new EventUpdatedEvent(
                         java.util.UUID.randomUUID(),

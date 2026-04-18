@@ -1,8 +1,8 @@
 ## 1. Event module: surface registrationDeadline
 
-- [ ] 1.1 Add `registrationDeadline` (`LocalDate`) to `com.klabis.events.EventData`.
-- [ ] 1.2 Update `EventDataProviderImpl` to populate `registrationDeadline` from the event aggregate (`event.getRegistrationDeadline()`).
-- [ ] 1.3 Update any existing test setup that constructs `EventData` directly to include the new field (default to `null` where not relevant).
+- [x] 1.1 Add `registrationDeadline` (`LocalDate`) to `com.klabis.events.EventData`.
+- [x] 1.2 Update `EventDataProviderImpl` to populate `registrationDeadline` from the event aggregate (`event.getRegistrationDeadline()`).
+- [x] 1.3 Update any existing test setup that constructs `EventData` directly to include the new field (default to `null` where not relevant).
 
 ## 2. Persistence enum
 
