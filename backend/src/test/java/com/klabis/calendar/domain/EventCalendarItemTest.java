@@ -23,7 +23,7 @@ class EventCalendarItemTest {
         @DisplayName("should create event-linked item with event data")
         void shouldCreateEventLinkedItemWithEventData() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            var command = new CalendarItem.CreateCalendarItemForEvent(
+            var command = new EventCalendarItem.CreateCalendarItemForEvent(
                     "City Championship", "Prague", "OOB", "https://example.com",
                     LocalDate.of(2026, 6, 15), eventId);
 
@@ -42,7 +42,7 @@ class EventCalendarItemTest {
         @DisplayName("should fail when name is null")
         void shouldFailWhenNameIsNull() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            var command = new CalendarItem.CreateCalendarItemForEvent(
+            var command = new EventCalendarItem.CreateCalendarItemForEvent(
                     null, null, null, null,
                     LocalDate.of(2026, 6, 15), eventId);
 
@@ -54,7 +54,7 @@ class EventCalendarItemTest {
         @Test
         @DisplayName("should fail when eventId is null")
         void shouldFailWhenEventIdIsNull() {
-            var command = new CalendarItem.CreateCalendarItemForEvent(
+            var command = new EventCalendarItem.CreateCalendarItemForEvent(
                     "Name", null, null, null,
                     LocalDate.of(2026, 6, 15), null);
 
@@ -67,7 +67,7 @@ class EventCalendarItemTest {
         @DisplayName("should fail when eventDate is null")
         void shouldFailWhenEventDateIsNull() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            var command = new CalendarItem.CreateCalendarItemForEvent(
+            var command = new EventCalendarItem.CreateCalendarItemForEvent(
                     "Name", null, null, null, null, eventId);
 
             assertThatThrownBy(() -> EventCalendarItem.createForEvent(command))
@@ -85,11 +85,11 @@ class EventCalendarItemTest {
         void shouldMutateFieldsOnSynchronization() {
             EventId eventId = EventId.of(UUID.randomUUID());
             EventCalendarItem item = EventCalendarItem.createForEvent(
-                    new CalendarItem.CreateCalendarItemForEvent(
+                    new EventCalendarItem.CreateCalendarItemForEvent(
                             "Old", "OldLoc", "OldOrg", null,
                             LocalDate.of(2026, 5, 10), eventId));
 
-            item.synchronizeFromEvent(new CalendarItem.SynchronizeFromEvent(
+            item.synchronizeFromEvent(new EventCalendarItem.SynchronizeFromEvent(
                     "New Name", "New Loc", "New Org", "https://new.com",
                     LocalDate.of(2026, 7, 20)));
 
@@ -105,12 +105,12 @@ class EventCalendarItemTest {
         void shouldFailWhenNameIsBlankDuringSync() {
             EventId eventId = EventId.of(UUID.randomUUID());
             EventCalendarItem item = EventCalendarItem.createForEvent(
-                    new CalendarItem.CreateCalendarItemForEvent(
+                    new EventCalendarItem.CreateCalendarItemForEvent(
                             "Old", null, null, null,
                             LocalDate.of(2026, 5, 10), eventId));
 
             assertThatThrownBy(() -> item.synchronizeFromEvent(
-                    new CalendarItem.SynchronizeFromEvent(
+                    new EventCalendarItem.SynchronizeFromEvent(
                             "   ", null, null, null,
                             LocalDate.of(2026, 7, 20))))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -127,7 +127,7 @@ class EventCalendarItemTest {
         void shouldThrowCalendarItemReadOnlyException() {
             EventId eventId = EventId.of(UUID.randomUUID());
             EventCalendarItem item = EventCalendarItem.createForEvent(
-                    new CalendarItem.CreateCalendarItemForEvent(
+                    new EventCalendarItem.CreateCalendarItemForEvent(
                             "Name", null, null, null,
                             LocalDate.of(2026, 6, 15), eventId));
 

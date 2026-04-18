@@ -4,7 +4,6 @@ import com.klabis.CleanupTestData;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.EventCalendarItem;
-import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;

@@ -491,7 +491,7 @@ class CalendarItemTest {
 
             LocalDate newDate = LocalDate.of(2026, 7, 20);
 
-            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
                     .name("New Name")
                     .location("City Park")
                     .organizer("OOB")
@@ -521,7 +521,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
                     .name("New Name")
                     .location("City Park")
                     .organizer("OOB")
@@ -548,7 +548,7 @@ class CalendarItemTest {
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    CalendarItemSynchronizeFromEventBuilder.builder()
+                    EventCalendarItemSynchronizeFromEventBuilder.builder()
                             .name("   ")
                             .location("Location")
                             .organizer("OOB")
@@ -573,7 +573,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
                     .name("New Name")
                     .location(null)
                     .organizer("OOB")
@@ -599,7 +599,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
                     .name("New Name")
                     .location("   ")
                     .organizer("OOB")
@@ -626,7 +626,7 @@ class CalendarItemTest {
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    CalendarItemSynchronizeFromEventBuilder.builder()
+                    EventCalendarItemSynchronizeFromEventBuilder.builder()
                             .name("Name")
                             .location("Location")
                             .organizer("OOB")
@@ -679,7 +679,7 @@ class CalendarItemTest {
     class BuildEventDescription {
 
         private String descriptionFor(String location, String organizer, String websiteUrl) {
-            return new CalendarItem.CreateCalendarItemForEvent(
+            return new EventCalendarItem.CreateCalendarItemForEvent(
                     "Event Name", location, organizer, websiteUrl,
                     LocalDate.of(2026, 6, 15), EventId.of(UUID.randomUUID())
             ).description();

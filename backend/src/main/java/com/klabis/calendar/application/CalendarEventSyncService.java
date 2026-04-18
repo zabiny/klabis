@@ -1,6 +1,5 @@
 package com.klabis.calendar.application;
 
-import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.EventData;
@@ -13,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 public class CalendarEventSyncService implements CalendarEventSyncPort {
@@ -29,12 +29,17 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         this.eventDataProvider = eventDataProvider;
     }
 
+    private Stream<EventCalendarItem> findEventCalendarItems(EventId eventId) {
+        return calendarRepository.findByEventId(eventId).stream()
+                .filter(EventCalendarItem.class::isInstance)
+                .map(EventCalendarItem.class::cast);
+    }
+
     @Transactional
     public void handleEventPublished(EventId eventId) {
         log.info("Creating calendar item for published event: {}", eventId);
 
-        boolean alreadyExists = calendarRepository.findByEventId(eventId).stream()
-                .anyMatch(item -> item instanceof EventCalendarItem);
+        boolean alreadyExists = findEventCalendarItems(eventId).findAny().isPresent();
 
         if (alreadyExists) {
             log.warn("Calendar item already exists for event {}. Skipping creation (idempotent).", eventId);
@@ -44,7 +49,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         EventData eventData = eventDataProvider.getEventData(eventId);
 
         EventCalendarItem calendarItem = EventCalendarItem.createForEvent(
-                new CalendarItem.CreateCalendarItemForEvent(
+                new EventCalendarItem.CreateCalendarItemForEvent(
                         eventData.name(),
                         eventData.location(),
                         eventData.organizer(),
@@ -61,10 +66,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
     public void handleEventUpdated(EventId eventId) {
         log.info("Updating calendar item for event: {}", eventId);
 
-        Optional<EventCalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventId).stream()
-                .filter(EventCalendarItem.class::isInstance)
-                .map(EventCalendarItem.class::cast)
-                .findFirst();
+        Optional<EventCalendarItem> calendarItemOpt = findEventCalendarItems(eventId).findFirst();
 
         if (calendarItemOpt.isEmpty()) {
             log.warn(
@@ -77,7 +79,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        calendarItem.synchronizeFromEvent(new CalendarItem.SynchronizeFromEvent(
+        calendarItem.synchronizeFromEvent(new EventCalendarItem.SynchronizeFromEvent(
                 eventData.name(),
                 eventData.location(),
                 eventData.organizer(),
@@ -93,10 +95,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
     public void handleEventCancelled(EventId eventId) {
         log.info("Deleting calendar item for cancelled event: {}", eventId);
 
-        List<EventCalendarItem> items = calendarRepository.findByEventId(eventId).stream()
-                .filter(EventCalendarItem.class::isInstance)
-                .map(EventCalendarItem.class::cast)
-                .toList();
+        List<EventCalendarItem> items = findEventCalendarItems(eventId).toList();
 
         if (items.isEmpty()) {
             log.warn(

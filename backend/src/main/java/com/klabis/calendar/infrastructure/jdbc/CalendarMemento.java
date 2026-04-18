@@ -120,9 +120,11 @@ class CalendarMemento implements Persistable<UUID> {
                     this.version);
         }
 
-        CalendarItemKind resolvedKind = this.kind != null ? this.kind : CalendarItemKind.EVENT_DATE;
+        if (this.kind == null) {
+            throw new IllegalStateException("CalendarItemKind must not be null for persisted item " + this.id);
+        }
 
-        return switch (resolvedKind) {
+        return switch (this.kind) {
             case MANUAL -> ManualCalendarItem.reconstruct(
                     calendarItemId,
                     this.name,

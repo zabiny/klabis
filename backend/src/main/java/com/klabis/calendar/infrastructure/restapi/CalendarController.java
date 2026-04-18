@@ -4,7 +4,6 @@ import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
-import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;

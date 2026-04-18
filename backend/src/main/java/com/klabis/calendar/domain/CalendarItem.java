@@ -9,11 +9,8 @@ import jakarta.validation.constraints.Size;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
-import com.klabis.events.EventId;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Abstract aggregate root for calendar items.
@@ -60,46 +57,6 @@ public abstract class CalendarItem extends KlabisAggregateRoot<CalendarItem, Cal
             @NotNull(message = "End date is required")
             LocalDate endDate
     ) {}
-
-    @RecordBuilder
-    public record CreateCalendarItemForEvent(
-            String name,
-            String location,
-            String organizer,
-            String websiteUrl,
-            LocalDate eventDate,
-            EventId eventId
-    ) {
-        public String description() {
-            return buildEventDescription(location, organizer, websiteUrl);
-        }
-    }
-
-    @RecordBuilder
-    public record SynchronizeFromEvent(
-            String name,
-            String location,
-            String organizer,
-            String websiteUrl,
-            LocalDate eventDate
-    ) {
-        public String description() {
-            return buildEventDescription(location, organizer, websiteUrl);
-        }
-    }
-
-    static String buildEventDescription(String location, String organizer, String websiteUrl) {
-        List<String> parts = new ArrayList<>();
-        if (location != null && !location.isBlank()) parts.add(location);
-        if (organizer != null && !organizer.isBlank()) parts.add(organizer);
-
-        String base = parts.isEmpty() ? null : String.join(" - ", parts);
-
-        if (websiteUrl != null && !websiteUrl.isBlank()) {
-            return base != null ? base + "\n" + websiteUrl : websiteUrl;
-        }
-        return base;
-    }
 
     @Identity
     private final CalendarItemId id;
