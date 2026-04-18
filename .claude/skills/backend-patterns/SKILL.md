@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Klabis Backend Patterns
@@ -609,6 +609,29 @@ Spring Boot 4 uses Jackson 3, which moved some packages — but Spring Boot wrap
 - Use `@MvcComponent` annotation on components in the presentation (restapi) layer
 - Do not use Lombok in domain classes — use records or plain Java
 - Use `@RecordBuilder` (from `io.soabase.recordbuilder`) on command records, events, and response DTOs — generates builder classes
+
+## `@MvcComponent` and `@WebMvcTest`
+
+`@MvcComponent` (`com.klabis.common.mvc.MvcComponent`) is a project-specific marker for presentation-layer beans (postprocessors, link processors, MVC helpers). It is meta-annotated `@Component`, but it is NOT a generic alias — `MvcConfiguration` wires it up via a targeted component scan:
+
+```java
+@ComponentScan(
+    basePackages = "com.klabis",
+    includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = MvcComponent.class),
+    useDefaultFilters = false
+)
+@Configuration
+class MvcConfiguration implements WebMvcConfigurer { ... }
+```
+
+**Consequences for tests:**
+- `@WebMvcTest` auto-loads `MvcConfiguration`, which then scans **all `com.klabis.**` packages** and picks up every `@MvcComponent` bean — cross-package, cross-module.
+- **Do NOT** list postprocessors or `@MvcComponent` beans in `@WebMvcTest(controllers = {...})` or `@Import({...})` — it is redundant. They are discovered automatically.
+- If a postprocessor's constructor depends on a non-MVC bean (e.g. a JDBC `SomeRepository`), the test must provide it via `@MockitoBean SomeRepository someRepository;`. Do NOT work around this with `@Lazy` on the constructor parameter — `@Lazy` only defers resolution, it doesn't supply the missing bean at runtime.
+
+**Consequences for production code:**
+- `@MvcComponent` is the correct annotation for anything in `infrastructure/restapi/` — controllers, postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers.
+- Cross-module postprocessors (e.g. a `groups.familygroup` postprocessor enriching a `Member` response) live in the consuming module and still just need `@MvcComponent`; the central scan finds them regardless of package.
 
 ## Additional Resources
 
