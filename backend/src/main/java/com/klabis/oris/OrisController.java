@@ -1,9 +1,10 @@
 package com.klabis.oris;
 
+import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.OrisEventListFilter;
+import com.dpolach.api.orisclient.OrisRegion;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.oris.apiclient.OrisApiClient;
-import com.klabis.oris.apiclient.OrisEventListFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,13 +42,13 @@ public class OrisController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "List upcoming ORIS events",
-            description = "Returns events from ORIS available for import. Accepts multiple region parameters to combine results."
+            description = "Returns events from ORIS available for import. Accepts multiple region parameters (OrisRegion enum names) to combine results."
     )
     public ResponseEntity<List<OrisEventSummary>> listOrisEvents(
-            @RequestParam(required = false) List<String> region) {
+            @RequestParam(required = false) List<OrisRegion> region) {
 
-        List<String> regions = (region == null || region.isEmpty())
-                ? List.of(OrisApiClient.REGION_JIHOMORAVSKA)
+        List<OrisRegion> regions = (region == null || region.isEmpty())
+                ? List.of(OrisRegion.JIHOMORAVSKA)
                 : region;
 
         List<OrisEventSummary> events = regions.stream()
