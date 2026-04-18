@@ -31,7 +31,7 @@
 
 **Prerequisite:** sections 1–4 must be complete (enum value, domain `kind` field, factories, and memento round-trip) before these tests will compile.
 
-- [ ] 5.1 Write failing unit test(s) for `CalendarEventSyncService`:
+- [x] 5.1 Write failing unit test(s) for `CalendarEventSyncService`:
   - Publishing an event without a deadline creates exactly one `EVENT_DATE` item.
   - Publishing an event with a deadline creates both `EVENT_DATE` and `EVENT_REGISTRATION_DATE` items.
   - Updating an event that had a deadline to clear the deadline removes the deadline item (and keeps the event-date item).
@@ -39,16 +39,16 @@
   - Updating an event's name updates both items' labels (event-date name, deadline "Přihlášky - {name}").
   - Updating an event whose event-date item is missing (simulate by deleting) recreates it (self-heal).
   - Cancelling an event removes both items when both exist; removes only the event-date item if that was the only one.
-- [ ] 5.2 Refactor `CalendarEventSyncService` into a unified reconcile path. Concretely:
+- [x] 5.2 Refactor `CalendarEventSyncService` into a unified reconcile path. Concretely:
   - `handleEventPublished(eventId)` and `handleEventUpdated(eventId)` both call a shared private `reconcile(eventId)` method.
   - `reconcile` loads event data via `eventDataProvider`, loads existing event-linked items via `findEventCalendarItems(eventId)`, groups them by `kind`, computes expected kinds from the event, and creates / syncs / deletes accordingly.
   - `handleEventCancelled(eventId)` deletes every event-linked item returned by `findEventCalendarItems(eventId)` (both kinds).
-- [ ] 5.3 Confirm that the warn-and-skip code paths in the previous `handleEventUpdated` and `handleEventCancelled` are gone (no surviving branch from the pre-reconcile code). They are subsumed by the reconcile loop (self-heal when missing) and by the cancel-delete-all behavior respectively.
-- [ ] 5.4 Verify tests from 5.1 now pass.
+- [x] 5.3 Confirm that the warn-and-skip code paths in the previous `handleEventUpdated` and `handleEventCancelled` are gone (no surviving branch from the pre-reconcile code). They are subsumed by the reconcile loop (self-heal when missing) and by the cancel-delete-all behavior respectively.
+- [x] 5.4 Verify tests from 5.1 now pass.
 
 ## 6. Listener wiring
 
-- [ ] 6.1 Verify `EventsEventListener` continues to delegate Published / Updated / Cancelled to the service's (now reworked) port methods. No new listener. No change to the port interface signatures beyond the internal behavior.
+- [x] 6.1 Verify `EventsEventListener` continues to delegate Published / Updated / Cancelled to the service's (now reworked) port methods. No new listener. No change to the port interface signatures beyond the internal behavior.
 
 ## 7. Integration
 

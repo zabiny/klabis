@@ -115,3 +115,30 @@ Tests:
 - The full memento round-trip is now functional for both `EVENT_DATE` and `EVENT_REGISTRATION_DATE`.
 - No schema migration needed — `kind` column is `VARCHAR`; `EVENT_REGISTRATION_DATE` is accepted as-is.
 - Iter 5 can freely create items of both kinds and rely on correct persistence round-trips.
+
+---
+
+### 2026-04-18 — Iteration 5
+
+**Files touched:**
+- `backend/src/test/java/com/klabis/calendar/application/CalendarEventSyncServiceTest.java` — completely rewritten with 8 nested scenarios covering all tasks.md 5.1 requirements: publish without deadline (1 item), publish with deadline (2 items), update removing deadline, update adding deadline, update renaming event (both labels updated), self-heal on missing EVENT_DATE item, cancel both items, cancel single item. Pre-existing tests (description variants, organizer-only, null description) retained under new nested structure. All 15 tests were RED before the service refactor.
+- `backend/src/main/java/com/klabis/calendar/application/CalendarEventSyncService.java` — rewritten: `handleEventPublished` and `handleEventUpdated` both delegate to private `reconcile(eventId)`; `handleEventCancelled` loads all event-linked items and deletes them all. `reconcile` implements the design.md Decision 2 algorithm: load event data + existing items, group by kind, compute expected kinds (`{EVENT_DATE}` always, add `EVENT_REGISTRATION_DATE` if deadline non-null), sync or create each expected kind, delete leftover entries from the map. Warn-and-skip branches removed entirely.
+
+**Test result:** 2202/2202 passed (full backend suite; 4 net new tests from the new scenarios).
+
+**Repository method used:** `calendarRepository.findByEventId(eventId)` — already present from the polymorphic hierarchy refactor (commit 39074743). No new repository methods needed.
+
+**5.3 Verification:** Old warn-and-skip code paths (`if (calendarItemOpt.isEmpty()) { log.warn(...); return; }` in `handleEventUpdated` and `if (items.isEmpty()) { log.warn(...); return; }` in `handleEventCancelled`) are fully removed. Self-heal replaces the updated-but-missing guard. Cancel-delete-all is a no-op when the list is empty (no special guard needed).
+
+**6.1 Verification:** `EventsEventListener` is unchanged — it still delegates `EventPublishedEvent` → `handleEventPublished`, `EventUpdatedEvent` → `handleEventUpdated`, `EventCancelledEvent` → `handleEventCancelled`. Port interface signatures unchanged.
+
+**Handoff for Iter 6 (integration tests + controller/DTO):**
+- `CalendarEventSyncIntegrationTest` needs new end-to-end scenarios for the full reconcile path. Key scenarios to cover:
+  1. Publish event with deadline → assert 2 DB rows for that eventId (one per kind).
+  2. Update event to clear deadline → assert 1 DB row remains (EVENT_DATE only).
+  3. Update event to add deadline after initial publish without one → assert 2 DB rows.
+  4. Update event name → assert both item labels updated correctly in DB.
+  5. Cancel event with 2 items → assert 0 DB rows remain for that eventId.
+  6. `findByEventId` ordering: if the test asserts list order, note that order is not guaranteed — use `containsExactlyInAnyOrder` not `containsExactly`.
+  7. Any existing assertion counting "one item per event" must be extended to handle two items.
+- `CalendarController` / `CalendarItemDto` are unchanged; MockMvc test (8.1) should assert that a list containing both kinds returns both items with correct self + event links, and that neither has edit/delete affordances (read-only constraint).

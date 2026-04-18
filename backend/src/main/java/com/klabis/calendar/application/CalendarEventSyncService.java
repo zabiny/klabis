@@ -1,5 +1,6 @@
 package com.klabis.calendar.application;
 
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.EventData;
@@ -10,9 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CalendarEventSyncService implements CalendarEventSyncPort {
@@ -29,78 +32,74 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         this.eventDataProvider = eventDataProvider;
     }
 
-    private Stream<EventCalendarItem> findEventCalendarItems(EventId eventId) {
-        return calendarRepository.findByEventId(eventId).stream()
-                .filter(EventCalendarItem.class::isInstance)
-                .map(EventCalendarItem.class::cast);
-    }
-
     @Transactional
     public void handleEventPublished(EventId eventId) {
-        log.info("Creating calendar item for published event: {}", eventId);
-
-        boolean alreadyExists = findEventCalendarItems(eventId).findAny().isPresent();
-
-        if (alreadyExists) {
-            log.warn("Calendar item already exists for event {}. Skipping creation (idempotent).", eventId);
-            return;
-        }
-
-        EventData eventData = eventDataProvider.getEventData(eventId);
-
-        EventCalendarItem calendarItem = EventCalendarItem.createForEventDate(
-                new EventCalendarItem.CreateCalendarItemForEvent(
-                        eventData.name(),
-                        eventData.location(),
-                        eventData.organizer(),
-                        eventData.websiteUrl(),
-                        eventData.eventDate(),
-                        eventId));
-
-        calendarRepository.save(calendarItem);
-
-        log.info("Calendar item created successfully for event: {}", eventId);
+        log.info("Reconciling calendar items for published event: {}", eventId);
+        reconcile(eventId);
+        log.info("Calendar items reconciled for published event: {}", eventId);
     }
 
     @Transactional
     public void handleEventUpdated(EventId eventId) {
-        log.info("Updating calendar item for event: {}", eventId);
-
-        Optional<EventCalendarItem> calendarItemOpt = findEventCalendarItems(eventId).findFirst();
-
-        if (calendarItemOpt.isEmpty()) {
-            log.warn(
-                    "Calendar item not found for event {}. Cannot update. Event may have been updated before being published.",
-                    eventId);
-            return;
-        }
-
-        EventCalendarItem calendarItem = calendarItemOpt.get();
-
-        EventData eventData = eventDataProvider.getEventData(eventId);
-
-        calendarItem.synchronizeFromEvent(eventData);
-
-        calendarRepository.save(calendarItem);
-
-        log.info("Calendar item updated successfully for event: {}", eventId);
+        log.info("Reconciling calendar items for updated event: {}", eventId);
+        reconcile(eventId);
+        log.info("Calendar items reconciled for updated event: {}", eventId);
     }
 
     @Transactional
     public void handleEventCancelled(EventId eventId) {
-        log.info("Deleting calendar item for cancelled event: {}", eventId);
+        log.info("Deleting all calendar items for cancelled event: {}", eventId);
 
-        List<EventCalendarItem> items = findEventCalendarItems(eventId).toList();
-
-        if (items.isEmpty()) {
-            log.warn(
-                    "Calendar item not found for event {}. Cannot delete. Event may have been cancelled before being published.",
-                    eventId);
-            return;
-        }
-
+        List<EventCalendarItem> items = findEventCalendarItems(eventId);
         items.forEach(calendarRepository::delete);
 
-        log.info("Calendar item deleted successfully for event: {}", eventId);
+        log.info("Deleted {} calendar item(s) for cancelled event: {}", items.size(), eventId);
+    }
+
+    private void reconcile(EventId eventId) {
+        EventData event = eventDataProvider.getEventData(eventId);
+
+        Map<CalendarItemKind, EventCalendarItem> existingByKind = findEventCalendarItems(eventId).stream()
+                .collect(Collectors.toMap(EventCalendarItem::getKind, item -> item));
+
+        Set<CalendarItemKind> expectedKinds = EnumSet.of(CalendarItemKind.EVENT_DATE);
+        if (event.registrationDeadline() != null) {
+            expectedKinds.add(CalendarItemKind.EVENT_REGISTRATION_DATE);
+        }
+
+        for (CalendarItemKind kind : expectedKinds) {
+            EventCalendarItem existing = existingByKind.remove(kind);
+            if (existing != null) {
+                existing.synchronizeFromEvent(event);
+                calendarRepository.save(existing);
+            } else {
+                calendarRepository.save(createItem(kind, event, eventId));
+            }
+        }
+
+        existingByKind.values().forEach(calendarRepository::delete);
+    }
+
+    private EventCalendarItem createItem(CalendarItemKind kind, EventData event, EventId eventId) {
+        return switch (kind) {
+            case EVENT_DATE -> EventCalendarItem.createForEventDate(
+                    new EventCalendarItem.CreateCalendarItemForEvent(
+                            event.name(),
+                            event.location(),
+                            event.organizer(),
+                            event.websiteUrl(),
+                            event.eventDate(),
+                            eventId));
+            case EVENT_REGISTRATION_DATE -> EventCalendarItem.createForRegistrationDeadline(
+                    event.name(), eventId, event.registrationDeadline());
+            default -> throw new IllegalArgumentException("Unexpected event calendar item kind: " + kind);
+        };
+    }
+
+    private List<EventCalendarItem> findEventCalendarItems(EventId eventId) {
+        return calendarRepository.findByEventId(eventId).stream()
+                .filter(EventCalendarItem.class::isInstance)
+                .map(EventCalendarItem.class::cast)
+                .toList();
     }
 }

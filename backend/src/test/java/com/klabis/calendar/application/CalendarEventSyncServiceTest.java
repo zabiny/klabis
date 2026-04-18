@@ -10,6 +10,7 @@ import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,312 +37,417 @@ class CalendarEventSyncServiceTest {
 
     private CalendarEventSyncService testedSubject;
 
+    private static final LocalDate EVENT_DATE = LocalDate.of(2024, 6, 15);
+    private static final LocalDate DEADLINE_DATE = LocalDate.of(2024, 6, 1);
+
     @BeforeEach
     void setUp() {
         testedSubject = new CalendarEventSyncService(calendarRepositoryMock, eventDataProviderMock);
     }
 
-    // ===== handleEventPublished() Tests =====
-
-    @Test
-    @DisplayName("should create EventCalendarItem when event is published")
-    void shouldCreateCalendarItemWhenEventIsPublished() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-
-        EventData eventData = new EventData(
-                "Spring Boot Workshop",
-                LocalDate.of(2024, 3, 15),
-                "Prague Conference Center",
-                "OOB",
-                "https://example.com/workshop",
-                null);
-
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
-
-        testedSubject.handleEventPublished(eventId);
-
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
-
-        CalendarItem savedItem = calendarItemCaptor.getValue();
-        assertThat(savedItem).isInstanceOf(EventCalendarItem.class);
-        assertThat(savedItem.getName()).isEqualTo("Spring Boot Workshop");
-        assertThat(savedItem.getDescription()).isEqualTo("Prague Conference Center - OOB\nhttps://example.com/workshop");
-        assertThat(savedItem.getStartDate()).isEqualTo(LocalDate.of(2024, 3, 15));
-        assertThat(savedItem.getEndDate()).isEqualTo(LocalDate.of(2024, 3, 15));
-        assertThat(((EventCalendarItem) savedItem).getEventId()).isEqualTo(eventId);
+    private EventId newEventId() {
+        return EventId.of(UUID.randomUUID());
     }
 
-    @Test
-    @DisplayName("should create calendar item without website URL when not present")
-    void shouldCreateCalendarItemWithoutWebsiteUrl() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-
-        EventData eventData = new EventData(
-                "Java Meetup",
-                LocalDate.of(2024, 4, 20),
-                "Brno Tech Hub",
-                "OOB",
-                null,
-                null);
-
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
-
-        testedSubject.handleEventPublished(eventId);
-
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
-
-        CalendarItem savedItem = calendarItemCaptor.getValue();
-        assertThat(savedItem.getDescription()).isEqualTo("Brno Tech Hub - OOB");
-        assertThat(savedItem.getDescription()).doesNotContain("\n");
+    private EventData eventDataWithoutDeadline(String name) {
+        return new EventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", null);
     }
 
-    @Test
-    @DisplayName("should skip creation when EventCalendarItem already exists (idempotent)")
-    void shouldSkipCreationWhenCalendarItemAlreadyExists() {
-        EventId eventId = EventId.of(UUID.randomUUID());
+    private EventData eventDataWithDeadline(String name) {
+        return new EventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", DEADLINE_DATE);
+    }
 
-        EventCalendarItem existingItem = EventCalendarItem.reconstruct(
+    private EventCalendarItem existingEventDateItem(EventId eventId) {
+        return EventCalendarItem.reconstruct(
                 CalendarItemId.generate(),
-                "Existing Item",
-                "Location - Organizer",
-                LocalDate.of(2024, 5, 10),
-                LocalDate.of(2024, 5, 10),
+                "Old Event Name",
+                "Prague - OOB\nhttps://example.com",
+                EVENT_DATE,
+                EVENT_DATE,
                 eventId,
                 CalendarItemKind.EVENT_DATE,
                 null);
+    }
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
+    private EventCalendarItem existingDeadlineItem(EventId eventId) {
+        return EventCalendarItem.reconstruct(
+                CalendarItemId.generate(),
+                "Přihlášky - Old Event Name",
+                null,
+                DEADLINE_DATE,
+                DEADLINE_DATE,
+                eventId,
+                CalendarItemKind.EVENT_REGISTRATION_DATE,
+                null);
+    }
 
-        testedSubject.handleEventPublished(eventId);
+    // ===== handleEventPublished() Tests =====
 
-        verify(calendarRepositoryMock, never()).save(any());
-        verify(eventDataProviderMock, never()).getEventData(any());
+    @Nested
+    @DisplayName("handleEventPublished")
+    class HandleEventPublishedTests {
+
+        @Test
+        @DisplayName("should create exactly one EVENT_DATE item when event has no deadline")
+        void shouldCreateOnlyEventDateItemWhenNoDeadline() {
+            EventId eventId = newEventId();
+            EventData event = eventDataWithoutDeadline("Spring Boot Workshop");
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(event);
+
+            testedSubject.handleEventPublished(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            EventCalendarItem saved = (EventCalendarItem) captor.getValue();
+            assertThat(saved.getKind()).isEqualTo(CalendarItemKind.EVENT_DATE);
+            assertThat(saved.getName()).isEqualTo("Spring Boot Workshop");
+            assertThat(saved.getStartDate()).isEqualTo(EVENT_DATE);
+            assertThat(saved.getEndDate()).isEqualTo(EVENT_DATE);
+            assertThat(saved.getEventId()).isEqualTo(eventId);
+        }
+
+        @Test
+        @DisplayName("should create both EVENT_DATE and EVENT_REGISTRATION_DATE items when event has deadline")
+        void shouldCreateBothItemsWhenEventHasDeadline() {
+            EventId eventId = newEventId();
+            EventData event = eventDataWithDeadline("Spring Boot Workshop");
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(event);
+
+            testedSubject.handleEventPublished(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(2)).save(captor.capture());
+
+            List<EventCalendarItem> saved = captor.getAllValues().stream()
+                    .map(EventCalendarItem.class::cast)
+                    .toList();
+
+            EventCalendarItem eventDateItem = saved.stream()
+                    .filter(i -> i.getKind() == CalendarItemKind.EVENT_DATE)
+                    .findFirst().orElseThrow();
+            assertThat(eventDateItem.getName()).isEqualTo("Spring Boot Workshop");
+            assertThat(eventDateItem.getStartDate()).isEqualTo(EVENT_DATE);
+            assertThat(eventDateItem.getEndDate()).isEqualTo(EVENT_DATE);
+            assertThat(eventDateItem.getEventId()).isEqualTo(eventId);
+
+            EventCalendarItem deadlineItem = saved.stream()
+                    .filter(i -> i.getKind() == CalendarItemKind.EVENT_REGISTRATION_DATE)
+                    .findFirst().orElseThrow();
+            assertThat(deadlineItem.getName()).isEqualTo("Přihlášky - Spring Boot Workshop");
+            assertThat(deadlineItem.getDescription()).isNull();
+            assertThat(deadlineItem.getStartDate()).isEqualTo(DEADLINE_DATE);
+            assertThat(deadlineItem.getEndDate()).isEqualTo(DEADLINE_DATE);
+            assertThat(deadlineItem.getEventId()).isEqualTo(eventId);
+        }
+
+        @Test
+        @DisplayName("should create calendar item without website URL when not present")
+        void shouldCreateCalendarItemWithoutWebsiteUrl() {
+            EventId eventId = newEventId();
+            EventData eventData = new EventData("Java Meetup", LocalDate.of(2024, 4, 20),
+                    "Brno Tech Hub", "OOB", null, null);
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+            testedSubject.handleEventPublished(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            assertThat(captor.getValue().getDescription()).isEqualTo("Brno Tech Hub - OOB");
+            assertThat(captor.getValue().getDescription()).doesNotContain("\n");
+        }
+
+        @Test
+        @DisplayName("should create calendar item with organizer-only description when event has no location")
+        void shouldCreateCalendarItemWithOrganizerOnlyWhenEventHasNoLocation() {
+            EventId eventId = newEventId();
+            EventData eventData = new EventData("ORIS Event", LocalDate.of(2024, 5, 10),
+                    null, "OOB", null, null);
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+            testedSubject.handleEventPublished(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            assertThat(captor.getValue().getDescription()).isEqualTo("OOB");
+            assertThat(captor.getValue().getDescription()).doesNotContain(" - ");
+        }
+
+        @Test
+        @DisplayName("should create calendar item with null description when all optional fields missing")
+        void shouldCreateCalendarItemWithNullDescriptionWhenAllFieldsMissing() {
+            EventId eventId = newEventId();
+            EventData eventData = new EventData("Minimal Event", LocalDate.of(2024, 6, 1),
+                    null, null, null, null);
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+            testedSubject.handleEventPublished(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            assertThat(captor.getValue().getDescription()).isNull();
+        }
     }
 
     // ===== handleEventUpdated() Tests =====
 
-    @Test
-    @DisplayName("should update EventCalendarItem when event is updated")
-    void shouldUpdateCalendarItemWhenEventIsUpdated() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-        CalendarItemId calendarItemId = CalendarItemId.generate();
+    @Nested
+    @DisplayName("handleEventUpdated")
+    class HandleEventUpdatedTests {
 
-        EventCalendarItem existingItem = EventCalendarItem.reconstruct(
-                calendarItemId,
-                "Old Name",
-                "Old Location - Old Organizer",
-                LocalDate.of(2024, 3, 10),
-                LocalDate.of(2024, 3, 10),
-                eventId,
-                CalendarItemKind.EVENT_DATE,
-                null);
+        @Test
+        @DisplayName("should update EVENT_DATE item when event with no deadline is updated")
+        void shouldUpdateEventDateItemWhenEventIsUpdated() {
+            EventId eventId = newEventId();
+            CalendarItemId calendarItemId = CalendarItemId.generate();
 
-        EventData eventData = new EventData(
-                "Updated Spring Boot Workshop",
-                LocalDate.of(2024, 3, 15),
-                "New Prague Center",
-                "OOB",
-                "https://example.com/updated",
-                null);
+            EventCalendarItem existingItem = EventCalendarItem.reconstruct(
+                    calendarItemId, "Old Name", "Old Location - Old Organizer",
+                    LocalDate.of(2024, 3, 10), LocalDate.of(2024, 3, 10),
+                    eventId, CalendarItemKind.EVENT_DATE, null);
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+            EventData eventData = new EventData("Updated Spring Boot Workshop",
+                    LocalDate.of(2024, 3, 15), "New Prague Center", "OOB",
+                    "https://example.com/updated", null);
 
-        testedSubject.handleEventUpdated(eventId);
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+            testedSubject.handleEventUpdated(eventId);
 
-        CalendarItem updatedItem = calendarItemCaptor.getValue();
-        assertThat(updatedItem.getId()).isEqualTo(calendarItemId);
-        assertThat(updatedItem.getName()).isEqualTo("Updated Spring Boot Workshop");
-        assertThat(updatedItem.getDescription()).isEqualTo("New Prague Center - OOB\nhttps://example.com/updated");
-        assertThat(updatedItem.getStartDate()).isEqualTo(LocalDate.of(2024, 3, 15));
-        assertThat(updatedItem.getEndDate()).isEqualTo(LocalDate.of(2024, 3, 15));
-        assertThat(((EventCalendarItem) updatedItem).getEventId()).isEqualTo(eventId);
-    }
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
 
-    @Test
-    @DisplayName("should update calendar item without website URL when not present")
-    void shouldUpdateCalendarItemWithoutWebsiteUrl() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-        CalendarItemId calendarItemId = CalendarItemId.generate();
+            CalendarItem updated = captor.getValue();
+            assertThat(updated.getId()).isEqualTo(calendarItemId);
+            assertThat(updated.getName()).isEqualTo("Updated Spring Boot Workshop");
+            assertThat(updated.getDescription()).isEqualTo("New Prague Center - OOB\nhttps://example.com/updated");
+            assertThat(updated.getStartDate()).isEqualTo(LocalDate.of(2024, 3, 15));
+            assertThat(updated.getEndDate()).isEqualTo(LocalDate.of(2024, 3, 15));
+        }
 
-        EventCalendarItem existingItem = EventCalendarItem.reconstruct(
-                calendarItemId,
-                "Old Name",
-                "Old Location - Old Organizer\nhttps://old-url.com",
-                LocalDate.of(2024, 4, 15),
-                LocalDate.of(2024, 4, 15),
-                eventId,
-                CalendarItemKind.EVENT_DATE,
-                null);
+        @Test
+        @DisplayName("should delete EVENT_REGISTRATION_DATE item when deadline is cleared from event")
+        void shouldDeleteDeadlineItemWhenDeadlineIsCleared() {
+            EventId eventId = newEventId();
+            EventCalendarItem eventDateItem = existingEventDateItem(eventId);
+            EventCalendarItem deadlineItem = existingDeadlineItem(eventId);
 
-        EventData eventData = new EventData(
-                "Updated Java Meetup",
-                LocalDate.of(2024, 4, 20),
-                "Brno Tech Hub",
-                "OOB",
-                null,
-                null);
+            EventData eventWithoutDeadline = eventDataWithoutDeadline("Spring Boot Workshop");
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(eventDateItem, deadlineItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventWithoutDeadline);
 
-        testedSubject.handleEventUpdated(eventId);
+            testedSubject.handleEventUpdated(eventId);
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+            ArgumentCaptor<CalendarItem> deletedCaptor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).delete(deletedCaptor.capture());
+            assertThat(((EventCalendarItem) deletedCaptor.getValue()).getKind())
+                    .isEqualTo(CalendarItemKind.EVENT_REGISTRATION_DATE);
 
-        CalendarItem updatedItem = calendarItemCaptor.getValue();
-        assertThat(updatedItem.getDescription()).isEqualTo("Brno Tech Hub - OOB");
-        assertThat(updatedItem.getDescription()).doesNotContain("\n");
-    }
+            verify(calendarRepositoryMock, times(1)).save(any());
+        }
 
-    @Test
-    @DisplayName("should skip update when EventCalendarItem not found (idempotent)")
-    void shouldSkipUpdateWhenCalendarItemNotFound() {
-        EventId eventId = EventId.of(UUID.randomUUID());
+        @Test
+        @DisplayName("should create EVENT_REGISTRATION_DATE item when deadline is added to event")
+        void shouldCreateDeadlineItemWhenDeadlineIsAdded() {
+            EventId eventId = newEventId();
+            EventCalendarItem eventDateItem = existingEventDateItem(eventId);
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            EventData eventWithDeadline = eventDataWithDeadline("Spring Boot Workshop");
 
-        testedSubject.handleEventUpdated(eventId);
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(eventDateItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventWithDeadline);
 
-        verify(calendarRepositoryMock, never()).save(any());
-        verify(eventDataProviderMock, never()).getEventData(any());
-    }
+            testedSubject.handleEventUpdated(eventId);
 
-    @Test
-    @DisplayName("should create calendar item with organizer-only description when event has no location")
-    void shouldCreateCalendarItemWithOrganizerOnlyWhenEventHasNoLocation() {
-        EventId eventId = EventId.of(UUID.randomUUID());
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(2)).save(captor.capture());
+            verify(calendarRepositoryMock, never()).delete(any());
 
-        EventData eventData = new EventData(
-                "ORIS Event Without Location",
-                LocalDate.of(2024, 5, 10),
-                null,
-                "OOB",
-                null,
-                null);
+            List<CalendarItemKind> savedKinds = captor.getAllValues().stream()
+                    .map(EventCalendarItem.class::cast)
+                    .map(EventCalendarItem::getKind)
+                    .toList();
+            assertThat(savedKinds).containsExactlyInAnyOrder(
+                    CalendarItemKind.EVENT_DATE, CalendarItemKind.EVENT_REGISTRATION_DATE);
+        }
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+        @Test
+        @DisplayName("should update both items' labels when event is renamed")
+        void shouldUpdateBothItemLabelsWhenEventIsRenamed() {
+            EventId eventId = newEventId();
+            EventCalendarItem eventDateItem = existingEventDateItem(eventId);
+            EventCalendarItem deadlineItem = existingDeadlineItem(eventId);
 
-        testedSubject.handleEventPublished(eventId);
+            EventData renamedEvent = eventDataWithDeadline("Renamed Event");
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(eventDateItem, deadlineItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(renamedEvent);
 
-        CalendarItem savedItem = calendarItemCaptor.getValue();
-        assertThat(savedItem.getDescription()).isEqualTo("OOB");
-        assertThat(savedItem.getDescription()).doesNotContain(" - ");
-    }
+            testedSubject.handleEventUpdated(eventId);
 
-    @Test
-    @DisplayName("should update calendar item with organizer-only description when event location becomes null")
-    void shouldUpdateCalendarItemWithOrganizerOnlyWhenEventLocationBecomesNull() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-        CalendarItemId calendarItemId = CalendarItemId.generate();
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(2)).save(captor.capture());
+            verify(calendarRepositoryMock, never()).delete(any());
 
-        EventCalendarItem existingItem = EventCalendarItem.reconstruct(
-                calendarItemId,
-                "Old Name",
-                "Old Location - OOB",
-                LocalDate.of(2024, 4, 15),
-                LocalDate.of(2024, 4, 15),
-                eventId,
-                CalendarItemKind.EVENT_DATE,
-                null);
+            List<EventCalendarItem> saved = captor.getAllValues().stream()
+                    .map(EventCalendarItem.class::cast).toList();
 
-        EventData eventData = new EventData(
-                "Updated Event No Location",
-                LocalDate.of(2024, 5, 10),
-                null,
-                "OOB",
-                null,
-                null);
+            EventCalendarItem updatedDateItem = saved.stream()
+                    .filter(i -> i.getKind() == CalendarItemKind.EVENT_DATE).findFirst().orElseThrow();
+            assertThat(updatedDateItem.getName()).isEqualTo("Renamed Event");
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+            EventCalendarItem updatedDeadlineItem = saved.stream()
+                    .filter(i -> i.getKind() == CalendarItemKind.EVENT_REGISTRATION_DATE).findFirst().orElseThrow();
+            assertThat(updatedDeadlineItem.getName()).isEqualTo("Přihlášky - Renamed Event");
+        }
 
-        testedSubject.handleEventUpdated(eventId);
+        @Test
+        @DisplayName("should self-heal and recreate EVENT_DATE item when it is missing")
+        void shouldSelfHealAndRecreateEventDateItemWhenMissing() {
+            EventId eventId = newEventId();
+            EventData event = eventDataWithoutDeadline("Spring Boot Workshop");
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(event);
 
-        CalendarItem updatedItem = calendarItemCaptor.getValue();
-        assertThat(updatedItem.getDescription()).isEqualTo("OOB");
-        assertThat(updatedItem.getDescription()).doesNotContain(" - ");
-    }
+            testedSubject.handleEventUpdated(eventId);
 
-    @Test
-    @DisplayName("should create calendar item with null description when event has no location, organizer, or website")
-    void shouldCreateCalendarItemWithNullDescriptionWhenAllFieldsMissing() {
-        EventId eventId = EventId.of(UUID.randomUUID());
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
 
-        EventData eventData = new EventData(
-                "Minimal Event",
-                LocalDate.of(2024, 6, 1),
-                null,
-                null,
-                null,
-                null);
+            EventCalendarItem created = (EventCalendarItem) captor.getValue();
+            assertThat(created.getKind()).isEqualTo(CalendarItemKind.EVENT_DATE);
+            assertThat(created.getName()).isEqualTo("Spring Boot Workshop");
+            assertThat(created.getEventId()).isEqualTo(eventId);
+        }
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+        @Test
+        @DisplayName("should update calendar item without website URL when not present")
+        void shouldUpdateCalendarItemWithoutWebsiteUrl() {
+            EventId eventId = newEventId();
+            CalendarItemId calendarItemId = CalendarItemId.generate();
 
-        testedSubject.handleEventPublished(eventId);
+            EventCalendarItem existingItem = EventCalendarItem.reconstruct(
+                    calendarItemId, "Old Name", "Old Location - OOB\nhttps://old-url.com",
+                    LocalDate.of(2024, 4, 15), LocalDate.of(2024, 4, 15),
+                    eventId, CalendarItemKind.EVENT_DATE, null);
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).save(calendarItemCaptor.capture());
+            EventData eventData = new EventData("Updated Java Meetup", LocalDate.of(2024, 4, 20),
+                    "Brno Tech Hub", "OOB", null, null);
 
-        CalendarItem savedItem = calendarItemCaptor.getValue();
-        assertThat(savedItem.getDescription()).isNull();
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+            testedSubject.handleEventUpdated(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            assertThat(captor.getValue().getDescription()).isEqualTo("Brno Tech Hub - OOB");
+            assertThat(captor.getValue().getDescription()).doesNotContain("\n");
+        }
+
+        @Test
+        @DisplayName("should update calendar item with organizer-only description when location is cleared")
+        void shouldUpdateCalendarItemWithOrganizerOnlyWhenEventLocationBecomesNull() {
+            EventId eventId = newEventId();
+            CalendarItemId calendarItemId = CalendarItemId.generate();
+
+            EventCalendarItem existingItem = EventCalendarItem.reconstruct(
+                    calendarItemId, "Old Name", "Old Location - OOB",
+                    LocalDate.of(2024, 4, 15), LocalDate.of(2024, 4, 15),
+                    eventId, CalendarItemKind.EVENT_DATE, null);
+
+            EventData eventData = new EventData("Updated Event No Location", LocalDate.of(2024, 5, 10),
+                    null, "OOB", null, null);
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+            testedSubject.handleEventUpdated(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).save(captor.capture());
+
+            assertThat(captor.getValue().getDescription()).isEqualTo("OOB");
+            assertThat(captor.getValue().getDescription()).doesNotContain(" - ");
+        }
     }
 
     // ===== handleEventCancelled() Tests =====
 
-    @Test
-    @DisplayName("should delete EventCalendarItem when event is cancelled")
-    void shouldDeleteCalendarItemWhenEventIsCancelled() {
-        EventId eventId = EventId.of(UUID.randomUUID());
-        CalendarItemId calendarItemId = CalendarItemId.generate();
+    @Nested
+    @DisplayName("handleEventCancelled")
+    class HandleEventCancelledTests {
 
-        EventCalendarItem existingItem = EventCalendarItem.reconstruct(
-                calendarItemId,
-                "Spring Boot Workshop",
-                "Prague Conference Center - OOB",
-                LocalDate.of(2024, 3, 15),
-                LocalDate.of(2024, 3, 15),
-                eventId,
-                CalendarItemKind.EVENT_DATE,
-                null);
+        @Test
+        @DisplayName("should delete both EVENT_DATE and EVENT_REGISTRATION_DATE items when both exist")
+        void shouldDeleteBothItemsWhenBothExist() {
+            EventId eventId = newEventId();
+            EventCalendarItem eventDateItem = existingEventDateItem(eventId);
+            EventCalendarItem deadlineItem = existingDeadlineItem(eventId);
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(eventDateItem, deadlineItem));
 
-        testedSubject.handleEventCancelled(eventId);
+            testedSubject.handleEventCancelled(eventId);
 
-        ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
-        verify(calendarRepositoryMock).delete(calendarItemCaptor.capture());
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(2)).delete(captor.capture());
 
-        CalendarItem deletedItem = calendarItemCaptor.getValue();
-        assertThat(deletedItem.getId()).isEqualTo(calendarItemId);
-        assertThat(((EventCalendarItem) deletedItem).getEventId()).isEqualTo(eventId);
-    }
+            List<CalendarItemKind> deletedKinds = captor.getAllValues().stream()
+                    .map(EventCalendarItem.class::cast)
+                    .map(EventCalendarItem::getKind)
+                    .toList();
+            assertThat(deletedKinds).containsExactlyInAnyOrder(
+                    CalendarItemKind.EVENT_DATE, CalendarItemKind.EVENT_REGISTRATION_DATE);
+        }
 
-    @Test
-    @DisplayName("should skip deletion when EventCalendarItem not found (idempotent)")
-    void shouldSkipDeletionWhenCalendarItemNotFound() {
-        EventId eventId = EventId.of(UUID.randomUUID());
+        @Test
+        @DisplayName("should delete only EVENT_DATE item when only it exists")
+        void shouldDeleteOnlyEventDateItemWhenOnlyItExists() {
+            EventId eventId = newEventId();
+            CalendarItemId calendarItemId = CalendarItemId.generate();
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+            EventCalendarItem existingItem = EventCalendarItem.reconstruct(
+                    calendarItemId, "Spring Boot Workshop", "Prague Conference Center - OOB",
+                    LocalDate.of(2024, 3, 15), LocalDate.of(2024, 3, 15),
+                    eventId, CalendarItemKind.EVENT_DATE, null);
 
-        testedSubject.handleEventCancelled(eventId);
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
 
-        verify(calendarRepositoryMock, never()).delete(any());
+            testedSubject.handleEventCancelled(eventId);
+
+            ArgumentCaptor<CalendarItem> captor = ArgumentCaptor.forClass(CalendarItem.class);
+            verify(calendarRepositoryMock, times(1)).delete(captor.capture());
+
+            assertThat(captor.getValue().getId()).isEqualTo(calendarItemId);
+        }
+
+        @Test
+        @DisplayName("should do nothing when no items exist for event")
+        void shouldDoNothingWhenNoItemsExist() {
+            EventId eventId = newEventId();
+
+            when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
+
+            testedSubject.handleEventCancelled(eventId);
+
+            verify(calendarRepositoryMock, never()).delete(any());
+        }
     }
 }
