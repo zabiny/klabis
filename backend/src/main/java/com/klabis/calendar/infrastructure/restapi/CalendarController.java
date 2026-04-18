@@ -4,6 +4,8 @@ import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +22,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -267,5 +270,19 @@ class CalendarController {
         LocalDate today = LocalDate.now();
         klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc"))
                 .ifPresent(link -> entityModel.add(link.withRel("collection")));
+    }
+}
+
+@MvcComponent
+class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
+                LocalDate.now().withDayOfMonth(1),
+                LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()),
+                "startDate,asc"
+        )).ifPresent(link -> model.add(link.withRel("calendar")));
+        return model;
     }
 }

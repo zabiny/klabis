@@ -1,6 +1,8 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
+import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
@@ -31,6 +33,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -333,4 +336,17 @@ public class EventController {
         }
     }
 
+}
+
+@MvcComponent
+class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged(), null))
+                .ifPresent(link -> model.add(link.withRel("events")));
+        klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
+                .ifPresent(link -> model.add(link.withRel("category-presets")));
+        return model;
+    }
 }
