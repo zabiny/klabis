@@ -1,15 +1,16 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.ui.EntityModelWithDomain;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -53,24 +54,20 @@ class MemberPermissionsLinkProcessorTest {
     }
 
     @Test
-    @DisplayName("should add permissions link when user has MEMBERS:PERMISSIONS authority")
+    @DisplayName("should add permissions link for active member when user has MEMBERS:PERMISSIONS authority")
     void shouldAddPermissionsLinkWhenUserHasMembersPermissionsAuthority() {
-        // Given: User with MEMBERS:PERMISSIONS authority
-        UUID memberId = UUID.randomUUID();
-        MemberDetailsResponse response = createMemberDetailsResponse(memberId);
-        EntityModel<MemberDetailsResponse> model = EntityModel.of(response);
+        UUID memberUuid = UUID.randomUUID();
+        EntityModelWithDomain<MemberDetailsResponse, Member> model = modelFor(memberUuid, true);
 
         mockSecurityContext(List.of(new SimpleGrantedAuthority("MEMBERS:PERMISSIONS")));
 
-        // When: Process is called
-        EntityModel<MemberDetailsResponse> result = testedSubject.process(model);
+        testedSubject.process(model);
 
-        // Then: Permissions link is present
-        Optional<Link> permissionsLink = result.getLink("permissions");
+        Optional<Link> permissionsLink = model.getLink("permissions");
         assertThat(permissionsLink).isPresent();
 
         String expectedHref = linkTo(methodOn(PermissionController.class)
-                .getUserPermissions(memberId))
+                .getUserPermissions(memberUuid))
                 .toUri()
                 .toString();
         assertThat(permissionsLink.get().getHref()).isEqualTo(expectedHref);
@@ -79,62 +76,43 @@ class MemberPermissionsLinkProcessorTest {
     @Test
     @DisplayName("should not add permissions link when user lacks MEMBERS:PERMISSIONS authority")
     void shouldNotAddPermissionsLinkWhenUserLacksMembersPermissionsAuthority() {
-        // Given: User without MEMBERS:PERMISSIONS authority
-        UUID memberId = UUID.randomUUID();
-        MemberDetailsResponse response = createMemberDetailsResponse(memberId);
-        EntityModel<MemberDetailsResponse> model = EntityModel.of(response);
+        EntityModelWithDomain<MemberDetailsResponse, Member> model = modelFor(UUID.randomUUID(), true);
 
         mockSecurityContext(List.of(new SimpleGrantedAuthority("MEMBERS:READ")));
 
-        // When: Process is called
-        EntityModel<MemberDetailsResponse> result = testedSubject.process(model);
+        testedSubject.process(model);
 
-        // Then: Permissions link is NOT present
-        Optional<Link> permissionsLink = result.getLink("permissions");
-        assertThat(permissionsLink).isEmpty();
+        assertThat(model.getLink("permissions")).isEmpty();
     }
 
     @Test
     @DisplayName("should not add permissions link when user is unauthenticated")
     void shouldNotAddPermissionsLinkWhenUserIsUnauthenticated() {
-        // Given: No authentication
-        UUID memberId = UUID.randomUUID();
-        MemberDetailsResponse response = createMemberDetailsResponse(memberId);
-        EntityModel<MemberDetailsResponse> model = EntityModel.of(response);
+        EntityModelWithDomain<MemberDetailsResponse, Member> model = modelFor(UUID.randomUUID(), true);
 
         SecurityContextHolder.clearContext();
 
-        // When: Process is called
-        EntityModel<MemberDetailsResponse> result = testedSubject.process(model);
+        testedSubject.process(model);
 
-        // Then: Permissions link is NOT present
-        Optional<Link> permissionsLink = result.getLink("permissions");
-        assertThat(permissionsLink).isEmpty();
+        assertThat(model.getLink("permissions")).isEmpty();
     }
 
     @Test
-    @DisplayName("should handle null id gracefully")
-    void shouldHandleNullIdGracefully() {
-        // Given: MemberDetailsResponse with null id
-        MemberDetailsResponse response = createMemberDetailsResponse(null);
-        EntityModel<MemberDetailsResponse> model = EntityModel.of(response);
+    @DisplayName("should not add permissions link when member is not active")
+    void shouldNotAddPermissionsLinkWhenMemberIsNotActive() {
+        EntityModelWithDomain<MemberDetailsResponse, Member> model = modelFor(UUID.randomUUID(), false);
 
         mockSecurityContext(List.of(new SimpleGrantedAuthority("MEMBERS:PERMISSIONS")));
 
-        // When: Process is called
-        EntityModel<MemberDetailsResponse> result = testedSubject.process(model);
+        testedSubject.process(model);
 
-        // Then: No exception thrown, no link added
-        Optional<Link> permissionsLink = result.getLink("permissions");
-        assertThat(permissionsLink).isEmpty();
+        assertThat(model.getLink("permissions")).isEmpty();
     }
 
-    /**
-     * Helper method to create a minimal MemberDetailsResponse for testing.
-     */
-    private MemberDetailsResponse createMemberDetailsResponse(UUID id) {
-        return MemberDetailsResponseBuilder.builder()
-                .id(new MemberId(id))
+    @SuppressWarnings("unchecked")
+    private EntityModelWithDomain<MemberDetailsResponse, Member> modelFor(UUID memberUuid, boolean active) {
+        MemberDetailsResponse response = MemberDetailsResponseBuilder.builder()
+                .id(new MemberId(memberUuid))
                 .registrationNumber("ZBM0101")
                 .firstName("Jan")
                 .lastName("Novák")
@@ -142,8 +120,15 @@ class MemberPermissionsLinkProcessorTest {
                 .nationality("CZ")
                 .email("test@example.com")
                 .phone("+420777123456")
-                .active(true)
+                .active(active)
                 .build();
+
+        Member member = MemberTestDataBuilder.aMemberWithId(memberUuid)
+                .withActive(active)
+                .build();
+
+        return (EntityModelWithDomain<MemberDetailsResponse, Member>)
+                HalFormsSupport.entityModelWithDomain(response, member);
     }
 
     /**

@@ -1,8 +1,10 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
+import com.klabis.members.domain.Member;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
@@ -26,20 +28,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * @see PermissionController
  */
 @MvcComponent
-class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
+class MemberPermissionsLinkProcessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     @Override
-    public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
-        MemberDetailsResponse response = model.getContent();
-        if (response == null) {
-            return model;
+    public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
+        if (member.isActive()) {
+            addPermissionsLink(dtoModel, member.getId());
         }
-
-        if (response.active()) {
-            addPermissionsLink(model, response.id());
-        }
-
-        return model;
     }
 }
 

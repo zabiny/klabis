@@ -89,6 +89,10 @@ public class HalFormsSupport {
         return List.of(modifiedResult);
     }
 
+    public static <T, D> EntityModel<T> entityModelWithDomain(T dto, D domain) {
+        return new EntityModelWithDomain<>(dto, domain);
+    }
+
     static final ThreadLocal<Map<String, List<String>>> PROPERTY_OPTIONS_CONTEXT = new ThreadLocal<>();
 
     /**
@@ -122,7 +126,9 @@ public class HalFormsSupport {
     }
 
     private record MethodAuthMeta(HasAuthority hasAuthority, OwnerVisible ownerVisible, int ownerIdParamIndex) {
-        boolean hasSecurityAnnotations() { return hasAuthority != null || ownerVisible != null; }
+        boolean hasSecurityAnnotations() {
+            return hasAuthority != null || ownerVisible != null;
+        }
     }
 
     private static final ConcurrentHashMap<Method, MethodAuthMeta> METHOD_AUTH_CACHE = new ConcurrentHashMap<>();
@@ -135,7 +141,10 @@ public class HalFormsSupport {
             if (ov != null) {
                 Parameter[] params = m.getParameters();
                 for (int i = 0; i < params.length; i++) {
-                    if (params[i].isAnnotationPresent(OwnerId.class)) { ownerIdx = i; break; }
+                    if (params[i].isAnnotationPresent(OwnerId.class)) {
+                        ownerIdx = i;
+                        break;
+                    }
                 }
             }
             return new MethodAuthMeta(ha, ov, ownerIdx);
@@ -157,7 +166,8 @@ public class HalFormsSupport {
             return false;
         }
 
-        if (meta.hasAuthority() != null && SecuritySpelEvaluator.hasAuthority(authentication, meta.hasAuthority().value())) {
+        if (meta.hasAuthority() != null && SecuritySpelEvaluator.hasAuthority(authentication,
+                meta.hasAuthority().value())) {
             return true;
         }
 
@@ -346,7 +356,8 @@ public class HalFormsSupport {
                     .isRecord();
 
             AffordanceModel.PropertyMetadata wrapped = getAnnotatedElementForProperty(inputPayloadMetadata, metadata)
-                    .map(annotatedElement -> (AffordanceModel.PropertyMetadata) new KlabisHalFormsPropertyMetadataWrapper(metadata,
+                    .map(annotatedElement -> (AffordanceModel.PropertyMetadata) new KlabisHalFormsPropertyMetadataWrapper(
+                            metadata,
                             annotatedElement,
                             isPayloadClassRecord,
                             isPropertyAuthorized(inputPayloadMetadata.getType(), metadata.getName())))
@@ -381,7 +392,7 @@ public class HalFormsSupport {
                 return Arrays.stream(payloadType.getRecordComponents())
                         .filter(c -> c.getName().equals(propertyName))
                         .filter(c -> c.getAccessor().isAnnotationPresent(PreAuthorize.class)
-                                || c.getAccessor().isAnnotationPresent(HasAuthority.class))
+                                     || c.getAccessor().isAnnotationPresent(HasAuthority.class))
                         .findFirst()
                         .map(c -> evaluateSecurityAnnotations(c.getAccessor()))
                         .orElse(true);
@@ -566,8 +577,8 @@ public class HalFormsSupport {
             }
 
             if (Optional.class.getSimpleName().equalsIgnoreCase(result)
-                    || PatchField.class.getSimpleName().equalsIgnoreCase(result)
-                    || isCollectionType()) {
+                || PatchField.class.getSimpleName().equalsIgnoreCase(result)
+                || isCollectionType()) {
                 result = getTypeFromClass(delegate.getType().getGeneric(0).getRawClass());
             }
 
@@ -594,3 +605,4 @@ public class HalFormsSupport {
     }
 
 }
+

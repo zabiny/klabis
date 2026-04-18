@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.3.0
+version: 0.4.0
 ---
 
 # Klabis Backend Patterns
@@ -228,34 +228,63 @@ ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id,
 
 Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `PatchField<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
 
-### HATEOAS Affordances (State-Driven)
+### HATEOAS — EntityModelWithDomain + Postprocessor Pattern
+
+**Primary choice for creating `EntityModel` instances in controllers that load a domain aggregate.** Controllers focus on returning data; all link/affordance customization lives in a dedicated postprocessor that receives BOTH the DTO-shaped `EntityModel<T>` and the domain aggregate `D`.
+
+**Controller — use `entityModelWithDomain(dto, domain)` instead of `EntityModel.of(dto)`:**
 
 ```java
 @GetMapping("/{id}")
 ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(@PathVariable UUID id) {
-    Member member = ...;
-    EntityModel<MemberDetailsResponse> model = EntityModel.of(memberMapper.toDetailsResponse(member));
-
-    // klabisLinkTo() returns Optional<WebMvcLinkBuilder> — use .ifPresent()
-    if (member.isActive()) {
-        klabisLinkTo(methodOn(MemberController.class).getMember(id))
-            .map(link -> link.withSelfRel()
-                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
-                .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id, null, null))))
-            .ifPresent(model::add);
-    } else {
-        klabisLinkTo(methodOn(MemberController.class).getMember(id))
-            .map(link -> link.withSelfRel()
-                .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null))))
-            .ifPresent(model::add);
-    }
-    return ResponseEntity.ok(model);
+    Member member = managementService.getMember(new MemberId(id));
+    return ResponseEntity.ok(entityModelWithDomain(memberMapper.toDetailsResponse(member), member));
 }
 ```
 
-Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()` helpers (not standard Spring HATEOAS helpers). Affordances depend on aggregate state.
+The controller does NOT add links/affordances inline. It just wraps the DTO with the domain aggregate and returns. `EntityModelWithDomain<T, D>` is a subclass of `EntityModel<T>` that piggy-backs the domain object; the domain is `@JsonIgnore`-annotated so it never leaks into the response body.
 
-HATEOAS rules (NON-NEGOTIABLE):
+**Postprocessor — extend `ModelWithDomainPostprocessor<T, D>`:**
+
+```java
+@MvcComponent
+class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
+
+    @Override
+    public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
+        klabisLinkTo(methodOn(MemberController.class).getMember(member.getId().uuid()))
+            .map(link -> {
+                var self = link.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(member.getId().uuid(), null, null)));
+                if (member.isActive()) {
+                    self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(member.getId().uuid(), null, null)));
+                } else {
+                    self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(member.getId().uuid(), null)));
+                }
+                return self;
+            })
+            .ifPresent(dtoModel::add);
+    }
+}
+```
+
+**Why this pattern:**
+- State-driven affordances read from the real aggregate (`member.isActive()`) — no reliance on whether the DTO field has already been filtered by Jackson field-level security.
+- Controllers stay small; all hypermedia shaping is externalized. Multiple postprocessors can compose for the same endpoint (e.g. cross-module concerns: a training-groups postprocessor adding a `trainingGroup` link to member details).
+- Cross-module postprocessors live in the consuming module — they declare their dependency on the DTO+domain pair explicitly via generics.
+- `domainItem` is `@JsonIgnore` — safe from serialization.
+
+**Fallback — plain `EntityModel.of(dto)`:** acceptable only when there is no domain aggregate in scope (e.g., pure DTO projections, synthetic summaries, `RootModel` navigation). For standard aggregate-backed endpoints use the postprocessor pattern.
+
+**Static import:**
+```java
+import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
+```
+
+### HATEOAS Rules (NON-NEGOTIABLE)
+
+Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()` — not standard Spring HATEOAS helpers.
+
 - Links (`withSelfRel()`, `withRel()`) — ONLY for GET endpoints
 - Affordances (`klabisAfford()`) — ONLY for POST/PUT/PATCH/DELETE endpoints
 - POST/PUT/PATCH/DELETE return 204 No Content or 201 Created with Location header — no response body
@@ -263,23 +292,29 @@ HATEOAS rules (NON-NEGOTIABLE):
 
 ### Root Navigation Postprocessors
 
-Add module collection links to the `/api` root via `RepresentationModelProcessor`:
+Root navigation (`/api`) is **NOT** an aggregate-backed endpoint — `RootModel` is just a marker for the entry point and there is no domain object to piggy-back. Use a plain `RepresentationModelProcessor<EntityModel<RootModel>>`. Place the class at the end of the file containing the referenced controller, annotated `@MvcComponent`:
 
 ```java
-// Top level class at the end of file containing referenced controller, annotated @MvcComponent
 @MvcComponent
 class MembersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(klabisLinkTo(methodOn(MemberController.class)
-            .listMembers(Pageable.unpaged(), null))  // use Pageable.unpaged(), not null
-            .withRel("members"));
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+            .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }
 }
 ```
 
-`RepresentationModelProcessor` follows the same HATEOAS rules — no affordances to POST endpoints.
+Same HATEOAS rules apply — no affordances to POST endpoints.
+
+### Choosing the postprocessor type
+
+| Situation | Use |
+|---|---|
+| Controller loads an aggregate and returns its detail/summary | `ModelWithDomainPostprocessor<Dto, Aggregate>` — controller returns `entityModelWithDomain(dto, aggregate)` |
+| Root navigation (`RootModel`) | Plain `RepresentationModelProcessor<EntityModel<RootModel>>` — no domain involved |
+| Cross-module link enrichment where consuming module knows only the DTO's marker interface and the publishing controller does not expose the aggregate | Plain `RepresentationModelProcessor<EntityModel<MarkerInterface>>` |
 
 ### Current User Parameters (`@ActingUser` / `@ActingMember`)
 

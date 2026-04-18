@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -269,7 +270,7 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(memberMapper.toDetailsResponse(member));
+        EntityModel<MemberDetailsResponse> entityModel = entityModelWithDomain(memberMapper.toDetailsResponse(member), member);
 
         buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
 
