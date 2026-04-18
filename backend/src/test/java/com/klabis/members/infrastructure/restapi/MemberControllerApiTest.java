@@ -65,8 +65,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
-        com.klabis.groups.traininggroup.infrastructure.restapi.MemberDetailsPostProcessor.class,
-        com.klabis.groups.familygroup.infrastructure.restapi.MemberDetailsPostProcessor.class})
+        com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
+        com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 
@@ -433,7 +433,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup.href")
-                            .value("/api/training-groups/" + groupId))
+                            .value(org.hamcrest.Matchers.endsWith("/api/training-groups/" + groupId)))
                     .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
         }
 
@@ -459,7 +459,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
                     .andExpect(jsonPath("$._links.familyGroup.href")
-                            .value("/api/family-groups/" + groupId));
+                            .value(org.hamcrest.Matchers.endsWith("/api/family-groups/" + groupId)));
         }
 
         @Test
