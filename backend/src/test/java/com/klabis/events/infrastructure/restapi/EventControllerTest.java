@@ -11,6 +11,7 @@ import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -62,6 +63,9 @@ class EventControllerTest {
 
     @MockitoBean
     private Members members;
+
+    @MockitoBean
+    private OrisEventImportPort orisEventImportPort;
 
     @MockitoBean
     private UserService userService;
@@ -816,7 +820,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldImportEventSuccessfully() throws Exception {
             Event importedEvent = EventTestDataBuilder.anEvent().withName("ORIS Sprint Race").build();
-            when(eventManagementService.importEventFromOris(9876)).thenReturn(importedEvent);
+            when(orisEventImportPort.importEventFromOris(9876)).thenReturn(importedEvent);
 
             mockMvc.perform(
                             post("/api/events/import")
@@ -845,7 +849,7 @@ class EventControllerTest {
         @DisplayName("should return 409 when ORIS event already imported")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn409WhenDuplicate() throws Exception {
-            when(eventManagementService.importEventFromOris(9876))
+            when(orisEventImportPort.importEventFromOris(9876))
                     .thenThrow(new DuplicateOrisImportException(9876));
 
             mockMvc.perform(
@@ -861,7 +865,7 @@ class EventControllerTest {
         @DisplayName("should return 404 when ORIS event not found")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn404WhenOrisEventNotFound() throws Exception {
-            when(eventManagementService.importEventFromOris(9999))
+            when(orisEventImportPort.importEventFromOris(9999))
                     .thenThrow(new EventNotFoundException(9999));
 
             mockMvc.perform(
@@ -910,7 +914,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isNoContent());
 
-            verify(eventManagementService).syncEventFromOris(new EventId(eventId));
+            verify(orisEventImportPort).syncEventFromOris(new EventId(eventId));
         }
 
         @Test
@@ -932,7 +936,7 @@ class EventControllerTest {
         void shouldReturn404WhenEventNotFound() throws Exception {
             UUID eventId = UUID.randomUUID();
             doThrow(new EventNotFoundException(new EventId(eventId)))
-                    .when(eventManagementService).syncEventFromOris(any());
+                    .when(orisEventImportPort).syncEventFromOris(any());
 
             mockMvc.perform(
                             post("/api/events/{id}/sync-from-oris", eventId)

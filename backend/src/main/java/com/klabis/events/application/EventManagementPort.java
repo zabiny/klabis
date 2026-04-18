@@ -14,8 +14,6 @@ public interface EventManagementPort {
 
     Event createEvent(Event.CreateEvent command);
 
-    Event importEventFromOris(int orisId);
-
     void updateEvent(EventId eventId, Event.UpdateEvent command);
 
     void publishEvent(EventId eventId);
@@ -23,8 +21,6 @@ public interface EventManagementPort {
     void cancelEvent(EventId eventId);
 
     void finishExpiredActiveEvents(LocalDate currentDate);
-
-    void syncEventFromOris(EventId eventId);
 
     Event getEvent(EventId eventId, boolean canManageEvents);
 

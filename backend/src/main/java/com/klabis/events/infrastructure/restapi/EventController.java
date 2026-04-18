@@ -6,6 +6,7 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -60,6 +62,7 @@ public class EventController {
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
     private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
+    private final Optional<OrisEventImportPort> orisEventImportPort;
     private final boolean orisIntegrationActive;
 
     public EventController(
@@ -67,11 +70,13 @@ public class EventController {
             EventRegistrationPort eventRegistrationService,
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
+            Optional<OrisEventImportPort> orisEventImportPort,
             @org.springframework.beans.factory.annotation.Value("${oris.client.enabled:false}") boolean orisIntegrationActive) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
+        this.orisEventImportPort = orisEventImportPort;
         this.orisIntegrationActive = orisIntegrationActive;
     }
 
@@ -104,7 +109,8 @@ public class EventController {
             @Parameter(description = "ORIS import command with orisId")
             @Valid @RequestBody Event.ImportCommand command) {
 
-        Event created = eventManagementService.importEventFromOris(command.orisId());
+        Event created = orisEventImportPort.orElseThrow(() ->
+                new IllegalStateException("ORIS integration is not active")).importEventFromOris(command.orisId());
 
         return ResponseEntity
                 .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
@@ -325,7 +331,8 @@ public class EventController {
     public ResponseEntity<Void> syncEventFromOris(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        eventManagementService.syncEventFromOris(new EventId(id));
+        orisEventImportPort.orElseThrow(() ->
+                new IllegalStateException("ORIS integration is not active")).syncEventFromOris(new EventId(id));
         return ResponseEntity.noContent().build();
     }
 
