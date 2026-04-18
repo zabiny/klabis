@@ -10,6 +10,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -41,7 +42,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping(value = "/api/family-groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "FamilyGroups", description = "Family group management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
+@ExposesResourceFor(FamilyGroup.class)
 class FamilyGroupController {
 
     private final FamilyGroupManagementPort familyGroupManagementService;

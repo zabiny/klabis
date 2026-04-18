@@ -12,6 +12,7 @@ import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -44,7 +45,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping(value = "/api/training-groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "TrainingGroups", description = "Training group management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
+@ExposesResourceFor(TrainingGroup.class)
 class TrainingGroupController {
 
     private final TrainingGroupManagementPort trainingGroupManagementService;

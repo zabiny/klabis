@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.members.ActingMember;
@@ -25,7 +26,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping(value = "/api/invitations", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Invitations", description = "Invitation management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
 class PendingInvitationsController {
 
     private final FreeGroupManagementPort membersGroupManagementService;

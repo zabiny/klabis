@@ -8,9 +8,11 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberController;
@@ -42,7 +44,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping(value = "/api/groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Groups", description = "Members group management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
+@ExposesResourceFor(FreeGroup.class)
 class FreeGroupController {
 
     private final FreeGroupManagementPort membersGroupManagementService;
