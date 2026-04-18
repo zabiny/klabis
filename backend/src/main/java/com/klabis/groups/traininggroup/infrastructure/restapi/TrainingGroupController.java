@@ -59,10 +59,7 @@ class TrainingGroupController {
     @HasAuthority(Authority.GROUPS_TRAINING)
     @Operation(summary = "Create a training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> createTrainingGroup(
-            @Valid @RequestBody CreateTrainingGroupRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Valid @RequestBody CreateTrainingGroupRequest request) {
 
         AgeRange ageRange = new AgeRange(request.minAge(), request.maxAge());
         TrainingGroup.CreateTrainingGroup command = new TrainingGroup.CreateTrainingGroup(
@@ -77,10 +74,7 @@ class TrainingGroupController {
     @GetMapping
     @HasAuthority(Authority.GROUPS_TRAINING)
     @Operation(summary = "List all training groups (requires GROUPS:TRAINING)")
-    ResponseEntity<CollectionModel<EntityModel<TrainingGroupSummaryResponse>>> listTrainingGroups(
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+    ResponseEntity<CollectionModel<EntityModel<TrainingGroupSummaryResponse>>> listTrainingGroups() {
 
         List<TrainingGroup> groups = trainingGroupManagementService.listTrainingGroups();
         List<EntityModel<TrainingGroupSummaryResponse>> items = groups.stream()
@@ -88,9 +82,9 @@ class TrainingGroupController {
                 .toList();
 
         CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups(null))
+        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
                 .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).createTrainingGroup(null, null)))));
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).createTrainingGroup(null)))));
 
         return ResponseEntity.ok(model);
     }
@@ -118,7 +112,7 @@ class TrainingGroupController {
         var model = entityModelWithDomain(response, group);
 
         if (hasTrainingAuthority) {
-            klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups(null))
+            klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
                     .ifPresent(link -> model.add(link.withRel("collection")));
         }
 
@@ -145,10 +139,7 @@ class TrainingGroupController {
     @Operation(summary = "Update a training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> updateTrainingGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody UpdateTrainingGroupRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Valid @RequestBody UpdateTrainingGroupRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
@@ -166,10 +157,7 @@ class TrainingGroupController {
     @HasAuthority(Authority.GROUPS_TRAINING)
     @Operation(summary = "Delete a training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> deleteTrainingGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Parameter(description = "Group UUID") @PathVariable UUID id) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.deleteTrainingGroup(groupId);
@@ -181,10 +169,7 @@ class TrainingGroupController {
     @Operation(summary = "Add a member to training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> addTrainingGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Valid @RequestBody AddMemberRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.addMemberToTrainingGroup(groupId, request.toMemberId());
@@ -196,10 +181,7 @@ class TrainingGroupController {
     @Operation(summary = "Remove a member from training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> removeTrainingGroupMember(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         MemberId memberToRemove = new MemberId(memberId);
@@ -212,10 +194,7 @@ class TrainingGroupController {
     @Operation(summary = "Add a trainer to training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> addTrainer(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddTrainerRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Valid @RequestBody AddTrainerRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.addTrainer(groupId, new MemberId(request.memberId()));
@@ -227,10 +206,7 @@ class TrainingGroupController {
     @Operation(summary = "Remove a trainer from training group (requires GROUPS:TRAINING)")
     ResponseEntity<Void> removeTrainer(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Trainer member UUID") @PathVariable UUID memberId,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireTrainingAuthority(currentUser);
+            @Parameter(description = "Trainer member UUID") @PathVariable UUID memberId) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.removeTrainer(groupId, new MemberId(memberId));
@@ -259,10 +235,10 @@ class TrainingGroupController {
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
                     if (hasTrainingAuthority && trainerIds.size() > 1) {
-                        klabisLinkTo(methodOn(TrainingGroupController.class).removeTrainer(groupUuid, trainerId.uuid(), null))
+                        klabisLinkTo(methodOn(TrainingGroupController.class).removeTrainer(groupUuid, trainerId.uuid()))
                                 .ifPresent(link -> model.add(link.withSelfRel()
                                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class)
-                                                .removeTrainer(groupUuid, trainerId.uuid(), null)))));
+                                                .removeTrainer(groupUuid, trainerId.uuid())))));
                     }
                     return model;
                 })
@@ -291,19 +267,13 @@ class TrainingGroupController {
         boolean memberIsTrainer = trainerIds.contains(memberId);
         if (hasTrainingAuthority && !memberIsTrainer) {
             klabisLinkTo(methodOn(TrainingGroupController.class)
-                    .removeTrainingGroupMember(groupUuid, memberId.uuid(), null))
+                    .removeTrainingGroupMember(groupUuid, memberId.uuid()))
                     .ifPresent(link -> model.add(link.withSelfRel()
                             .andAffordances(klabisAfford(methodOn(TrainingGroupController.class)
-                                    .removeTrainingGroupMember(groupUuid, memberId.uuid(), null)))));
+                                    .removeTrainingGroupMember(groupUuid, memberId.uuid())))));
         }
 
         return model;
-    }
-
-    private void requireTrainingAuthority(CurrentUserData currentUser) {
-        if (!currentUser.hasAuthority(Authority.GROUPS_TRAINING)) {
-            throw new InsufficientAuthorityException("GROUPS:TRAINING");
-        }
     }
 }
 
@@ -315,10 +285,10 @@ class TrainingGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Tra
         UUID id = group.getId().uuid();
         klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainer(id, null, null))))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(id)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainer(id, null))))
                 .ifPresent(dtoModel::add);
     }
 }
@@ -328,7 +298,7 @@ class TrainingGroupsRootPostprocessor implements RepresentationModelProcessor<En
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups(null))
+        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
                 .ifPresent(link -> model.add(link.withRel("training-groups")));
         return model;
     }

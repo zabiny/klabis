@@ -53,12 +53,10 @@ class FamilyGroupController {
     }
 
     @PostMapping(consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Create a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> createFamilyGroup(
-            @Valid @RequestBody CreateFamilyGroupRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Valid @RequestBody CreateFamilyGroupRequest request) {
 
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
                 request.name(), new MemberId(request.parent()));
@@ -72,10 +70,7 @@ class FamilyGroupController {
     @GetMapping
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "List all family groups (requires MEMBERS:MANAGE)")
-    ResponseEntity<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> listFamilyGroups(
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+    ResponseEntity<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> listFamilyGroups() {
 
         List<FamilyGroup> groups = familyGroupManagementService.listFamilyGroups();
         List<EntityModel<FamilyGroupSummaryResponse>> items = groups.stream()
@@ -83,9 +78,9 @@ class FamilyGroupController {
                 .toList();
 
         CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups(null))
+        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
                 .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).createFamilyGroup(null, null)))));
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).createFamilyGroup(null)))));
 
         return ResponseEntity.ok(model);
     }
@@ -110,7 +105,7 @@ class FamilyGroupController {
         var model = entityModelWithDomain(response, group);
 
         if (hasMembersManage) {
-            klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups(null))
+            klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
                     .ifPresent(link -> model.add(link.withRel("collection")));
         }
 
@@ -121,10 +116,7 @@ class FamilyGroupController {
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Delete a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> deleteFamilyGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Parameter(description = "Group UUID") @PathVariable UUID id) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.deleteFamilyGroup(groupId);
@@ -136,10 +128,7 @@ class FamilyGroupController {
     @Operation(summary = "Add a parent to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Valid @RequestBody AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addParent(groupId, new MemberId(request.memberId()));
@@ -147,13 +136,11 @@ class FamilyGroupController {
     }
 
     @DeleteMapping("/{id}/parents/{memberId}")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Remove a parent from family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> removeFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Parent member UUID") @PathVariable UUID memberId,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Parameter(description = "Parent member UUID") @PathVariable UUID memberId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         MemberId parentToRemove = new MemberId(memberId);
@@ -166,10 +153,7 @@ class FamilyGroupController {
     @Operation(summary = "Add a child to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Valid @RequestBody AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addChild(groupId, new MemberId(request.memberId()));
@@ -177,13 +161,11 @@ class FamilyGroupController {
     }
 
     @DeleteMapping("/{id}/children/{memberId}")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Remove a child from family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> removeFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Child member UUID") @PathVariable UUID memberId,
-            @ActingUser CurrentUserData currentUser) {
-
-        requireMembersManageAuthority(currentUser);
+            @Parameter(description = "Child member UUID") @PathVariable UUID memberId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.removeChild(groupId, new MemberId(memberId));
@@ -209,10 +191,10 @@ class FamilyGroupController {
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
                     if (hasMembersManage && parentIds.size() > 1) {
-                        klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupParent(groupUuid, parentId.uuid(), null))
+                        klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupParent(groupUuid, parentId.uuid()))
                                 .ifPresent(link -> model.add(link.withSelfRel()
                                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
-                                                .removeFamilyGroupParent(groupUuid, parentId.uuid(), null)))));
+                                                .removeFamilyGroupParent(groupUuid, parentId.uuid())))));
                     }
                     return model;
                 })
@@ -233,18 +215,12 @@ class FamilyGroupController {
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
         if (hasMembersManage) {
-            klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupChild(groupUuid, memberId.uuid(), null))
+            klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupChild(groupUuid, memberId.uuid()))
                     .ifPresent(link -> model.add(link.withSelfRel()
                             .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
-                                    .removeFamilyGroupChild(groupUuid, memberId.uuid(), null)))));
+                                    .removeFamilyGroupChild(groupUuid, memberId.uuid())))));
         }
         return model;
-    }
-
-    private void requireMembersManageAuthority(CurrentUserData currentUser) {
-        if (!currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            throw new InsufficientAuthorityException("MEMBERS:MANAGE");
-        }
     }
 }
 
@@ -256,9 +232,9 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
         UUID id = group.getId().uuid();
         klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null, null))))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null))))
                 .ifPresent(dtoModel::add);
     }
 }
@@ -268,7 +244,7 @@ class FamilyGroupsRootPostprocessor implements RepresentationModelProcessor<Enti
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups(null))
+        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
                 .ifPresent(link -> model.add(link.withRel("family-groups")));
         return model;
     }
