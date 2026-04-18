@@ -5,6 +5,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.domain.UserPermissionsRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,7 +39,7 @@ public class KlabisUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public @NonNull UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
         return loadKlabisUserDetails(username)
                 .map(KlabisUserDetails::getSpringSecurityUserDetails)
                 .orElseThrow(() -> new UsernameNotFoundException(
