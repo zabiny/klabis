@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
 import com.klabis.calendar.domain.EventCalendarItem;

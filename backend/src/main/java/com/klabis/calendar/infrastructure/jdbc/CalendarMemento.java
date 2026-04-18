@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.calendar.domain.ManualCalendarItem;
@@ -143,6 +144,8 @@ class CalendarMemento implements Persistable<UUID> {
                         eventIdObj,
                         auditMetadata);
             }
+            case EVENT_REGISTRATION_DATE ->
+                    throw new UnsupportedOperationException("EVENT_REGISTRATION_DATE reconstruct not yet implemented (Iter 4)");
         };
     }
 

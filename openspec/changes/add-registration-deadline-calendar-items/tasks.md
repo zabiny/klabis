@@ -6,9 +6,9 @@
 
 ## 2. Persistence enum
 
-- [ ] 2.1 Add `EVENT_REGISTRATION_DATE` to `CalendarItemKind`. Keep the enum package-private; expand its access if necessary for step 3.1.
-- [ ] 2.2 Move `CalendarItemKind` from `com.klabis.calendar.infrastructure.jdbc` to `com.klabis.calendar` (package root) so that the domain can reference it. Visibility stays package-private.
-- [ ] 2.3 Update imports anywhere the enum was referenced (`CalendarMemento`, any tests).
+- [x] 2.1 Add `EVENT_REGISTRATION_DATE` to `CalendarItemKind`. Keep the enum package-private; expand its access if necessary for step 3.1.
+- [x] 2.2 Move `CalendarItemKind` from `com.klabis.calendar.infrastructure.jdbc` to `com.klabis.calendar` (package root) so that the domain can reference it. Visibility stays package-private.
+- [x] 2.3 Update imports anywhere the enum was referenced (`CalendarMemento`, any tests).
 
 ## 3. Domain: EventCalendarItem carries a kind
 

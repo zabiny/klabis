@@ -51,3 +51,19 @@ After iterations: simplify code review, fix high-priority findings, commit.
 **Test result:** 2189/2189 passed (full backend suite).
 
 **Notes for Iter 2:** No surprises. `Event.getRegistrationDeadline()` already existed. The `@RecordBuilder` annotation on `EventData` means the generated `EventDataBuilder` now also has a `registrationDeadline(LocalDate)` setter — no manual changes needed there. `CalendarItemKind` is currently in `com.klabis.calendar.infrastructure.jdbc`; Iter 2 moves it to `com.klabis.calendar` package root.
+
+---
+
+### 2026-04-18 — Iteration 2
+
+**Files touched:**
+- `backend/src/main/java/com/klabis/calendar/CalendarItemKind.java` — created at package root with `MANUAL`, `EVENT_DATE`, `EVENT_REGISTRATION_DATE`; made `public` (see note below)
+- `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarItemKind.java` — deleted (old location)
+- `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarMemento.java` — added `import com.klabis.calendar.CalendarItemKind`; added placeholder `EVENT_REGISTRATION_DATE` case in switch (throws `UnsupportedOperationException` — to be replaced in Iter 4)
+- `backend/src/test/java/com/klabis/calendar/infrastructure/jdbc/CalendarRepositoryAdapterTest.java` — added `import com.klabis.calendar.CalendarItemKind`
+
+**Test result:** 2189/2189 passed.
+
+**Visibility note:** The design says "package-private" but Java package-private does not extend to sub-packages. `CalendarMemento` in `com.klabis.calendar.infrastructure.jdbc` cannot see a package-private type from `com.klabis.calendar`. Making it `public` is correct: Spring Modulith's `@ApplicationModule` boundary on `com.klabis.calendar` prevents the enum from leaking to other modules regardless of Java visibility. The tasks.md wording "expand its access if necessary" in 2.1 explicitly anticipated this.
+
+**Notes for Iter 3:** `CalendarItemKind` is now importable by `com.klabis.calendar.domain.EventCalendarItem`. The placeholder `UnsupportedOperationException` case in `CalendarMemento.toCalendarItem()` must be replaced in Iter 4 once `EventCalendarItem.reconstruct` accepts a `kind` parameter.
