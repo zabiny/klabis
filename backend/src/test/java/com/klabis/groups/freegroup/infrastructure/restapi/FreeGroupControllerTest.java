@@ -250,6 +250,43 @@ class FreeGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return owner-only affordances on self link when acting member is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnOwnerAffordancesForGroupOwner() throws Exception {
+            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateGroup.method").exists())
+                    .andExpect(jsonPath("$._templates.deleteGroup.method").exists())
+                    .andExpect(jsonPath("$._templates.addGroupOwner.method").exists())
+                    .andExpect(jsonPath("$._templates.inviteMember.method").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT return owner-only affordances on self link when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldNotReturnOwnerAffordancesForNonOwnerMember() throws Exception {
+            FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.updateGroup").doesNotExist())
+                    .andExpect(jsonPath("$._templates.deleteGroup").doesNotExist())
+                    .andExpect(jsonPath("$._templates.addGroupOwner").doesNotExist())
+                    .andExpect(jsonPath("$._templates.inviteMember").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should return 403 when user is neither owner nor member of the group")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturn403WhenNotOwnerNorMember() throws Exception {
