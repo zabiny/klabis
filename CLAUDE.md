@@ -5,7 +5,7 @@
 1. **Backend** → `./backend/` (Spring Boot application)
     - API endpoints, OAuth2 server, business logic
     - See `./backend/CLAUDE.md` for build/test/run commands
-    - Gradle build, Java 17+, Spring Boot 4.0.5
+    - Gradle build, Java 21+, Spring Boot 4.0.5
 
 2. **Frontend** → `./frontend/` (React + TypeScript + Vite)
     - Modern React SPA with OpenAPI integration

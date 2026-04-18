@@ -133,7 +133,7 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 
 ## Key Technologies
 
-- **Java 17+**
+- **Java 21+**
 - **Spring Boot 4.0.5**
 - **Spring Modulith 2.0.0** - Event-driven modular application using hexagonal architecture
 - **Spring Security 7** - OAuth2 Authorization Server + Resource Server

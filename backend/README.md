@@ -36,7 +36,7 @@ API available at: `https://localhost:8443`
 
 ## Prerequisites
 
-- **Java 17** or higher
+- **Java 21** or higher
 - **Gradle 8.14+** (wrapper included)
 - **PostgreSQL 14+** (for production profile)
 - **SMTP server** (for email functionality)
