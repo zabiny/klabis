@@ -1,5 +1,7 @@
 package com.klabis.common.users.infrastructure.restapi;
 
+import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
@@ -12,7 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.hateoas.Link;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -23,9 +25,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -47,13 +47,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class PermissionController {
 
     private final PermissionService permissionService;
-    private final PermissionsResponseModelAssembler permissionsAssembler;
 
-    public PermissionController(
-            PermissionService permissionService,
-            PermissionsResponseModelAssembler permissionsAssembler) {
+    public PermissionController(PermissionService permissionService) {
         this.permissionService = permissionService;
-        this.permissionsAssembler = permissionsAssembler;
     }
 
     /**
@@ -64,17 +60,10 @@ public class PermissionController {
      */
     @GetMapping("/{id}/permissions")
     @HasAuthority(Authority.MEMBERS_PERMISSIONS)
-    public ResponseEntity<PermissionsResponseModel> getUserPermissions(@PathVariable UUID id) {
+    public ResponseEntity<EntityModel<PermissionsResponse>> getUserPermissions(@PathVariable UUID id) {
         UserPermissions permissions = permissionService.getUserPermissions(new UserId(id));
         PermissionsResponse response = toPermissionsResponse(permissions);
-        PermissionsResponseModel model = permissionsAssembler.toModel(response);
-
-        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id)).ifPresent(selfLinkBuilder ->
-                model.add(selfLinkBuilder.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null))))
-        );
-
-        return ResponseEntity.ok(model);
+        return ResponseEntity.ok(entityModelWithDomain(response, permissions));
     }
 
     private PermissionsResponse toPermissionsResponse(UserPermissions permissions) {
@@ -99,7 +88,9 @@ public class PermissionController {
 
         permissionService.updateUserPermissions(new UserId(id), request.authorities());
 
-        URI location = linkTo(methodOn(PermissionController.class).getUserPermissions(id)).toUri();
+        URI location = klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id))
+                .map(link -> URI.create(link.toUri().toString()))
+                .orElseGet(() -> URI.create("/api/users/" + id + "/permissions"));
         return ResponseEntity.noContent().location(location).build();
     }
 
@@ -172,5 +163,18 @@ public class PermissionController {
             @NotEmpty
             Set<Authority> authorities
     ) {
+    }
+}
+
+@MvcComponent
+class PermissionsDetailsPostprocessor extends ModelWithDomainPostprocessor<PermissionsResponse, UserPermissions> {
+
+    @Override
+    public void process(EntityModel<PermissionsResponse> dtoModel, UserPermissions permissions) {
+        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(permissions.getUserId().uuid()))
+                .map(link -> link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(PermissionController.class)
+                                .updatePermissions(permissions.getUserId().uuid(), null))))
+                .ifPresent(dtoModel::add);
     }
 }
