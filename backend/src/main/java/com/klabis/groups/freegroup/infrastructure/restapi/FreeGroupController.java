@@ -2,6 +2,8 @@ package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
@@ -11,6 +13,7 @@ import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.MemberController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,16 +22,17 @@ import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -94,19 +98,7 @@ class FreeGroupController {
         }
 
         GroupResponse response = toGroupResponse(group, id, isOwner);
-        EntityModel<GroupResponse> model = EntityModel.of(response);
-
-        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(id, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel();
-            if (isOwner) {
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).updateGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).deleteGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).addGroupOwner(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).inviteMember(id, null, null)));
-            }
-            model.add(selfLink);
-        });
+        var model = entityModelWithDomain(response, group);
 
         klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
                 .ifPresent(link -> model.add(link.withRel("collection")));
@@ -245,7 +237,9 @@ class FreeGroupController {
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {
         EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
-        model.add(Link.of("/api/members/" + ownerId.uuid(), "member"));
+        klabisLinkTo(methodOn(MemberController.class).getMember(ownerId.uuid(), null))
+                .map(link -> link.withRel("member"))
+                .ifPresent(model::add);
         if (requestingUserIsOwner && ownerCount > 1) {
             klabisLinkTo(methodOn(FreeGroupController.class).removeGroupOwner(groupUuid, ownerId.uuid(), null))
                     .ifPresent(link -> model.add(link.withSelfRel()
@@ -262,7 +256,9 @@ class FreeGroupController {
         FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
 
         EntityModel<FreeGroupMembershipResponse> model = EntityModel.of(response);
-        model.add(Link.of("/api/members/" + memberId.uuid(), "member"));
+        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+                .map(link -> link.withRel("member"))
+                .ifPresent(model::add);
 
         boolean memberIsOwner = ownerIds.contains(memberId);
         if (isOwner && !memberIsOwner) {
@@ -280,6 +276,37 @@ class FreeGroupController {
         return InvitationModelBuilder.build(group, invitation);
     }
 
+}
+
+@MvcComponent
+class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupResponse, FreeGroup> {
+
+    @Override
+    public void process(EntityModel<GroupResponse> dtoModel, FreeGroup group) {
+        UUID id = group.getId().uuid();
+        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(id, null)).ifPresent(link -> {
+            var selfLink = link.withSelfRel();
+            if (isActingMemberOwner(group)) {
+                selfLink = selfLink
+                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).updateGroup(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).deleteGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).addGroupOwner(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).inviteMember(id, null, null)));
+            }
+            dtoModel.add(selfLink);
+        });
+    }
+
+    private boolean isActingMemberOwner(FreeGroup group) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof KlabisJwtAuthenticationToken token) {
+            return token.getMemberIdUuid()
+                    .map(MemberId::new)
+                    .map(group::isOwner)
+                    .orElse(false);
+        }
+        return false;
+    }
 }
 
 @MvcComponent
