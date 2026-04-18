@@ -66,7 +66,7 @@ The system SHALL allow authenticated members to view detailed information about 
 
 #### Scenario: Event-linked calendar item shows link to event
 
-- **WHEN** user views a calendar item that is linked to an event
+- **WHEN** user views a calendar item that originates from an event
 - **THEN** a link to the related event is shown
 - **AND** no edit or delete options are available (item is read-only)
 
@@ -164,7 +164,7 @@ The system SHALL allow users with CALENDAR:MANAGE permission to delete manually 
 
 ### Requirement: Automatic Synchronization from Events
 
-The system SHALL automatically create, update, and delete calendar items when events are published, updated, or cancelled. When the originating event has no location, the generated calendar item is created without location information — the calendar item's description is assembled only from the values that are actually available (location, organizer, website), and is left empty when none of these are present.
+The system SHALL automatically create, update, and delete event-linked calendar items when events are published, updated, or cancelled. A published event MAY be represented by one or more event-linked calendar items in the calendar. When the originating event has no location, the generated calendar item is created without location information — the calendar item's description is assembled only from the values that are actually available (location, organizer, website), and is left empty when none of these are present.
 
 #### Scenario: Calendar item created when event is published
 
@@ -182,15 +182,15 @@ The system SHALL automatically create, update, and delete calendar items when ev
 #### Scenario: Calendar item updated when event is updated
 
 - **WHEN** an event's name, date, location, or organizer is updated
-- **THEN** the linked calendar item is automatically updated with the new values
-- **AND** the calendar item's description reflects only the values currently present on the event
+- **THEN** every event-linked calendar item associated with that event is automatically updated to reflect the new values
+- **AND** each calendar item's description reflects only the values currently present on the event
 
 #### Scenario: Calendar item deleted when event is cancelled
 
 - **WHEN** an event is cancelled
-- **THEN** the linked calendar item is automatically removed from the calendar
+- **THEN** every event-linked calendar item associated with that event is automatically removed from the calendar
 
 #### Scenario: Finishing an event does not affect the calendar item
 
 - **WHEN** an event transitions from ACTIVE to FINISHED
-- **THEN** the linked calendar item remains visible on the calendar
+- **THEN** every event-linked calendar item associated with that event remains visible on the calendar
