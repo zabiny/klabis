@@ -105,6 +105,32 @@ class CalendarJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("should save and find registration deadline calendar item — kind column set to EVENT_REGISTRATION_DATE")
+        void shouldSaveAndFindRegistrationDeadlineCalendarItem() {
+            EventId eventId = new EventId(TEST_EVENT_1_ID);
+            LocalDate deadline = LocalDate.of(2026, 5, 20);
+            EventCalendarItem calendarItem = EventCalendarItem.createForRegistrationDeadline(
+                    "City Orienteering Championship", eventId, deadline);
+
+            CalendarItem saved = calendarRepository.save(calendarItem);
+            Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
+
+            assertThat(found).isPresent();
+            CalendarItem retrieved = found.get();
+            assertThat(retrieved).isInstanceOf(EventCalendarItem.class);
+            EventCalendarItem retrievedEvent = (EventCalendarItem) retrieved;
+            assertThat(retrievedEvent.getId()).isEqualTo(saved.getId());
+            assertThat(retrievedEvent.getKind()).isEqualTo(CalendarItemKind.EVENT_REGISTRATION_DATE);
+            assertThat(retrievedEvent.getName()).isEqualTo("Přihlášky - City Orienteering Championship");
+            assertThat(retrievedEvent.getDescription()).isNull();
+            assertThat(retrievedEvent.getStartDate()).isEqualTo(deadline);
+            assertThat(retrievedEvent.getEndDate()).isEqualTo(deadline);
+            assertThat(retrievedEvent.getEventId()).isEqualTo(eventId);
+            assertThat(retrievedEvent.getAuditMetadata()).isNotNull();
+            assertThat(retrievedEvent.getAuditMetadata().version()).isZero();
+        }
+
+        @Test
         @DisplayName("should save and find manual calendar item with null description")
         void shouldSaveAndFindManualCalendarItemWithNullDescription() {
             ManualCalendarItem calendarItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()

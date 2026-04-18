@@ -97,3 +97,21 @@ Tests:
 **Handoff for Iter 5 (CalendarEventSyncService):**
 - `handleEventPublished` and `handleEventUpdated` still follow the old single-item logic (find first, skip/warn if missing). The full reconcile rewrite happens in Iter 5.
 - `handleEventUpdated` now calls `synchronizeFromEvent(eventData)` — this correctly handles both kinds via the domain branch. The service-level wiring is correct; only the reconcile algorithm needs replacing.
+
+---
+
+### 2026-04-18 — Iteration 4
+
+**Files touched:**
+- `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarMemento.java` — replaced `UnsupportedOperationException` stub in `toCalendarItem()` `EVENT_REGISTRATION_DATE` case with a real branch: constructs `EventId` from `this.eventId`, calls `EventCalendarItem.reconstruct(..., CalendarItemKind.EVENT_REGISTRATION_DATE, auditMetadata)`.
+- `backend/src/test/java/com/klabis/calendar/infrastructure/jdbc/CalendarRepositoryAdapterTest.java` — added `mementoKindColumnMapsEventRegistrationDateCorrectly()` (unit round-trip via `CalendarMemento.from()` + `toCalendarItem()`) and `shouldConvertRegistrationDeadlineItemToMementoSaveAndConvertBack()` (adapter save path) under two new nested classes.
+- `backend/src/test/java/com/klabis/calendar/infrastructure/jdbc/CalendarJdbcRepositoryTest.java` — added `shouldSaveAndFindRegistrationDeadlineCalendarItem()` integration test: saves via `createForRegistrationDeadline(...)`, reloads by ID, asserts kind, name, description==null, startDate==endDate==deadline, eventId, auditMetadata populated.
+
+**Test result:** 2198/2198 passed.
+
+**Verification of 4.1:** `CalendarMemento.from()` already read `eventDateItem.getKind()` (done in Iter 3). No further change needed.
+
+**Handoff for Iter 5 (CalendarEventSyncService):**
+- The full memento round-trip is now functional for both `EVENT_DATE` and `EVENT_REGISTRATION_DATE`.
+- No schema migration needed — `kind` column is `VARCHAR`; `EVENT_REGISTRATION_DATE` is accepted as-is.
+- Iter 5 can freely create items of both kinds and rely on correct persistence round-trips.

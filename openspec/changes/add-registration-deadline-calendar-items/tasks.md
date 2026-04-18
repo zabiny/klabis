@@ -23,9 +23,9 @@
 
 ## 4. Persistence: round-trip the new kind
 
-- [ ] 4.1 Update `CalendarMemento.from()`: pattern-match branch for `EventCalendarItem` reads `eventItem.getKind()` and sets `memento.kind` accordingly (replacing the hard-coded `CalendarItemKind.EVENT_DATE`).
-- [ ] 4.2 Update `CalendarMemento.toCalendarItem()`: the existing `switch` on `this.kind` handles `EVENT_DATE`; add a case for `EVENT_REGISTRATION_DATE` that calls `EventCalendarItem.reconstruct(..., CalendarItemKind.EVENT_REGISTRATION_DATE, ...)`.
-- [ ] 4.3 Update `CalendarJdbcRepositoryTest` and `CalendarRepositoryAdapterTest`: cover both directions for a `EVENT_REGISTRATION_DATE` item. Assert the `kind` column value persists and round-trips.
+- [x] 4.1 Update `CalendarMemento.from()`: pattern-match branch for `EventCalendarItem` reads `eventItem.getKind()` and sets `memento.kind` accordingly (replacing the hard-coded `CalendarItemKind.EVENT_DATE`).
+- [x] 4.2 Update `CalendarMemento.toCalendarItem()`: the existing `switch` on `this.kind` handles `EVENT_DATE`; add a case for `EVENT_REGISTRATION_DATE` that calls `EventCalendarItem.reconstruct(..., CalendarItemKind.EVENT_REGISTRATION_DATE, ...)`.
+- [x] 4.3 Update `CalendarJdbcRepositoryTest` and `CalendarRepositoryAdapterTest`: cover both directions for a `EVENT_REGISTRATION_DATE` item. Assert the `kind` column value persists and round-trips.
 
 ## 5. Application: unified reconcile
 

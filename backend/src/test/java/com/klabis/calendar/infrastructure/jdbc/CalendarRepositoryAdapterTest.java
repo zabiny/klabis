@@ -257,6 +257,57 @@ class CalendarRepositoryAdapterTest {
             CalendarItem roundtripped = memento.toCalendarItem();
             assertThat(roundtripped).isInstanceOf(EventCalendarItem.class);
         }
+
+        @Test
+        @DisplayName("kind column maps correctly: EVENT_REGISTRATION_DATE memento roundtrips as EventCalendarItem with correct kind")
+        void mementoKindColumnMapsEventRegistrationDateCorrectly() {
+            EventId eventId = new EventId(UUID.randomUUID());
+            LocalDate deadline = LocalDate.of(2026, 5, 1);
+            EventCalendarItem registrationDeadline = EventCalendarItem.createForRegistrationDeadline(
+                    "City Championship", eventId, deadline);
+
+            CalendarMemento memento = CalendarMemento.from(registrationDeadline);
+            assertThat(memento.kind()).isEqualTo(CalendarItemKind.EVENT_REGISTRATION_DATE);
+
+            CalendarItem roundtripped = memento.toCalendarItem();
+            assertThat(roundtripped).isInstanceOf(EventCalendarItem.class);
+            EventCalendarItem roundtrippedEvent = (EventCalendarItem) roundtripped;
+            assertThat(roundtrippedEvent.getKind()).isEqualTo(CalendarItemKind.EVENT_REGISTRATION_DATE);
+            assertThat(roundtrippedEvent.getEventId()).isEqualTo(eventId);
+            assertThat(roundtrippedEvent.getName()).isEqualTo("Přihlášky - City Championship");
+            assertThat(roundtrippedEvent.getDescription()).isNull();
+            assertThat(roundtrippedEvent.getStartDate()).isEqualTo(deadline);
+            assertThat(roundtrippedEvent.getEndDate()).isEqualTo(deadline);
+        }
+    }
+
+    @Nested
+    @DisplayName("save() — EVENT_REGISTRATION_DATE kind")
+    class SaveEventRegistrationDateTests {
+
+        @Test
+        @DisplayName("should convert EventCalendarItem with EVENT_REGISTRATION_DATE kind to memento, save, and convert back")
+        void shouldConvertRegistrationDeadlineItemToMementoSaveAndConvertBack() {
+            EventId eventId = new EventId(UUID.randomUUID());
+            LocalDate deadline = LocalDate.of(2026, 5, 10);
+            EventCalendarItem calendarItem = EventCalendarItem.createForRegistrationDeadline(
+                    "Sprint Race", eventId, deadline);
+
+            CalendarMemento savedMemento = CalendarMemento.from(calendarItem);
+            when(jdbcRepositoryMock.save(any(CalendarMemento.class))).thenReturn(savedMemento);
+
+            CalendarItem result = testedSubject.save(calendarItem);
+
+            assertThat(result).isInstanceOf(EventCalendarItem.class);
+            EventCalendarItem resultEvent = (EventCalendarItem) result;
+            assertThat(resultEvent.getKind()).isEqualTo(CalendarItemKind.EVENT_REGISTRATION_DATE);
+            assertThat(resultEvent.getEventId()).isEqualTo(eventId);
+            assertThat(resultEvent.getName()).isEqualTo("Přihlášky - Sprint Race");
+            assertThat(resultEvent.getDescription()).isNull();
+            assertThat(resultEvent.getStartDate()).isEqualTo(deadline);
+            assertThat(resultEvent.getEndDate()).isEqualTo(deadline);
+            verify(jdbcRepositoryMock).save(any(CalendarMemento.class));
+        }
     }
 
     @Nested

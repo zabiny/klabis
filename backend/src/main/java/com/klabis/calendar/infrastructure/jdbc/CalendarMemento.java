@@ -145,8 +145,18 @@ class CalendarMemento implements Persistable<UUID> {
                         CalendarItemKind.EVENT_DATE,
                         auditMetadata);
             }
-            case EVENT_REGISTRATION_DATE ->
-                    throw new UnsupportedOperationException("EVENT_REGISTRATION_DATE reconstruct not yet implemented (Iter 4)");
+            case EVENT_REGISTRATION_DATE -> {
+                EventId eventIdObj = this.eventId != null ? new EventId(this.eventId) : null;
+                yield EventCalendarItem.reconstruct(
+                        calendarItemId,
+                        this.name,
+                        this.description,
+                        this.startDate,
+                        this.endDate,
+                        eventIdObj,
+                        CalendarItemKind.EVENT_REGISTRATION_DATE,
+                        auditMetadata);
+            }
         };
     }
 
