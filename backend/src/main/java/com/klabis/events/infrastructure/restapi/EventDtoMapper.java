@@ -15,7 +15,8 @@ class EventDtoMapper {
                 event.getEventCoordinatorId(),
                 event.getRegistrationDeadline(),
                 event.getStatus(),
-                event.getCategories()
+                event.getCategories(),
+                event.getOrisId()
         );
     }
 
@@ -29,7 +30,8 @@ class EventDtoMapper {
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
                 event.getRegistrationDeadline(),
                 event.getStatus(),
-                event.getCategories()
+                event.getCategories(),
+                event.getOrisId()
         );
     }
 

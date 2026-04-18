@@ -6,6 +6,7 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
@@ -67,12 +68,12 @@ public class EventController {
             EventRegistrationPort eventRegistrationService,
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
-            @org.springframework.beans.factory.annotation.Value("${oris.client.enabled:false}") boolean orisIntegrationActive) {
+            java.util.Optional<OrisEventImportPort> orisEventImportPort) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
-        this.orisIntegrationActive = orisIntegrationActive;
+        this.orisIntegrationActive = orisEventImportPort.isPresent();
     }
 
     @PostMapping(consumes = "application/json")
@@ -175,13 +176,11 @@ public class EventController {
         );
 
         klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel()
+            Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
-
             if (orisIntegrationActive) {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
             }
-
             pagedModel.add(selfLink);
         });
 
@@ -224,20 +223,22 @@ public class EventController {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
                 break;
 
             case ACTIVE:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                if (orisIntegrationActive && event.getOrisId() != null) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                }
                 break;
 
             case FINISHED:
             case CANCELLED:
                 break;
-        }
-
-        if (orisIntegrationActive && event.getOrisId() != null && (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.ACTIVE)) {
-            selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
         }
 
         return selfLink;
