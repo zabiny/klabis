@@ -177,9 +177,9 @@ export const labels = {
     },
 
     orisRegions: {
-        JM: 'Jihomoravská',
-        M: 'Žebříček Morava',
-        'ČR': 'ČR',
+        JIHOMORAVSKA: 'Jihomoravská',
+        MORAVA: 'Žebříček Morava',
+        CR: 'ČR',
     } as Record<string, string>,
 
     familyGroupRoles: {

@@ -351,7 +351,7 @@ describe('ImportOrisEventModal', () => {
     });
 
     describe('region picker', () => {
-        it('renders three radio buttons for JM, M, ČR regions', async () => {
+        it('renders three radio buttons for JIHOMORAVSKA, MORAVA, CR regions', async () => {
             mockAuthorizedFetch.mockResolvedValue({
                 ok: true,
                 json: async () => orisEvents,
@@ -364,7 +364,7 @@ describe('ImportOrisEventModal', () => {
             expect(screen.getByRole('radio', {name: 'ČR'})).toBeInTheDocument();
         });
 
-        it('JM radio is selected by default', async () => {
+        it('JIHOMORAVSKA radio is selected by default', async () => {
             mockAuthorizedFetch.mockResolvedValue({
                 ok: true,
                 json: async () => orisEvents,

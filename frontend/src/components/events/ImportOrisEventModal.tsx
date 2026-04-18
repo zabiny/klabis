@@ -15,7 +15,7 @@ interface OrisEvent {
     organizer: string | null;
 }
 
-const ORIS_REGION_KEYS = ['JM', 'M', 'ČR'] as const;
+const ORIS_REGION_KEYS = ['JIHOMORAVSKA', 'MORAVA', 'CR'] as const;
 
 interface ImportOrisEventModalProps {
     isOpen: boolean;
@@ -29,7 +29,7 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
     const navigate = useNavigate();
     const [fetchState, setFetchState] = useState<FetchState>('loading');
     const [orisEvents, setOrisEvents] = useState<OrisEvent[]>([]);
-    const [selectedRegion, setSelectedRegion] = useState<string>('JM');
+    const [selectedRegion, setSelectedRegion] = useState<string>('JIHOMORAVSKA');
     const [selectedId, setSelectedId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -56,8 +56,8 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
 
     useEffect(() => {
         if (!isOpen) return;
-        setSelectedRegion('JM');
-        fetchEvents('JM');
+        setSelectedRegion('JIHOMORAVSKA');
+        fetchEvents('JIHOMORAVSKA');
     }, [isOpen, fetchEvents]);
 
     const handleRegionChange = (regionValue: string | number) => {
