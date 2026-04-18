@@ -5,6 +5,8 @@ import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberResource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
@@ -16,7 +18,8 @@ public class MemberTrainingGroupLinkProcessor implements RepresentationModelProc
 
     private final TrainingGroupRepository trainingGroupRepository;
 
-    MemberTrainingGroupLinkProcessor(TrainingGroupRepository trainingGroupRepository) {
+    @Autowired
+    MemberTrainingGroupLinkProcessor(@Lazy TrainingGroupRepository trainingGroupRepository) {
         this.trainingGroupRepository = trainingGroupRepository;
     }
 
