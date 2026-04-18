@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("EventController — no ORIS integration")
 @WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@TestPropertySource(properties = "oris-integration.enabled=false")
+@TestPropertySource(properties = "oris.client.enabled=false")
 class EventControllerNoOrisTest {
 
     private static final String ADMIN_USERNAME = "admin";

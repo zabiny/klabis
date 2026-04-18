@@ -67,7 +67,7 @@ public class EventController {
             EventRegistrationPort eventRegistrationService,
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
-            @org.springframework.beans.factory.annotation.Value("${oris-integration.enabled:false}") boolean orisIntegrationActive) {
+            @org.springframework.beans.factory.annotation.Value("${oris.client.enabled:false}") boolean orisIntegrationActive) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
