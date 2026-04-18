@@ -6,12 +6,14 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.MemberController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,7 +22,6 @@ import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -103,26 +105,18 @@ class FamilyGroupController {
         }
 
         FamilyGroupResponse response = toFamilyGroupResponse(group, id, hasMembersManage);
-        EntityModel<FamilyGroupResponse> model = EntityModel.of(response);
+        var model = entityModelWithDomain(response, group);
 
-        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel();
-            if (hasMembersManage) {
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null, null)));
-            }
-            model.add(selfLink);
-        });
-
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups(null))
-                .ifPresent(link -> model.add(link.withRel("collection")));
+        if (hasMembersManage) {
+            klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups(null))
+                    .ifPresent(link -> model.add(link.withRel("collection")));
+        }
 
         return ResponseEntity.ok(model);
     }
 
     @DeleteMapping("/{id}")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Delete a family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> deleteFamilyGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
@@ -136,6 +130,7 @@ class FamilyGroupController {
     }
 
     @PostMapping(value = "/{id}/parents", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Add a parent to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupParent(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
@@ -165,6 +160,7 @@ class FamilyGroupController {
     }
 
     @PostMapping(value = "/{id}/children", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Add a child to family group (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> addFamilyGroupChild(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
@@ -207,7 +203,9 @@ class FamilyGroupController {
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {
                     EntityModel<ParentResponse> model = EntityModel.of(new ParentResponse(parentId.uuid()));
-                    model.add(Link.of("/api/members/" + parentId.uuid(), "member"));
+                    klabisLinkTo(methodOn(MemberController.class).getMember(parentId.uuid(), null))
+                            .map(link -> link.withRel("member"))
+                            .ifPresent(model::add);
                     if (hasMembersManage && parentIds.size() > 1) {
                         klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupParent(groupUuid, parentId.uuid(), null))
                                 .ifPresent(link -> model.add(link.withSelfRel()
@@ -229,7 +227,9 @@ class FamilyGroupController {
         MemberId memberId = MemberId.fromUserId(membership.userId());
         FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
-        model.add(Link.of("/api/members/" + memberId.uuid(), "member"));
+        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+                .map(link -> link.withRel("member"))
+                .ifPresent(model::add);
         if (hasMembersManage) {
             klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupChild(groupUuid, memberId.uuid(), null))
                     .ifPresent(link -> model.add(link.withSelfRel()
@@ -243,6 +243,21 @@ class FamilyGroupController {
         if (!currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE");
         }
+    }
+}
+
+@MvcComponent
+class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<FamilyGroupResponse, FamilyGroup> {
+
+    @Override
+    public void process(EntityModel<FamilyGroupResponse> dtoModel, FamilyGroup group) {
+        UUID id = group.getId().uuid();
+        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null))
+                .map(link -> link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null, null))))
+                .ifPresent(dtoModel::add);
     }
 }
 
