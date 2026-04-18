@@ -133,7 +133,7 @@ class CalendarMemento implements Persistable<UUID> {
                     this.startDate,
                     this.endDate,
                     auditMetadata);
-            case EVENT_DATE -> {
+            case EVENT_DATE, EVENT_REGISTRATION_DATE -> {
                 EventId eventIdObj = this.eventId != null ? new EventId(this.eventId) : null;
                 yield EventCalendarItem.reconstruct(
                         calendarItemId,
@@ -142,19 +142,7 @@ class CalendarMemento implements Persistable<UUID> {
                         this.startDate,
                         this.endDate,
                         eventIdObj,
-                        CalendarItemKind.EVENT_DATE,
-                        auditMetadata);
-            }
-            case EVENT_REGISTRATION_DATE -> {
-                EventId eventIdObj = this.eventId != null ? new EventId(this.eventId) : null;
-                yield EventCalendarItem.reconstruct(
-                        calendarItemId,
-                        this.name,
-                        this.description,
-                        this.startDate,
-                        this.endDate,
-                        eventIdObj,
-                        CalendarItemKind.EVENT_REGISTRATION_DATE,
+                        this.kind,
                         auditMetadata);
             }
         };

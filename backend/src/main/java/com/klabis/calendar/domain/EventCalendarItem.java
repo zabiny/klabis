@@ -136,6 +136,7 @@ public class EventCalendarItem extends CalendarItem {
         validateName(event.name());
 
         if (this.kind == CalendarItemKind.EVENT_REGISTRATION_DATE) {
+            Assert.notNull(event.registrationDeadline(), "Event registrationDeadline must not be null when synchronizing EVENT_REGISTRATION_DATE item");
             this.name = "Přihlášky - " + event.name();
             this.description = null;
             this.startDate = event.registrationDeadline();

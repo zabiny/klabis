@@ -195,6 +195,22 @@ class EventCalendarItemTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
+
+        @Test
+        @DisplayName("should fail when EVENT_REGISTRATION_DATE item receives null registrationDeadline during sync")
+        void shouldFailWhenRegistrationDeadlineIsNullDuringSync() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            EventCalendarItem item = EventCalendarItem.createForRegistrationDeadline(
+                    "Old Event", eventId, LocalDate.of(2026, 5, 10));
+
+            EventData event = new EventData(
+                    "New Name", LocalDate.of(2026, 7, 20),
+                    null, null, null, null);
+
+            assertThatThrownBy(() -> item.synchronizeFromEvent(event))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("registrationDeadline");
+        }
     }
 
     @Nested
