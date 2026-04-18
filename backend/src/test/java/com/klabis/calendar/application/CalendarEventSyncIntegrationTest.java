@@ -1,5 +1,6 @@
 package com.klabis.calendar.application;
 
+import com.klabis.CleanupTestData;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.when;
  */
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
+@CleanupTestData
 @DisplayName("Calendar Event Synchronization Integration Tests")
 class CalendarEventSyncIntegrationTest {
 
