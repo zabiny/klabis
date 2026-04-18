@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
+import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.usergroup.GroupMembership;
@@ -9,8 +10,6 @@ import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.members.ActingMember;
-import com.klabis.members.ActingUser;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -80,16 +79,19 @@ class FreeGroupController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get group details")
+    @Operation(summary = "Get group details (owner or member only)")
     ResponseEntity<EntityModel<GroupResponse>> getGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @ActingUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         FreeGroup group = membersGroupManagementService.getGroup(groupId);
 
-        MemberId requestingMember = currentUser != null ? currentUser.memberId() : null;
-        boolean isOwner = requestingMember != null && group.isOwner(requestingMember);
+        boolean isOwner = group.isOwner(actingMember);
+        boolean isMember = group.hasMember(actingMember);
+        if (!isOwner && !isMember) {
+            throw new InsufficientAuthorityException("Free group membership or ownership required");
+        }
 
         GroupResponse response = toGroupResponse(group, id, isOwner);
         EntityModel<GroupResponse> model = EntityModel.of(response);

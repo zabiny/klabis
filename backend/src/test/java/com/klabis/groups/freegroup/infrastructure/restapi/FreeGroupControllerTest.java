@@ -5,6 +5,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
@@ -68,6 +69,14 @@ class FreeGroupControllerTest {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
         return FreeGroup.reconstruct(
                 new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(), Set.of(), null);
+    }
+
+    private FreeGroup buildGroupWithMember(UUID groupUuid, String name, String ownerUuidStr, String memberUuidStr) {
+        MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
+        com.klabis.common.users.UserId memberUserId = new com.klabis.common.users.UserId(UUID.fromString(memberUuidStr));
+        GroupMembership membership = new GroupMembership(memberUserId, Instant.now());
+        return FreeGroup.reconstruct(
+                new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(membership), Set.of(), null);
     }
 
     @Nested
@@ -218,7 +227,7 @@ class FreeGroupControllerTest {
         @DisplayName("should return 200 when non-owner group member views group detail")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturnGroupDetailsForNonOwnerMember() throws Exception {
-            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
             mockMvc.perform(
@@ -230,6 +239,31 @@ class FreeGroupControllerTest {
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.owners").isArray())
                     .andExpect(jsonPath("$.members").isArray());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user is neither owner nor member of the group")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenNotOwnerNorMember() throws Exception {
+            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user has no member profile")
+        @WithKlabisMockUser
+        void shouldReturn403WhenNoMemberProfile() throws Exception {
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
