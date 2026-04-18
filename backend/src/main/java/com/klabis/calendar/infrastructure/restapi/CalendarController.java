@@ -5,9 +5,12 @@ import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.events.EventId;
+import com.klabis.events.infrastructure.restapi.EventController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,7 +22,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -30,8 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -76,22 +77,10 @@ class CalendarController {
 
         Sort sortObj = parseAndValidateSort(sort);
 
-        List<CalendarItemDto> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj)
-                .stream().map(this::toDto).toList();
+        List<EntityModel<CalendarItemDto>> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj)
+                .stream().map(calendarItem -> entityModelWithDomain(toDto(calendarItem), calendarItem)).toList();
 
-        CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(
-                items.stream()
-                        .map(dto -> {
-                            EntityModel<CalendarItemDto> model = EntityModel.of(dto);
-                            klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id().value()))
-                                    .ifPresent(link -> model.add(link.withSelfRel()));
-                            if (dto.eventId() != null) {
-                                model.add(Link.of("/api/events/" + dto.eventId().value()).withRel("event"));
-                            }
-                            return model;
-                        })
-                        .toList()
-        );
+        CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(items);
 
         klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort))
                 .ifPresent(selfLinkBuilder -> collectionModel.add(selfLinkBuilder.withSelfRel()
@@ -154,12 +143,9 @@ class CalendarController {
     public ResponseEntity<EntityModel<CalendarItemDto>> getCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
 
-        CalendarItemDto calendarItemDto = toDto(calendarManagementService.getCalendarItem(new CalendarItemId(id)));
+        CalendarItem calendarItem = calendarManagementService.getCalendarItem(new CalendarItemId(id));
 
-        EntityModel<CalendarItemDto> entityModel = EntityModel.of(calendarItemDto);
-        addLinksForCalendarItem(entityModel, calendarItemDto);
-
-        return ResponseEntity.ok(entityModel);
+        return ResponseEntity.ok(entityModelWithDomain(toDto(calendarItem), calendarItem));
     }
 
     @PostMapping(consumes = "application/json")
@@ -252,24 +238,32 @@ class CalendarController {
         );
     }
 
-    private void addLinksForCalendarItem(EntityModel<?> entityModel, CalendarItemDto calendarItemDto) {
-        UUID calendarItemId = calendarItemDto.id().value();
+}
+
+@MvcComponent
+class CalendarItemPostprocessor extends ModelWithDomainPostprocessor<CalendarItemDto, CalendarItem> {
+
+    @Override
+    public void process(EntityModel<CalendarItemDto> dtoModel, CalendarItem calendarItem) {
+        UUID calendarItemId = calendarItem.getId().value();
 
         klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
-            if (calendarItemDto.eventId() != null) {
-                entityModel.add(selfLinkBuilder.withSelfRel());
-                entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId().value()).withRel("event"));
+            if (calendarItem instanceof EventCalendarItem eventItem) {
+                dtoModel.add(selfLinkBuilder.withSelfRel());
+                EventId eventId = eventItem.getEventId();
+                klabisLinkTo(methodOn(EventController.class).getEvent(eventId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("event")));
             } else {
                 var selfLink = selfLinkBuilder.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)))
                         .andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));
-                entityModel.add(selfLink);
+                dtoModel.add(selfLink);
             }
         });
 
         LocalDate today = LocalDate.now();
         klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc"))
-                .ifPresent(link -> entityModel.add(link.withRel("collection")));
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
 

@@ -80,7 +80,7 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Spring Training"))
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[1].name").value("Spring Cup 2026"))
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray())
-                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value("/api/events/" + eventId))
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value(org.hamcrest.Matchers.endsWith("/api/events/" + eventId)))
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.event").doesNotExist());
         }
 
@@ -233,7 +233,7 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
                     .andExpect(jsonPath("$.eventId").value(eventId.toString()))
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.event.href").value("/api/events/" + eventId))
+                    .andExpect(jsonPath("$._links.event.href").value(org.hamcrest.Matchers.endsWith("/api/events/" + eventId)))
                     .andExpect(jsonPath("$._links.collection.href").exists());
         }
 
@@ -633,8 +633,8 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.self.href").exists())
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.self.href").exists())
                     // both items link to the same event
-                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.event.href").value("/api/events/" + sharedEventId))
-                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value("/api/events/" + sharedEventId))
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.event.href").value(org.hamcrest.Matchers.endsWith("/api/events/" + sharedEventId)))
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value(org.hamcrest.Matchers.endsWith("/api/events/" + sharedEventId)))
                     // neither item has edit/delete affordances (event-linked items are read-only)
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._templates.updateCalendarItem").doesNotExist())
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._templates.deleteCalendarItem").doesNotExist())
