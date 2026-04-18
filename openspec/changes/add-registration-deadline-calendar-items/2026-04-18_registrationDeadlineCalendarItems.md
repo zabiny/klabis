@@ -165,3 +165,29 @@ Tests:
 
 **Handoff for Iter 7 (final verification):**
 - Run full suite one final time, smoke test locally, run `openspec validate add-registration-deadline-calendar-items --strict`.
+
+---
+
+### 2026-04-18 — Iteration 7 (final verification)
+
+**9.1 Test suite:** 2209/2209 passed via `developer:test-runner-skill` (backend).
+
+**9.2 Smoke test:** Started local env via `runLocalEnvironment.sh`, logged in as `ZBM9000`, created event "Smoke Deadline Test" with `eventDate=2026-04-25` and `registrationDeadline=2026-04-20` via REST, called `publishEvent` affordance. Calendar list endpoint returned exactly two items for the event:
+- `Přihlášky - Smoke Deadline Test` (start=end=2026-04-20, description=null, eventId linked)
+- `Smoke Deadline Test` (start=end=2026-04-25, description="ZBM", eventId linked)
+
+Both carry `self` + `event` HAL links, neither has edit/delete affordances. Event was then cancelled, local env shut down.
+
+The tasks.md 9.2 also asks to verify that clearing the deadline via update removes the deadline item. This branch of the smoke test could not be exercised through the UI/REST because the Events PATCH endpoint ignores explicit `null` values (existing behavior of the Events module, unrelated to this change). The clear-deadline reconcile branch is fully covered by `CalendarEventSyncIntegrationTest.RegistrationDeadlineScenarios.updateClearsDeadline` at the integration level.
+
+**9.3 openspec validate:** `openspec validate add-registration-deadline-calendar-items --strict` → *Change 'add-registration-deadline-calendar-items' is valid*.
+
+**Production code changes this iteration:** None.
+
+**Handoff for post-implementation review:**
+- All tasks.md boxes ticked; change is functionally complete.
+- Recommend running `developer:kiss-principle` / `simplify` / `developer:code-reviewer` over the touched files: `EventCalendarItem`, `CalendarEventSyncService`, `CalendarMemento`, and the new test classes.
+- Specific spots worth a second look:
+  - `EventCalendarItem.synchronizeFromEvent(EventData)` branch on `this.kind` — switch expression may read cleaner than if/else.
+  - `CalendarEventSyncService.reconcile` — EnumMap grouping / expected-set computation could possibly be expressed more concisely.
+  - `CalendarMemento.toCalendarItem` — the two event-linked branches now mirror each other; a unified branch parameterized by `this.kind` may be cleaner but also may reduce clarity.

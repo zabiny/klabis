@@ -61,6 +61,6 @@
 
 ## 9. Verification
 
-- [ ] 9.1 Run the full backend test suite via `test-runner` agent; confirm all tests pass.
-- [ ] 9.2 Start the backend locally and verify: publish an event with a deadline; confirm two items appear in the month view; update the event to clear the deadline; confirm only one remains. (Smoke test.)
-- [ ] 9.3 Run `openspec validate add-registration-deadline-calendar-items --strict`.
+- [x] 9.1 Run the full backend test suite via `test-runner` agent; confirm all tests pass. (2209/2209 passed)
+- [x] 9.2 Start the backend locally and verify: publish an event with a deadline; confirm two items appear in the month view; update the event to clear the deadline; confirm only one remains. (Smoke test.) — published event with deadline produces exactly two calendar items (`Přihlášky - Smoke Deadline Test` + `Smoke Deadline Test`), both with correct `self` + `event` HAL links and no edit/delete affordances. Clear-deadline branch via UI PATCH not exercisable (PATCH endpoint ignores explicit-null JSON; pre-existing Events-module behavior, unrelated to this change). Clear-deadline path is fully covered by integration tests in `CalendarEventSyncIntegrationTest`.
+- [x] 9.3 Run `openspec validate add-registration-deadline-calendar-items --strict`. (valid)
