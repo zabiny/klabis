@@ -5,8 +5,6 @@ import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberResource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
@@ -18,8 +16,7 @@ public class MemberFamilyGroupLinkProcessor implements RepresentationModelProces
 
     private final FamilyGroupRepository familyGroupRepository;
 
-    @Autowired
-    MemberFamilyGroupLinkProcessor(@Lazy FamilyGroupRepository familyGroupRepository) {
+    MemberFamilyGroupLinkProcessor(FamilyGroupRepository familyGroupRepository) {
         this.familyGroupRepository = familyGroupRepository;
     }
 
