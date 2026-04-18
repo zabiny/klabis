@@ -69,7 +69,6 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 **Gradle Optimization**
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)
 - Gradle writes to `build/` directory during execution — may block concurrent builds
-- Use `dangerouslyDisableSandbox: true` for `./gradlew` commands (bwrap loopback issues)
 
 ## Documentation Index
 

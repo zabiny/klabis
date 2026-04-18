@@ -34,7 +34,6 @@ Now correctly reports: BACKEND TEST RESULTS: 1445/1445 passed
 - Scripts location: `/home/davca/Documents/Devel/klabis/scripts/`
 - Test results XML location: `/home/davca/Documents/Devel/klabis/backend/build/test-results/test/`
 - Frontend test results JSON location: `/tmp/claude/vitest-results.json`
-- Always use `dangerouslyDisableSandbox: true` for npm/Gradle commands (bwrap loopback issues)
 - Frontend tests require `/tmp/claude/` directory to exist for JSON output
 
 ## Frontend Test Execution (2026-03-11)
