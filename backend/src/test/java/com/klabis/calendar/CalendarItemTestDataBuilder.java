@@ -1,5 +1,6 @@
 package com.klabis.calendar;
 
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.calendar.domain.ManualCalendarItem;
@@ -93,6 +94,7 @@ public class CalendarItemTestDataBuilder {
                 startDate,
                 endDate,
                 eid,
+                CalendarItemKind.EVENT_DATE,
                 auditMetadata);
     }
 }

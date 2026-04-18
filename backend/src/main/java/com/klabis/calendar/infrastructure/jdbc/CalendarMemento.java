@@ -84,7 +84,7 @@ class CalendarMemento implements Persistable<UUID> {
             memento.kind = CalendarItemKind.MANUAL;
             memento.eventId = null;
         } else if (calendarItem instanceof EventCalendarItem eventDateItem) {
-            memento.kind = CalendarItemKind.EVENT_DATE;
+            memento.kind = eventDateItem.getKind();
             memento.eventId = eventDateItem.getEventId() != null ? eventDateItem.getEventId().value() : null;
         } else {
             throw new IllegalArgumentException("Unknown CalendarItem subtype: " + calendarItem.getClass().getName());
@@ -142,6 +142,7 @@ class CalendarMemento implements Persistable<UUID> {
                         this.startDate,
                         this.endDate,
                         eventIdObj,
+                        CalendarItemKind.EVENT_DATE,
                         auditMetadata);
             }
             case EVENT_REGISTRATION_DATE ->

@@ -77,6 +77,7 @@ class CalendarRepositoryAdapterTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
 
             CalendarMemento savedMemento = CalendarMemento.from(calendarItem);
@@ -200,6 +201,7 @@ class CalendarRepositoryAdapterTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
 
             CalendarMemento memento = CalendarMemento.from(calendarItem);
@@ -246,6 +248,7 @@ class CalendarRepositoryAdapterTest {
             EventCalendarItem eventDate = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(), "EventDate", null,
                     LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 1), eventId,
+                    CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
 
             CalendarMemento memento = CalendarMemento.from(eventDate);

@@ -2,6 +2,8 @@ package com.klabis.calendar.domain;
 
 import com.klabis.calendar.CalendarItemAssert;
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
+import com.klabis.events.EventData;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -298,6 +300,7 @@ class CalendarItemTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
@@ -403,6 +406,7 @@ class CalendarItemTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
@@ -472,11 +476,11 @@ class CalendarItemTest {
     }
 
     @Nested
-    @DisplayName("EventCalendarItem.synchronizeFromEvent() method")
+    @DisplayName("EventCalendarItem.synchronizeFromEvent(EventData) method")
     class SynchronizeFromEventMethod {
 
         @Test
-        @DisplayName("should synchronize event-linked calendar item with updated event data")
+        @DisplayName("should synchronize EVENT_DATE item with updated event data")
         void shouldSynchronizeEventCalendarItem() {
             EventId eventId = EventId.of(UUID.randomUUID());
             EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
@@ -486,18 +490,14 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
             LocalDate newDate = LocalDate.of(2026, 7, 20);
 
-            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
-                    .name("New Name")
-                    .location("City Park")
-                    .organizer("OOB")
-                    .websiteUrl(null)
-                    .eventDate(newDate)
-                    .build());
+            calendarItem.synchronizeFromEvent(new EventData(
+                    "New Name", newDate, "City Park", "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasName("New Name")
@@ -518,16 +518,12 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
-            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
-                    .name("New Name")
-                    .location("City Park")
-                    .organizer("OOB")
-                    .websiteUrl("https://example.com")
-                    .eventDate(LocalDate.of(2026, 7, 20))
-                    .build());
+            calendarItem.synchronizeFromEvent(new EventData(
+                    "New Name", LocalDate.of(2026, 7, 20), "City Park", "OOB", "https://example.com", null));
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasDescription("City Park - OOB\nhttps://example.com");
@@ -544,17 +540,12 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    EventCalendarItemSynchronizeFromEventBuilder.builder()
-                            .name("   ")
-                            .location("Location")
-                            .organizer("OOB")
-                            .websiteUrl(null)
-                            .eventDate(LocalDate.of(2026, 7, 20))
-                            .build()))
+                    new EventData("   ", LocalDate.of(2026, 7, 20), "Location", "OOB", null, null)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -570,16 +561,12 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
-            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
-                    .name("New Name")
-                    .location(null)
-                    .organizer("OOB")
-                    .websiteUrl(null)
-                    .eventDate(LocalDate.of(2026, 7, 20))
-                    .build());
+            calendarItem.synchronizeFromEvent(new EventData(
+                    "New Name", LocalDate.of(2026, 7, 20), null, "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasDescription("OOB");
@@ -596,16 +583,12 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
-            calendarItem.synchronizeFromEvent(EventCalendarItemSynchronizeFromEventBuilder.builder()
-                    .name("New Name")
-                    .location("   ")
-                    .organizer("OOB")
-                    .websiteUrl(null)
-                    .eventDate(LocalDate.of(2026, 7, 20))
-                    .build());
+            calendarItem.synchronizeFromEvent(new EventData(
+                    "New Name", LocalDate.of(2026, 7, 20), "   ", "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasDescription("OOB");
@@ -622,17 +605,12 @@ class CalendarItemTest {
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 10),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    EventCalendarItemSynchronizeFromEventBuilder.builder()
-                            .name("Name")
-                            .location("Location")
-                            .organizer("OOB")
-                            .websiteUrl(null)
-                            .eventDate(null)
-                            .build()))
+                    new EventData("Name", null, "Location", "OOB", null, null)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Start date");
         }
@@ -666,6 +644,7 @@ class CalendarItemTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 
@@ -755,6 +734,7 @@ class CalendarItemTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null
             );
 

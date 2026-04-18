@@ -12,14 +12,14 @@
 
 ## 3. Domain: EventCalendarItem carries a kind
 
-- [ ] 3.1 Write failing domain tests for the new factory `EventCalendarItem.createForRegistrationDeadline(...)`: builds an item with `kind = EVENT_REGISTRATION_DATE`, `name = "Přihlášky - {event name}"`, `description = null`, `startDate = endDate = deadlineDate`, `eventId` set. Rejects null event name, null eventId, and null deadline.
-- [ ] 3.2 Write failing tests for `EventCalendarItem.synchronizeFromEvent(EventData)`: for a `EVENT_DATE` kind item, updates name/description/startDate/endDate from event fields the same way `SynchronizeFromEvent` did. For a `EVENT_REGISTRATION_DATE` kind item, updates the label to `"Přihlášky - " + event.name()` and moves startDate/endDate to `event.registrationDeadline()`.
-- [ ] 3.3 Add `private final CalendarItemKind kind` field to `EventCalendarItem`. Expose via `getKind()`. Set from constructor.
-- [ ] 3.4 Rename existing `createForEvent(CreateCalendarItemForEvent)` factory to `createForEventDate(...)` and have it set `kind = EVENT_DATE`. Update callers.
-- [ ] 3.5 Add `createForRegistrationDeadline(String eventName, EventId eventId, LocalDate deadlineDate)` factory. Unconditionally sets `kind = EVENT_REGISTRATION_DATE`, `name = "Přihlášky - " + eventName`, `description = null`, `startDate = endDate = deadlineDate`. Rejects null eventName / eventId / deadlineDate.
-- [ ] 3.6 Replace the existing `synchronizeFromEvent(SynchronizeFromEvent)` method with `synchronizeFromEvent(EventData event)`. The method reads `this.kind` and updates fields accordingly (see design.md Decision 4 for per-kind behavior). Delete the `SynchronizeFromEvent` record — it is no longer needed; the caller passes `EventData` directly.
-- [ ] 3.7 Extend `reconstruct(...)` factory to accept and apply `kind`.
-- [ ] 3.8 Verify all domain tests from 3.1 and 3.2 now pass.
+- [x] 3.1 Write failing domain tests for the new factory `EventCalendarItem.createForRegistrationDeadline(...)`: builds an item with `kind = EVENT_REGISTRATION_DATE`, `name = "Přihlášky - {event name}"`, `description = null`, `startDate = endDate = deadlineDate`, `eventId` set. Rejects null event name, null eventId, and null deadline.
+- [x] 3.2 Write failing tests for `EventCalendarItem.synchronizeFromEvent(EventData)`: for a `EVENT_DATE` kind item, updates name/description/startDate/endDate from event fields the same way `SynchronizeFromEvent` did. For a `EVENT_REGISTRATION_DATE` kind item, updates the label to `"Přihlášky - " + event.name()` and moves startDate/endDate to `event.registrationDeadline()`.
+- [x] 3.3 Add `private final CalendarItemKind kind` field to `EventCalendarItem`. Expose via `getKind()`. Set from constructor.
+- [x] 3.4 Rename existing `createForEvent(CreateCalendarItemForEvent)` factory to `createForEventDate(...)` and have it set `kind = EVENT_DATE`. Update callers.
+- [x] 3.5 Add `createForRegistrationDeadline(String eventName, EventId eventId, LocalDate deadlineDate)` factory. Unconditionally sets `kind = EVENT_REGISTRATION_DATE`, `name = "Přihlášky - " + eventName`, `description = null`, `startDate = endDate = deadlineDate`. Rejects null eventName / eventId / deadlineDate.
+- [x] 3.6 Replace the existing `synchronizeFromEvent(SynchronizeFromEvent)` method with `synchronizeFromEvent(EventData event)`. The method reads `this.kind` and updates fields accordingly (see design.md Decision 4 for per-kind behavior). Delete the `SynchronizeFromEvent` record — it is no longer needed; the caller passes `EventData` directly.
+- [x] 3.7 Extend `reconstruct(...)` factory to accept and apply `kind`.
+- [x] 3.8 Verify all domain tests from 3.1 and 3.2 now pass.
 
 ## 4. Persistence: round-trip the new kind
 

@@ -2,6 +2,7 @@ package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.*;
 import com.klabis.events.EventId;
 import org.jmolecules.ddd.annotation.Repository;
@@ -90,6 +91,7 @@ class CalendarJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null);
 
             CalendarItem saved = calendarRepository.save(calendarItem);
@@ -326,6 +328,7 @@ class CalendarJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
+                    CalendarItemKind.EVENT_DATE,
                     null);
             calendarRepository.save(calendarItem);
 

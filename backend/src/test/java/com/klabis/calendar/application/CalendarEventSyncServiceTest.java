@@ -1,9 +1,9 @@
 package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
-import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.EventData;
 import com.klabis.events.EventDataProvider;
@@ -111,6 +111,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 5, 10),
                 LocalDate.of(2024, 5, 10),
                 eventId,
+                CalendarItemKind.EVENT_DATE,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
@@ -136,6 +137,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 3, 10),
                 LocalDate.of(2024, 3, 10),
                 eventId,
+                CalendarItemKind.EVENT_DATE,
                 null);
 
         EventData eventData = new EventData(
@@ -176,6 +178,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 4, 15),
                 LocalDate.of(2024, 4, 15),
                 eventId,
+                CalendarItemKind.EVENT_DATE,
                 null);
 
         EventData eventData = new EventData(
@@ -251,6 +254,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 4, 15),
                 LocalDate.of(2024, 4, 15),
                 eventId,
+                CalendarItemKind.EVENT_DATE,
                 null);
 
         EventData eventData = new EventData(
@@ -314,6 +318,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 3, 15),
                 LocalDate.of(2024, 3, 15),
                 eventId,
+                CalendarItemKind.EVENT_DATE,
                 null);
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));

@@ -67,3 +67,33 @@ After iterations: simplify code review, fix high-priority findings, commit.
 **Visibility note:** The design says "package-private" but Java package-private does not extend to sub-packages. `CalendarMemento` in `com.klabis.calendar.infrastructure.jdbc` cannot see a package-private type from `com.klabis.calendar`. Making it `public` is correct: Spring Modulith's `@ApplicationModule` boundary on `com.klabis.calendar` prevents the enum from leaking to other modules regardless of Java visibility. The tasks.md wording "expand its access if necessary" in 2.1 explicitly anticipated this.
 
 **Notes for Iter 3:** `CalendarItemKind` is now importable by `com.klabis.calendar.domain.EventCalendarItem`. The placeholder `UnsupportedOperationException` case in `CalendarMemento.toCalendarItem()` must be replaced in Iter 4 once `EventCalendarItem.reconstruct` accepts a `kind` parameter.
+
+---
+
+### 2026-04-18 — Iteration 3
+
+**Files touched:**
+
+Production:
+- `backend/src/main/java/com/klabis/calendar/domain/EventCalendarItem.java` — added `private final CalendarItemKind kind` field + `getKind()`; renamed `createForEvent` → `createForEventDate` (still takes `CreateCalendarItemForEvent`, sets `kind = EVENT_DATE`); added `createForRegistrationDeadline(String, EventId, LocalDate)` factory; replaced `synchronizeFromEvent(SynchronizeFromEvent)` with `synchronizeFromEvent(EventData)` branching on `this.kind`; extended `reconstruct(...)` to 8-param signature accepting `kind`; deleted `SynchronizeFromEvent` record.
+- `backend/src/main/java/com/klabis/calendar/application/CalendarEventSyncService.java` — updated `handleEventPublished` to call `createForEventDate`; updated `handleEventUpdated` to call `synchronizeFromEvent(eventData)` directly (no `SynchronizeFromEvent` wrapper). Service structure otherwise unchanged (Iter 5 rewrites the reconcile logic).
+- `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarMemento.java` — `from()` now reads `eventDateItem.getKind()` instead of hard-coding `EVENT_DATE`; `toCalendarItem()` `EVENT_DATE` branch passes `CalendarItemKind.EVENT_DATE` to `reconstruct`; `EVENT_REGISTRATION_DATE` branch still throws `UnsupportedOperationException` (stub for Iter 4).
+
+Tests:
+- `backend/src/test/java/com/klabis/calendar/domain/EventCalendarItemTest.java` — rewrote completely; added `CreateForRegistrationDeadlineTests` (3.1) and rewrote `SynchronizeFromEventTests` (3.2); updated `createForEvent` → `createForEventDate`; updated `reconstruct` to 8-param; added `ReconstructTests` covering both kinds.
+- `backend/src/test/java/com/klabis/calendar/domain/CalendarItemTest.java` — rewrote `SynchronizeFromEventMethod` to use `EventData` constructor instead of `SynchronizeFromEvent` builder; updated all `EventCalendarItem.reconstruct` calls to 8-param signature.
+- `backend/src/test/java/com/klabis/calendar/application/CalendarEventSyncServiceTest.java` — updated all `EventCalendarItem.reconstruct` calls to 8-param; deduplicated import.
+- `backend/src/test/java/com/klabis/calendar/infrastructure/jdbc/CalendarRepositoryAdapterTest.java` — updated 3 `EventCalendarItem.reconstruct` calls to 8-param.
+- `backend/src/test/java/com/klabis/calendar/infrastructure/jdbc/CalendarJdbcRepositoryTest.java` — added `CalendarItemKind` import; updated 2 `EventCalendarItem.reconstruct` calls to 8-param.
+- `backend/src/test/java/com/klabis/calendar/CalendarItemTestDataBuilder.java` — added `CalendarItemKind` import; updated `buildEventLinked` to pass `CalendarItemKind.EVENT_DATE`.
+
+**Test result:** 2195/2195 passed (full backend suite).
+
+**Handoff for Iter 4 (memento):**
+- `CalendarMemento.toCalendarItem()` `EVENT_REGISTRATION_DATE` case still throws `UnsupportedOperationException` — Iter 4 must replace it with `EventCalendarItem.reconstruct(..., CalendarItemKind.EVENT_REGISTRATION_DATE, ...)`.
+- `CalendarMemento.from()` already reads `eventDateItem.getKind()`, so it will correctly persist `EVENT_REGISTRATION_DATE` once items of that kind are created.
+- No schema migration needed — `kind` column is `VARCHAR`, `EVENT_REGISTRATION_DATE` is a new allowed string value.
+
+**Handoff for Iter 5 (CalendarEventSyncService):**
+- `handleEventPublished` and `handleEventUpdated` still follow the old single-item logic (find first, skip/warn if missing). The full reconcile rewrite happens in Iter 5.
+- `handleEventUpdated` now calls `synchronizeFromEvent(eventData)` — this correctly handles both kinds via the domain branch. The service-level wiring is correct; only the reconcile algorithm needs replacing.

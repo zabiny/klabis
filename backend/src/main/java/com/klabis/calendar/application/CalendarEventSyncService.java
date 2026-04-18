@@ -48,7 +48,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        EventCalendarItem calendarItem = EventCalendarItem.createForEvent(
+        EventCalendarItem calendarItem = EventCalendarItem.createForEventDate(
                 new EventCalendarItem.CreateCalendarItemForEvent(
                         eventData.name(),
                         eventData.location(),
@@ -79,12 +79,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        calendarItem.synchronizeFromEvent(new EventCalendarItem.SynchronizeFromEvent(
-                eventData.name(),
-                eventData.location(),
-                eventData.organizer(),
-                eventData.websiteUrl(),
-                eventData.eventDate()));
+        calendarItem.synchronizeFromEvent(eventData);
 
         calendarRepository.save(calendarItem);
 
