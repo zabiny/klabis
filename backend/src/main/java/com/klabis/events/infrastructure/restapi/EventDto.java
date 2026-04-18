@@ -21,7 +21,6 @@ import java.util.List;
  * @param websiteUrl         event website URL (optional)
  * @param eventCoordinatorId event coordinator user ID (optional)
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
- * @param orisId             ORIS event ID, present only for events imported from ORIS
  */
 record EventDto(
         @HalForms(access = HalForms.Access.READ_ONLY) EventId id,
@@ -33,7 +32,6 @@ record EventDto(
         MemberId eventCoordinatorId,
         LocalDate registrationDeadline,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories,
-        @HalForms(access = HalForms.Access.READ_ONLY) Integer orisId
+        List<String> categories
 ) {
 }

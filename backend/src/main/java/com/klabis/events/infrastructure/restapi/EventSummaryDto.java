@@ -26,7 +26,6 @@ import java.util.List;
  * @param websiteUrl           event website URL (optional)
  * @param registrationDeadline registration deadline (optional)
  * @param status               event status — only visible to EVENTS:MANAGE holders
- * @param orisId               ORIS event ID, present only for events imported from ORIS
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
@@ -40,7 +39,6 @@ record EventSummaryDto(
         LocalDate registrationDeadline,
         @HasAuthority(Authority.EVENTS_MANAGE)
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories,
-        @HalForms(access = HalForms.Access.READ_ONLY) Integer orisId
+        List<String> categories
 ) {
 }
