@@ -1,7 +1,9 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
-import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventId;
 import org.springframework.data.annotation.*;
@@ -14,26 +16,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * Memento pattern implementation for CalendarItem aggregate persistence.
- * <p>
- * This class acts as a bridge between the pure domain {@link CalendarItem} entity
- * and Spring Data JDBC persistence. It contains:
- * <ul>
- *   <li>All JDBC annotations for persistence</li>
- *   <li>Flat primitive fields matching the database schema</li>
- *   <li>Conversion methods to/from CalendarItem</li>
- * </ul>
- * <p>
- * The CalendarItem entity remains a pure domain object without Spring annotations,
- * while this memento handles all infrastructure concerns.
- */
 @Table("calendar_items")
 class CalendarMemento implements Persistable<UUID> {
 
     @Id
     @Column("id")
     private UUID id;
+
+    @Column("kind")
+    private CalendarItemKind kind;
 
     @Column("name")
     private String name;
@@ -71,19 +62,12 @@ class CalendarMemento implements Persistable<UUID> {
     @Column("version")
     private Long version;
 
-    // Transient flag for Persistable<UUID>
     @Transient
     private boolean isNew = true;
 
     protected CalendarMemento() {
     }
 
-    /**
-     * Creates a CalendarMemento from a CalendarItem entity (for save operations).
-     *
-     * @param calendarItem the CalendarItem entity to convert
-     * @return a new CalendarMemento with all fields copied from the CalendarItem
-     */
     static CalendarMemento from(CalendarItem calendarItem) {
         Assert.notNull(calendarItem, "CalendarItem must not be null");
 
@@ -94,7 +78,16 @@ class CalendarMemento implements Persistable<UUID> {
         memento.description = calendarItem.getDescription();
         memento.startDate = calendarItem.getStartDate();
         memento.endDate = calendarItem.getEndDate();
-        memento.eventId = calendarItem.getEventId() != null ? calendarItem.getEventId().value() : null;
+
+        if (calendarItem instanceof ManualCalendarItem) {
+            memento.kind = CalendarItemKind.MANUAL;
+            memento.eventId = null;
+        } else if (calendarItem instanceof EventCalendarItem eventDateItem) {
+            memento.kind = CalendarItemKind.EVENT_DATE;
+            memento.eventId = eventDateItem.getEventId() != null ? eventDateItem.getEventId().value() : null;
+        } else {
+            throw new IllegalArgumentException("Unknown CalendarItem subtype: " + calendarItem.getClass().getName());
+        }
 
         copyAuditMetadata(calendarItem, memento);
 
@@ -114,14 +107,8 @@ class CalendarMemento implements Persistable<UUID> {
         }
     }
 
-    /**
-     * Converts this CalendarMemento to a CalendarItem entity (for load operations).
-     *
-     * @return a reconstituted CalendarItem entity
-     */
     CalendarItem toCalendarItem() {
         CalendarItemId calendarItemId = new CalendarItemId(this.id);
-        EventId eventIdObj = this.eventId != null ? new EventId(this.eventId) : null;
 
         AuditMetadata auditMetadata = null;
         if (this.createdAt != null) {
@@ -133,15 +120,32 @@ class CalendarMemento implements Persistable<UUID> {
                     this.version);
         }
 
-        return CalendarItem.reconstruct(
-                calendarItemId,
-                this.name,
-                this.description,
-                this.startDate,
-                this.endDate,
-                eventIdObj,
-                auditMetadata
-        );
+        CalendarItemKind resolvedKind = this.kind != null ? this.kind : CalendarItemKind.EVENT_DATE;
+
+        return switch (resolvedKind) {
+            case MANUAL -> ManualCalendarItem.reconstruct(
+                    calendarItemId,
+                    this.name,
+                    this.description,
+                    this.startDate,
+                    this.endDate,
+                    auditMetadata);
+            case EVENT_DATE -> {
+                EventId eventIdObj = this.eventId != null ? new EventId(this.eventId) : null;
+                yield EventCalendarItem.reconstruct(
+                        calendarItemId,
+                        this.name,
+                        this.description,
+                        this.startDate,
+                        this.endDate,
+                        eventIdObj,
+                        auditMetadata);
+            }
+        };
+    }
+
+    CalendarItemKind kind() {
+        return kind;
     }
 
     @Override

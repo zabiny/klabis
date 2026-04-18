@@ -2,26 +2,18 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
+import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.EventData;
 import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
+import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Application service for synchronizing calendar items with event lifecycle.
- * <p>
- * This service handles business logic for event-driven calendar synchronization:
- * <ul>
- *   <li>Creating calendar items when events are published</li>
- *   <li>Updating calendar items when events are modified</li>
- *   <li>Deleting calendar items when events are cancelled</li>
- * </ul>
- * <p>
- * All operations are idempotent to handle event replays and retries.
- */
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class CalendarEventSyncService implements CalendarEventSyncPort {
 
@@ -37,50 +29,42 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         this.eventDataProvider = eventDataProvider;
     }
 
-    /**
-     * Creates a calendar item for a published event.
-     * <p>
-     * Idempotent: if a calendar item already exists for this event, skips creation.
-     *
-     * @param eventId the event ID
-     */
     @Transactional
     public void handleEventPublished(EventId eventId) {
         log.info("Creating calendar item for published event: {}", eventId);
 
-        if (calendarRepository.findByEventId(eventId).isPresent()) {
+        boolean alreadyExists = calendarRepository.findByEventId(eventId).stream()
+                .anyMatch(item -> item instanceof EventCalendarItem);
+
+        if (alreadyExists) {
             log.warn("Calendar item already exists for event {}. Skipping creation (idempotent).", eventId);
             return;
         }
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        CalendarItem calendarItem = CalendarItem.createForEvent(new CalendarItem.CreateCalendarItemForEvent(
-                eventData.name(),
-                eventData.location(),
-                eventData.organizer(),
-                eventData.websiteUrl(),
-                eventData.eventDate(),
-                eventId
-        ));
+        EventCalendarItem calendarItem = EventCalendarItem.createForEvent(
+                new CalendarItem.CreateCalendarItemForEvent(
+                        eventData.name(),
+                        eventData.location(),
+                        eventData.organizer(),
+                        eventData.websiteUrl(),
+                        eventData.eventDate(),
+                        eventId));
 
         calendarRepository.save(calendarItem);
 
         log.info("Calendar item created successfully for event: {}", eventId);
     }
 
-    /**
-     * Updates a calendar item when an event is modified.
-     * <p>
-     * Idempotent: if no calendar item exists for this event, logs warning and skips.
-     *
-     * @param eventId the event ID
-     */
     @Transactional
     public void handleEventUpdated(EventId eventId) {
         log.info("Updating calendar item for event: {}", eventId);
 
-        var calendarItemOpt = calendarRepository.findByEventId(eventId);
+        Optional<EventCalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventId).stream()
+                .filter(EventCalendarItem.class::isInstance)
+                .map(EventCalendarItem.class::cast)
+                .findFirst();
 
         if (calendarItemOpt.isEmpty()) {
             log.warn(
@@ -89,7 +73,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
             return;
         }
 
-        CalendarItem calendarItem = calendarItemOpt.get();
+        EventCalendarItem calendarItem = calendarItemOpt.get();
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
@@ -98,36 +82,30 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
                 eventData.location(),
                 eventData.organizer(),
                 eventData.websiteUrl(),
-                eventData.eventDate()
-        ));
+                eventData.eventDate()));
 
         calendarRepository.save(calendarItem);
 
         log.info("Calendar item updated successfully for event: {}", eventId);
     }
 
-    /**
-     * Deletes a calendar item when an event is cancelled.
-     * <p>
-     * Idempotent: if no calendar item exists for this event, logs warning and skips.
-     *
-     * @param eventId the event ID
-     */
     @Transactional
     public void handleEventCancelled(EventId eventId) {
         log.info("Deleting calendar item for cancelled event: {}", eventId);
 
-        var calendarItemOpt = calendarRepository.findByEventId(eventId);
+        List<EventCalendarItem> items = calendarRepository.findByEventId(eventId).stream()
+                .filter(EventCalendarItem.class::isInstance)
+                .map(EventCalendarItem.class::cast)
+                .toList();
 
-        if (calendarItemOpt.isEmpty()) {
+        if (items.isEmpty()) {
             log.warn(
                     "Calendar item not found for event {}. Cannot delete. Event may have been cancelled before being published.",
                     eventId);
             return;
         }
 
-        CalendarItem calendarItem = calendarItemOpt.get();
-        calendarRepository.delete(calendarItem);
+        items.forEach(calendarRepository::delete);
 
         log.info("Calendar item deleted successfully for event: {}", eventId);
     }

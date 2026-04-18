@@ -1,12 +1,12 @@
 package com.klabis.calendar.application;
 
 import com.klabis.CleanupTestData;
-import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
+import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
-import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,9 +73,12 @@ class CalendarEventSyncIntegrationTest {
 
         // When & Then: CalendarItem should be created automatically
         scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, EventStatus.ACTIVE, null, List.of(), List.of(), null)))
-                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isPresent())
+                .andWaitForStateChange(() -> !calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(isPresent -> {
-                    CalendarItem calendarItem = calendarRepository.findByEventId(eventId).orElseThrow();
+                    EventCalendarItem calendarItem = calendarRepository.findByEventId(eventId).stream()
+                            .filter(EventCalendarItem.class::isInstance)
+                            .map(EventCalendarItem.class::cast)
+                            .findFirst().orElseThrow();
                     assertThat(calendarItem.getName()).isEqualTo("Spring Boot Workshop");
                     assertThat(calendarItem.getDescription())
                             .isEqualTo("Prague CC - OOB\nhttps://example.com/workshop");
@@ -112,7 +115,9 @@ class CalendarEventSyncIntegrationTest {
                         java.util.List.of(),
                         java.time.Instant.now()
                 ))
-                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null),
+                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).stream()
+                                .filter(EventCalendarItem.class::isInstance)
+                                .findFirst().orElse(null),
                         item -> "Updated Workshop".equalsIgnoreCase(item.getName()))
                 .andVerify(updatedItem -> {
                     assertThat(updatedItem.getName()).isEqualTo("Updated Workshop");
@@ -131,7 +136,9 @@ class CalendarEventSyncIntegrationTest {
         // Given: An existing calendar item
         final EventId eventId = EVENT_ID;
 
-        final CalendarItemId calendarItemId = calendarRepository.findByEventId(eventId).orElseThrow().getId();
+        final CalendarItemId calendarItemId = calendarRepository.findByEventId(eventId).stream()
+                .filter(EventCalendarItem.class::isInstance)
+                .findFirst().orElseThrow().getId();
 
         // When: Event is cancelled
         scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, EventStatus.CANCELLED, null, List.of(), List.of(), null)))

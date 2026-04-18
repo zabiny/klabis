@@ -1,7 +1,8 @@
 package com.klabis.calendar;
 
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventId;
 
@@ -67,24 +68,31 @@ public class CalendarItemTestDataBuilder {
     }
 
     public CalendarItem build() {
-        return CalendarItem.reconstruct(
+        if (eventId != null) {
+            return buildEventLinked(eventId.value());
+        }
+        return buildManual();
+    }
+
+    public ManualCalendarItem buildManual() {
+        return ManualCalendarItem.reconstruct(
                 calendarItemId,
                 name,
                 description,
                 startDate,
                 endDate,
-                eventId,
-                auditMetadata
-        );
+                auditMetadata);
     }
 
-    public CalendarItem buildManual() {
-        eventId = null;
-        return build();
-    }
-
-    public CalendarItem buildEventLinked(UUID eventId) {
-        this.eventId = new EventId(eventId);
-        return build();
+    public EventCalendarItem buildEventLinked(UUID eventIdUuid) {
+        EventId eid = new EventId(eventIdUuid);
+        return EventCalendarItem.reconstruct(
+                calendarItemId,
+                name,
+                description,
+                startDate,
+                endDate,
+                eid,
+                auditMetadata);
     }
 }

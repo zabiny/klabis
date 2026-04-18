@@ -1,10 +1,8 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.calendar.domain.CalendarRepository;
+import com.klabis.calendar.domain.*;
 import com.klabis.events.EventId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,16 +24,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration tests for CalendarItem aggregate with Spring Data JDBC.
- * <p>
- * Tests cover:
- * - CRUD operations (save, findById, delete)
- * - Calendar item with all fields
- * - Date range queries (multi-day items, boundary dates)
- * - Event-linked calendar items (findByEventId)
- * - Audit metadata population
- */
 @DisplayName("Calendar JDBC Repository Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
         type = FilterType.ANNOTATION,
@@ -64,30 +52,26 @@ class CalendarJdbcRepositoryTest {
     class SaveAndFindByIdWithAllFields {
 
         @Test
-        @DisplayName("should save and find manual calendar item")
+        @DisplayName("should save and find manual calendar item — kind column set to MANUAL")
         void shouldSaveAndFindManualCalendarItem() {
-            // Given
-            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Summer Training Camp")
                     .description("Weekly training at City Park - Coach John")
                     .startDate(LocalDate.of(2026, 7, 1))
                     .endDate(LocalDate.of(2026, 7, 7))
                     .build());
 
-            // When
             CalendarItem saved = calendarRepository.save(calendarItem);
             Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
 
-            // Then
             assertThat(found).isPresent();
             CalendarItem retrieved = found.get();
+            assertThat(retrieved).isInstanceOf(ManualCalendarItem.class);
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
             assertThat(retrieved.getName()).isEqualTo("Summer Training Camp");
             assertThat(retrieved.getDescription()).isEqualTo("Weekly training at City Park - Coach John");
             assertThat(retrieved.getStartDate()).isEqualTo(LocalDate.of(2026, 7, 1));
             assertThat(retrieved.getEndDate()).isEqualTo(LocalDate.of(2026, 7, 7));
-            assertThat(retrieved.getEventId()).isNull();
-            assertThat(retrieved.isEventLinked()).isFalse();
 
             assertThat(retrieved.getAuditMetadata()).isNotNull();
             assertThat(retrieved.getAuditMetadata().createdAt()).isNotNull();
@@ -96,48 +80,41 @@ class CalendarJdbcRepositoryTest {
         }
 
         @Test
-        @DisplayName("should save and find event-linked calendar item")
-        void shouldSaveAndFindEventLinkedCalendarItem() {
-            // Given
+        @DisplayName("should save and find event-linked calendar item — kind column set to EVENT_DATE")
+        void shouldSaveAndFindEventCalendarItem() {
             EventId eventId = new EventId(TEST_EVENT_1_ID);
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "City Orienteering Championship",
                     "Prague - OOB\nhttps://example.com",
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
-                    null
-            );
+                    null);
 
-            // When
             CalendarItem saved = calendarRepository.save(calendarItem);
             Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
 
-            // Then
             assertThat(found).isPresent();
             CalendarItem retrieved = found.get();
+            assertThat(retrieved).isInstanceOf(EventCalendarItem.class);
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
-            assertThat(retrieved.getEventId()).isEqualTo(eventId);
-            assertThat(retrieved.isEventLinked()).isTrue();
+            assertThat(((EventCalendarItem) retrieved).getEventId()).isEqualTo(eventId);
         }
 
         @Test
         @DisplayName("should save and find manual calendar item with null description")
         void shouldSaveAndFindManualCalendarItemWithNullDescription() {
-            // Given
-            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Klubová schůze")
                     .description(null)
                     .startDate(LocalDate.of(2026, 7, 1))
                     .endDate(LocalDate.of(2026, 7, 1))
                     .build());
 
-            // When
             CalendarItem saved = calendarRepository.save(calendarItem);
             Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
 
-            // Then
             assertThat(found).isPresent();
             assertThat(found.get().getDescription()).isNull();
         }
@@ -145,13 +122,10 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should return empty when calendar item not found")
         void shouldReturnEmptyWhenCalendarItemNotFound() {
-            // Given
             CalendarItemId nonExistentId = CalendarItemId.generate();
 
-            // When
             Optional<CalendarItem> found = calendarRepository.findById(nonExistentId);
 
-            // Then
             assertThat(found).isEmpty();
         }
     }
@@ -163,8 +137,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should find items within date range")
         void shouldFindItemsWithinDateRange() {
-            // Given - create items in June
-            CalendarItem item1 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item1 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event 1")
                     .description("Description 1")
                     .startDate(LocalDate.of(2026, 6, 5))
@@ -172,7 +145,7 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item1);
 
-            CalendarItem item2 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item2 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event 2")
                     .description("Description 2")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -180,7 +153,7 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item2);
 
-            CalendarItem item3 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item3 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event 3")
                     .description("Description 3")
                     .startDate(LocalDate.of(2026, 6, 25))
@@ -188,13 +161,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item3);
 
-            // When - query middle of month
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 10),
-                    LocalDate.of(2026, 6, 20)
-            );
+                    LocalDate.of(2026, 6, 20));
 
-            // Then - only item2 is in range
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Event 2");
         }
@@ -202,8 +172,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should include items on boundary dates")
         void shouldIncludeItemsOnBoundaryDates() {
-            // Given
-            CalendarItem itemOnStart = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem itemOnStart = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event on start date")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 1))
@@ -211,7 +180,7 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(itemOnStart);
 
-            CalendarItem itemOnEnd = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem itemOnEnd = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event on end date")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 30))
@@ -219,13 +188,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(itemOnEnd);
 
-            // When
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then
             assertThat(result).hasSize(2);
             assertThat(result).extracting(CalendarItem::getName)
                     .containsExactlyInAnyOrder("Event on start date", "Event on end date");
@@ -234,8 +200,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should find multi-day items that span across boundaries")
         void shouldFindMultiDayItemsThatSpanAcrossBoundaries() {
-            // Given - multi-day item spanning May-June-July
-            CalendarItem multiDay = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem multiDay = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Summer Camp")
                     .description("Multi-week event")
                     .startDate(LocalDate.of(2026, 5, 25))
@@ -243,13 +208,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(multiDay);
 
-            // When - query only June
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then - multi-day item should be included
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Summer Camp");
             assertThat(result.get(0).getStartDate()).isEqualTo(LocalDate.of(2026, 5, 25));
@@ -259,8 +221,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should find items that start before range and end within range")
         void shouldFindItemsThatStartBeforeRangeAndEndWithinRange() {
-            // Given
-            CalendarItem item = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Overlapping Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 5, 20))
@@ -268,13 +229,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            // When
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Overlapping Event");
         }
@@ -282,8 +240,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should find items that start within range and end after range")
         void shouldFindItemsThatStartWithinRangeAndEndAfterRange() {
-            // Given
-            CalendarItem item = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Overlapping Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 20))
@@ -291,13 +248,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            // When
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Overlapping Event");
         }
@@ -305,8 +259,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should return empty list when no items in range")
         void shouldReturnEmptyListWhenNoItemsInRange() {
-            // Given - item in July
-            CalendarItem item = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("July Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 7, 15))
@@ -314,21 +267,17 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            // When - query June
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then
             assertThat(result).isEmpty();
         }
 
         @Test
         @DisplayName("should sort results by start date and name")
         void shouldSortResultsByStartDateAndName() {
-            // Given
-            CalendarItem item1 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item1 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("B Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -336,7 +285,7 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item1);
 
-            CalendarItem item2 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item2 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("A Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -344,7 +293,7 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item2);
 
-            CalendarItem item3 = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem item3 = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("C Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 10))
@@ -352,13 +301,10 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item3);
 
-            // When
             List<CalendarItem> result = calendarRepository.findByDateRange(
                     LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30)
-            );
+                    LocalDate.of(2026, 6, 30));
 
-            // Then - sorted by date first, then by name
             assertThat(result).hasSize(3);
             assertThat(result).extracting(CalendarItem::getName)
                     .containsExactly("C Event", "A Event", "B Event");
@@ -366,44 +312,38 @@ class CalendarJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByEventId() - event-linked items")
+    @DisplayName("findByEventId() - returns List")
     class FindByEventIdTests {
 
         @Test
-        @DisplayName("should find calendar item by event ID")
-        void shouldFindCalendarItemByEventId() {
-            // Given
+        @DisplayName("should find calendar item by event ID and return as list")
+        void shouldFindCalendarItemByEventIdAsList() {
             EventId eventId = new EventId(TEST_EVENT_1_ID);
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "City Championship",
                     "Prague - OOB",
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
                     eventId,
-                    null
-            );
+                    null);
             calendarRepository.save(calendarItem);
 
-            // When
-            Optional<CalendarItem> found = calendarRepository.findByEventId(eventId);
+            List<CalendarItem> found = calendarRepository.findByEventId(eventId);
 
-            // Then
-            assertThat(found).isPresent();
-            assertThat(found.get().getEventId()).isEqualTo(eventId);
-            assertThat(found.get().getName()).isEqualTo("City Championship");
+            assertThat(found).hasSize(1);
+            assertThat(found.get(0)).isInstanceOf(EventCalendarItem.class);
+            assertThat(((EventCalendarItem) found.get(0)).getEventId()).isEqualTo(eventId);
+            assertThat(found.get(0).getName()).isEqualTo("City Championship");
         }
 
         @Test
-        @DisplayName("should return empty when no calendar item linked to event")
-        void shouldReturnEmptyWhenNoCalendarItemLinkedToEvent() {
-            // Given
+        @DisplayName("should return empty list when no calendar item linked to event")
+        void shouldReturnEmptyListWhenNoCalendarItemLinkedToEvent() {
             EventId eventId = new EventId(TEST_EVENT_2_ID);
 
-            // When
-            Optional<CalendarItem> found = calendarRepository.findByEventId(eventId);
+            List<CalendarItem> found = calendarRepository.findByEventId(eventId);
 
-            // Then
             assertThat(found).isEmpty();
         }
     }
@@ -415,8 +355,7 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should delete calendar item")
         void shouldDeleteCalendarItem() {
-            // Given
-            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Event to Delete")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -424,10 +363,8 @@ class CalendarJdbcRepositoryTest {
                     .build());
             CalendarItem saved = calendarRepository.save(calendarItem);
 
-            // When
             calendarRepository.delete(saved);
 
-            // Then
             Optional<CalendarItem> found = calendarRepository.findById(saved.getId());
             assertThat(found).isEmpty();
         }
@@ -440,18 +377,15 @@ class CalendarJdbcRepositoryTest {
         @Test
         @DisplayName("should populate audit metadata on save")
         void shouldPopulateAuditMetadataOnSave() {
-            // Given
-            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
                     .name("Test Event")
                     .description("Test Description")
                     .startDate(LocalDate.of(2026, 6, 15))
                     .endDate(LocalDate.of(2026, 6, 15))
                     .build());
 
-            // When
             CalendarItem saved = calendarRepository.save(calendarItem);
 
-            // Then
             assertThat(saved.getAuditMetadata()).isNotNull();
             assertThat(saved.getAuditMetadata().createdAt()).isNotNull();
             assertThat(saved.getAuditMetadata().createdBy()).isNotNull();

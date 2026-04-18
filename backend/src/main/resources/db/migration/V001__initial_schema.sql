@@ -312,7 +312,8 @@ COMMENT ON COLUMN event_registrations.registered_at IS 'Timestamp when member re
 
 CREATE TABLE calendar_items
 (
-    id               UUID PRIMARY KEY,
+    id               UUID         PRIMARY KEY,
+    kind             VARCHAR(32)  NOT NULL DEFAULT 'EVENT_DATE',
     name             VARCHAR(200) NOT NULL,
     description      TEXT         NULL,
     start_date       DATE         NOT NULL,
@@ -334,6 +335,7 @@ CREATE INDEX idx_calendar_items_event_id ON calendar_items (event_id);
 -- Comments for calendar_items
 COMMENT ON TABLE calendar_items IS 'Stores calendar items (manual and event-linked)';
 COMMENT ON COLUMN calendar_items.id IS 'Unique calendar item identifier (UUID)';
+COMMENT ON COLUMN calendar_items.kind IS 'Discriminator: MANUAL or EVENT_DATE (single-table inheritance)';
 COMMENT ON COLUMN calendar_items.name IS 'Calendar item name (event name for linked items)';
 COMMENT ON COLUMN calendar_items.description IS 'Calendar item description (location + organizer + website for linked items)';
 COMMENT ON COLUMN calendar_items.start_date IS 'Start date of the calendar item';

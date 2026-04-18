@@ -19,7 +19,7 @@ public interface CalendarRepository {
 
     List<CalendarItem> findByDateRange(LocalDate startDate, LocalDate endDate);
 
-    Optional<CalendarItem> findByEventId(EventId eventId);
+    List<CalendarItem> findByEventId(EventId eventId);
 
     void delete(CalendarItem calendarItem);
 }

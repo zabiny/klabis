@@ -3,6 +3,8 @@ package com.klabis.calendar.infrastructure.restapi;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
@@ -237,22 +239,22 @@ class CalendarController {
     }
 
     private CalendarItemDto toDto(CalendarItem calendarItem) {
+        var eventId = calendarItem instanceof EventCalendarItem linked ? linked.getEventId() : null;
         return new CalendarItemDto(
                 calendarItem.getId(),
                 calendarItem.getName(),
                 calendarItem.getDescription(),
                 calendarItem.getStartDate(),
                 calendarItem.getEndDate(),
-                calendarItem.getEventId()
+                eventId
         );
     }
 
     private void addLinksForCalendarItem(EntityModel<?> entityModel, CalendarItemDto calendarItemDto) {
         UUID calendarItemId = calendarItemDto.id().value();
-        boolean isEventLinked = calendarItemDto.eventId() != null;
 
         klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
-            if (isEventLinked) {
+            if (calendarItemDto.eventId() != null) {
                 entityModel.add(selfLinkBuilder.withSelfRel());
                 entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId().value()).withRel("event"));
             } else {

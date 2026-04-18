@@ -11,12 +11,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Adapter that bridges between CalendarRepository domain interface and CalendarJdbcRepository.
- * <p>
- * This adapter implements the domain repository interface and delegates to Spring Data JDBC repository.
- * It handles conversion between CalendarItem entities and CalendarMemento persistence objects.
- */
 @SecondaryAdapter
 @Repository
 class CalendarRepositoryAdapter implements CalendarRepository {
@@ -47,9 +41,10 @@ class CalendarRepositoryAdapter implements CalendarRepository {
     }
 
     @Override
-    public Optional<CalendarItem> findByEventId(EventId eventId) {
-        return jdbcRepository.findByEventId(eventId.value())
-                .map(CalendarMemento::toCalendarItem);
+    public List<CalendarItem> findByEventId(EventId eventId) {
+        return jdbcRepository.findByEventId(eventId.value()).stream()
+                .map(CalendarMemento::toCalendarItem)
+                .toList();
     }
 
     @Override

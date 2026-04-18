@@ -215,7 +215,7 @@ class CalendarControllerTest {
         @Test
         @DisplayName("should return 200 with calendar item details for event-linked item")
         @WithKlabisMockUser(username = ADMIN_USERNAME)
-        void shouldGetEventLinkedCalendarItem() throws Exception {
+        void shouldGetEventCalendarItem() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
             UUID eventId = UUID.randomUUID();
             CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))

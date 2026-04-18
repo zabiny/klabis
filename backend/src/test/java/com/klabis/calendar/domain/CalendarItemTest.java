@@ -14,10 +14,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
-import com.klabis.calendar.domain.CalendarItemSynchronizeFromEventBuilder;
-import com.klabis.calendar.domain.CalendarItemCreateCalendarItemForEventBuilder;
-
 import static com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder.builder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CalendarItemTest {
 
     @Nested
-    @DisplayName("create() factory method")
+    @DisplayName("ManualCalendarItem.create() factory method")
     class CreateMethod {
 
         @Test
@@ -37,7 +33,7 @@ class CalendarItemTest {
             LocalDate startDate = LocalDate.of(2026, 6, 15);
             LocalDate endDate = LocalDate.of(2026, 6, 15);
 
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            CalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name(name)
                     .description(description)
                     .startDate(startDate)
@@ -60,7 +56,7 @@ class CalendarItemTest {
             LocalDate startDate = LocalDate.of(2026, 7, 1);
             LocalDate endDate = LocalDate.of(2026, 7, 5);
 
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            CalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Summer Camp")
                     .description("5-day orienteering summer camp")
                     .startDate(startDate)
@@ -78,7 +74,7 @@ class CalendarItemTest {
         void shouldCreateCalendarItemWithSameStartAndEndDate() {
             LocalDate sameDate = LocalDate.of(2026, 6, 15);
 
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            CalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Single Day Event")
                     .description("One day activity")
                     .startDate(sameDate)
@@ -95,7 +91,7 @@ class CalendarItemTest {
         void shouldFailWhenNameIsNull() {
             LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name(null)
                     .description("Description")
                     .startDate(date)
@@ -110,7 +106,7 @@ class CalendarItemTest {
         void shouldFailWhenNameIsBlank() {
             LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("   ")
                     .description("Description")
                     .startDate(date)
@@ -125,7 +121,7 @@ class CalendarItemTest {
         void shouldCreateCalendarItemWithNullDescription() {
             LocalDate date = LocalDate.of(2026, 6, 15);
 
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            CalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Klubová schůze")
                     .description(null)
                     .startDate(date)
@@ -144,7 +140,7 @@ class CalendarItemTest {
         void shouldStillRejectMissingName() {
             LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name(null)
                     .description(null)
                     .startDate(date)
@@ -157,7 +153,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should still reject missing startDate")
         void shouldStillRejectMissingStartDate() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description(null)
                     .startDate(null)
@@ -170,7 +166,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should still reject missing endDate")
         void shouldStillRejectMissingEndDate() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description(null)
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -183,7 +179,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should still reject endDate before startDate")
         void shouldStillRejectEndDateBeforeStartDate() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description(null)
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -196,7 +192,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when startDate is null")
         void shouldFailWhenStartDateIsNull() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(null)
@@ -209,7 +205,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when endDate is null")
         void shouldFailWhenEndDateIsNull() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -222,7 +218,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when endDate is before startDate")
         void shouldFailWhenEndDateIsBeforeStartDate() {
-            assertThatThrownBy(() -> CalendarItem.create(builder()
+            assertThatThrownBy(() -> ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -234,13 +230,13 @@ class CalendarItemTest {
     }
 
     @Nested
-    @DisplayName("update() method")
+    @DisplayName("ManualCalendarItem.update() method")
     class UpdateMethod {
 
         @Test
         @DisplayName("should update manual calendar item with valid data")
         void shouldUpdateManualCalendarItemWithValidData() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Original Name")
                     .description("Original Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -270,7 +266,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should update manual calendar item to single day")
         void shouldUpdateManualCalendarItemToSingleDay() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Multi-day Event")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 1))
@@ -293,9 +289,9 @@ class CalendarItemTest {
 
         @Test
         @DisplayName("should fail to update event-linked calendar item")
-        void shouldFailToUpdateEventLinkedCalendarItem() {
+        void shouldFailToUpdateEventCalendarItem() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Event-linked Item",
                     "Synchronized from event",
@@ -305,12 +301,9 @@ class CalendarItemTest {
                     null
             );
 
-            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
-                    .name("New Name")
-                    .description("New Description")
-                    .startDate(LocalDate.of(2026, 7, 1))
-                    .endDate(LocalDate.of(2026, 7, 1))
-                    .build()))
+            // EventCalendarItem has no update() method — verified at compile time.
+            // Calling assertCanBeDeleted() tests the read-only guard.
+            assertThatThrownBy(calendarItem::assertCanBeDeleted)
                     .isInstanceOf(CalendarItemReadOnlyException.class)
                     .hasMessageContaining("Cannot manually modify event-linked calendar item");
         }
@@ -318,7 +311,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null name")
         void shouldFailToUpdateWithNullName() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Original Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -338,7 +331,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with blank name")
         void shouldFailToUpdateWithBlankName() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Original Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -358,7 +351,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should update manual calendar item with null description")
         void shouldUpdateManualCalendarItemWithNullDescription() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Original Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -379,13 +372,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should clear existing description when update command has null description")
         void shouldClearExistingDescriptionWhenUpdateCommandHasNullDescription() {
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            ManualCalendarItem calendarItem = ManualCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Name",
                     "Existing description",
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 15),
-                    null,
                     null
             );
 
@@ -404,7 +396,7 @@ class CalendarItemTest {
         @DisplayName("should still throw CalendarItemReadOnlyException for event-linked items")
         void shouldStillThrowForEventLinkedItems() {
             com.klabis.events.EventId eventId = com.klabis.events.EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Event-linked Item",
                     null,
@@ -414,19 +406,14 @@ class CalendarItemTest {
                     null
             );
 
-            assertThatThrownBy(() -> calendarItem.update(CalendarItemUpdateCalendarItemBuilder.builder()
-                    .name("New Name")
-                    .description(null)
-                    .startDate(LocalDate.of(2026, 7, 1))
-                    .endDate(LocalDate.of(2026, 7, 1))
-                    .build()))
+            assertThatThrownBy(calendarItem::assertCanBeDeleted)
                     .isInstanceOf(CalendarItemReadOnlyException.class);
         }
 
         @Test
         @DisplayName("should fail to update with null startDate")
         void shouldFailToUpdateWithNullStartDate() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -446,7 +433,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null endDate")
         void shouldFailToUpdateWithNullEndDate() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -466,7 +453,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with endDate before startDate")
         void shouldFailToUpdateWithEndDateBeforeStartDate() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Name")
                     .description("Description")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -485,14 +472,14 @@ class CalendarItemTest {
     }
 
     @Nested
-    @DisplayName("synchronizeFromEvent() method")
+    @DisplayName("EventCalendarItem.synchronizeFromEvent() method")
     class SynchronizeFromEventMethod {
 
         @Test
         @DisplayName("should synchronize event-linked calendar item with updated event data")
-        void shouldSynchronizeEventLinkedCalendarItem() {
+        void shouldSynchronizeEventCalendarItem() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -524,7 +511,7 @@ class CalendarItemTest {
         @DisplayName("should synchronize with website URL appended to description")
         void shouldSynchronizeWithWebsiteUrl() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -550,7 +537,7 @@ class CalendarItemTest {
         @DisplayName("should fail synchronization when name is blank")
         void shouldFailSynchronizationWhenNameIsBlank() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -576,7 +563,7 @@ class CalendarItemTest {
         @DisplayName("should synchronize with null location — description contains organizer only")
         void shouldSynchronizeWithNullLocation() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -602,7 +589,7 @@ class CalendarItemTest {
         @DisplayName("should synchronize with blank location — treated as null, description contains organizer only")
         void shouldSynchronizeWithBlankLocation() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -628,7 +615,7 @@ class CalendarItemTest {
         @DisplayName("should fail synchronization when eventDate is null")
         void shouldFailSynchronizationWhenEventDateIsNull() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Old Name",
                     "Old Description",
@@ -658,7 +645,7 @@ class CalendarItemTest {
         @Test
         @DisplayName("should not throw for manual calendar item")
         void shouldNotThrowForManualCalendarItem() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Manual Item")
                     .description("Created manually")
                     .startDate(LocalDate.of(2026, 6, 15))
@@ -670,9 +657,9 @@ class CalendarItemTest {
 
         @Test
         @DisplayName("should throw CalendarItemReadOnlyException for event-linked calendar item")
-        void shouldThrowForEventLinkedCalendarItem() {
+        void shouldThrowForEventCalendarItem() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Event-linked Item",
                     "Synchronized from event",
@@ -754,14 +741,14 @@ class CalendarItemTest {
     }
 
     @Nested
-    @DisplayName("isEventLinked()")
+    @DisplayName("instanceof checks (replacing isEventLinked())")
     class IsEventLinked {
 
         @Test
-        @DisplayName("should identify event-linked calendar item")
-        void shouldIdentifyEventLinkedCalendarItem() {
+        @DisplayName("should identify event-linked calendar item via instanceof")
+        void shouldIdentifyEventCalendarItem() {
             EventId eventId = EventId.of(UUID.randomUUID());
-            CalendarItem calendarItem = CalendarItem.reconstruct(
+            EventCalendarItem calendarItem = EventCalendarItem.reconstruct(
                     CalendarItemId.generate(),
                     "Event Item",
                     "From event",
@@ -777,9 +764,9 @@ class CalendarItemTest {
         }
 
         @Test
-        @DisplayName("should identify manual calendar item")
+        @DisplayName("should identify manual calendar item via instanceof")
         void shouldIdentifyManualCalendarItem() {
-            CalendarItem calendarItem = CalendarItem.create(builder()
+            ManualCalendarItem calendarItem = ManualCalendarItem.create(builder()
                     .name("Manual Item")
                     .description("Created manually")
                     .startDate(LocalDate.of(2026, 6, 15))

@@ -3,6 +3,7 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
+import com.klabis.calendar.domain.ManualCalendarItem;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
 import org.jmolecules.ddd.annotation.Service;
@@ -17,7 +18,7 @@ class CalendarManagementService implements CalendarManagementPort {
 
     private final CalendarRepository calendarRepository;
 
-    private static final int MAX_DATE_RANGE_DAYS = 366; // 1 year (including leap year)
+    private static final int MAX_DATE_RANGE_DAYS = 366;
 
     public CalendarManagementService(CalendarRepository calendarRepository) {
         this.calendarRepository = calendarRepository;
@@ -51,7 +52,7 @@ class CalendarManagementService implements CalendarManagementPort {
     @Transactional
     @Override
     public CalendarItem createCalendarItem(CalendarItem.CreateCalendarItem command) {
-        CalendarItem calendarItem = CalendarItem.create(command);
+        ManualCalendarItem calendarItem = ManualCalendarItem.create(command);
         return calendarRepository.save(calendarItem);
     }
 
@@ -61,9 +62,13 @@ class CalendarManagementService implements CalendarManagementPort {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
-        calendarItem.update(command);
+        if (!(calendarItem instanceof ManualCalendarItem manual)) {
+            throw new com.klabis.calendar.domain.CalendarItemReadOnlyException();
+        }
 
-        calendarRepository.save(calendarItem);
+        manual.update(command);
+
+        calendarRepository.save(manual);
     }
 
     @Transactional
@@ -76,5 +81,4 @@ class CalendarManagementService implements CalendarManagementPort {
 
         calendarRepository.delete(calendarItem);
     }
-
 }

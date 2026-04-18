@@ -45,7 +45,7 @@ An upcoming change will add a second event-linked variant: a calendar item that 
 
 ## Decisions
 
-### Decision 1: Abstract base `CalendarItem` with an intermediate `EventLinkedCalendarItem`
+### Decision 1: Abstract base `CalendarItem` with a single concrete `EventCalendarItem`
 
 ```mermaid
 classDiagram
@@ -66,27 +66,22 @@ classDiagram
         +assertCanBeDeleted() void
     }
 
-    class EventLinkedCalendarItem {
-        <<abstract>>
+    class EventCalendarItem {
         +EventId eventId
+        +createForEvent(CreateCalendarItemForEvent)$ EventCalendarItem
+        +synchronizeFromEvent(SynchronizeFromEvent) void
         +assertCanBeDeleted() void
     }
 
-    class EventDateCalendarItem {
-        +createForEvent(CreateCalendarItemForEvent)$ EventDateCalendarItem
-        +synchronizeFromEvent(SynchronizeFromEvent) void
-    }
-
     CalendarItem <|-- ManualCalendarItem
-    CalendarItem <|-- EventLinkedCalendarItem
-    EventLinkedCalendarItem <|-- EventDateCalendarItem
+    CalendarItem <|-- EventCalendarItem
 ```
 
 **Rationale:**
 
-- The intermediate `EventLinkedCalendarItem` lets the next change add `RegistrationDeadlineCalendarItem` as a sibling of `EventDateCalendarItem` without duplicating the `eventId` field, the `@Association`, or the read-only guard.
-- `CalendarItem` knows nothing about events — the event coupling lives only under `EventLinkedCalendarItem`. This respects the dependency rule: the more general concept depends on nothing event-specific.
-- `assertCanBeDeleted()` is abstract on the base: each subtype declares its own answer. `ManualCalendarItem` returns normally; `EventLinkedCalendarItem` throws `CalendarItemReadOnlyException`.
+- A single `EventCalendarItem` concrete class holds the `eventId` association, the read-only guard, and all event synchronization methods. A future change adding registration deadline items will use a `kind` discriminator field on `EventCalendarItem` itself (single class, multi-kind) rather than introducing another subtype — so the intermediate abstract class that was originally planned (`EventLinkedCalendarItem`) is not needed.
+- `CalendarItem` knows nothing about events — the event coupling lives only in `EventCalendarItem`. This respects the dependency rule: the more general concept depends on nothing event-specific.
+- `assertCanBeDeleted()` is abstract on the base: each subtype declares its own answer. `ManualCalendarItem` returns normally; `EventCalendarItem` throws `CalendarItemReadOnlyException`.
 
 **Alternatives considered:**
 
@@ -116,13 +111,13 @@ Before: `Optional<CalendarItem> findByEventId(EventId)`. After: `List<CalendarIt
 
 **Rationale:**
 
-- The upcoming change will introduce a second event-linked item per event. Even today, returning a list lets callers filter by concrete subtype (`instanceof EventDateCalendarItem`).
+- The upcoming change will introduce a second event-linked item per event. Even today, returning a list lets callers filter by concrete subtype (`instanceof EventCalendarItem`).
 - The repository contract no longer encodes an invariant ("at most one") that will soon be broken.
 
 **Alternatives considered:**
 
 - **Keep `Optional<CalendarItem>` and introduce `findByEventIdAndKind(EventId, CalendarItemKind)`.** Rejected: forces the application layer to know about the discriminator enum, which should stay in the persistence layer. `instanceof` against the domain type is more natural.
-- **Add `findByEventIdAndType(Class<? extends EventLinkedCalendarItem>)`.** Rejected: reflects a persistence concern through a class literal at the application boundary; `findByEventId` + `instanceof` is simpler and equivalent.
+- **Add `findByEventIdAndType(Class<? extends EventCalendarItem>)`.** Rejected: reflects a persistence concern through a class literal at the application boundary; `findByEventId` + `instanceof` is simpler and equivalent.
 
 ### Decision 4: `CalendarItemDto` stays flat, frontend stays kind-agnostic
 
@@ -166,7 +161,7 @@ Call sites that previously branched on `isEventLinked()` — in `CalendarControl
 
 - **Risk:** Spring Data JDBC's `RowMapper` and `JdbcAggregateTemplate` do not automatically handle polymorphic return types through `CalendarJdbcRepository`. The adapter must build the domain object manually from the memento. → Mitigation: this is already the pattern for every Klabis aggregate (memento → `reconstruct` factory in adapter). No deviation from convention.
 
-- **Risk:** Unit tests that construct `CalendarItem` through a helper (`CalendarItemTestDataBuilder`) must be rewritten. → Mitigation: builders are test-only; split the builder into `ManualCalendarItemTestDataBuilder` and `EventDateCalendarItemTestDataBuilder`, each delegating to the respective factory. Test scenarios remain identical.
+- **Risk:** Unit tests that construct `CalendarItem` through a helper (`CalendarItemTestDataBuilder`) must be rewritten. → Mitigation: builders are test-only; typed builder methods on a single builder class (`buildManual()` / `buildEventLinked()`) delegate to the respective factory. Test scenarios remain identical.
 
 - **Risk:** `CalendarItem.reconstruct(...)` is used by the adapter and takes all fields including `eventId`. After the refactor, the adapter must call a different `reconstruct` on each subtype. → Mitigation: each subtype exposes its own `reconstruct` factory with the fields it owns; the adapter's `switch(kind)` passes the right ones. The existing integration test `CalendarRepositoryAdapterTest` and `CalendarJdbcRepositoryTest` cover both round-trips.
 
@@ -181,11 +176,11 @@ Call sites that previously branched on `isEventLinked()` — in `CalendarControl
 Implementation order (within a single commit or a short commit chain):
 
 1. Introduce `CalendarItemKind` enum (persistence-internal) and add `kind` to `CalendarMemento`. Update `V001` schema.
-2. Make `CalendarItem` abstract: extract `ManualCalendarItem`, `EventLinkedCalendarItem`, `EventDateCalendarItem`. Move the appropriate factories and methods onto each subtype.
+2. Make `CalendarItem` abstract: extract `ManualCalendarItem` and `EventCalendarItem`. Move the appropriate factories and methods onto each subtype.
 3. Update `CalendarRepository.findByEventId` signature to return `List<CalendarItem>`.
 4. Rewrite `CalendarRepositoryAdapter` to perform polymorphic memento↔domain dispatch.
 5. Update `CalendarJdbcRepository` queries to select/store the `kind` column and to return lists where needed.
-6. Update `CalendarEventSyncService` to filter event-linked items to `EventDateCalendarItem` and use its synchronization method.
+6. Update `CalendarEventSyncService` to filter event-linked items to `EventCalendarItem` and use its synchronization method.
 7. Update `CalendarManagementService` to use `ManualCalendarItem` factories/methods.
 8. Update `CalendarController` affordance rendering from `isEventLinked()` to `instanceof ManualCalendarItem`.
 9. Update tests and test data builders.

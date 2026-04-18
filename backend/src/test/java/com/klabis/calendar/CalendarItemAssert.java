@@ -1,6 +1,8 @@
 package com.klabis.calendar;
 
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.EventCalendarItem;
+import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.events.EventId;
 import org.assertj.core.api.AbstractAssert;
@@ -78,15 +80,16 @@ public class CalendarItemAssert extends AbstractAssert<CalendarItemAssert, Calen
 
     public CalendarItemAssert hasEventId(EventId expected) {
         isNotNull();
+        EventId actualEventId = actual instanceof EventCalendarItem linked ? linked.getEventId() : null;
         if (expected == null) {
-            if (actual.getEventId() != null) {
-                failWithMessage("Expected event id to be null but was <%s>", actual.getEventId());
+            if (actualEventId != null) {
+                failWithMessage("Expected event id to be null but was <%s>", actualEventId);
             }
         } else {
-            if (actual.getEventId() == null) {
+            if (actualEventId == null) {
                 failWithMessage("Expected event id to be <%s> but was null", expected);
-            } else if (!actual.getEventId().equals(expected)) {
-                failWithMessage("Expected event id to be <%s> but was <%s>", expected, actual.getEventId());
+            } else if (!actualEventId.equals(expected)) {
+                failWithMessage("Expected event id to be <%s> but was <%s>", expected, actualEventId);
             }
         }
         return this;
@@ -94,16 +97,16 @@ public class CalendarItemAssert extends AbstractAssert<CalendarItemAssert, Calen
 
     public CalendarItemAssert isEventLinked() {
         isNotNull();
-        if (!actual.isEventLinked()) {
-            failWithMessage("Expected calendar item to be event-linked but eventId was null");
+        if (!(actual instanceof EventCalendarItem)) {
+            failWithMessage("Expected calendar item to be event-linked but was <%s>", actual.getClass().getSimpleName());
         }
         return this;
     }
 
     public CalendarItemAssert isManual() {
         isNotNull();
-        if (actual.isEventLinked()) {
-            failWithMessage("Expected calendar item to be manual but eventId was <%s>", actual.getEventId());
+        if (!(actual instanceof ManualCalendarItem)) {
+            failWithMessage("Expected calendar item to be manual (ManualCalendarItem) but was <%s>", actual.getClass().getSimpleName());
         }
         return this;
     }

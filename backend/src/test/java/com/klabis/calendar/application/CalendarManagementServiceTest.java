@@ -2,11 +2,7 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
-import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
-import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
-import com.klabis.calendar.domain.CalendarItemReadOnlyException;
-import com.klabis.calendar.domain.CalendarRepository;
+import com.klabis.calendar.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,13 +47,13 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            CalendarItem item1 = CalendarItemTestDataBuilder.aCalendarItem()
+            ManualCalendarItem item1 = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("March Training")
                     .withStartDate(LocalDate.of(2026, 3, 10))
                     .withEndDate(LocalDate.of(2026, 3, 10))
                     .buildManual();
 
-            CalendarItem item2 = CalendarItemTestDataBuilder.aCalendarItem()
+            ManualCalendarItem item2 = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("March Event")
                     .withStartDate(LocalDate.of(2026, 3, 20))
                     .withEndDate(LocalDate.of(2026, 3, 20))
@@ -89,7 +85,7 @@ class CalendarManagementServiceTest {
         @Test
         @DisplayName("should accept date range of exactly 366 days")
         void shouldAcceptDateRangeOfExactly366Days() {
-            LocalDate startDate = LocalDate.of(2024, 1, 1); // Leap year
+            LocalDate startDate = LocalDate.of(2024, 1, 1);
             LocalDate endDate = LocalDate.of(2024, 12, 31);
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
@@ -103,7 +99,7 @@ class CalendarManagementServiceTest {
         @DisplayName("should throw exception when date range exceeds 366 days")
         void shouldThrowExceptionWhenDateRangeExceeds366Days() {
             LocalDate startDate = LocalDate.of(2024, 1, 1);
-            LocalDate endDate = LocalDate.of(2025, 1, 2); // 367 days in leap year
+            LocalDate endDate = LocalDate.of(2025, 1, 2);
 
             assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -115,7 +111,7 @@ class CalendarManagementServiceTest {
         @DisplayName("should throw exception when date range exceeds 366 days in non-leap year")
         void shouldThrowExceptionWhenDateRangeExceeds366DaysInNonLeapYear() {
             LocalDate startDate = LocalDate.of(2025, 1, 1);
-            LocalDate endDate = LocalDate.of(2026, 1, 2); // 367 days
+            LocalDate endDate = LocalDate.of(2026, 1, 2);
 
             assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -131,7 +127,7 @@ class CalendarManagementServiceTest {
         @DisplayName("should return calendar item dto when item exists")
         void shouldReturnCalendarItemDtoWhenExists() {
             UUID calendarItemId = UUID.randomUUID();
-            CalendarItem calendarItem = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
+            ManualCalendarItem calendarItem = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
                     .withName("Test Event")
                     .withDescription("Test description")
                     .buildManual();
@@ -163,7 +159,7 @@ class CalendarManagementServiceTest {
     class CreateCalendarItemTests {
 
         @Test
-        @DisplayName("should create calendar item and return it")
+        @DisplayName("should create ManualCalendarItem and return it")
         void shouldCreateCalendarItemAndReturnIt() {
             CalendarItem.CreateCalendarItem command = CalendarItemCreateCalendarItemBuilder.builder()
                     .name("New Event")
@@ -172,16 +168,16 @@ class CalendarManagementServiceTest {
                     .endDate(LocalDate.of(2026, 3, 15))
                     .build();
 
-            CalendarItem savedItem = CalendarItemTestDataBuilder.aCalendarItem()
+            ManualCalendarItem savedItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("New Event")
                     .buildManual();
 
-            when(calendarRepository.save(any(CalendarItem.class))).thenReturn(savedItem);
+            when(calendarRepository.save(any(ManualCalendarItem.class))).thenReturn(savedItem);
 
             CalendarItem result = testedSubject.createCalendarItem(command);
 
             assertThat(result).isEqualTo(savedItem);
-            verify(calendarRepository).save(any(CalendarItem.class));
+            verify(calendarRepository).save(any(ManualCalendarItem.class));
         }
     }
 
@@ -190,10 +186,10 @@ class CalendarManagementServiceTest {
     class UpdateCalendarItemTests {
 
         @Test
-        @DisplayName("should update manual calendar item")
+        @DisplayName("should update ManualCalendarItem")
         void shouldUpdateManualCalendarItem() {
             UUID calendarItemId = UUID.randomUUID();
-            CalendarItem existingItem = CalendarItemTestDataBuilder.aCalendarItem()
+            ManualCalendarItem existingItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("Old Name")
                     .buildManual();
 
@@ -205,7 +201,7 @@ class CalendarManagementServiceTest {
                     .build();
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(existingItem));
-            when(calendarRepository.save(any(CalendarItem.class))).thenReturn(existingItem);
+            when(calendarRepository.save(any(ManualCalendarItem.class))).thenReturn(existingItem);
 
             testedSubject.updateCalendarItem(new CalendarItemId(calendarItemId), command);
 
@@ -219,9 +215,9 @@ class CalendarManagementServiceTest {
         void shouldThrowExceptionWhenUpdatingEventLinkedItem() {
             UUID calendarItemId = UUID.randomUUID();
             UUID eventId = UUID.randomUUID();
-            CalendarItem eventLinkedItem = CalendarItemTestDataBuilder.aCalendarItem()
+            EventCalendarItem eventLinkedItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withEventId(eventId)
-                    .build();
+                    .buildEventLinked(eventId);
 
             CalendarItem.UpdateCalendarItem command = CalendarItemUpdateCalendarItemBuilder.builder()
                     .name("Updated Name")
@@ -259,10 +255,10 @@ class CalendarManagementServiceTest {
     class DeleteCalendarItemTests {
 
         @Test
-        @DisplayName("should delete manual calendar item")
+        @DisplayName("should delete ManualCalendarItem")
         void shouldDeleteManualCalendarItem() {
             UUID calendarItemId = UUID.randomUUID();
-            CalendarItem manualItem = CalendarItemTestDataBuilder.aCalendarItem()
+            ManualCalendarItem manualItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("To Delete")
                     .buildManual();
 
@@ -278,9 +274,9 @@ class CalendarManagementServiceTest {
         void shouldThrowExceptionWhenDeletingEventLinkedItem() {
             UUID calendarItemId = UUID.randomUUID();
             UUID eventId = UUID.randomUUID();
-            CalendarItem eventLinkedItem = CalendarItemTestDataBuilder.aCalendarItem()
+            EventCalendarItem eventLinkedItem = CalendarItemTestDataBuilder.aCalendarItem()
                     .withEventId(eventId)
-                    .build();
+                    .buildEventLinked(eventId);
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(eventLinkedItem));
 

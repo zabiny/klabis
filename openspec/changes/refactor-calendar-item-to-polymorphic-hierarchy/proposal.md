@@ -14,17 +14,16 @@ This change is a pure refactor: no user-visible behavior changes, no API changes
 
 - **BREAKING (internal only)**: `CalendarItem` becomes an abstract base class. Direct instantiation is no longer possible; callers must use subtype factories. This affects only in-repo code (domain, application, infrastructure, tests) — no public API.
 - Introduce `ManualCalendarItem` subtype — carries `update()` and `assertCanBeDeleted()` (returns normally).
-- Introduce `EventLinkedCalendarItem` intermediate abstract subtype — holds `eventId` association and enforces read-only by throwing `CalendarItemReadOnlyException` from `assertCanBeDeleted()`.
-- Introduce `EventDateCalendarItem` concrete subtype under `EventLinkedCalendarItem` — carries `createForEvent()` and `synchronizeFromEvent()`.
+- Introduce `EventCalendarItem` concrete subtype — holds `eventId` association, enforces read-only by throwing `CalendarItemReadOnlyException` from `assertCanBeDeleted()`, carries `createForEvent()` and `synchronizeFromEvent()`.
 - Introduce `CalendarItemKind` enum (`MANUAL`, `EVENT_DATE`) used only as persistence discriminator; the enum is internal to the persistence layer and MAY be referenced by application code when needed.
 - `CalendarMemento` gains a `kind` field (NOT NULL, default `EVENT_DATE`) — single-table inheritance mapping. `V001` schema script updated in place.
 - `CalendarRepositoryAdapter` performs polymorphic dispatch: memento→domain switches on `kind`, domain→memento pattern-matches on concrete subtype.
 - `CalendarRepository.findByEventId(EventId)` return type changes from `Optional<CalendarItem>` to `List<CalendarItem>` — preparation for multiple event-linked items per event (a future change will add deadline items; today the list contains 0..1).
-- `CalendarEventSyncService` works against `EventDateCalendarItem` directly; filters by `instanceof EventDateCalendarItem` after `findByEventId`.
+- `CalendarEventSyncService` works against `EventCalendarItem` directly; filters by `instanceof EventCalendarItem` after `findByEventId`.
 - `CalendarManagementService` works against `ManualCalendarItem` directly.
 - `CalendarController` replaces `isEventLinked()` branching with `instanceof ManualCalendarItem` for affordance rendering.
 - `CalendarItemDto` remains unchanged (flat, no new `kind` field).
-- `CalendarItemReadOnlyException` semantics unchanged; throw site moves from `CalendarItem` into `EventLinkedCalendarItem.assertCanBeDeleted()` and equivalent guards.
+- `CalendarItemReadOnlyException` semantics unchanged; throw site moves from `CalendarItem` into `EventCalendarItem.assertCanBeDeleted()`.
 
 ## Capabilities
 
@@ -45,7 +44,7 @@ None.
 - `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarMemento.java` — add `kind` field
 - `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarRepositoryAdapter.java` — polymorphic dispatch
 - `backend/src/main/java/com/klabis/calendar/infrastructure/jdbc/CalendarJdbcRepository.java` — adjust queries (list return, `kind` column)
-- `backend/src/main/java/com/klabis/calendar/application/CalendarEventSyncService.java` — work with `EventDateCalendarItem`
+- `backend/src/main/java/com/klabis/calendar/application/CalendarEventSyncService.java` — work with `EventCalendarItem`
 - `backend/src/main/java/com/klabis/calendar/application/CalendarManagementService.java` — work with `ManualCalendarItem`
 - `backend/src/main/java/com/klabis/calendar/infrastructure/restapi/CalendarController.java` — replace `isEventLinked()` branching
 - `backend/src/main/resources/db/migration/V001*.sql` — add `kind` column (update in place, not a new migration)
