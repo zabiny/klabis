@@ -13,6 +13,8 @@ import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.application.MemberAlreadyInFamilyGroupException;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,6 +56,12 @@ class FamilyGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FamilyGroupRepository familyGroupRepository;
+
+    @MockitoBean
+    private TrainingGroupRepository trainingGroupRepository;
 
     private FamilyGroup buildFamilyGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));

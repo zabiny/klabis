@@ -6,8 +6,8 @@ import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.members.MemberId;
 import com.klabis.groups.freegroup.infrastructure.restapi.FreeGroupController;
+import com.klabis.members.infrastructure.restapi.MemberController;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 
 import java.util.UUID;
 
@@ -38,7 +38,12 @@ class InvitationModelBuilder {
                 groupId, groupName, invitation.getId(), invitedByUuid);
 
         EntityModel<PendingInvitationResponse> model = EntityModel.of(response);
-        model.add(Link.of("/api/members/" + invitedMemberUuid, "invitedMember"));
+        klabisLinkTo(methodOn(MemberController.class).getMember(invitedMemberUuid, null))
+                .map(link -> link.withRel("invitedMember"))
+                .ifPresent(model::add);
+        // TODO: "accept" and "reject" rels point to POST endpoints and should be pure affordances
+        //   per backend-patterns skill. Kept as links because the frontend (GroupsPage.tsx) reads
+        //   _links.accept / _links.reject directly to render action buttons.
         klabisLinkTo(methodOn(FreeGroupController.class)
                 .acceptInvitation(groupUuid, invitationUuid, null))
                 .ifPresent(link -> model.add(link.withRel("accept")

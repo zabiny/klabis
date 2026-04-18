@@ -11,6 +11,8 @@ import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
@@ -57,6 +59,12 @@ class TrainingGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FamilyGroupRepository familyGroupRepository;
+
+    @MockitoBean
+    private TrainingGroupRepository trainingGroupRepository;
 
     private TrainingGroup buildTrainingGroup(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr) {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));

@@ -11,6 +11,8 @@ import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -64,6 +66,12 @@ class FreeGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FamilyGroupRepository familyGroupRepository;
+
+    @MockitoBean
+    private TrainingGroupRepository trainingGroupRepository;
 
     private FreeGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));

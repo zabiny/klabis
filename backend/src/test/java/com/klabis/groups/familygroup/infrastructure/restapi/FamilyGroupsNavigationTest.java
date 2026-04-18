@@ -9,6 +9,8 @@ import com.klabis.common.users.UserService;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,12 @@ class FamilyGroupsNavigationTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FamilyGroupRepository familyGroupRepository;
+
+    @MockitoBean
+    private TrainingGroupRepository trainingGroupRepository;
 
     @Test
     @DisplayName("should include family-groups collection link for MEMBERS:MANAGE users")
