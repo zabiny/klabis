@@ -3,6 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -59,13 +60,13 @@ public class MemberController {
 
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
-    private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
+    private final PagedResourcesAssembler<Member> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
-            PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
+            PagedResourcesAssembler<Member> pagedResourcesAssembler,
             MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
@@ -198,37 +199,13 @@ public class MemberController {
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
-                memberPage.map(memberMapper::toSummaryResponse),
-                response -> buildSummaryModel(response)
+                memberPage,
+                member -> entityModelWithDomain(memberMapper.toSummaryResponse(member), member)
         );
 
         pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable).orElse(oldLink));
 
         return ResponseEntity.ok(pagedModel);
-    }
-
-    private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response) {
-        UUID memberId = response.id().uuid();
-        EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
-
-        buildMemberSelfLink(memberId, Boolean.TRUE.equals(response.active())).ifPresent(model::add);
-
-        return model;
-    }
-
-    private java.util.Optional<Link> buildMemberSelfLink(UUID memberId, boolean isActive) {
-        return klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(selfLinkBuilder -> {
-            var selfLink = selfLinkBuilder.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
-            if (isActive) {
-                selfLink = selfLink.andAffordances(
-                        klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
-            } else {
-                selfLink = selfLink.andAffordances(
-                        klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
-            }
-            return (Link) selfLink;
-        });
     }
 
     private java.util.Optional<Link> buildCollectionSelfLink(Pageable pageable) {
@@ -270,17 +247,52 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        EntityModel<MemberDetailsResponse> entityModel = entityModelWithDomain(memberMapper.toDetailsResponse(member), member);
-
-        buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
-
-        klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10), null
-        )).ifPresent(link -> entityModel.add(link.withRel("collection")));
-
-        return ResponseEntity.ok(entityModel);
+        return ResponseEntity.ok(entityModelWithDomain(memberMapper.toDetailsResponse(member), member));
     }
 
+}
+
+@MvcComponent
+class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
+
+    @Override
+    public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
+        UUID memberId = member.getId().uuid();
+
+        klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
+            var self = link.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
+            if (member.isActive()) {
+                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
+            } else {
+                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
+            }
+            return (Link) self;
+        }).ifPresent(dtoModel::add);
+
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+    }
+}
+
+@MvcComponent
+class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSummaryResponse, Member> {
+
+    @Override
+    public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
+        UUID memberId = member.getId().uuid();
+
+        klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
+            var self = link.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
+            if (member.isActive()) {
+                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
+            } else {
+                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
+            }
+            return (Link) self;
+        }).ifPresent(dtoModel::add);
+    }
 }
 
 @MvcComponent
