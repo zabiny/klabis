@@ -1,17 +1,15 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
-import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
-import com.klabis.members.ActingUser;
-import com.klabis.members.CurrentUserData;
+import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,9 +23,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -75,12 +71,9 @@ class EventRegistrationController {
     public ResponseEntity<Void> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Registration data") @Valid @RequestBody Event.RegisterCommand command,
-            @ActingUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
-        if (currentUser.memberId() == null) {
-            throw new MemberProfileRequiredException();
-        }
-        registrationService.registerMember(new EventId(eventId), currentUser.memberId(), command);
+        registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
                 linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri()
@@ -98,12 +91,9 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "204", description = "Successfully unregistered")
     public ResponseEntity<Void> unregisterFromEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @ActingUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
-        if (currentUser.memberId() == null) {
-            throw new MemberProfileRequiredException();
-        }
-        registrationService.unregisterMember(new EventId(eventId), currentUser.memberId());
+        registrationService.unregisterMember(new EventId(eventId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
@@ -140,11 +130,11 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "200", description = "Own registration retrieved successfully")
     public ResponseEntity<EntityModel<OwnRegistrationDto>> getOwnRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @ActingUser CurrentUserData currentUser) {
+            @ActingMember MemberId actingMember) {
 
         Event event = eventManagementService.getEvent(new EventId(eventId), true);
-        EventRegistration registration = event.findRegistration(currentUser.memberId())
-                .orElseThrow(() -> new RegistrationNotFoundException(currentUser.memberId(), new EventId(eventId)));
+        EventRegistration registration = event.findRegistration(actingMember)
+                .orElseThrow(() -> new RegistrationNotFoundException(actingMember, new EventId(eventId)));
 
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(toOwnRegistrationDto(registration));
         addLinksForOwnRegistration(entityModel, eventId, event);
@@ -169,8 +159,4 @@ class EventRegistrationController {
         return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.category(), registration.registeredAt());
     }
 
-    @ExceptionHandler(DuplicateRegistrationException.class)
-    public ErrorResponse handleBusinessRuleViolationException(DuplicateRegistrationException ex) {
-        return ErrorResponse.builder(ex, HttpStatus.CONFLICT, "").title("Registration Conflict").build();
-    }
 }

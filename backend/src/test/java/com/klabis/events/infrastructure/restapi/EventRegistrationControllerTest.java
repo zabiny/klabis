@@ -11,6 +11,8 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.*;
+import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
+import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -42,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Event Registration Controller API Tests")
-@WebMvcTest(controllers = {EventRegistrationController.class})
+@WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, SecurityConfiguration.class})
 class EventRegistrationControllerTest {
 
@@ -71,6 +73,12 @@ class EventRegistrationControllerTest {
 
     @MockitoBean
     private Members membersMock;
+
+    @MockitoBean
+    private FamilyGroupRepository familyGroupRepository;
+
+    @MockitoBean
+    private TrainingGroupRepository trainingGroupRepository;
 
     static EntityLinks entityLinksMock() {
         return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);
