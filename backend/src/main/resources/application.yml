@@ -145,6 +145,10 @@ klabis:
       requests: 3
       duration-seconds: 3600
 
+oris:
+  client:
+    enabled: false
+
 jasypt:
   encryptor:
     password: ${KLABIS_JASYPT_PASSWORD}

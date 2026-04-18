@@ -1,2 +1,4 @@
-oris-integration:
-  enabled: true
+oris:
+  client:
+    enabled: true
+    my-club-id: 205
