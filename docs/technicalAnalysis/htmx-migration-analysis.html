@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Analýza migrace Klabis frontendu na HTMX</title>
+<style>
+  :root {
+    --fg: #1f2328;
+    --muted: #59636e;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --accent: #0969da;
+    --border: #d0d7de;
+    --green: #1a7f37;
+    --orange: #bc4c00;
+    --red: #cf222e;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  h1 { font-size: 2rem; border-bottom: 2px solid var(--border); padding-bottom: .4rem; }
+  h2 { font-size: 1.5rem; margin-top: 2.4rem; border-bottom: 1px solid var(--border); padding-bottom: .3rem; }
+  h3 { font-size: 1.15rem; margin-top: 1.6rem; color: var(--accent); }
+  h4 { font-size: 1rem; margin-top: 1.2rem; }
+  code {
+    background: var(--bg-alt);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+  pre {
+    background: var(--bg-alt);
+    padding: .9rem 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    border: 1px solid var(--border);
+  }
+  pre code { background: transparent; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: .93em;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: .55rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--bg-alt); font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .badge {
+    display: inline-block;
+    padding: .1rem .55rem;
+    border-radius: 10px;
+    font-size: .78em;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .b-green  { background: #dafbe1; color: var(--green); }
+  .b-orange { background: #ffe2c6; color: var(--orange); }
+  .b-red    { background: #ffebe9; color: var(--red); }
+  .b-blue   { background: #ddf4ff; color: var(--accent); }
+  .callout {
+    border-left: 4px solid var(--accent);
+    background: #ddf4ff55;
+    padding: .75rem 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+  .callout.warn { border-color: var(--orange); background: #fff4e6; }
+  .callout.danger { border-color: var(--red); background: #ffebe9; }
+  .callout.ok { border-color: var(--green); background: #dafbe188; }
+  ul li, ol li { margin: .25rem 0; }
+  .toc { background: var(--bg-alt); padding: 1rem 1.4rem; border-radius: 6px; }
+  .toc ol { margin: .3rem 0; }
+  .meta { color: var(--muted); font-size: .9em; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Analýza migrace Klabis frontendu z React na HTMX</h1>
+<p class="meta">Datum: 2026-04-19 · Autor: analýza Claude Code · Projekt: <code>klabis</code></p>
+
+<div class="callout">
+<strong>TL;DR.</strong> HTMX je technicky reálná alternativa k současnému React SPA: ve Spring Boot existuje oficiálně udržovaná knihovna <code>htmx-spring-boot</code> (wimdeblauwe) poskytující <code>@HxRequest</code>, <code>HtmxResponse</code>, <code>HxTrigger</code>, OOB swapy a fragment rendering přes Thymeleaf. Naše API <strong>zůstává zachováno</strong> (HAL+FORMS je výborný kontrakt pro 3rd party). Migrace ale není „přelepení šablon“ — klíčové překážky jsou OAuth2 authorization-code flow s PKCE (access token v cookie místo sessionStorage), HAL+FORMS → Thymeleaf template přepis, formulářová UX (Formik + Yup → server-side validace + HTML5), klientské interakce (admin mód, theme toggle, modal state). Doporučený postup: zavést paralelní Thymeleaf/HTMX modul vedle React SPA, migrovat po stránkách a sdílet layout přes <code>hx-boost</code>.
+</div>
+
+<div class="toc">
+<strong>Obsah</strong>
+<ol>
+  <li><a href="#context">Kontext a cíle</a></li>
+  <li><a href="#htmx-spring">Podpora HTMX ve Spring Boot</a></li>
+  <li><a href="#current-stack">Přehled vlastností současného frontendu</a></li>
+  <li><a href="#feature-map">Mapa vlastností → HTMX ekvivalent</a></li>
+  <li><a href="#arch">Cílová architektura (dual-UI)</a></li>
+  <li><a href="#oauth2">OAuth2/OIDC migrace (nejtvrdší oříšek)</a></li>
+  <li><a href="#hal-forms">HAL+FORMS vs. server-rendered UI</a></li>
+  <li><a href="#paths">Možné migrační cesty</a></li>
+  <li><a href="#risks">Rizika a kompromisy</a></li>
+  <li><a href="#recommendation">Doporučení</a></li>
+</ol>
+</div>
+
+<h2 id="context">1. Kontext a cíle</h2>
+<ul>
+  <li><strong>Současný stav:</strong> Spring Boot 4.0.5 backend s HAL+FORMS API + samostatný React 19 SPA (Vite, TanStack Query, Formik, Tailwind, oidc-client-ts).</li>
+  <li><strong>Motivace pro HTMX:</strong> snížení komplexity frontendu, eliminace duplicity typů (OpenAPI generator), rychlejší vývoj funkcionalit, méně klientského stavu, odstranění buildu a dev serveru.</li>
+  <li><strong>Podmínka:</strong> HAL+FORMS API se <strong>zachovává</strong> pro 3rd party integrace (ORIS, externí klienti).</li>
+</ul>
+
+<h2 id="htmx-spring">2. Podpora HTMX ve Spring Boot</h2>
+
+<h3>2.1 Oficiální knihovna <code>htmx-spring-boot</code> (Wim Deblauwe)</h3>
+<p>Aktivně udržovaná knihovna (GitHub: <code>wimdeblauwe/htmx-spring-boot</code>) poskytuje first-class integraci HTMX s Spring MVC + Thymeleaf.</p>
+
+<table>
+<thead><tr><th>Feature</th><th>Popis</th></tr></thead>
+<tbody>
+<tr><td><code>@HxRequest</code></td><td>Anotace pro mapování, která se aplikuje pouze na HTMX requesty (<code>HX-Request: true</code>). Umožňuje mít na stejné URL dvě metody — jednu pro plný render, druhou pro HTMX fragment.</td></tr>
+<tr><td><code>HtmxRequest</code> / <code>HtmxResponse</code></td><td>Argument-resolver objekty pro čtení HTMX hlaviček (target, trigger, current-url) a pro nastavení response hlaviček (HX-Trigger, HX-Retarget, HX-Reswap, HX-Push-Url, HX-Redirect, HX-Refresh, HX-Location).</td></tr>
+<tr><td>Metodové anotace</td><td><code>@HxTrigger</code>, <code>@HxPushUrl</code>, <code>@HxRedirect</code>, <code>@HxRefresh</code>, <code>@HxReselect</code>, <code>@HxReswap</code>, <code>@HxRetarget</code>, <code>@HxLocation</code> — deklarativní nastavení response hlaviček bez injektování <code>HtmxResponse</code>.</td></tr>
+<tr><td>View prefixy</td><td><code>redirect:htmx:/path</code>, <code>redirect:htmx:location:/path</code>, <code>refresh:htmx</code> — klientský redirect místo serverového.</td></tr>
+<tr><td>OOB swapy</td><td><code>FragmentsRendering.with("users :: list").fragment("users :: count").build()</code> — jeden request vrátí více fragmentů, každý swapnutý do svého targetu (skvělé pro aktualizaci počítadla + seznamu současně).</td></tr>
+<tr><td>Exception handlery</td><td><code>@ExceptionHandler</code> může přijmout <code>HtmxRequest</code>/<code>HtmxResponse</code> a rozhodnout, jestli chybu swapnout do <code>#error-message</code> nebo redirectnout.</td></tr>
+</tbody>
+</table>
+
+<h3>2.2 Ostatní stavební bloky</h3>
+<ul>
+  <li><strong>Thymeleaf</strong> jako template engine (nativní podpora fragmentů přes <code>th:fragment</code> a <code>th:replace</code>), alternativně <strong>JTE</strong> nebo <strong>Mustache</strong>.</li>
+  <li><strong>Spring Security</strong> — formulářové login + session cookie (HttpOnly, Secure, SameSite=Lax) nahrazuje OAuth2 bearer tokeny pro UI.</li>
+  <li><strong>CSRF</strong> — obnoven, formulářový token vkládán do layoutu přes <code>&lt;meta name="_csrf"&gt;</code>, HTMX ho pošle přes <code>hx-headers</code>.</li>
+  <li><strong>Live reload</strong> — Spring Boot DevTools + Thymeleaf <code>spring.thymeleaf.cache=false</code>; žádný Vite není potřeba.</li>
+  <li><strong>Hypermedia rozšíření:</strong> knihovny jako <code>Alpine.js</code> (10kB) nebo <code>_hyperscript</code> pokryjí klientské interakce (dropdown, theme toggle) bez React.</li>
+</ul>
+
+<h2 id="current-stack">3. Přehled vlastností současného frontendu</h2>
+
+<p>Inventura toho, co aktuálně SPA dělá. Seznam vychází z <code>frontend/src/App.tsx</code>, <code>HalNavigator2</code>, <code>KlabisTable</code>, <code>UI</code> a pages.</p>
+
+<h3>3.1 Stránky (routes)</h3>
+<ol>
+  <li><strong>Dashboard</strong> (<code>HomePage</code>) — role-based (<code>AdminDashboard</code> vs <code>UserDashboard</code>).</li>
+  <li><strong>Login</strong> (<code>LoginPage</code>) — vlastní formulář, posílá na <code>/login</code> Spring AS.</li>
+  <li><strong>Password setup / expired</strong> (2 stránky).</li>
+  <li><strong>Members</strong> — list, detail, registrace, finance účet, field-level edit (PatchField).</li>
+  <li><strong>Events</strong> — list, detail, category presets.</li>
+  <li><strong>Groups / Training Groups / Family Groups</strong> — list + detail, přidání členů/vlastníků/rodičů.</li>
+  <li><strong>Calendar</strong> — list kalendářních položek.</li>
+  <li><strong>Finances</strong>.</li>
+  <li><strong>GenericHalPage</strong> — catch-all navigator pro admin mode a neimplementované routes.</li>
+</ol>
+
+<h3>3.2 Sdílené komponenty</h3>
+<ul>
+  <li><strong>Layout</strong> — sidebar menu řízený HAL linky z root resourcu (<code>useRootNavigation</code>), theme toggle, admin toggle, logout.</li>
+  <li><strong>KlabisTable + KlabisTableWithQuery</strong> — tabulka/karty s HAL embedded daty, řazení, pagination, card-view na mobilu.</li>
+  <li><strong>HalNavigator2</strong>:
+    <ul>
+      <li><code>HalFormButton</code> — tlačítko spouštějící formulář (modal nebo inline dle URL).</li>
+      <li><code>HalFormDisplay</code> — render HAL+FORMS template, customLayout pro inline editing.</li>
+      <li><code>HalFormsForm</code> / <code>HalFormsFieldFactory</code> — generují form fields z HAL+FORMS <code>properties</code>.</li>
+      <li><code>HalFormsPageLayout</code> — orchestruje modal vs. URL-based form state.</li>
+      <li><code>MultiStepFormModal</code> — wizardy (např. registrace člena).</li>
+      <li><code>HalEmbeddedTable</code>, <code>HalLinksSection</code>, <code>HalFormsSection</code>.</li>
+    </ul>
+  </li>
+  <li><strong>UI/</strong> — <code>Button</code>, <code>Modal</code>, <code>Alert</code>, <code>Badge</code>, <code>Toast</code>, <code>Skeleton</code>, <code>Spinner</code>, <code>DetailRow</code>, <code>Card</code>, <code>ErrorDisplay</code>, <code>TokenRenewalOverlay</code>.</li>
+  <li><strong>Formuláře</strong> — Formik + Yup, klientská validace, <code>BirthNumberConditionalField</code>, <code>SuspensionWarningDialog</code>.</li>
+</ul>
+
+<h3>3.3 Klientské chování</h3>
+<ul>
+  <li>OAuth2 Authorization Code + PKCE, access token v sessionStorage, silent renew přes refresh token.</li>
+  <li>TanStack Query cache + refetch on mutation.</li>
+  <li>React Router — client-side navigace, URL parametry pro inline formy (<code>?form=xyz</code>).</li>
+  <li>Admin mode toggle (Context API) — přepíná route handling.</li>
+  <li>Theme (light/dark) toggle (Tailwind).</li>
+  <li>Client-side validace (Yup schémata).</li>
+  <li>React localization (<code>labels.ts</code>).</li>
+  <li>Error boundary → <code>ErrorFallback</code>.</li>
+</ul>
+
+<h2 id="feature-map">4. Mapa vlastností → HTMX ekvivalent</h2>
+
+<p>Každý řádek ukazuje, jak konkrétní SPA pattern migrovat.</p>
+
+<table>
+<thead>
+<tr>
+  <th>Feature (React/SPA)</th>
+  <th>HTMX řešení</th>
+  <th>Náročnost</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td><strong>Client-side routing</strong> (React Router)</td>
+  <td><code>hx-boost="true"</code> na <code>&lt;body&gt;</code> — všechny <code>&lt;a&gt;</code>/<code>&lt;form&gt;</code> se mění na HTMX requesty, které swapnou <code>&lt;body&gt;</code> bez full reload. URL se aktualizuje přes <code>hx-push-url</code>. Back/forward button funguje nativně.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Layout + shared nav</strong> (<code>Layout.tsx</code>)</td>
+  <td>Thymeleaf layout fragment (<code>layout/main.html</code>) + <code>th:replace="~{::content}"</code>. Menu generováno serverově z HAL root resource (stejná logika jako dnes, jen na backendu).</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>KlabisTable</strong> (list + pagination + sort)</td>
+  <td>Thymeleaf fragment <code>table :: rows</code> + server-side pagination. Sort/filter tlačítka posílají <code>hx-get="/members?sort=lastName"</code>, <code>hx-target="#members-table"</code>. Pagination přes stránky se swapem <code>innerHTML</code>.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Card-view na mobilu</strong></td>
+  <td>CSS media queries + dvě Thymeleaf fragments (table, cards) rendered současně, zobrazené responzivně. Žádná JS logika.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>HalFormDisplay</strong> (generický render HAL+FORMS template)</td>
+  <td>Neekvivalent 1:1. HTMX pracuje se server-rendered HTML formuláři — HAL+FORMS templaty se přepíšou na Thymeleaf šablony (nebo se vytvoří server-side generátor, který z HAL+FORMS properties vyrobí HTML form). Jednodušší varianta: pro UI se HAL+FORMS nepoužívá, jen pro 3rd party API.</td>
+  <td><span class="badge b-red">Vysoká</span></td>
+</tr>
+
+<tr>
+  <td><strong>HalFormButton</strong> (otevření modal formuláře)</td>
+  <td><code>&lt;button hx-get="/members/new" hx-target="#modal" hx-swap="innerHTML"&gt;</code> + modal div na konci layoutu. Zavření modalu přes <code>HX-Trigger: closeModal</code>, který chytne Alpine.js / hyperscript.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+<tr>
+  <td><strong>MultiStepFormModal</strong> (wizardy)</td>
+  <td>Každý krok = vlastní endpoint, který vrací HTML fragment s formem pro další krok. Stav se drží v HTTP session (nebo v hidden fields). HTMX swapne celý wizard div.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+<tr>
+  <td><strong>Inline editing</strong> (<code>enrichTemplateWithReadOnlyFields</code> + <code>HalFormDisplay</code>)</td>
+  <td>Read-only view má tlačítko „Upravit“ → <code>hx-get</code> swapne řádek za editační form → submit swapne zpět read-only. Klasický HTMX vzor (<code>click-to-edit</code> example).</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Formik + Yup</strong> (klient. validace)</td>
+  <td>Server-side validace přes <code>@Valid</code> + Bean Validation. Inline chyby vrácené přes fragment: <code>return "user/form";</code> při <code>bindingResult.hasErrors()</code>. HTML5 constraints (<code>required</code>, <code>pattern</code>, <code>type="email"</code>) pro instant feedback. Volitelně <code>hx-trigger="blur changed delay:300ms"</code> pro validaci per-field.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+<tr>
+  <td><strong>Conditional field</strong> (<code>BirthNumberConditionalField</code>)</td>
+  <td><code>hx-get="/members/new/fragment/birth-number" hx-trigger="change from:#country" hx-target="#birth-number-wrapper"</code> — server rozhodne, co renderovat.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>TanStack Query cache + invalidation</strong></td>
+  <td>Odpadá. Mutace vrátí <code>HX-Trigger: members-updated</code>, cílový fragment poslouchá: <code>hx-get="/members" hx-trigger="members-updated from:body"</code>. Nebo jednodušeji: OOB swap vrátí aktualizovaný seznam přímo v response mutace.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Toast notifications</strong></td>
+  <td>Server pošle <code>HX-Trigger: {"toast": {"message": "Uloženo", "level": "success"}}</code>. Global JS listener (Alpine/hyperscript) přidá toast do DOM. Nebo OOB swap do <code>#toasts</code>.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Admin mode toggle</strong> (Context API)</td>
+  <td>Cookie/session atribut. Toggle volá <code>hx-post="/user/preferences/admin-mode"</code>, backend přehodí flag a pošle <code>HX-Refresh: true</code>. Route handling už je na serveru.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Theme toggle (dark/light)</strong></td>
+  <td>Čistě klient: malý Alpine.js (~10kB) nebo vanilla JS snippet, který toggluje <code>class="dark"</code> na <code>&lt;html&gt;</code> + persistuje do localStorage. Tailwind dark mode funguje beze změny.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Error boundary</strong> (<code>ErrorFallback</code>)</td>
+  <td><code>@ExceptionHandler</code> vrátí <code>error</code> template. Pro HTMX requesty <code>HxResponse.setRetarget("#error-zone")</code>. Pro plné requesty whitelabel stránka.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Loading indicators</strong> (Skeleton, Spinner)</td>
+  <td>HTMX má <code>htmx-indicator</code> class a <code>hx-indicator=".spinner"</code>. Spinner se zobrazí jen během requestu.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Modal overlay</strong> (generický)</td>
+  <td>Thymeleaf fragment <code>modal.html</code> swapovaný do <code>#modal</code> na <code>&lt;body&gt;</code>. Zavírání: <code>hx-on::click="if (event.target === this) htmx.ajax('GET', '/empty', '#modal')"</code> nebo hyperscript <code>_="on closeModal remove me"</code>.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+<tr>
+  <td><strong>Calendar page</strong></td>
+  <td>Server renderuje mřížku, navigace (prev/next month) přes <code>hx-get="/calendar?month=..."</code>. Pro drag-and-drop události bude potřeba klientská knihovna (FullCalendar JS) — HTMX není pro tohle ideální.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+<tr>
+  <td><strong>OAuth2/OIDC (oidc-client-ts)</strong></td>
+  <td><strong>Hlavní architektonická změna.</strong> UI přestane volat API bearer tokenem a stane se resource server sám o sobě (session cookie). Viz <a href="#oauth2">sekce 6</a>.</td>
+  <td><span class="badge b-red">Vysoká</span></td>
+</tr>
+
+<tr>
+  <td><strong>GenericHalPage</strong> (catch-all navigator)</td>
+  <td>Buď odpadá (každá stránka má vlastní server-rendered template), nebo se nahradí minimalistickým HTML navigatorem pro admin debug mode.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Localization</strong> (<code>labels.ts</code>)</td>
+  <td>Přesun do Spring <code>messages.properties</code> + Thymeleaf <code>#{member.firstName}</code>. Jazyk už je jen čeština, takže migrace je přímočará.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Infinite scroll / lazy load</strong> (pokud bude potřeba)</td>
+  <td>Nativní HTMX pattern: poslední řádek má <code>hx-get="...?page=N+1" hx-trigger="revealed" hx-swap="afterend"</code>.</td>
+  <td><span class="badge b-green">Nízká</span></td>
+</tr>
+
+<tr>
+  <td><strong>Tests</strong> (Vitest + Testing Library)</td>
+  <td>Spring MockMvc + <code>@WebMvcTest</code> + HtmlUnit / Selenide / Playwright pro E2E. Žádné JS unit testy (minimum klient. logiky). Backendové testy se rozšíří o rendering.</td>
+  <td><span class="badge b-orange">Střední</span></td>
+</tr>
+
+</tbody>
+</table>
+
+<h2 id="arch">5. Cílová architektura (dual-UI)</h2>
+
+<p>Doporučená cílová architektura ponechává API pro 3rd party a přidává HTMX UI jako <em>druhý primary adapter</em>:</p>
+
+<pre><code>backend/
+├── *.api/                  ← současný HAL+FORMS REST (zachováno pro 3rd party)
+│   └── /api/v1/members     ← JSON, bearer token auth
+│
+├── *.web/                  ← NOVÝ Thymeleaf + HTMX UI
+│   ├── /members            ← HTML, session cookie auth
+│   ├── /members/{id}/edit  ← HTMX fragmenty
+│   └── templates/
+│       ├── layout/main.html
+│       ├── members/list.html
+│       └── members/detail.html
+│
+└── common/security/
+    ├── oauth2-resource-server   ← pro /api/**
+    └── form-login + session     ← pro /**
+</code></pre>
+
+<p>Obě UI sdílí doménové příkazy (<code>MemberCommandService</code>, <code>EventCommandService</code>). Rozdíl je jen v <strong>adapteru</strong>: REST controller vs. MVC controller. Díky hexagonální architektuře, kterou projekt má, je to přímočaré.</p>
+
+<h3>5.1 Dva bezpečnostní filter-chainy</h3>
+<pre><code>@Bean
+@Order(1)
+SecurityFilterChain apiChain(HttpSecurity http) {
+    http.securityMatcher("/api/**")
+        .oauth2ResourceServer(o -> o.jwt(...))
+        .csrf(c -> c.disable());
+    return http.build();
+}
+
+@Bean
+@Order(2)
+SecurityFilterChain webChain(HttpSecurity http) {
+    http.securityMatcher("/**")
+        .formLogin(f -> f.loginPage("/login"))
+        .oauth2Login(Customizer.withDefaults())   // volitelně, pokud chceme OIDC i pro UI
+        .csrf(Customizer.withDefaults());         // CSRF zapnuto
+    return http.build();
+}
+</code></pre>
+
+<h2 id="oauth2">6. OAuth2/OIDC migrace — nejtvrdší oříšek</h2>
+
+<div class="callout warn">
+<strong>Klíčové rozhodnutí.</strong> HTMX posílá requesty <em>jako HTML formuláře</em> — hlavičku <code>Authorization: Bearer</code> do nich dostanete jen přes JavaScript (<code>htmx:configRequest</code>). Oficiální HTMX doporučení: <em>„nepoužívejte bearer tokeny v localStorage pro UI, použijte secure HttpOnly cookie“</em>. To ale znamená, že <strong>UI už není OAuth2 client SPA</strong>, ale klasická session-based aplikace.
+</div>
+
+<h3>6.1 Tři možné přístupy</h3>
+
+<table>
+<thead>
+<tr><th>Varianta</th><th>Popis</th><th>Pros</th><th>Cons</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>A. Session-only UI</strong></td>
+  <td>Form login na <code>/login</code>, HttpOnly session cookie. API endpointy ponechány jako OAuth2 resource server (pro 3rd party).</td>
+  <td>Nejjednodušší. CSRF out-of-the-box. Žádný JS token management. Plně Spring Security standard.</td>
+  <td>Dvě cesty autentizace (session pro UI, bearer pro API). Uživatel musí mít samostatný flow pro 3rd party.</td>
+</tr>
+<tr>
+  <td><strong>B. OAuth2 Client + session</strong></td>
+  <td>UI je Spring <code>oauth2Login()</code> — Spring sám provede authorization code flow se svým vlastním auth serverem, access token si drží v HttpSession, cookie je jen session ID.</td>
+  <td>Uživatel vidí stejnou login obrazovku. Přihlášení přes OIDC (budoucí sociální login). Auth server zůstává autoritou.</td>
+  <td>Trochu overkill — auth server a UI běží ve stejném procesu. Nutno opatrně s registered client pro „sebe samu“.</td>
+</tr>
+<tr>
+  <td><strong>C. Token v cookie + bearer hybrid</strong></td>
+  <td>Auth server vystaví JWT, backend ho uloží do HttpOnly cookie. Filter ho při každém requestu zkopíruje do <code>Authorization</code> hlavičky.</td>
+  <td>Jeden auth mechanismus pro UI i API. Konzistentní.</td>
+  <td>Vlastní kód pro token refresh. Riziko CSRF (nutno double-submit cookie). Netriviální.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout ok">
+<strong>Doporučení:</strong> varianta <strong>B</strong> (OAuth2 Client + session). Uživatel se přihlásí stejným flow jako dnes (Spring AS na <code>/oauth2/authorize</code>), ale v redirect URI místo SPA callbacku Spring sám dokončí flow, uloží <code>OAuth2AuthorizedClient</code> a vytvoří HTTP session. Výhoda: pokud se rozhodnete přidat další OIDC providery (Google, GitHub), stačí je přidat jako <code>ClientRegistration</code>.
+</div>
+
+<h3>6.2 Dopad na existující bezpečnostní rozšíření</h3>
+<ul>
+  <li><strong><code>KlabisAuthorizationServerCustomizer</code></strong> — zůstává beze změny (AS je autonomní modul).</li>
+  <li><strong>JWT claims</strong> (<code>registrationNumber</code>, <code>memberIdUuid</code>, <code>authorities</code>) — pro UI se načítají z <code>OAuth2AuthorizedClient</code> při loginu, uloží se do <code>Authentication.principal</code> (stejné <code>Member</code> resolvní přes <code>CurrentUserArgumentResolver</code>).</li>
+  <li><strong>Field-level authorization</strong> (<code>@OwnerVisible</code>, <code>@HasAuthority</code>, <code>PatchField</code>) — funguje beze změny, pracuje s <code>Authentication</code>, ne s requestem.</li>
+  <li><strong><code>local-dev</code> profil</strong> (refresh-token workaround) — odpadá! Session-based UI žádný refresh token nepotřebuje.</li>
+  <li><strong>TokenRenewalOverlay</strong> — odpadá. Session prodlužování je triviální (request prodlužuje session).</li>
+</ul>
+
+<h2 id="hal-forms">7. HAL+FORMS vs. server-rendered UI</h2>
+
+<p>HAL+FORMS je silná abstrakce, protože frontend dynamicky renderuje formuláře podle <code>_templates</code>. Po migraci na HTMX tato abstrakce <strong>už není nutná pro UI</strong> — server má plnou kontrolu nad HTML. Ale HAL+FORMS zůstává pro 3rd party API.</p>
+
+<div class="grid-2">
+<div>
+<h4>Co z HAL+FORMS v UI zanikne</h4>
+<ul>
+  <li>Dynamický render formuláře z JSON template.</li>
+  <li><code>HalFormsFieldFactory</code> — nahrazeno Thymeleaf fragmenty per-field.</li>
+  <li><code>enrichTemplateWithReadOnlyFields</code> — není potřeba, server zná kontext.</li>
+  <li>Klient. navigace přes <code>_links</code> — nahrazeno normálními <code>&lt;a&gt;</code> a <code>hx-get</code>.</li>
+</ul>
+</div>
+<div>
+<h4>Co zůstane</h4>
+<ul>
+  <li>HAL+FORMS API endpointy (<code>Accept: application/prs.hal-forms+json</code>) pro 3rd party.</li>
+  <li>Všechny <code>klabisLinkTo</code> a <code>klabisAfford</code> v <code>*.api</code> controllerech.</li>
+  <li>Field-level authorization (<code>PatchField</code>, <code>@OwnerVisible</code>) — pracuje na úrovni záznamu, funguje stejně v obou vrstvách.</li>
+</ul>
+</div>
+</div>
+
+<div class="callout warn">
+<strong>Pozor na duplicitu.</strong> Pokud UI nepoužije HAL+FORMS, bude nutné každý formulář definovat dvakrát: jednou jako Thymeleaf template pro UI, podruhé jako HAL+FORMS <code>_templates</code> pro API. To je cena za udržení obou protokolů. Mitigace: generovat HAL+FORMS <code>_templates</code> z Bean Validation anotací na command objektech (už se tak děje pro UI formuláře).
+</div>
+
+<h2 id="paths">8. Možné migrační cesty</h2>
+
+<h3>Cesta 1 — Big Bang (NEDOPORUČENO)</h3>
+<p>Kompletní přepis za jednu iteraci. Aplikace je v rané fázi, ale má už 15+ stránek a netriviální security. Odhad 8–12 týdnů, během kterých nelze dodávat nové funkce.</p>
+<ul><li><span class="badge b-red">Risk</span> vysoký</li><li>Výhoda: čistý kód, bez duálního deploymentu</li></ul>
+
+<h3>Cesta 2 — Paralelní UI, postupná migrace (DOPORUČENO)</h3>
+<ol>
+  <li><strong>Fáze 0 (1 týden):</strong> Přidat Thymeleaf + <code>htmx-spring-boot</code> dependency. Vytvořit <code>web</code> package vedle <code>api</code>. Form login <code>SecurityFilterChain</code> pro <code>/ui/**</code>.</li>
+  <li><strong>Fáze 1 (1 týden):</strong> Sdílený layout: nav, footer, toast, modal container. <code>hx-boost</code> na body. Theme toggle v Alpine.js.</li>
+  <li><strong>Fáze 2 (2 týdny):</strong> Migrace <strong>read-only</strong> stránek: Members list, Events list, Calendar, Dashboard. Zatím bez editace.</li>
+  <li><strong>Fáze 3 (3 týdny):</strong> Members detail + edit (click-to-edit), Member registration (multi-step). Řeší složitější formulářový UX.</li>
+  <li><strong>Fáze 4 (2 týdny):</strong> Groups, Training Groups, Family Groups (stejný vzor jako Members).</li>
+  <li><strong>Fáze 5 (1 týden):</strong> Finances, Category Presets.</li>
+  <li><strong>Fáze 6 (1 týden):</strong> Přepnutí default URL z React SPA na HTMX UI. React SPA zůstává jako <code>/legacy</code> nebo odstraněn.</li>
+  <li><strong>Fáze 7 (0.5 týdne):</strong> Smazání <code>frontend/</code>, <code>static/</code>, build scriptů. Aktualizace CLAUDE.md a developer manuálu.</li>
+</ol>
+<p><strong>Odhad: 10–12 týdnů s jedním vývojářem.</strong> Během migrace lze dodávat nové funkce do obou UI (ale nové features dělat rovnou v HTMX).</p>
+
+<h3>Cesta 3 — „HTMX island“ v React SPA</h3>
+<p>Ponechat React shell a postupně nahrazovat jednotlivé stránky server-rendered HTML loadovaným přes HTMX. <span class="badge b-red">NEDOPORUČENO</span> — ztrácí výhody obou přístupů, složitý security model (bearer i session současně).</p>
+
+<h2 id="risks">9. Rizika a kompromisy</h2>
+
+<table>
+<thead>
+<tr><th>Oblast</th><th>Riziko</th><th>Mitigace</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td>OAuth2 session architektura</td>
+  <td>Špatně nastavený <code>oauth2Login</code> může rozbít 3rd party API auth.</td>
+  <td>Dva <code>SecurityFilterChain</code> s <code>securityMatcher</code>. Kompletní integrační testy pro oba flow-y.</td>
+</tr>
+<tr>
+  <td>Komplexní formulářový UX</td>
+  <td>Multi-step wizardy, conditional fields, cross-field validation — v Reactu trivialita, v HTMX víc server roundtripů.</td>
+  <td>Pro opravdu složité wizardy (např. member registration) použít Alpine.js <code>x-data</code> s klientským stavem, HTMX jen pro finální submit.</td>
+</tr>
+<tr>
+  <td>Calendar UX</td>
+  <td>HTMX není ideální pro drag-drop, inline editaci událostí, real-time update.</td>
+  <td>Přijmout, že calendar zůstane klient-heavy — použít FullCalendar JS. HTMX pro CRUD operace.</td>
+</tr>
+<tr>
+  <td>Duplicita formulářů</td>
+  <td>HAL+FORMS v API + Thymeleaf v UI = dvojí údržba.</td>
+  <td>Generovat HAL+FORMS <code>_templates</code> z Bean Validation (Spring HATEOAS to umí); sdílet command objekty.</td>
+</tr>
+<tr>
+  <td>Offline-first / PWA</td>
+  <td>Pokud se bude chtít offline režim (např. terénní sběr dat na závodech), HTMX tomu nepomáhá.</td>
+  <td>Projekt to aktuálně nepotřebuje. Pokud se objeví, je řešením samostatná mini-SPA pro offline use-case, ne návrat k Reactu.</td>
+</tr>
+<tr>
+  <td>Testování</td>
+  <td>Ztrácí se Vitest + Testing Library. MockMvc testuje HTML fragmenty textově (brittle).</td>
+  <td>Pro kritické UI flow-y psát Playwright E2E testy (už máme QA skill). Unit testy přesunout na controllery a command handlery.</td>
+</tr>
+<tr>
+  <td>Team skill</td>
+  <td>Tým je zvyklý na React; HTMX + Thymeleaf je jiná mentální mapa (hypermedia-first).</td>
+  <td>Pilot na jedné stránce (např. Dashboard) před commit k plné migraci.</td>
+</tr>
+<tr>
+  <td>3rd party JS knihovny</td>
+  <td>Date pickers (formik-mui-x-date-pickers), rich editor, atd.</td>
+  <td>Nativní <code>&lt;input type="date"&gt;</code> je dostatečný pro 90% případů; pro zbytek Flatpickr/Tom-Select (vanilla).</td>
+</tr>
+<tr>
+  <td>Ztráta typesafety mezi BE a FE</td>
+  <td>OpenAPI generator dnes produkuje TypeScript typy.</td>
+  <td>Není aplikovatelné — FE je v Javě. Templaty mají přístup k doménovým typům nativně.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="recommendation">10. Doporučení</h2>
+
+<div class="callout ok">
+<strong>Migrace je technicky proveditelná a dává smysl</strong>, pokud primární motivací je snížit komplexitu a zrychlit vývoj featur. Spring Boot má vyzrálý ekosystém pro HTMX (<code>htmx-spring-boot</code>), hexagonální architektura projektu umožňuje přidat druhý UI adapter bez dotyku domény.
+</div>
+
+<h3>Go/no-go kritéria</h3>
+<p><strong>Jděte do migrace, pokud:</strong></p>
+<ul>
+  <li>Tým preferuje full-stack Java nad TypeScriptem.</li>
+  <li>Plánované UI je primárně CRUD + tabulky + formuláře (to odpovídá Klabis).</li>
+  <li>Není plán na mobilní aplikaci sdílející frontend kód.</li>
+  <li>Není vyžadována real-time collaboration (multi-user editace).</li>
+</ul>
+
+<p><strong>Nejděte do migrace, pokud:</strong></p>
+<ul>
+  <li>Plánuje se progresivně vyměnit za mobilní app (React Native by sdílel komponenty) — <em>u Klabis zřejmě neplatí</em>.</li>
+  <li>UI se posune směrem k bohatým klientským interakcím (kreslení na závodní mapy, drag-drop trasy).</li>
+</ul>
+
+<h3>Navrhovaný další krok</h3>
+<ol>
+  <li><strong>Spike (1 týden):</strong> Pilot na jedné stránce — doporučuji <strong>Members list + detail (read-only)</strong>. Ověří Thymeleaf render, <code>hx-boost</code>, session auth, layout sdílení.</li>
+  <li><strong>Rozhodovací bod:</strong> po spike vyhodnotit produktivitu (řádky kódu, rychlost vývoje, UX dojem).</li>
+  <li>Pokud pozitivní → <strong>Cesta 2 (paralelní migrace)</strong> podle fází výše.</li>
+  <li>OpenSpec proposal pro každou fázi, aby se zachovala auditní stopa.</li>
+</ol>
+
+<hr>
+
+<h3 id="resume">Navázání na tuto konverzaci</h3>
+<pre><code>claude --resume htmx-migration-feasibility</code></pre>
+
+<h3>Reference</h3>
+<ul>
+  <li>HTMX dokumentace — <code>htmx.org</code></li>
+  <li><code>wimdeblauwe/htmx-spring-boot</code> — Spring Boot integrace s Thymeleaf</li>
+  <li>Spring HATEOAS HAL+FORMS — zachováno pro 3rd party API</li>
+  <li><code>openspec/</code> — pro proposal jednotlivých migračních fází</li>
+  <li><code>backend/CLAUDE.md</code>, <code>frontend/CLAUDE.md</code> — současný stav dokumentace</li>
+</ul>
+
+</body>
+</html>

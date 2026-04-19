@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Studie proveditelnosti: Migrace na Spring Data REST (Klabis)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.55;
+         color: #1f2937; background: #fafafa; }
+  h1 { border-bottom: 3px solid #2563eb; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .3rem; color: #1e3a8a; }
+  h3 { margin-top: 1.5rem; color: #374151; }
+  code, pre { font-family: "JetBrains Mono", Consolas, monospace; }
+  code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #0f172a; color: #e2e8f0; padding: .9rem 1.1rem; border-radius: 6px;
+        overflow-x: auto; font-size: .85em; line-height: 1.4; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .93em; }
+  th, td { border: 1px solid #d1d5db; padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  th { background: #e0e7ff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .verdict { padding: 1rem 1.2rem; border-radius: 6px; margin: 1rem 0;
+             border-left: 5px solid; }
+  .verdict.warn { background: #fff7ed; border-color: #ea580c; }
+  .verdict.stop { background: #fef2f2; border-color: #dc2626; }
+  .verdict.ok   { background: #ecfdf5; border-color: #059669; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .78em;
+         font-weight: 600; margin-right: .3rem; }
+  .tag.easy { background: #d1fae5; color: #065f46; }
+  .tag.med  { background: #fef3c7; color: #92400e; }
+  .tag.hard { background: #fee2e2; color: #991b1b; }
+  .tag.block { background: #111827; color: #fff; }
+  blockquote { border-left: 4px solid #6366f1; background: #eef2ff;
+               margin: 1rem 0; padding: .6rem 1rem; color: #312e81; }
+  ul li { margin-bottom: .25rem; }
+  .toc { background: #fff; border: 1px solid #e5e7eb; padding: .8rem 1.3rem;
+         border-radius: 6px; margin-bottom: 2rem; }
+  .toc ol { margin: .3rem 0; }
+  .muted { color: #6b7280; font-size: .9em; }
+</style>
+</head>
+<body>
+
+<h1>Studie proveditelnosti: Migrace modulů <code>members</code> a <code>calendar</code> na Spring Data REST</h1>
+<p class="muted">Verze 1.0 · Projekt Klabis · 2026-04-19</p>
+
+<div class="toc">
+<strong>Obsah</strong>
+<ol>
+  <li><a href="#cil">Cíl studie a metodika</a></li>
+  <li><a href="#zaver">Celkový závěr (TL;DR)</a></li>
+  <li><a href="#sdr">Co Spring Data REST umí a neumí</a></li>
+  <li><a href="#sdr-jdbc">Kompatibilita se Spring Data JDBC</a></li>
+  <li><a href="#features">Inventář funkcí používaných v Klabisu</a></li>
+  <li><a href="#members">Modul members — analýza &amp; návrh migrace</a></li>
+  <li><a href="#calendar">Modul calendar — analýza &amp; návrh migrace</a></li>
+  <li><a href="#common">Sdílený framework (common) — dopad migrace</a></li>
+  <li><a href="#roadmap">Návrh postupu (hybridní model)</a></li>
+  <li><a href="#recom">Doporučení</a></li>
+  <li><a href="#resume">Navázání na Claude konverzaci</a></li>
+</ol>
+</div>
+
+<h2 id="cil">1. Cíl studie a metodika</h2>
+<p>Cílem je posoudit, zda lze REST API vrstvy modulů <code>members</code> a <code>calendar</code>
+nahradit Spring Data REST (dále <strong>SDR</strong>). Studie:</p>
+<ul>
+  <li>Zmapovala každý endpoint, HATEOAS processor, Jackson customizaci a perzistenční pattern v obou modulech.</li>
+  <li>Porovnala potřeby s aktuálními schopnostmi SDR (dokumentace Spring Data REST, main branch, ověřeno přes Context7).</li>
+  <li>Klasifikovala jednotlivé funkce podle obtížnosti migrace:
+    <span class="tag easy">LEHKÉ</span>
+    <span class="tag med">STŘEDNÍ</span>
+    <span class="tag hard">VELMI TĚŽKÉ</span>
+    <span class="tag block">BLOKER</span>
+  </li>
+</ul>
+
+<h2 id="zaver">2. Celkový závěr (TL;DR)</h2>
+
+<div class="verdict stop">
+<strong>Migraci nelze provést přímočaře.</strong> SDR je silný nástroj pro CRUD expozici agregátů,
+ale Klabis staví REST vrstvu na řadě konceptů, které SDR nativně <em>neposkytuje</em>
+a které tvoří <strong>podstatu produktu</strong> (field-level autorizace, domain-aware HAL-FORMS
+afordance, custom business operace, PATCH sémantika přes <code>PatchField&lt;T&gt;</code>,
+polymorfní agregáty, cross-module koordinace přes eventy).
+</div>
+
+<p><strong>Reálný scénář migrace</strong> je <em>hybrid</em>: u jednoduchých čtení nahradit vlastní
+controller expozicí repository přes SDR, u všeho ostatního si ponechat vlastní
+<code>@RestController</code>. Přínos takového hybridu je však marginální — úspora ~5 % kódu
+za cenu nekonzistence stylu, duplicitní konfigurace a limitů SDR, které při dalším
+vývoji narážejí na strop. <strong>Doporučení: migraci neprovádět.</strong></p>
+
+<h2 id="sdr">3. Co Spring Data REST umí a neumí</h2>
+
+<table>
+<thead><tr><th>Schopnost</th><th>SDR</th><th>Poznámka</th></tr></thead>
+<tbody>
+<tr><td>CRUD expozice <code>CrudRepository</code></td><td>✅ nativně</td><td>GET list/detail, POST, PUT, PATCH, DELETE zdarma.</td></tr>
+<tr><td>HAL + HAL-FORMS</td><td>✅ (základní)</td><td>Šablony odvozené z entity, ale <em>bez</em> podmíněnosti nebo field-level autorizace.</td></tr>
+<tr><td>Dynamické afordance dle stavu agregátu</td><td>❌</td><td>Afordance se generují staticky z metadat entity.</td></tr>
+<tr><td>Projekce/Excerpts</td><td>✅</td><td><code>@Projection</code>, <code>excerptProjection</code>.</td></tr>
+<tr><td>Paging &amp; Sort</td><td>✅</td><td>Stejně jako v Klabisu dnes.</td></tr>
+<tr><td>Vlastní search endpointy (<code>findByXxx</code>)</td><td>✅</td><td>Publikují se pod <code>/{resource}/search/{rel}</code>.</td></tr>
+<tr><td>Custom business endpointy (např. <code>/suspend</code>)</td><td>⚠️ jen přes <code>@RepositoryRestController</code></td><td>Píše se ručně stejně jako dnes — žádná úspora.</td></tr>
+<tr><td>Field-level security (Jackson)</td><td>❌</td><td>SDR o <code>@HasAuthority</code> / <code>@OwnerVisible</code> na atributech neví.</td></tr>
+<tr><td>PATCH se sémantikou "pole nebylo poskytnuto"</td><td>⚠️ jen přes JSON Patch / Merge Patch</td><td>Nesedí na Klabisův <code>PatchField&lt;T&gt;</code> (HAL-FORMS oriented).</td></tr>
+<tr><td>Polymorfní agregát (discriminator)</td><td>❌</td><td>Jeden resource = jeden typ. <code>ManualCalendarItem</code> vs. <code>EventCalendarItem</code> se nedají rozlišit.</td></tr>
+<tr><td>Lifecycle eventy (beforeSave, …)</td><td>✅</td><td><code>@RepositoryEventHandler</code>.</td></tr>
+<tr><td>Integrace se Spring Security</td><td>✅ (method-level)</td><td><code>@PreAuthorize</code> / <code>@Secured</code> na repository metodách.</td></tr>
+<tr><td>Přístup k doménovému objektu v processoru</td><td>❌</td><td><code>RepresentationModelProcessor</code> má jen DTO, ne agregát.</td></tr>
+</tbody>
+</table>
+
+<h2 id="sdr-jdbc">4. Kompatibilita Spring Data REST &times; Spring Data JDBC</h2>
+
+<div class="verdict warn">
+<strong>Formálně podporováno, prakticky okrajové.</strong> Spring Data REST oficiálně podporuje
+"Spring Data backend" (JPA, MongoDB, JDBC, Neo4j, Cassandra, Gemfire, Solr). Reálné nasazení
+s Spring Data JDBC je však minoritní a dokumentace se opírá o JPA příklady.
+</div>
+
+<p>Konkrétní důsledky pro Klabis:</p>
+<ul>
+  <li><strong>Memento pattern.</strong> SDR by exponoval <code>MemberMemento</code> / <code>CalendarMemento</code>
+  — tedy <em>persistenční</em> objekty místo doménových agregátů. To přímo narušuje
+  hexagonální architekturu a DDD vrstvení, které je základem projektu.</li>
+  <li><strong>Rekonstrukce agregátu.</strong> SDR volá <code>CrudRepository.save()</code> přímo;
+  neprochází přes doménové metody jako <code>member.update(cmd)</code>, kde se vyhodnocují invarianty
+  a registrují domain eventy. Invarianty by tím skončily až na úrovni databáze.</li>
+  <li><strong>Polymorfismus.</strong> <code>CalendarMemento</code> má <code>kind</code>
+  discriminator s převodem na <code>ManualCalendarItem</code> / <code>EventCalendarItem</code>.
+  SDR pracuje s jedním typem, tudíž by modul musel být rozdělen na dva resource nebo přejít na plochý model.</li>
+  <li><strong>ID jako value object.</strong> <code>MemberId</code>, <code>CalendarItemId</code>, <code>UserId</code>
+  jsou records obalující UUID. SDR vyžaduje <code>@Id</code> na poli repozitované entity —
+  fungovat bude, ale výstup <code>self</code> linku bude nad raw UUID, ne doménovým ID.</li>
+</ul>
+
+<blockquote>
+<strong>Klíčový architektonický konflikt:</strong> Klabis záměrně odděluje doménu od perzistence
+pomocí Memento + Adapter. SDR toto oddělení ruší a vrací vás k anemickému modelu
+"JPA entita = REST resource". To je krok zpět od DDD stylu, který projekt praktikuje.
+</blockquote>
+
+<h2 id="features">5. Inventář funkcí používaných v Klabisu</h2>
+
+<table>
+<thead><tr>
+  <th>Funkce</th><th>Obtížnost v SDR</th><th>Jak by se řešila</th>
+</tr></thead>
+<tbody>
+
+<tr><td>GET list s pagingem/sortem</td>
+    <td><span class="tag easy">LEHKÉ</span></td>
+    <td><code>PagingAndSortingRepository</code>.</td></tr>
+
+<tr><td>GET detail</td>
+    <td><span class="tag easy">LEHKÉ</span></td>
+    <td>Nativní.</td></tr>
+
+<tr><td>POST create</td>
+    <td><span class="tag med">STŘEDNÍ</span></td>
+    <td>Normalizace (blank→null, generování registration number) přes <code>@HandleBeforeCreate</code>.</td></tr>
+
+<tr><td>PUT full update (calendar)</td>
+    <td><span class="tag med">STŘEDNÍ</span></td>
+    <td>Read-only kontrola <code>EventCalendarItem</code> přes <code>@HandleBeforeSave</code> + databázový re-fetch.</td></tr>
+
+<tr><td>PATCH s <code>PatchField&lt;T&gt;</code> (members)</td>
+    <td><span class="tag hard">VELMI TĚŽKÉ</span></td>
+    <td>SDR umí pouze JSON Patch/Merge Patch. Klabisova sémantika (HAL-FORMS + per-field auth) by se musela napsat ručně.</td></tr>
+
+<tr><td>DELETE s business rule</td>
+    <td><span class="tag med">STŘEDNÍ</span></td>
+    <td><code>@HandleBeforeDelete</code>, nutný re-fetch pro rozlišení typu.</td></tr>
+
+<tr><td>Custom akce (<code>POST /members/{id}/suspend</code>, <code>/resume</code>)</td>
+    <td><span class="tag hard">VELMI TĚŽKÉ</span></td>
+    <td><code>@RepositoryRestController</code> + ruční implementace. Úspora oproti dnešku nulová.</td></tr>
+
+<tr><td>Registrace nového členu (cross-aggregate: User + Member)</td>
+    <td><span class="tag block">BLOKER</span></td>
+    <td>SDR nemá koncept multi-aggregate transakce. Nutný vlastní controller nebo nová fasádní service.</td></tr>
+
+<tr><td>Veto event pattern (<code>MemberSuspensionRequestedEvent</code>)</td>
+    <td><span class="tag block">BLOKER</span></td>
+    <td>Vyžaduje synchronní publish &amp; kolekci blokátorů. SDR event model neumí.</td></tr>
+
+<tr><td>Field-level authorization (<code>@HasAuthority</code> na property)</td>
+    <td><span class="tag block">BLOKER</span></td>
+    <td>SDR nemá žádný mechanismus. Bylo by nutné přenést celý <code>FieldSecurityJacksonModule</code> (který zůstává funkční i bez SDR).</td></tr>
+
+<tr><td>HAL-FORMS afordance dle stavu agregátu (<code>member.isActive()</code>)</td>
+    <td><span class="tag block">BLOKER</span></td>
+    <td>SDR generuje statické afordance. Bylo by nutné celý <code>RepresentationModelProcessor</code> ponechat.</td></tr>
+
+<tr><td>Polymorfní calendar items (MANUAL vs. EVENT_*)</td>
+    <td><span class="tag hard">VELMI TĚŽKÉ</span></td>
+    <td>SDR má jeden typ na resource. Řešení: rozdělit na dva endpointy, tj. <em>rozbít</em> dnešní jednotné API.</td></tr>
+
+<tr><td>Date-range dotaz s validací ≤366 dní</td>
+    <td><span class="tag med">STŘEDNÍ</span></td>
+    <td><code>@Query</code> zpřístupní search endpoint, ale validaci je nutno psát ručně (nejspíš přes controller advice nebo custom <code>@RepositoryRestController</code>).</td></tr>
+
+<tr><td>Domain events na save (Spring Modulith)</td>
+    <td><span class="tag easy">LEHKÉ</span></td>
+    <td>Fungují nezávisle na SDR — <code>@DomainEvents</code> na mementu.</td></tr>
+
+<tr><td>GDPR audit (<code>BirthNumberAccessedEvent</code>)</td>
+    <td><span class="tag hard">VELMI TĚŽKÉ</span></td>
+    <td>Event se dnes publikuje v application service při čtení. SDR jde přímo do repository — hook chybí.</td></tr>
+
+<tr><td>OpenAPI + <code>@SecurityRequirement</code></td>
+    <td><span class="tag med">STŘEDNÍ</span></td>
+    <td>SDR endpointy vyžadují samostatnou OpenAPI customizaci (springdoc-openapi-data-rest).</td></tr>
+
+</tbody>
+</table>
+
+<h2 id="members">6. Modul <code>members</code> — analýza &amp; návrh</h2>
+
+<p>Klíčové charakteristiky:</p>
+<ul>
+  <li>6 endpointů, z toho 3 business akce (<code>/suspend</code>, <code>/resume</code>, registrace).</li>
+  <li>PATCH se sémantikou <code>PatchField&lt;T&gt;</code> + per-field <code>@HasAuthority</code> (14 polí).</li>
+  <li>Field-level autorizace v <em>response</em> DTO (<code>@OwnerVisible</code>, <code>NullDeniedHandler</code>).</li>
+  <li>Cross-module závislost: <code>RegistrationService</code> vytváří <code>User</code> + <code>Member</code> v jedné transakci.</li>
+  <li>Veto event pattern na <code>/suspend</code>.</li>
+  <li>GDPR audit eventy (<code>BirthNumberAccessedEvent</code>) publikované z <code>getMember()</code>.</li>
+</ul>
+
+<div class="verdict stop">
+<strong>Verdikt: migraci nedoporučit.</strong> Celkem 6 funkcí klasifikovaných jako BLOKER nebo VELMI TĚŽKÉ,
+1 LEHKÁ (GET list). Migrací by vzniklo ~5 % úspora kódu a přibyla by 2. REST technologie.
+Čistší postup je <em>refaktoring</em> stávajícího controlleru, případně extrakce helperů do <code>common/ui</code>.
+</div>
+
+<h3>Mapování jednotlivých endpointů</h3>
+<table>
+<thead><tr><th>Endpoint</th><th>SDR?</th><th>Poznámka</th></tr></thead>
+<tbody>
+<tr><td><code>GET /api/members</code></td><td>⚠️</td><td>SDR zvládne paging. Field-level filtrování pro non-admin vyžaduje vlastní processor (= stejný kód).</td></tr>
+<tr><td><code>GET /api/members/options</code></td><td>✅</td><td>Projekce + search endpoint.</td></tr>
+<tr><td><code>GET /api/members/{id}</code></td><td>❌</td><td>GDPR audit event při čtení rodného čísla nelze publikovat bez mezivrstvy.</td></tr>
+<tr><td><code>PATCH /api/members/{id}</code></td><td>❌</td><td><code>PatchField</code> + field-level auth. SDR nemá mechanismus.</td></tr>
+<tr><td><code>POST /api/members/{id}/suspend</code></td><td>❌</td><td>Veto event, cross-module (<code>UserService</code>), není CRUD.</td></tr>
+<tr><td><code>POST /api/members/{id}/resume</code></td><td>❌</td><td>Cross-module business akce.</td></tr>
+<tr><td><code>POST /api/members</code> (registrace)</td><td>❌</td><td>Multi-aggregate transakce (User + Member).</td></tr>
+</tbody>
+</table>
+
+<h2 id="calendar">7. Modul <code>calendar</code> — analýza &amp; návrh</h2>
+
+<p>Klíčové charakteristiky:</p>
+<ul>
+  <li>5 endpointů — klasické CRUD.</li>
+  <li><strong>Polymorfní agregát</strong> s discriminatorem <code>kind</code>.</li>
+  <li><code>EventCalendarItem</code> je read-only, řízeno <code>assertCanBeDeleted()</code>.</li>
+  <li>Filtrování date-range s validací ≤366 dní + month-based prev/next navigační linky.</li>
+  <li>Reconciliace z event eventů (<code>EventPublishedEvent</code>, …).</li>
+  <li>HAL-FORMS afordance dle subtypu: Manual = UPDATE + DELETE; Event = žádné.</li>
+</ul>
+
+<div class="verdict warn">
+<strong>Verdikt: částečně proveditelné, ale bez přínosu.</strong> SDR zvládne ~60 % CRUD,
+ale polymorfní handling, month navigace a read-only enforcement stejně vyžadují custom
+processor + event handler. Úspora kódu ≈ 15 %, výměnou za nutnost re-fetch z DB
+v <code>@HandleBeforeSave</code>/<code>@HandleBeforeDelete</code> a rozdělení
+jednoho endpointu na dva resource.
+</div>
+
+<h3>Mapování endpointů</h3>
+<table>
+<thead><tr><th>Endpoint</th><th>SDR?</th><th>Poznámka</th></tr></thead>
+<tbody>
+<tr><td><code>GET /api/calendar-items</code></td><td>⚠️</td><td>Date-range search možný, ale validace rozsahu a prev/next linky = custom kód.</td></tr>
+<tr><td><code>GET /api/calendar-items/{id}</code></td><td>⚠️</td><td>Polymorfní afordance vyžadují custom processor + re-fetch z DB.</td></tr>
+<tr><td><code>POST /api/calendar-items</code></td><td>✅</td><td>Normalizace přes <code>@HandleBeforeCreate</code>.</td></tr>
+<tr><td><code>PUT /api/calendar-items/{id}</code></td><td>⚠️</td><td>Read-only check přes <code>@HandleBeforeSave</code> s re-fetch.</td></tr>
+<tr><td><code>DELETE /api/calendar-items/{id}</code></td><td>⚠️</td><td>Jako PUT.</td></tr>
+</tbody>
+</table>
+
+<h2 id="common">8. Sdílený framework (<code>common/</code>) — dopad</h2>
+<p>SDR by <em>nemohlo</em> nahradit tyto custom komponenty; musely by buď zůstat, nebo
+být přepsány:</p>
+
+<table>
+<thead><tr><th>Komponenta</th><th>Poskytuje SDR?</th><th>Řešení při migraci</th></tr></thead>
+<tbody>
+<tr><td><code>HalFormsSupport</code> (<code>klabisLinkTo</code>, <code>klabisAfford</code>)</td><td>❌</td><td>Ponechat, integrovat s SDR přes <code>RepresentationModelProcessor</code>.</td></tr>
+<tr><td><code>FieldSecurityJacksonModule</code></td><td>❌</td><td>Ponechat beze změny — funguje nezávisle.</td></tr>
+<tr><td><code>HasAuthorityMethodInterceptor</code></td><td>❌</td><td>Ponechat beze změny.</td></tr>
+<tr><td><code>PatchFieldModule</code></td><td>❌</td><td>Ztratí smysl, pokud SDR vynutí JSON Patch.</td></tr>
+<tr><td><code>ModelWithDomainPostprocessor</code></td><td>❌</td><td>V SDR nelze (processor má jen DTO). Nahradit re-fetchem z repository.</td></tr>
+<tr><td><code>KlabisJwtAuthenticationToken</code>, <code>OwnershipResolver</code></td><td>❌</td><td>Nezávislé na SDR.</td></tr>
+<tr><td>Memento pattern + <code>KlabisAggregateRoot</code></td><td>n/a</td><td>SDR by zpřístupňoval Memento jako resource — <em>architektonicky nepřijatelné</em>.</td></tr>
+</tbody>
+</table>
+
+<h2 id="roadmap">9. Hypotetický postup hybridní migrace</h2>
+<p>Pokud by se přesto přistoupilo k částečné migraci (čistě teoreticky):</p>
+
+<ol>
+  <li><strong>Fáze 1 — Pilot.</strong> Vybrat nejjednodušší modul (ne members, ne calendar).
+  Kandidáti: audit log readonly, reference data.</li>
+  <li><strong>Fáze 2 — Calendar GET.</strong> Ponechat POST/PUT/DELETE v custom controlleru,
+  u GET zkusit SDR + projekci. Porovnat výstup HAL-FORMS proti dnešku.</li>
+  <li><strong>Fáze 3 — Rozhodnutí.</strong> Pokud vyjde ≥30 % úspora bez ztráty funkcionality, jít dál.
+  Jinak migraci zastavit.</li>
+  <li><strong>Fáze 4 (nedoporučeno) — Members.</strong> Pouze <code>/options</code> endpoint jako search resource.
+  Všechny ostatní endpointy ponechat.</li>
+</ol>
+
+<p><em>Předpokládaný odhad úsilí pilotní fáze: 3–5 člověkodnů. Očekávaný přínos: validace/vyvrácení hypotézy.</em></p>
+
+<h2 id="recom">10. Doporučení</h2>
+
+<div class="verdict stop">
+<strong>Migraci modulů <code>members</code> a <code>calendar</code> na Spring Data REST nedoporučujeme.</strong>
+</div>
+
+<p><strong>Proč:</strong></p>
+<ol>
+  <li><strong>Architektonický mismatch.</strong> SDR exponuje <em>persistenční</em> objekty (memento);
+  Klabis staví na oddělení domény od persistence. Migrace by znamenala krok zpět k anemickému modelu.</li>
+  <li><strong>Čistý přínos blízký nule.</strong> CRUD tvoří v members modulu cca 1 endpoint z 6; v calendaru 5 z 5, ale všechny 5 mají business rules vyžadující stejný custom kód jako dnes.</li>
+  <li><strong>SDR nepokrývá klíčové features.</strong> Field-level autorizace, PATCH sémantika, veto events, polymorfní agregáty, domain-aware afordance — pro všechny by bylo nutné napsat vlastní kód nad SDR.</li>
+  <li><strong>Dvojí REST stack.</strong> Hybrid = <code>@RestController</code> i <code>@RepositoryRestController</code> vedle sebe, dvě OpenAPI konfigurace, dvě testovací strategie.</li>
+  <li><strong>Riziko stagnace SDR.</strong> Spring Data REST je v posledních releasech ve stabilizačním režimu; HAL-FORMS customizace nesledují rychlý vývoj Spring HATEOAS.</li>
+</ol>
+
+<p><strong>Alternativa — refactoring stávajícího řešení:</strong></p>
+<ul>
+  <li>Extrahovat do <code>common/ui</code> opakující se kódy paging/sort validace (dnes v <code>MemberController</code> i <code>CalendarController</code>).</li>
+  <li>Standardizovat pattern "<code>ModelWithDomainPostprocessor</code> + afordance dle stavu" — např. fluent builder <code>AffordancesBuilder</code>.</li>
+  <li>Podchytit month-based navigaci v calendaru jako helper.</li>
+  <li>Review pokrytí OpenAPI dokumentace (použití <code>@SecurityRequirement</code>).</li>
+</ul>
+
+<h2 id="resume">11. Navázání na Claude konverzaci</h2>
+<pre>claude --resume spring-data-rest-feasibility
+claude --resume 8eb4b349-1bcc-4c3a-9e54-27326186b39e</pre>
+
+<p class="muted">Konec studie.</p>
+
+</body>
+</html>
