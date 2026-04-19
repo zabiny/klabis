@@ -26,6 +26,7 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -191,8 +192,39 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
     }
 
+    /**
+     * Secures the developer documentation under {@code /docs/**}.
+     * <p>
+     * Unlike the API chain (Bearer JWT) and the SPA chain (permitAll), the documentation
+     * is accessed directly by a browser URL — there is no SPA wrapper that could attach a
+     * Bearer token. Authentication is therefore session-based: the HTTP session established
+     * by the {@code /login} form (see {@code authorizationServerLoginSecurityFilterChain})
+     * is reused here. Unauthenticated requests are redirected to {@code /login}.
+     * <p>
+     * Must be ordered before the SPA chain, otherwise the SPA HTML matcher would swallow
+     * {@code /docs/**} requests (browsers send {@code Accept: text/html}).
+     */
     @Bean
     @Order(3)
+    public SecurityFilterChain docsFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/docs/**")
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                )
+                .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                );
+        return http.build();
+    }
+
+    @Bean
+    @Order(4)
     public SecurityFilterChain spaFilterChain(HttpSecurity http) throws Exception {
         // Custom matcher that only applies to HTML requests (text/html Accept header)
         // This prevents conflicts with API endpoints that might match the same path patterns

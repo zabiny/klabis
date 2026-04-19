@@ -39,9 +39,9 @@ class SpaFallbackController {
      */
     @GetMapping(value = {
             "/",
-            "/{path:(?!h2-console)[^\\.]*}",
-            "/{path1:(?!h2-console)[^\\.]*}/{path2:[^\\.]*}",
-            "/{path1:(?!h2-console)[^\\.]*}/{path2}/{path3:[^\\.]*}"
+            "/{path:(?!h2-console|docs)[^\\.]*}",
+            "/{path1:(?!h2-console|docs)[^\\.]*}/{path2:[^\\.]*}",
+            "/{path1:(?!h2-console|docs)[^\\.]*}/{path2}/{path3:[^\\.]*}"
     }, produces = "text/html")
     public String forwardToIndex() {
         return "forward:/index.html";

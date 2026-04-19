@@ -180,6 +180,14 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     classpath = classpath.filter { !it.name.contains("lombok") }
 }
 
+// Zahrne developer dokumentaci z ../docs/developerManual do výsledného JARu
+// na classpath:/static/docs/developers/, čímž ji Spring Boot servíruje na /docs/developers/*.
+tasks.named<ProcessResources>("processResources") {
+    from(layout.projectDirectory.dir("../docs/developerManual")) {
+        into("static/docs/developers")
+    }
+}
+
 // SpringDoc OpenAPI Gradle Plugin configuration
 openApi {
     apiDocsUrl.set("http://localhost:8080/v3/api-docs")
