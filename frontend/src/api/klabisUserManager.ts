@@ -47,6 +47,7 @@ export const silentRenewRetry = (userManager: UserManager): Promise<void> => {
         try {
             for (let attempt = 1; attempt <= SILENT_RENEW_MAX_ATTEMPTS; attempt++) {
                 try {
+                    console.log('Refreshing token...');
                     await userManager.signinSilent();
                     return;
                 } catch (err) {
@@ -107,7 +108,23 @@ export const createUserManager = ({
 
     const userManager = new UserManager(userManagerConfig);
 
-    userManager.events.addUserLoaded(onUserLoaded);
+    let refreshingToken = false;
+
+    userManager.events.addUserLoaded((user) => {
+        if (refreshingToken) {
+            refreshingToken = false;
+            const expiresAt = user.expires_at
+                ? new Date(user.expires_at * 1000).toISOString()
+                : '<unknown>';
+            console.log(`Successfully refreshed token - will expire at ${expiresAt}`);
+        }
+        onUserLoaded(user);
+    });
+
+    userManager.events.addAccessTokenExpiring(() => {
+        refreshingToken = true;
+        console.log('Refreshing token...');
+    });
 
     userManager.events.addUserUnloaded(() => {
         console.log('User unloaded');
@@ -116,6 +133,7 @@ export const createUserManager = ({
 
     userManager.events.addAccessTokenExpired(() => {
         console.warn('Access token expired');
+        refreshingToken = true;
         silentRenewRetry(userManager).catch(() => {
             // removeUser() already called inside silentRenewRetry after exhausting all attempts
         });
@@ -126,6 +144,7 @@ export const createUserManager = ({
         // to prevent oidc-client-ts from stacking its own retries on top of ours
         console.error('Silent renew error (automatic):', err);
         userManager.stopSilentRenew();
+        refreshingToken = true;
         silentRenewRetry(userManager)
             .then(() => {
                 userManager.startSilentRenew();
