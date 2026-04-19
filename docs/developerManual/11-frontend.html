@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Frontend — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>11 · Frontend</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Frontend</h1>
+
+<p class="lead">
+    Klabis frontend je SPA postavená nad <strong>HAL+FORMS</strong> driveným klientem — backend posílá
+    nejen data, ale i metadata o tom, jaké linky a formuláře jsou pro daný resource a uživatele
+    dostupné. Frontend tato metadata interpretuje a generuje navigaci, akce a formuláře dynamicky.
+    Tato kapitola popisuje Klabis-specific patterny: jak číst HAL response, jak postavit stránku,
+    tabulku a formulář.
+</p>
+
+<aside class="note">
+    Generická znalost React, TypeScript, Vite, TanStack Query a oidc-client-ts je předpokládaná —
+    viz kap. 00 Předpoklady. Tato kapitola pokrývá jen Klabis-specific kód.
+</aside>
+
+<h2>Klíčové stavební bloky</h2>
+
+<table class="ref-table">
+    <thead><tr><th>Oblast</th><th>Lokace</th><th>Účel</th></tr></thead>
+    <tbody>
+        <tr><td>API klient</td><td><code>src/api/setup.ts</code>, <code>klabisUserManager.ts</code>, <code>authorizedFetch.ts</code></td><td>OpenAPI typed klient, OIDC auth, automatický Bearer token.</td></tr>
+        <tr><td>HAL utils</td><td><code>src/api/hateoas.ts</code></td><td><code>getLink()</code>, <code>getLinkHref()</code>, <code>followLink()</code>, <code>getEmbedded()</code>.</td></tr>
+        <tr><td>Route context</td><td><code>src/contexts/HalRouteContext.tsx</code></td><td>Resource data pro aktuální URL, navigace přes <code>self</code> link.</td></tr>
+        <tr><td>Form context</td><td><code>src/contexts/HalFormContext.tsx</code></td><td>Modal form requests (ephemeral state).</td></tr>
+        <tr><td>Page hook</td><td><code>src/hooks/useHalPageData.ts</code></td><td>Unified rozhraní pro stránky — kombinuje route + actions + admin check.</td></tr>
+        <tr><td>HAL Forms komponenty</td><td><code>src/components/HalNavigator2/</code></td><td>Buttony, formuláře, sekce, layout pro HAL+FORMS.</td></tr>
+        <tr><td>Tabulka</td><td><code>src/components/KlabisTable/</code></td><td>Tabulka s paginací, sortováním, mobilní card view.</td></tr>
+        <tr><td>UI knihovna</td><td><code>src/components/UI/</code></td><td>Button, Modal, Alert, Spinner, Toast, …</td></tr>
+        <tr><td>Lokalizace</td><td><code>src/localization/labels.ts</code></td><td>Centrální české labely (žádný i18n framework).</td></tr>
+    </tbody>
+</table>
+
+<h2>Práce s HAL+FORMS response</h2>
+
+<p>
+    Backend vrací HAL+FORMS strukturu: <code>{ ...data, _links, _embedded, _templates }</code>.
+    Pro typové utility z <code>src/api/hateoas.ts</code>:
+</p>
+
+<pre class="signature"><code>// Získat link podle rel name
+const editLink: Link | null = getLink(resourceData, 'edit');
+const href: string | null = getLinkHref(resourceData, 'edit');
+
+// Načíst data z linku (následuje href)
+const detail = await followLink&lt;MemberDetail&gt;(link);
+
+// Získat embedded resources
+const items = getEmbedded(resourceData, 'items');</code></pre>
+
+<aside class="note warn">
+    <strong>Nikdy nehardcodujte URL.</strong> Všechna navigace probíhá přes <code>_links</code>
+    a <code>_templates</code> z aktuálního resource. Pokud něco není v response, uživatel na to nemá
+    oprávnění (backend filtruje field-level autorizací) — frontend se ani nemusí ptát.
+</aside>
+
+<h2>useHalPageData — vstupní hook stránky</h2>
+
+<p>
+    Většina stránek začíná zavoláním <code>useHalPageData()</code>. Hook automaticky načte HAL
+    resource pro aktuální URL přes <code>HalRouteContext</code> a vrátí unified API:
+</p>
+
+<pre class="signature"><code>const useHalPageData&lt;T extends HalResponse = HalResponse&gt;(): UseHalPageDataReturn&lt;T&gt;;
+
+interface UseHalPageDataReturn&lt;T&gt; {
+    resourceData: T | null;
+    isLoading: boolean;
+    error: Error | null;
+    isAdmin: boolean;
+
+    route: {
+        pathname: string;
+        navigateToResource: (resource: HalResponse | Link) =&gt; void;
+        refetch: () =&gt; Promise&lt;void&gt;;
+        getResourceLink: (linkName?: string) =&gt; Link | null;
+    };
+
+    actions: { handleNavigateToItem: (href: string) =&gt; void; };
+
+    // helpery
+    getLinks(); getTemplates(); hasEmbedded(); getEmbeddedItems();
+    isCollection(); hasLink(name); hasTemplate(name); hasForms();
+}</code></pre>
+
+<pre class="signature"><code>export const MemberDetailPage = () =&gt; {
+    const { resourceData, isLoading, error, isAdmin } = useHalPageData&lt;MemberDetail&gt;();
+
+    if (isLoading) return &lt;Spinner /&gt;;
+    if (error)     return &lt;ErrorDisplay error={error} /&gt;;
+    if (!resourceData) return null;
+
+    return &lt;div&gt;…&lt;/div&gt;;
+};</code></pre>
+
+<aside class="note">
+    <code>route.refetch()</code> se automaticky volá v <code>HalFormDisplay</code> po úspěšném
+    odeslání formuláře. Manuální volání potřebujete jen pro custom akce mimo HAL Forms.
+</aside>
+
+<h2>Formuláře přes HAL+FORMS</h2>
+
+<p>
+    Formuláře se generují z <code>_templates</code> v resource odpovědi. Klíčové komponenty v
+    <code>src/components/HalNavigator2/</code>:
+</p>
+
+<dl class="api-list">
+    <dt>HalFormButton</dt>
+    <dd>Tlačítko pro otevření formuláře. Vrací <code>null</code>, pokud šablona neexistuje
+        v <code>_templates</code> (= uživatel nemá oprávnění). Modal nebo inline režim.</dd>
+
+    <dt>HalFormsSection</dt>
+    <dd>Vyrendruje tlačítka pro <strong>všechny</strong> dostupné šablony. Ideální když chcete
+        zobrazit "všechny dostupné akce" bez explicitního výčtu.</dd>
+
+    <dt>HalFormsPageLayout</dt>
+    <dd>Page wrapper, který orchestruje zobrazení formulářů — modal (z <code>HalFormContext</code>)
+        i inline (z URL parametru <code>?form=…</code>).</dd>
+
+    <dt>HalFormDisplay</dt>
+    <dd>Skutečný renderer formuláře. Obvykle se nepoužívá přímo — volají ho výše uvedené.</dd>
+
+    <dt>HalFormTemplateButton</dt>
+    <dd>Submit/cancel tlačítko uvnitř formuláře. Label se taháne přes <code>getTemplateLabel</code>.</dd>
+
+    <dt>MultiStepFormModal</dt>
+    <dd>Wrapper pro vícekrokové formuláře — viz <code>MULTI_STEP_FORM.md</code>.</dd>
+</dl>
+
+<h3>Modal vs inline formulář</h3>
+
+<table class="ref-table">
+    <thead><tr><th></th><th>Modal (<code>modal=true</code>)</th><th>Inline (<code>modal=false</code>)</th></tr></thead>
+    <tbody>
+        <tr><td>State</td><td>Ephemeral (Context API)</td><td>Persistent v URL (<code>?form=name</code>)</td></tr>
+        <tr><td>Shareable URL</td><td>Ne</td><td>Ano</td></tr>
+        <tr><td>Browser history</td><td>Ne</td><td>Ano (back tlačítko zavře)</td></tr>
+        <tr><td>Render</td><td>Modal overlay</td><td>Místo <code>children</code> v <code>HalFormsPageLayout</code></td></tr>
+        <tr><td>Custom layout</td><td>Přes <code>customLayout</code> prop</td><td>Přes <code>customLayouts</code> na <code>HalFormsPageLayout</code></td></tr>
+    </tbody>
+</table>
+
+<h3>Základní použití</h3>
+
+<pre class="signature"><code>&lt;HalFormsPageLayout&gt;
+    &lt;h1&gt;Detail člena&lt;/h1&gt;
+    &lt;HalFormButton name="updateMember" modal={true} /&gt;
+    &lt;HalFormButton name="suspendMember" modal={false} /&gt;
+&lt;/HalFormsPageLayout&gt;</code></pre>
+
+<h3>Custom layout formuláře</h3>
+
+<p>
+    Default layout vyrendruje pole pod sebou. Pro vlastní rozložení existují dva patterny — children
+    s <code>HalFormsFormField</code> nebo callback s <code>renderField(name)</code>:
+</p>
+
+<pre class="signature"><code>// Children pattern
+&lt;HalFormButton name="editMember" modal={true} customLayout={
+    &lt;div className="grid grid-cols-2 gap-4"&gt;
+        &lt;HalFormsFormField fieldName="firstName" /&gt;
+        &lt;HalFormsFormField fieldName="lastName" /&gt;
+        &lt;HalFormsFormField fieldName="submit" /&gt;
+    &lt;/div&gt;
+} /&gt;
+
+// Callback pattern
+&lt;HalFormButton name="editMember" modal={true} customLayout={(renderField) =&gt; (
+    &lt;&gt;
+        {renderField('firstName')}
+        {renderField('lastName')}
+        {renderField('submit')}
+    &lt;/&gt;
+)} /&gt;</code></pre>
+
+<aside class="note">
+    Pro <strong>inline</strong> formuláře nejde předat <code>customLayout</code> přes
+    <code>HalFormButton</code> — místo toho použijte <code>customLayouts</code> prop na
+    <code>HalFormsPageLayout</code> (mapa <code>templateName → layout</code>).
+</aside>
+
+<h2>KlabisTable — tabulka pro HAL collection</h2>
+
+<p>
+    Komponenta v <code>src/components/KlabisTable/</code>. Sloupce se deklarují přes
+    <code>&lt;TableCell&gt;</code> children (extrakce ve renderu). Stav (paginace, sort) se kontroluje
+    z parent komponenty.
+</p>
+
+<pre class="signature"><code>interface KlabisTableProps&lt;T extends Record&lt;string, unknown&gt;&gt; {
+    data: T[];
+    page?: TablePageData;
+    error?: Error | null;
+    onSortChange?: (column: string, direction: SortDirection) =&gt; void;
+    onPageChange?: (page: number) =&gt; void;
+    onRowsPerPageChange?: (size: number) =&gt; void;
+    onRowClick?: (item: T) =&gt; void;
+    currentPage?: number;
+    currentSort?: SortState;
+    children: ReactNode;            // &lt;TableCell&gt; deklarace
+}</code></pre>
+
+<pre class="signature"><code>&lt;KlabisTable
+    data={items}
+    page={pageInfo}
+    currentPage={page}
+    currentSort={sort}
+    onPageChange={setPage}
+    onSortChange={(col, dir) =&gt; setSort({ by: col, direction: dir })}
+    onRowClick={(member) =&gt; navigate(toHref(getLink(member, 'self')!))}
+&gt;
+    &lt;TableCell column="registrationNumber" sortable&gt;Reg. číslo&lt;/TableCell&gt;
+    &lt;TableCell column="firstName" sortable&gt;Jméno&lt;/TableCell&gt;
+    &lt;TableCell column="email" hidden&gt;Email&lt;/TableCell&gt;
+    &lt;TableCell column="status" dataRender={({ value }) =&gt; (
+        &lt;Badge&gt;{getEnumLabel('memberStatus', value as string)}&lt;/Badge&gt;
+    )} /&gt;
+&lt;/KlabisTable&gt;</code></pre>
+
+<dl class="api-list">
+    <dt>column (povinné)</dt>
+    <dd>Klíč v datovém objektu. Použije se k zobrazení hodnoty a pro sort.</dd>
+
+    <dt>sortable</dt>
+    <dd>Zapíná řadicí šipky v hlavičce. Sort se předává nahoru přes <code>onSortChange</code>.</dd>
+
+    <dt>hidden</dt>
+    <dd>Sloupec není defaultně viditelný (uživatel ho může zapnout v column toggleru).</dd>
+
+    <dt>alwaysVisible</dt>
+    <dd>Sloupec nelze skrýt — užitečné pro klíčové identifikátory.</dd>
+
+    <dt>dataRender</dt>
+    <dd>Custom render buňky: <code>({ item, column, value }) =&gt; ReactNode</code>. Bez ní se
+        renderuje <code>String(value)</code>.</dd>
+</dl>
+
+<aside class="note">
+    Pro mobilní zařízení tabulka automaticky přepíná na <code>CardView</code> (každý řádek = card).
+    Detekce je přes <code>useMediaQuery</code>.
+</aside>
+
+<h3>KlabisTableWithQuery</h3>
+
+<p>
+    Wrapper, který kombinuje <code>KlabisTable</code> s React Query / HAL fetchingem — vhodný pro
+    stránky, kde nepotřebujete vlastní řízení dat. Podívejte se na implementaci, pokud chcete
+    rovnou tabulku z HAL collection bez explicitního <code>useQuery</code>.
+</p>
+
+<h2>Customizace stránky</h2>
+
+<p>
+    Klabis frontend podporuje dvě úrovně customizace:
+</p>
+
+<dl class="api-list">
+    <dt>Plně generované (GenericHalPage)</dt>
+    <dd>Stránka je vygenerována kompletně z HAL metadat — žádný custom kód, jen routing. Vhodné
+        pro standardní CRUD obrazovky.</dd>
+
+    <dt>Customizovaná stránka</dt>
+    <dd>Vlastní layout, vlastní text, mix HAL komponent a custom kódu. Začíná
+        <code>useHalPageData()</code>, končí v <code>HalFormsPageLayout</code>. Tomuto patternu se
+        věnuje <code>COMPONENTS.md</code> v <code>src/components/HalNavigator2/</code>.</dd>
+</dl>
+
+<h3>Šablona customizované stránky</h3>
+
+<pre class="signature"><code>export const EventDetailsPage = () =&gt; {
+    const { resourceData, isLoading, error, route } = useHalPageData&lt;EventDetail&gt;();
+
+    if (isLoading) return &lt;Spinner /&gt;;
+    if (error)     return &lt;ErrorDisplay error={error} /&gt;;
+    if (!resourceData) return null;
+
+    return (
+        &lt;HalFormsPageLayout&gt;
+            &lt;h1&gt;{resourceData.name}&lt;/h1&gt;
+            &lt;DetailRow label={labels.event.date} value={resourceData.date} /&gt;
+
+            {/* Sekce s linky */}
+            &lt;HalLinksSection /&gt;
+
+            {/* Akce — všechny dostupné šablony */}
+            &lt;HalFormsSection modal={true} /&gt;
+
+            {/* Specifické tlačítko se zobrazí jen pokud má uživatel oprávnění */}
+            &lt;HalFormButton name="cancelEvent" modal={true} /&gt;
+        &lt;/HalFormsPageLayout&gt;
+    );
+};</code></pre>
+
+<h2>Lokalizace</h2>
+
+<p>
+    In-house systém v <code>src/localization/labels.ts</code>, žádný i18n framework (Klabis je
+    jednojazyčný — čeština). Importujte z <code>@/localization</code>:
+</p>
+
+<pre class="signature"><code>import { labels, getFieldLabel, getTemplateLabel, getNavLabel, getEnumLabel } from '@/localization';
+
+labels.member.firstName                                    // "Jméno"
+getFieldLabel('eventDate')                                 // z labels.ts
+getFieldLabel('eventDate', { eventDate: 'Custom popisek' }) // per-form override
+getTemplateLabel('updateMember')                           // "Upravit"
+getEnumLabel('memberStatus', 'ACTIVE')                     // "Aktivní"</code></pre>
+
+<dl class="api-list">
+    <dt>getFieldLabel</dt>
+    <dd>Použije se v <code>HalFormsInput</code> pro popisky polí formuláře. Druhý argument umožňuje
+        per-form override.</dd>
+
+    <dt>getTemplateLabel</dt>
+    <dd>Použije se v <code>HalFormTemplateButton</code> pro popisek submit tlačítka.</dd>
+
+    <dt>getNavLabel</dt>
+    <dd>Pro položky v hlavní navigaci (<code>useRootNavigation</code>).</dd>
+</dl>
+
+<h2>Autentizace a fetch</h2>
+
+<dl class="api-list">
+    <dt>klabisUserManager (<code>src/api/klabisUserManager.ts</code>)</dt>
+    <dd><code>oidc-client-ts</code> wrapper. Authorization Code Grant + PKCE proti Klabis backendu
+        (<code>https://localhost:8443</code> v devu, proxováno přes Vite). Konfigurace přes Vite env
+        proměnné <code>VITE_OAUTH_CLIENT_ID</code>, <code>VITE_OAUTH_CLIENT_SECRET</code>,
+        <code>VITE_OAUTH_SCOPE</code>.</dd>
+
+    <dt>authorizedFetch (<code>src/api/authorizedFetch.ts</code>)</dt>
+    <dd>Wrapper přes <code>fetch</code>, který automaticky přidává <code>Authorization: Bearer …</code>,
+        řeší token refresh a 401 redirect na login.</dd>
+
+    <dt>useAuthorizedQuery / useAuthorizedMutation (<code>src/hooks/useAuthorizedFetch.ts</code>)</dt>
+    <dd>React Query wrappery nad <code>authorizedFetch</code>. Použijte je pro vlastní HTTP volání
+        mimo HAL navigation flow.</dd>
+</dl>
+
+<aside class="note">
+    Pro typesafe volání známých endpointů použijte <code>useKlabisApiQuery</code> /
+    <code>useKlabisApiMutation</code> z <code>src/api/index.ts</code> — generované typy
+    z OpenAPI specifikace. Pro HAL navigation use cases ale typicky stačí
+    <code>useHalPageData()</code>.
+</aside>
+
+<h2>Lokální vývoj</h2>
+
+<table class="ref-table">
+    <thead><tr><th>Port</th><th>Použití</th></tr></thead>
+    <tbody>
+        <tr><td><code>3000</code></td><td><strong>Vždy</strong> používejte pro vývoj a Playwright testy. Vite HMR auto-reload.</td></tr>
+        <tr><td><code>8443</code></td><td>Backend + statický bundle (poslední <code>npm run refresh-backend-server-resources</code>). HMR neexistuje.</td></tr>
+    </tbody>
+</table>
+
+<aside class="note warn">
+    Před commitem frontend změn vždy spusťte <code>npm run refresh-backend-server-resources</code> —
+    publikuje nový bundle do <code>backend/src/main/resources/static/</code>. Skript napřed pustí
+    testy a buildí jen pokud projdou.
+</aside>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>frontend/CLAUDE.md</code> — build, test, OAuth2 konfigurace, deployment.</li>
+    <li><code>frontend/DESIGN.md</code> — design tokeny a UI knihovna.</li>
+    <li><code>src/components/HalNavigator2/COMPONENTS.md</code> — detailní popis HAL komponent (modal/inline orchestrace, custom layouts, MultiStepFormModal).</li>
+    <li><code>src/components/HalNavigator2/MULTI_STEP_FORM.md</code> — vícekrokové formuláře.</li>
+    <li>Skill <code>hal-navigator-patterns</code> — auto-load v <code>frontend-developer</code> agentu, kompletní vzory pro HAL+FORMS práci.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="10-testing.html">← 10 · Testování</a>
+    <a href="12-claude-workflow.html">12 · Práce s Claude Code →</a>
+</nav>
+
+</body>
+</html>

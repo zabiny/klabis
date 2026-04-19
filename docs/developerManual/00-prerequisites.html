@@ -146,7 +146,55 @@ public void on(MemberCreatedEvent event) { … }</code></pre>
     <dd>SQL migrace s verzí. Klabis má jen 3 baseline skripty (V001 doménové tabulky, V002 OAuth2, V003 Modulith). Změny schématu se zapisují přímo do existujících scriptů (DB se v devu resetuje). <a class="ext" href="https://documentation.red-gate.com/flyway" target="_blank" rel="noopener">docs</a></dd>
 </dl>
 
-<h2>Testovací stack</h2>
+<h2>Frontend stack</h2>
+<p>
+    Frontend je SPA v <strong>React 19 + TypeScript 5.8</strong> postavená přes <strong>Vite 7</strong>.
+    Klabis-specific patterny pro práci s HAL+FORMS odpověďmi popisuje kap. 11.
+</p>
+<dl class="api-list">
+    <dt>React + TypeScript + Vite</dt>
+    <dd>Bundler s HMR, dev server na portu 3000.
+        <a class="ext" href="https://react.dev/" target="_blank" rel="noopener">React</a>
+        · <a class="ext" href="https://vitejs.dev/" target="_blank" rel="noopener">Vite</a></dd>
+
+    <dt>TanStack Query (React Query)</dt>
+    <dd>Server-state management — cache, deduplication, refetching. Konvence:
+        <code>refetchOnWindowFocus: false</code>, <code>retry: 1</code>, query keys jako
+        <code>['members']</code>, <code>['members', id]</code>.
+        <a class="ext" href="https://tanstack.com/query/latest" target="_blank" rel="noopener">docs</a></dd>
+
+    <dt>React Router DOM</dt>
+    <dd>Client-side routing. URL je single source of truth pro aktuální resource (<code>HalRouteContext</code>
+        kombinuje pathname s HAL fetch).
+        <a class="ext" href="https://reactrouter.com/" target="_blank" rel="noopener">docs</a></dd>
+
+    <dt>Tailwind CSS</dt>
+    <dd>Utility-first styling. Klabis má vlastní theme tokens v <code>src/theme/</code>.
+        <a class="ext" href="https://tailwindcss.com/docs" target="_blank" rel="noopener">docs</a></dd>
+
+    <dt>Formik + Yup</dt>
+    <dd>Form state + validační schémata. HAL+FORMS komponenty Formik používají interně — vlastní
+        Formik formuláře potřebujete jen mimo HAL flow.
+        <a class="ext" href="https://formik.org/docs/overview" target="_blank" rel="noopener">Formik</a>
+        · <a class="ext" href="https://github.com/jquense/yup" target="_blank" rel="noopener">Yup</a></dd>
+
+    <dt>oidc-client-ts</dt>
+    <dd>OAuth2/OIDC klient — Authorization Code Grant + PKCE. Wrapper v
+        <code>src/api/klabisUserManager.ts</code>.
+        <a class="ext" href="https://github.com/authts/oidc-client-ts" target="_blank" rel="noopener">docs</a></dd>
+
+    <dt>openapi-fetch + openapi-react-query</dt>
+    <dd>Typesafe HTTP klient nad TanStack Query, generovaný z OpenAPI specifikace
+        (<code>npm run openapi</code> generuje <code>src/api/klabisApi.d.ts</code>).
+        <a class="ext" href="https://openapi-ts.dev/openapi-fetch/" target="_blank" rel="noopener">openapi-fetch</a></dd>
+
+    <dt>Vitest + Testing Library</dt>
+    <dd>Frontend testovací runner (jsdom environment). Testy v <code>src/**/*.{test,spec}.{ts,tsx}</code>.
+        <a class="ext" href="https://vitest.dev/" target="_blank" rel="noopener">Vitest</a>
+        · <a class="ext" href="https://testing-library.com/docs/" target="_blank" rel="noopener">Testing Library</a></dd>
+</dl>
+
+<h2>Testovací stack (backend)</h2>
 <p>
     JUnit 5, AssertJ, Mockito a Spring Boot test slicy
     (<code>@WebMvcTest</code>, <code>@DataJdbcTest</code>, <code>@SpringBootTest</code>).
