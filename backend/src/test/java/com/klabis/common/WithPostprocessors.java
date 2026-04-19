@@ -1,6 +1,5 @@
 package com.klabis.common;
 
-import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -16,13 +15,15 @@ import java.lang.annotation.Target;
  * slices can load the MVC scan without {@code UnsatisfiedDependencyException}.
  * <p>
  * Add new entries here whenever a postprocessor gains a new dependency type.
+ * <p>
+ * Beans treated as feature flags via {@code Optional<T>} injection (e.g. {@code OrisEventImportPort})
+ * must NOT be added here — the mere presence of the mock would activate the feature in every test.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @MockitoBean(types = {
         FamilyGroupRepository.class,
-        TrainingGroupRepository.class,
-        OrisEventImportPort.class
+        TrainingGroupRepository.class
 })
 public @interface WithPostprocessors {
 }

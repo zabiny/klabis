@@ -86,10 +86,10 @@ class MemberControllerApiTest {
     @MockitoBean
     private RegistrationPort registrationService;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @TestBean

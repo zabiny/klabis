@@ -52,6 +52,8 @@ public class HalFormsSupport {
         this.ownershipResolverProvider = ownershipResolverProvider;
     }
 
+    // TODO: this static causes troubles in tests (some tests are not starting full context and this post construct may not be called yet, so tests are working without ownership resolver)
+    // (try to find out way how to do this resolved directly from data)
     @PostConstruct
     void init() {
         INSTANCE = this;

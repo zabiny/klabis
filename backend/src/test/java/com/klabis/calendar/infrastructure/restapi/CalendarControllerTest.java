@@ -51,7 +51,7 @@ class CalendarControllerTest {
 
         @Test
         @DisplayName("should return 200 with paginated calendar items when dates provided")
-        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldListCalendarItemsWithDates() throws Exception {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
@@ -215,7 +215,7 @@ class CalendarControllerTest {
 
         @Test
         @DisplayName("should return 200 with calendar item details for event-linked item")
-        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldGetEventCalendarItem() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
             UUID eventId = UUID.randomUUID();
@@ -597,7 +597,7 @@ class CalendarControllerTest {
 
         @Test
         @DisplayName("should return both EVENT_DATE and EVENT_REGISTRATION_DATE items with self and event links, no edit/delete affordances")
-        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturnBothKindsWithCorrectHateoasLinks() throws Exception {
             LocalDate startDate = LocalDate.of(2025, 6, 1);
             LocalDate endDate = LocalDate.of(2025, 6, 30);
