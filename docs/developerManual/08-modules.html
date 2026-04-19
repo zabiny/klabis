@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Spring Modulith a moduly — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>08 · Spring Modulith a moduly</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Spring Modulith a moduly</h1>
+
+<p class="lead">
+    Komunikace mezi moduly probíhá <strong>výhradně přes domain eventy</strong>. Spring Modulith
+    publikuje eventy přes <strong>transactional outbox pattern</strong> (tabulka
+    <code>event_publication</code>). Listenery v jiných modulech reagují asynchronně, mají vlastní
+    transakci a automatický retry. Tato kapitola pokrývá způsob, jakým moduly Klabisu komunikují,
+    publikaci, listenery, idempotenci a observability metriky.
+</p>
+
+<h2>Publikace eventu</h2>
+
+<p>
+    Event se registruje na agregátu pomocí <code>registerEvent(...)</code>. Spring po
+    úspěšném <code>save()</code> a commitu transakce vytvoří záznamy v
+    <code>event_publication</code> a předá eventy listenerům.
+</p>
+
+<pre class="signature"><code>public class Member extends KlabisAggregateRoot&lt;Member, MemberId&gt; {
+    public static Member registerNewMember(...) {
+        Member m = new Member(...);
+        m.registerEvent(MemberCreatedEvent.fromAggregate(m));
+        return m;
+    }
+}</code></pre>
+
+<aside class="note">
+    Event třída leží v kořenovém package modulu (je veřejné API), nikoli v <code>domain/</code> —
+    aby ji mohly importovat jiné moduly.
+</aside>
+
+<h2>@ApplicationModuleListener</h2>
+
+<p>
+    Listener je <code>@Component</code> v <code>{module}/infrastructure/listeners/</code>.
+    <code>@ApplicationModuleListener</code> automaticky:
+</p>
+
+<ul>
+    <li>Spustí handler v <strong>nové transakci</strong> (REQUIRES_NEW), takže selhání nebrání commitu publikujícího agregátu.</li>
+    <li>Zařídí <strong>asynchronní</strong> doručení.</li>
+    <li>Při výjimce zaznamená neúspěch v outboxu a Spring Modulith ho po restartu znovu publikuje
+        (incomplete event detection).</li>
+</ul>
+
+<pre class="signature"><code>@Component
+@PrimaryAdapter
+public class UserCreatedEventHandler {
+
+    @ApplicationModuleListener
+    public void onUserCreated(UserCreatedEvent event) {
+        if (event.accountStatus() != AccountStatus.PENDING_ACTIVATION) return;
+        if (event.email().isEmpty()) return;
+        // … vygeneruj token, odešli email …
+    }
+}</code></pre>
+
+<h2>Transactional outbox</h2>
+
+<p>
+    Spring Modulith ukládá publikované eventy do tabulky <code>event_publication</code>
+    (V003 migrace). Klabis používá tyto klíčové vlastnosti:
+</p>
+
+<ul>
+    <li><strong>completion-mode: UPDATE</strong> — po úspěchu se publikace označí jako kompletní,
+        ne smazána (= audit trail).</li>
+    <li><strong>republish on restart</strong> — incomplete eventy starší než 5 minut se po startu
+        aplikace znovu publikují.</li>
+    <li><strong>cleanup po 7 dnech</strong> — kompletní záznamy se mažou.</li>
+</ul>
+
+<aside class="note">
+    Konfigurace je v <code>application.yml</code> pod <code>spring.modulith.events.*</code>.
+    Detailní popis flow viz <code>backend/docs/EVENT-DRIVEN-ARCHITECTURE.md</code>.
+</aside>
+
+<h2>Idempotence</h2>
+
+<p>
+    Listener musí být <strong>idempotentní</strong> — Spring Modulith může událost doručit víckrát
+    (po výjimce, restartu). Typické vzory:
+</p>
+
+<ul>
+    <li>Kontrola "už existuje?" před vytvořením (např. pomocí stabilního ID z eventu).</li>
+    <li>Stavový check (jako v ukázce výše: ignorovat, pokud uživatel už není <code>PENDING_ACTIVATION</code>).</li>
+    <li>Idempotentní operace (např. přidat člena do skupiny — pokud už tam je, nevyhodí výjimku).</li>
+</ul>
+
+<h2>Konvence event flow</h2>
+
+<ol>
+    <li>Doménová akce → agregát zaregistruje event přes <code>registerEvent(...)</code>.</li>
+    <li><code>save(aggregate)</code> v application service spustí publikaci.</li>
+    <li>Spring Modulith vloží záznam do outboxu, commit transakce.</li>
+    <li>Po commitu se eventy doručí všem <code>@ApplicationModuleListener</code>.</li>
+    <li>Listener si načte vlastní data přes svůj application service (ne z eventu — event nese pouze ID).</li>
+    <li>Pokud listener selže, outbox záznam zůstane "incomplete" a Modulith ho po restartu zopakuje.</li>
+</ol>
+
+<aside class="note warn">
+    Eventy nemají obsahovat byznys data, jen <strong>ID</strong> a minimální payload nutný k
+    rozhodnutí (např. typ akce). Pokud listener potřebuje detail, načte si ho přes service. Eliminuje
+    se tím riziko zastaralého snapshotu v eventu.
+</aside>
+
+<h2>Observability</h2>
+
+<p>
+    Profil <code>metrics</code> aktivuje <code>CustomMetricsConfiguration</code>, který expose
+    Micrometer metriky:
+</p>
+
+<table class="ref-table">
+    <thead><tr><th>Metrika</th><th>Význam</th></tr></thead>
+    <tbody>
+        <tr><td><code>spring.modulith.events.published</code></td><td>Counter — celkový počet publikovaných eventů.</td></tr>
+        <tr><td><code>spring.modulith.events.incomplete</code></td><td>Gauge — aktuální počet nedokončených eventů (backlog).</td></tr>
+        <tr><td><code>spring.modulith.events.latency</code></td><td>Histogram doby zpracování (ms).</td></tr>
+    </tbody>
+</table>
+
+<p>
+    Dostupné na <code>/actuator/prometheus</code>. <code>CustomMetricsTrackingAspect</code> obaluje
+    listenery a měří jejich latence.
+</p>
+
+<h2>Verifikace pravidel závislostí</h2>
+
+<p>
+    Pravidla závislostí mezi moduly (kap. 01) automaticky ověřuje Spring Modulith. V projektu existuje
+    <code>ApplicationModulesTest</code>, který obsahuje:
+</p>
+
+<pre class="signature"><code>ApplicationModules.of(KlabisApplication.class).verify();</code></pre>
+
+<p>
+    Tento test selže, pokud modul importuje nepublikovaný typ z jiného modulu (např.
+    <code>events.application</code> z <code>members.application</code>).
+</p>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend/docs/EVENT-DRIVEN-ARCHITECTURE.md</code> — diagram event flows mezi moduly.</li>
+    <li><code>developer:event-driven-integration</code> skill — patterny pro cross-modul integraci.</li>
+    <li>Příklad: <code>UserCreatedEventHandler</code> v <code>common/users/infrastructure/listeners/</code>.</li>
+    <li>Kap. 07 — <code>EmailService</code> a <code>TemplateRenderer</code>, typičtí konzumenti event listenerů.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="07-common.html">← 07 · Common — sdílené stavební bloky</a>
+    <a href="09-cross-cutting.html">09 · Cross-cutting concerns →</a>
+</nav>
+
+</body>
+</html>

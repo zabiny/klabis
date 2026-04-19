@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Common — sdílené stavební bloky — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>07 · Common — sdílené stavební bloky</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Common — sdílené stavební bloky</h1>
+
+<p class="lead">
+    Tato kapitola popisuje znovu-použitelné domain/infrastructure bloky, které sdílí všechny moduly:
+    <code>UserGroup</code> (kompozice pro skupiny s členstvím a invitation flow), <code>EmailService</code>
+    a <code>TemplateRenderer</code> pro odesílání emailů a doménovou hierarchii výjimek mapovanou na
+    HTTP statusy.
+</p>
+
+<h2>UserGroup building block</h2>
+
+<p>
+    <code>common.usergroup</code> obsahuje znovu-použitelný stavební blok pro skupiny uživatelů s
+    vlastnictvím (owners) a členstvím (members). Není to agregát — identita patří agregátu, který
+    <code>UserGroup</code> embeduje (kompozice). Aktuálně ho používají agregáty
+    <code>FamilyGroup</code>, <code>TrainingGroup</code> a <code>FreeGroup</code> v modulu
+    <code>groups</code>.
+</p>
+
+<h3>UserGroup</h3>
+
+<p>
+    Drží jméno skupiny, množinu vlastníků (<code>UserId</code>) a množinu členství
+    (<code>GroupMembership</code>). Bez závislosti na Spring frameworku — čistě doménový kód.
+</p>
+
+<pre class="signature"><code>public class UserGroup {
+    public static UserGroup create(String name, UserId owner);
+    public static UserGroup reconstruct(String name, Set&lt;UserId&gt; owners, Set&lt;GroupMembership&gt; members);
+
+    public void rename(String newName);
+    public void addMember(UserId userId);
+    public void removeMember(UserId userId);
+    public void addOwner(UserId userId);
+    public void removeOwner(UserId userId);
+
+    public boolean isOwner(UserId userId);
+    public boolean hasMember(UserId userId);
+    public boolean isLastOwner(UserId userId);
+
+    public String getName();
+    public Set&lt;UserId&gt; getOwners();
+    public Set&lt;GroupMembership&gt; getMembers();
+}</code></pre>
+
+<h3>Použití přes kompozici</h3>
+
+<pre class="signature"><code>public class FamilyGroup extends KlabisAggregateRoot&lt;FamilyGroup, FamilyGroupId&gt; {
+    private final FamilyGroupId id;
+    private final UserGroup userGroup;
+
+    public static FamilyGroup create(CreateFamilyGroup command) {
+        UserGroup userGroup = UserGroup.create(command.name(), command.ownerId());
+        return new FamilyGroup(FamilyGroupId.newId(), userGroup);
+    }
+
+    public void addMember(UserId userId) {
+        userGroup.addMember(userId);
+        registerEvent(...);
+    }
+}</code></pre>
+
+<aside class="note">
+    Výhoda kompozice (vs. dědičnost): různé agregáty mají různé další chování (FamilyGroup
+    automaticky přidá ownera i jako membera, TrainingGroup ne) a nepotřebují dědit konkrétní
+    invariants.
+</aside>
+
+<h3>Invariants vynucované UserGroup</h3>
+
+<ul>
+    <li>Jméno skupiny nesmí být prázdné.</li>
+    <li>Skupina musí mít aspoň jednoho vlastníka. Pokus o odstranění posledního vyhodí
+        <code>CannotRemoveLastOwnerException</code>.</li>
+    <li>Vlastník nemůže být odstraněn jako člen (pouze jako vlastník) —
+        <code>OwnerCannotBeRemovedFromGroupException</code>.</li>
+    <li>Stejný uživatel nemůže být přidán dvakrát — <code>MemberAlreadyInGroupException</code>.</li>
+    <li>Odstranění neexistujícího člena vyhodí <code>MemberNotInGroupException</code>.</li>
+</ul>
+
+<h3>WithInvitations — invitation flow</h3>
+
+<p>
+    Některé skupiny pracují s pozvánkami místo přímého přidání člena. Pro ně existuje samostatný
+    contract <code>WithInvitations</code>. Společné výjimky:
+    <code>DirectMemberAdditionNotAllowedException</code>, <code>NotInvitedMemberException</code>,
+    <code>DuplicatePendingInvitationException</code>, <code>InvitationNotFoundException</code>,
+    <code>CannotInviteExistingMemberException</code>.
+</p>
+
+<pre class="signature"><code>public interface WithInvitations {
+    void invite(UserId invitedBy, UserId target);
+    void acceptInvitation(InvitationId invitationId);
+    void rejectInvitation(InvitationId invitationId);
+
+    List&lt;Invitation&gt; getPendingInvitations();
+    Set&lt;Invitation&gt; getInvitations();
+    boolean isInvitedMember(UserId userId);
+    boolean hasMember(UserId userId);
+}</code></pre>
+
+<h3>Invitation entity</h3>
+
+<pre class="signature"><code>@Entity
+public class Invitation {
+    public static Invitation createPending(UserId invitedBy, UserId invitedUser);
+
+    public void accept();          // PENDING → ACCEPTED
+    public void reject();          // PENDING → REJECTED
+    public boolean isPending();
+    public boolean isForUser(UserId userId);
+
+    // gettery: id, invitedUser, invitedBy, status, createdAt
+}</code></pre>
+
+<p>
+    <code>InvitationStatus</code> = <code>PENDING</code> | <code>ACCEPTED</code> | <code>REJECTED</code>.
+    Po opuštění <code>PENDING</code> stavu je další transition zakázána (vyhodí
+    <code>IllegalStateException</code>).
+</p>
+
+<h3>GroupMembership</h3>
+
+<p>
+    Lehký value object popisující členství uživatele ve skupině (UserId + okamžik vstupu).
+    Slouží pro rozlišení vlastníka (<code>Set&lt;UserId&gt;</code>) od běžných členů
+    (<code>Set&lt;GroupMembership&gt;</code>).
+</p>
+
+<h3>Persistence sdíleného UserGroup</h3>
+
+<p>
+    Aktuálně mají všechny tři group agregáty (<code>FamilyGroup</code>, <code>TrainingGroup</code>,
+    <code>FreeGroup</code>) <strong>sdílenou JDBC reprezentaci</strong> (společný
+    <code>GroupMemento</code> + <code>GroupJdbcRepository</code> v modulu <code>groups</code>) s
+    type discriminator sloupcem. Každý agregát má vlastní repository adapter, ale fyzicky leží data
+    v jedné tabulce.
+</p>
+
+<h2>EmailService</h2>
+
+<pre class="signature"><code>public interface EmailService {
+    void send(EmailMessage message);
+}</code></pre>
+
+<dl class="api-list">
+    <dt>JavaMailEmailService</dt>
+    <dd>Reálné odesílání přes SMTP. Aktivní pouze s profilem <code>email</code> a nastavenými
+        <code>KLABIS_SMTP_*</code> env vars.</dd>
+
+    <dt>LoggingEmailService</dt>
+    <dd>Default v dev/test — email se vypíše do logu místo odeslání. Užitečné pro vývoj bez SMTP serveru.</dd>
+</dl>
+
+<aside class="note">
+    Implementace nikdy nesmí vyhodit výjimku — neúspěch se loguje. Email selhání nesmí blokovat
+    byznys operaci. Pro dev s reálnými emaily lze použít MailHog
+    (<code>docker compose up mailhog -d</code>).
+</aside>
+
+<h3>EmailMessage</h3>
+
+<pre class="signature"><code>public record EmailMessage(String to, String subject, String htmlBody, String textBody) {
+    public static EmailMessage html(String to, String subject, String htmlBody);
+    public static EmailMessage text(String to, String subject, String textBody);
+    public static EmailMessage multipart(String to, String subject, String htmlBody, String textBody);
+}</code></pre>
+
+<aside class="note">
+    <code>toString()</code> redactuje příjemce (<code>"to='[REDACTED]'"</code>), aby se PII
+    neobjevilo v logu.
+</aside>
+
+<h2>TemplateRenderer</h2>
+
+<pre class="signature"><code>public interface TemplateRenderer {
+    String render(Template template);
+}
+
+public record Template(Resource template, Map&lt;String, Object&gt; variables) { ... }</code></pre>
+
+<p>
+    Implementace: <code>ThymeleafTemplateRenderer</code>. Šablony jsou v
+    <code>backend/src/main/resources/templates/</code>. Použití:
+</p>
+
+<pre class="signature"><code>Template t = new Template(
+    resourceLoader.getResource("classpath:templates/password-setup.html"),
+    Map.of("firstName", firstName, "setupUrl", url));
+
+String html = templateRenderer.render(t);
+emailService.send(EmailMessage.html(to, subject, html));</code></pre>
+
+<h2>Hierarchie doménových výjimek</h2>
+
+<p>
+    Výjimky v <code>common.exceptions</code> jsou základní, doménové moduly z nich dědí. Mapování na
+    HTTP status řeší <code>MvcExceptionHandler</code> (kap. 05).
+</p>
+
+<dl class="api-list">
+    <dt>BusinessRuleViolationException (abstract)</dt>
+    <dd>Base pro porušení byznys pravidel — HTTP 400. Doménové moduly z ní dědí (např.
+        <code>InvalidUpdateException</code>, <code>MemberAlreadyInGroupException</code>).</dd>
+
+    <dt>InvalidDataException</dt>
+    <dd>Nevalidní vstupní data (jiné než Bean Validation chyby) — HTTP 400.</dd>
+
+    <dt>AuthorizationException</dt>
+    <dd>Obecné selhání autorizace — HTTP 403.</dd>
+
+    <dt>InsufficientAuthorityException</dt>
+    <dd>Uživatel nemá konkrétní autoritu — HTTP 403.</dd>
+
+    <dt>ResourceNotFoundException</dt>
+    <dd>Zdroj neexistuje — HTTP 404. Doménové moduly z ní dědí (<code>MemberNotFoundException</code>, …).</dd>
+
+    <dt>MemberProfileRequiredException</dt>
+    <dd>Akce vyžaduje Member profil, ale uživatel ho nemá — HTTP 403. Vyhazuje resolver
+        <code>@ActingMember</code>.</dd>
+</dl>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li>Aktuální implementace UserGroup v modulu <code>groups</code>: <code>FamilyGroup</code>, <code>TrainingGroup</code>, <code>FreeGroup</code>.</li>
+    <li>Kap. 05 — mapování výjimek na HTTP statusy v <code>MvcExceptionHandler</code>.</li>
+    <li>Kap. 08 — odesílání emailů z domain event listenerů.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="06-security.html">← 06 · Bezpečnost</a>
+    <a href="08-modules.html">08 · Spring Modulith a moduly →</a>
+</nav>
+
+</body>
+</html>

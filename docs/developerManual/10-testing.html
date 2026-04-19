@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Testování — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>10 · Testování</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Testování</h1>
+
+<p class="lead">
+    Testovací stack stojí na JUnit 5 + AssertJ + Mockito + Spring Boot test slicy. Klabis přidává
+    pár vlastních anotací a assertion tříd, které řeší specifické potřeby projektu — autentizaci v
+    testech, izolaci E2E flow a doménové asserty.
+</p>
+
+<h2>Pyramida v Klabisu</h2>
+
+<table class="ref-table">
+    <thead><tr><th>Vrstva</th><th>Anotace</th><th>Co testuje</th></tr></thead>
+    <tbody>
+        <tr><td>Doménový unit</td><td>plain JUnit + Mockito</td><td>Agregáty, value objects, domain services. Bez Springu.</td></tr>
+        <tr><td>Repository</td><td><code>@DataJdbcTest</code></td><td>JDBC repository adaptery + memento mapování.</td></tr>
+        <tr><td>Controller</td><td><code>@WebMvcTest</code> + <code>@WithKlabisMockUser</code></td><td>Endpoint mapping, request/response, autorizace.</td></tr>
+        <tr><td>Modulová integrace</td><td><code>@ApplicationModuleTest</code></td><td>Modul + jeho závislosti, event flows uvnitř modulu.</td></tr>
+        <tr><td>End-to-end</td><td><code>@E2ETest</code></td><td>Plný flow přes všechny moduly s MockMvc.</td></tr>
+        <tr><td>Modularita</td><td>plain test s <code>ApplicationModules</code></td><td>Verifikace pravidel závislostí.</td></tr>
+    </tbody>
+</table>
+
+<aside class="note">
+    Detailní popis pyramidy a kdy co volit najdete v <code>docs/testing-pyramid.md</code>.
+    Tato kapitola pokrývá pouze <strong>Klabis-specific nástroje</strong>.
+</aside>
+
+<h2>@WithKlabisMockUser</h2>
+
+<p>
+    Anotace pro autentizaci v testech (analog Spring <code>@WithMockUser</code>, ale produkuje
+    <code>KlabisJwtAuthenticationToken</code> s typovaným <code>UserId</code>, <code>memberIdUuid</code>
+    a <code>Authority</code>). <strong>Vždy preferujte tuto anotaci</strong> před
+    <code>@WithMockUser</code> — ta vytváří plain token bez Klabis claims a field-level autorizace
+    ji nepozná.
+</p>
+
+<pre class="signature"><code>@Retention(RUNTIME)
+@Target({METHOD, TYPE})
+@WithSecurityContext(factory = WithKlabisMockUserSecurityContextFactory.class)
+public @interface WithKlabisMockUser {
+    String userId()    default "";   // pokud chybí, vygeneruje se random
+    String memberId()  default "";   // pokud chybí, uživatel nemá Member profil
+    String username()  default "";   // pro Authentication.getName()
+    Authority[] authorities() default {};
+}</code></pre>
+
+<pre class="signature"><code>@Test
+@WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+void admin_can_update_any_member() { ... }
+
+@Test
+@WithKlabisMockUser(memberId = OWNER_ID_STRING)
+void owner_can_see_own_birth_number() { ... }</code></pre>
+
+<aside class="note warn">
+    Pokud má <code>memberId</code> hodnotu a <code>userId</code> chybí, použije se stejná hodnota i
+    pro userId (member ID = user ID podle shared-ID konvence — viz kap. 02). Pokud testujete
+    ownership-based field security, <strong>musíte</strong> nastavit <code>memberId</code>.
+</aside>
+
+<h2>@E2ETest</h2>
+
+<p>
+    Meta-anotace pro end-to-end testy. Spustí celou aplikaci se všemi moduly a poskytne
+    <code>MockMvc</code> pro HTTP volání.
+</p>
+
+<pre class="signature"><code>@ApplicationModuleTest(mode = ALL_DEPENDENCIES, verifyAutomatically = false)
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@CleanupTestData
+@Import(TestApplicationConfiguration.class)
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface E2ETest {}</code></pre>
+
+<dl class="api-list">
+    <dt>BootstrapMode.ALL_DEPENDENCIES</dt>
+    <dd>Načte tested modul + všechny moduly, na kterých závisí (přechodně). Listenery v jiných
+        modulech budou reagovat na publikované eventy.</dd>
+
+    <dt>verifyAutomatically = false</dt>
+    <dd>Vypne kontrolu závislostí mezi moduly. Tu má dělat samostatný <code>ApplicationModulesTest</code>,
+        ne každý E2E test.</dd>
+
+    <dt>@CleanupTestData</dt>
+    <dd>Listener, který po každém testu vymaže data z DB (E2E testy commitují kvůli event flow,
+        proto je nutný explicitní cleanup).</dd>
+</dl>
+
+<pre class="signature"><code>@E2ETest
+class MemberRegistrationE2ETest {
+    @Autowired MockMvc mvc;
+
+    @Test
+    @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+    void registration_creates_user_and_sends_password_email() throws Exception {
+        mvc.perform(post("/api/registration").contentType(...).content(json))
+            .andExpect(status().isCreated());
+        // … asserty na DB i emailovou frontu …
+    }
+}</code></pre>
+
+<h2>@ApplicationModuleTest pro modul</h2>
+
+<p>
+    Použijte pro testy uvnitř modulu, kdy chcete reálné Spring beany ale s izolací od ostatních
+    modulů. Pro listenery se hodí <code>PublishedEvents</code> a <code>Scenario</code> ze Spring
+    Modulith.
+</p>
+
+<pre class="signature"><code>@ApplicationModuleTest
+class CalendarUpdateOnEventChangeTest {
+    @Test
+    void event_change_creates_calendar_item(Scenario scenario) {
+        scenario.publish(new EventCreatedEvent(...))
+                .andWaitForStateChange(() -&gt; calendarRepo.findByEventId(...))
+                .andVerify(item -&gt; assertThat(item).isPresent());
+    }
+}</code></pre>
+
+<h2>Custom assertions (AssertJ)</h2>
+
+<p>
+    Pro doménové typy existují <code>AbstractAssert</code> rozšíření, která dělají testy čitelnější.
+    Aktuálně: <code>MemberAssert</code>, <code>UserAssert</code>, <code>EventAssert</code>,
+    <code>CalendarItemAssert</code>.
+</p>
+
+<pre class="signature"><code>import static com.klabis.members.MemberAssert.assertThat;
+
+assertThat(savedMember)
+    .hasFirstName("Karel")
+    .hasLastName("Vomáčka")
+    .hasRegistrationNumber("ZBM2501");</code></pre>
+
+<p>
+    Pro nový agregát napište vlastní <code>{Aggregate}Assert</code> v <code>src/test/java</code>
+    (stejný package jako agregát). Pokrývá nejčastější asserty + skrývá detaily getterů.
+</p>
+
+<h2>Memento round-trip test</h2>
+
+<p>
+    Pro každý agregát mít test, který ověří, že memento přesně zrcadlí doménový stav (po
+    <code>from(aggregate).toAggregate()</code> musí vyjít equální agregát). Chrání před chybami při
+    přidávání nových polí.
+</p>
+
+<pre class="signature"><code>@Test
+void memento_roundtrip_preserves_state() {
+    Member original = MemberTestDataBuilder.aMember().withFirstName("Karel").build();
+    Member roundtripped = MemberMemento.from(original).toMember();
+
+    assertThat(roundtripped).isEqualTo(original);   // identita podle ID
+    MemberAssert.assertThat(roundtripped).hasFirstName("Karel");
+}</code></pre>
+
+<h2>Test data buildery</h2>
+
+<p>
+    Pro každý agregát existuje fluent builder (<code>{Aggregate}TestDataBuilder</code>) v testovacím
+    classpath, který poskytuje sensible defaults a umožňuje nastavit jen relevantní pole testu.
+    Eliminuje opakující se setup kód.
+</p>
+
+<h2>Spouštění testů</h2>
+
+<aside class="note warn">
+    <strong>Vždy</strong> používejte agenta <code>test-runner</code> (skill
+    <code>developer:test-runner-skill</code>) místo přímého <code>./gradlew test</code>.
+    Důvody: zabraňuje paralelnímu Gradle (deadlock na cache lock), filtruje výstup, předává jen
+    relevantní failures.
+</aside>
+
+<h2>Gotcha: @WebMvcTest a UserService</h2>
+
+<p>
+    <code>SecurityConfiguration.jwtAuthenticationConverter()</code> potřebuje <code>UserService</code>
+    bean. V <code>@WebMvcTest</code> kontextu přidejte:
+</p>
+
+<pre class="signature"><code>@WebMvcTest(MemberController.class)
+class MemberControllerTest {
+    @MockitoBean UserService userService;
+    @MockitoBean OwnershipResolver ownershipResolver;   // pokud testujete @OwnerVisible
+    // …
+}</code></pre>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>docs/testing-pyramid.md</code> — kompletní pyramida včetně rozhodovacího stromu.</li>
+    <li><code>backend-patterns/references/testing-guide.md</code> — Klabis-specific patterny do hloubky.</li>
+    <li>Skill <code>developer:tdd-best-practices</code> — TDD workflow.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="09-cross-cutting.html">← 09 · Cross-cutting concerns</a>
+    <a href="11-claude-workflow.html">11 · Práce s Claude Code →</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Doménová vrstva — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>02 · Doménová vrstva</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Doménová vrstva</h1>
+
+<p class="lead">
+    Stavební bloky pro doménový model: <code>KlabisAggregateRoot</code> (base třída agregátu),
+    <code>AuditMetadata</code> (audit pole), type-safe ID jako value object, doporučení pro hodnotové typy
+    a domain events, a <code>EncryptedString</code> pro citlivé údaje.
+</p>
+
+<h2>KlabisAggregateRoot</h2>
+
+<p>
+    Každý agregát dědí z <code>KlabisAggregateRoot&lt;A, ID&gt;</code>, který rozšiřuje
+    Spring Data <code>AbstractAggregateRoot</code> o audit metadata a identity-based equality.
+</p>
+
+<pre class="signature"><code>public abstract class KlabisAggregateRoot&lt;A extends KlabisAggregateRoot&lt;A, ID&gt;, ID&gt;
+        extends AbstractAggregateRoot&lt;A&gt; {
+
+    public abstract ID getId();
+    public AuditMetadata getAuditMetadata();
+    public void updateAuditMetadata(AuditMetadata metadata);
+
+    @DomainEvents
+    public List&lt;Object&gt; getDomainEvents();   // pro Spring Modulith
+    public void clearDomainEvents();
+
+    // equals/hashCode podle getId()
+}</code></pre>
+
+<aside class="note">
+    Self-typed parametr <code>A extends KlabisAggregateRoot&lt;A, ID&gt;</code> umožňuje fluent API
+    z <code>AbstractAggregateRoot</code> vracet konkrétní typ agregátu.
+</aside>
+
+<h3>Použití</h3>
+
+<pre class="signature"><code>public class Member extends KlabisAggregateRoot&lt;Member, MemberId&gt; {
+
+    public static Member registerNewMember(RegisterMember command) {
+        Member member = new Member(...);
+        member.registerEvent(MemberCreatedEvent.fromAggregate(member));
+        return member;
+    }
+}</code></pre>
+
+<dl class="api-list">
+    <dt>registerEvent(event)</dt>
+    <dd>Zapíše domain event do agregátu. Spring Data ho po <code>save()</code> publikuje
+        a Spring Modulith uloží do transactional outboxu (viz kap. 08).</dd>
+
+    <dt>updateAuditMetadata(metadata)</dt>
+    <dd>Volá persistence vrstva po načtení/uložení. Aplikační kód toto nevolá.</dd>
+
+    <dt>equals/hashCode</dt>
+    <dd>Porovnává se podle <code>getId()</code>, ne podle stavu — což je správně pro DDD agregát.</dd>
+</dl>
+
+<h2>AuditMetadata</h2>
+
+<pre class="signature"><code>@RecordBuilder
+@ValueObject
+public record AuditMetadata(
+        Instant createdAt, String createdBy,
+        Instant lastModifiedAt, String lastModifiedBy,
+        Long version) {
+
+    public AuditMetadata markModified(String modifiedBy);
+    public AuditMetadata incrementVersion();
+}</code></pre>
+
+<p>
+    Vyplňuje persistence vrstva — auditor (<code>createdBy</code>/<code>lastModifiedBy</code>) je
+    extrahován ze SecurityContext (<code>registrationNumber</code> přihlášeného uživatele) v
+    <code>JdbcConfiguration</code>.
+</p>
+
+<h2>Type-safe identifikátory</h2>
+
+<p>
+    Každý agregát má vlastní typ ID — record implementující jMolecules <code>Identifier</code>.
+    Eliminuje záměnu UUID různých entit.
+</p>
+
+<pre class="signature"><code>@ValueObject
+public record MemberId(UUID value) implements Identifier {
+    public UUID uuid() { return value; }
+}</code></pre>
+
+<aside class="note">
+    Pokud má aggregát relaci 1:0–1 s jiným (jako <code>Member</code> ↔ <code>User</code>), používá se
+    <strong>shared ID</strong>: oba agregáty sdílí stejnou UUID hodnotu (<code>MemberId.toUserId()</code> /
+    <code>MemberId.fromUserId(...)</code>). Detail viz aggregate-checklist v skillu <code>backend-patterns</code>.
+</aside>
+
+<h2>Value objects</h2>
+
+<p>
+    Hodnotové typy (Address, EmailAddress, BirthNumber, …) jsou imutabilní recordy v
+    <code>{module}/domain/</code>, anotované <code>@ValueObject</code>. Validace proběhne v compact
+    konstruktoru:
+</p>
+
+<pre class="signature"><code>@ValueObject
+public record EmailAddress(String value) {
+    public EmailAddress {
+        Assert.hasText(value, "email is required");
+        Assert.isTrue(value.contains("@"), "must contain @");
+    }
+}</code></pre>
+
+<p>
+    Pro builder pattern lze přidat <code>@io.soabase.recordbuilder.core.RecordBuilder</code>.
+</p>
+
+<h2>Domain events</h2>
+
+<p>
+    Eventy jsou recordy v kořenovém package modulu (jsou součástí veřejného API):
+</p>
+
+<pre class="signature"><code>public record MemberCreatedEvent(MemberId memberId, EmailAddress email, Instant occurredAt) {
+    public static MemberCreatedEvent fromAggregate(Member member) { ... }
+}</code></pre>
+
+<p>
+    Agregát eventy registruje pomocí <code>registerEvent(event)</code>. Spring je publikuje po
+    úspěšném commitu transakce. Listenery v jiných modulech viz kap. 08.
+</p>
+
+<h2>Repository (interface)</h2>
+
+<p>
+    Repository <em>interface</em> patří do <code>domain/</code> a deklaruje pouze doménové operace.
+    Implementace (JDBC adapter) je v <code>infrastructure/jdbc/</code> — viz kap. 04.
+</p>
+
+<pre class="signature"><code>@org.jmolecules.architecture.hexagonal.SecondaryPort
+public interface MemberRepository {
+    Optional&lt;Member&gt; findById(MemberId id);
+    Member save(Member member);
+}</code></pre>
+
+<h2>EncryptedString — GDPR-citlivá pole</h2>
+
+<p>
+    Value object pro řetězce, které musí být šifrované at-rest. Spring Data JDBC konvertery zajistí
+    transparentní šifrování/dešifrování (Jasypt). <code>toString()</code> vrací <code>"***"</code>,
+    aby hodnota neunikla do logů.
+</p>
+
+<pre class="signature"><code>public record EncryptedString(String value) {
+    public static EncryptedString of(String value);
+    @Override public String toString() { return "***"; }
+}</code></pre>
+
+<p>
+    Použití v doméně — pole, které má být šifrováno, má v memento typ <code>EncryptedString</code>;
+    konvertery jsou registrované v <code>JdbcConfiguration</code>. Manuální šifrování (mimo JDBC)
+    přes <code>EncryptionService</code>.
+</p>
+
+<aside class="note">
+    Příklady v repu: <code>Member</code> používá <code>EncryptedString</code> pro
+    <code>BirthNumber</code> v memento vrstvě (viz <code>members/infrastructure/jdbc/MemberMemento</code>).
+    Audit access k citlivému poli se loguje pomocí <code>BirthNumberAccessedEvent</code>.
+</aside>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — sekce "Aggregate" a "Type-safe IDs".</li>
+    <li><code>aggregate-checklist.md</code> v <code>backend-patterns/references/</code> — kompletní postup pro nový agregát.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="01-architecture.html">← 01 · Architektura projektu</a>
+    <a href="03-services.html">03 · Aplikační vrstva (services) →</a>
+</nav>
+
+</body>
+</html>

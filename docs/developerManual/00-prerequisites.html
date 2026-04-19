@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Předpoklady — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>00 · Předpoklady</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Předpoklady</h1>
+
+<p class="lead">
+    Tato stránka je rozcestník pro vývojáře, kteří se potřebují rychle zorientovat
+    v technologiích používaných v Klabisu. Každá sekce dává pětivětný přehled
+    a odkaz na oficiální dokumentaci. Pokud vám něco zní povědomě, klidně přeskočte.
+</p>
+
+<h2>Java 21 a Spring Boot 4</h2>
+<p>
+    Backend běží na Javě 21+ a Spring Bootu 4.0.x. Spring Boot je opinionated kontejner pro Spring aplikace
+    se startovacími závislostmi, auto-konfigurací, embedded serverem a "production-ready" nástroji
+    (actuator, health checky). Konfigurace se píše do <code>application.yml</code> nebo přes proměnné prostředí.
+</p>
+<p>
+    <a class="ext" href="https://docs.spring.io/spring-boot/index.html" target="_blank" rel="noopener">Spring Boot Reference</a>
+    · <a class="ext" href="https://docs.oracle.com/en/java/javase/21/" target="_blank" rel="noopener">Java 21 docs</a>
+</p>
+
+<h2>Domain-Driven Design (DDD) — taktické patterny</h2>
+<p>
+    Klabis používá taktické DDD building blocks: <strong>Aggregate Root</strong> (kořen konzistenčního celku),
+    <strong>Entity</strong> (objekt s identitou), <strong>Value Object</strong> (immutable hodnota bez identity),
+    <strong>Domain Event</strong> (fakt, který se v doméně stal) a <strong>Repository</strong> (kolekce-like
+    přístup k agregátům). Cílem je modelovat byznys jazykem (ubiquitous language) a držet invariants uvnitř agregátu.
+</p>
+<p>
+    <a class="ext" href="https://www.domainlanguage.com/ddd/reference/" target="_blank" rel="noopener">DDD Reference (Eric Evans, PDF)</a>
+    · <a class="ext" href="https://martinfowler.com/bliki/DDD_Aggregate.html" target="_blank" rel="noopener">DDD Aggregate (Fowler)</a>
+</p>
+
+<h2>Hexagonální architektura (Ports &amp; Adapters)</h2>
+<p>
+    Doménová logika je v "hexagonu" obklopeném <em>porty</em> (interfaces) a <em>adaptéry</em> (implementace).
+    Primární porty (in) jsou volány UI/REST, sekundární porty (out) jsou volány doménou (typicky persistence).
+    Klabis to kombinuje s jMolecules anotacemi (<code>@PrimaryPort</code>, <code>@SecondaryPort</code>,
+    <code>@PrimaryAdapter</code>, <code>@SecondaryAdapter</code>) a fyzicky to dělí do package
+    <code>domain</code> / <code>application</code> / <code>infrastructure</code>.
+</p>
+<p>
+    <a class="ext" href="https://alistair.cockburn.us/hexagonal-architecture/" target="_blank" rel="noopener">Hexagonal Architecture (Cockburn)</a>
+    · <a class="ext" href="https://jmolecules.org/" target="_blank" rel="noopener">jMolecules</a>
+</p>
+
+<h2>Spring Modulith</h2>
+<p>
+    Modulární monolit organizovaný do <strong>application modules</strong> (kořenové package pod
+    <code>com.klabis</code>). Spring Modulith vynucuje pravidla závislostí mezi moduly, publikuje
+    domain eventy přes <strong>transactional outbox</strong> (tabulka <code>event_publication</code>) a podporuje
+    <code>@ApplicationModuleTest</code> pro izolované testování modulu.
+</p>
+<pre class="signature"><code>@ApplicationModuleListener
+public void on(MemberCreatedEvent event) { … }</code></pre>
+<p>
+    <a class="ext" href="https://docs.spring.io/spring-modulith/reference/" target="_blank" rel="noopener">Spring Modulith Reference</a>
+</p>
+
+<h2>Spring Data JDBC</h2>
+<p>
+    Lehký ORM postavený na agregátu jako jednotce perzistence. Bez lazy loadingu, bez session, bez change-trackingu —
+    při <code>save()</code> se ukládá celý agregát. Mapování přes konvence + <code>JdbcCustomConversions</code>
+    pro vlastní typy. V Klabisu se ukládá přes <strong>Memento pattern</strong>: doménový agregát se
+    konvertuje do persistence-only recordu (memento), repository ukládá memento.
+</p>
+<p>
+    <a class="ext" href="https://docs.spring.io/spring-data/relational/reference/jdbc.html" target="_blank" rel="noopener">Spring Data JDBC Reference</a>
+</p>
+
+<h2>Spring Security a OAuth2</h2>
+<p>
+    Aplikace funguje současně jako <strong>Authorization Server</strong> (vydává JWT tokeny) i jako
+    <strong>Resource Server</strong> (validuje vlastní tokeny). Frontend je SPA klient, který získává
+    access token přes Authorization Code Grant + PKCE. Method security se zapíná
+    <code>@EnableMethodSecurity</code>, autorizace se vyhodnocuje přes <code>AuthorizationManager</code>
+    a <code>AuthorizationAdvisor</code>.
+</p>
+<p>
+    <a class="ext" href="https://docs.spring.io/spring-security/reference/" target="_blank" rel="noopener">Spring Security Reference</a>
+    · <a class="ext" href="https://docs.spring.io/spring-authorization-server/reference/" target="_blank" rel="noopener">Spring Authorization Server</a>
+    · <a class="ext" href="https://datatracker.ietf.org/doc/html/rfc6749" target="_blank" rel="noopener">OAuth2 RFC 6749</a>
+</p>
+
+<h2>Spring HATEOAS, HAL, HAL+FORMS</h2>
+<p>
+    REST API vrací JSON podle <strong>HAL</strong> (links + embedded resources). Klabis používá
+    rozšíření <strong>HAL+FORMS</strong> (media type
+    <code>application/prs.hal-forms+json</code>), které navíc popisuje <em>affordances</em> —
+    tj. jak může klient s daným resourcem manipulovat (POST/PUT/PATCH/DELETE) včetně metadat o polích formuláře.
+    Spring HATEOAS poskytuje <code>linkTo()</code>, <code>methodOn()</code>, <code>RepresentationModelAssembler</code>
+    a Jackson serialization.
+</p>
+<pre class="signature"><code>EntityModel.of(dto)
+    .add(linkTo(methodOn(MemberController.class).get(id)).withSelfRel())
+    .add(Affordances.of(linkTo(…)).afford(HttpMethod.PATCH).withInput(MemberPatchDto.class).toLink());</code></pre>
+<p>
+    <a class="ext" href="https://docs.spring.io/spring-hateoas/docs/current/reference/html/" target="_blank" rel="noopener">Spring HATEOAS Reference</a>
+    · <a class="ext" href="https://stateless.group/hal_specification.html" target="_blank" rel="noopener">HAL spec</a>
+    · <a class="ext" href="https://rwcbook.github.io/hal-forms/" target="_blank" rel="noopener">HAL+FORMS draft</a>
+</p>
+
+<h2>Jackson</h2>
+<p>
+    JSON serializace/deserializace přes Jackson. Klabis používá vlastní moduly:
+    <code>PatchFieldModule</code> (pro PATCH semantiku), <code>HalFormsMultiPropertyModule</code> (rozšířená
+    metadata) a <code>FieldSecurityJacksonModule</code> (filtrování polí podle autorizace).
+</p>
+<p>
+    <a class="ext" href="https://github.com/FasterXML/jackson-docs" target="_blank" rel="noopener">Jackson docs</a>
+</p>
+
+<h2>MapStruct</h2>
+<p>
+    Compile-time generátor mapperů mezi DTO a doménovými typy. Mapper je interface s anotacemi
+    <code>@Mapper</code>, <code>@Mapping</code>; implementaci generuje annotation processor do
+    <code>build/generated/</code>. Bezpečnější a rychlejší než reflexní mappery.
+</p>
+<p>
+    <a class="ext" href="https://mapstruct.org/documentation/stable/reference/html/" target="_blank" rel="noopener">MapStruct docs</a>
+</p>
+
+<h2>Resilience4j, Jasypt, Flyway</h2>
+<dl class="api-list">
+    <dt>Resilience4j</dt>
+    <dd>Knihovna pro fault tolerance — Klabis ji používá pro per-key rate limiting (viz kap. 09). <a class="ext" href="https://resilience4j.readme.io/" target="_blank" rel="noopener">docs</a></dd>
+    <dt>Jasypt</dt>
+    <dd>Šifrování řetězců (PBE) — používá se pro GDPR-citlivá pole (viz <code>EncryptedString</code> v kap. 02). <a class="ext" href="http://www.jasypt.org/" target="_blank" rel="noopener">docs</a></dd>
+    <dt>Flyway</dt>
+    <dd>SQL migrace s verzí. Klabis má jen 3 baseline skripty (V001 doménové tabulky, V002 OAuth2, V003 Modulith). Změny schématu se zapisují přímo do existujících scriptů (DB se v devu resetuje). <a class="ext" href="https://documentation.red-gate.com/flyway" target="_blank" rel="noopener">docs</a></dd>
+</dl>
+
+<h2>Testovací stack</h2>
+<p>
+    JUnit 5, AssertJ, Mockito a Spring Boot test slicy
+    (<code>@WebMvcTest</code>, <code>@DataJdbcTest</code>, <code>@SpringBootTest</code>).
+    Pro modulové testy <code>@ApplicationModuleTest</code> ze Spring Modulith. Pro integrace s reálnou
+    databází TestContainers (PostgreSQL). Klabis-specific anotace <code>@WithKlabisMockUser</code>
+    a <code>@E2ETest</code> najdete v kap. 10.
+</p>
+<p>
+    <a class="ext" href="https://junit.org/junit5/docs/current/user-guide/" target="_blank" rel="noopener">JUnit 5</a>
+    · <a class="ext" href="https://assertj.github.io/doc/" target="_blank" rel="noopener">AssertJ</a>
+    · <a class="ext" href="https://site.mockito.org/" target="_blank" rel="noopener">Mockito</a>
+    · <a class="ext" href="https://java.testcontainers.org/" target="_blank" rel="noopener">TestContainers</a>
+</p>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="index.html">← Obsah</a>
+    <a href="01-architecture.html">01 · Architektura projektu →</a>
+</nav>
+
+</body>
+</html>

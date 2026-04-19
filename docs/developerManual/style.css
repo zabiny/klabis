@@ -1,0 +1,358 @@
+/* ==========================================================================
+   Klabis Developer Manual — stylesheet
+   --------------------------------------------------------------------------
+   Tyto styly slouží společně všem stránkám manuálu. Cílem je čistý čitelný
+   layout bez výrazných barev a kontrastů. Veškerá vizuální úprava je řízena
+   z tohoto souboru — HTML stránky obsahují pouze sémantické tagy a několik
+   málo "vocabulary" tříd popsaných níže.
+
+   Vocabulary nestandardních HTML bloků
+   --------------------------------------------------------------------------
+
+   1) Layout stránky
+      <body>
+        <header class="page-header">…breadcrumbs…</header>
+        <main class="page-main">
+          <article>…obsah stránky…</article>
+        </main>
+        <nav class="page-nav">…prev/next/index…</nav>
+      </body>
+
+   2) Breadcrumb a top navigation
+      <header class="page-header">
+        <a href="index.html">Developer Manual</a>
+        <span class="sep">›</span>
+        <span>Aktuální stránka</span>
+      </header>
+
+   3) Sekce s definicemi (např. "co tato třída dělá / jak ji použít")
+      <dl class="api-list">
+        <dt>EmailService</dt>
+        <dd>Interface pro odesílání emailů…</dd>
+      </dl>
+
+   4) Code signature (krátký Java snippet — typicky 1–5 řádků)
+      <pre class="signature"><code>public interface EmailService {
+          void send(EmailMessage message);
+      }</code></pre>
+
+   5) Inline odkaz na soubor v repu (pro orientaci)
+      <code class="path">backend/src/main/java/com/klabis/common/email/EmailService.java</code>
+
+   6) Poznámka / upozornění (informativní rámeček s tlumeným pozadím)
+      <aside class="note">Spring Modulith …</aside>
+      <aside class="note warn">Nemíchat … s …</aside>
+
+   7) Seznam vlastností / "klíčové třídy" v kapitole
+      <ul class="feature-list">
+        <li><strong>KlabisAggregateRoot</strong> — base třída pro agregáty.</li>
+      </ul>
+
+   8) Tabulka pro přehled (např. seznam stránek nebo enum hodnot)
+      <table class="ref-table">
+        <thead><tr><th>Položka</th><th>Význam</th></tr></thead>
+        <tbody>…</tbody>
+      </table>
+
+   9) Externí odkaz (otevírá se v nové záložce; styly žádné navíc)
+      <a class="ext" href="…" target="_blank" rel="noopener">…</a>
+
+   ========================================================================== */
+
+:root {
+    --color-bg: #fbfbf9;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f3f1ec;
+    --color-text: #2c2c2a;
+    --color-text-muted: #6c6c68;
+    --color-border: #e2dfd8;
+    --color-link: #3a5a7d;
+    --color-link-hover: #1f3a5a;
+    --color-code-bg: #f3f1ec;
+    --color-note-bg: #f1f3f5;
+    --color-note-warn-bg: #faf3e6;
+    --color-note-warn-border: #e0c98a;
+    --font-text: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-code: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --max-width: 50rem;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 1rem;
+    --space-4: 1.5rem;
+    --space-5: 2.5rem;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-text);
+}
+
+a {
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-link-hover);
+    text-decoration: underline;
+}
+
+/* Layout ------------------------------------------------------------------ */
+
+.page-header {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.page-header .sep {
+    margin: 0 var(--space-2);
+    color: var(--color-text-muted);
+}
+
+.page-main {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-4);
+}
+
+.page-nav {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font-size: 0.875rem;
+}
+
+.page-nav a {
+    color: var(--color-text-muted);
+}
+
+.page-nav a:hover {
+    color: var(--color-link);
+}
+
+/* Typografie -------------------------------------------------------------- */
+
+article h1 {
+    margin: 0 0 var(--space-3);
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+article h2 {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-1);
+}
+
+article h3 {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+article p {
+    margin: var(--space-2) 0 var(--space-3);
+}
+
+article ul, article ol {
+    margin: var(--space-2) 0 var(--space-3);
+    padding-left: 1.5rem;
+}
+
+article li {
+    margin: var(--space-1) 0;
+}
+
+article .lead {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+}
+
+/* Kód --------------------------------------------------------------------- */
+
+code {
+    font-family: var(--font-code);
+    font-size: 0.875em;
+    background: var(--color-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+}
+
+pre {
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    background: var(--color-code-bg);
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+}
+
+.signature {
+    border-left: 3px solid var(--color-border);
+}
+
+code.path {
+    color: var(--color-text-muted);
+    background: transparent;
+    padding: 0;
+    font-size: 0.8em;
+    word-break: break-all;
+}
+
+/* Definitions & lists ----------------------------------------------------- */
+
+.api-list {
+    margin: var(--space-3) 0;
+    padding: 0;
+}
+
+.api-list dt {
+    font-weight: 600;
+    margin-top: var(--space-3);
+    font-family: var(--font-code);
+    font-size: 0.95rem;
+}
+
+.api-list dd {
+    margin: var(--space-1) 0 var(--space-2) 0;
+    color: var(--color-text);
+}
+
+.api-list dd + dd {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+.feature-list strong {
+    font-family: var(--font-code);
+    font-weight: 600;
+}
+
+/* Note / warn ------------------------------------------------------------- */
+
+aside.note {
+    margin: var(--space-3) 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-note-bg);
+    border-left: 3px solid var(--color-border);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9rem;
+    color: var(--color-text);
+}
+
+aside.note.warn {
+    background: var(--color-note-warn-bg);
+    border-left-color: var(--color-note-warn-border);
+}
+
+aside.note p:first-child {
+    margin-top: 0;
+}
+
+aside.note p:last-child {
+    margin-bottom: 0;
+}
+
+/* Tabulka ----------------------------------------------------------------- */
+
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-3) 0;
+    font-size: 0.9rem;
+}
+
+.ref-table th,
+.ref-table td {
+    padding: var(--space-2);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ref-table th {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-surface-muted);
+}
+
+/* Index page -------------------------------------------------------------- */
+
+.toc {
+    margin: var(--space-4) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.toc li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-2);
+    align-items: baseline;
+}
+
+.toc li:last-child {
+    border-bottom: none;
+}
+
+.toc .num {
+    color: var(--color-text-muted);
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+}
+
+.toc .title {
+    font-weight: 600;
+}
+
+.toc .desc {
+    grid-column: 2;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <span>Developer Manual</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Klabis — Developer Manual</h1>
+
+<p class="lead">
+    Praktický průvodce po "framework" části backendu Klabisu — sdíleném jádru,
+    které zajišťuje autorizaci, perzistenci, HAL+FORMS API, eventy a další
+    společné věci pro všechny moduly aplikace. Cílem manuálu je popsat,
+    co je v projektu vlastní (Klabis-specific) a jak to používat při psaní
+    nových features.
+</p>
+
+<h2>Pro koho je manuál určen</h2>
+<p>
+    Manuál předpokládá, že čtenář umí Spring Boot, Spring Security, Spring Data,
+    DDD a hexagonální architekturu. Pokud některou z těchto oblastí
+    neznáte, začněte stránkou <a href="00-prerequisites.html">Předpoklady</a> —
+    obsahuje rychlý přehled s odkazy na oficiální zdroje.
+</p>
+
+<h2>Obsah</h2>
+
+<ol class="toc">
+    <li>
+        <span class="num">00</span>
+        <a class="title" href="00-prerequisites.html">Předpoklady</a>
+        <span class="desc">Rychlý přehled Spring Boot, Spring Modulith, Spring HATEOAS, Spring Data JDBC, Spring Security/OAuth2, DDD, hexagonální architektury.</span>
+    </li>
+    <li>
+        <span class="num">01</span>
+        <a class="title" href="01-architecture.html">Architektura projektu</a>
+        <span class="desc">Modulární monolit, struktura packages (<code>domain</code>/<code>application</code>/<code>infrastructure</code>), pravidla závislostí, jMolecules.</span>
+    </li>
+    <li>
+        <span class="num">02</span>
+        <a class="title" href="02-domain.html">Doménová vrstva</a>
+        <span class="desc"><code>KlabisAggregateRoot</code>, <code>AuditMetadata</code>, type-safe IDs, value objects, domain events, <code>EncryptedString</code>.</span>
+    </li>
+    <li>
+        <span class="num">03</span>
+        <a class="title" href="03-services.html">Aplikační vrstva (services)</a>
+        <span class="desc">Konvence pro <code>@PrimaryPort</code> services, sdílené <code>UserService</code>/<code>PermissionService</code>/<code>PasswordSetupService</code>, <code>EncryptionService</code>.</span>
+    </li>
+    <li>
+        <span class="num">04</span>
+        <a class="title" href="04-persistence.html">Perzistence</a>
+        <span class="desc">Spring Data JDBC konfigurace, custom converters, Memento pattern, <code>TranslatedPageable</code>.</span>
+    </li>
+    <li>
+        <span class="num">05</span>
+        <a class="title" href="05-rest-api.html">REST API a HAL+FORMS</a>
+        <span class="desc"><code>@HalForms</code>, <code>HalFormsSupport</code>, link/affordance buildery, <code>RootController</code>, <code>PatchField</code>, validace, exception handling, <code>@ActingUser</code>/<code>@ActingMember</code>.</span>
+    </li>
+    <li>
+        <span class="num">06</span>
+        <a class="title" href="06-security.html">Bezpečnost</a>
+        <span class="desc">OAuth2 AS+RS, JWT s vlastními claims, <code>Authority</code> enum, <code>@HasAuthority</code>, field-level (<code>@OwnerVisible</code>+<code>@OwnerId</code>), OAuth2 customizace v <code>members</code>.</span>
+    </li>
+    <li>
+        <span class="num">07</span>
+        <a class="title" href="07-common.html">Common — sdílené stavební bloky</a>
+        <span class="desc"><code>UserGroup</code> + <code>Invitation</code> building block, <code>EmailService</code>, <code>TemplateRenderer</code>, hierarchie doménových výjimek.</span>
+    </li>
+    <li>
+        <span class="num">08</span>
+        <a class="title" href="08-modules.html">Spring Modulith a moduly</a>
+        <span class="desc">Domain eventy, <code>@ApplicationModuleListener</code>, transactional outbox, idempotence, observability metriky.</span>
+    </li>
+    <li>
+        <span class="num">09</span>
+        <a class="title" href="09-cross-cutting.html">Cross-cutting concerns</a>
+        <span class="desc">Bootstrap dat, MDC logging, <code>PerKeyRateLimiter</code>.</span>
+    </li>
+    <li>
+        <span class="num">10</span>
+        <a class="title" href="10-testing.html">Testování</a>
+        <span class="desc">Klabis-specific testovací nástroje: <code>@WithKlabisMockUser</code>, <code>@E2ETest</code>, custom assertions, memento round-trip testy.</span>
+    </li>
+    <li>
+        <span class="num">11</span>
+        <a class="title" href="11-claude-workflow.html">Práce s Claude Code</a>
+        <span class="desc">OpenSpec workflow, dostupné skills a agenti, jak přidat feature, refactoring, sandbox pravidla.</span>
+    </li>
+</ol>
+
+<h2>Co tu nenajdete</h2>
+<ul>
+    <li>Byznys logiku jednotlivých modulů (<code>members</code>, <code>events</code>, <code>calendar</code>) — ta je pokryta specifikacemi v <code>openspec/</code>.</li>
+    <li>Postup zakládání nových change proposals — viz <code>openspec/AGENTS.md</code> a OpenSpec workflow.</li>
+    <li>Setup IDE a SSL certifikátů — viz <code>docs/INTELLIJ_SETUP.md</code> a <code>backend/README.md</code>.</li>
+    <li>Detailní QA scénáře — viz <code>docs/smoke-test.md</code>.</li>
+    <li>Hloubkovou testovací pyramidu — viz <code>docs/testing-pyramid.md</code>.</li>
+</ul>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — autoritativní zdroj pro každodenní konvence (agregáty, controllery, persistenci, field-level autorizaci).</li>
+    <li><code>backend/CLAUDE.md</code> — build, test, profily, gotchas pro Claude Code.</li>
+    <li><code>backend/docs/EVENT-DRIVEN-ARCHITECTURE.md</code> — event flows mezi moduly.</li>
+</ul>
+
+</article>
+</main>
+
+</body>
+</html>

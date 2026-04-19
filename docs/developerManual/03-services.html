@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Aplikační vrstva (services) — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>03 · Aplikační vrstva (services)</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Aplikační vrstva (services)</h1>
+
+<p class="lead">
+    Application services jsou vstupní body do doménové logiky — orchestrují use cases, drží
+    transakční hranici a koordinují více agregátů. V Klabisu je interface vždy <code>@PrimaryPort</code>
+    v <code>{module}/application/</code>, implementace je <code>@Service</code>. Sdílené services
+    pro práci s uživateli (<code>UserService</code>, <code>PermissionService</code>,
+    <code>PasswordSetupService</code>) žijí v <code>common.users</code>. Tato kapitola také pokrývá
+    šifrovací <code>EncryptionService</code> v <code>common.encryption</code>.
+</p>
+
+<h2>Konvence application services</h2>
+
+<dl class="api-list">
+    <dt>Interface s @PrimaryPort</dt>
+    <dd>V <code>{module}/application/</code>, jméno odpovídá use casu (např. <code>RegistrationPort</code>,
+        <code>ManagementPort</code>). Pro sdílené services v <code>common</code> stačí jméno
+        <code>{Subject}Service</code>.</dd>
+
+    <dt>Inner record commands</dt>
+    <dd>Vstupní DTO patří jako vnořený record do interface (<code>RegistrationPort.RegisterNewMember</code>).
+        Drží jen data z aplikační vrstvy — service sám doplní generované hodnoty (ID, registrační číslo).</dd>
+
+    <dt>@Transactional na metodě</dt>
+    <dd>Anotace patří na rozhraní (nebo metodu rozhraní), aby byla viditelná i pro AOP advisory bez
+        proxování implementace.</dd>
+
+    <dt>Implementace bez prefixu/sufixu Impl</dt>
+    <dd>Pojmenujte podle role (<code>RegistrationService</code>), ne podle implementace. Mappery
+        a privátní pomocníci patří do package <code>infrastructure</code>.</dd>
+</dl>
+
+<pre class="signature"><code>@PrimaryPort
+public interface RegistrationPort {
+    record RegisterNewMember(
+            PersonalInformation personalInformation,
+            Address address,
+            EmailAddress email,
+            UserId registeredBy
+    ) {}
+
+    @Transactional
+    Member registerMember(RegisterNewMember command);
+}
+
+@Service
+class RegistrationService implements RegistrationPort {
+    private final UserService userService;
+    private final MemberRepository memberRepository;
+    // …
+}</code></pre>
+
+<aside class="note">
+    Application service nikdy nevrací přímo entity persistence vrstvy — vrací doménový agregát nebo
+    explicitní DTO. Pro REST DTO konverzi slouží mapper v <code>infrastructure/restapi/</code>.
+</aside>
+
+<h2>Sdílené user services (<code>common.users</code>)</h2>
+
+<p>
+    Framework-úroveň services pro správu uživatelů. Exponovány jako <code>@PrimaryPort</code> v
+    kořeni <code>common.users</code>, aby je mohly volat všechny moduly.
+</p>
+
+<h3>UserService</h3>
+
+<pre class="signature"><code>@PrimaryPort
+public interface UserService {
+    UserId createUser(String username, String email, Set&lt;Authority&gt; authorities);
+    UserId createActiveUser(String username, String passwordHash, Set&lt;Authority&gt; authorities);
+    Optional&lt;User&gt; findById(UserId id);
+    Optional&lt;User&gt; findByUsername(String username);
+    void suspendUser(UserId id);
+    void resumeUser(UserId id);
+}</code></pre>
+
+<dl class="api-list">
+    <dt>createUser(...)</dt>
+    <dd>Vytvoří uživatele se statusem <code>PENDING_ACTIVATION</code>. Publikuje
+        <code>UserCreatedEvent</code>, na který reaguje <code>PasswordSetupService</code>
+        a pošle setup email.</dd>
+
+    <dt>createActiveUser(...)</dt>
+    <dd>Bootstrap varianta — uživatel rovnou <code>ACTIVE</code> s předpřipraveným hash hesla,
+        bez emailu.</dd>
+</dl>
+
+<h3>PermissionService</h3>
+
+<pre class="signature"><code>@PrimaryPort
+public interface PermissionService {
+    UserPermissions updateUserPermissions(UserId userId, Set&lt;Authority&gt; newAuthorities);
+    UserPermissions getUserPermissions(UserId userId);
+}</code></pre>
+
+<h3>PasswordSetupService</h3>
+
+<pre class="signature"><code>@PrimaryPort
+public interface PasswordSetupService {
+    record SetupPasswordCommand(String token, String password) {}
+
+    GeneratedTokenResult generateToken(User user);
+    void sendPasswordSetupEmail(String firstName, String email, String plainToken);
+    PasswordSetupToken validateToken(String plainToken);
+    User completePasswordSetup(SetupPasswordCommand command, String ipAddress);
+    void requestNewToken(String registrationNumber, String email);
+}</code></pre>
+
+<h3>AuthorizationQueryService</h3>
+
+<p>
+    Read-only služba pro dotazy "má uživatel X autoritu Y v kontextu Z?". Neexponuje doménový stav,
+    pouze rozhoduje. Vhodné pro adaptace v jiných modulech.
+</p>
+
+<h2>EncryptionService — šifrování mimo persistenci</h2>
+
+<p>
+    Pokud potřebujete zašifrovat řetězec mimo JDBC vrstvu (např. před uložením do tokenu nebo do
+    cache), je k dispozici <code>EncryptionService</code> v <code>common.encryption</code>.
+    <code>EncryptionConfiguration</code> sestavuje Jasypt encryptor podle property
+    <code>klabis.encryption.password</code>.
+</p>
+
+<pre class="signature"><code>String cipher = encryptionService.encrypt(plaintext);
+String plain  = encryptionService.decrypt(cipher);</code></pre>
+
+<aside class="note">
+    Pro běžné šifrování DB polí používejte hodnotový typ <code>EncryptedString</code> (kap. 02) —
+    šifrování probíhá transparentně přes JDBC converters. <code>EncryptionService</code> je únikový
+    poklop pro výjimečné scénáře.
+</aside>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — sekce "Application services".</li>
+    <li>Kap. 04 — perzistence (repository implementace volaná z application service).</li>
+    <li>Kap. 09 — domain eventy (publikace z application service po commitu).</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="02-domain.html">← 02 · Doménová vrstva</a>
+    <a href="04-persistence.html">04 · Perzistence →</a>
+</nav>
+
+</body>
+</html>

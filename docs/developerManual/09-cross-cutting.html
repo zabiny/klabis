@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Cross-cutting concerns — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>09 · Cross-cutting concerns</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Cross-cutting concerns</h1>
+
+<p class="lead">
+    Sdílená infrastruktura napříč moduly: bootstrap dat při startu, MDC logování s correlation ID
+    a per-key rate limiting. Spring Modulith eventy a metriky popisuje kap. 08; výjimky a Encryption
+    najdete v kap. 07 resp. kap. 03.
+</p>
+
+<h2>Bootstrap dat</h2>
+
+<p>
+    Plugin SPI pro inicializaci dat při startu aplikace. Každý modul, který potřebuje seedovat
+    výchozí data, implementuje <code>BootstrapDataInitializer</code> a registruje jako
+    <code>@Component</code>. <code>BootstrapDataLoader</code> (jeden ApplicationRunner) projde
+    všechny implementace a v případě potřeby je spustí.
+</p>
+
+<pre class="signature"><code>public interface BootstrapDataInitializer {
+    boolean requiresBootstrap();    // true = data ještě nejsou
+    void bootstrapData();
+}</code></pre>
+
+<pre class="signature"><code>@Component
+class MembersDataBootstrap implements BootstrapDataInitializer {
+    public boolean requiresBootstrap() { return memberRepo.existsAny() == false; }
+    public void bootstrapData() { /* vytvoř seed members */ }
+}</code></pre>
+
+<aside class="note">
+    Existující implementace: <code>MembersDataBootstrap</code>, <code>UsersDataBootstrap</code>,
+    <code>OidcRegisteredClientsBootstrap</code> (OAuth2 klienti), <code>TrainingGroupDataBootstrap</code>.
+    OAuth2 klient <code>klabis-web-local</code> se zavádí jen při profilu <code>local-dev</code> —
+    pro povolení refresh tokenů z localhost frontendu.
+</aside>
+
+<h2>MDC logging — RequestLoggingFilter</h2>
+
+<p>
+    Filter v <code>common.logging</code>, který obohatí MDC o context aktuálního HTTP requestu.
+    Aktivní jen pro <code>/api/**</code> endpointy.
+</p>
+
+<table class="ref-table">
+    <thead><tr><th>MDC klíč</th><th>Hodnota</th></tr></thead>
+    <tbody>
+        <tr><td><code>requestContext</code></td><td><code>"GET /members/123"</code> (HTTP method + cesta bez <code>/api</code>)</td></tr>
+        <tr><td><code>userId</code></td><td>UUID přihlášeného uživatele (pokud autentizován)</td></tr>
+        <tr><td><code>correlationId</code></td><td>Z <code>X-Correlation-ID</code> nebo <code>X-Request-ID</code> headeru, jinak vygenerované UUID</td></tr>
+    </tbody>
+</table>
+
+<p>
+    Tyto klíče lze použít v <code>logback-spring.xml</code> patternech (<code>%X{requestContext}</code>).
+    Pomocné konvertery <code>HighlightLevelConverter</code> a <code>ThreadOrRequestConverter</code>
+    jsou v stejném package.
+</p>
+
+<h2>PerKeyRateLimiter</h2>
+
+<p>
+    Cache-driven rate limiter — každý klíč (např. registrační číslo, IP) má vlastní counter
+    s periodickým resetem. Vyžaduje nakonfigurovanou Spring Cache s názvem <code>rateLimitCache</code>.
+</p>
+
+<pre class="signature"><code>public class PerKeyRateLimiter {
+    public PerKeyRateLimiter(int limit, Duration duration, CacheManager cacheManager);
+
+    public void checkLimit(String key);   // throws RateLimitExceededException
+}</code></pre>
+
+<pre class="signature"><code>// Konfigurace beanu
+@Bean
+PerKeyRateLimiter passwordSetupRateLimiter(CacheManager cm) {
+    return new PerKeyRateLimiter(5, Duration.ofMinutes(15), cm);
+}
+
+// Použití
+rateLimiter.checkLimit(registrationNumber);  // throws if exceeded</code></pre>
+
+<aside class="note">
+    <code>RateLimitExceededException</code> se mapuje v <code>MvcExceptionHandler</code> na HTTP 429.
+</aside>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li>Kap. 07 — hierarchie doménových výjimek (přesunuto sem).</li>
+    <li>Kap. 03 — <code>EncryptionService</code> pro šifrování mimo JDBC vrstvu.</li>
+    <li>Kap. 08 — Spring Modulith eventy a custom metriky.</li>
+    <li><code>backend/CLAUDE.md</code> — kompletní seznam profilů aplikace.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="08-modules.html">← 08 · Spring Modulith a moduly</a>
+    <a href="10-testing.html">10 · Testování →</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Bezpečnost — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>06 · Bezpečnost</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Bezpečnost</h1>
+
+<p class="lead">
+    Klabis je <strong>OAuth2 Authorization Server i Resource Server</strong> v jedné aplikaci.
+    Frontend získává access token přes Authorization Code Grant + PKCE. Autorizace má tři vrstvy:
+    method-level (<code>@HasAuthority</code>), endpoint-level (<code>SecurityConfiguration</code>)
+    a field-level (<code>@OwnerVisible</code> + <code>@OwnerId</code>).
+</p>
+
+<h2>Přehled bezpečnostní vrstvy</h2>
+
+<table class="ref-table">
+    <thead><tr><th>Třída</th><th>Účel</th></tr></thead>
+    <tbody>
+        <tr><td><code>SecurityConfiguration</code></td><td>Hlavní filter chain — JWT validace, endpoint matchers, password encoder.</td></tr>
+        <tr><td><code>AuthorizationServerConfiguration</code></td><td>Setup Spring Authorization Serveru (issuer, JWK, token endpointy).</td></tr>
+        <tr><td><code>AuthorizationServerCustomizer</code> (interface)</td><td>SPI bod pro customizaci AS chainu — moduly mohou registrovat <code>@Component</code>.</td></tr>
+        <tr><td><code>KlabisJwtAuthenticationConverter</code></td><td>Z JWT vyrobí <code>KlabisJwtAuthenticationToken</code> s typovaným <code>UserId</code> + <code>memberIdUuid</code>.</td></tr>
+        <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>, <code>hasAuthority(Authority)</code>.</td></tr>
+        <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> vyhodnocující <code>@HasAuthority</code> + <code>@OwnerVisible</code>.</td></tr>
+        <tr><td><code>FieldSecurityJacksonModule</code></td><td>Jackson modul, který při serializaci response filtruje pole bez oprávnění.</td></tr>
+    </tbody>
+</table>
+
+<h2>JWT a custom claims</h2>
+
+<p>
+    Access token vydávaný Klabisem nese kromě standardních claims (sub, aud, iat, exp) i:
+</p>
+
+<ul>
+    <li><code>user_id</code> — UUID interního <code>User</code>u (nikoli registračního čísla).</li>
+    <li><code>memberIdUuid</code> — UUID členského profilu (chybí u admin účtů bez Member profilu).</li>
+    <li><code>authorities</code> — pole stringů ve formátu <code>"MEMBERS:MANAGE"</code>.</li>
+    <li><code>registrationNumber</code> — používá se pro audit (<code>createdBy</code>/<code>lastModifiedBy</code>).</li>
+</ul>
+
+<p>
+    Konstanty názvů jsou v <code>KlabisOAuth2ClaimNames</code>. Jejich přidání do tokenu zajišťuje
+    <code>KlabisAuthorizationServerCustomizer</code> v modulu <code>members</code> (viz sekce
+    "OAuth2 customizace" níže na této stránce).
+</p>
+
+<h2>KlabisJwtAuthenticationToken</h2>
+
+<pre class="signature"><code>public class KlabisJwtAuthenticationToken extends JwtAuthenticationToken {
+    public UserId getUserId();
+    public Optional&lt;UUID&gt; getMemberIdUuid();
+    public boolean hasMemberProfile();
+    public boolean hasAuthority(Authority authority);
+    public String getUsername();
+}</code></pre>
+
+<aside class="note">
+    Pokud potřebujete v controlleru aktuálního uživatele, <strong>nepoužívejte</strong> přímo
+    <code>SecurityContextHolder</code>. Použijte parametrové anotace <code>@ActingUser</code> /
+    <code>@ActingMember</code> z modulu <code>members</code> (kap. 05) — ty automaticky resolvují
+    z této tokenové třídy.
+</aside>
+
+<h2>Authority enum</h2>
+
+<p>
+    Type-safe seznam všech autorit. Eliminuje překlepy a umožňuje IDE refactoring.
+</p>
+
+<pre class="signature"><code>public enum Authority {
+    CALENDAR_MANAGE("CALENDAR:MANAGE", Scope.CONTEXT_SPECIFIC),
+    MEMBERS_MANAGE("MEMBERS:MANAGE", Scope.CONTEXT_SPECIFIC),
+    MEMBERS_READ("MEMBERS:READ", Scope.CONTEXT_SPECIFIC),
+    MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
+    EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
+    EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC),
+    GROUPS_TRAINING("GROUPS:TRAINING", Scope.GLOBAL);
+
+    public String getValue();           // "MEMBERS:MANAGE"
+    public Scope getScope();            // GLOBAL nebo CONTEXT_SPECIFIC
+    public static Authority fromString(String value);
+    public static Set&lt;Authority&gt; getStandardUserAuthorities();
+    public static boolean isKnownAuthority(String value);
+}</code></pre>
+
+<dl class="api-list">
+    <dt>Scope.GLOBAL</dt>
+    <dd>Autorita platná pro celou aplikaci, nelze ji udělit přes group membership (admin-level).</dd>
+
+    <dt>Scope.CONTEXT_SPECIFIC</dt>
+    <dd>Lze (do budoucna) udělit přes group membership v daném kontextu.</dd>
+
+    <dt>isKnownAuthority(value)</dt>
+    <dd>Použije se k filtrování — Spring <code>DaoAuthenticationProvider</code> přidává
+        <code>FACTOR_PASSWORD</code> autoritu, kterou nechceme vidět v JWT.</dd>
+</dl>
+
+<h2>Method-level autorizace: @HasAuthority</h2>
+
+<pre class="signature"><code>@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface HasAuthority {
+    Authority value();
+}</code></pre>
+
+<p>Použití na metodě nebo třídě (metoda overriduje třídu):</p>
+
+<pre class="signature"><code>@RestController
+class MemberController {
+
+    @HasAuthority(Authority.MEMBERS_READ)
+    @GetMapping("/members/{id}")
+    public ... getMember(@PathVariable MemberId id) { ... }
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @OwnerVisible
+    @PatchMapping("/members/{id}")
+    public ... updateMember(@PathVariable @OwnerId MemberId id, ...) { ... }
+}</code></pre>
+
+<aside class="note">
+    Při kombinaci s <code>@OwnerVisible</code> je vyhodnocení <strong>OR</strong>: přístup povolen, pokud
+    má uživatel autoritu <em>nebo</em> je vlastníkem (parameter s <code>@OwnerId</code>).
+</aside>
+
+<h2>Field-level autorizace</h2>
+
+<p>
+    Pole DTO se filtrují podle autorizace při serializaci. Anotace lze kombinovat (OR semantika).
+    Field bez oprávnění se buď vynechá z odpovědi, nebo nahradí null/maskovanou hodnotou (záleží na
+    konfiguraci handleru).
+</p>
+
+<pre class="signature"><code>public record MemberDetailsResponse(
+        UUID id,
+        String firstName,
+        @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+        String email,
+        @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+        BirthNumber birthNumber,
+        @OwnerId UUID ownerId
+) {}</code></pre>
+
+<dl class="api-list">
+    <dt>@OwnerVisible</dt>
+    <dd>Pole je viditelné pro vlastníka. Vlastník je určen polem označeným <code>@OwnerId</code>
+        v stejném recordu (nebo automaticky, pokud existuje právě jedno pole konvertibilní na UUID).</dd>
+
+    <dt>@OwnerId</dt>
+    <dd>Označuje, které pole/parametr nese identifikátor vlastníka. Hodnota se porovnává proti
+        <code>memberIdUuid</code> z aktuálního JWT tokenu.</dd>
+
+    <dt>@HasAuthority + @OwnerVisible</dt>
+    <dd>OR semantika — přístup, pokud je splněna alespoň jedna podmínka.</dd>
+</dl>
+
+<h2>OwnershipResolver</h2>
+
+<p>
+    Strategy interface, který určí, zda je aktuální uživatel vlastníkem objektu. Default implementace
+    (<code>DefaultOwnershipResolver</code>) bere hodnotu z <code>@OwnerId</code> a porovnává s
+    <code>memberIdUuid</code> z <code>KlabisJwtAuthenticationToken</code>. Konverze typu na UUID
+    probíhá přes Spring <code>ConversionService</code> — proto např. modul <code>members</code>
+    registruje <code>MemberIdToUuidConverter</code>.
+</p>
+
+<aside class="note warn">
+    Bean <code>OwnershipResolver</code> je <strong>lazy</strong> resolvován z
+    <code>ApplicationContext</code> uvnitř <code>HasAuthorityMethodInterceptor</code>. Eager
+    injection způsobí <em>"No ServletContext set"</em> při startu (security advisor se inicializuje
+    dříve než web kontext).
+</aside>
+
+<h2>Pomocné komponenty</h2>
+
+<dl class="api-list">
+    <dt>AccountStatusValidationFilter</dt>
+    <dd>Filter, který odmítne JWT od uživatele s <code>SUSPENDED</code> nebo <code>DELETED</code>
+        statusem (i kdyby JWT byl ještě platný).</dd>
+
+    <dt>CorsConfiguration</dt>
+    <dd>CORS pro frontend (origin <code>http://localhost:3000</code> v dev).</dd>
+
+    <dt>FrontendProperties</dt>
+    <dd>Configuration properties pro frontend URL/redirect URI (<code>klabis.frontend.*</code>).</dd>
+
+    <dt>PasswordEncoderConfiguration</dt>
+    <dd>BCrypt password encoder bean.</dd>
+
+    <dt>Custom AuthenticationEntryPoint</dt>
+    <dd>Validuje OAuth2 <code>redirect_uri</code> proti <code>RegisteredClientRepository</code> před
+        redirectem (zabraňuje open redirector zranitelnosti).</dd>
+</dl>
+
+<h2>OAuth2 customizace v modulu <code>members</code></h2>
+
+<p>
+    Modul <code>members</code> rozšiřuje sdílený OAuth2 stack o Klabis-specific bridging mezi
+    User aggregate a Spring Security. Tyto třídy jsou framework-úrovňové, ne byznys logika.
+</p>
+
+<dl class="api-list">
+    <dt>KlabisAuthorizationServerCustomizer</dt>
+    <dd>Implementace <code>AuthorizationServerCustomizer</code> SPI z <code>common.security</code>.
+        Wirne Klabis-specific token claims (registrationNumber, memberIdUuid, firstName, lastName,
+        authorities) do AS chainu během vydávání tokenu. Auto-registruje se jako <code>@Component</code>.</dd>
+
+    <dt>KlabisUserDetailsService</dt>
+    <dd>Bridge: načte <code>User</code> + <code>UserPermissions</code> a vrátí Spring Security
+        <code>UserDetails</code>. Klíčové pro <code>DaoAuthenticationProvider</code> při login flow.
+        Poskytuje i metodu <code>loadKlabisUserDetails(userName)</code> pro non-Spring-specific
+        přístup z aplikačního kódu.</dd>
+
+    <dt>MemberIdToUuidConverter</dt>
+    <dd>Spring <code>Converter&lt;MemberId, UUID&gt;</code> registrovaný do
+        <code>ConversionService</code>. Vyžadovaný pro field-level autorizaci —
+        <code>DefaultOwnershipResolver</code> potřebuje generic konverzi <code>@OwnerId</code>
+        hodnoty na UUID, aby ji mohl porovnat s <code>memberIdUuid</code> z JWT.</dd>
+</dl>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — sekce "Field-level authorization".</li>
+    <li><code>backend/CLAUDE.md</code> — Security extension points + gotchas (<code>@WebMvcTest</code> s <code>UserService</code> mock).</li>
+    <li>Kap. 05 — jak v controlleru získat aktuálního uživatele přes <code>@ActingUser</code>.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="05-rest-api.html">← 05 · REST API a HAL+FORMS</a>
+    <a href="07-common.html">07 · Common — sdílené stavební bloky →</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Práce s Claude Code — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>11 · Práce s Claude Code</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Práce s Claude Code</h1>
+
+<p class="lead">
+    Klabis je do velké míry vyvíjen s asistencí Claude Code. Projekt obsahuje sadu
+    <strong>OpenSpec specifikací</strong>, <strong>skills</strong>, <strong>agentů</strong> a
+    <strong>commands</strong>, které celý workflow udržují konzistentní. Tahle stránka popisuje
+    typické postupy: jak přidat feature, jak refaktorovat, kdy spouštět které agenty.
+</p>
+
+<h2>Filozofie projektu</h2>
+
+<p>
+    Workflow staví na třech pilířích:
+</p>
+
+<ol>
+    <li><strong>Specifikace první</strong> — než se píše kód, popíše se chování v <code>openspec/specs/</code>.
+        Změny se navrhují přes change proposals, ne přímou editací specs.</li>
+    <li><strong>Konvence v skillech</strong> — opakující se patterny (agregát, controller, JDBC adapter)
+        jsou zdokumentované v <code>backend-patterns</code> skillu, který si Claude automaticky načítá.</li>
+    <li><strong>TDD a malé iterace</strong> — feature se rozdělí na vertikální slice (jeden flow přes
+        všechny vrstvy), každý slice má své testy, je samostatně commitovatelný.</li>
+</ol>
+
+<h2>OpenSpec workflow</h2>
+
+<p>
+    OpenSpec je systém pro řízení specifikací a změnových návrhů. V Klabisu žije v
+    <code>openspec/</code>:
+</p>
+
+<dl class="api-list">
+    <dt>openspec/specs/</dt>
+    <dd>Aktuální specifikace aplikace, organizované po bounded contextech (modulech).
+        Každý modul má jeden <code>spec.md</code> psaný z user-facing perspektivy
+        (scénáře, ne implementace).</dd>
+
+    <dt>openspec/changes/</dt>
+    <dd>Otevřené change proposals (ještě nezaarchivované). Každý je samostatný adresář s
+        <code>proposal.md</code>, <code>design.md</code>, <code>tasks.md</code> a delta speciacemi.</dd>
+
+    <dt>openspec/changes/archive/</dt>
+    <dd>Hotové změny — slouží jako historie a kontext pro Claude.</dd>
+
+    <dt>openspec/config.yaml</dt>
+    <dd>Pravidla pro psaní spec (jazyk, scope, styl scénářů).</dd>
+</dl>
+
+<h3>Typický cyklus změny</h3>
+
+<ol>
+    <li><strong>/openspec-explore</strong> nebo <strong>/openspec-new-change</strong> — nahodit nápad,
+        prozkoumat kódovou základnu, ujasnit si požadavky.</li>
+    <li><strong>/openspec-propose</strong> — vytvoří proposal + design + tasks v jednom kroku
+        (nebo postupně přes <strong>/openspec-continue-change</strong>).</li>
+    <li><strong>/openspec-ff-change</strong> — fast-forward přes všechny artefakty (rychlý mód, pokud
+        je proposal už promyšlený).</li>
+    <li><strong>/openspec-apply-change</strong> nebo <strong>/openspec-ext:implement-proposal</strong>
+        — implementace podle <code>tasks.md</code>. <code>implement-proposal</code> používá víc
+        subagentů iterativně.</li>
+    <li><strong>/openspec-verify-change</strong> — zkontrolovat, že implementace odpovídá specifikaci.</li>
+    <li><strong>/openspec-archive-change</strong> — zaarchivovat hotovou změnu (přesun do
+        <code>archive/</code>) a sloučit delta do hlavních specs.</li>
+</ol>
+
+<aside class="note">
+    Pro malé bug fixy nebo čistě technické refactoring není nutné zakládat OpenSpec change.
+    Použijte <code>tasks/</code> queue (níže) nebo přímou implementaci přes <code>backend-developer</code>
+    agenta.
+</aside>
+
+<h2>Skills</h2>
+
+<p>
+    Skills jsou znalostní balíčky, které si Claude automaticky načte při relevantním úkolu. Jsou
+    rozdělené na <strong>projektové</strong> (v <code>.claude/skills/</code>) a
+    <strong>marketplace</strong> (prefixované <code>developer:</code>, <code>hateoas-api:</code>, …).
+</p>
+
+<h3>Projektové skills</h3>
+
+<table class="ref-table">
+    <thead><tr><th>Skill</th><th>Kdy se použije</th></tr></thead>
+    <tbody>
+        <tr><td><code>backend-patterns</code></td><td>Autoritativní konvence pro backend (agregáty, controllery, persistence). Auto-load v <code>backend-developer</code>.</td></tr>
+        <tr><td><code>hal-navigator-patterns</code></td><td>Frontend HAL+FORMS patterny (KlabisTable, formuláře, navigation). Auto-load v <code>frontend-developer</code>.</td></tr>
+        <tr><td><code>openspec-*</code></td><td>OpenSpec workflow — explore, propose, apply, verify, archive, sync.</td></tr>
+        <tr><td><code>openspec-writing-guide</code></td><td>Klabis-specific styl psaní specs (user-facing, business-only).</td></tr>
+        <tr><td><code>code-review</code></td><td>Code review konvence pro Klabis. Vyvoláno před commitem CODE změn.</td></tr>
+        <tr><td><code>domain-review-to-task</code></td><td>End-to-end audit doménové vrstvy modulu, výstup je task queue.</td></tr>
+        <tr><td><code>estimated-kanban-board</code></td><td>Aktualizuje <code>docs/implementation-status.html</code> proti GitHub issues + OpenSpec.</td></tr>
+        <tr><td><code>klabis-assistant</code>, <code>oris-assistant</code></td><td>Specifické helper skills.</td></tr>
+        <tr><td><code>review-collecting-assistant</code></td><td>Sbírá review komentáře z PR pro pozdější aplikaci.</td></tr>
+    </tbody>
+</table>
+
+<h3>Marketplace skills</h3>
+
+<table class="ref-table">
+    <thead><tr><th>Skill</th><th>Účel</th></tr></thead>
+    <tbody>
+        <tr><td><code>developer:tdd-best-practices</code></td><td>Red-Green-Refactor cyklus.</td></tr>
+        <tr><td><code>developer:spring-conventions</code></td><td>Spring naming + organizace.</td></tr>
+        <tr><td><code>developer:spring-modulith</code></td><td>Spring Modulith patterny (modul, listener, eventy).</td></tr>
+        <tr><td><code>developer:spring-data-jdbc</code></td><td>JDBC repository, custom queries.</td></tr>
+        <tr><td><code>developer:spring-hateoas-api</code></td><td>HATEOAS API building.</td></tr>
+        <tr><td><code>developer:ddd-domain-modeling</code></td><td>Tactical DDD (agregáty, value objects).</td></tr>
+        <tr><td><code>developer:hexagonal-architecture</code></td><td>Ports and adapters.</td></tr>
+        <tr><td><code>developer:event-driven-integration</code></td><td>Cross-modul event flows, idempotence.</td></tr>
+        <tr><td><code>developer:kiss-principle</code></td><td>Boj proti over-engineeringu.</td></tr>
+        <tr><td><code>developer:test-runner-skill</code></td><td>Spouštění testů. <strong>Vždy</strong> přes tento skill, ne přímo Gradle.</td></tr>
+        <tr><td><code>developer:frontend-qa-testing</code></td><td>Manuální QA přes Playwright.</td></tr>
+        <tr><td><code>developer:frontend-ux-review</code></td><td>UX review přes Playwright.</td></tr>
+        <tr><td><code>hateoas-api:review-hateoas-links</code></td><td>Review HAL+FORMS linků/affordancí.</td></tr>
+        <tr><td><code>openspec-ext:implement-proposal</code></td><td>Iterativní implementace návrhu více subagenty.</td></tr>
+        <tr><td><code>openspec-ext:task-queue</code>, <code>task-queue-process</code></td><td>Queue tasků pro pozdější implementaci.</td></tr>
+        <tr><td><code>openspec-ext:qa-testing</code></td><td>QA testy podle openspec scénářů.</td></tr>
+    </tbody>
+</table>
+
+<h2>Agenti</h2>
+
+<p>
+    Agenti jsou prekonfigurované role s vlastními skills a chováním. V projektu (<code>.claude/agents/</code>):
+</p>
+
+<dl class="api-list">
+    <dt>backend-developer</dt>
+    <dd>Java vývojář pro Spring/Modulith. Auto-load: <code>backend-patterns</code>,
+        <code>developer:spring-conventions</code>, <code>developer:tdd-best-practices</code>.
+        On-demand: spring-modulith, spring-data-jdbc, spring-hateoas-api, ddd-domain-modeling, …
+        <strong>Použijte na jakoukoli implementaci/oprava backend kódu.</strong></dd>
+
+    <dt>frontend-developer</dt>
+    <dd>React/TypeScript vývojář. Auto-load: <code>hal-navigator-patterns</code>,
+        <code>developer:test-runner-skill</code>, <code>developer:tdd-best-practices</code>.
+        Pre-flight: vždy nejdřív projde existující patterny.</dd>
+
+    <dt>git-operator</dt>
+    <dd>Git operace (commits, branching, rebase). Použijte na cokoli git-related, abyste se vyhnuli
+        chybám s 1Password signing apod.</dd>
+</dl>
+
+<aside class="note">
+    Externí marketplace agenti, které se hodí: <code>Explore</code> (rychlé prohledání kódu),
+    <code>Plan</code> (architektonický plán), <code>developer:test-runner</code>, <code>developer:code-reviewer</code>.
+</aside>
+
+<h2>Slash commands</h2>
+
+<p>
+    V <code>.claude/commands/</code>:
+</p>
+
+<dl class="api-list">
+    <dt>/frontend-qa-testing</dt>
+    <dd>Plánuje a spouští QA testy podle openspec specifikací (přes Playwright).</dd>
+
+    <dt>/simplifyModule</dt>
+    <dd>Hluboká analýza modulu — duplikace, dead code, over-abstrakce. Užitečné po větší feature
+        nebo před refactoringem.</dd>
+
+    <dt>/tests-structure-review</dt>
+    <dd>Review struktury testů (pyramida, smoke testy).</dd>
+</dl>
+
+<h2>Jak přidat novou feature (typický flow)</h2>
+
+<ol>
+    <li><strong>Spec</strong>: <code>/openspec-new-change</code> nebo <code>/openspec-propose</code>
+        — popsat scénáře z pohledu uživatele, design rozhodnutí, rozdělit na tasks.</li>
+    <li><strong>Implementace</strong>: spustit <code>backend-developer</code> agenta s odkazem na
+        <code>tasks.md</code>. Pro frontend totéž s <code>frontend-developer</code>.</li>
+    <li><strong>Vertikální slice</strong>: jedna feature = jeden end-to-end flow napříč vrstvami.
+        Po každé fázi (commit-able chunk) commit a test run.</li>
+    <li><strong>Testy</strong>: TDD cyklus (test první). Vždy přes
+        <code>developer:test-runner-skill</code>.</li>
+    <li><strong>Code review</strong>: před commitem spustit <code>code-review</code> skill (nebo
+        <code>developer:code-reviewer</code> agenta).</li>
+    <li><strong>QA</strong>: <code>/openspec-ext:qa-testing</code> nebo
+        <code>developer:frontend-qa-testing</code> přes Playwright.</li>
+    <li><strong>Verify + archive</strong>: <code>/openspec-verify-change</code> →
+        <code>/openspec-archive-change</code>.</li>
+</ol>
+
+<h2>Refactoring</h2>
+
+<ol>
+    <li>Pokud refactoring mění chování, založit OpenSpec change. Pokud je čistě technický (jiná
+        struktura, žádná změna chování), stačí task queue.</li>
+    <li>Vertikální slice (<code>backend/CLAUDE.md</code>): refaktorovat jednu feature/metodu
+        end-to-end přes všechny vrstvy, ne jednu vrstvu napříč všemi feature.</li>
+    <li>Po každém slice testovat (<code>test-runner</code>) a commitnout.</li>
+    <li>Po dokončení modulu spustit <code>/simplifyModule</code> a/nebo
+        <code>domain-review-to-task</code> pro audit.</li>
+</ol>
+
+<h2>Lokální spouštění</h2>
+
+<pre class="signature"><code>./runLocalEnvironment.sh
+# spustí backend (https://localhost:8443) a frontend (http://localhost:3000)</code></pre>
+
+<aside class="note warn">
+    Pro testování UI <strong>vždy port 3000</strong> (Vite HMR auto-reload).
+    Port 8443 obsahuje statický bundle, který se aktualizuje až po
+    <code>publish-frontend-resources</code> + restartu backendu.
+</aside>
+
+<h3>Testovací uživatelé</h3>
+<ul>
+    <li>Admin: registration <code>ZBM9000</code>, heslo <code>password</code>.</li>
+    <li>Member: registration <code>ZBM9500</code>, heslo <code>password</code>.</li>
+</ul>
+
+<h2>Sandbox a ostatní pravidla</h2>
+
+<ul>
+    <li><strong>Nikdy</strong> nepoužívejte <code>dangerouslyDisableSandbox</code>. Pokud command
+        v sandboxu selže, reportněte chybu — uživatel rozhodne.</li>
+    <li>Při paralelizaci: <strong>nikdy</strong> nespouštějte víc Gradle/test-runner agentů paralelně
+        (deadlock na cache lock).</li>
+    <li>Git commits: nikdy <code>--no-verify</code>, nikdy <code>--no-gpg-sign</code> (1Password
+        signing musí projít).</li>
+    <li>Pro JetBrains MCP tools: nepoužívat v git worktree (selžou).</li>
+</ul>
+
+<h2>Ramdisk pro temp soubory</h2>
+
+<p>
+    Pro dočasné soubory používejte <code>/mnt/ramdisk/klabis/</code> — rychlejší než disk a uklízí
+    se samo při restartu.
+</p>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>CLAUDE.md</code> v rootu — quick start a development workflow best practices.</li>
+    <li><code>backend/CLAUDE.md</code> — build, test, profily, Spring 7 gotchas.</li>
+    <li><code>frontend/CLAUDE.md</code> — frontend dev workflow.</li>
+    <li><code>openspec/AGENTS.md</code> — pravidla pro AI při práci s OpenSpec.</li>
+    <li><code>docs/INTELLIJ_SETUP.md</code>, <code>docs/smoke-test.md</code> — IDE a manuální QA.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="10-testing.html">← 10 · Testování</a>
+    <a href="index.html">Obsah ↑</a>
+</nav>
+
+</body>
+</html>

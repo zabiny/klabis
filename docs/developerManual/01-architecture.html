@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Architektura projektu — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>01 · Architektura projektu</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Architektura projektu</h1>
+
+<p class="lead">
+    Klabis je <strong>modulární monolit</strong> postavený nad Spring Modulith. Každý modul má vlastní
+    veřejné API (kořenový package) a tři interní package <code>domain</code> / <code>application</code>
+    / <code>infrastructure</code> dle hexagonální architektury. Pravidla závislostí mezi moduly vynucuje
+    Spring Modulith.
+</p>
+
+<h2>Aplikační moduly</h2>
+<p>
+    Moduly jsou top-level package pod <code>com.klabis</code>. Každý je označen
+    <code>@ApplicationModule</code> v <code>package-info.java</code>:
+</p>
+
+<pre class="signature"><code>@org.springframework.modulith.ApplicationModule
+package com.klabis.members;</code></pre>
+
+<table class="ref-table">
+    <thead>
+        <tr><th>Modul</th><th>Účel</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>common</code></td><td>Sdílené jádro (security, hateoas, persistence helpery, users, …) — používá ho každý modul.</td></tr>
+        <tr><td><code>members</code></td><td>Členové, registrace, OAuth2 server customizace, ActingMember.</td></tr>
+        <tr><td><code>events</code></td><td>Závody a další "události" v kalendáři.</td></tr>
+        <tr><td><code>calendar</code></td><td>Sjednocený pohled na kalendář (události + manuální položky).</td></tr>
+        <tr><td><code>groups</code></td><td>Skupiny členů.</td></tr>
+        <tr><td><code>oris</code></td><td>Adaptér pro externí ORIS API (orientační běh).</td></tr>
+    </tbody>
+</table>
+
+<aside class="note">
+    Tato dokumentace popisuje pouze <code>common</code> + framework-like části <code>members</code>
+    (ActingMember, OAuth2 customizace). Byznys logiku ostatních modulů hledejte ve specifikacích
+    v <code>openspec/specs/</code>.
+</aside>
+
+<h2>Hexagonální struktura modulu</h2>
+
+<p>Každý modul je rozdělen do tří package:</p>
+
+<dl class="api-list">
+    <dt>{module}/ (root)</dt>
+    <dd>Veřejné API modulu — typy a interfaces, které smí používat jiné moduly: hodnotové typy
+        (např. <code>MemberId</code>), DTO pro publikované eventy (<code>MemberCreatedEvent</code>),
+        meta-anotace (<code>@ActingMember</code>).</dd>
+    <dd>Modulith považuje vše mimo root (kromě explicitně exportovaných package) za interní.</dd>
+
+    <dt>{module}/domain/</dt>
+    <dd>Doménový model: agregáty, value objects, repository <em>interfaces</em>, domain events.
+        <strong>Bez závislostí na Spring frameworku</strong> (smí jen <code>org.springframework.data.domain</code>
+        a jMolecules).</dd>
+
+    <dt>{module}/application/</dt>
+    <dd>Application services (use cases), <code>@PrimaryPort</code> interfaces a jejich implementace,
+        konfigurace modulu, cross-aggregate koordinace, transakční hranice.</dd>
+
+    <dt>{module}/infrastructure/</dt>
+    <dd>Adaptéry — REST controllery (<code>restapi/</code>), JDBC repositories (<code>jdbc/</code>),
+        event listeners (<code>listeners/</code>), bootstrap (<code>bootstrap/</code>), externí integrace.</dd>
+</dl>
+
+<h2>jMolecules anotace</h2>
+
+<p>
+    Pro vyznačení role typu používáme jMolecules. Anotace jsou jen metadata (žádný runtime efekt),
+    ale poskytují čitelnost a podklad pro statickou analýzu.
+</p>
+
+<dl class="api-list">
+    <dt>@org.jmolecules.architecture.hexagonal.PrimaryPort</dt>
+    <dd>Interface application service volaný "zvenku" (REST, scheduled job, jiný modul).</dd>
+
+    <dt>@org.jmolecules.architecture.hexagonal.SecondaryPort</dt>
+    <dd>Interface, který doména/application volá ven (typicky repository, externí gateway).</dd>
+
+    <dt>@org.jmolecules.architecture.hexagonal.PrimaryAdapter</dt>
+    <dd>Implementace primárního adaptéru — typicky REST controller.</dd>
+
+    <dt>@org.jmolecules.architecture.hexagonal.SecondaryAdapter</dt>
+    <dd>Implementace sekundárního adaptéru — typicky JDBC repository.</dd>
+
+    <dt>@org.jmolecules.ddd.annotation.AggregateRoot, @ValueObject, @Repository, @DomainEvent</dt>
+    <dd>DDD building blocks (přímo na třídách v <code>domain/</code>).</dd>
+</dl>
+
+<p>Příklad portu:</p>
+<pre class="signature"><code>@org.jmolecules.architecture.hexagonal.PrimaryPort
+public interface RegistrationPort {
+    record RegisterNewMember(...) {}
+
+    @Transactional
+    Member registerMember(RegisterNewMember command);
+}</code></pre>
+
+<h2>Pravidla závislostí</h2>
+
+<ul>
+    <li><strong>Žádný modul nesmí importovat <code>infrastructure</code>/<code>application</code> jiného modulu.</strong>
+        Pouze veřejné API (kořenový package) cílového modulu.</li>
+    <li><code>domain</code> nesmí záviset na <code>infrastructure</code> ani na Spring frameworku
+        (kromě <code>spring-data-commons</code> a jMolecules).</li>
+    <li><code>application</code> může záviset na <code>domain</code> a na veřejném API jiných modulů.</li>
+    <li><code>infrastructure</code> má největší volnost — implementuje porty z <code>application</code>
+        a <code>domain</code> a vidí na všechny Spring/JDBC/Jackson knihovny.</li>
+    <li>Cross-modul integrace probíhá <strong>pouze přes domain eventy</strong> (viz kap. 08).</li>
+</ul>
+
+<aside class="note">
+    Pravidla automaticky ověřuje Spring Modulith. Pokud chcete strukturu zkontrolovat, spusťte
+    <code>ApplicationModulesTest</code> v testech (ten obsahuje
+    <code>ApplicationModules.of(KlabisApplication.class).verify()</code>).
+</aside>
+
+<h2>Modul <code>common</code> — sdílené jádro</h2>
+
+<p>
+    <code>common</code> je shared kernel — knihovna patternů a infrastruktury, kterou používá každý modul.
+    Obsahuje subpackages podle tématu:
+</p>
+
+<table class="ref-table">
+    <thead><tr><th>Package</th><th>Obsah</th><th>Kapitola</th></tr></thead>
+    <tbody>
+        <tr><td><code>common.domain</code></td><td>KlabisAggregateRoot, AuditMetadata</td><td><a href="02-domain.html">02</a></td></tr>
+        <tr><td><code>common.encryption</code></td><td>EncryptedString (typ), EncryptionService</td><td><a href="02-domain.html">02</a> / <a href="03-services.html">03</a></td></tr>
+        <tr><td><code>common.users</code> (services)</td><td>UserService, PermissionService, PasswordSetupService, AuthorizationQueryService</td><td><a href="03-services.html">03</a></td></tr>
+        <tr><td><code>common.jdbc</code></td><td>JdbcConfiguration, custom converters</td><td><a href="04-persistence.html">04</a></td></tr>
+        <tr><td><code>common.pagination</code></td><td>TranslatedPageable</td><td><a href="04-persistence.html">04</a></td></tr>
+        <tr><td><code>common.hateoas</code>, <code>common.ui</code></td><td>HAL+FORMS support, RootController</td><td><a href="05-rest-api.html">05</a></td></tr>
+        <tr><td><code>common.patch</code></td><td>PatchField pro PATCH operace</td><td><a href="05-rest-api.html">05</a></td></tr>
+        <tr><td><code>common.validation</code></td><td>@ValidOptionalSize</td><td><a href="05-rest-api.html">05</a></td></tr>
+        <tr><td><code>common.mvc</code></td><td>MvcExceptionHandler, MvcComponent</td><td><a href="05-rest-api.html">05</a></td></tr>
+        <tr><td>members (ActingUser/ActingMember)</td><td>@ActingUser, @ActingMember, CurrentUserData, CurrentUserArgumentResolver</td><td><a href="05-rest-api.html">05</a></td></tr>
+        <tr><td><code>common.security</code>, <code>common.security.fieldsecurity</code></td><td>SecurityConfiguration, OwnerVisible, OwnerId, KlabisJwtAuthenticationToken, Authority</td><td><a href="06-security.html">06</a></td></tr>
+        <tr><td>members (OAuth2 customizace)</td><td>KlabisAuthorizationServerCustomizer, KlabisUserDetailsService, MemberIdToUuidConverter</td><td><a href="06-security.html">06</a></td></tr>
+        <tr><td><code>common.usergroup</code></td><td>UserGroup, GroupMembership, Invitation</td><td><a href="07-common.html">07</a></td></tr>
+        <tr><td><code>common.email</code>, <code>common.templating</code></td><td>EmailService, TemplateRenderer</td><td><a href="07-common.html">07</a></td></tr>
+        <tr><td><code>common.exceptions</code></td><td>BusinessRuleViolationException, AuthorizationException, …</td><td><a href="07-common.html">07</a></td></tr>
+        <tr><td>Spring Modulith integrace</td><td>Domain events, @ApplicationModuleListener, transactional outbox</td><td><a href="08-modules.html">08</a></td></tr>
+        <tr><td><code>common.observability</code></td><td>Custom metriky pro Modulith eventy</td><td><a href="08-modules.html">08</a></td></tr>
+        <tr><td><code>common.bootstrap</code></td><td>BootstrapDataInitializer</td><td><a href="09-cross-cutting.html">09</a></td></tr>
+        <tr><td><code>common.logging</code></td><td>RequestLoggingFilter (MDC)</td><td><a href="09-cross-cutting.html">09</a></td></tr>
+        <tr><td><code>common.ratelimit</code></td><td>PerKeyRateLimiter</td><td><a href="09-cross-cutting.html">09</a></td></tr>
+    </tbody>
+</table>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — kanonické konvence pro každodenní práci.</li>
+    <li><code>backend/docs/EVENT-DRIVEN-ARCHITECTURE.md</code> — diagram závislostí modulů a event flows.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="00-prerequisites.html">← 00 · Předpoklady</a>
+    <a href="02-domain.html">02 · Doménová vrstva →</a>
+</nav>
+
+</body>
+</html>

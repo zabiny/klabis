@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Perzistence — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>04 · Perzistence</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Perzistence</h1>
+
+<p class="lead">
+    Klabis používá Spring Data JDBC s <strong>Memento patternem</strong> — doménový agregát se
+    při ukládání převede do persistence-only recordu, který je čistě o mapování na DB. Domain typy
+    tak nejsou znečištěné JDBC anotacemi a nemají závislost na Spring frameworku.
+</p>
+
+<h2>JdbcConfiguration</h2>
+
+<p>
+    Centrální konfigurace JDBC vrstvy v <code>common.jdbc</code>. Aktivuje repository scanning,
+    auditing a registruje custom converters.
+</p>
+
+<pre class="signature"><code>@Configuration
+@EnableJdbcRepositories(basePackages = {"com.klabis"})
+@EnableJdbcAuditing
+@Import(EncryptionConfiguration.class)
+public class JdbcConfiguration extends AbstractJdbcConfiguration {
+
+    @Override
+    public JdbcCustomConversions jdbcCustomConversions() { ... }
+
+    @Bean
+    public AuditorAware&lt;String&gt; auditorProvider();
+}</code></pre>
+
+<dl class="api-list">
+    <dt>AuditorAware&lt;String&gt;</dt>
+    <dd>Vrací přihlášeného uživatele (jeho <code>registrationNumber</code> ze SecurityContextu)
+        pro audit pole. Bez autentikace vrací <code>"system"</code>.</dd>
+
+    <dt>JdbcCustomConversions</dt>
+    <dd>Místo, kam se přidávají converter beany pro vlastní hodnotové typy (např.
+        <code>EncryptedString</code>). Pro nový typ napište dva <code>Converter</code>y
+        (sem ↔ String/UUID/…) a registrujte jako <code>@Component</code>; <code>JdbcConfiguration</code>
+        je auto-discoverne (jsou injectované konstruktorem).</dd>
+</dl>
+
+<h2>Memento pattern</h2>
+
+<p>
+    Pro každý agregát existuje memento třída v <code>{module}/infrastructure/jdbc/</code>:
+</p>
+
+<ul>
+    <li>POJO s JDBC anotacemi (<code>@Table</code>, <code>@Column</code>, <code>@Id</code>, <code>@Version</code>).</li>
+    <li>Statická factory <code>from(Aggregate)</code> a metoda <code>toAggregate()</code>.</li>
+    <li>Implementuje <code>Persistable&lt;ID&gt;</code> — agregát si sám určí, jestli je nový (<code>isNew()</code>).</li>
+    <li>Přeposílá domain eventy zpět na agregát přes <code>@DomainEvents</code> a
+        <code>@AfterDomainEventPublication</code>.</li>
+</ul>
+
+<pre class="signature"><code>@Table("members")
+class MemberMemento implements Persistable&lt;UUID&gt; {
+
+    @Id @Column("id") private UUID id;
+    @Column("registration_number") private String registrationNumber;
+    // … další pole …
+
+    @Version private Long version;
+    @CreatedDate private Instant createdAt;
+    @CreatedBy   private String createdBy;
+    @LastModifiedDate private Instant lastModifiedAt;
+    @LastModifiedBy   private String lastModifiedBy;
+
+    static MemberMemento from(Member member) { ... }
+    Member toMember() { ... }
+
+    @DomainEvents List&lt;Object&gt; events() { /* delegate to aggregate */ }
+    @AfterDomainEventPublication void clear() { /* delegate to aggregate */ }
+}</code></pre>
+
+<h2>Repository pattern</h2>
+
+<p>
+    Doménové repository <em>interface</em> je v <code>{module}/domain/</code> (port). V infrastruktuře
+    jsou dvě třídy:
+</p>
+
+<dl class="api-list">
+    <dt>{Aggregate}JdbcRepository (Spring Data interface)</dt>
+    <dd>Rozšiřuje <code>CrudRepository&lt;Memento, ID&gt;</code> nebo
+        <code>PagingAndSortingRepository</code>. Sem se píší derived queries a <code>@Query</code>.
+        Pracuje vždy s memento typem, ne s agregátem.</dd>
+
+    <dt>{Aggregate}RepositoryAdapter</dt>
+    <dd>Implementace doménového rozhraní (<code>@SecondaryAdapter</code> + <code>@Repository</code>).
+        Konvertuje mezi mementem a agregátem, používá interní <code>JdbcRepository</code>
+        a <code>JdbcAggregateTemplate</code> pro pokročilé dotazy.</dd>
+</dl>
+
+<pre class="signature"><code>@SecondaryAdapter
+@Repository
+class MemberRepositoryAdapter implements MemberRepository {
+
+    private final MemberJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
+
+    @Override
+    public Member save(Member member) {
+        MemberMemento savedMemento = jdbcRepository.save(MemberMemento.from(member));
+        return savedMemento.toMember();
+    }
+
+    @Override
+    public Optional&lt;Member&gt; findById(MemberId id) {
+        return jdbcRepository.findById(id.uuid()).map(MemberMemento::toMember);
+    }
+}</code></pre>
+
+<h2>TranslatedPageable — překlad sort properties</h2>
+
+<p>
+    Doménové query API přijímá <code>Pageable</code> s doménovými property names (např.
+    <code>"firstName"</code>). DB ale očekává sloupce (<code>first_name</code>). <code>TranslatedPageable</code>
+    je dekorátor, který přeloží sort orders pomocí mapy. Neznámé properties prochází beze změny
+    (fail-safe).
+</p>
+
+<pre class="signature"><code>private static final Map&lt;String, String&gt; DOMAIN_TO_DB_COLUMN = Map.of(
+    "firstName", "first_name",
+    "lastName", "last_name",
+    "registrationNumber", "registration_number"
+);
+
+Pageable translated = TranslatedPageable.translate(originalPageable, DOMAIN_TO_DB_COLUMN);
+return jdbcRepository.findAll(translated);</code></pre>
+
+<h2>Custom queries s JdbcAggregateTemplate</h2>
+
+<p>
+    Pro filtry s dynamickou kombinací podmínek se hodí <code>JdbcAggregateTemplate</code> +
+    <code>Query</code>/<code>Criteria</code> z <code>spring-data-relational</code>:
+</p>
+
+<pre class="signature"><code>Criteria criteria = Criteria.empty();
+if (filter.firstName() != null)
+    criteria = criteria.and("first_name").like("%" + filter.firstName() + "%");
+
+Query query = Query.query(criteria).with(translatedPageable);
+List&lt;Member&gt; results = jdbcAggregateTemplate
+        .findAll(query, MemberMemento.class).stream()
+        .map(MemberMemento::toMember).toList();</code></pre>
+
+<h2>Migrace</h2>
+
+<p>
+    Tři Flyway scripty v <code>backend/src/main/resources/db/migration/</code>:
+</p>
+
+<ul>
+    <li><code>V001__domain_schema.sql</code> — všechny doménové tabulky.</li>
+    <li><code>V002__oauth2_schema.sql</code> — Spring Authorization Server tabulky.</li>
+    <li><code>V003__modulith_schema.sql</code> — <code>event_publication</code> pro Modulith outbox.</li>
+</ul>
+
+<aside class="note warn">
+    <strong>Nepřidávejte nové migrační skripty.</strong> Aplikace je v devu, DB se v H2 resetuje při
+    každém startu a v PostgreSQL prostředí ji jednoduše dropneme. Doménové změny patří do
+    <code>V001</code>.
+</aside>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — sekce "Persistence" a "Memento pattern".</li>
+    <li><code>aggregate-checklist.md</code> v <code>backend-patterns/references/</code> — postup pro nový agregát s persistencí.</li>
+    <li>Příklad: <code>members/infrastructure/jdbc/</code> obsahuje úplnou implementaci pro <code>Member</code>.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="03-services.html">← 03 · Aplikační vrstva</a>
+    <a href="05-rest-api.html">05 · REST API a HAL+FORMS →</a>
+</nav>
+
+</body>
+</html>

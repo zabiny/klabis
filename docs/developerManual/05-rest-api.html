@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>REST API a HAL+FORMS — Klabis Developer Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>05 · REST API a HAL+FORMS</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>REST API a HAL+FORMS</h1>
+
+<p class="lead">
+    Veškeré REST endpointy vrací <code>application/prs.hal-forms+json</code> — HAL doplněný
+    o popis affordancí (POST/PUT/PATCH/DELETE operací včetně metadat formuláře). Klabis poskytuje
+    helpery <code>klabisLinkTo</code> a <code>klabisAfford</code>, anotaci <code>@HalForms</code>
+    pro pole, <code>PatchField&lt;T&gt;</code> pro PATCH operace a centrální exception handler.
+</p>
+
+<h2>HAL+FORMS principy</h2>
+
+<ul>
+    <li>Každý odpověďový resource má <code>_self</code> link a (pokud existují) další navigační linky.</li>
+    <li><strong>Odkazy</strong> (<code>_links</code>) odkazují pouze na GET endpoints.</li>
+    <li><strong>Affordances</strong> (<code>_templates</code>) popisují modifikační operace
+        (POST/PUT/PATCH/DELETE) i s metadaty polí (typ, required, readOnly, options).</li>
+    <li>Frontend čte tyto metadata a generuje formuláře dynamicky (viz hal-navigator-patterns).</li>
+</ul>
+
+<h2>klabisLinkTo a klabisAfford</h2>
+
+<p>
+    Wrapper kolem Spring HATEOAS <code>linkTo()</code> a <code>afford()</code>. Přidává:
+</p>
+
+<ul>
+    <li>Filtrování podle autorizace — pokud aktuální uživatel nemá oprávnění na cílovou metodu,
+        link/affordance se nevygeneruje. Vrací se <code>Optional&lt;WebMvcLinkBuilder&gt;</code>.</li>
+    <li>Aplikace anotací <code>@HalForms</code> z record komponent na affordance metadata.</li>
+</ul>
+
+<pre class="signature"><code>import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+
+klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null))
+    .map(link -&gt; link.withSelfRel()
+        .andAffordances(klabisAfford(methodOn(MemberController.class)
+            .updateMember(memberId, null, null))));</code></pre>
+
+<dl class="api-list">
+    <dt>klabisLinkTo(invocation)</dt>
+    <dd>Vrátí <code>Optional&lt;WebMvcLinkBuilder&gt;</code> pokud má uživatel oprávnění
+        na cílovou metodu, jinak <code>Optional.empty()</code>.</dd>
+
+    <dt>klabisAfford(invocation)</dt>
+    <dd>Vrátí seznam <code>Affordance</code> objektů (prázdný, pokud uživatel nemá oprávnění).
+        Aplikuje <code>@HalForms</code> anotace z body parametru (record components).</dd>
+
+    <dt>klabisAffordWithOptions(invocation, propertyOptions)</dt>
+    <dd>Stejné jako <code>klabisAfford</code>, ale navíc vloží inline <code>options</code> hodnoty pro
+        zadané property (např. dropdown values).</dd>
+
+    <dt>entityModelWithDomain(dto, domain)</dt>
+    <dd>Místo <code>EntityModel.of(dto)</code> — wrapper, který doplní <em>domain</em> info do
+        odpovědi (potřebné pro frontend pro identifikaci typu).</dd>
+</dl>
+
+<h2>Anotace @HalForms</h2>
+
+<p>
+    Použitelná na record komponentu DTO. Ovlivňuje, jak se pole zobrazí v HAL+FORMS metadatech.
+</p>
+
+<pre class="signature"><code>@Target(ElementType.RECORD_COMPONENT)
+public @interface HalForms {
+    enum Access { READ_ONLY, NONE, READ_WRITE, DEFAULT }
+    Access access() default Access.DEFAULT;
+    String formInputType() default "";   // např. "email", "tel", "date"
+}</code></pre>
+
+<table class="ref-table">
+    <thead><tr><th>Access</th><th>Význam</th></tr></thead>
+    <tbody>
+        <tr><td><code>READ_ONLY</code></td><td>Pole je v metadatech, ale <code>readOnly=true</code> (zobrazí se, ale nelze měnit).</td></tr>
+        <tr><td><code>READ_WRITE</code></td><td>Pole je v metadatech, <code>readOnly=false</code>.</td></tr>
+        <tr><td><code>NONE</code></td><td>Pole se v metadatech vůbec neobjeví (skryto z formuláře).</td></tr>
+        <tr><td><code>DEFAULT</code></td><td>Default behavior podle Spring HATEOAS — record komponenta = read-write.</td></tr>
+    </tbody>
+</table>
+
+<pre class="signature"><code>public record CalendarItemDto(
+        @HalForms(access = HalForms.Access.READ_ONLY) CalendarItemId id,
+        String title,
+        @HalForms(access = HalForms.Access.READ_ONLY) EventId eventId
+) {}</code></pre>
+
+<h2>RootController a navigace</h2>
+
+<p>
+    <code>/api</code> vrací prázdný resource s linky do jednotlivých modulů. Linky <strong>nepřidává</strong>
+    samotný <code>RootController</code> — místo toho každý modul registruje
+    <code>RepresentationModelProcessor&lt;EntityModel&lt;RootModel&gt;&gt;</code>
+    (typicky v <code>{module}/infrastructure/restapi/</code>), který doplní svoje top-level linky.
+</p>
+
+<aside class="note">
+    Frontend si při startu načte <code>/api</code> a podle dostupných linků postaví navigační menu —
+    nepotřebuje si pamatovat URL strukturu. Modul, který nemá linky pro daného uživatele, prostě
+    v menu nebude.
+</aside>
+
+<h2>EntityModelWithDomain a ModelWithDomainPostprocessor</h2>
+
+<p>
+    Wrapper přes <code>EntityModel</code>, který do odpovědi přidává atribut
+    <code>_domain</code> s názvem byznys domény. Frontend podle něj rozpozná typ payload-u
+    (např. "Member", "Event") nezávisle na URL. <code>ModelWithDomainPostprocessor</code> je
+    Jackson postprocessor, který tento atribut serializuje.
+</p>
+
+<h2>PatchField — partial updates</h2>
+
+<p>
+    Pro PATCH semantiku potřebujeme rozlišit "pole nebylo posláno" vs. "pole je explicitně null"
+    (vymazat). <code>PatchField&lt;T&gt;</code> tuto distinkci umožňuje.
+</p>
+
+<pre class="signature"><code>public final class PatchField&lt;T&gt; {
+    public static &lt;T&gt; PatchField&lt;T&gt; of(T value);
+    public static &lt;T&gt; PatchField&lt;T&gt; notProvided();
+
+    public boolean isProvided();
+    public T patchValue(T originalValue);          // returns provided value or original
+    public void ifProvided(Consumer&lt;? super T&gt; action);
+    public &lt;O&gt; PatchField&lt;O&gt; map(Function&lt;T, O&gt; mapper);
+    public T throwIfNotProvided();
+}</code></pre>
+
+<p>Použití v request DTO:</p>
+
+<pre class="signature"><code>public record UpdateMemberRequest(
+        PatchField&lt;String&gt; firstName,
+        PatchField&lt;String&gt; lastName,
+        PatchField&lt;String&gt; email,
+        PatchField&lt;AddressRequest&gt; address
+) {}</code></pre>
+
+<p>V mapperu / aplikační vrstvě se aplikuje na agregát:</p>
+
+<pre class="signature"><code>request.firstName().ifProvided(name -&gt; member.changeFirstName(name));
+String newEmail = request.email().patchValue(member.getEmail().value());</code></pre>
+
+<aside class="note">
+    Jackson deserializer (<code>PatchFieldDeserializer</code>, registrován přes <code>PatchFieldModule</code>)
+    rozpoznává, že JSON klíč chybí, vs. že je <code>null</code>. Modul je registrován automaticky.
+</aside>
+
+<h2>@ValidOptionalSize — validace volitelných polí</h2>
+
+<p>
+    Standardní <code>@Size</code> nefunguje na <code>Optional&lt;String&gt;</code>.
+    <code>@ValidOptionalSize</code> je vlastní constraint v <code>common.validation</code>:
+</p>
+
+<pre class="signature"><code>public record AddressRequest(
+        @ValidOptionalSize(max = 100) Optional&lt;String&gt; street,
+        @ValidOptionalSize(max = 50) Optional&lt;String&gt; city
+) {}</code></pre>
+
+<h2>Exception handling</h2>
+
+<p>
+    <code>MvcExceptionHandler</code> v <code>common.mvc</code> je <code>@RestControllerAdvice</code>,
+    který mapuje doménové výjimky na HTTP 4xx/5xx s <code>application/problem+json</code> tělem
+    (RFC 7807 ProblemDetail).
+</p>
+
+<table class="ref-table">
+    <thead><tr><th>Výjimka</th><th>HTTP status</th></tr></thead>
+    <tbody>
+        <tr><td><code>IllegalArgumentException</code>, <code>InvalidDataException</code>, <code>BusinessRuleViolationException</code></td><td>400</td></tr>
+        <tr><td><code>AuthorizationException</code>, <code>InsufficientAuthorityException</code></td><td>403</td></tr>
+        <tr><td><code>ResourceNotFoundException</code></td><td>404</td></tr>
+        <tr><td><code>OptimisticLockingFailureException</code></td><td>409</td></tr>
+        <tr><td><code>CannotRemoveLastOwnerException</code>, <code>DirectMemberAdditionNotAllowedException</code>, …</td><td>422</td></tr>
+        <tr><td><code>MethodArgumentNotValidException</code> / <code>HandlerMethodValidationException</code></td><td>400 (s <code>errors[]</code>)</td></tr>
+    </tbody>
+</table>
+
+<p>
+    V controlleru tedy nepoužíváme <code>try/catch</code> — vyhodíme typovanou doménovou výjimku
+    a handler ji zformátuje. Custom výjimku přidáte přímo do <code>MvcExceptionHandler</code>.
+</p>
+
+<h2>Konfigurace</h2>
+
+<dl class="api-list">
+    <dt>HateoasConfiguration (<code>common.hateoas</code>)</dt>
+    <dd>Globální Spring HATEOAS setup, registrace <code>HalFormsMultiPropertyModule</code>
+        (rozšířená HAL+FORMS metadata pro více properties), <code>FieldSecurityJacksonModule</code>
+        (filtrování polí podle autorizace).</dd>
+
+    <dt>MvcConfiguration (<code>common.mvc</code>)</dt>
+    <dd>WebMvc configuration — registrace argument resolverů (např. <code>CurrentUserArgumentResolver</code>
+        pro <code>@ActingUser</code>) a interceptors.</dd>
+
+    <dt>SpaFallbackController (<code>common.ui</code>)</dt>
+    <dd>Vrací <code>index.html</code> pro všechny ne-API URL (SPA routing). Frontend bundluje React aplikaci.</dd>
+
+    <dt>@MvcComponent (<code>common.mvc</code>)</dt>
+    <dd>Stereotyp pro MVC komponenty (controllery, advice). Aktuálně rozšiřuje <code>@RestController</code>
+        a slouží pro budoucí customizace component scanu / aspektů. Použití analogické jako
+        <code>@RestController</code>.</dd>
+</dl>
+
+<h2>Aktuální uživatel v controlleru</h2>
+
+<p>
+    Pro získání přihlášeného uživatele používejte parametrové anotace <code>@ActingUser</code> a
+    <code>@ActingMember</code> z modulu <code>members</code>. <strong>Nepoužívejte</strong> přímo
+    <code>SecurityContextHolder</code> — ztratíte typovou bezpečnost a usnadníte si testování.
+</p>
+
+<h3>@ActingUser</h3>
+
+<p>
+    Pro všechny přihlášené uživatele — i pro ty bez Member profilu (např. admin účty).
+</p>
+
+<pre class="signature"><code>@Target(ElementType.PARAMETER)
+public @interface ActingUser {}</code></pre>
+
+<table class="ref-table">
+    <thead><tr><th>Typ parametru</th><th>Co dostanete</th></tr></thead>
+    <tbody>
+        <tr><td><code>UserId</code></td><td>UUID aktuálního uživatele.</td></tr>
+        <tr><td><code>CurrentUserData</code></td><td>Plná data: userName, userId, memberId (nullable), authorities.</td></tr>
+    </tbody>
+</table>
+
+<pre class="signature"><code>@PostMapping("/members")
+public ... registerMember(@RequestBody Request body, @ActingUser UserId currentUserId) { ... }
+
+@PatchMapping("/members/{id}")
+public ... updateMember(@PathVariable MemberId id,
+                        @RequestBody Request body,
+                        @ActingUser CurrentUserData currentUser) { ... }</code></pre>
+
+<h3>@ActingMember</h3>
+
+<p>
+    Vyžaduje Member profil. Pokud uživatel nemá Member (např. admin), vyhodí
+    <code>MemberProfileRequiredException</code> ještě před vstupem do controller metody (handler
+    vrátí HTTP 403).
+</p>
+
+<pre class="signature"><code>@Target(ElementType.PARAMETER)
+public @interface ActingMember {}</code></pre>
+
+<p>Podporované cílové typy: <code>MemberId</code>.</p>
+
+<pre class="signature"><code>@PostMapping("/events/{id}/registrations")
+public ... register(@PathVariable EventId id,
+                    @ActingMember MemberId actingMember) { ... }</code></pre>
+
+<h3>CurrentUserData</h3>
+
+<pre class="signature"><code>public record CurrentUserData(
+        String userName,
+        UserId userId,
+        @Nullable MemberId memberId,
+        Set&lt;Authority&gt; authorities) {
+
+    public boolean isMember();
+    public boolean hasAuthority(Authority authority);
+    public boolean isMemberOf(Predicate&lt;MemberId&gt; membershipCheck);
+}</code></pre>
+
+<aside class="note">
+    Pro autorizaci v rámci kontextu metody preferujte <code>@HasAuthority</code> nebo
+    <code>@OwnerVisible</code> (kap. 06). <code>currentUser.hasAuthority(...)</code> v těle metody
+    používejte jen pro <em>obsahové</em> rozhodování (např. které pole vyplnit), ne pro security
+    checky.
+</aside>
+
+<h3>CurrentUserArgumentResolver</h3>
+
+<p>
+    Spring MVC <code>HandlerMethodArgumentResolver</code> v
+    <code>members.infrastructure.authorizationserver</code>, který implementuje obě anotace.
+    Načítá data z <code>KlabisJwtAuthenticationToken</code> (kap. 06) a v případě
+    <code>CurrentUserData</code> doplní username a authorities. Auto-registruje se přes
+    <code>WebMvcConfigurer</code>.
+</p>
+
+<h2>Související zdroje</h2>
+<ul>
+    <li><code>backend-patterns</code> skill — sekce "REST controllers" a "HATEOAS affordances".</li>
+    <li><code>backend/hal+forms.md</code> — pracovní popis HAL+FORMS pravidel pro Klabis.</li>
+    <li>Skill <code>hateoas-api:review-hateoas-links</code> — kontrola best practices.</li>
+    <li>Příklad: <code>members/infrastructure/restapi/MemberController.java</code> — kompletní controller s linky a affordances.</li>
+</ul>
+
+</article>
+</main>
+
+<nav class="page-nav">
+    <a href="04-persistence.html">← 04 · Perzistence</a>
+    <a href="06-security.html">06 · Bezpečnost →</a>
+</nav>
+
+</body>
+</html>
