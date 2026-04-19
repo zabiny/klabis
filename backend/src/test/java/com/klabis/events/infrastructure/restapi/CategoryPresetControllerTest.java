@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
@@ -34,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("CategoryPresetController API tests")
 @WebMvcTest(controllers = {CategoryPresetController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class CategoryPresetControllerTest {
 
     @Autowired

@@ -1,6 +1,7 @@
 package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.GroupMembership;
@@ -9,8 +10,6 @@ import com.klabis.common.users.UserService;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("FamilyGroups navigation HAL link visibility")
 @WebMvcTest(controllers = {FamilyGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class FamilyGroupsNavigationTest {
 
     private static final String ADMIN_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -57,12 +57,6 @@ class FamilyGroupsNavigationTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     @Test
     @DisplayName("should include family-groups collection link for MEMBERS:MANAGE users")

@@ -7,6 +7,7 @@ import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CalendarNotFoundException;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("CalendarController API tests")
 @WebMvcTest(controllers = CalendarController.class)
 @MockitoBean(types = {UserService.class})
+@WithPostprocessors
 class CalendarControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";

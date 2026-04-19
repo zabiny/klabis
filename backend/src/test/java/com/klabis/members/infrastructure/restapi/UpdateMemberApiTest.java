@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
@@ -65,6 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Update Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
 @Import({EncryptionConfiguration.class, com.klabis.common.security.SecurityConfiguration.class})
+@WithPostprocessors
 class UpdateMemberApiTest {
 
     @Autowired
@@ -87,12 +89,6 @@ class UpdateMemberApiTest {
 
     @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
-
-    @MockitoBean
-    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
-
-    @MockitoBean
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     private final UUID testMemberId = UUID.randomUUID();
 

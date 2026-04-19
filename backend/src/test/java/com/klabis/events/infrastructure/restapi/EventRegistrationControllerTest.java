@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
@@ -11,8 +12,6 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.*;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -46,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
 @Import({EncryptionConfiguration.class, SecurityConfiguration.class})
+@WithPostprocessors
 class EventRegistrationControllerTest {
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
@@ -73,12 +73,6 @@ class EventRegistrationControllerTest {
 
     @MockitoBean
     private Members membersMock;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     static EntityLinks entityLinksMock() {
         return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);

@@ -1,6 +1,7 @@
 package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
@@ -13,8 +14,6 @@ import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.application.MemberAlreadyInFamilyGroupException;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("FamilyGroupController API tests")
 @WebMvcTest(controllers = {FamilyGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class FamilyGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -56,12 +56,6 @@ class FamilyGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     private FamilyGroup buildFamilyGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));

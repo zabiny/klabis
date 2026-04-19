@@ -1,6 +1,7 @@
 package com.klabis.common.users.passwordsetup;
 
 import tools.jackson.databind.ObjectMapper;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.UserService;
 import com.klabis.common.users.UserId;
@@ -38,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = PasswordSetupController.class)
 @Import(EncryptionConfiguration.class)
 @DisplayName("PasswordSetupController API tests")
+@WithPostprocessors
 class PasswordSetupControllerTest {
 
     @Autowired

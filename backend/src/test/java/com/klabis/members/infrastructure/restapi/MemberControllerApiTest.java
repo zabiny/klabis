@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -67,6 +68,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
         com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class})
 @MockitoBean(types = {UserService.class})
+@WithPostprocessors
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";

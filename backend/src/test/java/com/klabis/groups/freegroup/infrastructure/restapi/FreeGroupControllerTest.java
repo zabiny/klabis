@@ -1,6 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
@@ -11,8 +12,6 @@ import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -46,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("FreeGroupController API tests")
 @WebMvcTest(controllers = {FreeGroupController.class, PendingInvitationsController.class, FreeGroupExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class FreeGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -66,12 +66,6 @@ class FreeGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     private FreeGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));

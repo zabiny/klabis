@@ -1,6 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = AffordanceAuthorizationTest.AffordanceTestController.class)
 @Import(HalFormsSupport.class)
 @DisplayName("klabisAfford authorization filtering")
+@WithPostprocessors
 class AffordanceAuthorizationTest {
 
     private static final String OWNER_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";

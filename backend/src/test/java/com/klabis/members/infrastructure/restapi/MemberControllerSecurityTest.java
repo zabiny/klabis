@@ -3,10 +3,9 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.application.LastOwnershipCheckerImpl;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
@@ -25,19 +24,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
+@WithPostprocessors
 class MemberControllerSecurityTest extends SecurityTestBase {
 
     @MockitoBean
     @SuppressWarnings("unused")
     private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private TrainingGroupRepository trainingGroupRepository;
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private FamilyGroupRepository familyGroupRepository;
 
     @Test
     @DisplayName("POST /api/members without authentication should return 401")

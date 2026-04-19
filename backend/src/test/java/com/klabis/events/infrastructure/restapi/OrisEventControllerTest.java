@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
@@ -48,6 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {EventController.class, OrisEventController.class, EventsExceptionHandler.class})
 @ActiveProfiles("oris")
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class OrisEventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";

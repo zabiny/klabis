@@ -1,6 +1,7 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
@@ -11,8 +12,6 @@ import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
@@ -42,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("TrainingGroupController API tests")
 @WebMvcTest(controllers = {TrainingGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
 class TrainingGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -59,12 +59,6 @@ class TrainingGroupControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     private TrainingGroup buildTrainingGroup(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr) {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));

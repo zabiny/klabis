@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.UserService;
 import com.klabis.members.ActingMember;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = CurrentUserIntegrationTest.TestController.class)
 @Import({CurrentUserArgumentResolver.class, MvcConfigurerMembers.class})
 @MockitoBean(types = {UserService.class})
+@WithPostprocessors
 class CurrentUserIntegrationTest {
 
     private static final String TEST_USER_ID = "123e4567-e89b-12d3-a456-426614174000";

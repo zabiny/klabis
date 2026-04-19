@@ -1,6 +1,7 @@
 package com.klabis.common.users.authorization;
 
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -10,8 +11,6 @@ import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(PermissionController.class)
 @Import(EncryptionConfiguration.class)
 @DisplayName("PermissionController permissions endpoints tests")
+@WithPostprocessors
 class PermissionControllerTest {
 
     @Autowired
@@ -57,12 +57,6 @@ class PermissionControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private FamilyGroupRepository familyGroupRepository;
-
-    @MockitoBean
-    private TrainingGroupRepository trainingGroupRepository;
 
     private static final UserId USER_ID = new UserId(UUID.randomUUID());
 

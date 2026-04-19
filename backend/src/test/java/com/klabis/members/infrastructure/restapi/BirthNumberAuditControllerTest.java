@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
@@ -44,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
 @Import({MemberMapperImpl.class})
 @MockitoBean(types = {UserService.class})
+@WithPostprocessors
 class BirthNumberAuditControllerTest {
 
     @Autowired
@@ -57,12 +59,6 @@ class BirthNumberAuditControllerTest {
 
     @MockitoBean
     private RegistrationPort registrationService;
-
-    @MockitoBean
-    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
-
-    @MockitoBean
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
 
     @TestBean
     private EntityLinks entityLinks;
