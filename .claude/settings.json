@@ -55,7 +55,8 @@
   "enabledPlugins": {},
   "sandbox": {
     "excludedCommands": [
-      "./runLocalEnvironment.sh"
+      "./runLocalEnvironment.sh",
+      "./gradlew *"
     ],
     "network": {
       "allowedDomains": [
