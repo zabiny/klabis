@@ -54,6 +54,9 @@
   },
   "enabledPlugins": {},
   "sandbox": {
+    "excludedCommands": [
+      "./runLocalEnvironment.sh"
+    ],
     "network": {
       "allowedDomains": [
         "repo.maven.apache.org",

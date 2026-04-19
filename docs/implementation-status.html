@@ -1,0 +1,1286 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Klabis — Implementation Status</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!--
+  ============================================================
+  HOW TO UPDATE THIS BOARD
+  ============================================================
+  The data for the board lives in the <script id="data"> JSON
+  block at the bottom of this file. Just edit/add/remove
+  entries there — layout, counts and filters update on reload.
+
+  Each entry:
+  {
+    "id":       123,               // Github issue number
+    "title":    "…",               // Short title shown on card
+    "milestone":"MVP" | "core",
+    "status":   "TODO" | "IN_PROGRESS" | "COMPLETED",
+    "details":  ""                 // Markdown-lite; empty = no popup detail
+  }
+
+  The repo (for issue links) is set in the REPO constant
+  in the <script> block just below the JSON.
+  ============================================================
+-->
+
+<style>
+  :root {
+    /* surfaces */
+    --bg:        #0b0d12;
+    --bg-2:      #0f1218;
+    --surface:   rgba(255, 255, 255, 0.025);
+    --surface-2: rgba(255, 255, 255, 0.04);
+    --surface-3: rgba(255, 255, 255, 0.06);
+    --border:    rgba(255, 255, 255, 0.07);
+    --border-2:  rgba(255, 255, 255, 0.12);
+    --border-3:  rgba(255, 255, 255, 0.18);
+
+    /* text */
+    --text:      #e8eaed;
+    --text-soft: #c7cad1;
+    --text-dim:  #8a8f99;
+    --text-mute: #5b616c;
+
+    /* accents */
+    --accent:    #a78bfa;            /* violet */
+    --accent-2:  #7c7fff;            /* indigo */
+    --todo:      #64748b;            /* slate */
+    --progress:  #f59e0b;            /* amber */
+    --progress-2:#fbbf24;
+    --done:      #10b981;            /* emerald */
+    --done-2:    #34d399;
+
+    /* ui */
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+
+    --shadow-1: 0 1px 0 rgba(255,255,255,0.03) inset, 0 1px 1px rgba(0,0,0,0.25);
+    --shadow-2: 0 10px 30px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.04) inset;
+    --shadow-3: 0 20px 60px rgba(0,0,0,0.5),  0 1px 0 rgba(255,255,255,0.05) inset;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    font-feature-settings: "ss01" on, "cv11" on;
+  }
+
+  /* soft radial atmosphere */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgba(167,139,250,0.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 100%, rgba(16,185,129,0.07), transparent 55%),
+      radial-gradient(600px 400px at 50% 120%, rgba(245,158,11,0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1640px;
+    margin: 0 auto;
+    padding: 44px 40px 80px;
+  }
+  @media (max-width: 900px) { .page { padding: 24px 16px 60px; } }
+
+  /* ─── Header ─────────────────────────────────────── */
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+    padding-bottom: 26px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-soft);
+    font-weight: 500;
+    padding: 7px 12px 7px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .brand .logo-dot {
+    width: 18px; height: 18px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent) 0%, #5b7bff 100%);
+    box-shadow: 0 0 18px rgba(167,139,250,0.5), 0 1px 0 rgba(255,255,255,0.2) inset;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #0b0d12; font-family: "JetBrains Mono", monospace;
+    font-weight: 700; font-size: 10px;
+  }
+  .brand .sep {
+    display: inline-block;
+    width: 1px; height: 14px;
+    background: var(--border-2);
+  }
+  .brand .chip {
+    color: var(--text-dim);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+  }
+
+  h1.title {
+    margin: 22px 0 10px;
+    font-family: "Instrument Serif", "Times New Roman", serif;
+    font-weight: 400;
+    font-size: clamp(40px, 5vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    max-width: 18ch;
+  }
+  h1.title em {
+    font-style: italic;
+    background: linear-gradient(90deg, #c4b5fd 0%, #fbbf24 60%, #34d399 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    max-width: 58ch;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin: 0 0 4px;
+  }
+  .subtitle code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85em;
+    padding: 1px 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-soft);
+  }
+
+  .meta-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .meta-col .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 12px 7px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-soft);
+    letter-spacing: 0.04em;
+  }
+  .meta-col .live::before {
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--done);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.18), 0 0 14px rgba(52,211,153,0.6);
+    animation: pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.35), 0 0 14px rgba(52,211,153,0.6); }
+    70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0),   0 0 14px rgba(52,211,153,0.4); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0),     0 0 14px rgba(52,211,153,0.6); }
+  }
+
+  /* ─── Stats strip ──────────────────────────────────── */
+  .stats {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .stat {
+    position: relative;
+    padding: 18px 20px 20px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-1);
+    overflow: hidden;
+    transition: border-color 220ms ease, transform 220ms ease;
+  }
+  .stat:hover { border-color: var(--border-2); transform: translateY(-1px); }
+  .stat .label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .stat .label .sq {
+    width: 8px; height: 8px; border-radius: 2px;
+    background: var(--text-dim);
+  }
+  .stat .value {
+    font-family: "Instrument Serif", serif;
+    font-weight: 400;
+    font-size: 54px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .pct {
+    display: inline-block;
+    margin-left: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    vertical-align: 10px;
+  }
+  .stat .bar {
+    margin-top: 14px;
+    height: 4px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .stat .bar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 420ms cubic-bezier(.25,.9,.3,1);
+  }
+  .stat.completed .label .sq { background: var(--done); box-shadow: 0 0 10px var(--done); }
+  .stat.completed .value     { color: var(--done-2); }
+  .stat.completed .bar span  { background: linear-gradient(90deg, var(--done), var(--done-2)); box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+
+  .stat.progress  .label .sq { background: var(--progress); box-shadow: 0 0 10px var(--progress); }
+  .stat.progress  .value     { color: var(--progress-2); }
+  .stat.progress  .bar span  { background: linear-gradient(90deg, var(--progress), var(--progress-2)); box-shadow: 0 0 12px rgba(245,158,11,0.4); }
+
+  .stat.todo .label .sq      { background: var(--todo); }
+  .stat.todo .value          { color: var(--text-soft); }
+  .stat.todo .bar span       { background: linear-gradient(90deg, #4b5563, #94a3b8); }
+
+  .stat.total .label .sq     { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .stat.total .value         { color: var(--text); }
+  .stat.total .bar span      { background: linear-gradient(90deg, var(--accent-2), var(--accent)); box-shadow: 0 0 12px rgba(167,139,250,0.4); }
+
+  @media (max-width: 780px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ─── Controls ─────────────────────────────────────── */
+  .controls {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .filters {
+    display: inline-flex;
+    padding: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .filters button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+  .filters button:hover { color: var(--text-soft); }
+  .filters button[aria-pressed="true"] {
+    color: var(--text);
+    background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .filters button .count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 5px;
+  }
+  .filters button[aria-pressed="true"] .count {
+    color: var(--text-soft);
+    background: rgba(255,255,255,0.08);
+  }
+
+  .search {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+    max-width: 480px;
+  }
+  .search input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    padding: 11px 14px 11px 40px;
+    font-family: "Inter", sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .search input:focus {
+    border-color: var(--border-3);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.15);
+  }
+  .search input::placeholder { color: var(--text-mute); }
+  .search svg {
+    position: absolute;
+    left: 14px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px;
+    stroke: var(--text-dim);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  .kbd {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .kbd span {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 1px solid var(--border-2);
+    border-radius: 4px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+  }
+
+  /* ─── Board ────────────────────────────────────────── */
+  .board {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  @media (max-width: 1100px) { .board { grid-template-columns: 1fr; } }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.005) 100%);
+    min-height: 420px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: linear-gradient(180deg, rgba(15,18,24,0.85), rgba(15,18,24,0.75));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 3;
+  }
+  .col-head-lhs {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--todo);
+    box-shadow: 0 0 0 3px rgba(100,116,139,0.15);
+  }
+  .column.progress  .status-dot { background: var(--progress); box-shadow: 0 0 0 3px rgba(245,158,11,0.18), 0 0 14px rgba(245,158,11,0.5); }
+  .column.completed .status-dot { background: var(--done);     box-shadow: 0 0 0 3px rgba(16,185,129,0.18),  0 0 14px rgba(52,211,153,0.5); }
+
+  .col-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+  .col-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .column-body {
+    flex: 1;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+  .column-body::-webkit-scrollbar { width: 8px; }
+  .column-body::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+  .column-body::-webkit-scrollbar-track { background: transparent; }
+
+  .empty {
+    margin: 40px auto;
+    text-align: center;
+    color: var(--text-mute);
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: 16px;
+  }
+
+  /* ─── Card ─────────────────────────────────────────── */
+  .card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
+    padding: 14px 14px 12px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition:
+      transform 220ms cubic-bezier(.2,.7,.3,1),
+      border-color 220ms ease,
+      box-shadow 220ms ease,
+      background 220ms ease;
+    box-shadow: var(--shadow-1);
+    animation: cardIn 340ms cubic-bezier(.2,.7,.3,1) both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .card:hover {
+    border-color: var(--border-2);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+  }
+  .card:focus-visible {
+    outline: none;
+    border-color: var(--border-3);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.25), var(--shadow-2);
+  }
+
+  .card-top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+  .milestone {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--text-dim);
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+  }
+  .milestone::before {
+    content: "";
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor;
+  }
+  .milestone.mvp  { color: #fbbf24; background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.22); }
+  .milestone.core { color: #7ee7c4; background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.22); }
+
+  .id-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    position: relative; z-index: 2;
+  }
+  .id-link:hover {
+    color: var(--text);
+    border-color: var(--border-3);
+    background: var(--surface-3);
+    transform: translateY(-1px);
+  }
+  .id-link svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  .card-title {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    /* allow 3 lines then fade */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    min-height: 16px;
+  }
+  .has-details {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    color: var(--text-mute);
+    opacity: 0;
+    transition: opacity 180ms ease, color 180ms ease;
+  }
+  .card[data-has-details="true"]:hover .has-details { opacity: 1; color: var(--text-dim); }
+  .has-details svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* status accent strip on the left */
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 10px; bottom: 10px;
+    left: -1px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--todo);
+    opacity: 0.75;
+    transition: opacity 220ms ease, box-shadow 220ms ease;
+  }
+  .card.progress::before  { background: var(--progress); box-shadow: 0 0 14px rgba(245,158,11,0.55); }
+  .card.completed::before { background: var(--done);     box-shadow: 0 0 14px rgba(16,185,129,0.55); }
+  .card:hover::before { opacity: 1; }
+
+  /* ─── Modal ────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8, 10, 14, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: fade 180ms ease;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .modal {
+    max-width: 620px;
+    width: 100%;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+      var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 18px;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-3);
+    animation: rise 240ms cubic-bezier(.2,.7,.3,1);
+  }
+  .modal[data-status="COMPLETED"]  { border-color: rgba(16,185,129,0.35); }
+  .modal[data-status="IN_PROGRESS"]{ border-color: rgba(245,158,11,0.35); }
+
+  .modal-head {
+    padding: 22px 26px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(600px 200px at 10% 0%, rgba(167,139,250,0.10), transparent 60%);
+  }
+  .modal[data-status="COMPLETED"] .modal-head {
+    background: radial-gradient(600px 200px at 10% 0%, rgba(16,185,129,0.14), transparent 60%);
+  }
+  .modal[data-status="IN_PROGRESS"] .modal-head {
+    background: radial-gradient(600px 200px at 10% 0%, rgba(245,158,11,0.12), transparent 60%);
+  }
+
+  .modal-status-row {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .modal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    color: var(--text-soft);
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+  }
+  .modal-chip .sq {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--todo);
+  }
+  .modal[data-status="COMPLETED"]  .modal-chip.status .sq { background: var(--done);     box-shadow: 0 0 10px var(--done); }
+  .modal[data-status="IN_PROGRESS"].modal-chip { /* placeholder */ }
+  .modal[data-status="IN_PROGRESS"] .modal-chip.status .sq { background: var(--progress); box-shadow: 0 0 10px var(--progress); }
+  .modal[data-status="TODO"]       .modal-chip.status .sq { background: var(--todo); }
+
+  .modal h2 {
+    margin: 0;
+    font-family: "Instrument Serif", serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    padding-right: 8px;
+  }
+
+  .modal-close {
+    appearance: none;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); border-color: var(--border-2); }
+
+  .modal-body {
+    padding: 22px 26px 24px;
+  }
+  .m-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 8px;
+  }
+  .m-details {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-soft);
+  }
+  .m-details.empty {
+    color: var(--text-mute);
+    font-style: italic;
+    font-family: "Instrument Serif", serif;
+    font-size: 17px;
+  }
+  .m-details code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85em;
+    padding: 1px 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--accent);
+  }
+
+  .modal-footer {
+    border-top: 1px solid var(--border);
+    padding: 14px 18px 14px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    background: rgba(0,0,0,0.15);
+  }
+  .modal-footer .mini {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    color: var(--text-mute);
+    letter-spacing: 0.08em;
+  }
+  .modal-footer .mini span {
+    padding: 2px 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    margin-right: 4px;
+  }
+  .open-on-gh {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--accent) 0%, #8b9cff 100%);
+    padding: 9px 14px 9px 14px;
+    border-radius: 9px;
+    text-decoration: none;
+    transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+    box-shadow: 0 6px 18px rgba(123,127,255,0.35);
+  }
+  .open-on-gh:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+    box-shadow: 0 10px 22px rgba(123,127,255,0.45);
+  }
+  .open-on-gh svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ─── Footer ───────────────────────────────────────── */
+  footer.bottom {
+    margin-top: 48px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+  }
+  footer.bottom a { color: var(--text-dim); text-decoration: none; border-bottom: 1px dashed var(--border-2); }
+  footer.bottom a:hover { color: var(--text-soft); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ─── Header ─── -->
+  <header class="top">
+    <div>
+      <div class="brand">
+        <span class="logo-dot">K</span>
+        <span>Klabis</span>
+        <span class="sep"></span>
+        <span class="chip">Implementation board</span>
+      </div>
+      <h1 class="title">
+        Kam jsme se <em>dostali</em><br/>
+        s&nbsp;implementací.
+      </h1>
+      <p class="subtitle">
+        Mapa <strong>123 otevřených</strong> Github issues v&nbsp;milestonech <strong>core</strong> a <strong>MVP</strong>
+        vůči aktuálním OpenSpec specifikacím v&nbsp;<code>openspec/specs/</code>. Stav reflektuje pokrytí
+        specifikací — ne ověřenou implementaci v&nbsp;kódu.
+      </p>
+    </div>
+    <div class="meta-col">
+      <span class="live">SNAPSHOT · 2026-04-19 · 05:45 CEST</span>
+      <span>repo · zabiny/klabis · main</span>
+    </div>
+  </header>
+
+  <!-- ─── Stats ─── -->
+  <section class="stats" aria-label="Summary">
+    <div class="stat completed">
+      <span class="label"><span class="sq"></span>Completed</span>
+      <span class="value"><span data-stat="completed">0</span><span class="pct" data-pct="completed">0%</span></span>
+      <span class="bar"><span data-bar="completed" style="width:0%"></span></span>
+    </div>
+    <div class="stat progress">
+      <span class="label"><span class="sq"></span>In Progress</span>
+      <span class="value"><span data-stat="progress">0</span><span class="pct" data-pct="progress">0%</span></span>
+      <span class="bar"><span data-bar="progress" style="width:0%"></span></span>
+    </div>
+    <div class="stat todo">
+      <span class="label"><span class="sq"></span>Todo</span>
+      <span class="value"><span data-stat="todo">0</span><span class="pct" data-pct="todo">0%</span></span>
+      <span class="bar"><span data-bar="todo" style="width:0%"></span></span>
+    </div>
+    <div class="stat total">
+      <span class="label"><span class="sq"></span>Filtered total</span>
+      <span class="value"><span data-stat="total">0</span><span class="pct" data-pct="total">100%</span></span>
+      <span class="bar"><span data-bar="total" style="width:100%"></span></span>
+    </div>
+  </section>
+
+  <!-- ─── Controls ─── -->
+  <div class="controls">
+    <div class="filters" role="tablist" id="filters">
+      <button role="tab" data-filter="all"  aria-pressed="true">All <span class="count" data-count="all">0</span></button>
+      <button role="tab" data-filter="MVP"  aria-pressed="false">MVP <span class="count" data-count="MVP">0</span></button>
+      <button role="tab" data-filter="core" aria-pressed="false">Core <span class="count" data-count="core">0</span></button>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.3" y1="16.3" x2="21" y2="21"/></svg>
+      <input id="search" type="search" placeholder="Hledat podle názvu nebo #ID…" autocomplete="off" />
+    </div>
+    <span class="kbd"><span>Esc</span> zavřít</span>
+  </div>
+
+  <!-- ─── Board ─── -->
+  <main class="board">
+    <section class="column todo" data-status="TODO">
+      <div class="column-head">
+        <div class="col-head-lhs">
+          <span class="status-dot"></span>
+          <span class="col-name">Todo</span>
+        </div>
+        <span class="col-count" data-col-count="TODO">0</span>
+      </div>
+      <div class="column-body" data-body="TODO"></div>
+    </section>
+
+    <section class="column progress" data-status="IN_PROGRESS">
+      <div class="column-head">
+        <div class="col-head-lhs">
+          <span class="status-dot"></span>
+          <span class="col-name">In Progress</span>
+        </div>
+        <span class="col-count" data-col-count="IN_PROGRESS">0</span>
+      </div>
+      <div class="column-body" data-body="IN_PROGRESS"></div>
+    </section>
+
+    <section class="column completed" data-status="COMPLETED">
+      <div class="column-head">
+        <div class="col-head-lhs">
+          <span class="status-dot"></span>
+          <span class="col-name">Completed</span>
+        </div>
+        <span class="col-count" data-col-count="COMPLETED">0</span>
+      </div>
+      <div class="column-body" data-body="COMPLETED"></div>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <span>Source · <a href="./implementation-status.md">docs/implementation-status.md</a></span>
+    <span>Update data · edit JSON block at bottom of this file</span>
+  </footer>
+</div>
+
+<!-- ─── Modal ─── -->
+<div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" id="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-status-row">
+          <span class="modal-chip status"><span class="sq"></span><span id="m-status"></span></span>
+          <span class="modal-chip"><span id="m-milestone"></span></span>
+        </div>
+        <h2 id="modal-title"></h2>
+      </div>
+      <button class="modal-close" id="modal-close" aria-label="Zavřít">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-label">Details</div>
+      <div class="m-details" id="m-details"></div>
+    </div>
+    <div class="modal-footer">
+      <span class="mini"><span>Esc</span>&nbsp;zavřít</span>
+      <a class="open-on-gh" id="m-open" href="#" target="_blank" rel="noopener">
+        <span id="m-open-label">Otevřít na GitHubu</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!--
+  ============================================================
+  DATA — edit entries here, save, reload
+  ============================================================
+-->
+<script id="data" type="application/json">
+[
+{"id":269,"title":"Skupiny: Omezení ukončení členství vedoucím skupiny","milestone":"core","status":"COMPLETED","details":"Spec `user-groups` obsahuje requirement \"Warning on Last Owner Deactivation\" a spec `members` scénáře \"Suspension blocked when member is last owner of a training/family/free group\" — při suspend člena, který je posledním vlastníkem skupiny, systém blokuje akci a vyžaduje určení nástupce."},
+{"id":268,"title":"CUS: Odstranění neaktivních členů z exportu","milestone":"core","status":"TODO","details":""},
+{"id":267,"title":"ORIS: Označení neaktivního člena v ORIS","milestone":"core","status":"TODO","details":""},
+{"id":266,"title":"Finance: Kontrola dluhů před ukončením členství","milestone":"core","status":"TODO","details":""},
+{"id":126,"title":"chci mít editovatelnou informaci u clena jaky ma typ clenskeho prispevku","milestone":"core","status":"TODO","details":""},
+{"id":88,"title":"chci vedet kam jsem prihlasen","milestone":"core","status":"IN_PROGRESS","details":"Spec `event-registrations` definuje \"View Own Registration\" (detail vlastní přihlášky k akci). Chybí však agregovaný přehled všech akcí, na které je člen přihlášen napříč systémem."},
+{"id":87,"title":"Chci se prihlasit do kategorie mimo soutez (mimo vekovou kategorii)","milestone":"core","status":"IN_PROGRESS","details":"Spec `event-registrations` podporuje volbu kategorie při registraci z libovolné vypsané kategorie akce. Speciální příznak \"mimo soutěž\" ale specifikován není."},
+{"id":86,"title":"chci se zapsat na dopravu na akci","milestone":"core","status":"TODO","details":""},
+{"id":85,"title":"chci se zapsat na ubytovani na akci","milestone":"core","status":"TODO","details":""},
+{"id":84,"title":"Chci mít k dispozici seznam příhlášených na společnou dopravu","milestone":"core","status":"TODO","details":""},
+{"id":83,"title":"Chci definovat vedoucího akce (a jeho zástupce)","milestone":"core","status":"IN_PROGRESS","details":"Spec `events` definuje pole coordinator (přiřaditelný člen klubu) na akci. Zástupce vedoucího akce specifikován není."},
+{"id":82,"title":"Možnost strhávání/připisování částky za/na akci","milestone":"core","status":"TODO","details":""},
+{"id":81,"title":"Chci mít přehled akcí na cca 10 dní dopředu","milestone":"core","status":"COMPLETED","details":"Spec `calendar-items` definuje kalendář s uživatelsky volitelným rozsahem (default current month, max 366 dní), který zahrnuje automaticky generované event-date a registration-deadline položky."},
+{"id":80,"title":"Chci zadávat cenu akce","milestone":"core","status":"TODO","details":""},
+{"id":79,"title":"Chci si vybrat které oddílové oblečení si chci objednat","milestone":"core","status":"TODO","details":""},
+{"id":78,"title":"Chci mít přehled o členských příspěvcích. kdo zaplatil / nezaplatil","milestone":"core","status":"TODO","details":""},
+{"id":77,"title":"Možnost strhávání/připisování částky členovi","milestone":"core","status":"TODO","details":""},
+{"id":76,"title":"postezovat si kolik mi bylo strzeno penez za akci","milestone":"core","status":"TODO","details":""},
+{"id":75,"title":"chci ostatnim dat vedet kdy kde je sraz","milestone":"core","status":"TODO","details":""},
+{"id":74,"title":"Potřebuji definovat pro které skupiny je akce určená","milestone":"core","status":"TODO","details":""},
+{"id":73,"title":"Potrebuji zalozit akci","milestone":"core","status":"COMPLETED","details":"Spec `events` \"Create Event\" — uživatel s EVENTS:MANAGE může založit akci (název, datum, organizer code + volitelné location, web, coordinator, deadline, kategorie). Akce vzniká v DRAFT statusu."},
+{"id":72,"title":"Potřebuji zadávat informace o akcí","milestone":"core","status":"COMPLETED","details":"Spec `events` \"Update Event\" pokrývá editaci DRAFT/ACTIVE akcí včetně inline editace z detail page. Spec `event-categories` pokrývá správu kategorií."},
+{"id":71,"title":"zrušit (či po nějako dobu upravovat) již provedené platby","milestone":"core","status":"TODO","details":""},
+{"id":70,"title":"Chci vědět, kolik, kdy, jak a kam mám platit (členské příspěvky, za akce, vybavení, ...)","milestone":"core","status":"TODO","details":""},
+{"id":69,"title":"Chci vědět, kolik, kdy a jak mám platit (za akce, vybavení, ...)","milestone":"core","status":"TODO","details":""},
+{"id":68,"title":"Chci sledovat stav svých financí","milestone":"core","status":"TODO","details":""},
+{"id":67,"title":"Chci kontaktovat vedoucího akce","milestone":"core","status":"IN_PROGRESS","details":"Spec `events` ukazuje coordinator jako klikatelný odkaz na jeho profil členské detailové stránky; kontaktní údaje jsou viditelné v profilu. Dedikovaný \"kontakt na vedoucího\" flow ale není."},
+{"id":66,"title":"Chci mít možnost viditelně škrtnout akci se zveřejněním důvodu zrušení","milestone":"core","status":"IN_PROGRESS","details":"Spec `events` definuje cancel akci (DRAFT i ACTIVE → CANCELLED) se zachováním registrací pro záznamy. Zveřejnění důvodu zrušení (textový reason) však specifikován není."},
+{"id":65,"title":"chci změnit info o tréninku","milestone":"core","status":"TODO","details":""},
+{"id":64,"title":"Chci mít možnost zneviditelnit/smazat akci","milestone":"core","status":"IN_PROGRESS","details":"Spec `events` podporuje cancel akce. Hard delete/zneviditelnění mimo DRAFT ale definované není."},
+{"id":63,"title":"chci vedet co kdy poradame a jak se mohu zapojit","milestone":"core","status":"TODO","details":""},
+{"id":62,"title":"Chci zjistit informace o trénincích (tento/další týden)","milestone":"core","status":"TODO","details":""},
+{"id":61,"title":"Chci mít možnost převést finance jinému členu","milestone":"core","status":"TODO","details":""},
+{"id":60,"title":"Chci řešit finance jako řádný člen, (ale bez členských příspevků)","milestone":"core","status":"TODO","details":""},
+{"id":59,"title":"Chci sledovat dění v klubu (novinky)","milestone":"core","status":"TODO","details":""},
+{"id":58,"title":"informovat cleny o deni v oddile","milestone":"core","status":"TODO","details":""},
+{"id":57,"title":"Chci zadávat veřejně dostupné novinky","milestone":"core","status":"TODO","details":""},
+{"id":56,"title":"Chci kontakt na mé trenéry","milestone":"core","status":"COMPLETED","details":"Spec `user-groups` \"Training Group Info on Member Profile\" — každý člen vidí na profilu název své tréninkové skupiny + jméno a kontakt trenéra/trenérů."},
+{"id":55,"title":"Chci za členy skupiny rešit finance","milestone":"core","status":"TODO","details":""},
+{"id":54,"title":"Pro členy své skupiny chci řešit přihlášky","milestone":"core","status":"TODO","details":""},
+{"id":53,"title":"Chci mít možnost editovat osobní údaje členů skupiny (čip, adresa, telefon, apod)","milestone":"core","status":"TODO","details":""},
+{"id":52,"title":"Chci mapy a informace o pevných areálech kontrol","milestone":"core","status":"TODO","details":""},
+{"id":51,"title":"dozvedet se co je OB klub SK Brno Žabovřesky","milestone":"core","status":"TODO","details":""},
+{"id":50,"title":"kontakt na X","milestone":"core","status":"TODO","details":""},
+{"id":49,"title":"jak se stat clenem","milestone":"core","status":"TODO","details":""},
+{"id":48,"title":"Chci mít přehled pravidelnych tréninků","milestone":"core","status":"TODO","details":""},
+{"id":47,"title":"Chci mít přehled o slevách poskytovaných oddílu (mně)","milestone":"core","status":"TODO","details":""},
+{"id":46,"title":"informace o zavodech poradanych ZBM","milestone":"core","status":"TODO","details":""},
+{"id":45,"title":"Rodiče/Prarodiče rádi sledují své ratolesti (fotky, ...)","milestone":"core","status":"TODO","details":""},
+{"id":44,"title":"Sponzoři se chtějí vidět na stránkách","milestone":"core","status":"TODO","details":""},
+{"id":43,"title":"Chci vidět, že oddíl žije pro volbu kam se přihlásím","milestone":"core","status":"TODO","details":""},
+{"id":42,"title":"Potřebuji znát fakturační údaje oddílu","milestone":"core","status":"TODO","details":""},
+{"id":41,"title":"odkazy na CSOS, ORIS, BZL,..","milestone":"core","status":"TODO","details":""},
+{"id":40,"title":"Chci informace pro nováčky, co a jak v oddíle chodí","milestone":"core","status":"TODO","details":""},
+{"id":39,"title":"Chci číst oddílový časopis","milestone":"core","status":"TODO","details":""},
+{"id":38,"title":"Chci sdílet fotky z akcí (momentálně přihlašovací údaje na rajče/instagram)","milestone":"core","status":"TODO","details":""},
+{"id":37,"title":"Chci kontaktovat vedoucího akce, ...","milestone":"core","status":"IN_PROGRESS","details":"Viz #67 — kontakty přes profilové stránky koordinátora/členů jsou dostupné skrze spec `events` + `members`, ale dedikovaný kontaktní flow ne."},
+{"id":36,"title":"Chci kontaktovat vedení","milestone":"core","status":"TODO","details":""},
+{"id":35,"title":"Chci kontaktovat trenéra/trenéry, ...","milestone":"core","status":"COMPLETED","details":"Spec `user-groups` \"Training Group Info on Member Profile\" garantuje viditelnost jména a kontaktu trenérů na profilu člena jeho tréninkové skupiny."},
+{"id":34,"title":"Jako vedouci akce chci odhlasovat lidi z akce","milestone":"core","status":"TODO","details":""},
+{"id":33,"title":"chci prihlasovat lidi na akce (pripadne i po terminu)","milestone":"core","status":"TODO","details":""},
+{"id":32,"title":"Chci zaznamenat absenci drive prihlaseneho cloveka","milestone":"core","status":"TODO","details":""},
+{"id":31,"title":"Chci mít možnost kdykoli před termínem se odhlásit","milestone":"core","status":"COMPLETED","details":"Spec `event-registrations` \"Unregister from Event\" — registrovaný člen se odhlásí před datem akce i před deadlinem (pokud je deadline nastaven). Po deadlinu/datu akce je odhlášení odmítnuto."},
+{"id":30,"title":"Chci mít k dispozici seznam příhlášených na akci","milestone":"core","status":"COMPLETED","details":"Spec `event-registrations` \"List Event Registrations\" — seznam přihlášených s jménem, příjmením, kategorií a časem přihlášky pro akce mimo DRAFT."},
+{"id":29,"title":"Chci, aby vedoucí akce mohl evidovat účast na akci (soustředění, trénink,....)","milestone":"core","status":"TODO","details":""},
+{"id":28,"title":"chci si vybrat jake notifikace mi budou chodit emailem a/nebo do feedu zmen na strankach","milestone":"core","status":"TODO","details":""},
+{"id":27,"title":"Chci notifikaci pri zapornem zustatku na financnim uctu","milestone":"core","status":"TODO","details":""},
+{"id":26,"title":"Chci se prihlasit na akci","milestone":"core","status":"COMPLETED","details":"Spec `event-registrations` \"Register for Event\" — člen se přihlásí na ACTIVE akci s otevřenými registracemi, zadá SI card, volí kategorii (pokud je nastavena)."},
+{"id":25,"title":"chci zjisti telefon / adresu na jineho clena","milestone":"core","status":"COMPLETED","details":"Spec `members` \"Member Detail\" — autentizovaný člen s MEMBERS:READ vidí kompletní detail (osobní údaje, adresu, kontakty) aktivních členů."},
+{"id":14,"title":"Pozastaveni clenstvi v oddíle na základě obdržené odhlášky","milestone":"MVP","status":"COMPLETED","details":"Spec `members` \"Membership Suspension\" — admin s MEMBERS:UPDATE může suspendovat členství s důvodem (ODHLASKA, PRESTUP, OTHER), kontroluje vlastnictví skupin. Tiket je label `BackendCompleted`."},
+{"id":4,"title":"Clen: editace svych osobnich udaju","milestone":"MVP","status":"COMPLETED","details":"Spec `members` \"Member Update\" — člen edituje vlastní profil (email, telefon, adresa, čip, národnost, bankovní účet, opatrovník, doklady, licence, dietní omezení). Tiket je label `BackendCompleted`."},
+{"id":3,"title":"Zakládání nových členů oddílu","milestone":"MVP","status":"COMPLETED","details":"Spec `members` \"Member Registration Flow\" + \"Registration Number Generation\" + \"Welcome Email on Registration\" — kompletní registrační flow s generováním čísla XXXYYSS a uvítacím emailem. Tiket je label `BackendCompleted`."},
+{"id":265,"title":"feat(cus): CUS synchronizace dat členů","milestone":"MVP","status":"TODO","details":""},
+{"id":241,"title":"Zruseni pozvanky do skupiny","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `user-groups` \"Free Group Invitation System\" definuje vytvoření, accept a reject pozvánky. Explicitní zrušení pozvánky majitelem skupiny (cancel pending) ale specifikováno není."},
+{"id":240,"title":"Pri zalození noveho clena klubu chci zvolit skupiny do kterych bude prirazen","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `user-groups` \"Training Group Membership Assignment\" — při registraci nového člena se automaticky přiřadí do training group podle věku. Manuální volba skupin v registračním formuláři specifikována není."},
+{"id":235,"title":"chci synchronizovat členy s ČUS","milestone":"MVP","status":"TODO","details":""},
+{"id":234,"title":"chci definovat pravidelné tréninky","milestone":"MVP","status":"TODO","details":""},
+{"id":233,"title":"Zrušit své členství ve skupině","milestone":"MVP","status":"TODO","details":""},
+{"id":232,"title":"Odebrat členy ze skupiny","milestone":"MVP","status":"COMPLETED","details":"Spec `user-groups` \"Training Group Member Management\" (remove člen s GROUPS:TRAINING, mimo trenéra) + \"Free Group Member Management\" (owner odebere člena) + \"Add and Remove Child Members of a Family Group\" (MEMBERS:MANAGE odebere dítě)."},
+{"id":231,"title":"Pozvat nové členy skupiny","milestone":"MVP","status":"COMPLETED","details":"Spec `user-groups` \"Free Group Invitation System\" — owner pozve člena, invitation se objeví v seznamu pozvánek příjemce, který může accept/reject."},
+{"id":128,"title":"Chci aby skupina lidí měla možnost platit společně (např. rodiny)","milestone":"MVP","status":"TODO","details":""},
+{"id":127,"title":"Chci automatický import plateb členů klubu = připsání částky členovi","milestone":"MVP","status":"TODO","details":""},
+{"id":125,"title":"Chci hromadně změnit typu oddílového příspěvku ostatním členům","milestone":"MVP","status":"TODO","details":""},
+{"id":124,"title":"Chci potvrzení o členských příspěvcích, ... (pro pojišťovny)","milestone":"MVP","status":"TODO","details":""},
+{"id":123,"title":"Chci export dat z tabulkovych prehledu do CSV","milestone":"MVP","status":"TODO","details":""},
+{"id":122,"title":"Chci nahrávat mapové teorie a další dokumenty na web","milestone":"MVP","status":"TODO","details":""},
+{"id":121,"title":"chci něcojakowiki (pokyny k poradani, info o treninkovych skupinach,..)","milestone":"MVP","status":"TODO","details":""},
+{"id":120,"title":"Při vstupu do skupiny chci potvrdit oprávnění které skupina vyžaduje","milestone":"MVP","status":"TODO","details":""},
+{"id":119,"title":"Při vytvoření skupiny chci nadefinovat sadu oprávnění platných pro mou skupinu","milestone":"MVP","status":"TODO","details":""},
+{"id":118,"title":"Své skupině mohu nastavit další vedoucí","milestone":"MVP","status":"COMPLETED","details":"Spec `user-groups` \"Group Owner Management\" — pro training groups přidání dalšího trenéra (GROUPS:TRAINING), pro free groups promote člena na co-ownera, pro family groups přidání dalšího parent (MEMBERS:MANAGE)."},
+{"id":117,"title":"Jsem vedoucím skupinky pro své svěřence","milestone":"MVP","status":"COMPLETED","details":"Spec `user-groups` \"Create Training Group\" + \"Group Owner Management\" — training group má trenéry (referovaní jako \"trainers\" v UI). Trenéři jsou spravováni uživateli s GROUPS:TRAINING permission."},
+{"id":116,"title":"Chci vědět, do které tréninkové skupiny patřím a kdo jsou trenéři","milestone":"MVP","status":"COMPLETED","details":"Spec `user-groups` \"Training Group Info on Member Profile\" — profil člena zobrazuje název tréninkové skupiny a jména + kontakty trenérů."},
+{"id":115,"title":"U zavodu chci mit prehled vysledku clenu klubu","milestone":"MVP","status":"TODO","details":""},
+{"id":114,"title":"Chci se z detailu akce dostat na prehled povinnosti vedoucího akce (odkaz na wiki)","milestone":"MVP","status":"TODO","details":""},
+{"id":113,"title":"Automaticky vytvaret a synchronizovat (a tagovat pro ktere skupiny, termin prihlasek -1D,..) akce z ORIS k diskuzi jak a co implementovat","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `events` \"ORIS Import Includes Registration Deadline\" + \"ORIS Import Tolerates Missing Location\" + spec `event-categories` \"Sync Event from ORIS\" — manuální import jednotlivých akcí z ORIS včetně kategorií a deadlinu je implementován. Automatická hromadná synchronizace a tagování pro skupiny specifikovány nejsou."},
+{"id":112,"title":"Chci mít možnost přepsat informace v importovaných akcích (vcetne doplnkovych sluzeb)","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `events` \"Update Event\" umožňuje editaci ORIS-importovaných akcí (DRAFT/ACTIVE). Doplňkové služby ale specifikovány nejsou."},
+{"id":111,"title":"Chci (uzivatelsky definovatelny?) export kalendare do externich aplikaci (google calendar, Outlook, etc)","milestone":"MVP","status":"TODO","details":""},
+{"id":110,"title":"Chci kalendar kde uvidim terminy prihlasek, akce skupin jejichz jsem clenem","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `calendar-items` \"Automatic Synchronization from Events\" — kalendář automaticky obsahuje event-date položky i registration-deadline položky (\"Přihlášky - {event name}\"). Filtrace podle členství ve skupinách ale specifikována není."},
+{"id":109,"title":"Chci mit moznost filtrovat v kalendari podle ruznych kriterii","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `calendar-items` podporuje sortování a navigaci po měsících. Filtrace podle kritérií (skupiny, typ, atd.) specifikována není."},
+{"id":108,"title":"Chci zadávat dotaci oddílu akci po skupinách (může se lišit)","milestone":"MVP","status":"TODO","details":""},
+{"id":107,"title":"Chci zadávat slevy na akci pro členy/skupiny (za pomoc/práci)","milestone":"MVP","status":"TODO","details":""},
+{"id":106,"title":"Potřebují čísla OP/pasů na ubytování","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `members` \"Identity Card, Licenses, and Supplementary Fields\" eviduje ID card s validity date na úrovni člena. Propojení s ubytováním na akci specifikováno není."},
+{"id":105,"title":"Chci mít k dispozici seznam ubytovaných na akci včetně adres a dalších údajů","milestone":"MVP","status":"TODO","details":""},
+{"id":104,"title":"Pro dva a více víkendových závodů (spojených) mít společnou evidenci ubytování","milestone":"MVP","status":"TODO","details":""},
+{"id":103,"title":"Potřebuji co nejdříve vědět počty účastníků kvůli ubytování (nezávazný zájem)","milestone":"MVP","status":"TODO","details":""},
+{"id":102,"title":"Pri prihlasovani si chci zvolit doplnkove sluzby (vypsane v ORIS popr. \"offline v systemu\")","milestone":"MVP","status":"TODO","details":""},
+{"id":101,"title":"Chceme zpetnou synchronizaci prihlasek z ORIS do systemu (lide prihlasujici se primo v Oris popr. dohlaseni pres email po terminu)","milestone":"MVP","status":"TODO","details":""},
+{"id":100,"title":"Chci si pripravit seznam zavodu kterych se chci zucastnit jeste pred tim nez se na tyto zavody otevrou prihlasky (ale uz jsou vypsane terminy v ORIS)","milestone":"MVP","status":"TODO","details":""},
+{"id":99,"title":"Chci vedet koho mam dohlasit rucne (pred terminem prihlasek)","milestone":"MVP","status":"TODO","details":""},
+{"id":98,"title":"Synchronizace prihlasek vybrane s ORIS udalosti na \"tlacitko\"","milestone":"MVP","status":"TODO","details":""},
+{"id":97,"title":"Chci na akci prihlasit nekoho neregistrovaneho v klubu na interni akci (\"+1\") tak aby byl zapocitan do poctu (doprava, ubytovani, apod)","milestone":"MVP","status":"TODO","details":""},
+{"id":96,"title":"Chci mít možnost po uzaverce prihlasek zadat absenci","milestone":"MVP","status":"TODO","details":""},
+{"id":95,"title":"Chci přehled/statistiku o počtu účastí na akcí/jednotlivých typech akcích/...","milestone":"MVP","status":"TODO","details":""},
+{"id":94,"title":"Potřebují přehled účasti na akcích (pro určení slev na členských prispevcich, apod)","milestone":"MVP","status":"TODO","details":""},
+{"id":93,"title":"Chci se prihlasit jako vypomoc na akci/poradani/apod","milestone":"MVP","status":"TODO","details":""},
+{"id":92,"title":"Chci mít možnost kdykoli před termínem (i mezi termíny) změnit příhlášku","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `event-registrations` podporuje register i unregister před deadlinem, takže změna přihlášky je možná přes unregister + re-register. Explicitní \"edit registration\" (např. změna kategorie bez re-registrace) specifikována není."},
+{"id":91,"title":"Chci být informován o nových akcích z ORISu (abych zkontroloval přiřazení ke skupině)","milestone":"MVP","status":"TODO","details":""},
+{"id":90,"title":"Chci být informován o změnách importovane akce (napr. z ORIS) po prvotnim importu (včetně těch, které jsem přepsal)","milestone":"MVP","status":"TODO","details":""},
+{"id":89,"title":"Chci nepropasnout zadny deadline prihlasek","milestone":"MVP","status":"IN_PROGRESS","details":"Spec `calendar-items` \"Automatic Synchronization from Events\" — pro každou publikovanou akci s deadlinem vzniká automaticky položka \"Přihlášky - {event name}\" dne deadlinu v kalendáři. Aktivní email notifikace specifikována není."},
+{"id":24,"title":"Chci si řídit, kdo má přístup k informacím o mně","milestone":"MVP","status":"TODO","details":""},
+{"id":10,"title":"Chci vědět, na které žebříčky mám právo (z ORISu).","milestone":"MVP","status":"TODO","details":""},
+{"id":7,"title":"natahovat aktuální licence členů z ORISu do systému","milestone":"MVP","status":"TODO","details":""},
+{"id":6,"title":"Chci synchronizaci údajů clenu k jednotlivým agenturám (ORIS, ČUS)","milestone":"MVP","status":"TODO","details":""},
+{"id":5,"title":"Vytvoreni noveho (hostujicho) clena z ORIS (prestupy, hostujici clen)","milestone":"MVP","status":"TODO","details":""}
+]
+</script>
+
+<script>
+/* ─────────────────────────────────────────────────────
+   Klabis Kanban — render + filter + modal
+   Data lives above in the <script id="data"> JSON block.
+   ───────────────────────────────────────────────────── */
+(function () {
+  const REPO = "zabiny/klabis"; // ← if repo moves, change this
+
+  const issues = JSON.parse(document.getElementById("data").textContent);
+
+  const state = { milestone: "all", search: "" };
+
+  const STATUS = ["TODO", "IN_PROGRESS", "COMPLETED"];
+  const STATUS_LABEL = { TODO: "Todo", IN_PROGRESS: "In Progress", COMPLETED: "Completed" };
+
+  const esc = (s) => String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  const renderInline = (s) => esc(s ?? "").replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  /* Pre-compute milestone totals (unchanged across filter state) */
+  const totalAll  = issues.length;
+  const totalMVP  = issues.filter(i => i.milestone === "MVP").length;
+  const totalCore = issues.filter(i => i.milestone === "core").length;
+  document.querySelector('[data-count="all"]').textContent  = pad2(totalAll);
+  document.querySelector('[data-count="MVP"]').textContent  = pad2(totalMVP);
+  document.querySelector('[data-count="core"]').textContent = pad2(totalCore);
+
+  function cardHtml(it) {
+    const hasDetails = !!(it.details && it.details.trim());
+    const ms  = (it.milestone || "").toLowerCase();
+    const cls = it.status === "COMPLETED" ? "completed"
+              : it.status === "IN_PROGRESS" ? "progress" : "todo";
+    return `
+      <article class="card ${cls}" data-id="${it.id}" data-has-details="${hasDetails}" tabindex="0" role="button" aria-label="Issue #${it.id}: ${esc(it.title)}">
+        <div class="card-top">
+          <span class="milestone ${ms}">${esc(it.milestone)}</span>
+          <a class="id-link" href="https://github.com/${REPO}/issues/${it.id}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="Open issue #${it.id} on GitHub">
+            #${it.id}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>
+          </a>
+        </div>
+        <h3 class="card-title">${esc(it.title)}</h3>
+        <div class="card-footer">
+          ${hasDetails
+            ? `<span class="has-details">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                kliknout pro detail
+              </span>`
+            : ''}
+        </div>
+      </article>
+    `;
+  }
+
+  function render() {
+    const q = state.search.trim().toLowerCase();
+    const filtered = issues.filter(it => {
+      if (state.milestone !== "all" && it.milestone !== state.milestone) return false;
+      if (q) {
+        const hay = (it.title + " #" + it.id).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    const buckets = { TODO: [], IN_PROGRESS: [], COMPLETED: [] };
+    filtered.forEach(it => buckets[it.status].push(it));
+    for (const k of STATUS) buckets[k].sort((a, b) => b.id - a.id);
+
+    STATUS.forEach(status => {
+      const body = document.querySelector(`[data-body="${status}"]`);
+      const list = buckets[status];
+      body.innerHTML = list.length
+        ? list.map(cardHtml).join("")
+        : `<div class="empty">žádný záznam</div>`;
+      document.querySelector(`[data-col-count="${status}"]`).textContent = pad2(list.length);
+    });
+
+    const total = filtered.length;
+    const done  = buckets.COMPLETED.length;
+    const prog  = buckets.IN_PROGRESS.length;
+    const todo  = buckets.TODO.length;
+
+    document.querySelector('[data-stat="completed"]').textContent = pad2(done);
+    document.querySelector('[data-stat="progress"]').textContent  = pad2(prog);
+    document.querySelector('[data-stat="todo"]').textContent      = pad2(todo);
+    document.querySelector('[data-stat="total"]').textContent     = pad2(total);
+
+    const pct = (n) => total ? Math.round((n / total) * 100) : 0;
+    document.querySelector('[data-bar="completed"]').style.width = pct(done) + "%";
+    document.querySelector('[data-bar="progress"]').style.width  = pct(prog) + "%";
+    document.querySelector('[data-bar="todo"]').style.width      = pct(todo) + "%";
+
+    document.querySelector('[data-pct="completed"]').textContent = pct(done) + "%";
+    document.querySelector('[data-pct="progress"]').textContent  = pct(prog) + "%";
+    document.querySelector('[data-pct="todo"]').textContent      = pct(todo) + "%";
+    document.querySelector('[data-pct="total"]').textContent     = total ? "100%" : "0%";
+  }
+
+  /* Filters */
+  document.getElementById("filters").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-filter]");
+    if (!btn) return;
+    document.querySelectorAll("#filters button").forEach(b => b.setAttribute("aria-pressed", "false"));
+    btn.setAttribute("aria-pressed", "true");
+    state.milestone = btn.dataset.filter;
+    render();
+  });
+
+  /* Search */
+  const searchInput = document.getElementById("search");
+  searchInput.addEventListener("input", () => {
+    state.search = searchInput.value;
+    render();
+  });
+  /* Cmd/Ctrl+K focus search */
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
+  });
+
+  /* Modal */
+  const backdrop = document.getElementById("modal-backdrop");
+  const modal    = document.getElementById("modal");
+  const closeBtn = document.getElementById("modal-close");
+
+  function openModal(issue) {
+    modal.dataset.status = issue.status;
+    document.getElementById("m-status").textContent    = STATUS_LABEL[issue.status];
+    document.getElementById("m-milestone").textContent = issue.milestone;
+    document.getElementById("modal-title").textContent = issue.title;
+    document.getElementById("m-open-label").textContent = "Otevřít #" + issue.id + " na GitHubu";
+    document.getElementById("m-open").href = `https://github.com/${REPO}/issues/${issue.id}`;
+    const det = document.getElementById("m-details");
+    if (issue.details && issue.details.trim()) {
+      det.classList.remove("empty");
+      det.innerHTML = renderInline(issue.details);
+    } else {
+      det.classList.add("empty");
+      det.textContent = "Zatím žádné další detaily — tiket čeká na zpracování.";
+    }
+    backdrop.classList.add("open");
+    backdrop.setAttribute("aria-hidden", "false");
+    closeBtn.focus();
+  }
+  function closeModal() {
+    backdrop.classList.remove("open");
+    backdrop.setAttribute("aria-hidden", "true");
+  }
+  closeBtn.addEventListener("click", closeModal);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && backdrop.classList.contains("open")) closeModal();
+  });
+
+  /* Delegated card interactions */
+  const board = document.querySelector(".board");
+  board.addEventListener("click", (e) => {
+    if (e.target.closest("a.id-link")) return;
+    const card = e.target.closest(".card");
+    if (!card) return;
+    const id = Number(card.dataset.id);
+    const issue = issues.find(i => i.id === id);
+    if (issue) openModal(issue);
+  });
+  board.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest(".card");
+    if (!card) return;
+    e.preventDefault();
+    const id = Number(card.dataset.id);
+    const issue = issues.find(i => i.id === id);
+    if (issue) openModal(issue);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
