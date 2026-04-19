@@ -29,6 +29,14 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     })),
 }));
 
+vi.mock('../../hooks/useHalFormGetAvailability', () => ({
+    useHalFormGetAvailability: vi.fn(() => ({
+        isGetAllowed: false,
+        isLoading: false,
+        error: null,
+    })),
+}));
+
 vi.mock('../../hooks/useFormCacheInvalidation', () => ({
     useFormCacheInvalidation: vi.fn(() => ({
         invalidateAllCaches: vi.fn().mockResolvedValue(undefined),

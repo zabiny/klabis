@@ -25,6 +25,9 @@ vi.mock('react-router-dom', async () => {
 const createMockResponseWithLocation = (data: any, status = 201, location: string | null = null): Response =>
     createMockResponse(data, status, location ? {'Location': location} : {});
 
+const createOptionsResponse = (allowMethods: string[]): Response =>
+    createMockResponse(null, 200, {'Allow': allowMethods.join(', ')});
+
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
@@ -185,19 +188,16 @@ describe('HalFormDisplay Component', () => {
 
             const Wrapper = createWrapper(pageData);
 
-            // Mock fetch calls:
-            // First call: fetching form target data (200 OK)
-            // Second call: form submission (200 OK)
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}))
-                .mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
+            // target normalizes to the same path as pathname — no OPTIONS/GET prefetch fires.
+            // resourceData provides the pre-fill values; only the submission call needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
 
             render(
                 <Wrapper>
                     <HalFormDisplay
                         template={template}
                         templateName="create"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'Existing Member'}}
                         pathname="/members"
                         onClose={onClose}
                         onSubmitSuccess={onSubmitSuccess}
@@ -300,17 +300,15 @@ describe('HalFormDisplay Component', () => {
 
             const Wrapper = createWrapper(pageData);
 
-            // Mock fetch calls:
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}))
-                .mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
+            // target normalizes to the same path as pathname — only submission needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
 
             render(
                 <Wrapper>
                     <HalFormDisplay
                         template={template}
                         templateName="create"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'Existing Member'}}
                         pathname="/members"
                         onClose={onClose}
                         onSubmitSuccess={onSubmitSuccess}
@@ -369,17 +367,15 @@ describe('HalFormDisplay Component', () => {
 
             const Wrapper = createWrapper(pageData);
 
-            // Mock fetch calls:
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({id: 123, name: 'John Doe'}))
-                .mockResolvedValueOnce(createMockResponse({id: 123, name: 'Jane Doe'}));
+            // target normalizes to the same path as pathname — only submission needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 123, name: 'Jane Doe'}));
 
             render(
                 <Wrapper>
                     <HalFormDisplay
                         template={template}
                         templateName="edit"
-                        resourceData={{id: 123}}
+                        resourceData={{id: 123, name: 'John Doe'}}
                         pathname="/members/123"
                         onClose={onClose}
                     />
@@ -434,17 +430,15 @@ describe('HalFormDisplay Component', () => {
             const pageData = createMockPageData({id: 1});
             const Wrapper = createWrapper(pageData);
 
-            // Mock fetch to return initial data successfully, but fail on submission
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Test'}))
-                .mockResolvedValueOnce(createMockResponse({errors: {name: 'Required'}}, 400));
+            // target normalizes to the same path as pathname — only submission needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse({errors: {name: 'Required'}}, 400));
 
             render(
                 <Wrapper>
                     <HalFormDisplay
                         template={template}
                         templateName="create"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'Test'}}
                         pathname="/members"
                         onClose={onClose}
                     />
@@ -496,16 +490,15 @@ describe('HalFormDisplay Component', () => {
             const Wrapper = createWrapper(pageData);
             const responseData = {id: 99, name: 'New Member', _links: {self: {href: '/api/members/99'}}};
 
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing'}))
-                .mockResolvedValueOnce(createMockResponse(responseData));
+            // target normalizes to the same path as pathname — only submission needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse(responseData));
 
             render(
                 <Wrapper>
                     <HalFormDisplay
                         template={template}
                         templateName="create"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'Existing'}}
                         pathname="/members"
                         onClose={onClose}
                         onSubmitSuccess={onSubmitSuccess}
@@ -528,6 +521,8 @@ describe('HalFormDisplay Component', () => {
         });
 
         describe('auto-navigation on POST+Location', () => {
+            // target '/api/family-groups' normalizes to '/family-groups' which equals pathname
+            // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.
             const renderPostForm = (method: HalFormsTemplateMethod, pageData?: any) => {
                 const template = mockHalFormsTemplate({
                     title: 'Create Group',
@@ -542,7 +537,7 @@ describe('HalFormDisplay Component', () => {
                         <HalFormDisplay
                             template={template}
                             templateName="create"
-                            resourceData={{id: 1}}
+                            resourceData={{id: 1, name: 'Existing'}}
                             pathname="/family-groups"
                             onClose={vi.fn()}
                         />
@@ -556,9 +551,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('POST', pageData);
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -587,16 +580,14 @@ describe('HalFormDisplay Component', () => {
                         <HalFormDisplay
                             template={template}
                             templateName="create"
-                            resourceData={{id: 1}}
+                            resourceData={{id: 1, name: 'Existing'}}
                             pathname="/family-groups"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
                 );
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -624,16 +615,15 @@ describe('HalFormDisplay Component', () => {
                         <HalFormDisplay
                             template={template}
                             templateName="edit"
-                            resourceData={{id: 1}}
+                            resourceData={{id: 1, name: 'Existing'}}
                             pathname="/family-groups/xyz"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
                 );
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
+                // target normalizes to the same path as pathname — only submission needs mocking.
+                fetchSpy.mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -650,9 +640,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('PUT', pageData);
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 200, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 200, '/api/family-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -669,9 +657,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('DELETE', pageData);
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 204, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 204, '/api/family-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 await user.click(screen.getByRole('button', {name: /odeslat/i}));
@@ -685,9 +671,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('POST', pageData);
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation({id: 42}, 201, null));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation({id: 42}, 201, null));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -718,9 +702,7 @@ describe('HalFormDisplay Component', () => {
 
                 renderPostForm('POST', pageData);
 
-                fetchSpy
-                    .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                    .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -752,9 +734,8 @@ describe('HalFormDisplay Component', () => {
             const pageData = createMockPageData({id: 1});
             const Wrapper = createWrapper(pageData);
 
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({name: 'John', readOnlyField: 'read-only'}))
-                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane'}));
+            // target normalizes to the same path as pathname — only submission needs mocking.
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane'}));
 
             const postprocessPayload = vi.fn((payload: Record<string, unknown>) => {
                 const {readOnlyField: _, ...rest} = payload;
@@ -766,7 +747,7 @@ describe('HalFormDisplay Component', () => {
                     <HalFormDisplay
                         template={template}
                         templateName="edit"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'John', readOnlyField: 'read-only'}}
                         pathname="/members/1"
                         onClose={onClose}
                         postprocessPayload={postprocessPayload}
@@ -785,7 +766,7 @@ describe('HalFormDisplay Component', () => {
 
             await waitFor(() => {
                 expect(postprocessPayload).toHaveBeenCalled();
-                const submittedPayload = (fetchSpy.mock.calls[1][1] as RequestInit).body as string;
+                const submittedPayload = (fetchSpy.mock.calls[0][1] as RequestInit).body as string;
                 const body = JSON.parse(submittedPayload);
                 expect(body).not.toHaveProperty('readOnlyField');
             });
@@ -890,15 +871,13 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
+            // target normalizes to the same path as pathname — resourceData provides pre-fill.
             const resourceData: HalResponse = {
                 id: 1,
-                name: 'Test Resource',
+                name: 'Existing Member',
             };
             const pageData = createMockPageData(resourceData);
             const Wrapper = createWrapper(pageData);
-
-            // Mock fetch for target data
-            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}));
 
             render(
                 <Wrapper>
@@ -1002,15 +981,13 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
+            // target normalizes to the same path as pathname — resourceData provides pre-fill.
             const resourceData: HalResponse = {
                 id: 1,
-                name: 'Test Resource',
+                name: 'John Doe',
             };
             const pageData = createMockPageData(resourceData);
             const Wrapper = createWrapper(pageData);
-
-            // Mock fetch for target data
-            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'John Doe'}));
 
             const customLayout: RenderFormCallback = ({renderField}) => (
                 <div data-testid="custom-callback-layout">
@@ -1060,15 +1037,13 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
+            // target normalizes to the same path as pathname — resourceData provides pre-fill.
             const resourceData: HalResponse = {
                 id: 1,
-                name: 'Test Resource',
+                name: 'Jane Smith',
             };
             const pageData = createMockPageData(resourceData);
             const Wrapper = createWrapper(pageData);
-
-            // Mock fetch for target data
-            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane Smith'}));
 
             render(
                 <Wrapper>
@@ -1134,7 +1109,10 @@ describe('HalFormDisplay Component', () => {
 
         it('prefers template.target over resourceUrl when both are present', async () => {
             const user = userEvent.setup();
+            // target '/api/category-presets/abc' differs from pathname '/category-presets'
+            // — OPTIONS probe fires first, then GET for pre-fill, then submission.
             fetchSpy
+                .mockResolvedValueOnce(createOptionsResponse(['GET', 'PUT']))
                 .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
                 .mockResolvedValueOnce(createMockResponse({name: 'Updated'}, 200));
 
@@ -1158,6 +1136,8 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('navigateOnSuccess prop', () => {
+        // target '/api/category-presets' normalizes to '/category-presets' which equals pathname
+        // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.
         const renderPostFormWithNav = (navigateOnSuccess: boolean | undefined, onClose = vi.fn()) => {
             const template = mockHalFormsTemplate({
                 title: 'Create Preset',
@@ -1172,7 +1152,7 @@ describe('HalFormDisplay Component', () => {
                     <HalFormDisplay
                         template={template}
                         templateName="createCategoryPreset"
-                        resourceData={{id: 1}}
+                        resourceData={{id: 1, name: 'Existing'}}
                         pathname="/category-presets"
                         onClose={onClose}
                         navigateOnSuccess={navigateOnSuccess}
@@ -1187,9 +1167,7 @@ describe('HalFormDisplay Component', () => {
             const mockOnClose = vi.fn();
             renderPostFormWithNav(false, mockOnClose);
 
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+            fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
 
             await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
             const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -1206,9 +1184,7 @@ describe('HalFormDisplay Component', () => {
             const user = userEvent.setup();
             renderPostFormWithNav(true);
 
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+            fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
 
             await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
             const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -1225,9 +1201,7 @@ describe('HalFormDisplay Component', () => {
             const user = userEvent.setup();
             renderPostFormWithNav(undefined);
 
-            fetchSpy
-                .mockResolvedValueOnce(createMockResponse({name: 'Existing'}))
-                .mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
+            fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/category-presets/xyz'));
 
             await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
             const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
