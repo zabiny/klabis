@@ -8,12 +8,14 @@ import com.klabis.common.users.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
 @Component
+@Order(0)
 class UsersDataBootstrap implements BootstrapDataInitializer {
 
     private final PasswordGenerator passwordGenerator;

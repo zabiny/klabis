@@ -9,9 +9,11 @@ import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(2)
 class TrainingGroupDataBootstrap implements BootstrapDataInitializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(TrainingGroupDataBootstrap.class);

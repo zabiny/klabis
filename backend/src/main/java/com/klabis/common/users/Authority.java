@@ -41,7 +41,6 @@ public enum Authority {
     private final String value;
     private final Scope scope;
 
-    @JsonCreator
     Authority(String value, Scope scope) {
         this.value = value;
         this.scope = scope;
