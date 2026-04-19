@@ -49,14 +49,14 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 **IMPORTANT:** Always use the `test-runner` agent to execute tests. Never run `./gradlew test` directly.
 
+**CRITICAL — never run Gradle / test-runner in parallel tool calls.** Gradle uses a single daemon and a shared `build/` directory; concurrent invocations deadlock on cache locks (`fileHashes.lock`) and require manual cleanup. Always invoke test-runner sequentially — even when running multiple test classes, batch them into one invocation or run them one after another.
+
 - `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
   need to pass it manually
 
 **CRITICAL: @WebMvcTest and SecurityConfiguration**
 - `SecurityConfiguration.jwtAuthenticationConverter()` requires a `UserService` bean
 - In `@WebMvcTest` contexts, add: `@MockitoBean UserService userService;` to test class
-- `SecurityConfiguration.authenticationManager()` requires a `UserDetailsService` bean
-- Also add: `@MockitoBean UserDetailsService userDetailsService;` to test class
 - Affects all `@WebMvcTest` controllers that import `SecurityConfiguration`
 - This resolves `UnsatisfiedDependencyException` in component-scanned tests
 

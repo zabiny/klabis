@@ -18,7 +18,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = CurrentUserIntegrationTest.TestController.class)
 @Import({CurrentUserArgumentResolver.class, MvcConfigurerMembers.class})
-@MockitoBean(types = {UserService.class, UserDetailsService.class})
+@MockitoBean(types = {UserService.class})
 class CurrentUserIntegrationTest {
 
     private static final String TEST_USER_ID = "123e4567-e89b-12d3-a456-426614174000";

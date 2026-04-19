@@ -25,7 +25,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -67,7 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
         com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class})
-@MockitoBean(types = {UserService.class, UserDetailsService.class})
+@MockitoBean(types = {UserService.class})
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";

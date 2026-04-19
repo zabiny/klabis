@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("CalendarController API tests")
 @WebMvcTest(controllers = CalendarController.class)
-@MockitoBean(types = {UserService.class, UserDetailsService.class})
+@MockitoBean(types = {UserService.class})
 class CalendarControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
