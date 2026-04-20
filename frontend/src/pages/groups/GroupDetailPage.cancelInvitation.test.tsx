@@ -22,7 +22,15 @@ vi.mock('../../contexts/HalFormContext.tsx', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
+    HalFormDisplay: ({template}: {template: {properties: Array<{name: string; type: string}>}}) => (
+        <div data-testid="hal-form-display">
+            {template.properties.map(p => (
+                p.type === 'textarea'
+                    ? <textarea key={p.name} data-testid={`field-${p.name}`} aria-label={p.name}/>
+                    : <input key={p.name} data-testid={`field-${p.name}`} aria-label={p.name}/>
+            ))}
+        </div>
+    ),
 }));
 
 vi.mock('../../components/UI', async (importOriginal) => {
@@ -110,11 +118,12 @@ const buildPendingInvitationWithAffordance = (overrides?: Record<string, unknown
         invitedMember: {href: '/api/members/member-2'},
     },
     _templates: {
+        // Spring HATEOAS does not emit properties for DELETE affordances — empty array reflects the actual backend response
         cancelInvitation: mockHalFormsTemplate({
             title: 'Zrušit pozvánku',
             method: 'DELETE',
             target: '/api/groups/group-1/invitations/inv-1',
-            properties: [{name: 'reason', prompt: 'Důvod zrušení (volitelné)', type: 'textarea', required: false}],
+            properties: [],
         }),
     },
     ...overrides,
@@ -192,6 +201,17 @@ describe('GroupDetailPage — cancel invitation (task 7)', () => {
             renderPage(createMockPageData(resourceData));
             fireEvent.click(screen.getByRole('button', {name: /zrušit pozvánku/i}));
             expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+        });
+
+        it('modal renders "reason" textarea even when backend DELETE affordance has empty properties', () => {
+            // Backend does not emit properties for DELETE affordances.
+            // GroupDetailPage must inject the reason property client-side.
+            const resourceData = buildGroupDetail({
+                pendingInvitations: [buildPendingInvitationWithAffordance()],
+            });
+            renderPage(createMockPageData(resourceData));
+            fireEvent.click(screen.getByRole('button', {name: /zrušit pozvánku/i}));
+            expect(screen.getByTestId('field-reason')).toBeInTheDocument();
         });
     });
 

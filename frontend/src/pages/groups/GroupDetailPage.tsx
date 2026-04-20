@@ -43,6 +43,20 @@ interface MemberActionModalState {
     template: HalFormsTemplate;
 }
 
+// Spring HATEOAS does not emit properties for DELETE affordances. The backend does
+// accept a reason body — inject the property client-side so the form renders the field.
+const withReasonProperty = (template: HalFormsTemplate): HalFormsTemplate => {
+    const alreadyHasReason = template.properties.some(p => p.name === 'reason');
+    if (alreadyHasReason) return template;
+    return {
+        ...template,
+        properties: [
+            ...template.properties,
+            {name: 'reason', prompt: labels.fields.reason, type: 'textarea', required: false},
+        ],
+    };
+};
+
 const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactElement => {
     const {route} = useHalPageData<GroupDetail>();
     const navigate = useNavigate();
@@ -396,7 +410,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                     size="md"
                 >
                     <HalFormDisplay
-                        template={cancelInvitationModal.template}
+                        template={withReasonProperty(cancelInvitationModal.template)}
                         templateName="cancelInvitation"
                         resourceData={cancelInvitationModal.invitation as unknown as Record<string, unknown>}
                         pathname={extractNavigationPath(toHref(cancelInvitationModal.invitation._links.self ?? {href: ''}))}

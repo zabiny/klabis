@@ -119,3 +119,17 @@ All domain and persistence code was already written: `CANCELLED` status in `Invi
 **Backend gap discovered:** None. The backend affordance from iteration 2 is exactly what the frontend consumes — `_templates.cancelInvitation` on each pending-invitation row with `method: DELETE`, `target` URL, and optional `reason` property.
 
 **Readiness for iteration 5:** Ready. Iteration 5 is wrap-up: follow-up GH issue for notifications, manual QA, and adding `BackendCompleted` label to GH #241.
+
+### Iteration 4.1 — 2026-04-20 — bugfix: reason textarea not rendering
+
+**Root cause:** Spring HATEOAS does not emit `properties` for DELETE affordances. HTTP DELETE has no semantic body per spec, so the library skips property emission regardless of `@RequestBody(required = false)` on the controller method. The `cancelInvitation` template arrived from the backend with `properties: []`. `HalFormsForm` iterates `template.properties` → nothing rendered except Submit/Cancel buttons.
+
+**Fix location:** Frontend only — `GroupDetailPage.tsx`. A `withReasonProperty()` helper enriches the template client-side before passing it to `HalFormDisplay`. It injects `{name: 'reason', prompt: labels.fields.reason, type: 'textarea', required: false}` unless the backend starts emitting it natively (idempotent guard). The backend does accept the `reason` body — the gap was purely in affordance serialization.
+
+**Why this differs from `inviteMember`:** `inviteMember` uses `@PostMapping` with `@Valid @RequestBody InviteMemberRequest` (required=true). Spring HATEOAS emits properties for POST bodies normally. DELETE is special-cased by the library.
+
+**Test coverage added:**
+- `HalFormDisplay` mock updated to render `<textarea data-testid="field-{name}"/>` for each `textarea` property in the template, enabling field-level assertions
+- Fixture `buildPendingInvitationWithAffordance` corrected to use `properties: []` (reflecting actual backend response)
+- New test: "modal renders reason textarea even when backend DELETE affordance has empty properties" — asserts `[data-testid=field-reason]` is present after button click
+- Full suite: 1150/1150 pass

@@ -58,6 +58,6 @@
 
 ## 8. Follow-up and wrap-up
 
-- [ ] 8.1 Create a follow-up GitHub issue referencing issue #241 — scope is to wire the `FreeGroupInvitationCancelled` event to the notification-service once that capability is added
+- [x] 8.1 Create a follow-up GitHub issue referencing issue #241 — scope is to wire the `FreeGroupInvitationCancelled` event to the notification-service once that capability is added (→ #272)
 - [ ] 8.2 Manual QA on local environment: invite → cancel → re-invite; deactivate member with pending invitations → verify auto-cancel
 - [ ] 8.3 Add label `BackendCompleted` to GitHub issue #241 once backend tasks (sections 1-6) are merged
