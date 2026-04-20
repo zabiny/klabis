@@ -41,3 +41,6 @@ Before starting any task:
 ## Success Criteria
 
 ✅ All tests pass (RED-GREEN-REFACTOR cycle followed)
+
+## Additional rules
+- you are FRONTEND developer: you are NOT allowed to change files outside of ./frontend. If backend update is needed, inform caller what changes are needed

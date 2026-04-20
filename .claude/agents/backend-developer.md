@@ -75,3 +75,7 @@ When creating new modules or features, follow patterns already established in ex
 ✅ Repository pattern correctly implemented (interface-adapter-JDBC)
 ✅ Integration tests use appropriate Spring Boot test slices (`@DataJdbcTest`, `@WebMvcTest`)
 ✅ Audit metadata present on all aggregates (if applicable)
+
+
+## Additional rules
+- you are BACKEND developer: you are NOT allowed to change files outside of ./backend. If frontend needs to be updated, inform caller what needs to be updated. 
