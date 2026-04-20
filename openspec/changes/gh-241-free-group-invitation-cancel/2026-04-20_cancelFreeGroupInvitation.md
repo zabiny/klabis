@@ -68,3 +68,19 @@ All domain and persistence code was already written: `CANCELLED` status in `Invi
 **Test status:** 70 tests, 0 failures. All tasks 1.1–3.3 marked complete.
 
 **Readiness for iteration 2:** Ready. Iteration 2 covers application service command, REST `DELETE` endpoint, authorization wiring, and HATEOAS affordance (tasks 4.*, 5.*). Prerequisites from iteration 1 are all in place.
+
+### Iteration 2 — 2026-04-20
+
+**Application command shape:** Added `cancelInvitation(FreeGroupId, InvitationId, MemberId actor, String reason)` method directly to `FreeGroupManagementPort` (no separate command record — consistent with the existing port style where each operation is a distinct method with named parameters). Service delegates to `group.cancelInvitation(invitationId, Optional.of(actor), reason)`.
+
+**REST endpoint:** `DELETE /api/groups/{id}/invitations/{invitationId}` — returns 204 No Content. Optional request body `CancelInvitationRequest { reason: String (max 500) }`. Body is `required = false`; missing body = null reason. Wired in `FreeGroupController` alongside the existing accept/reject POST endpoints.
+
+**Authorization and exception translation:** `GroupOwnershipRequiredException` → 403 was already handled by `FreeGroupExceptionHandler`. Added `InvitationNotCancellableException` → 409 to the same handler.
+
+**Affordance placement:** `InvitationModelBuilder` now takes a boolean `includeOwnerAffordances`. The `build(FreeGroup, Invitation)` path (called from `FreeGroupController.buildPendingInvitationModel` when `requestingUserIsOwner = true`) passes `true`; the `buildFromView` path (called from `PendingInvitationsController` for the invitee view) passes `false`. Cancel affordance uses `withSelfRel()` + `klabisAfford()` pointing at the new DELETE endpoint, so it appears as `_templates.cancelInvitation` in HAL+FORMS responses.
+
+**Deviation from design:** Design §D6 mentions the affordance should declare an optional `reason` field. The `CancelInvitationRequest` record is the method parameter, so `klabisAfford` will expose the `reason` field in the HAL+FORMS template automatically (same mechanism as all other affordances in this codebase). No extra wiring needed.
+
+**Test status:** 169/169 freegroup tests pass. Full suite: 2209/2210 pass — the single failure is `CalendarEventSyncIntegrationTest.initializationError` in the calendar module, a pre-existing infrastructure issue unrelated to this change.
+
+**Readiness for iteration 3:** Ready. Iteration 3 needs an event listener on the members-module deactivation event (task 6.*). The `cancelInvitation` service method already supports `Optional.of(actor)` for manual cancel; iteration 3 will call a variant with `Optional.empty()` (SYSTEM actor) for auto-cancel via `group.cancelInvitation(invitationId, Optional.empty(), reason)` directly at the aggregate level through the repository — or can reuse the port with a dedicated SYSTEM-actor method. The aggregate's `cancelInvitation` already handles the SYSTEM path correctly.

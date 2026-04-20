@@ -1,9 +1,8 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
+import com.klabis.common.usergroup.InvitationNotCancellableException;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.groups.freegroup.domain.GroupOwnershipRequiredException;
-import com.klabis.groups.freegroup.infrastructure.restapi.FreeGroupController;
-import com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationsController;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.ErrorResponse;
@@ -18,6 +17,13 @@ class FreeGroupExceptionHandler {
     public ErrorResponse handleGroupOwnershipRequired(GroupOwnershipRequiredException ex) {
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(403), ex.getMessage())
                 .title("Group Ownership Required")
+                .build();
+    }
+
+    @ExceptionHandler(InvitationNotCancellableException.class)
+    public ErrorResponse handleInvitationNotCancellable(InvitationNotCancellableException ex) {
+        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(409), ex.getMessage())
+                .title("Invitation Cannot Be Cancelled")
                 .build();
     }
 

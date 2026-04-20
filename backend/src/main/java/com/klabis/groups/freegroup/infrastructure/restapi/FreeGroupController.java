@@ -181,6 +181,21 @@ class FreeGroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/invitations/{invitationId}")
+    @Operation(summary = "Cancel a pending invitation (owner only)")
+    ResponseEntity<Void> cancelInvitation(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
+            @RequestBody(required = false) CancelInvitationRequest request,
+            @ActingMember MemberId actingMember) {
+
+        FreeGroupId groupId = new FreeGroupId(id);
+        InvitationId invId = new InvitationId(invitationId);
+        String reason = request != null ? request.reason() : null;
+        membersGroupManagementService.cancelInvitation(groupId, invId, actingMember, reason);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(value = "/{id}/invitations/{invitationId}/accept",
             produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     @Operation(summary = "Accept a pending invitation")

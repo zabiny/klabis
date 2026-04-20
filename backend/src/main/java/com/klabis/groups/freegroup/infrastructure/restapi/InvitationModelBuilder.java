@@ -5,7 +5,6 @@ import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.members.MemberId;
-import com.klabis.groups.freegroup.infrastructure.restapi.FreeGroupController;
 import com.klabis.members.infrastructure.restapi.MemberController;
 import org.springframework.hateoas.EntityModel;
 
@@ -21,14 +20,15 @@ class InvitationModelBuilder {
     }
 
     static EntityModel<PendingInvitationResponse> buildFromView(PendingInvitationView view) {
-        return buildInternal(view.groupId(), view.groupName(), view.invitation());
+        return buildInternal(view.groupId(), view.groupName(), view.invitation(), false);
     }
 
     static EntityModel<PendingInvitationResponse> build(FreeGroup group, Invitation invitation) {
-        return buildInternal(group.getId(), group.getName(), invitation);
+        return buildInternal(group.getId(), group.getName(), invitation, true);
     }
 
-    private static EntityModel<PendingInvitationResponse> buildInternal(FreeGroupId groupId, String groupName, Invitation invitation) {
+    private static EntityModel<PendingInvitationResponse> buildInternal(
+            FreeGroupId groupId, String groupName, Invitation invitation, boolean includeOwnerAffordances) {
         UUID groupUuid = groupId.uuid();
         UUID invitationUuid = invitation.getId().value();
         UUID invitedByUuid = MemberId.fromUserId(invitation.getInvitedBy()).uuid();
@@ -54,6 +54,13 @@ class InvitationModelBuilder {
                 .ifPresent(link -> model.add(link.withRel("reject")
                         .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
                                 .rejectInvitation(groupUuid, invitationUuid, null)))));
+        if (includeOwnerAffordances) {
+            klabisLinkTo(methodOn(FreeGroupController.class)
+                    .cancelInvitation(groupUuid, invitationUuid, null, null))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                                    .cancelInvitation(groupUuid, invitationUuid, null, null)))));
+        }
         return model;
     }
 }

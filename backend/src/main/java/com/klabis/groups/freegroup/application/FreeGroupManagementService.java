@@ -12,6 +12,7 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 class FreeGroupManagementService implements FreeGroupManagementPort {
@@ -106,6 +107,14 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     public void rejectInvitation(FreeGroupId id, InvitationId invitationId, MemberId rejectingMember) {
         FreeGroup group = loadGroup(id);
         group.rejectInvitation(invitationId, rejectingMember);
+        freeGroupRepository.save(group);
+    }
+
+    @Transactional
+    @Override
+    public void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, MemberId actor, String reason) {
+        FreeGroup group = loadGroup(groupId);
+        group.cancelInvitation(invitationId, Optional.of(actor), reason);
         freeGroupRepository.save(group);
     }
 

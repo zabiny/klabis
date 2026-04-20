@@ -26,18 +26,18 @@
 
 ## 4. Backend — Application service and REST
 
-- [ ] 4.1 Add application command `CancelFreeGroupInvitation(groupId, invitationId, actor, reason)`
-- [ ] 4.2 Write failing controller test: `DELETE /api/groups/{groupId}/invitations/{invitationId}` with empty body → 204, invitation becomes CANCELLED
-- [ ] 4.3 Write failing controller test: `DELETE /api/groups/{groupId}/invitations/{invitationId}` with `{"reason": "..."}` → 204, reason persisted
-- [ ] 4.4 Write failing controller test: cancel on non-PENDING invitation → 409 Conflict
-- [ ] 4.5 Write failing controller test: caller is not a current owner → 403 Forbidden
-- [ ] 4.6 Implement the REST endpoint and wire authorization; make tests pass
+- [x] 4.1 Add application command `CancelFreeGroupInvitation(groupId, invitationId, actor, reason)`
+- [x] 4.2 Write failing controller test: `DELETE /api/groups/{groupId}/invitations/{invitationId}` with empty body → 204, invitation becomes CANCELLED
+- [x] 4.3 Write failing controller test: `DELETE /api/groups/{groupId}/invitations/{invitationId}` with `{"reason": "..."}` → 204, reason persisted
+- [x] 4.4 Write failing controller test: cancel on non-PENDING invitation → 409 Conflict
+- [x] 4.5 Write failing controller test: caller is not a current owner → 403 Forbidden
+- [x] 4.6 Implement the REST endpoint and wire authorization; make tests pass
 
 ## 5. Backend — HATEOAS affordance on free-group detail
 
-- [ ] 5.1 Write failing representation test: free-group detail for an owner includes a "cancel" affordance on each pending-invitation row, with an optional `reason` field
-- [ ] 5.2 Write failing representation test: free-group detail for a non-owner does NOT include the cancel affordance
-- [ ] 5.3 Implement the affordance in the detail representation processor; make tests pass
+- [x] 5.1 Write failing representation test: free-group detail for an owner includes a "cancel" affordance on each pending-invitation row, with an optional `reason` field
+- [x] 5.2 Write failing representation test: free-group detail for a non-owner does NOT include the cancel affordance
+- [x] 5.3 Implement the affordance in the detail representation processor; make tests pass
 
 ## 6. Backend — Auto-cancel on invitee deactivation
 

@@ -35,8 +35,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.klabis.common.usergroup.InvitationNotCancellableException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -327,6 +330,46 @@ class FreeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("should include cancel affordance on each pending invitation row when acting member is owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldIncludeCancelAffordanceOnPendingInvitationsForOwner() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            MemberId invitee = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
+                    INVITATION_ID, invitee.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now());
+            FreeGroup group = FreeGroup.reconstruct(
+                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.pendingInvitations[0]._templates.cancelInvitation").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include cancel affordance on pending invitations when acting member is not owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldNotIncludeCancelAffordanceForNonOwner() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            com.klabis.common.users.UserId nonOwnerUserId = new com.klabis.common.users.UserId(UUID.fromString(OTHER_MEMBER_ID));
+            GroupMembership membership = new GroupMembership(nonOwnerUserId, Instant.now());
+            FreeGroup group = FreeGroup.reconstruct(
+                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(membership), Set.of(), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.pendingInvitations").isArray())
+                    .andExpect(jsonPath("$.pendingInvitations").isEmpty());
         }
     }
 
@@ -913,6 +956,89 @@ class FreeGroupControllerTest {
             mockMvc.perform(
                             post("/api/groups/{id}/invitations/{invitationId}/reject",
                                     GROUP_UUID, INVITATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/groups/{id}/invitations/{invitationId}")
+    class CancelInvitationTests {
+
+        @Test
+        @DisplayName("should return 204 when owner cancels invitation without reason body")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldCancelInvitationWithoutReasonAndReturn204() throws Exception {
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 204 when owner cancels invitation with reason body")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldCancelInvitationWithReasonAndReturn204() throws Exception {
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"reason": "No longer needed"}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 409 when invitation is not in PENDING state")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn409WhenInvitationNotCancellable() throws Exception {
+            doThrow(new InvitationNotCancellableException(INVITATION_ID, InvitationStatus.ACCEPTED))
+                    .when(membersGroupManagementService).cancelInvitation(
+                            any(FreeGroupId.class), any(InvitationId.class), any(MemberId.class), isNull());
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should return 403 when caller is not a current owner")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn403WhenCallerIsNotOwner() throws Exception {
+            MemberId notOwner = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            doThrow(new GroupOwnershipRequiredException(notOwner, GROUP_ID))
+                    .when(membersGroupManagementService).cancelInvitation(
+                            any(FreeGroupId.class), any(InvitationId.class), any(MemberId.class), any());
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user has no member profile")
+        @WithKlabisMockUser
+        void shouldReturn403WhenNoMemberProfile() throws Exception {
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(
+                            delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
