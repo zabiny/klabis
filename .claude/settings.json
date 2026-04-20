@@ -15,11 +15,22 @@
       "Bash(openspec instructions:*)",
       "Bash(openspec list:*)",
       "Bash(./runLocalEnvironment.sh)",
-      "Bash(./runLocalEnvironment.sh:*)"
+      "Bash(./runLocalEnvironment.sh:*)",
+      "Bash(./gradle-isolated.sh:*)"
     ]
   },
   "hooks": {
-    "PreToolUse": [],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-direct-gradle.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
@@ -36,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -q '\\.java$' && cd $(git rev-parse --show-toplevel) && ./gradlew compileJava -q 2>&1 | grep -E 'ERROR|WARN' | head -5 || true"
+            "command": "jq -r '.tool_input.file_path // empty' | grep -q '\\.java$' && cd $(git rev-parse --show-toplevel) && ./gradle-isolated.sh compileJava -q 2>&1 | grep -E 'ERROR|WARN' | head -5 || true"
           }
         ]
       },
@@ -56,7 +67,8 @@
   "sandbox": {
     "excludedCommands": [
       "./runLocalEnvironment.sh",
-      "./gradlew *"
+      "./gradlew *",
+      "./gradle-isolated.sh *"
     ],
     "network": {
       "allowedDomains": [
@@ -72,7 +84,8 @@
     },
     "filesystem": {
       "allowWrite": [
-        "/home/davca/.gradle"
+        "/home/davca/.gradle",
+        "/mnt/ramdisk/klabis"
       ]
     }
   }
