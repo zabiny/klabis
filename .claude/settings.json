@@ -68,6 +68,7 @@
     "excludedCommands": [
       "./runLocalEnvironment.sh",
       "./gradlew *",
+      "/home/davca/bin/gradle *",
       "./gradle-isolated.sh *"
     ],
     "network": {
@@ -86,6 +87,10 @@
       "allowWrite": [
         "/home/davca/.gradle",
         "/mnt/ramdisk/klabis"
+      ],
+      "allowRead": [
+      	"/home/davca/.gradle",
+	"/mnt/ramdisk/klabis"
       ]
     }
   }
