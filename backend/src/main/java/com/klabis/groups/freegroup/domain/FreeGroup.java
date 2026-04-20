@@ -5,12 +5,14 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.usergroup.*;
 import com.klabis.common.users.UserId;
 import com.klabis.groups.freegroup.FreeGroupId;
+import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.*;
 
 @AggregateRoot
@@ -152,6 +154,50 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
             throw new NotInvitedMemberException(rejectingMember.toUserId(), invitationId);
         }
         rejectInvitation(invitationId);
+    }
+
+    /**
+     * Cancels a pending invitation. Only current owners (or SYSTEM) may cancel.
+     *
+     * @param invitationId the invitation to cancel
+     * @param actor        the cancelling owner, or empty for SYSTEM-initiated cancel
+     * @param reason       optional free-text reason (max 500 chars, may be null)
+     */
+    public void cancelInvitation(InvitationId invitationId, Optional<MemberId> actor, String reason) {
+        Assert.notNull(invitationId, "invitationId is required");
+        Assert.notNull(actor, "actor is required");
+        actor.ifPresent(a -> {
+            if (!userGroup.isOwner(a.toUserId())) {
+                throw new GroupOwnershipRequiredException(a, id);
+            }
+        });
+        Invitation invitation = findInvitation(invitationId);
+        invitation.cancel(actor, reason);
+
+        Set<MemberId> recipientOwnerIds = computeRecipientOwnerIds(actor);
+        MemberId inviteeMemberId = MemberId.fromUserId(invitation.getInvitedUser());
+        registerEvent(new FreeGroupInvitationCancelledEvent(
+                UUID.randomUUID(),
+                id,
+                invitationId,
+                inviteeMemberId,
+                actor,
+                Optional.ofNullable(reason),
+                recipientOwnerIds,
+                Instant.now()));
+    }
+
+    private Set<MemberId> computeRecipientOwnerIds(Optional<MemberId> actor) {
+        Set<MemberId> recipients = new HashSet<>(getOwners());
+        actor.ifPresent(recipients::remove);
+        return Collections.unmodifiableSet(recipients);
+    }
+
+    private Invitation findInvitation(InvitationId invitationId) {
+        return invitations.stream()
+                .filter(inv -> inv.getId().equals(invitationId))
+                .findFirst()
+                .orElseThrow(() -> new InvitationNotFoundException(invitationId));
     }
 
     @Override

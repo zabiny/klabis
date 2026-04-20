@@ -10,6 +10,7 @@ import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
+
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -156,6 +157,49 @@ class FreeGroupPersistenceTest {
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(rejected.getStatus()).isEqualTo(InvitationStatus.REJECTED);
+        }
+
+        @Test
+        @DisplayName("should persist and restore cancelled invitation with all audit fields")
+        void shouldPersistAndRestoreCancelledInvitation() {
+            FreeGroup group = FreeGroup.create(
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, INVITED_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
+            freeGroupRepository.save(group);
+
+            FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
+
+            assertThat(retrieved.hasMember(INVITED_MEMBER)).isFalse();
+            assertThat(retrieved.getPendingInvitations()).isEmpty();
+            Invitation cancelled = retrieved.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(cancelled.getCancelledAt()).isPresent();
+            assertThat(cancelled.getCancelledBy()).contains(CREATOR);
+            assertThat(cancelled.getCancellationReason()).contains("No longer needed");
+        }
+
+        @Test
+        @DisplayName("should persist cancelled invitation with SYSTEM actor — cancelledBy is empty")
+        void shouldPersistCancelledInvitationWithSystemActor() {
+            FreeGroup group = FreeGroup.create(
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, INVITED_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
+            freeGroupRepository.save(group);
+
+            FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
+
+            Invitation cancelled = retrieved.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(cancelled.getCancelledBy()).isEmpty();
+            assertThat(cancelled.getCancellationReason()).contains("Member deactivated");
         }
     }
 

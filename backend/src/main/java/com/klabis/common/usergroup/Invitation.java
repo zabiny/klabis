@@ -1,12 +1,14 @@
 package com.klabis.common.usergroup;
 
 import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 public class Invitation {
@@ -17,6 +19,10 @@ public class Invitation {
     private final UserId invitedBy;
     private InvitationStatus status;
     private final Instant createdAt;
+
+    private Instant cancelledAt;
+    private MemberId cancelledBy;
+    private String cancellationReason;
 
     private Invitation(InvitationId id, UserId invitedUser, UserId invitedBy, InvitationStatus status, Instant createdAt) {
         Assert.notNull(id, "InvitationId is required");
@@ -40,6 +46,16 @@ public class Invitation {
         return new Invitation(id, invitedUser, invitedBy, status, createdAt);
     }
 
+    public static Invitation reconstruct(InvitationId id, UserId invitedUser, UserId invitedBy,
+                                         InvitationStatus status, Instant createdAt,
+                                         Instant cancelledAt, MemberId cancelledBy, String cancellationReason) {
+        Invitation invitation = new Invitation(id, invitedUser, invitedBy, status, createdAt);
+        invitation.cancelledAt = cancelledAt;
+        invitation.cancelledBy = cancelledBy;
+        invitation.cancellationReason = cancellationReason;
+        return invitation;
+    }
+
     public void accept() {
         if (this.status != InvitationStatus.PENDING) {
             throw new IllegalStateException("Cannot accept invitation that is not in PENDING state: " + this.status);
@@ -52,6 +68,26 @@ public class Invitation {
             throw new IllegalStateException("Cannot reject invitation that is not in PENDING state: " + this.status);
         }
         this.status = InvitationStatus.REJECTED;
+    }
+
+    /**
+     * Cancels this invitation. Only PENDING invitations can be cancelled.
+     *
+     * @param actor  the member performing the cancellation, or empty for SYSTEM-initiated cancel
+     * @param reason optional free-text reason (max 500 chars)
+     */
+    public void cancel(Optional<MemberId> actor, String reason) {
+        Assert.notNull(actor, "actor is required");
+        if (reason != null) {
+            Assert.isTrue(reason.length() <= 500, "Cancellation reason must not exceed 500 characters");
+        }
+        if (this.status != InvitationStatus.PENDING) {
+            throw new InvitationNotCancellableException(this.id, this.status);
+        }
+        this.status = InvitationStatus.CANCELLED;
+        this.cancelledAt = Instant.now();
+        this.cancelledBy = actor.orElse(null);
+        this.cancellationReason = reason;
     }
 
     public boolean isPending() {
@@ -80,6 +116,18 @@ public class Invitation {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Optional<Instant> getCancelledAt() {
+        return Optional.ofNullable(cancelledAt);
+    }
+
+    public Optional<MemberId> getCancelledBy() {
+        return Optional.ofNullable(cancelledBy);
+    }
+
+    public Optional<String> getCancellationReason() {
+        return Optional.ofNullable(cancellationReason);
     }
 
     @Override

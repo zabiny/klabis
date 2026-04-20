@@ -97,7 +97,10 @@ public class GroupMemento implements Persistable<UUID> {
                         inv.getInvitedUser().uuid(),
                         inv.getInvitedBy().uuid(),
                         inv.getStatus().name(),
-                        inv.getCreatedAt()))
+                        inv.getCreatedAt(),
+                        inv.getCancelledAt().orElse(null),
+                        inv.getCancelledBy().map(MemberId::value).orElse(null),
+                        inv.getCancellationReason().orElse(null)))
                 .collect(Collectors.toSet());
         return memento;
     }
@@ -125,7 +128,10 @@ public class GroupMemento implements Persistable<UUID> {
                         new UserId(inv.getInvitedMemberId()),
                         new UserId(inv.getInvitedByMemberId()),
                         InvitationStatus.valueOf(inv.getStatus()),
-                        inv.getCreatedAt()))
+                        inv.getCreatedAt(),
+                        inv.getCancelledAt(),
+                        inv.getCancelledBy() != null ? new MemberId(inv.getCancelledBy()) : null,
+                        inv.getCancellationReason()))
                 .collect(Collectors.toSet());
 
         return FreeGroup.reconstruct(new FreeGroupId(this.id), this.name,

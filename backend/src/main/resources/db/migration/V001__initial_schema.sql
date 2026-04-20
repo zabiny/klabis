@@ -461,7 +461,10 @@ CREATE TABLE user_group_invitations
     invited_member_id    UUID        NOT NULL,
     invited_by_member_id UUID        NOT NULL,
     status               VARCHAR(20) NOT NULL,
-    created_at           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cancelled_at         TIMESTAMP   NULL,
+    cancelled_by         UUID        NULL,
+    cancellation_reason  VARCHAR(500) NULL
 );
 
 -- Indexes for user_group_invitations
@@ -470,7 +473,10 @@ CREATE INDEX idx_user_group_invitations_invited_member_status ON user_group_invi
 
 -- Comments for user_group_invitations
 COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (FreeGroup) groups';
-COMMENT ON COLUMN user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED';
+COMMENT ON COLUMN user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED, CANCELLED';
+COMMENT ON COLUMN user_group_invitations.cancelled_at IS 'Timestamp when the invitation was cancelled; NULL if not cancelled';
+COMMENT ON COLUMN user_group_invitations.cancelled_by IS 'MemberId of the owner who cancelled; NULL for SYSTEM-initiated cancel';
+COMMENT ON COLUMN user_group_invitations.cancellation_reason IS 'Optional free-text reason for cancellation (max 500 chars)';
 
 -- ============================================================================
 -- 24. CATEGORY_PRESETS TABLE

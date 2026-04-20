@@ -7,15 +7,18 @@ import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.usergroup.DuplicatePendingInvitationException;
 import com.klabis.common.usergroup.Invitation;
 import com.klabis.common.usergroup.InvitationId;
+import com.klabis.common.usergroup.InvitationNotCancellableException;
 import com.klabis.common.usergroup.InvitationNotFoundException;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
+import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -520,6 +523,176 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelInvitation()")
+    class CancelInvitationMethod {
+
+        @Test
+        @DisplayName("should cancel pending invitation with reason and populate audit fields")
+        void shouldCancelPendingInvitationWithReason() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), "Changed plans");
+
+            Invitation invitation = group.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(invitation.getCancelledAt()).isPresent();
+            assertThat(invitation.getCancelledBy()).contains(CREATOR);
+            assertThat(invitation.getCancellationReason()).contains("Changed plans");
+            assertThat(group.getPendingInvitations()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should cancel pending invitation without reason — reason stays null")
+        void shouldCancelPendingInvitationWithoutReason() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
+
+            Invitation invitation = group.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(invitation.getCancelledAt()).isPresent();
+            assertThat(invitation.getCancelledBy()).contains(CREATOR);
+            assertThat(invitation.getCancellationReason()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when former owner attempts to cancel")
+        void shouldThrowWhenFormerOwnerAttemptsToCancel() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            group.addOwner(OTHER_MEMBER);
+            group.invite(CREATOR, ANOTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.removeOwner(OTHER_MEMBER);
+
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(OTHER_MEMBER), null))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
+
+            Invitation invitation = group.getInvitations().stream()
+                    .filter(inv -> inv.getId().equals(invitationId))
+                    .findFirst().orElseThrow();
+            assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.PENDING);
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when non-owner member attempts to cancel")
+        void shouldThrowWhenNonOwnerMemberAttemptsToCancel() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            group.invite(CREATOR, ANOTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(OTHER_MEMBER), null))
+                    .isInstanceOf(GroupOwnershipRequiredException.class);
+        }
+
+        @Test
+        @DisplayName("should throw InvitationNotCancellableException when cancelling an ACCEPTED invitation")
+        void shouldThrowWhenCancellingAcceptedInvitation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.acceptInvitation(invitationId);
+
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+                    .isInstanceOf(InvitationNotCancellableException.class);
+        }
+
+        @Test
+        @DisplayName("should throw InvitationNotCancellableException when cancelling a REJECTED invitation")
+        void shouldThrowWhenCancellingRejectedInvitation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.rejectInvitation(invitationId);
+
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+                    .isInstanceOf(InvitationNotCancellableException.class);
+        }
+
+        @Test
+        @DisplayName("should throw InvitationNotCancellableException when cancelling an already CANCELLED invitation")
+        void shouldThrowWhenCancellingAlreadyCancelledInvitation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
+
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+                    .isInstanceOf(InvitationNotCancellableException.class);
+        }
+
+        @Test
+        @DisplayName("should allow re-inviting a member after their previous invitation was cancelled")
+        void shouldAllowReInviteAfterCancellation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId firstId = group.getPendingInvitations().get(0).getId();
+            group.cancelInvitation(firstId, Optional.of(CREATOR), null);
+
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            List<Invitation> pending = group.getPendingInvitations();
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedUser()).isEqualTo(OTHER_MEMBER.toUserId());
+        }
+    }
+
+    @Nested
+    @DisplayName("cancelInvitation() — domain event")
+    class CancelInvitationDomainEvent {
+
+        @Test
+        @DisplayName("should emit FreeGroupInvitationCancelledEvent with recipientOwnerIds excluding the actor")
+        void shouldEmitEventExcludingActor() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            group.addOwner(OTHER_MEMBER);
+            group.invite(CREATOR, ANOTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
+
+            List<Object> events = group.getDomainEvents();
+            assertThat(events).hasSize(1);
+            FreeGroupInvitationCancelledEvent event = (FreeGroupInvitationCancelledEvent) events.get(0);
+            assertThat(event.groupId()).isEqualTo(group.getId());
+            assertThat(event.invitationId()).isEqualTo(invitationId);
+            assertThat(event.inviteeMemberId()).isEqualTo(ANOTHER_MEMBER);
+            assertThat(event.actor()).contains(CREATOR);
+            assertThat(event.reason()).contains("No longer needed");
+            assertThat(event.recipientOwnerIds()).containsExactly(OTHER_MEMBER);
+            assertThat(event.cancelledAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should emit FreeGroupInvitationCancelledEvent with all owners as recipients for SYSTEM actor")
+        void shouldEmitEventWithAllOwnersForSystemActor() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            group.addOwner(OTHER_MEMBER);
+            group.invite(CREATOR, ANOTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
+
+            List<Object> events = group.getDomainEvents();
+            assertThat(events).hasSize(1);
+            FreeGroupInvitationCancelledEvent event = (FreeGroupInvitationCancelledEvent) events.get(0);
+            assertThat(event.actor()).isEmpty();
+            assertThat(event.recipientOwnerIds()).containsExactlyInAnyOrder(CREATOR, OTHER_MEMBER);
         }
     }
 
