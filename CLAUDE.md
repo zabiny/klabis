@@ -127,6 +127,5 @@ refactor(users): extract password validation to service
 
 **Common types:** feat, fix, test, docs, refactor, chore, perf, style, ci
 
-
-## Additional instructions
-- dont use Edit/Write/MultiEdit/Update/etc tools when jetbrains MCP alternatives are available (prefer jetbrains tools)
+## OpenSpec Workflow
+- Always use the openspec skill for creating proposals. Do not write proposals manually. Follow the skill's directory naming conventions.
