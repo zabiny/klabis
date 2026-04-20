@@ -2,10 +2,8 @@ package com.klabis.groups.freegroup.infrastructure.listeners;
 
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.Invitation;
-import com.klabis.common.usergroup.InvitationId;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.members.MemberId;
@@ -25,9 +23,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @DisplayName("MemberSuspendedListener")
@@ -42,14 +40,11 @@ class MemberSuspendedListenerTest {
     @Mock
     private FreeGroupRepository freeGroupRepository;
 
-    @Mock
-    private FreeGroupManagementPort freeGroupManagementPort;
-
     private MemberSuspendedListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new MemberSuspendedListener(freeGroupManagementPort, freeGroupRepository);
+        listener = new MemberSuspendedListener(freeGroupRepository);
     }
 
     private MemberSuspendedEvent suspendedEvent(MemberId memberId) {
@@ -68,7 +63,7 @@ class MemberSuspendedListenerTest {
     class PendingInvitationsScenario {
 
         @Test
-        @DisplayName("should cancel all pending invitations for the deactivated member with SYSTEM actor")
+        @DisplayName("should cancel all pending invitations for the deactivated member and save the group")
         void shouldCancelAllPendingInvitationsForDeactivatedMember() {
             Invitation pending = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group",
@@ -79,15 +74,16 @@ class MemberSuspendedListenerTest {
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group));
+            when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             listener.on(suspendedEvent(INVITEE));
 
-            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            verify(freeGroupManagementPort).cancelInvitationAsSystem(GROUP_ID, invitationId, "Member was deactivated");
+            assertThat(group.getPendingInvitations()).isEmpty();
+            verify(freeGroupRepository).save(group);
         }
 
         @Test
-        @DisplayName("should cancel pending invitations across multiple groups")
+        @DisplayName("should cancel pending invitations across multiple groups — each group saved once")
         void shouldCancelPendingInvitationsAcrossMultipleGroups() {
             Invitation pending1 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
             Invitation pending2 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
@@ -98,13 +94,12 @@ class MemberSuspendedListenerTest {
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));
+            when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             listener.on(suspendedEvent(INVITEE));
 
-            verify(freeGroupManagementPort, times(1))
-                    .cancelInvitationAsSystem(eq(GROUP_ID), any(), eq("Member was deactivated"));
-            verify(freeGroupManagementPort, times(1))
-                    .cancelInvitationAsSystem(eq(SECOND_GROUP_ID), any(), eq("Member was deactivated"));
+            verify(freeGroupRepository, times(1)).save(group1);
+            verify(freeGroupRepository, times(1)).save(group2);
         }
     }
 
@@ -120,7 +115,7 @@ class MemberSuspendedListenerTest {
 
             listener.on(suspendedEvent(INVITEE));
 
-            verify(freeGroupManagementPort, never()).cancelInvitationAsSystem(any(), any(), any());
+            verify(freeGroupRepository, never()).save(any());
         }
     }
 
@@ -129,8 +124,8 @@ class MemberSuspendedListenerTest {
     class PartialFailureScenario {
 
         @Test
-        @DisplayName("should continue cancelling remaining invitations when one fails")
-        void shouldContinueWhenOneInvitationCancelFails() {
+        @DisplayName("should continue cancelling remaining groups when one save fails")
+        void shouldContinueWhenOneGroupSaveFails() {
             Invitation pending1 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
             Invitation pending2 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
             FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One",
@@ -140,15 +135,12 @@ class MemberSuspendedListenerTest {
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));
-
-            doThrow(new RuntimeException("Simulated failure"))
-                    .when(freeGroupManagementPort)
-                    .cancelInvitationAsSystem(eq(GROUP_ID), any(), any());
+            doThrow(new RuntimeException("Simulated failure")).when(freeGroupRepository).save(group1);
+            when(freeGroupRepository.save(group2)).thenAnswer(inv -> inv.getArgument(0));
 
             assertThatCode(() -> listener.on(suspendedEvent(INVITEE))).doesNotThrowAnyException();
 
-            verify(freeGroupManagementPort, times(1))
-                    .cancelInvitationAsSystem(eq(SECOND_GROUP_ID), any(), eq("Member was deactivated"));
+            verify(freeGroupRepository, times(1)).save(group2);
         }
     }
 }

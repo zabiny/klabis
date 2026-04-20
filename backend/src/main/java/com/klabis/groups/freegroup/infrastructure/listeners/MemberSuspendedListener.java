@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
 import com.klabis.groups.common.domain.FreeGroupFilter;
-import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.members.MemberId;
@@ -13,6 +12,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @PrimaryAdapter
 @Component
@@ -22,11 +22,9 @@ class MemberSuspendedListener {
 
     static final String SYSTEM_CANCEL_REASON = "Member was deactivated";
 
-    private final FreeGroupManagementPort freeGroupManagementPort;
     private final FreeGroupRepository freeGroupRepository;
 
-    MemberSuspendedListener(FreeGroupManagementPort freeGroupManagementPort, FreeGroupRepository freeGroupRepository) {
-        this.freeGroupManagementPort = freeGroupManagementPort;
+    MemberSuspendedListener(FreeGroupRepository freeGroupRepository) {
         this.freeGroupRepository = freeGroupRepository;
     }
 
@@ -41,21 +39,18 @@ class MemberSuspendedListener {
             return;
         }
 
-        log.info("Auto-cancelling {} pending free-group invitation(s) for deactivated member {}",
-                groupsWithPendingInvitations.size(), deactivatedMember);
+        log.info("Auto-cancelling pending free-group invitations for deactivated member {}", deactivatedMember);
 
-        groupsWithPendingInvitations.forEach(group ->
+        groupsWithPendingInvitations.forEach(group -> {
+            try {
                 group.getPendingInvitations().stream()
                         .filter(inv -> inv.isForUser(deactivatedMember.toUserId()))
-                        .forEach(inv -> {
-                            try {
-                                freeGroupManagementPort.cancelInvitationAsSystem(
-                                        group.getId(), inv.getId(), SYSTEM_CANCEL_REASON);
-                            } catch (Exception e) {
-                                log.error("Failed to auto-cancel invitation {} in group {} for deactivated member {}: {}",
-                                        inv.getId(), group.getId(), deactivatedMember, e.getMessage(), e);
-                            }
-                        })
-        );
+                        .forEach(inv -> group.cancelInvitation(inv.getId(), Optional.empty(), SYSTEM_CANCEL_REASON));
+                freeGroupRepository.save(group);
+            } catch (Exception e) {
+                log.error("Failed to auto-cancel invitations in group {} for deactivated member {}: {}",
+                        group.getId(), deactivatedMember, e.getMessage(), e);
+            }
+        });
     }
 }

@@ -78,26 +78,37 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
         return userGroup.getMembers();
     }
 
-    public void rename(String newName) {
+    public void rename(String newName, MemberId actingMember) {
+        requireOwner(actingMember);
         userGroup.rename(newName);
     }
 
-    public void addOwner(MemberId memberId) {
+    public void addOwner(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
+        requireOwner(actingMember);
         if (!userGroup.hasMember(memberId.toUserId())) {
             throw new CannotPromoteNonMemberToOwnerException(memberId.toUserId());
         }
         userGroup.addOwner(memberId.toUserId());
     }
 
-    public void removeOwner(MemberId memberId) {
+    public void removeOwner(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
+        requireOwner(actingMember);
         userGroup.removeOwner(memberId.toUserId());
     }
 
-    public void removeMember(MemberId memberId) {
+    public void removeMember(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
+        requireOwner(actingMember);
         userGroup.removeMember(memberId.toUserId());
+    }
+
+    public void requireOwner(MemberId actingMember) {
+        Assert.notNull(actingMember, "actingMember is required");
+        if (!userGroup.isOwner(actingMember.toUserId())) {
+            throw new GroupOwnershipRequiredException(actingMember, id);
+        }
     }
 
     @Override
@@ -156,25 +167,17 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
         rejectInvitation(invitationId);
     }
 
-    /**
-     * Cancels a pending invitation. Only current owners (or SYSTEM) may cancel.
-     *
-     * @param invitationId the invitation to cancel
-     * @param actor        the cancelling owner, or empty for SYSTEM-initiated cancel
-     * @param reason       optional free-text reason (max 500 chars, may be null)
-     */
     public void cancelInvitation(InvitationId invitationId, Optional<MemberId> actor, String reason) {
         Assert.notNull(invitationId, "invitationId is required");
-        Assert.notNull(actor, "actor is required");
-        actor.ifPresent(a -> {
-            if (!userGroup.isOwner(a.toUserId())) {
-                throw new GroupOwnershipRequiredException(a, id);
-            }
-        });
-        Invitation invitation = findInvitation(invitationId);
+        actor.ifPresent(this::requireOwner);
+        Invitation invitation = invitations.stream()
+                .filter(inv -> inv.getId().equals(invitationId))
+                .findFirst()
+                .orElseThrow(() -> new InvitationNotFoundException(invitationId));
         invitation.cancel(actor, reason);
 
-        Set<MemberId> recipientOwnerIds = computeRecipientOwnerIds(actor);
+        Set<MemberId> recipientOwnerIds = new HashSet<>(getOwners());
+        actor.ifPresent(recipientOwnerIds::remove);
         MemberId inviteeMemberId = MemberId.fromUserId(invitation.getInvitedUser());
         registerEvent(new FreeGroupInvitationCancelledEvent(
                 UUID.randomUUID(),
@@ -183,21 +186,8 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
                 inviteeMemberId,
                 actor,
                 Optional.ofNullable(reason),
-                recipientOwnerIds,
+                Collections.unmodifiableSet(recipientOwnerIds),
                 Instant.now()));
-    }
-
-    private Set<MemberId> computeRecipientOwnerIds(Optional<MemberId> actor) {
-        Set<MemberId> recipients = new HashSet<>(getOwners());
-        actor.ifPresent(recipients::remove);
-        return Collections.unmodifiableSet(recipients);
-    }
-
-    private Invitation findInvitation(InvitationId invitationId) {
-        return invitations.stream()
-                .filter(inv -> inv.getId().equals(invitationId))
-                .findFirst()
-                .orElseThrow(() -> new InvitationNotFoundException(invitationId));
     }
 
     @Override

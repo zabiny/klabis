@@ -4,7 +4,6 @@ import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.domain.GroupOwnershipRequiredException;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.members.MemberId;
@@ -46,8 +45,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public FreeGroup renameGroup(FreeGroupId id, String newName, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        requireOwnership(group, actingMember);
-        group.rename(newName);
+        group.rename(newName, actingMember);
         return freeGroupRepository.save(group);
     }
 
@@ -55,7 +53,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void deleteGroup(FreeGroupId id, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        requireOwnership(group, actingMember);
+        group.requireOwner(actingMember);
         freeGroupRepository.delete(id);
     }
 
@@ -63,8 +61,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void addOwner(FreeGroupId id, MemberId memberId, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        requireOwnership(group, actingMember);
-        group.addOwner(memberId);
+        group.addOwner(memberId, actingMember);
         freeGroupRepository.save(group);
     }
 
@@ -72,8 +69,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void removeOwner(FreeGroupId id, MemberId memberId, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        requireOwnership(group, actingMember);
-        group.removeOwner(memberId);
+        group.removeOwner(memberId, actingMember);
         freeGroupRepository.save(group);
     }
 
@@ -81,8 +77,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void removeMember(FreeGroupId id, MemberId memberId, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        requireOwnership(group, actingMember);
-        group.removeMember(memberId);
+        group.removeMember(memberId, actingMember);
         freeGroupRepository.save(group);
     }
 
@@ -118,23 +113,9 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
         freeGroupRepository.save(group);
     }
 
-    @Transactional
-    @Override
-    public void cancelInvitationAsSystem(FreeGroupId groupId, InvitationId invitationId, String reason) {
-        FreeGroup group = loadGroup(groupId);
-        group.cancelInvitation(invitationId, Optional.empty(), reason);
-        freeGroupRepository.save(group);
-    }
-
     private FreeGroup loadGroup(FreeGroupId id) {
         return freeGroupRepository.findById(id)
                 .orElseThrow(() -> new GroupNotFoundException("Members", id));
-    }
-
-    private void requireOwnership(FreeGroup group, MemberId actingMember) {
-        if (!group.isOwner(actingMember)) {
-            throw new GroupOwnershipRequiredException(actingMember, group.getId());
-        }
     }
 
     @Transactional(readOnly = true)

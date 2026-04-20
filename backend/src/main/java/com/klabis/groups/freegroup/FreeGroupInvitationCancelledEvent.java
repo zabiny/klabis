@@ -10,14 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Emitted when a pending free-group invitation is cancelled by a current owner or SYSTEM.
- * <p>
- * {@code actor} is empty when the cancellation was triggered by SYSTEM (e.g. invitee deactivation).
- * {@code recipientOwnerIds} is snapshotted at emit time: all current owners except the actor,
- * or all owners when the actor is SYSTEM — so downstream notification delivery never needs
- * to query aggregate state again.
- */
 @RecordBuilder
 @DomainEvent
 public record FreeGroupInvitationCancelledEvent(

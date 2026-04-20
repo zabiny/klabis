@@ -214,7 +214,7 @@ class FreeGroupPersistenceTest {
                     FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR)));
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
-            group.addOwner(MEMBER_A);
+            group.addOwner(MEMBER_A, CREATOR);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -230,7 +230,7 @@ class FreeGroupPersistenceTest {
                     Set.of(GroupMembership.of(CREATOR.toUserId()), GroupMembership.of(MEMBER_A.toUserId())),
                     Set.of(), null);
             group = freeGroupRepository.save(group);
-            group.removeOwner(MEMBER_A);
+            group.removeOwner(MEMBER_A, CREATOR);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -246,7 +246,7 @@ class FreeGroupPersistenceTest {
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             group = freeGroupRepository.save(group);
-            group.removeMember(MEMBER_A);
+            group.removeMember(MEMBER_A, CREATOR);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();

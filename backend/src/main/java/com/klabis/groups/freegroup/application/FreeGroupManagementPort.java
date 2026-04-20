@@ -35,8 +35,6 @@ public interface FreeGroupManagementPort {
 
     void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, MemberId actor, String reason);
 
-    void cancelInvitationAsSystem(FreeGroupId groupId, InvitationId invitationId, String reason);
-
     List<FreeGroup> getGroupsWithPendingInvitations(MemberId memberId);
 
     List<PendingInvitationView> getPendingInvitationsForMember(MemberId memberId);

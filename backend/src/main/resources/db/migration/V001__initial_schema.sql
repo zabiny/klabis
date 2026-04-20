@@ -474,9 +474,9 @@ CREATE INDEX idx_user_group_invitations_invited_member_status ON user_group_invi
 -- Comments for user_group_invitations
 COMMENT ON TABLE user_group_invitations IS 'Membership invitations for FREE (FreeGroup) groups';
 COMMENT ON COLUMN user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED, CANCELLED';
-COMMENT ON COLUMN user_group_invitations.cancelled_at IS 'Timestamp when the invitation was cancelled; NULL if not cancelled';
-COMMENT ON COLUMN user_group_invitations.cancelled_by IS 'MemberId of the owner who cancelled; NULL for SYSTEM-initiated cancel';
-COMMENT ON COLUMN user_group_invitations.cancellation_reason IS 'Optional free-text reason for cancellation (max 500 chars)';
+COMMENT ON COLUMN user_group_invitations.cancelled_at IS 'Timestamp when the invitation was cancelled';
+COMMENT ON COLUMN user_group_invitations.cancelled_by IS 'MemberId of the member who cancelled the invitation';
+COMMENT ON COLUMN user_group_invitations.cancellation_reason IS 'Optional free-text reason for cancellation';
 
 -- ============================================================================
 -- 24. CATEGORY_PRESETS TABLE

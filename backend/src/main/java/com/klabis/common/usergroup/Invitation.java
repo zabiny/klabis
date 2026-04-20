@@ -70,14 +70,7 @@ public class Invitation {
         this.status = InvitationStatus.REJECTED;
     }
 
-    /**
-     * Cancels this invitation. Only PENDING invitations can be cancelled.
-     *
-     * @param actor  the member performing the cancellation, or empty for SYSTEM-initiated cancel
-     * @param reason optional free-text reason (max 500 chars)
-     */
     public void cancel(Optional<MemberId> actor, String reason) {
-        Assert.notNull(actor, "actor is required");
         if (reason != null) {
             Assert.isTrue(reason.length() <= 500, "Cancellation reason must not exceed 500 characters");
         }
