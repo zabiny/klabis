@@ -41,11 +41,11 @@
 
 ## 6. Backend — Auto-cancel on invitee deactivation
 
-- [ ] 6.1 Identify or confirm the exact domain event emitted by the members module on deactivation / termination
-- [ ] 6.2 Write failing listener test: on `MemberDeactivated`, all PENDING invitations for that invitee across all free groups transition to CANCELLED with SYSTEM actor
-- [ ] 6.3 Write failing listener test: non-PENDING invitations for the deactivated member are NOT modified
-- [ ] 6.4 Write failing listener test: one invitation's cancel failure does not block the others (partial success logged)
-- [ ] 6.5 Implement the listener in the `user-groups` module; make tests pass
+- [x] 6.1 Identify or confirm the exact domain event emitted by the members module on deactivation / termination
+- [x] 6.2 Write failing listener test: on `MemberDeactivated`, all PENDING invitations for that invitee across all free groups transition to CANCELLED with SYSTEM actor
+- [x] 6.3 Write failing listener test: non-PENDING invitations for the deactivated member are NOT modified
+- [x] 6.4 Write failing listener test: one invitation's cancel failure does not block the others (partial success logged)
+- [x] 6.5 Implement the listener in the `user-groups` module; make tests pass
 
 ## 7. Frontend — Cancel action on pending invitation row
 

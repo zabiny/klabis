@@ -84,3 +84,21 @@ All domain and persistence code was already written: `CANCELLED` status in `Invi
 **Test status:** 169/169 freegroup tests pass. Full suite: 2209/2210 pass — the single failure is `CalendarEventSyncIntegrationTest.initializationError` in the calendar module, a pre-existing infrastructure issue unrelated to this change.
 
 **Readiness for iteration 3:** Ready. Iteration 3 needs an event listener on the members-module deactivation event (task 6.*). The `cancelInvitation` service method already supports `Optional.of(actor)` for manual cancel; iteration 3 will call a variant with `Optional.empty()` (SYSTEM actor) for auto-cancel via `group.cancelInvitation(invitationId, Optional.empty(), reason)` directly at the aggregate level through the repository — or can reuse the port with a dedicated SYSTEM-actor method. The aggregate's `cancelInvitation` already handles the SYSTEM path correctly.
+
+### Iteration 3 — 2026-04-20
+
+**Event subscribed to:** `MemberSuspendedEvent` (package `com.klabis.members`). The members module does not have a separate `MemberDeactivatedEvent` — suspension IS the deactivation event. The enum `DeactivationReason` (ODHLASKA, PRESTUP, OTHER) distinguishes the reason but the event type is the same regardless.
+
+**New port method:** Added `cancelInvitationAsSystem(FreeGroupId, InvitationId, String reason)` to `FreeGroupManagementPort` and implemented in `FreeGroupManagementService`. This is needed because the existing `cancelInvitation` port method requires a non-null `MemberId actor` — the SYSTEM path needs to pass `Optional.empty()` to the aggregate. Rather than change the public API of the existing method (which would break controller wiring), a dedicated SYSTEM-actor method was added. The service delegates to `group.cancelInvitation(invitationId, Optional.empty(), reason)`.
+
+**Listener class:** `com.klabis.groups.freegroup.infrastructure.listeners.MemberSuspendedListener` — `@PrimaryAdapter @Component`, annotated with `@ApplicationModuleListener`. Located in `groups/freegroup/infrastructure/listeners/` following the same pattern as `traininggroup`'s `MemberCreatedListener`.
+
+**Query strategy:** Reuses `FreeGroupFilter.all().withPendingInvitationFor(memberId)` — the filter already existed in iteration 2. The listener queries the repository directly (not via port) to get the list of affected groups + their pending invitation IDs, then delegates individual cancel calls to the port.
+
+**SYSTEM cancel reason sentinel:** `"Member was deactivated"` (English, matches design §D4).
+
+**Error handling:** Each invitation cancel call is wrapped in try/catch. A failure on one invitation logs at ERROR level and continues to the next — no propagation, per design §D4. The listener itself never throws; `assertThatCode(...).doesNotThrowAnyException()` test verifies this.
+
+**Test status:** 4/4 new listener tests pass; 169/169 existing freegroup tests unaffected. All tasks 6.1–6.5 marked complete.
+
+**Readiness for iteration 4:** Ready. Iteration 4 is the frontend cancel button + modal (tasks 7.*). The HAL+FORMS affordance from iteration 2 is already live; the frontend only needs to handle the affordance to render the button and modal.

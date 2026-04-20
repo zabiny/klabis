@@ -118,6 +118,14 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
         freeGroupRepository.save(group);
     }
 
+    @Transactional
+    @Override
+    public void cancelInvitationAsSystem(FreeGroupId groupId, InvitationId invitationId, String reason) {
+        FreeGroup group = loadGroup(groupId);
+        group.cancelInvitation(invitationId, Optional.empty(), reason);
+        freeGroupRepository.save(group);
+    }
+
     private FreeGroup loadGroup(FreeGroupId id) {
         return freeGroupRepository.findById(id)
                 .orElseThrow(() -> new GroupNotFoundException("Members", id));
