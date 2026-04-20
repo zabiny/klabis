@@ -102,3 +102,20 @@ All domain and persistence code was already written: `CANCELLED` status in `Invi
 **Test status:** 4/4 new listener tests pass; 169/169 existing freegroup tests unaffected. All tasks 6.1–6.5 marked complete.
 
 **Readiness for iteration 4:** Ready. Iteration 4 is the frontend cancel button + modal (tasks 7.*). The HAL+FORMS affordance from iteration 2 is already live; the frontend only needs to handle the affordance to render the button and modal.
+
+### Iteration 4 — 2026-04-20
+
+**Components touched:**
+- `frontend/src/pages/groups/types.ts` — added `_templates?: { cancelInvitation?: HalFormsTemplate }` to `PendingInvitation`
+- `frontend/src/localization/labels.ts` — added `templates.cancelInvitation` ("Zrušit pozvánku") and `fields.reason` ("Důvod zrušení (volitelné)")
+- `frontend/src/pages/groups/GroupDetailPage.tsx` — added cancel button per invitation row (HAL-driven, `Ban` icon), `cancelInvitationModal` state, and confirmation modal wired to `HalFormDisplay`
+
+**Modal pattern used:** Same `Modal` + `HalFormDisplay` pattern as `removeMemberModal` and `removeOwnerModal`. On success: `setCancelInvitationModal(null)` + `route.refetch()`. `navigateOnSuccess={false}` prevents auto-navigation after the DELETE (204 returns no Location header). The `HalFormDisplay` already handles the optional `reason` textarea field declared in the HAL+FORMS template — no custom layout needed.
+
+**Label keys added:** `labels.templates.cancelInvitation`, `labels.fields.reason`
+
+**Test coverage:** New file `GroupDetailPage.cancelInvitation.test.tsx` — 7 tests covering: affordance present → button visible; affordance absent → button hidden; mixed rows → only affordance-bearing rows show button; click → modal opens with correct title; modal contains `hal-form-display`; modal does not trigger mutation on open. Full suite: 1149/1149 pass.
+
+**Backend gap discovered:** None. The backend affordance from iteration 2 is exactly what the frontend consumes — `_templates.cancelInvitation` on each pending-invitation row with `method: DELETE`, `target` URL, and optional `reason` property.
+
+**Readiness for iteration 5:** Ready. Iteration 5 is wrap-up: follow-up GH issue for notifications, manual QA, and adding `BackendCompleted` label to GH #241.

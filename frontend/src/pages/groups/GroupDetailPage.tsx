@@ -9,7 +9,7 @@ import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Crown, Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
+import {Ban, Crown, Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 
@@ -53,6 +53,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
     const [addOwnerModal, setAddOwnerModal] = useState(false);
     const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
+    const [cancelInvitationModal, setCancelInvitationModal] = useState<{invitation: PendingInvitation; template: HalFormsTemplate} | null>(null);
 
     const editTemplate = resourceData._templates?.updateGroup ?? null;
     const deleteTemplate = resourceData._templates?.deleteGroup ?? null;
@@ -175,15 +176,32 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         {labels.sections.pendingInvitations}
                     </h3>
                     <ul className="flex flex-col gap-2">
-                        {pendingInvitations.map((invitation) => (
-                            <li key={invitation.invitationId} className="text-sm text-text-primary">
-                                {invitation._links?.invitedMember ? (
-                                    <HalRouteProvider routeLink={invitation._links.invitedMember}>
-                                        <MemberNameWithRegNumber/>
-                                    </HalRouteProvider>
-                                ) : invitation.invitationId}
-                            </li>
-                        ))}
+                        {pendingInvitations.map((invitation) => {
+                            const cancelTemplate = invitation._templates?.cancelInvitation;
+                            return (
+                                <li key={invitation.invitationId} className="flex items-center justify-between text-sm text-text-primary">
+                                    <span>
+                                        {invitation._links?.invitedMember ? (
+                                            <HalRouteProvider routeLink={invitation._links.invitedMember}>
+                                                <MemberNameWithRegNumber/>
+                                            </HalRouteProvider>
+                                        ) : invitation.invitationId}
+                                    </span>
+                                    {cancelTemplate && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600"
+                                            aria-label={labels.templates.cancelInvitation}
+                                            onClick={() => setCancelInvitationModal({invitation, template: cancelTemplate})}
+                                        >
+                                            <Ban className="w-4 h-4"/>
+                                            <span className="ml-1">{labels.templates.cancelInvitation}</span>
+                                        </Button>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </Card>
             )}
@@ -366,6 +384,29 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         pathname={route.pathname}
                         onClose={() => setDeleteModal(false)}
                         onSubmitSuccess={() => navigate('/groups')}
+                    />
+                </Modal>
+            )}
+
+            {cancelInvitationModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setCancelInvitationModal(null)}
+                    title={cancelInvitationModal.template.title ?? labels.templates.cancelInvitation}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={cancelInvitationModal.template}
+                        templateName="cancelInvitation"
+                        resourceData={cancelInvitationModal.invitation as unknown as Record<string, unknown>}
+                        pathname={extractNavigationPath(toHref(cancelInvitationModal.invitation._links.self ?? {href: ''}))}
+                        onClose={() => setCancelInvitationModal(null)}
+                        onSubmitSuccess={() => {
+                            setCancelInvitationModal(null);
+                            void route.refetch();
+                        }}
+                        successMessage={labels.ui.savedSuccessfully}
+                        navigateOnSuccess={false}
                     />
                 </Modal>
             )}

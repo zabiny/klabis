@@ -49,12 +49,12 @@
 
 ## 7. Frontend — Cancel action on pending invitation row
 
-- [ ] 7.1 Render the "Zrušit pozvánku" button on each pending invitation row when the HAL affordance is present
-- [ ] 7.2 Hide the button when the affordance is absent (non-owner view)
-- [ ] 7.3 Clicking the button opens a confirmation modal with an optional `reason` textarea
-- [ ] 7.4 Confirm submits the DELETE with the reason; cancel closes the modal without calling the API
-- [ ] 7.5 On success, remove the invitation row from the pending list and refresh the representation
-- [ ] 7.6 Write component test covering: affordance present → button visible, affordance absent → button hidden, confirm → DELETE call with body, cancel → no call
+- [x] 7.1 Render the "Zrušit pozvánku" button on each pending invitation row when the HAL affordance is present
+- [x] 7.2 Hide the button when the affordance is absent (non-owner view)
+- [x] 7.3 Clicking the button opens a confirmation modal with an optional `reason` textarea
+- [x] 7.4 Confirm submits the DELETE with the reason; cancel closes the modal without calling the API
+- [x] 7.5 On success, remove the invitation row from the pending list and refresh the representation
+- [x] 7.6 Write component test covering: affordance present → button visible, affordance absent → button hidden, confirm → DELETE call with body, cancel → no call
 
 ## 8. Follow-up and wrap-up
 

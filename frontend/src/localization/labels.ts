@@ -69,6 +69,7 @@ export const labels = {
         removeFamilyGroupChild: 'Odebrat',
         addFamilyGroupMember: 'Přidat člena',
         deleteFamilyGroup: 'Smazat rodinnou skupinu',
+        cancelInvitation: 'Zrušit pozvánku',
         createCategoryPreset: 'Přidat šablonu',
         updateCategoryPreset: 'Upravit šablonu',
         deleteCategoryPreset: 'Smazat šablonu',
@@ -117,6 +118,7 @@ export const labels = {
         maxAge: 'Max. věk',
         memberCount: 'Počet členů',
         ageRange: 'Věkové rozmezí',
+        reason: 'Důvod zrušení (volitelné)',
     },
 
     enums: {
