@@ -2,7 +2,6 @@
 name: conversation-feedback
 description: Creates html file with evaluation of current conversation - what went well and what caused issues
 disable-model-invocation: true
-context: fork
 model: sonnet
 ---
 
