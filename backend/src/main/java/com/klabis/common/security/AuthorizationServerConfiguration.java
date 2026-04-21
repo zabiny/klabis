@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 @Configuration
 public class AuthorizationServerConfiguration {
 
-    @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
+    @Value(JwtKeysConfiguration.ISSUER_PROPERTY)
     private String issuer;
 
     private final AuthorizationServerCustomizer authorizationServerCustomizer;

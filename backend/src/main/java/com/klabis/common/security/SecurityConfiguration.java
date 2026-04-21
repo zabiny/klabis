@@ -1,16 +1,11 @@
 package com.klabis.common.security;
 
 import com.klabis.common.users.UserService;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
@@ -20,7 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -37,13 +32,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.ObjectMapper;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Spring Security configuration for OAuth2 Authorization Server and Resource Server.
@@ -72,57 +62,12 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@Import(JwtKeysConfiguration.class)
 public class SecurityConfiguration implements WebMvcConfigurer {
-
-    @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
-    private String issuer;
 
     @Bean
     public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
         return new HasAuthorityMethodInterceptor();
-    }
-
-    @Bean
-    public KeyPair generateRsaKey() {
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            return keyPairGenerator.generateKeyPair();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate RSA key pair", e);
-        }
-    }
-
-    @Bean
-    public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) {
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
-
-    @Bean
-    public JwtDecoder jwtDecoder(KeyPair keyPair) {
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        org.springframework.security.oauth2.jwt.NimbusJwtDecoder jwtDecoder =
-                org.springframework.security.oauth2.jwt.NimbusJwtDecoder
-                        .withPublicKey(publicKey)
-                        .build();
-
-        // Use externalized issuer URL from configuration instead of hardcoded value
-        // This ensures JWT tokens are validated against the correct issuer per environment
-        jwtDecoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
-
-        return jwtDecoder;
-    }
-
-    @Bean
-    public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
-        return new NimbusJwtEncoder(jwkSource);
     }
 
     @Bean
