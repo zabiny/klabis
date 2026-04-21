@@ -115,6 +115,114 @@ interface UseHalPageDataReturn&lt;T&gt; {
     odeslání formuláře. Manuální volání potřebujete jen pro custom akce mimo HAL Forms.
 </aside>
 
+<h2>HalSubresourceProvider — přepnutí kontextu na sub-resource</h2>
+
+<p>
+    Stránky obvykle pracují s jedním HAL resource (ten, který odpovídá aktuální URL přes
+    <code>HalRouteProvider</code>). Komponenty uvnitř ale nevědí, kde v HAL stromu jsou — sahají
+    po datech přes <code>useHalRoute()</code> / <code>useHalPageData()</code>. Někdy ale potřebujete
+    na části stránky <strong>dočasně přepnout kontext</strong> na jiný resource — typicky na
+    sub-resource odkazovaný přes <code>_links</code> z aktuálního resource (majitel účtu, embedded
+    kolekce transakcí, detail souvisejícího objektu apod.).
+</p>
+
+<p>
+    K tomu slouží <code>HalSubresourceProvider</code>
+    (<code>src/contexts/HalRouteContext.tsx</code>). Přečte jmenovaný link z parent resource,
+    udělá nad ním nový <code>HalRouteProvider</code> a vše uvnitř <code>children</code> pak pracuje
+    s tímto sub-resource, jako by to byl hlavní route resource — bez změny URL v prohlížeči.
+</p>
+
+<pre class="signature"><code>interface HalSubresourceProviderProps {
+    subresourceLinkName: string;   // jméno linku v parent resource._links
+    children: React.ReactNode;
+}</code></pre>
+
+<p>
+    Předpokládejme, že stránka <code>/members/123/finance</code> načte HAL resource účtu v této
+    podobě (zjednodušeno):
+</p>
+
+<pre class="signature"><code>{
+    "balance": 1250,
+    "_links": {
+        "self":         { "href": "/api/members/123/finance" },
+        "owner":        { "href": "/api/members/123" },
+        "transactions": { "href": "/api/members/123/finance/transactions" }
+    },
+    "_templates": {
+        "deposit": { "method": "POST", "target": "/api/members/123/finance/deposit", … }
+    }
+}</code></pre>
+
+<p>
+    Linky <code>owner</code> a <code>transactions</code> ukazují na samostatné API endpointy —
+    nejsou embedded v odpovědi. <code>HalSubresourceProvider</code> pro každý z nich udělá
+    samostatný HTTP fetch a obsah zpřístupní uvnitř svého podstromu jako hlavní resource:
+</p>
+
+<pre class="signature"><code>export const MemberFinancePage = () =&gt; {
+    const { resourceData, isLoading, route } = useHalPageData();
+    if (isLoading) return &lt;Skeleton /&gt;;
+
+    return (
+        &lt;&gt;
+            &lt;p&gt;Zůstatek: {resourceData?.balance} Kč&lt;/p&gt;
+
+            {/* Fetch GET /api/members/123 — MemberName uvnitř vidí jako resourceData
+                objekt majitele, ne účtu */}
+            &lt;HalSubresourceProvider subresourceLinkName="owner"&gt;
+                &lt;MemberName /&gt;
+            &lt;/HalSubresourceProvider&gt;
+
+            {/* Fetch GET /api/members/123/finance/transactions — HalEmbeddedTable
+                vidí kolekci transakcí jako svůj hlavní resource */}
+            &lt;HalSubresourceProvider subresourceLinkName="transactions"&gt;
+                &lt;HalEmbeddedTable collectionName="transactionItemResponseList" …&gt;…&lt;/HalEmbeddedTable&gt;
+            &lt;/HalSubresourceProvider&gt;
+        &lt;/&gt;
+    );
+};</code></pre>
+
+<aside class="note">
+    Každý <code>HalSubresourceProvider</code> vyvolá <strong>samostatný</strong> GET na URL
+    z odpovídajícího linku parent resource. Výsledek je cacheovaný React Query zvlášť podle
+    cílové URL (stejná pravidla staleTime / gcTime jako u hlavního <code>HalRouteProvider</code>).
+    Při třech sub-resource sekcích na stránce tedy vznikají tři nezávislé HTTP requesty — pokud
+    by to byl výkonnostní problém, zvažte backend-side embedding místo linků.
+</aside>
+
+<dl class="api-list">
+    <dt>Kdy použít</dt>
+    <dd>Když chcete uvnitř stránky použít existující HAL-aware komponentu (<code>MemberName</code>,
+        <code>HalEmbeddedTable</code>, <code>HalFormButton</code>, …) proti <strong>jinému</strong>
+        resource, než který visí na aktuální URL. Komponenta nemusí o přepnutí vědět — čte pořád
+        přes <code>useHalRoute()</code>.</dd>
+
+    <dt>Co se stane při chybějícím linku</dt>
+    <dd>Pokud parent resource nemá link daného jména (např. nedostatečná oprávnění, backend
+        ho nevrátil), vykreslí se fallback text <em>"Subresource … wasn't found"</em>. V praxi
+        buď link podmiňte autorizací na backendu, nebo wrap obalte vlastní kontrolou přes
+        <code>getLink()</code>.</dd>
+
+    <dt>URL se nemění</dt>
+    <dd>Jde o čistě logické přepnutí kontextu v React stromu — <code>window.location</code>
+        i <code>route.pathname</code> zůstávají na parent resource. Pro reálnou navigaci na
+        sub-resource jako na samostatnou stránku použijte <code>route.navigateToResource()</code>.</dd>
+
+    <dt>Vnořování</dt>
+    <dd>Poskytovatele lze vnořovat (sub-resource sub-resource), protože uvnitř se znovu použije
+        <code>HalRouteProvider</code>. Data každého providera jsou cacheovaná React Query zvlášť
+        podle cílové URL.</dd>
+</dl>
+
+<aside class="note">
+    <code>useHalRoute().getResourceLink()</code> v main resource vrací jen linky z
+    <strong>hlavního</strong> resource — linky ze sub-resource nevidí. Pokud potřebujete link
+    ze sub-resource, čtěte ho uvnitř <code>HalSubresourceProvider</code>, kde je sub-resource
+    vystavený jako hlavní.
+</aside>
+
 <h2>Formuláře přes HAL+FORMS</h2>
 
 <p>
