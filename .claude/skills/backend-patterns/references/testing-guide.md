@@ -87,7 +87,7 @@ Notes:
 
 ## Controller Tests (@WebMvcTest)
 
-**Critical**: `SecurityConfiguration` depends on `UserService` — always mock it:
+**Critical**: `ResourceServerSecurityConfiguration` depends on `UserService` (via `AccountStatusValidationFilter`) — always mock it:
 
 ```java
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})

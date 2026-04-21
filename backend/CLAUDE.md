@@ -59,9 +59,10 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 
-**@WebMvcTest slice + SecurityConfiguration**
-- `AccountStatusValidationFilter` requires a `UserService` bean (per-request account status check from resource server filter chain)
-- `@WithPostprocessors` test annotation auto-mocks `UserService` + `UserDetailsService` — use it on any `@WebMvcTest` that imports/scans `SecurityConfiguration`
+**@WebMvcTest slice + security configuration**
+- `AccountStatusValidationFilter` requires a `UserService` bean (per-request account status check from `ResourceServerSecurityConfiguration` filter chain)
+- `WebSecurityCommonConfiguration` owns the API filter chain and is discovered via `WebMvcConfigurer`; `ResourceServerSecurityConfiguration` provides the JWT converter and `AccountStatusValidationFilter`
+- `@WithPostprocessors` test annotation auto-mocks `UserService` + `UserDetailsService` — use it on any `@WebMvcTest` that imports/scans security configuration classes
 - Without it, slice tests fail with `UnsatisfiedDependencyException` on `accountStatusValidationFilter` bean
 
 **Gradle Optimization**
@@ -107,12 +108,12 @@ See `backend-patterns` skill for detailed patterns including type-safe IDs, Meme
 
 These are the Klabis-specific hooks on top of Spring Security / Spring Authorization Server. The mainline filter-chain / JWT theory lives in the Spring docs (see [docs/README.md](docs/README.md)).
 
-- **`KlabisAuthorizationServerCustomizer`** (`members.infrastructure.authorizationserver`) — Spring AS customizer that wires Klabis-specific behaviour into the authorization server chain (registered clients, token customizers).
+- **`KlabisAuthorizationServerCustomizer`** (`com.klabis.authorizationserver`) — Spring AS customizer that wires Klabis-specific behaviour into the authorization server chain (registered clients, token customizers).
 - **JWT custom claims** — access tokens carry `registrationNumber`, `memberIdUuid`, and the user's `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
-- **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
+- **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** (`members.infrastructure.mvc`) — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
 - **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
 - **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. See `backend-patterns` skill.
-- **`KlabisUserDetailsService`** — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
+- **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
 
 ## Application Profiles
