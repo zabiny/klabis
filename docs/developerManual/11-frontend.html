@@ -22,7 +22,7 @@
     Klabis frontend je SPA postavená nad <strong>HAL+FORMS</strong> driveným klientem — backend posílá
     nejen data, ale i metadata o tom, jaké linky a formuláře jsou pro daný resource a uživatele
     dostupné. Frontend tato metadata interpretuje a generuje navigaci, akce a formuláře dynamicky.
-    Tato kapitola popisuje Klabis-specific patterny: jak číst HAL response, jak postavit stránku,
+    Tato kapitola popisuje vzory specifické pro Klabis: jak číst HAL response, jak postavit stránku,
     tabulku a formulář.
 </p>
 
@@ -112,7 +112,7 @@ interface UseHalPageDataReturn&lt;T&gt; {
 
 <aside class="note">
     <code>route.refetch()</code> se automaticky volá v <code>HalFormDisplay</code> po úspěšném
-    odeslání formuláře. Manuální volání potřebujete jen pro custom akce mimo HAL Forms.
+    odeslání formuláře. Manuální volání potřebujete jen pro vlastní akce mimo HAL Forms.
 </aside>
 
 <h2>HalSubresourceProvider — přepnutí kontextu na sub-resource</h2>
@@ -259,10 +259,10 @@ interface UseHalPageDataReturn&lt;T&gt; {
     <thead><tr><th></th><th>Modal (<code>modal=true</code>)</th><th>Inline (<code>modal=false</code>)</th></tr></thead>
     <tbody>
         <tr><td>State</td><td>Ephemeral (Context API)</td><td>Persistent v URL (<code>?form=name</code>)</td></tr>
-        <tr><td>Shareable URL</td><td>Ne</td><td>Ano</td></tr>
+        <tr><td>Sdílitelná URL</td><td>Ne</td><td>Ano</td></tr>
         <tr><td>Browser history</td><td>Ne</td><td>Ano (back tlačítko zavře)</td></tr>
         <tr><td>Render</td><td>Modal overlay</td><td>Místo <code>children</code> v <code>HalFormsPageLayout</code></td></tr>
-        <tr><td>Custom layout</td><td>Přes <code>customLayout</code> prop</td><td>Přes <code>customLayouts</code> na <code>HalFormsPageLayout</code></td></tr>
+        <tr><td>Vlastní layout</td><td>Přes <code>customLayout</code> prop</td><td>Přes <code>customLayouts</code> na <code>HalFormsPageLayout</code></td></tr>
     </tbody>
 </table>
 
@@ -274,14 +274,14 @@ interface UseHalPageDataReturn&lt;T&gt; {
     &lt;HalFormButton name="suspendMember" modal={false} /&gt;
 &lt;/HalFormsPageLayout&gt;</code></pre>
 
-<h3>Custom layout formuláře</h3>
+<h3>Vlastní layout formuláře</h3>
 
 <p>
-    Default layout vyrendruje pole pod sebou. Pro vlastní rozložení existují dva patterny — children
-    s <code>HalFormsFormField</code> nebo callback s <code>renderField(name)</code>:
+    Výchozí layout vyrendruje pole pod sebou. Pro vlastní rozložení existují dva způsoby — přes
+    children s <code>HalFormsFormField</code> nebo přes callback s <code>renderField(name)</code>:
 </p>
 
-<pre class="signature"><code>// Children pattern
+<pre class="signature"><code>// Způsob 1: children
 &lt;HalFormButton name="editMember" modal={true} customLayout={
     &lt;div className="grid grid-cols-2 gap-4"&gt;
         &lt;HalFormsFormField fieldName="firstName" /&gt;
@@ -290,7 +290,7 @@ interface UseHalPageDataReturn&lt;T&gt; {
     &lt;/div&gt;
 } /&gt;
 
-// Callback pattern
+// Způsob 2: callback
 &lt;HalFormButton name="editMember" modal={true} customLayout={(renderField) =&gt; (
     &lt;&gt;
         {renderField('firstName')}
@@ -357,7 +357,7 @@ interface UseHalPageDataReturn&lt;T&gt; {
     <dd>Sloupec nelze skrýt — užitečné pro klíčové identifikátory.</dd>
 
     <dt>dataRender</dt>
-    <dd>Custom render buňky: <code>({ item, column, value }) =&gt; ReactNode</code>. Bez ní se
+    <dd>Vlastní render buňky: <code>({ item, column, value }) =&gt; ReactNode</code>. Bez ní se
         renderuje <code>String(value)</code>.</dd>
 </dl>
 
@@ -374,24 +374,24 @@ interface UseHalPageDataReturn&lt;T&gt; {
     rovnou tabulku z HAL collection bez explicitního <code>useQuery</code>.
 </p>
 
-<h2>Customizace stránky</h2>
+<h2>Přizpůsobení stránky</h2>
 
 <p>
-    Klabis frontend podporuje dvě úrovně customizace:
+    Klabis frontend podporuje dvě úrovně přizpůsobení:
 </p>
 
 <dl class="api-list">
     <dt>Plně generované (GenericHalPage)</dt>
-    <dd>Stránka je vygenerována kompletně z HAL metadat — žádný custom kód, jen routing. Vhodné
+    <dd>Stránka je vygenerována kompletně z HAL metadat — žádný vlastní kód, jen routing. Vhodné
         pro standardní CRUD obrazovky.</dd>
 
-    <dt>Customizovaná stránka</dt>
-    <dd>Vlastní layout, vlastní text, mix HAL komponent a custom kódu. Začíná
-        <code>useHalPageData()</code>, končí v <code>HalFormsPageLayout</code>. Tomuto patternu se
+    <dt>Přizpůsobená stránka</dt>
+    <dd>Vlastní layout, vlastní text, mix HAL komponent a vlastního kódu. Začíná
+        <code>useHalPageData()</code>, končí v <code>HalFormsPageLayout</code>. Tomuto vzoru se
         věnuje <code>COMPONENTS.md</code> v <code>src/components/HalNavigator2/</code>.</dd>
 </dl>
 
-<h3>Šablona customizované stránky</h3>
+<h3>Šablona přizpůsobené stránky</h3>
 
 <pre class="signature"><code>export const EventDetailsPage = () =&gt; {
     const { resourceData, isLoading, error, route } = useHalPageData&lt;EventDetail&gt;();
@@ -489,7 +489,7 @@ getEnumLabel('memberStatus', 'ACTIVE')                     // "Aktivní"</code><
 <ul>
     <li><code>frontend/CLAUDE.md</code> — build, test, OAuth2 konfigurace, deployment.</li>
     <li><code>frontend/DESIGN.md</code> — design tokeny a UI knihovna.</li>
-    <li><code>src/components/HalNavigator2/COMPONENTS.md</code> — detailní popis HAL komponent (modal/inline orchestrace, custom layouts, MultiStepFormModal).</li>
+    <li><code>src/components/HalNavigator2/COMPONENTS.md</code> — detailní popis HAL komponent (modal/inline orchestrace, vlastní layouty, MultiStepFormModal).</li>
     <li><code>src/components/HalNavigator2/MULTI_STEP_FORM.md</code> — vícekrokové formuláře.</li>
     <li>Skill <code>hal-navigator-patterns</code> — auto-load v <code>frontend-developer</code> agentu, kompletní vzory pro HAL+FORMS práci.</li>
 </ul>
