@@ -54,17 +54,15 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
   need to pass it manually
 
-**CRITICAL: @WebMvcTest and SecurityConfiguration**
-- `SecurityConfiguration.jwtAuthenticationConverter()` requires a `UserService` bean
-- In `@WebMvcTest` contexts, add: `@MockitoBean UserService userService;` to test class
-- Affects all `@WebMvcTest` controllers that import `SecurityConfiguration`
-- This resolves `UnsatisfiedDependencyException` in component-scanned tests
-
 **Field-Level Authorization Pattern** — see `backend-patterns` skill for full details. Key gotchas:
 - `OwnershipResolver` is lazy-resolved from `ApplicationContext` — eager injection causes `No ServletContext set` startup error
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 
+**@WebMvcTest slice + SecurityConfiguration**
+- `AccountStatusValidationFilter` requires a `UserService` bean (per-request account status check from resource server filter chain)
+- `@WithPostprocessors` test annotation auto-mocks `UserService` + `UserDetailsService` — use it on any `@WebMvcTest` that imports/scans `SecurityConfiguration`
+- Without it, slice tests fail with `UnsatisfiedDependencyException` on `accountStatusValidationFilter` bean
 
 **Gradle Optimization**
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)

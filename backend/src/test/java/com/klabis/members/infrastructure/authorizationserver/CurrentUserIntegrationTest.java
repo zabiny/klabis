@@ -3,7 +3,6 @@ package com.klabis.members.infrastructure.authorizationserver;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.users.UserService;
 import com.klabis.members.ActingMember;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
@@ -19,7 +18,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = CurrentUserIntegrationTest.TestController.class)
 @Import({CurrentUserArgumentResolver.class, MvcConfigurerMembers.class})
-@MockitoBean(types = {UserService.class})
 @WithPostprocessors
 class CurrentUserIntegrationTest {
 

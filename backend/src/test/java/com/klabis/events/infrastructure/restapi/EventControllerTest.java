@@ -5,7 +5,6 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserService;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
@@ -24,7 +23,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -62,12 +60,6 @@ class EventControllerTest {
 
     @MockitoBean
     private Members members;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     @Nested
     @DisplayName("POST /api/events")

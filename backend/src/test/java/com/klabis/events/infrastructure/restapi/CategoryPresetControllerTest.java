@@ -5,7 +5,6 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserService;
 import com.klabis.events.CategoryPresetId;
 import com.klabis.events.application.CategoryPresetManagementPort;
 import com.klabis.events.application.CategoryPresetNotFoundException;
@@ -17,10 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,17 +38,8 @@ class CategoryPresetControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockitoBean
     private CategoryPresetManagementPort categoryPresetManagementService;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     @Nested
     @DisplayName("GET /api/category-presets")

@@ -1,7 +1,6 @@
 package com.klabis.common.security;
 
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
@@ -17,7 +16,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for KlabisJwtAuthenticationConverter.
@@ -29,8 +27,7 @@ class KlabisJwtAuthenticationConverterTest {
     private static final String TEST_USERNAME = "123456";
     private static final List<String> AUTHORITIES = List.of("MEMBERS:READ", "MEMBERS:WRITE");
 
-    private final UserService userService = mock(UserService.class);
-    private final KlabisJwtAuthenticationConverter converter = new KlabisJwtAuthenticationConverter(userService);
+    private final KlabisJwtAuthenticationConverter converter = new KlabisJwtAuthenticationConverter();
 
     @Test
     @DisplayName("should convert JWT with UserId only")

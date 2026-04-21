@@ -11,12 +11,10 @@ import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupE
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
-import com.klabis.groups.traininggroup.TrainingGroupId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -53,12 +50,6 @@ class TrainingGroupControllerTest {
 
     @MockitoBean
     private TrainingGroupManagementPort trainingGroupManagementService;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     private TrainingGroup buildTrainingGroup(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr) {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));

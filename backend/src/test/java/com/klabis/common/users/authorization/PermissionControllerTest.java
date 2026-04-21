@@ -5,7 +5,6 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -50,13 +48,7 @@ class PermissionControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
     private PermissionService permissionService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     private static final UserId USER_ID = new UserId(UUID.randomUUID());
 

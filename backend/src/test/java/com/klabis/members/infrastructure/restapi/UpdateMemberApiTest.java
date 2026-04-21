@@ -4,7 +4,6 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
@@ -21,9 +20,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
@@ -73,9 +69,6 @@ class UpdateMemberApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
     private ManagementPort memberService;
 
     @MockitoBean
@@ -84,17 +77,10 @@ class UpdateMemberApiTest {
     @MockitoBean
     private MemberMapper memberMapper;
 
-    @TestBean
-    private UserDetailsService userDetailsService;
-
     @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
 
     private final UUID testMemberId = UUID.randomUUID();
-
-    static UserDetailsService userDetailsService() {
-        return new InMemoryUserDetailsManager();
-    }
 
     private Member stubMember() {
         return MemberTestDataBuilder.aMember()

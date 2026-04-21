@@ -126,8 +126,8 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter(UserService userService) {
-        return new KlabisJwtAuthenticationConverter(userService);
+    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter() {
+        return new KlabisJwtAuthenticationConverter();
     }
 
     @Bean

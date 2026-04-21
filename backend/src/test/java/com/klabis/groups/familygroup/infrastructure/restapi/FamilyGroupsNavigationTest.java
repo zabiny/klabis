@@ -6,7 +6,6 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserService;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -51,12 +49,6 @@ class FamilyGroupsNavigationTest {
 
     @MockitoBean
     private FamilyGroupManagementPort familyGroupManagementService;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     @Test
     @DisplayName("should include family-groups collection link for MEMBERS:MANAGE users")

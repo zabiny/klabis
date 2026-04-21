@@ -1,7 +1,9 @@
 package com.klabis.common;
 
+import com.klabis.common.users.UserService;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.ElementType;
@@ -16,6 +18,14 @@ import java.lang.annotation.Target;
  * <p>
  * Add new entries here whenever a postprocessor gains a new dependency type.
  * <p>
+ * Security-related infra beans mocked here:
+ * <ul>
+ *   <li>{@link UserService} — required by {@code AccountStatusValidationFilter}, which checks
+ *       account status from the database on every request in the resource-server filter chain.</li>
+ *   <li>{@link UserDetailsService} — required by Authorization Server components introduced
+ *       via component scan (e.g. {@code KlabisUserDetailsService}).</li>
+ * </ul>
+ * <p>
  * Beans treated as feature flags via {@code Optional<T>} injection (e.g. {@code OrisEventImportPort})
  * must NOT be added here — the mere presence of the mock would activate the feature in every test.
  */
@@ -23,7 +33,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @MockitoBean(types = {
         FamilyGroupRepository.class,
-        TrainingGroupRepository.class
+        TrainingGroupRepository.class,
+        UserService.class,
+        UserDetailsService.class
 })
 public @interface WithPostprocessors {
 }

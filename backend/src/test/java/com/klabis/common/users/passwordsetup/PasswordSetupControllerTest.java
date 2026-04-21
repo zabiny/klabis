@@ -3,7 +3,6 @@ package com.klabis.common.users.passwordsetup;
 import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.users.UserService;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PasswordSetupService;
 import com.klabis.common.users.domain.PasswordSetupToken;
@@ -20,12 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -49,13 +46,7 @@ class PasswordSetupControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private UserService userServiceMock;
-
-    @MockitoBean
     private PasswordSetupService passwordSetupServiceMock;
-
-    @MockitoBean
-    private UserDetailsService userDetailsServiceMock;
 
     @Nested
     @DisplayName("POST /api/auth/password-setup/complete tests")

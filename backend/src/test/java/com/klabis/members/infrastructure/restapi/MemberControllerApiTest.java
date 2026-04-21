@@ -6,7 +6,6 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
@@ -67,7 +66,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
         com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class})
-@MockitoBean(types = {UserService.class})
 @WithPostprocessors
 class MemberControllerApiTest {
 

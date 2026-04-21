@@ -3,7 +3,6 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
-@WithPostprocessors
 class MemberControllerSecurityTest extends SecurityTestBase {
 
     @MockitoBean

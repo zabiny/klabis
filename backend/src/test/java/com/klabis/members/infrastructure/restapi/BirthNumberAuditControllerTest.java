@@ -5,7 +5,6 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
@@ -44,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Birth Number Audit – Controller Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
 @Import({MemberMapperImpl.class})
-@MockitoBean(types = {UserService.class})
 @WithPostprocessors
 class BirthNumberAuditControllerTest {
 

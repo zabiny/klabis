@@ -11,7 +11,6 @@ import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
 import com.klabis.common.usergroup.NotInvitedMemberException;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -26,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -63,12 +61,6 @@ class FreeGroupControllerTest {
 
     @MockitoBean
     private FreeGroupManagementPort membersGroupManagementService;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
 
     private FreeGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
