@@ -22,7 +22,7 @@
     Klabis je do velké míry vyvíjen s asistencí Claude Code. Projekt obsahuje sadu
     <strong>OpenSpec specifikací</strong>, <strong>skills</strong>, <strong>agentů</strong> a
     <strong>commands</strong>, které celý workflow udržují konzistentní. Tahle stránka popisuje
-    typické postupy: jak přidat feature, jak refaktorovat, kdy spouštět které agenty.
+    typické postupy: jak přidat novou funkcionalitu, jak refaktorovat, kdy spouštět které agenty.
 </p>
 
 <h2>Filozofie projektu</h2>
@@ -34,9 +34,9 @@
 <ol>
     <li><strong>Specifikace první</strong> — než se píše kód, popíše se chování v <code>openspec/specs/</code>.
         Změny se navrhují přes change proposals, ne přímou editací specs.</li>
-    <li><strong>Konvence v skillech</strong> — opakující se patterny (agregát, controller, JDBC adapter)
+    <li><strong>Konvence v skillech</strong> — opakující se vzory (agregát, controller, JDBC adapter)
         jsou zdokumentované v <code>backend-patterns</code> skillu, který si Claude automaticky načítá.</li>
-    <li><strong>TDD a malé iterace</strong> — feature se rozdělí na vertikální slice (jeden flow přes
+    <li><strong>TDD a malé iterace</strong> — funkcionalita se rozdělí na vertikální slice (jeden flow přes
         všechny vrstvy), každý slice má své testy, je samostatně commitovatelný.</li>
 </ol>
 
@@ -82,7 +82,7 @@
 </ol>
 
 <aside class="note">
-    Pro malé bug fixy nebo čistě technické refactoring není nutné zakládat OpenSpec change.
+    Pro malé opravy chyb nebo čistě technický refaktoring není nutné zakládat OpenSpec change.
     Použijte <code>tasks/</code> queue (níže) nebo přímou implementaci přes <code>backend-developer</code>
     agenta.
 </aside>
@@ -101,9 +101,9 @@
     <thead><tr><th>Skill</th><th>Kdy se použije</th></tr></thead>
     <tbody>
         <tr><td><code>backend-patterns</code></td><td>Autoritativní konvence pro backend (agregáty, controllery, persistence). Auto-load v <code>backend-developer</code>.</td></tr>
-        <tr><td><code>hal-navigator-patterns</code></td><td>Frontend HAL+FORMS patterny (KlabisTable, formuláře, navigation). Auto-load v <code>frontend-developer</code>.</td></tr>
+        <tr><td><code>hal-navigator-patterns</code></td><td>Frontend HAL+FORMS vzory (KlabisTable, formuláře, navigace). Auto-load v <code>frontend-developer</code>.</td></tr>
         <tr><td><code>openspec-*</code></td><td>OpenSpec workflow — explore, propose, apply, verify, archive, sync.</td></tr>
-        <tr><td><code>openspec-writing-guide</code></td><td>Klabis-specific styl psaní specs (user-facing, business-only).</td></tr>
+        <tr><td><code>openspec-writing-guide</code></td><td>Styl psaní specifikací specifický pro Klabis (user-facing, business-only).</td></tr>
         <tr><td><code>code-review</code></td><td>Code review konvence pro Klabis. Vyvoláno před commitem CODE změn.</td></tr>
         <tr><td><code>domain-review-to-task</code></td><td>End-to-end audit doménové vrstvy modulu, výstup je task queue.</td></tr>
         <tr><td><code>estimated-kanban-board</code></td><td>Aktualizuje <code>docs/implementation-status.html</code> proti GitHub issues + OpenSpec.</td></tr>
@@ -120,8 +120,8 @@
     <tbody>
         <tr><td><code>developer:tdd-best-practices</code></td><td>Red-Green-Refactor cyklus.</td></tr>
         <tr><td><code>developer:spring-conventions</code></td><td>Spring naming + organizace.</td></tr>
-        <tr><td><code>developer:spring-modulith</code></td><td>Spring Modulith patterny (modul, listener, eventy).</td></tr>
-        <tr><td><code>developer:spring-data-jdbc</code></td><td>JDBC repository, custom queries.</td></tr>
+        <tr><td><code>developer:spring-modulith</code></td><td>Vzory pro Spring Modulith (modul, listener, eventy).</td></tr>
+        <tr><td><code>developer:spring-data-jdbc</code></td><td>JDBC repository, vlastní dotazy.</td></tr>
         <tr><td><code>developer:spring-hateoas-api</code></td><td>HATEOAS API building.</td></tr>
         <tr><td><code>developer:ddd-domain-modeling</code></td><td>Tactical DDD (agregáty, value objects).</td></tr>
         <tr><td><code>developer:hexagonal-architecture</code></td><td>Ports and adapters.</td></tr>
@@ -153,7 +153,7 @@
     <dt>frontend-developer</dt>
     <dd>React/TypeScript vývojář. Auto-load: <code>hal-navigator-patterns</code>,
         <code>developer:test-runner-skill</code>, <code>developer:tdd-best-practices</code>.
-        Pre-flight: vždy nejdřív projde existující patterny.</dd>
+        Pre-flight: vždy nejdřív projde existující vzory.</dd>
 
     <dt>git-operator</dt>
     <dd>Git operace (commits, branching, rebase). Použijte na cokoli git-related, abyste se vyhnuli
@@ -176,21 +176,21 @@
     <dd>Plánuje a spouští QA testy podle openspec specifikací (přes Playwright).</dd>
 
     <dt>/simplifyModule</dt>
-    <dd>Hluboká analýza modulu — duplikace, dead code, over-abstrakce. Užitečné po větší feature
-        nebo před refactoringem.</dd>
+    <dd>Hluboká analýza modulu — duplikace, dead code, nadměrná abstrakce. Užitečné po větší
+        funkcionalitě nebo před refaktoringem.</dd>
 
     <dt>/tests-structure-review</dt>
     <dd>Review struktury testů (pyramida, smoke testy).</dd>
 </dl>
 
-<h2>Jak přidat novou feature (typický flow)</h2>
+<h2>Jak přidat novou funkcionalitu (typický postup)</h2>
 
 <ol>
     <li><strong>Spec</strong>: <code>/openspec-new-change</code> nebo <code>/openspec-propose</code>
         — popsat scénáře z pohledu uživatele, design rozhodnutí, rozdělit na tasks.</li>
     <li><strong>Implementace</strong>: spustit <code>backend-developer</code> agenta s odkazem na
         <code>tasks.md</code>. Pro frontend totéž s <code>frontend-developer</code>.</li>
-    <li><strong>Vertikální slice</strong>: jedna feature = jeden end-to-end flow napříč vrstvami.
+    <li><strong>Vertikální slice</strong>: jedna funkcionalita = jeden end-to-end flow napříč vrstvami.
         Po každé fázi (commit-able chunk) commit a test run.</li>
     <li><strong>Testy</strong>: TDD cyklus (test první). Vždy přes
         <code>developer:test-runner-skill</code>.</li>
@@ -202,13 +202,13 @@
         <code>/openspec-archive-change</code>.</li>
 </ol>
 
-<h2>Refactoring</h2>
+<h2>Refaktoring</h2>
 
 <ol>
-    <li>Pokud refactoring mění chování, založit OpenSpec change. Pokud je čistě technický (jiná
+    <li>Pokud refaktoring mění chování, založit OpenSpec change. Pokud je čistě technický (jiná
         struktura, žádná změna chování), stačí task queue.</li>
-    <li>Vertikální slice (<code>backend/CLAUDE.md</code>): refaktorovat jednu feature/metodu
-        end-to-end přes všechny vrstvy, ne jednu vrstvu napříč všemi feature.</li>
+    <li>Vertikální slice (<code>backend/CLAUDE.md</code>): refaktorovat jednu funkcionalitu/metodu
+        end-to-end přes všechny vrstvy, ne jednu vrstvu napříč vším.</li>
     <li>Po každém slice testovat (<code>test-runner</code>) a commitnout.</li>
     <li>Po dokončení modulu spustit <code>/simplifyModule</code> a/nebo
         <code>domain-review-to-task</code> pro audit.</li>

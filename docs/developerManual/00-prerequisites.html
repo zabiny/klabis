@@ -35,7 +35,7 @@
     · <a class="ext" href="https://docs.oracle.com/en/java/javase/21/" target="_blank" rel="noopener">Java 21 docs</a>
 </p>
 
-<h2>Domain-Driven Design (DDD) — taktické patterny</h2>
+<h2>Domain-Driven Design (DDD) — taktické vzory</h2>
 <p>
     Klabis používá taktické DDD building blocks: <strong>Aggregate Root</strong> (kořen konzistenčního celku),
     <strong>Entity</strong> (objekt s identitou), <strong>Value Object</strong> (immutable hodnota bez identity),
@@ -149,7 +149,7 @@ public void on(MemberCreatedEvent event) { … }</code></pre>
 <h2>Frontend stack</h2>
 <p>
     Frontend je SPA v <strong>React 19 + TypeScript 5.8</strong> postavená přes <strong>Vite 7</strong>.
-    Klabis-specific patterny pro práci s HAL+FORMS odpověďmi popisuje kap. 11.
+    Vzory specifické pro Klabis pro práci s HAL+FORMS odpověďmi popisuje kap. 11.
 </p>
 <dl class="api-list">
     <dt>React + TypeScript + Vite</dt>
@@ -199,7 +199,7 @@ public void on(MemberCreatedEvent event) { … }</code></pre>
     JUnit 5, AssertJ, Mockito a Spring Boot test slicy
     (<code>@WebMvcTest</code>, <code>@DataJdbcTest</code>, <code>@SpringBootTest</code>).
     Pro modulové testy <code>@ApplicationModuleTest</code> ze Spring Modulith. Pro integrace s reálnou
-    databází TestContainers (PostgreSQL). Klabis-specific anotace <code>@WithKlabisMockUser</code>
+    databází TestContainers (PostgreSQL). Anotace specifické pro Klabis <code>@WithKlabisMockUser</code>
     a <code>@E2ETest</code> najdete v kap. 10.
 </p>
 <p>

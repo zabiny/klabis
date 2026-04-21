@@ -40,7 +40,7 @@ package com.klabis.members;</code></pre>
     </thead>
     <tbody>
         <tr><td><code>common</code></td><td>Sdílené jádro (security, hateoas, persistence helpery, users, …) — používá ho každý modul.</td></tr>
-        <tr><td><code>members</code></td><td>Členové, registrace, OAuth2 server customizace, ActingMember.</td></tr>
+        <tr><td><code>members</code></td><td>Členové, registrace, přizpůsobení OAuth2 serveru, ActingMember.</td></tr>
         <tr><td><code>events</code></td><td>Závody a další "události" v kalendáři.</td></tr>
         <tr><td><code>calendar</code></td><td>Sjednocený pohled na kalendář (události + manuální položky).</td></tr>
         <tr><td><code>groups</code></td><td>Skupiny členů.</td></tr>
@@ -50,7 +50,7 @@ package com.klabis.members;</code></pre>
 
 <aside class="note">
     Tato dokumentace popisuje pouze <code>common</code> + framework-like části <code>members</code>
-    (ActingMember, OAuth2 customizace). Byznys logiku ostatních modulů hledejte ve specifikacích
+    (ActingMember, OAuth2 přizpůsobení). Byznys logiku ostatních modulů hledejte ve specifikacích
     v <code>openspec/specs/</code>.
 </aside>
 
@@ -134,7 +134,7 @@ public interface RegistrationPort {
 <h2>Modul <code>common</code> — sdílené jádro</h2>
 
 <p>
-    <code>common</code> je shared kernel — knihovna patternů a infrastruktury, kterou používá každý modul.
+    <code>common</code> je sdílené jádro (shared kernel) — knihovna vzorů a infrastruktury, kterou používá každý modul.
     Obsahuje subpackages podle tématu:
 </p>
 
@@ -144,7 +144,7 @@ public interface RegistrationPort {
         <tr><td><code>common.domain</code></td><td>KlabisAggregateRoot, AuditMetadata</td><td><a href="02-domain.html">02</a></td></tr>
         <tr><td><code>common.encryption</code></td><td>EncryptedString (typ), EncryptionService</td><td><a href="02-domain.html">02</a> / <a href="03-services.html">03</a></td></tr>
         <tr><td><code>common.users</code> (services)</td><td>UserService, PermissionService, PasswordSetupService, AuthorizationQueryService</td><td><a href="03-services.html">03</a></td></tr>
-        <tr><td><code>common.jdbc</code></td><td>JdbcConfiguration, custom converters</td><td><a href="04-persistence.html">04</a></td></tr>
+        <tr><td><code>common.jdbc</code></td><td>JdbcConfiguration, vlastní konvertory</td><td><a href="04-persistence.html">04</a></td></tr>
         <tr><td><code>common.pagination</code></td><td>TranslatedPageable</td><td><a href="04-persistence.html">04</a></td></tr>
         <tr><td><code>common.hateoas</code>, <code>common.ui</code></td><td>HAL+FORMS support, RootController</td><td><a href="05-rest-api.html">05</a></td></tr>
         <tr><td><code>common.patch</code></td><td>PatchField pro PATCH operace</td><td><a href="05-rest-api.html">05</a></td></tr>
@@ -152,12 +152,12 @@ public interface RegistrationPort {
         <tr><td><code>common.mvc</code></td><td>MvcExceptionHandler, MvcComponent</td><td><a href="05-rest-api.html">05</a></td></tr>
         <tr><td>members (ActingUser/ActingMember)</td><td>@ActingUser, @ActingMember, CurrentUserData, CurrentUserArgumentResolver</td><td><a href="05-rest-api.html">05</a></td></tr>
         <tr><td><code>common.security</code>, <code>common.security.fieldsecurity</code></td><td>SecurityConfiguration, OwnerVisible, OwnerId, KlabisJwtAuthenticationToken, Authority</td><td><a href="06-security.html">06</a></td></tr>
-        <tr><td>members (OAuth2 customizace)</td><td>KlabisAuthorizationServerCustomizer, KlabisUserDetailsService, MemberIdToUuidConverter</td><td><a href="06-security.html">06</a></td></tr>
+        <tr><td>members (OAuth2 přizpůsobení)</td><td>KlabisAuthorizationServerCustomizer, KlabisUserDetailsService, MemberIdToUuidConverter</td><td><a href="06-security.html">06</a></td></tr>
         <tr><td><code>common.usergroup</code></td><td>UserGroup, GroupMembership, Invitation</td><td><a href="07-common.html">07</a></td></tr>
         <tr><td><code>common.email</code>, <code>common.templating</code></td><td>EmailService, TemplateRenderer</td><td><a href="07-common.html">07</a></td></tr>
         <tr><td><code>common.exceptions</code></td><td>BusinessRuleViolationException, AuthorizationException, …</td><td><a href="07-common.html">07</a></td></tr>
         <tr><td>Spring Modulith integrace</td><td>Domain events, @ApplicationModuleListener, transactional outbox</td><td><a href="08-modules.html">08</a></td></tr>
-        <tr><td><code>common.observability</code></td><td>Custom metriky pro Modulith eventy</td><td><a href="08-modules.html">08</a></td></tr>
+        <tr><td><code>common.observability</code></td><td>Vlastní metriky pro Modulith eventy</td><td><a href="08-modules.html">08</a></td></tr>
         <tr><td><code>common.bootstrap</code></td><td>BootstrapDataInitializer</td><td><a href="09-cross-cutting.html">09</a></td></tr>
         <tr><td><code>common.logging</code></td><td>RequestLoggingFilter (MDC)</td><td><a href="09-cross-cutting.html">09</a></td></tr>
         <tr><td><code>common.ratelimit</code></td><td>PerKeyRateLimiter</td><td><a href="09-cross-cutting.html">09</a></td></tr>

@@ -32,7 +32,7 @@
     <tbody>
         <tr><td><code>SecurityConfiguration</code></td><td>Hlavní filter chain — JWT validace, endpoint matchers, password encoder.</td></tr>
         <tr><td><code>AuthorizationServerConfiguration</code></td><td>Setup Spring Authorization Serveru (issuer, JWK, token endpointy).</td></tr>
-        <tr><td><code>AuthorizationServerCustomizer</code> (interface)</td><td>SPI bod pro customizaci AS chainu — moduly mohou registrovat <code>@Component</code>.</td></tr>
+        <tr><td><code>AuthorizationServerCustomizer</code> (interface)</td><td>SPI bod pro přizpůsobení AS chainu — moduly mohou registrovat <code>@Component</code>.</td></tr>
         <tr><td><code>KlabisJwtAuthenticationConverter</code></td><td>Z JWT vyrobí <code>KlabisJwtAuthenticationToken</code> s typovaným <code>UserId</code> + <code>memberIdUuid</code>.</td></tr>
         <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>, <code>hasAuthority(Authority)</code>.</td></tr>
         <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> vyhodnocující <code>@HasAuthority</code> + <code>@OwnerVisible</code>.</td></tr>
@@ -40,7 +40,7 @@
     </tbody>
 </table>
 
-<h2>JWT a custom claims</h2>
+<h2>JWT a vlastní claims</h2>
 
 <p>
     Access token vydávaný Klabisem nese kromě standardních claims (sub, aud, iat, exp) i:
@@ -56,7 +56,7 @@
 <p>
     Konstanty názvů jsou v <code>KlabisOAuth2ClaimNames</code>. Jejich přidání do tokenu zajišťuje
     <code>KlabisAuthorizationServerCustomizer</code> v modulu <code>members</code> (viz sekce
-    "OAuth2 customizace" níže na této stránce).
+    "OAuth2 přizpůsobení" níže na této stránce).
 </p>
 
 <h2>KlabisJwtAuthenticationToken</h2>
@@ -172,7 +172,7 @@ class MemberController {
 <h2>OwnershipResolver</h2>
 
 <p>
-    Strategy interface, který určí, zda je aktuální uživatel vlastníkem objektu. Default implementace
+    Strategy interface, který určí, zda je aktuální uživatel vlastníkem objektu. Výchozí implementace
     (<code>DefaultOwnershipResolver</code>) bere hodnotu z <code>@OwnerId</code> a porovnává s
     <code>memberIdUuid</code> z <code>KlabisJwtAuthenticationToken</code>. Konverze typu na UUID
     probíhá přes Spring <code>ConversionService</code> — proto např. modul <code>members</code>
@@ -202,29 +202,29 @@ class MemberController {
     <dt>PasswordEncoderConfiguration</dt>
     <dd>BCrypt password encoder bean.</dd>
 
-    <dt>Custom AuthenticationEntryPoint</dt>
+    <dt>Vlastní AuthenticationEntryPoint</dt>
     <dd>Validuje OAuth2 <code>redirect_uri</code> proti <code>RegisteredClientRepository</code> před
         redirectem (zabraňuje open redirector zranitelnosti).</dd>
 </dl>
 
-<h2>OAuth2 customizace v modulu <code>members</code></h2>
+<h2>OAuth2 přizpůsobení v modulu <code>members</code></h2>
 
 <p>
-    Modul <code>members</code> rozšiřuje sdílený OAuth2 stack o Klabis-specific bridging mezi
-    User aggregate a Spring Security. Tyto třídy jsou framework-úrovňové, ne byznys logika.
+    Modul <code>members</code> rozšiřuje sdílený OAuth2 stack o bridging specifický pro Klabis
+    mezi User aggregate a Spring Security. Tyto třídy jsou framework-úrovňové, ne byznys logika.
 </p>
 
 <dl class="api-list">
     <dt>KlabisAuthorizationServerCustomizer</dt>
     <dd>Implementace <code>AuthorizationServerCustomizer</code> SPI z <code>common.security</code>.
-        Wirne Klabis-specific token claims (registrationNumber, memberIdUuid, firstName, lastName,
-        authorities) do AS chainu během vydávání tokenu. Auto-registruje se jako <code>@Component</code>.</dd>
+        Zapojuje token claims specifické pro Klabis (registrationNumber, memberIdUuid, firstName,
+        lastName, authorities) do AS chainu během vydávání tokenu. Auto-registruje se jako <code>@Component</code>.</dd>
 
     <dt>KlabisUserDetailsService</dt>
     <dd>Bridge: načte <code>User</code> + <code>UserPermissions</code> a vrátí Spring Security
         <code>UserDetails</code>. Klíčové pro <code>DaoAuthenticationProvider</code> při login flow.
-        Poskytuje i metodu <code>loadKlabisUserDetails(userName)</code> pro non-Spring-specific
-        přístup z aplikačního kódu.</dd>
+        Poskytuje i metodu <code>loadKlabisUserDetails(userName)</code> pro přístup z aplikačního
+        kódu nezávislý na Spring Security.</dd>
 
     <dt>MemberIdToUuidConverter</dt>
     <dd>Spring <code>Converter&lt;MemberId, UUID&gt;</code> registrovaný do

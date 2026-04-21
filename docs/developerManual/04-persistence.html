@@ -28,7 +28,7 @@
 
 <p>
     Centrální konfigurace JDBC vrstvy v <code>common.jdbc</code>. Aktivuje repository scanning,
-    auditing a registruje custom converters.
+    auditing a registruje vlastní konvertory.
 </p>
 
 <pre class="signature"><code>@Configuration
@@ -146,7 +146,7 @@ class MemberRepositoryAdapter implements MemberRepository {
 Pageable translated = TranslatedPageable.translate(originalPageable, DOMAIN_TO_DB_COLUMN);
 return jdbcRepository.findAll(translated);</code></pre>
 
-<h2>Custom queries s JdbcAggregateTemplate</h2>
+<h2>Vlastní dotazy s JdbcAggregateTemplate</h2>
 
 <p>
     Pro filtry s dynamickou kombinací podmínek se hodí <code>JdbcAggregateTemplate</code> +

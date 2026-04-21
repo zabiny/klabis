@@ -20,8 +20,8 @@
     Praktický průvodce po "framework" části backendu Klabisu — sdíleném jádru,
     které zajišťuje autorizaci, perzistenci, HAL+FORMS API, eventy a další
     společné věci pro všechny moduly aplikace. Cílem manuálu je popsat,
-    co je v projektu vlastní (Klabis-specific) a jak to používat při psaní
-    nových features.
+    co je v projektu vlastní (specifické pro Klabis) a jak to používat při psaní
+    nové funkcionality.
 </p>
 
 <h2>Pro koho je manuál určen</h2>
@@ -58,7 +58,7 @@
     <li>
         <span class="num">04</span>
         <a class="title" href="04-persistence.html">Perzistence</a>
-        <span class="desc">Spring Data JDBC konfigurace, custom converters, Memento pattern, <code>TranslatedPageable</code>.</span>
+        <span class="desc">Spring Data JDBC konfigurace, vlastní konvertory, Memento pattern, <code>TranslatedPageable</code>.</span>
     </li>
     <li>
         <span class="num">05</span>
@@ -68,7 +68,7 @@
     <li>
         <span class="num">06</span>
         <a class="title" href="06-security.html">Bezpečnost</a>
-        <span class="desc">OAuth2 AS+RS, JWT s vlastními claims, <code>Authority</code> enum, <code>@HasAuthority</code>, field-level (<code>@OwnerVisible</code>+<code>@OwnerId</code>), OAuth2 customizace v <code>members</code>.</span>
+        <span class="desc">OAuth2 AS+RS, JWT s vlastními claims, <code>Authority</code> enum, <code>@HasAuthority</code>, field-level (<code>@OwnerVisible</code>+<code>@OwnerId</code>), OAuth2 přizpůsobení v <code>members</code>.</span>
     </li>
     <li>
         <span class="num">07</span>
@@ -88,17 +88,17 @@
     <li>
         <span class="num">10</span>
         <a class="title" href="10-testing.html">Testování</a>
-        <span class="desc">Klabis-specific testovací nástroje: <code>@WithKlabisMockUser</code>, <code>@E2ETest</code>, custom assertions, memento round-trip testy.</span>
+        <span class="desc">Testovací nástroje specifické pro Klabis: <code>@WithKlabisMockUser</code>, <code>@E2ETest</code>, vlastní assertions, memento round-trip testy.</span>
     </li>
     <li>
         <span class="num">11</span>
         <a class="title" href="11-frontend.html">Frontend</a>
-        <span class="desc">HAL+FORMS klient, <code>useHalPageData</code>, <code>HalFormButton</code>/<code>HalFormsPageLayout</code>, <code>KlabisTable</code>, customizace stránek, lokalizace.</span>
+        <span class="desc">HAL+FORMS klient, <code>useHalPageData</code>, <code>HalFormButton</code>/<code>HalFormsPageLayout</code>, <code>KlabisTable</code>, přizpůsobení stránek, lokalizace.</span>
     </li>
     <li>
         <span class="num">12</span>
         <a class="title" href="12-claude-workflow.html">Práce s Claude Code</a>
-        <span class="desc">OpenSpec workflow, dostupné skills a agenti, jak přidat feature, refactoring, sandbox pravidla.</span>
+        <span class="desc">OpenSpec workflow, dostupné skills a agenti, jak přidat funkcionalitu, refaktoring, sandbox pravidla.</span>
     </li>
 </ol>
 

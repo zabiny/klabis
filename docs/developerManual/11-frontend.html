@@ -28,7 +28,7 @@
 
 <aside class="note">
     Generická znalost React, TypeScript, Vite, TanStack Query a oidc-client-ts je předpokládaná —
-    viz kap. 00 Předpoklady. Tato kapitola pokrývá jen Klabis-specific kód.
+    viz kap. 00 Předpoklady. Tato kapitola pokrývá jen kód specifický pro Klabis.
 </aside>
 
 <h2>Klíčové stavební bloky</h2>
@@ -428,7 +428,7 @@ interface UseHalPageDataReturn&lt;T&gt; {
 
 labels.member.firstName                                    // "Jméno"
 getFieldLabel('eventDate')                                 // z labels.ts
-getFieldLabel('eventDate', { eventDate: 'Custom popisek' }) // per-form override
+getFieldLabel('eventDate', { eventDate: 'Vlastní popisek' }) // per-form override
 getTemplateLabel('updateMember')                           // "Upravit"
 getEnumLabel('memberStatus', 'ACTIVE')                     // "Aktivní"</code></pre>
 

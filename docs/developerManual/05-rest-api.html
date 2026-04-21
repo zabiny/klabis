@@ -92,7 +92,7 @@ public @interface HalForms {
         <tr><td><code>READ_ONLY</code></td><td>Pole je v metadatech, ale <code>readOnly=true</code> (zobrazí se, ale nelze měnit).</td></tr>
         <tr><td><code>READ_WRITE</code></td><td>Pole je v metadatech, <code>readOnly=false</code>.</td></tr>
         <tr><td><code>NONE</code></td><td>Pole se v metadatech vůbec neobjeví (skryto z formuláře).</td></tr>
-        <tr><td><code>DEFAULT</code></td><td>Default behavior podle Spring HATEOAS — record komponenta = read-write.</td></tr>
+        <tr><td><code>DEFAULT</code></td><td>Výchozí chování podle Spring HATEOAS — record komponenta = read-write.</td></tr>
     </tbody>
 </table>
 
@@ -197,7 +197,7 @@ String newEmail = request.email().patchValue(member.getEmail().value());</code><
 
 <p>
     V controlleru tedy nepoužíváme <code>try/catch</code> — vyhodíme typovanou doménovou výjimku
-    a handler ji zformátuje. Custom výjimku přidáte přímo do <code>MvcExceptionHandler</code>.
+    a handler ji zformátuje. Vlastní výjimku přidáte přímo do <code>MvcExceptionHandler</code>.
 </p>
 
 <h2>Konfigurace</h2>
@@ -217,7 +217,7 @@ String newEmail = request.email().patchValue(member.getEmail().value());</code><
 
     <dt>@MvcComponent (<code>common.mvc</code>)</dt>
     <dd>Stereotyp pro MVC komponenty (controllery, advice). Aktuálně rozšiřuje <code>@RestController</code>
-        a slouží pro budoucí customizace component scanu / aspektů. Použití analogické jako
+        a slouží pro budoucí přizpůsobení component scanu / aspektů. Použití analogické jako
         <code>@RestController</code>.</dd>
 </dl>
 
