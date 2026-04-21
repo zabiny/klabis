@@ -1,14 +1,15 @@
-package com.klabis.common.bootstrap;
+package com.klabis.authorizationserver;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.bootstrap.BootstrapDataLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -18,7 +19,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ApplicationModuleTest(verifyAutomatically = false)
+@SpringBootTest
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles({"test", "local-dev"})
 @TestPropertySource(properties = {

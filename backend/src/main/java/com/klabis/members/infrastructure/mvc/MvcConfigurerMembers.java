@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.authorizationserver;
+package com.klabis.members.infrastructure.mvc;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;

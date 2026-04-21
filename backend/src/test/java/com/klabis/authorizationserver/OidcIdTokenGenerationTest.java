@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.authorizationserver;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

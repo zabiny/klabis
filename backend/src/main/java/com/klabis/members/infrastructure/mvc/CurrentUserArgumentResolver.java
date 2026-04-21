@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.authorizationserver;
+package com.klabis.members.infrastructure.mvc;
 
 import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.mvc.MvcComponent;

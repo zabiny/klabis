@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.authorizationserver;
+package com.klabis.members.infrastructure.mvc;
 
 import com.klabis.members.MemberId;
 import org.springframework.core.convert.converter.Converter;

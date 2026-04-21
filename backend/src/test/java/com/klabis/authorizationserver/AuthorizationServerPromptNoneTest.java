@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.authorizationserver;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
@@ -8,11 +8,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>When {@code prompt=none} is absent, normal behavior applies: unauthenticated TEXT_HTML
  * requests are redirected to {@code /login}.
  */
-@ApplicationModuleTest(verifyAutomatically = false)
+@SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles("test")

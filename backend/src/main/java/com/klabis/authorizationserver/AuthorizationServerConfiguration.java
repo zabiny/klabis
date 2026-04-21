@@ -1,5 +1,7 @@
-package com.klabis.common.security;
+package com.klabis.authorizationserver;
 
+import com.klabis.common.security.AuthorizationServerCustomizer;
+import com.klabis.common.security.KlabisOAuth2ClaimNames;
 import com.klabis.common.users.Authority;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
@@ -13,7 +15,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.*;
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
 @Configuration
 public class AuthorizationServerConfiguration {
 
-    @Value(JwtKeysConfiguration.ISSUER_PROPERTY)
+    @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
     private String issuer;
 
     private final AuthorizationServerCustomizer authorizationServerCustomizer;

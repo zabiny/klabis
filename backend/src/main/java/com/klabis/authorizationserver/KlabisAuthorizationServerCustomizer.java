@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.authorizationserver;
+package com.klabis.authorizationserver;
 
 import com.klabis.common.security.AuthorizationServerCustomizer;
 import com.klabis.common.security.KlabisOAuth2ClaimNames;

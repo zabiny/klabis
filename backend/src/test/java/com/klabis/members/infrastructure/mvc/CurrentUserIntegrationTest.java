@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.authorizationserver;
+package com.klabis.members.infrastructure.mvc;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;

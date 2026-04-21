@@ -41,7 +41,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @Modulithic(
         systemName = "Klabis Membership Management",
-        sharedModules = {"common"}  // Always included in module tests (users because of UserDetailsService implementation)
+        sharedModules = {"common"}  // Always included in module tests; KlabisUserDetailsService is in the authorizationserver module (not shared)
 )
 @SpringBootApplication
 @ConfigurationPropertiesScan

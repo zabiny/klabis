@@ -1,19 +1,20 @@
-package com.klabis.common.security;
+package com.klabis.authorizationserver;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.bootstrap.BootstrapDataLoader;
+import com.klabis.common.security.KlabisOAuth2ClaimNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenClaimNames;
 import org.springframework.test.context.ActiveProfiles;
@@ -47,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>UserInfo: GET /userinfo with access token</li>
  * </ol>
  */
-@ApplicationModuleTest(verifyAutomatically = false)
+@SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles("test")

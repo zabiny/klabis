@@ -1,7 +1,7 @@
 package com.klabis;
 
 import com.klabis.config.TestSslConfiguration;
-import com.klabis.members.infrastructure.authorizationserver.KlabisUserDetailsService;
+import com.klabis.authorizationserver.KlabisUserDetailsService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
