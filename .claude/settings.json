@@ -69,7 +69,9 @@
       "./runLocalEnvironment.sh",
       "./gradlew *",
       "/home/davca/bin/gradle *",
-      "./gradle-isolated.sh *"
+      "./gradle-isolated.sh *",
+      "/usr/bin/ps *",
+      "/usr/bin/lsof *"
     ],
     "network": {
       "allowedDomains": [
