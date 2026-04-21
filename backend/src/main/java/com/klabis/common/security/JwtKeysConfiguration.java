@@ -29,9 +29,9 @@ import java.util.UUID;
  * - Architecturally, {@code common.security} must not depend on {@code authorizationserver}
  */
 @Configuration
-class JwtKeysConfiguration {
+public class JwtKeysConfiguration {
 
-    static final String ISSUER_PROPERTY = "${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}";
+    public static final String ISSUER_PROPERTY = "${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}";
 
     @Value(ISSUER_PROPERTY)
     private String issuer;

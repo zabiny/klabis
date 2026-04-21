@@ -6,15 +6,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URI;
 
 /**
  * JWT authentication converter, account status filter, and custom error handlers for the resource server.
@@ -46,35 +47,32 @@ public class ResourceServerSecurityConfiguration {
 
     @Bean
     public AuthenticationEntryPoint customAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        return (request, response, authException) -> {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-            Map<String, Object> problem = new HashMap<>();
-            problem.put("type", "https://api.klabis.example.com/errors/unauthorized");
-            problem.put("title", "Unauthorized");
-            problem.put("status", 401);
-            problem.put("detail",
-                    authException.getMessage() != null ? authException.getMessage() : "Authentication required");
-
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
-        };
+        return (request, response, authException) -> writeProblemDetail(
+                response, objectMapper,
+                HttpStatus.UNAUTHORIZED,
+                "https://api.klabis.example.com/errors/unauthorized",
+                "Unauthorized",
+                authException.getMessage() != null ? authException.getMessage() : "Authentication required");
     }
 
     @Bean
     public AccessDeniedHandler customAccessDeniedHandler(ObjectMapper objectMapper) {
-        return (request, response, accessDeniedException) -> {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        return (request, response, accessDeniedException) -> writeProblemDetail(
+                response, objectMapper,
+                HttpStatus.FORBIDDEN,
+                "https://api.klabis.example.com/errors/forbidden",
+                "Forbidden",
+                accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Insufficient authority");
+    }
 
-            Map<String, Object> problem = new HashMap<>();
-            problem.put("type", "https://api.klabis.example.com/errors/forbidden");
-            problem.put("title", "Forbidden");
-            problem.put("status", 403);
-            problem.put("detail",
-                    accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Insufficient authority");
+    private static void writeProblemDetail(HttpServletResponse response, ObjectMapper objectMapper,
+                                           HttpStatus status, String type, String title, String detail) throws java.io.IOException {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setType(URI.create(type));
+        problem.setTitle(title);
 
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
-        };
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(problem));
     }
 }
