@@ -61,7 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Update Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
-@Import({EncryptionConfiguration.class, com.klabis.common.security.SecurityConfiguration.class})
+@Import(EncryptionConfiguration.class)
 @WithPostprocessors
 class UpdateMemberApiTest {
 

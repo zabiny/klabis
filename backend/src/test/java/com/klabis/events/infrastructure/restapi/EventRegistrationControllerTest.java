@@ -4,7 +4,6 @@ import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
@@ -42,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
-@Import({EncryptionConfiguration.class, SecurityConfiguration.class})
+@Import(EncryptionConfiguration.class)
 @WithPostprocessors
 class EventRegistrationControllerTest {
 

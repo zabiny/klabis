@@ -1,7 +1,5 @@
 package com.klabis.common.security;
 
-import com.klabis.common.users.UserService;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,29 +28,22 @@ import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Spring Security configuration for OAuth2 Authorization Server and Resource Server.
+ * Common web security configuration: method security, API resource server, SPA, docs, and H2 console filter chains.
+ * <p>
+ * Owns {@link EnableWebSecurity} and {@link EnableMethodSecurity} — exactly one {@code @Configuration}
+ * class in the context carries these, and it is this one.
+ * <p>
+ * Implements {@link WebMvcConfigurer} so that {@code @WebMvcTest} slices auto-discover this class:
+ * Spring Boot's {@code WebMvcTypeExcludeFilter} includes {@code WebMvcConfigurer} implementors,
+ * which causes all {@code @Bean} methods on this class to be loaded in test slices. Without this
+ * marker interface, the filter chain beans (including {@code defaultSecurityFilterChain}) would
+ * be absent from the slice context and Spring Security would fall back to its auto-configured chain.
  * <p>
  * Authentication Architecture:
- * - JWT-based stateless authentication (no server-side sessions)
- * - Resource server validates JWT tokens on every request
- * - OAuth2 Authorization Server for token issuance
- * <p>
- * Authorization Architecture:
- * - Role-based access control (RBAC) with custom authorities
- * - Method-level security with @PreAuthorize
- * - Scope-based permissions for OAuth2 clients
- * <p>
- * CSRF Protection:
- * - CSRF is DISABLED for this API (see defaultSecurityFilterChain)
- * - Rationale: JWT tokens are stored in memory/Authorization header, not cookies
- * - Stateless authentication is immune to CSRF attacks
- * - If cookie-based authentication is added in the future, CSRF protection MUST be enabled
+ * - JWT-based stateless authentication (no server-side sessions) for API chain
+ * - OAuth2 Authorization Server for token issuance (see AuthorizationServerConfiguration)
  * <p>
  * Configuration:
  * - Externalizes issuer URL for environment-specific configuration
@@ -62,8 +53,8 @@ import java.util.Map;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Import(JwtKeysConfiguration.class)
-public class SecurityConfiguration implements WebMvcConfigurer {
+@Import(ResourceServerSecurityConfiguration.class)
+public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
 
     @Bean
     public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
@@ -71,47 +62,49 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter() {
-        return new KlabisJwtAuthenticationConverter();
-    }
+    @Order(5)
+    public SecurityFilterChain defaultSecurityFilterChain(
+            HttpSecurity http,
+            AuthenticationEntryPoint authenticationEntryPoint,
+            AccessDeniedHandler accessDeniedHandler,
+            CorsConfigurationSource corsConfigurationSource,
+            Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter,
+            AccountStatusValidationFilter accountStatusValidationFilter) throws Exception {
 
-    @Bean
-    public AccountStatusValidationFilter accountStatusValidationFilter(UserService userService, ObjectMapper objectMapper) {
-        return new AccountStatusValidationFilter(userService, objectMapper);
-    }
+        final String[] PATHS = {"/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"};
 
-    @Bean
-    public AuthenticationEntryPoint customAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        return (request, response, authException) -> {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        http
+                .securityMatcher(PATHS)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/auth/password-setup/**").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
+                .addFilterAfter(accountStatusValidationFilter, BearerTokenAuthenticationFilter.class)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives(
+                                        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';")
+                        )
+                        .frameOptions(frame -> frame.deny())
+                        .xssProtection(xss -> xss.disable())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
+                )
+                .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));
 
-            Map<String, Object> problem = new HashMap<>();
-            problem.put("type", "https://api.klabis.example.com/errors/unauthorized");
-            problem.put("title", "Unauthorized");
-            problem.put("status", 401);
-            problem.put("detail",
-                    authException.getMessage() != null ? authException.getMessage() : "Authentication required");
-
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
-        };
-    }
-
-    @Bean
-    public AccessDeniedHandler customAccessDeniedHandler(ObjectMapper objectMapper) {
-        return (request, response, accessDeniedException) -> {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-            Map<String, Object> problem = new HashMap<>();
-            problem.put("type", "https://api.klabis.example.com/errors/forbidden");
-            problem.put("title", "Forbidden");
-            problem.put("status", 403);
-            problem.put("detail",
-                    accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Insufficient authority");
-
-            response.getWriter().write(objectMapper.writeValueAsString(problem));
-        };
+        return http.build();
     }
 
     @Bean
@@ -134,7 +127,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
-
     }
 
     /**
@@ -228,62 +220,4 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                 matcher.matcher("/favicon.ico")
         );
     }
-
-    @Bean
-    @Order(5)
-    public SecurityFilterChain defaultSecurityFilterChain(
-            HttpSecurity http,
-            AuthenticationEntryPoint authenticationEntryPoint,
-            AccessDeniedHandler accessDeniedHandler,
-            CorsConfigurationSource corsConfigurationSource,
-            Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter,
-            AccountStatusValidationFilter accountStatusValidationFilter) throws Exception {
-
-        final String[] PATHS = {"/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"};
-
-        http
-                .securityMatcher(PATHS)
-                .authorizeHttpRequests(authorize -> authorize
-                        // Actuator endpoints (public access for monitoring)
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // Password setup endpoints (public)
-                        .requestMatchers("/api/auth/password-setup/**").permitAll()
-                        .requestMatchers("/api/**").authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
-                .addFilterAfter(accountStatusValidationFilter, BearerTokenAuthenticationFilter.class)
-                // Enable CORS configuration
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Security headers for enhanced protection
-                .headers(headers -> headers
-                        // Content Security Policy to prevent XSS attacks
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives(
-                                        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';")
-                        )
-                        // Prevent clickjacking attacks
-                        .frameOptions(frame -> frame.deny())
-                        // Disable X-XSS-Protection (modern browsers don't need it, CSP is sufficient)
-                        .xssProtection(xss -> xss.disable())
-                        // HSTS for HTTPS enforcement (only enable in production with HTTPS)
-                        .httpStrictTransportSecurity(hsts -> hsts
-                                .includeSubDomains(true)
-                                .maxAgeInSeconds(31536000)
-                        )
-                        // Prevent browser from MIME-sniffing responses
-                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
-                )
-                // Configure CSRF to ignore stateless API and documentation endpoints,
-                // while keeping CSRF protection enabled for any other browser-facing routes.
-                .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));
-
-        return http.build();
-    }
-
 }
