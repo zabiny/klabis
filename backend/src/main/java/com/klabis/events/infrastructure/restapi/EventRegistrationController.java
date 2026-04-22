@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
@@ -206,7 +205,7 @@ class EventRegistrationController {
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        Event event = eventManagementService.getEvent(new EventId(eventId), hasEventsManageAuthority());
+        Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasEventsManageAuthority());
         MemberId targetMember = new MemberId(memberId);
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
@@ -218,9 +217,9 @@ class EventRegistrationController {
     }
 
     private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId) {
+        MemberId actingMember = resolveActingMember();
         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId)).ifPresent(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel();
-            MemberId actingMember = resolveActingMember();
             if (event.areRegistrationsOpen() && memberId.equals(actingMember)) {
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
@@ -237,9 +236,5 @@ class EventRegistrationController {
         return new RegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.category(), registration.registeredAt());
     }
 
-    private boolean hasEventsManageAuthority() {
-        return SecuritySpelEvaluator.hasAuthority(
-                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
-    }
 
 }

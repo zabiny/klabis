@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -489,7 +490,7 @@ class EventRegistrationControllerTest {
     class GetRegistrationByMemberIdTests {
 
         @Test
-        @DisplayName("1.1 owner gets 200 with SI card number")
+        @DisplayName("1.1 owner gets 200 with SI card number and self link pointing to /{memberId}")
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn200WithSiCardForOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -504,7 +505,7 @@ class EventRegistrationControllerTest {
             activeEvent.publish();
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
-            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
                     new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
@@ -514,7 +515,9 @@ class EventRegistrationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.firstName").value("John"))
                     .andExpect(jsonPath("$.lastName").value("Doe"))
-                    .andExpect(jsonPath("$.siCardNumber").value("123456"));
+                    .andExpect(jsonPath("$.siCardNumber").value("123456"))
+                    .andExpect(jsonPath("$._links.self.href", containsString(MEMBER_1_ID)))
+                    .andExpect(jsonPath("$._links.self.href", not(containsString("/me"))));
         }
 
         @Test
@@ -533,7 +536,7 @@ class EventRegistrationControllerTest {
             activeEvent.publish();
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
-            when(membersMock.findById(targetMemberId)).thenReturn(java.util.Optional.of(
+            when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
                     new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
 
             mockMvc.perform(
@@ -579,33 +582,6 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
 
-        @Test
-        @DisplayName("2.5 self link contains /{memberId} not /me")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
-        void shouldHaveSelfLinkWithMemberIdNotMe() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
-
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
-            Event activeEvent = EventTestDataBuilder.anEvent()
-                    .withDate(LocalDate.now().plusDays(30))
-                    .addRegistration(registration)
-                    .build();
-            activeEvent.publish();
-
-            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
-            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
-
-            mockMvc.perform(
-                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href", containsString(MEMBER_1_ID)))
-                    .andExpect(jsonPath("$._links.self.href", not(containsString("/me"))));
-        }
     }
 
 }

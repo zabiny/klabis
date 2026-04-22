@@ -133,7 +133,7 @@ public class EventController {
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
-        Event event = eventManagementService.getEvent(new EventId(id), hasEventsManageAuthority());
+        Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasEventsManageAuthority());
 
         EventDto eventDto = EventDtoMapper.toDto(event);
 
@@ -179,7 +179,7 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
-        Page<Event> page = eventManagementService.listEvents(filter, pageable, hasEventsManageAuthority());
+        Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasEventsManageAuthority());
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
@@ -196,11 +196,6 @@ public class EventController {
         });
 
         return ResponseEntity.ok(pagedModel);
-    }
-
-    private boolean hasEventsManageAuthority() {
-        return SecuritySpelEvaluator.hasAuthority(
-                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
     }
 
     private void validateSortFields(Sort sort) {
@@ -255,6 +250,11 @@ public class EventController {
 }
 
 class EventAffordanceSupport {
+
+    static boolean hasEventsManageAuthority() {
+        return SecuritySpelEvaluator.hasAuthority(
+                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
+    }
 
     static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive) {
         UUID eventId = event.getId().value();
