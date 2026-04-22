@@ -29,12 +29,12 @@ export interface paths {
         };
         /**
          * Get registration by member ID
-         * @description Get a member's event registration including SI card number. Accessible by the member themselves or a user with EVENTS:MANAGE authority.
+         * @description Get a member's event registration including SI card number. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority.
          */
         get: operations["getRegistration"];
         /**
-         * Edit own event registration
-         * @description Update SI card number and/or category for the authenticated member's registration. Only allowed when registrations are open.
+         * Edit event registration
+         * @description Update SI card number and/or category for a member's registration. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when registrations are open.
          */
         put: operations["editRegistration"];
         post?: never;
@@ -960,7 +960,7 @@ export interface components {
             };
         };
         UpdatePermissionsRequest: {
-            authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "GROUPS:TRAINING")[];
+            authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING")[];
         };
         EditRegistrationRequest: {
             siCardNumber: string;
@@ -1859,7 +1859,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - must be the member or have EVENTS:MANAGE */
+            /** @description Forbidden - must be the member or have EVENTS:REGISTRATIONS */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1940,7 +1940,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - can only edit own registration */
+            /** @description Forbidden - must be the member or have EVENTS:REGISTRATIONS */
             403: {
                 headers: {
                     [name: string]: unknown;

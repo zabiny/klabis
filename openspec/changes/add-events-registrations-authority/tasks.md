@@ -40,8 +40,8 @@
 
 ## 6. Frontend — OpenAPI regeneration
 
-- [ ] 6.1 Rebuild backend and regenerate `frontend/src/api/klabisApi.d.ts` via `npm run openapi`
-- [ ] 6.2 Verify the `authorities` enum in `MemberPermissionsDto` now includes `EVENTS:REGISTRATIONS`
+- [x] 6.1 Rebuild backend and regenerate `frontend/src/api/klabisApi.d.ts` via `npm run openapi`
+- [x] 6.2 Verify the `authorities` enum in `MemberPermissionsDto` now includes `EVENTS:REGISTRATIONS`
 
 ## 7. Frontend — permissions dialog
 
