@@ -54,14 +54,6 @@ For frontend testing prefer http://localhost:3000 because of that HMR auto reloa
 - always do code review (use proper agent) before commiting changes involving CODE (either backend or frontend) to git. 
 - use `http://localhost:3000` (NPM dev) for testing frontend using playwright. Never use port 8443 for UI testing.
 
-### Sandbox policy
-
-**NEVER use `dangerouslyDisableSandbox: true`.** Always run Bash commands inside the sandbox.
-
-- If a command fails inside the sandbox (e.g. `bwrap: loopback` for `./gradlew`, localhost network blocked for `curl`, TMPDIR missing for `git commit`), STOP and report the exact error to the user. The user decides whether to allow the command unsandboxed via a permission prompt.
-- Do NOT preemptively disable the sandbox "just in case" — most commands (grep, find, ls, cat, git status/log/diff, gh read subcommands, openspec read subcommands, lsof, ps, ...) work fine in the sandbox and disabling it only produces unnecessary permission prompts.
-- This applies to all agents and subagents. No per-tool or per-command exception.
-
 #### Frontend testing
 
 ##### Authentication
