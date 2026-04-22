@@ -121,7 +121,7 @@ interface RegistrationsTableProps {
 const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const registration = item as unknown as RegistrationData;
-        const editTemplate = registration._templates?.edit;
+        const editTemplate = registration._templates?.editRegistration;
         if (!editTemplate) return null;
 
         return (

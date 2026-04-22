@@ -442,22 +442,22 @@ describe('EventDetailPage', () => {
                 expect(screen.getByRole('columnheader', {name: /akce/i})).toBeInTheDocument();
             });
 
-            it('shows edit button on row that has _templates.edit', () => {
+            it('shows edit button on row that has _templates.editRegistration', () => {
                 const row = buildRegistrationRow({
-                    _templates: {edit: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
+                    _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
                 });
                 renderPageWithRegistrationRows([row]);
                 expect(screen.getByRole('button', {name: /upravit přihlášku/i})).toBeInTheDocument();
             });
 
-            it('does not show edit button on row without _templates.edit', () => {
+            it('does not show edit button on row without _templates.editRegistration', () => {
                 renderPageWithRegistrationRows([buildRegistrationRow()]);
                 expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
             });
 
             it('opens modal with HalFormDisplay when row edit button is clicked', () => {
                 const row = buildRegistrationRow({
-                    _templates: {edit: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
+                    _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
                 });
                 renderPageWithRegistrationRows([row]);
 
