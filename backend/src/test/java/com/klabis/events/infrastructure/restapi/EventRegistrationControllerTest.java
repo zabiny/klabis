@@ -33,12 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
@@ -88,6 +89,24 @@ class EventRegistrationControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("2.3 Location header after registration points to /{memberId} not /me")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturnLocationHeaderWithMemberIdNotMe() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", containsString(MEMBER_1_ID)))
+                    .andExpect(header().string("Location", not(containsString("/me"))));
         }
 
         @Test
@@ -766,6 +785,34 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
+        }
+
+        @Test
+        @DisplayName("2.5 self link contains /{memberId} not /me")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldHaveSelfLinkWithMemberIdNotMe() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href", containsString(MEMBER_1_ID)))
+                    .andExpect(jsonPath("$._links.self.href", not(containsString("/me"))));
         }
     }
 

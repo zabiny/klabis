@@ -81,7 +81,7 @@ class EventRegistrationController {
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri()
+                linkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId)).toUri()
         ).build();
     }
 
@@ -166,7 +166,7 @@ class EventRegistrationController {
             RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members);
             EntityModel<RegistrationSummaryDto> item = EntityModel.of(dto);
             if (actingMember != null && actingMember.equals(registration.memberId())) {
-                klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null))
+                klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId))
                         .ifPresent(selfLinkBuilder -> {
                             if (event.areRegistrationsOpen()) {
                                 item.add(selfLinkBuilder.withSelfRel()
@@ -212,7 +212,7 @@ class EventRegistrationController {
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
         EntityModel<RegistrationDto> entityModel = EntityModel.of(toRegistrationDto(registration));
-        entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
+        addLinksForRegistration(entityModel, eventId, event, targetMember);
 
         return ResponseEntity.ok(entityModel);
     }
@@ -232,18 +232,19 @@ class EventRegistrationController {
                 .orElseThrow(() -> new RegistrationNotFoundException(actingMember, new EventId(eventId)));
 
         EntityModel<RegistrationDto> entityModel = EntityModel.of(toOwnRegistrationDto(registration));
-        addLinksForOwnRegistration(entityModel, eventId, event, actingMember);
+        addLinksForRegistration(entityModel, eventId, event, actingMember);
 
         return ResponseEntity.ok(entityModel);
     }
 
-    private void addLinksForOwnRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId actingMember) {
-        klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).ifPresent(selfLinkBuilder -> {
+    private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId) {
+        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId)).ifPresent(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel();
-            if (event.areRegistrationsOpen()) {
+            MemberId actingMember = resolveActingMember();
+            if (event.areRegistrationsOpen() && memberId.equals(actingMember)) {
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, actingMember.value(), null)));
+                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null)));
             }
             entityModel.add(selfLink);
         });
