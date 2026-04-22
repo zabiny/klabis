@@ -213,8 +213,15 @@ class EventRegistrationControllerTest {
                     EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
                     EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
             );
+            Event closedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistrations(registrations)
+                    .build();
+            closedEvent.publish();
+            closedEvent.finish();
 
             when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
                     member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
@@ -241,8 +248,15 @@ class EventRegistrationControllerTest {
             List<EventRegistration> registrations = List.of(
                     EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), "M21", Instant.now())
             );
+            Event closedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistrations(registrations)
+                    .build();
+            closedEvent.publish();
+            closedEvent.finish();
 
             when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
             ));
@@ -419,6 +433,246 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/events/{eventId}/registrations/{memberId}")
+    class EditRegistrationTests {
+
+        @Test
+        @DisplayName("4.1 acting user == memberId updates registration and returns 204")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldEditRegistrationAndReturn204WhenActingUserIsOwner() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(registrationServiceMock).editRegistration(eq(new EventId(eventId)), eq(new MemberId(UUID.fromString(MEMBER_1_ID))), any(Event.EditRegistrationCommand.class));
+        }
+
+        @Test
+        @DisplayName("4.2 PUT by different member returns 403")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
+        void shouldReturn403WhenActingUserIsNotOwner() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("4.3 PUT with invalid SI card number returns 400 with field feedback")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn400WithFieldFeedbackForInvalidSiCardNumber() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"abc","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("4.4 PUT with category not in event category list returns 400")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn400WhenCategoryIsNotInEventList() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","category":"INVALID_CATEGORY"}
+                    """;
+
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Category 'INVALID_CATEGORY' is not available for this event") {})
+                    .when(registrationServiceMock)
+                    .editRegistration(any(), any(), any());
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id}/registrations/me — edit affordance")
+    class OwnRegistrationEditAffordanceTests {
+
+        @Test
+        @DisplayName("4.5 edit affordance present when registrations are open")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldExposeEditAffordanceWhenRegistrationsOpen() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/me", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editRegistration.method").value("PUT"));
+        }
+
+        @Test
+        @DisplayName("4.6 edit affordance absent after deadline")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldNotExposeEditAffordanceAfterDeadline() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+            Event finishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistration(registration)
+                    .build();
+            finishedEvent.publish();
+            finishedEvent.finish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(finishedEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/me", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editRegistration").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("4.7 /me always returns edit affordance for authenticated member when window is open (owner == /me caller)")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldAlwaysExposeEditAffordanceForOwnRegistrationWhenOpen() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/me", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editRegistration.method").value("PUT"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id}/registrations — edit affordance on acting member row")
+    class ListRegistrationsEditAffordanceTests {
+
+        @Test
+        @DisplayName("4.8 edit affordance present on acting member row and absent on other rows")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldExposeEditAffordanceOnlyOnActingMemberRow() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(registrations)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates.editRegistration.method").value("PUT"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._templates").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("edit affordance absent on all rows when registrations are closed")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldNotExposeEditAffordanceWhenRegistrationsClosed() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now())
+            );
+
+            Event finishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistrations(registrations)
+                    .build();
+            finishedEvent.publish();
+            finishedEvent.finish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(finishedEvent);
+            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates").doesNotExist());
         }
     }
 
