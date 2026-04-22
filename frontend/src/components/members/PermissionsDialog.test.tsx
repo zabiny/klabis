@@ -135,6 +135,41 @@ describe('PermissionsDialog', () => {
             expect(toggle).toHaveAttribute('aria-checked', 'false');
         });
 
+        it('renders a toggle for EVENTS:REGISTRATIONS permission with label "Správa přihlášek"', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            expect(toggle).toBeInTheDocument();
+        });
+
+        it('shows description "Editace přihlášek ostatních členů na akce" for EVENTS:REGISTRATIONS', () => {
+            renderDialog();
+
+            expect(screen.getByText('Editace přihlášek ostatních členů na akce')).toBeInTheDocument();
+        });
+
+        it('reflects current state for EVENTS:REGISTRATIONS when assigned', () => {
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: {
+                    authorities: ['EVENTS:REGISTRATIONS'],
+                    _links: {self: {href: '/api/users/1/permissions'}},
+                },
+                isLoading: false,
+            });
+
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'true');
+        });
+
+        it('reflects current state for EVENTS:REGISTRATIONS when not assigned', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'false');
+        });
+
         it('toggles permission on click', async () => {
             const user = userEvent.setup();
             renderDialog();

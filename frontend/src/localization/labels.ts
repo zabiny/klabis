@@ -299,6 +299,7 @@ export const labels = {
         'EVENTS:MANAGE': {label: 'Správa akcí', description: 'Vytváření a úprava akcí'},
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
         'GROUPS:TRAINING': {label: 'Správa tréninkových skupin', description: 'Umožňuje vytvářet a spravovat tréninkové skupiny a jejich členy.'},
+        'EVENTS:REGISTRATIONS': {label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce'},
     },
 
     links: {

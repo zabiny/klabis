@@ -45,11 +45,11 @@
 
 ## 7. Frontend — permissions dialog
 
-- [ ] 7.1 Add failing test to `PermissionsDialog.test.tsx` asserting the `EVENTS:REGISTRATIONS` toggle renders with label "Správa přihlášek" and its description
-- [ ] 7.2 Add `'EVENTS:REGISTRATIONS'` entry to `PERMISSION_COLORS` in `PermissionsDialog.tsx` (distinct color, e.g. purple)
-- [ ] 7.3 Add `'EVENTS:REGISTRATIONS': { label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce' }` to `labels.permissions` in `labels.ts`
-- [ ] 7.4 Update `labels.test.ts` if it snapshots the permissions list
-- [ ] 7.5 Run affected frontend tests — all green
+- [x] 7.1 Add failing test to `PermissionsDialog.test.tsx` asserting the `EVENTS:REGISTRATIONS` toggle renders with label "Správa přihlášek" and its description
+- [x] 7.2 Add `'EVENTS:REGISTRATIONS'` entry to `PERMISSION_COLORS` in `PermissionsDialog.tsx` (distinct color, e.g. purple)
+- [x] 7.3 Add `'EVENTS:REGISTRATIONS': { label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce' }` to `labels.permissions` in `labels.ts`
+- [x] 7.4 Update `labels.test.ts` if it snapshots the permissions list (n/a — no snapshot)
+- [x] 7.5 Run affected frontend tests — all green
 
 ## 8. Frontend — stay on event page after registration
 
