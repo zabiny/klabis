@@ -1,11 +1,11 @@
 ## 1. Authority enum
 
-- [ ] 1.1 Add red test to `AuthorityValidatorTest` asserting `EVENTS:REGISTRATIONS` is a known authority
-- [ ] 1.2 Add `EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", Scope.CONTEXT_SPECIFIC)` to `Authority` enum
-- [ ] 1.3 Change scope of `EVENTS_MANAGE` from `CONTEXT_SPECIFIC` to `GLOBAL`
-- [ ] 1.4 Verify `EVENTS_REGISTRATIONS` is NOT added to `getStandardUserAuthorities()`
-- [ ] 1.5 Update `JwtParamsTest` and any other test enumerating valid authorities to include `EVENTS:REGISTRATIONS`
-- [ ] 1.6 Run affected unit tests — all green
+- [x] 1.1 Add red test to `AuthorityValidatorTest` asserting `EVENTS:REGISTRATIONS` is a known authority
+- [x] 1.2 Add `EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", Scope.CONTEXT_SPECIFIC)` to `Authority` enum
+- [x] 1.3 Change scope of `EVENTS_MANAGE` from `CONTEXT_SPECIFIC` to `GLOBAL`
+- [x] 1.4 Verify `EVENTS_REGISTRATIONS` is NOT added to `getStandardUserAuthorities()`
+- [x] 1.5 Update `JwtParamsTest` and any other test enumerating valid authorities to include `EVENTS:REGISTRATIONS`
+- [x] 1.6 Run affected unit tests — all green
 
 ## 2. Backend — authorization of other members' registrations (vertical slice)
 

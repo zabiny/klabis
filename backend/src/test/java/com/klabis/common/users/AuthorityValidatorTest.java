@@ -38,9 +38,17 @@ class AuthorityValidatorTest {
                     "MEMBERS:READ",
                     "MEMBERS:PERMISSIONS",
                     "EVENTS:READ",
-                    "EVENTS:MANAGE"
+                    "EVENTS:MANAGE",
+                    "EVENTS:REGISTRATIONS",
+                    "GROUPS:TRAINING"
             );
             AuthorityValidator.validate(allAuthorities);
+        }
+
+        @Test
+        @DisplayName("should recognise EVENTS:REGISTRATIONS as a known authority")
+        void shouldRecogniseEventsRegistrationsAsKnownAuthority() {
+            AuthorityValidator.validate(Set.of("EVENTS:REGISTRATIONS"));
         }
 
         @Test
