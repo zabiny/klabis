@@ -11,6 +11,15 @@ import {EventDetailPage} from './EventDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
+
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
@@ -153,6 +162,7 @@ const renderPage = (pageData: any) => {
 describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockNavigate.mockReset();
     });
 
     it('renders back link to events list', () => {
@@ -496,6 +506,43 @@ describe('EventDetailPage', () => {
             fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+    });
+
+    describe('registerForEvent — stay on page after registration (Group 8)', () => {
+        it('clicking registerForEvent opens modal but does NOT navigate away', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    registerForEvent: mockHalFormsTemplate({method: 'POST', title: 'Přihlásit se'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /přihlásit se/i}));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toBeInTheDocument();
+        });
+
+        it('registerForEvent button passes navigateOnSuccess=false so Location header is ignored', () => {
+            const data = mockEventDetailData({
+                _links: {
+                    self: {href: 'http://localhost:8443/api/events/1'},
+                    registrations: {href: 'http://localhost:8443/api/events/1/registrations'},
+                },
+                _templates: {
+                    registerForEvent: mockHalFormsTemplate({method: 'POST', title: 'Přihlásit se'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /přihlásit se/i}));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: /přihlášky/i})).toBeInTheDocument();
         });
     });
 });

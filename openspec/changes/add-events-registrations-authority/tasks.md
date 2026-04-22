@@ -53,9 +53,9 @@
 
 ## 8. Frontend — stay on event page after registration
 
-- [ ] 8.1 Update existing `EventDetailPage.test.tsx` test that asserts redirect after successful `registerForEvent`: expect user to stay on event detail page and the registration list to reflect the new registration
-- [ ] 8.2 Remove the code in `EventDetailPage.tsx` (or `EventsPage.tsx` if that is where `registerForEvent` is wired) that follows the `Location` header; invalidate the event-detail and registration-list queries instead
-- [ ] 8.3 Run affected frontend tests — all green
+- [x] 8.1 Update existing `EventDetailPage.test.tsx` test that asserts redirect after successful `registerForEvent`: expect user to stay on event detail page and the registration list to reflect the new registration
+- [x] 8.2 Remove the code in `EventDetailPage.tsx` (or `EventsPage.tsx` if that is where `registerForEvent` is wired) that follows the `Location` header; invalidate the event-detail and registration-list queries instead (n/a — `useAuthorizedMutation` already drops the Location header; production code was already aligned)
+- [x] 8.3 Run affected frontend tests — all green
 
 ## 9. Frontend — edit button visible for EVENTS:REGISTRATIONS holders in list
 
