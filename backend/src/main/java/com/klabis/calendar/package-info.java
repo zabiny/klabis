@@ -13,5 +13,5 @@
  * This module consumes domain events from the Events module but does not depend on it directly,
  * following Spring Modulith's event-driven architecture.
  */
-@org.springframework.modulith.ApplicationModule
+@org.springframework.modulith.ApplicationModule(displayName = "Kalendář")
 package com.klabis.calendar;

@@ -1,2 +1,2 @@
-@org.springframework.modulith.ApplicationModule(displayName = "Groups")
+@org.springframework.modulith.ApplicationModule(displayName = "Uživatelské skupiny")
 package com.klabis.groups;
