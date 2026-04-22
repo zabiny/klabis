@@ -4,6 +4,7 @@ import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
@@ -669,6 +670,102 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{eventId}/registrations/{memberId}")
+    class GetRegistrationByMemberIdTests {
+
+        @Test
+        @DisplayName("1.1 owner gets 200 with SI card number")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn200WithSiCardForOwner() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.firstName").value("John"))
+                    .andExpect(jsonPath("$.lastName").value("Doe"))
+                    .andExpect(jsonPath("$.siCardNumber").value("123456"));
+        }
+
+        @Test
+        @DisplayName("1.2 user with EVENTS:MANAGE gets 200 with SI card number (non-owner coordinator)")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn200WithSiCardForEventsManageAuthority() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), targetMemberId, SiCardNumber.of("654321"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
+            when(membersMock.findById(targetMemberId)).thenReturn(java.util.Optional.of(
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.firstName").value("Jane"))
+                    .andExpect(jsonPath("$.siCardNumber").value("654321"));
+        }
+
+        @Test
+        @DisplayName("1.3 non-owner without EVENTS:MANAGE gets 403")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
+        void shouldReturn403ForNonOwnerWithoutEventsManage() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("1.4 returns 404 when member is not registered for the event")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn404WhenMemberNotRegistered() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            Event eventWithoutRegistration = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            eventWithoutRegistration.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(eventWithoutRegistration);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
     }
 

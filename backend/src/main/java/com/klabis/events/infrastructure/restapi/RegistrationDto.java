@@ -1,24 +1,27 @@
 package com.klabis.events.infrastructure.restapi;
 
-import org.springframework.hateoas.server.core.Relation;
+import com.klabis.common.ui.HalForms;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.Instant;
 
 /**
- * DTO for event registration (public view without SI card number).
+ * DTO for member's own event registration (includes SI card number).
  * <p>
- * This DTO is used for listing registrations to protect member privacy.
- * SI card numbers are considered sensitive and only visible to the member who owns the registration.
+ * This DTO is used when a member views their own registration details.
+ * Includes the SI card number which is not visible in the public listing.
  *
  * @param firstName    member's first name
  * @param lastName     member's last name
+ * @param siCardNumber member's SI card number for this event
  * @param registeredAt timestamp when registration was created
  */
-@Relation(collectionRelation = "registrationDtoList")
+@RecordBuilder
 public record RegistrationDto(
-        String firstName,
-        String lastName,
-        String category,
-        Instant registeredAt
+        @HalForms(access = HalForms.Access.READ_ONLY) String firstName,
+        @HalForms(access = HalForms.Access.READ_ONLY) String lastName,
+        String siCardNumber,
+        @HalForms(access = HalForms.Access.READ_ONLY) String category,
+        @HalForms(access = HalForms.Access.READ_ONLY) Instant registeredAt
 ) {
 }

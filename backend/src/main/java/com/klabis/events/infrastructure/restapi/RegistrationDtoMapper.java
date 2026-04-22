@@ -10,16 +10,16 @@ import java.util.Map;
 
 class RegistrationDtoMapper {
 
-    static RegistrationDto toDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex, Members members) {
+    static RegistrationSummaryDto toDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex, Members members) {
         MemberDto member = memberIndex.get(registration.memberId());
         if (member == null) {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.category(), registration.registeredAt());
+        return new RegistrationSummaryDto(member.firstName(), member.lastName(), registration.category(), registration.registeredAt());
     }
 
-    static List<RegistrationDto> toDtoList(List<EventRegistration> registrations, Members members) {
+    static List<RegistrationSummaryDto> toDtoList(List<EventRegistration> registrations, Members members) {
         List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(memberIds);
         return registrations.stream()
