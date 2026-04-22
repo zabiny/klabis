@@ -20,6 +20,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/{eventId}/registrations/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get registration by member ID
+         * @description Get a member's event registration including SI card number. Accessible by the member themselves or a user with EVENTS:MANAGE authority.
+         */
+        get: operations["getRegistration"];
+        /**
+         * Edit own event registration
+         * @description Update SI card number and/or category for the authenticated member's registration. Only allowed when registrations are open.
+         */
+        put: operations["editRegistration"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar-items/{id}": {
         parameters: {
             query?: never;
@@ -201,23 +225,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/groups/{id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Direct member addition (always throws — invitation-only group) */
-        post: operations["addGroupMember"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/groups/{id}/invitations": {
         parameters: {
             query?: never;
@@ -349,26 +356,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/events/{id}/sync-from-oris": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sync event from ORIS
-         * @description Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and ACTIVE events with an orisId.
-         */
-        post: operations["syncEventFromOris"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/events/{id}/publish": {
         parameters: {
             query?: never;
@@ -436,26 +423,6 @@ export interface paths {
          *
          */
         delete: operations["unregisterFromEvent"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/events/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import event from ORIS
-         * @description Creates a new event in DRAFT status by importing data from ORIS.
-         */
-        post: operations["importEvent"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -603,7 +570,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get group details */
+        /** Get group details (owner or member only) */
         get: operations["getGroup"];
         put?: never;
         post?: never;
@@ -683,26 +650,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/oris/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List upcoming ORIS events
-         * @description Returns events from ORIS available for import. Accepts multiple region parameters to combine results.
-         */
-        get: operations["listOrisEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/members/options": {
         parameters: {
             query?: never;
@@ -743,32 +690,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get family group details (requires MEMBERS:MANAGE) */
+        /** Get family group details */
         get: operations["getFamilyGroup"];
         put?: never;
         post?: never;
         /** Delete a family group (requires MEMBERS:MANAGE) */
         delete: operations["deleteFamilyGroup"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/events/{eventId}/registrations/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get own registration
-         * @description Get the authenticated member's registration details including SI card number.
-         */
-        get: operations["getOwnRegistration"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -964,6 +891,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/groups/{id}/invitations/{invitationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancel a pending invitation (owner only) */
+        delete: operations["cancelInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/family-groups/{id}/parents/{memberId}": {
         parameters: {
             query?: never;
@@ -1017,6 +961,10 @@ export interface components {
         };
         UpdatePermissionsRequest: {
             authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "GROUPS:TRAINING")[];
+        };
+        EditRegistrationRequest: {
+            siCardNumber: string;
+            category?: string;
         };
         /** @description Calendar item update data */
         UpdateCalendarItem: {
@@ -1151,13 +1099,10 @@ export interface components {
             /** Format: uuid */
             memberId: string;
         };
-        CreateFamilyGroup: {
-            name?: string;
-            parent?: components["schemas"]["MemberId"];
-        };
-        MemberId: {
+        CreateFamilyGroupRequest: {
+            name: string;
             /** Format: uuid */
-            value?: string;
+            parent: string;
         };
         /** @description Event creation data */
         CreateEvent: {
@@ -1172,15 +1117,14 @@ export interface components {
             registrationDeadline?: string;
             categories?: string[];
         };
+        MemberId: {
+            /** Format: uuid */
+            value?: string;
+        };
         /** @description Registration data */
         RegisterCommand: {
             siCardNumber: string;
             category?: string;
-        };
-        /** @description ORIS import command with orisId */
-        ImportCommand: {
-            /** Format: int32 */
-            orisId?: number;
         };
         /** @description Preset creation data */
         CreateCategoryPreset: {
@@ -1248,7 +1192,7 @@ export interface components {
              */
             registrationNumber?: string;
         };
-        PatchFieldInteger: {
+        PatchFieldAgeRangeRequest: {
             provided?: boolean;
         };
         PatchFieldListString: {
@@ -1259,8 +1203,7 @@ export interface components {
         };
         UpdateTrainingGroupRequest: {
             name?: components["schemas"]["PatchFieldString"];
-            minAge?: components["schemas"]["PatchFieldInteger"];
-            maxAge?: components["schemas"]["PatchFieldInteger"];
+            ageRange?: components["schemas"]["PatchFieldAgeRangeRequest"];
             trainers?: components["schemas"]["PatchFieldListString"];
         };
         PatchFieldAddressRequest: {
@@ -1345,7 +1288,7 @@ export interface components {
             name?: string;
             templated?: boolean;
         };
-        PermissionsResponseModel: {
+        EntityModelPermissionsResponse: {
             /** Format: uuid */
             userId?: string;
             authorities?: string[];
@@ -1394,15 +1337,6 @@ export interface components {
             trainers?: components["schemas"]["EntityModelTrainerResponse"][];
             members?: components["schemas"]["EntityModelGroupMembershipResponse"][];
             _links?: components["schemas"]["Links"];
-        };
-        OrisEventSummary: {
-            /** Format: int32 */
-            id?: number;
-            name?: string;
-            /** Format: date */
-            date?: string;
-            location?: string;
-            organizer?: string;
         };
         EntityModelMemberSummaryResponse: {
             /**
@@ -1530,18 +1464,18 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelPendingInvitationResponse: {
-            groupId?: components["schemas"]["MembersGroupId"];
+            groupId?: components["schemas"]["FreeGroupId"];
             groupName?: string;
             invitationId?: components["schemas"]["InvitationId"];
             /** Format: uuid */
             invitedBy?: string;
             _links?: components["schemas"]["Links"];
         };
-        InvitationId: {
+        FreeGroupId: {
             /** Format: uuid */
             value?: string;
         };
-        MembersGroupId: {
+        InvitationId: {
             /** Format: uuid */
             value?: string;
         };
@@ -1552,23 +1486,23 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelGroupSummaryResponse: {
-            id?: components["schemas"]["MembersGroupId"];
+            id?: components["schemas"]["FreeGroupId"];
             name?: string;
             _links?: components["schemas"]["Links"];
         };
-        EntityModelGroupResponse: {
-            id?: components["schemas"]["MembersGroupId"];
-            name?: string;
-            owners?: components["schemas"]["EntityModelOwnerResponse"][];
-            members?: components["schemas"]["EntityModelMembersGroupMembershipResponse"][];
-            pendingInvitations?: components["schemas"]["EntityModelPendingInvitationResponse"][];
-            _links?: components["schemas"]["Links"];
-        };
-        EntityModelMembersGroupMembershipResponse: {
+        EntityModelFreeGroupMembershipResponse: {
             /** Format: uuid */
             memberId?: string;
             /** Format: date-time */
             joinedAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelGroupResponse: {
+            id?: components["schemas"]["FreeGroupId"];
+            name?: string;
+            owners?: components["schemas"]["EntityModelOwnerResponse"][];
+            members?: components["schemas"]["EntityModelFreeGroupMembershipResponse"][];
+            pendingInvitations?: components["schemas"]["EntityModelPendingInvitationResponse"][];
             _links?: components["schemas"]["Links"];
         };
         EntityModelOwnerResponse: {
@@ -1641,20 +1575,21 @@ export interface components {
         RepresentationModelObject: {
             _links?: components["schemas"]["Links"];
         };
-        CollectionModelRegistrationDto: {
+        CollectionModelEntityModelRegistrationSummaryDto: {
             _embedded?: {
-                registrationDtoList?: components["schemas"]["RegistrationDto"][];
+                registrationDtoList?: components["schemas"]["EntityModelRegistrationSummaryDto"][];
             };
             _links?: components["schemas"]["Links"];
         };
-        RegistrationDto: {
+        EntityModelRegistrationSummaryDto: {
             firstName?: string;
             lastName?: string;
             category?: string;
             /** Format: date-time */
             registeredAt?: string;
+            _links?: components["schemas"]["Links"];
         };
-        EntityModelOwnRegistrationDto: {
+        EntityModelRegistrationDto: {
             firstName?: string;
             lastName?: string;
             siCardNumber?: string;
@@ -1714,6 +1649,9 @@ export interface components {
              */
             expiresAt?: string;
         };
+        CancelInvitationRequest: {
+            reason?: string;
+        };
         Links: {
             [key: string]: components["schemas"]["Link"];
         };
@@ -1743,7 +1681,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PermissionsResponseModel"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelPermissionsResponse"];
                 };
             };
             /** @description Bad request - invalid argument */
@@ -1843,6 +1781,166 @@ export interface operations {
                 };
             };
             /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                memberId: string;
+                /** @description Event UUID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registration retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelRegistrationDto"];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - must be the member or have EVENTS:MANAGE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Member not registered for this event */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    editRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                eventId: string;
+                /** @description Member UUID */
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRegistrationRequest"];
+            };
+        };
+        responses: {
+            /** @description Registration updated successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - can only edit own registration */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2959,85 +3057,6 @@ export interface operations {
             };
         };
     };
-    addGroupMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Group UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddMemberRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request - invalid argument */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Conflict - cannot promote a non-member to owner */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unprocessable entity - cannot remove the last owner of a group */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
     inviteMember: {
         parameters: {
             query?: never;
@@ -3354,7 +3373,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateFamilyGroup"];
+                "application/json": components["schemas"]["CreateFamilyGroupRequest"];
             };
         };
         responses: {
@@ -3738,81 +3757,6 @@ export interface operations {
             };
         };
     };
-    syncEventFromOris: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Event UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Event synced from ORIS successfully */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request - invalid argument */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Conflict - cannot promote a non-member to owner */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unprocessable entity - cannot remove the last owner of a group */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
     publishEvent: {
         parameters: {
             query?: never;
@@ -3981,7 +3925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelRegistrationDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelRegistrationSummaryDto"];
                 };
             };
             /** @description Bad request - invalid argument */
@@ -4133,82 +4077,6 @@ export interface operations {
         responses: {
             /** @description Successfully unregistered */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad request - invalid argument */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Conflict - cannot promote a non-member to owner */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unprocessable entity - cannot remove the last owner of a group */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    importEvent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportCommand"];
-            };
-        };
-        responses: {
-            /** @description Event imported successfully */
-            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5831,82 +5699,6 @@ export interface operations {
             };
         };
     };
-    listOrisEvents: {
-        parameters: {
-            query?: {
-                region?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrisEventSummary"][];
-                };
-            };
-            /** @description Bad request - invalid argument */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Conflict - cannot promote a non-member to owner */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unprocessable entity - cannot remove the last owner of a group */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
     listMemberOptions: {
         parameters: {
             query?: never;
@@ -6151,83 +5943,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Bad request - invalid argument */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Conflict - cannot promote a non-member to owner */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Unprocessable entity - cannot remove the last owner of a group */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    getOwnRegistration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Event UUID */
-                eventId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Own registration retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
-                };
             };
             /** @description Bad request - invalid argument */
             400: {
@@ -7088,6 +6803,87 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    cancelInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+                /** @description Invitation UUID */
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelInvitationRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
