@@ -41,6 +41,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.events.infrastructure.restapi.EventAffordanceSupport.hasEventsRegistrationsAuthority;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -192,20 +193,20 @@ class EventRegistrationController {
 
     @GetMapping("/{memberId}")
     @OwnerVisible
-    @HasAuthority(Authority.EVENTS_MANAGE)
+    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
             summary = "Get registration by member ID",
             description = "Get a member's event registration including SI card number. " +
-                          "Accessible by the member themselves or a user with EVENTS:MANAGE authority."
+                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority."
     )
     @ApiResponse(responseCode = "200", description = "Registration retrieved successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:MANAGE")
+    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS")
     @ApiResponse(responseCode = "404", description = "Member not registered for this event")
     public ResponseEntity<EntityModel<RegistrationDto>> getRegistration(
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasEventsManageAuthority());
+        Event event = eventManagementService.getEvent(new EventId(eventId), hasEventsRegistrationsAuthority());
         MemberId targetMember = new MemberId(memberId);
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));

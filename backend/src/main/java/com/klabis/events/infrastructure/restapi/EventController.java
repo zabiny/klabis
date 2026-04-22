@@ -256,6 +256,11 @@ class EventAffordanceSupport {
                 SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
     }
 
+    static boolean hasEventsRegistrationsAuthority() {
+        return SecuritySpelEvaluator.hasAuthority(
+                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_REGISTRATIONS);
+    }
+
     static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive) {
         UUID eventId = event.getId().value();
 

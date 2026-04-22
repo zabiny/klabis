@@ -9,11 +9,11 @@
 
 ## 2. Backend — authorization of other members' registrations (vertical slice)
 
-- [ ] 2.1 Add red test to `EventRegistrationControllerTest`: user with `EVENTS:REGISTRATIONS` can `GET /api/events/{eventId}/registrations/{memberId}` for another member and receives SI card number
-- [ ] 2.2 Add red test: user with only `EVENTS:MANAGE` (no `EVENTS:REGISTRATIONS`) receives 403 on the same endpoint
-- [ ] 2.3 Change `@HasAuthority(EVENTS_MANAGE)` to `@HasAuthority(EVENTS_REGISTRATIONS)` on `EventRegistrationController.getRegistration`
-- [ ] 2.4 Update OpenAPI description strings on `getRegistration` to reference `EVENTS:REGISTRATIONS`
-- [ ] 2.5 Run affected tests — all green
+- [x] 2.1 Add red test to `EventRegistrationControllerTest`: user with `EVENTS:REGISTRATIONS` can `GET /api/events/{eventId}/registrations/{memberId}` for another member and receives SI card number
+- [x] 2.2 Add red test: user with only `EVENTS:MANAGE` (no `EVENTS:REGISTRATIONS`) receives 403 on the same endpoint
+- [x] 2.3 Change `@HasAuthority(EVENTS_MANAGE)` to `@HasAuthority(EVENTS_REGISTRATIONS)` on `EventRegistrationController.getRegistration`
+- [x] 2.4 Update OpenAPI description strings on `getRegistration` to reference `EVENTS:REGISTRATIONS`
+- [x] 2.5 Run affected tests — all green
 
 ## 3. Backend — editing another member's registration (vertical slice)
 

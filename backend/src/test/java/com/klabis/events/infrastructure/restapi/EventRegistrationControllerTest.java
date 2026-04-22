@@ -521,9 +521,9 @@ class EventRegistrationControllerTest {
         }
 
         @Test
-        @DisplayName("1.2 user with EVENTS:MANAGE gets 200 with SI card number (non-owner coordinator)")
-        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_MANAGE})
-        void shouldReturn200WithSiCardForEventsManageAuthority() throws Exception {
+        @DisplayName("2.1 user with EVENTS:REGISTRATIONS gets 200 with SI card number (non-owner)")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldReturn200WithSiCardForEventsRegistrationsAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
@@ -549,7 +549,20 @@ class EventRegistrationControllerTest {
         }
 
         @Test
-        @DisplayName("1.3 non-owner without EVENTS:MANAGE gets 403")
+        @DisplayName("2.2 user with only EVENTS:MANAGE (not owner, not EVENTS:REGISTRATIONS) gets 403")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn403ForNonOwnerWithEventsManageOnly() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("1.3 non-owner without any special authority gets 403")
         @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
         void shouldReturn403ForNonOwnerWithoutEventsManage() throws Exception {
             UUID eventId = UUID.randomUUID();
