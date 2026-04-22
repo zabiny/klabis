@@ -34,9 +34,9 @@
 
 ## 5. Backend — bootstrap and documentation
 
-- [ ] 5.1 Update `BootstrapDataLoader` admin user to include `EVENTS:REGISTRATIONS` so local dev workflows keep working
-- [ ] 5.2 Update `EventSummaryDto` docstrings only if they reference the old behaviour; otherwise leave as-is (status column still guarded by `EVENTS:MANAGE`)
-- [ ] 5.3 Run full backend test suite via test-runner agent — all green
+- [x] 5.1 Update `BootstrapDataLoader` admin user to include `EVENTS:REGISTRATIONS` so local dev workflows keep working (n/a — admin already receives `Set.of(Authority.values())`)
+- [x] 5.2 Update `EventSummaryDto` docstrings only if they reference the old behaviour; otherwise leave as-is (status column still guarded by `EVENTS:MANAGE`)
+- [x] 5.3 Run full backend test suite via test-runner agent — all green
 
 ## 6. Frontend — OpenAPI regeneration
 
