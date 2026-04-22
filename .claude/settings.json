@@ -15,22 +15,10 @@
       "Bash(openspec instructions:*)",
       "Bash(openspec list:*)",
       "Bash(./runLocalEnvironment.sh)",
-      "Bash(./runLocalEnvironment.sh:*)",
-      "Bash(./gradle-isolated.sh:*)"
+      "Bash(./runLocalEnvironment.sh:*)"
     ]
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/block-direct-gradle.sh"
-          }
-        ]
-      }
-    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
@@ -39,15 +27,6 @@
             "type": "command",
             "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; if echo \"$f\" | grep -qE 'frontend/.*\\.(ts|tsx|js|jsx)$'; then cd frontend && npx eslint --fix \"$f\" 2>/dev/null; fi; } || true",
             "statusMessage": "Running ESLint fix..."
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit|Update",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | grep -q '\\.java$' && cd $(git rev-parse --show-toplevel) && ./gradle-isolated.sh compileJava -q 2>&1 | grep -E 'ERROR|WARN' | head -5 || true"
           }
         ]
       },
@@ -69,7 +48,6 @@
       "./runLocalEnvironment.sh",
       "./gradlew *",
       "/home/davca/bin/gradle *",
-      "./gradle-isolated.sh *",
       "/usr/bin/ps *",
       "/usr/bin/lsof *"
     ],
@@ -91,8 +69,8 @@
         "/mnt/ramdisk/klabis"
       ],
       "allowRead": [
-      	"/home/davca/.gradle",
-	"/mnt/ramdisk/klabis"
+        "/home/davca/.gradle",
+        "/mnt/ramdisk/klabis"
       ]
     }
   }
