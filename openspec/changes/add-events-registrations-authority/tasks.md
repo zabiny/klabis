@@ -25,12 +25,12 @@
 
 ## 4. Backend — affordances in registrations list (vertical slice)
 
-- [ ] 4.1 Add red test: holder of `EVENTS:REGISTRATIONS` viewing the registrations list of an event with open window sees `editRegistration` affordance on EVERY row
-- [ ] 4.2 Add red test: regular member viewing the same list sees `editRegistration` affordance ONLY on their own row
-- [ ] 4.3 Add red test: when registrations are closed, no `editRegistration` affordance is emitted for any row (for anyone)
-- [ ] 4.4 In `EventRegistrationController.buildRegistrationItems` remove the `actingMember.equals(registration.memberId())` branch; attach the `editRegistration` affordance to every row when `event.areRegistrationsOpen()` is true, relying on `klabisAfford` + annotations to filter per user
-- [ ] 4.5 Emit a self-link on every row using `klabisLinkTo(...getRegistration(...))` so holders of `EVENTS:REGISTRATIONS` receive it too (framework filters for regular members automatically)
-- [ ] 4.6 Run affected tests — all green
+- [x] 4.1 Add red test: holder of `EVENTS:REGISTRATIONS` viewing the registrations list of an event with open window sees `editRegistration` affordance on EVERY row
+- [x] 4.2 Add red test: regular member viewing the same list sees `editRegistration` affordance ONLY on their own row
+- [x] 4.3 Add red test: when registrations are closed, no `editRegistration` affordance is emitted for any row (for anyone)
+- [x] 4.4 In `EventRegistrationController.buildRegistrationItems` remove the `actingMember.equals(registration.memberId())` branch; attach the `editRegistration` affordance to every row when `event.areRegistrationsOpen()` is true, relying on `klabisAfford` + annotations to filter per user
+- [x] 4.5 Emit a self-link on every row using `klabisLinkTo(...getRegistration(...))` so holders of `EVENTS:REGISTRATIONS` receive it too (framework filters for regular members automatically)
+- [x] 4.6 Run affected tests — all green
 
 ## 5. Backend — bootstrap and documentation
 

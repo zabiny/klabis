@@ -4,6 +4,7 @@ import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
@@ -44,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class, HalFormsSupport.class})
 @WithPostprocessors
 class EventRegistrationControllerTest {
 
@@ -546,6 +547,77 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("4.1 holder of EVENTS:REGISTRATIONS sees editRegistration affordance and self-link on EVERY row when registrations are open")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldExposeEditAffordanceOnEveryRowForEventsRegistrationsHolder() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
+            MemberId member2Id = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(registrations)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates.editRegistration.method").value("PUT"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._templates.editRegistration.method").value("PUT"));
+        }
+
+        @Test
+        @DisplayName("4.3 holder of EVENTS:REGISTRATIONS sees no editRegistration affordance when registrations are closed")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldNotExposeEditAffordanceForEventsRegistrationsHolderWhenRegistrationsClosed() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
+            MemberId member2Id = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+
+            Event finishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistrations(registrations)
+                    .build();
+            finishedEvent.publish();
+            finishedEvent.finish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(finishedEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._templates").doesNotExist());
         }
     }
 

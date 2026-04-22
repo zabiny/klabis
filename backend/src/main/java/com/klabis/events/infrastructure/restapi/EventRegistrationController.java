@@ -142,9 +142,8 @@ class EventRegistrationController {
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
         List<EventRegistration> registrations = event.getRegistrations();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
-        MemberId actingMember = resolveActingMember();
 
-        List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(registrations, memberIndex, event, actingMember, eventId);
+        List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(registrations, memberIndex, event, eventId);
 
         CollectionModel<EntityModel<RegistrationSummaryDto>> collectionModel = CollectionModel.of(
                 items,
@@ -160,25 +159,23 @@ class EventRegistrationController {
             List<EventRegistration> registrations,
             Map<MemberId, MemberDto> memberIndex,
             Event event,
-            @Nullable MemberId actingMember,
             UUID eventId) {
 
         List<EntityModel<RegistrationSummaryDto>> items = new ArrayList<>();
         for (EventRegistration registration : registrations) {
             RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members);
             EntityModel<RegistrationSummaryDto> item = EntityModel.of(dto);
-            if (actingMember != null && actingMember.equals(registration.memberId())) {
-                klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId))
-                        .ifPresent(selfLinkBuilder -> {
-                            if (event.areRegistrationsOpen()) {
-                                item.add(selfLinkBuilder.withSelfRel()
-                                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class)
-                                                .editRegistration(eventId, actingMember.value(), null))));
-                            } else {
-                                item.add(selfLinkBuilder.withSelfRel());
-                            }
-                        });
-            }
+            UUID rowMemberId = registration.memberId().value();
+            klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId))
+                    .ifPresent(selfLinkBuilder -> {
+                        if (event.areRegistrationsOpen()) {
+                            item.add(selfLinkBuilder.withSelfRel()
+                                    .andAffordances(klabisAfford(methodOn(EventRegistrationController.class)
+                                            .editRegistration(eventId, rowMemberId, null))));
+                        } else {
+                            item.add(selfLinkBuilder.withSelfRel());
+                        }
+                    });
             items.add(item);
         }
         return items;
