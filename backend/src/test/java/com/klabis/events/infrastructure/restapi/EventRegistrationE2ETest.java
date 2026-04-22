@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -296,8 +297,8 @@ class EventRegistrationE2ETest {
                 .andExpect(jsonPath("$.title").value("Resource Not Found"));
     }
 
-    private String createPublishedEvent(String name, LocalDate date) throws Exception {
-        String eventId = createDraftEvent(name, date);
+    private String createPublishedEvent(String name, LocalDate date, List<String> categories) throws Exception {
+        String eventId = createDraftEvent(name, date, categories);
 
         mockMvc.perform(
                         post("/api/events/{id}/publish", eventId)
@@ -309,11 +310,166 @@ class EventRegistrationE2ETest {
         return eventId;
     }
 
+    private String createPublishedEvent(String name, LocalDate date) throws Exception {
+        return createPublishedEvent(name, date, List.of());
+    }
+
+    @Test
+    @DisplayName("5.1 Editing SI card number preserves registeredAt")
+    void shouldUpdateSiCardNumberAndPreserveRegisteredAt() throws Exception {
+        String eventId = createPublishedEvent("SI card edit test", LocalDate.now().plusDays(10));
+
+        mockMvc.perform(
+                post("/api/events/{id}/registrations", eventId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456")))
+                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+        ).andExpect(status().isCreated());
+
+        String registeredAt = mockMvc.perform(
+                        get("/api/events/{id}/registrations/me", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String originalRegisteredAt = objectMapper.readTree(registeredAt).get("registeredAt").asText();
+
+        mockMvc.perform(
+                        put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/events/{id}/registrations/me", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.siCardNumber").value("999999"))
+                .andExpect(jsonPath("$.registeredAt").value(originalRegisteredAt));
+    }
+
+    @Test
+    @DisplayName("5.2 Editing category is reflected in registration list")
+    void shouldUpdateCategoryAndShowInRegistrationList() throws Exception {
+        String eventId = createPublishedEvent("Category edit test", LocalDate.now().plusDays(10), List.of("M21", "W35"));
+
+        mockMvc.perform(
+                post("/api/events/{id}/registrations", eventId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "category", "M21")))
+                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+        ).andExpect(status().isCreated());
+
+        mockMvc.perform(
+                        put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "category", "W35")))
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/events/{id}/registrations", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("W35"));
+    }
+
+    @Test
+    @DisplayName("5.3 Member cannot edit another member's registration (403)")
+    void shouldReturn403WhenEditingAnotherMembersRegistration() throws Exception {
+        UUID member2Id = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        String eventId = createPublishedEvent("Forbidden edit test", LocalDate.now().plusDays(10));
+
+        mockMvc.perform(
+                post("/api/events/{id}/registrations", eventId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "111111")))
+                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+        ).andExpect(status().isCreated());
+
+        mockMvc.perform(
+                        put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
+                                .with(klabisAuthentication(member(member2Id)))
+                )
+                .andDo(print())
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("5.4 Second member can edit their own registration")
+    void shouldAllowSecondMemberToEditOwnRegistration() throws Exception {
+        UUID member2Id = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        String eventId = createPublishedEvent("Second member edit test", LocalDate.now().plusDays(10));
+
+        mockMvc.perform(
+                post("/api/events/{id}/registrations", eventId)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "777777")))
+                        .with(klabisAuthentication(member(member2Id)))
+        ).andExpect(status().isCreated());
+
+        mockMvc.perform(
+                        put("/api/events/{eventId}/registrations/{memberId}", eventId, member2Id)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "888888")))
+                                .with(klabisAuthentication(member(member2Id)))
+                )
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/events/{id}/registrations/me", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(member(member2Id)))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.siCardNumber").value("888888"));
+    }
+
+    @Test
+    @DisplayName("5.5 Editing registration after deadline returns 400 and leaves registration unchanged")
+    @WithKlabisMockUser(memberId = TEST_MEMBER_ID_STRING)
+    @Sql(scripts = "/sql/test-past-deadline-event-with-registration.sql",
+         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldReturn400WhenEditingRegistrationAfterDeadline() throws Exception {
+        String eventId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
+        mockMvc.perform(
+                        put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(
+                        get("/api/events/{id}/registrations/me", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.siCardNumber").value("123456"));
+    }
+
     private String createDraftEvent(String name) throws Exception {
         return createDraftEvent(name, LocalDate.now().plusMonths(1));
     }
 
-    private String createDraftEvent(String name, LocalDate eventDate) throws Exception {
+    private String createDraftEvent(String name, LocalDate eventDate, List<String> categories) throws Exception {
         Map<String, Object> event = new java.util.HashMap<>();
         event.put("name", name);
         event.put("eventDate", eventDate.toString());
@@ -321,6 +477,9 @@ class EventRegistrationE2ETest {
         event.put("organizer", "TEST");
         event.put("websiteUrl", null);
         event.put("eventCoordinatorId", null);
+        if (!categories.isEmpty()) {
+            event.put("categories", categories);
+        }
 
         MvcResult result = mockMvc.perform(
                         post("/api/events")
@@ -333,5 +492,9 @@ class EventRegistrationE2ETest {
 
         String location = result.getResponse().getHeader("Location");
         return location.substring(location.lastIndexOf('/') + 1);
+    }
+
+    private String createDraftEvent(String name, LocalDate eventDate) throws Exception {
+        return createDraftEvent(name, eventDate, List.of());
     }
 }
