@@ -100,7 +100,7 @@ class EventRegistrationE2ETest {
 
         // Then: View own registration (should include SI card)
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", publishedEventId)
+                        get("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(
                                         member(TEST_MEMBER_ID)
@@ -144,7 +144,7 @@ class EventRegistrationE2ETest {
 
         // Then: Verify registration is removed
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", publishedEventId)
+                        get("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(
                                         member(TEST_MEMBER_ID)
@@ -251,7 +251,7 @@ class EventRegistrationE2ETest {
 
         // When: Get own registration (as User 1)
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(member(TEST_MEMBER_ID)))
                 )
@@ -288,13 +288,28 @@ class EventRegistrationE2ETest {
 
         // When: Get own registration without being registered
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(member(TEST_MEMBER_ID)))
                 )
                 .andDo(print())
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Resource Not Found"));
+    }
+
+    @Test
+    @DisplayName("3.1 GET /api/events/{id}/registrations/me is gone — /me is no longer a valid memberId")
+    void shouldNotResolveMeAsRegistrationEndpoint() throws Exception {
+        String eventId = createPublishedEvent("Me endpoint removal test", LocalDate.now().plusDays(10));
+
+        // /me is routed to /{memberId} but "me" is not a valid UUID — Spring returns 400 (not 200 as before)
+        mockMvc.perform(
+                        get("/api/events/{id}/registrations/me", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                )
+                .andDo(print())
+                .andExpect(status().is4xxClientError());
     }
 
     private String createPublishedEvent(String name, LocalDate date, List<String> categories) throws Exception {
@@ -327,7 +342,7 @@ class EventRegistrationE2ETest {
         ).andExpect(status().isCreated());
 
         String registeredAt = mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(member(TEST_MEMBER_ID)))
                 )
@@ -348,7 +363,7 @@ class EventRegistrationE2ETest {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(member(TEST_MEMBER_ID)))
                 )
@@ -433,7 +448,7 @@ class EventRegistrationE2ETest {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, member2Id)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(member(member2Id)))
                 )
@@ -458,7 +473,7 @@ class EventRegistrationE2ETest {
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(
-                        get("/api/events/{id}/registrations/me", eventId)
+                        get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())

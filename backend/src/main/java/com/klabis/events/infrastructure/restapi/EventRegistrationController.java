@@ -217,26 +217,6 @@ class EventRegistrationController {
         return ResponseEntity.ok(entityModel);
     }
 
-    @GetMapping("/me")
-    @Operation(
-            summary = "Get own registration",
-            description = "Get the authenticated member's registration details including SI card number."
-    )
-    @ApiResponse(responseCode = "200", description = "Own registration retrieved successfully")
-    public ResponseEntity<EntityModel<RegistrationDto>> getOwnRegistration(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @ActingMember MemberId actingMember) {
-
-        Event event = eventManagementService.getEvent(new EventId(eventId), true);
-        EventRegistration registration = event.findRegistration(actingMember)
-                .orElseThrow(() -> new RegistrationNotFoundException(actingMember, new EventId(eventId)));
-
-        EntityModel<RegistrationDto> entityModel = EntityModel.of(toOwnRegistrationDto(registration));
-        addLinksForRegistration(entityModel, eventId, event, actingMember);
-
-        return ResponseEntity.ok(entityModel);
-    }
-
     private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId) {
         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId)).ifPresent(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel();
@@ -249,10 +229,6 @@ class EventRegistrationController {
             entityModel.add(selfLink);
         });
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
-    }
-
-    private RegistrationDto toOwnRegistrationDto(EventRegistration registration) {
-        return toRegistrationDto(registration);
     }
 
     private RegistrationDto toRegistrationDto(EventRegistration registration) {
