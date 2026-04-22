@@ -324,7 +324,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
                 } else {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
@@ -375,7 +375,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
                 } else {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),

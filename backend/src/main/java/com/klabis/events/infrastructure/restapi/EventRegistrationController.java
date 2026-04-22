@@ -43,12 +43,6 @@ import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-/**
- * REST controller for Event Registration resources.
- * <p>
- * Provides HATEOAS-compliant endpoints for event registration management.
- * All mutation operations require authentication.
- */
 @RestController
 @RequestMapping(value = "/api/events/{eventId}/registrations", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Event Registrations", description = "Event registration API for members")
@@ -118,15 +112,13 @@ class EventRegistrationController {
     public ResponseEntity<Void> editRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @Valid @RequestBody EditRegistrationRequest request,
-            @ActingMember MemberId actingMember) {
+            @Valid @RequestBody EditRegistrationRequest request) {
 
-        MemberId memberIdValue = new MemberId(memberId);
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
                 SiCardNumber.of(request.siCardNumber()),
                 request.category()
         );
-        registrationService.editRegistration(new EventId(eventId), memberIdValue, command);
+        registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
         return ResponseEntity.noContent().build();
     }
@@ -143,10 +135,9 @@ class EventRegistrationController {
     public ResponseEntity<CollectionModel<EntityModel<RegistrationDto>>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        List<EventRegistration> registrations = registrationService.listRegistrations(new EventId(eventId));
-        Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
-
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
+        List<EventRegistration> registrations = event.getRegistrations();
+        Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
         MemberId actingMember = resolveActingMember();
 
         List<EntityModel<RegistrationDto>> items = buildRegistrationItems(registrations, memberIndex, event, actingMember, eventId);
@@ -172,12 +163,17 @@ class EventRegistrationController {
         for (EventRegistration registration : registrations) {
             RegistrationDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members);
             EntityModel<RegistrationDto> item = EntityModel.of(dto);
-            if (actingMember != null && actingMember.equals(registration.memberId()) && event.areRegistrationsOpen()) {
-                klabisLinkTo(methodOn(EventRegistrationController.class)
-                        .editRegistration(eventId, actingMember.value(), null, null))
-                        .ifPresent(link -> item.add(link.withSelfRel()
-                                .andAffordances(klabisAfford(methodOn(EventRegistrationController.class)
-                                        .editRegistration(eventId, actingMember.value(), null, null)))));
+            if (actingMember != null && actingMember.equals(registration.memberId())) {
+                klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null))
+                        .ifPresent(selfLinkBuilder -> {
+                            if (event.areRegistrationsOpen()) {
+                                item.add(selfLinkBuilder.withSelfRel()
+                                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class)
+                                                .editRegistration(eventId, actingMember.value(), null))));
+                            } else {
+                                item.add(selfLinkBuilder.withSelfRel());
+                            }
+                        });
             }
             items.add(item);
         }
@@ -219,7 +215,7 @@ class EventRegistrationController {
             if (event.areRegistrationsOpen()) {
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, actingMember.value(), null, null)));
+                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, actingMember.value(), null)));
             }
             entityModel.add(selfLink);
         });

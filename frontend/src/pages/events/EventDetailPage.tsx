@@ -125,19 +125,17 @@ const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): 
         if (!editTemplate) return null;
 
         return (
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={labels.templates.editRegistration}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenEditModal({item: registration, template: editTemplate});
-                    }}
-                >
-                    <Pencil className="w-4 h-4"/>
-                </Button>
-            </div>
+            <Button
+                variant="ghost"
+                size="sm"
+                aria-label={labels.templates.editRegistration}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenEditModal({item: registration, template: editTemplate});
+                }}
+            >
+                <Pencil className="w-4 h-4"/>
+            </Button>
         );
     };
 
@@ -320,6 +318,25 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const handleRegistrationEditClose = () => setRegistrationEditModal(null);
 
+    const registrationEditModalJsx = registrationEditModal && (
+        <Modal
+            isOpen={true}
+            onClose={handleRegistrationEditClose}
+            title={labels.dialogTitles.editRegistration}
+            size="md"
+        >
+            <HalFormDisplay
+                template={registrationEditModal.template}
+                templateName="edit"
+                resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
+                pathname={route.pathname}
+                resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
+                onClose={handleRegistrationEditClose}
+                navigateOnSuccess={false}
+            />
+        </Modal>
+    );
+
     if (isEditing && enrichedTemplate) {
         return (
             <>
@@ -336,24 +353,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     customLayout={renderContent}
                     fieldsFactory={eventFormFieldsFactory}
                 />
-                {registrationEditModal && (
-                    <Modal
-                        isOpen={true}
-                        onClose={handleRegistrationEditClose}
-                        title={labels.dialogTitles.editRegistration}
-                        size="md"
-                    >
-                        <HalFormDisplay
-                            template={registrationEditModal.template}
-                            templateName="edit"
-                            resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
-                            pathname={route.pathname}
-                            resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
-                            onClose={handleRegistrationEditClose}
-                            navigateOnSuccess={false}
-                        />
-                    </Modal>
-                )}
+                {registrationEditModalJsx}
             </>
         );
     }
@@ -361,24 +361,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     return (
         <>
             {renderContent() as ReactElement}
-            {registrationEditModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={handleRegistrationEditClose}
-                    title={labels.dialogTitles.editRegistration}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={registrationEditModal.template}
-                        templateName="edit"
-                        resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
-                        onClose={handleRegistrationEditClose}
-                        navigateOnSuccess={false}
-                    />
-                </Modal>
-            )}
+            {registrationEditModalJsx}
         </>
     );
 };

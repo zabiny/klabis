@@ -220,7 +220,6 @@ class EventRegistrationControllerTest {
             closedEvent.publish();
             closedEvent.finish();
 
-            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
@@ -255,7 +254,6 @@ class EventRegistrationControllerTest {
             closedEvent.publish();
             closedEvent.finish();
 
-            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
@@ -627,7 +625,6 @@ class EventRegistrationControllerTest {
             activeEvent.publish();
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
-            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
                     member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
@@ -662,7 +659,6 @@ class EventRegistrationControllerTest {
             finishedEvent.finish();
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(finishedEvent);
-            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")
             ));
