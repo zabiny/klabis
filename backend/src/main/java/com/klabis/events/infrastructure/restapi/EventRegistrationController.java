@@ -104,13 +104,15 @@ class EventRegistrationController {
 
     @PutMapping(value = "/{memberId}", consumes = "application/json")
     @OwnerVisible
+    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
-            summary = "Edit own event registration",
-            description = "Update SI card number and/or category for the authenticated member's registration. " +
+            summary = "Edit event registration",
+            description = "Update SI card number and/or category for a member's registration. " +
+                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. " +
                           "Only allowed when registrations are open."
     )
     @ApiResponse(responseCode = "204", description = "Registration updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - can only edit own registration")
+    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS")
     public ResponseEntity<Void> editRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,

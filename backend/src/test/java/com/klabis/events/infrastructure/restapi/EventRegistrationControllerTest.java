@@ -412,6 +412,70 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("3.1 user with EVENTS:REGISTRATIONS can PUT another member's registration and it is updated")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldAllowEditByEventsRegistrationsAuthorityForNonOwner() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"999888","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(registrationServiceMock).editRegistration(
+                    eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))),
+                    any(Event.EditRegistrationCommand.class));
+        }
+
+        @Test
+        @DisplayName("3.2 user without EVENTS:REGISTRATIONS (and not the owner) receives 403 on PUT")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
+        void shouldReturn403ForNonOwnerWithoutEventsRegistrations() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"999888","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("3.3 member without special authority can PUT own registration (owner flow preserved)")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldAllowOwnerToEditOwnRegistrationWithoutSpecialAuthority() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"111222","category":null}
+                    """;
+
+            mockMvc.perform(
+                            put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(registrationServiceMock).editRegistration(
+                    eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))),
+                    any(Event.EditRegistrationCommand.class));
+        }
     }
 
     @Nested

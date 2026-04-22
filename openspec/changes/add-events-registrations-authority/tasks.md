@@ -17,11 +17,11 @@
 
 ## 3. Backend — editing another member's registration (vertical slice)
 
-- [ ] 3.1 Add red test: user with `EVENTS:REGISTRATIONS` can `PUT /api/events/{eventId}/registrations/{memberId}` for another member and the registration is updated
-- [ ] 3.2 Add red test: user without `EVENTS:REGISTRATIONS` (and not the owner) receives 403 on the same endpoint
-- [ ] 3.3 Add red test: member without any special authority can still `PUT` their own registration (owner flow preserved)
-- [ ] 3.4 Add `@HasAuthority(EVENTS_REGISTRATIONS)` to `EventRegistrationController.editRegistration` (alongside existing `@OwnerVisible`)
-- [ ] 3.5 Run affected tests — all green
+- [x] 3.1 Add red test: user with `EVENTS:REGISTRATIONS` can `PUT /api/events/{eventId}/registrations/{memberId}` for another member and the registration is updated
+- [x] 3.2 Add red test: user without `EVENTS:REGISTRATIONS` (and not the owner) receives 403 on the same endpoint
+- [x] 3.3 Add red test: member without any special authority can still `PUT` their own registration (owner flow preserved)
+- [x] 3.4 Add `@HasAuthority(EVENTS_REGISTRATIONS)` to `EventRegistrationController.editRegistration` (alongside existing `@OwnerVisible`)
+- [x] 3.5 Run affected tests — all green
 
 ## 4. Backend — affordances in registrations list (vertical slice)
 
