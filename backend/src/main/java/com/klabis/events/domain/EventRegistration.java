@@ -96,6 +96,10 @@ public class EventRegistration {
         return new EventRegistration(id, memberId, siCardNumber, category, registeredAt);
     }
 
+    public EventRegistration withChanges(SiCardNumber newSiCard, String newCategory) {
+        return new EventRegistration(this.id, this.memberId, newSiCard, newCategory, this.registeredAt);
+    }
+
     // ========== Getters ==========
 
     public UUID id() {

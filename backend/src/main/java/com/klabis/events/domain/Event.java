@@ -218,6 +218,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
     }
 
+    @RecordBuilder
+    public record EditRegistrationCommand(
+            SiCardNumber siCardNumber,
+            String category
+    ) {}
+
     /**
      * Private constructor for creating new Event instances.
      * <p>
@@ -638,6 +644,21 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.remove(registration);
 
         registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, command.memberId()));
+    }
+
+    public void editRegistration(MemberId memberId, EditRegistrationCommand command) {
+        assertRegistrationsOpen();
+
+        EventRegistration current = findRegistration(memberId)
+                .orElseThrow(() -> new RegistrationNotFoundException(memberId, this.id));
+
+        String resolvedCategory = resolveCategory(command.category());
+        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategory);
+
+        registrations.remove(current);
+        registrations.add(updated);
+
+        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated));
     }
 
     private void assertRegistrationsOpen() {

@@ -7,6 +7,7 @@ import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.EventUnregisterMemberBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
+import com.klabis.events.domain.EventEditRegistrationCommandBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1306,6 +1307,263 @@ class EventTest {
             event.syncFromOris(commandWithDeadline);
 
             assertThat(event.getRegistrationDeadline()).isEqualTo(LocalDate.of(2026, 9, 5));
+        }
+    }
+
+    @Nested
+    @DisplayName("editRegistration() – Skupina 1: SI karta")
+    class EditRegistrationSiCard {
+
+        private Event activeEventWithFutureDate() {
+            return EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .buildPublished();
+        }
+
+        private Event activeEventWithRegisteredMember(MemberId memberId, SiCardNumber siCard) {
+            Event event = activeEventWithFutureDate();
+            event.clearDomainEvents();
+            event.registerMember(memberId, siCard, null);
+            event.clearDomainEvents();
+            return event;
+        }
+
+        @Test
+        @DisplayName("should update SI card number, preserve id and registeredAt, replace registration in collection")
+        void shouldUpdateSiCardPreservingIdAndRegisteredAt() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            SiCardNumber originalSiCard = SiCardNumber.of("123456");
+            Event event = activeEventWithRegisteredMember(memberId, originalSiCard);
+
+            UUID originalRegistrationId = event.findRegistration(memberId).get().id();
+            var originalRegisteredAt = event.findRegistration(memberId).get().registeredAt();
+
+            SiCardNumber newSiCard = SiCardNumber.of("654321");
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(newSiCard)
+                    .build());
+
+            assertThat(event.getRegistrations()).hasSize(1);
+            var updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.siCardNumber()).isEqualTo(newSiCard);
+            assertThat(updated.id()).isEqualTo(originalRegistrationId);
+            assertThat(updated.registeredAt()).isEqualTo(originalRegisteredAt);
+        }
+
+        @Test
+        @DisplayName("should throw RegistrationNotFoundException when member is not registered")
+        void shouldThrowWhenMemberNotRegistered() {
+            Event event = activeEventWithFutureDate();
+            MemberId unknownMember = new MemberId(UUID.randomUUID());
+
+            assertThatThrownBy(() -> event.editRegistration(unknownMember, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("111111"))
+                    .build()))
+                    .isInstanceOf(RegistrationNotFoundException.class)
+                    .hasMessageContaining("not registered");
+        }
+
+        @Test
+        @DisplayName("should throw when event is not ACTIVE")
+        void shouldThrowWhenEventNotActive() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event draftEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .build();
+
+            assertThatThrownBy(() -> draftEvent.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("111111"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("ACTIVE");
+        }
+
+        @Test
+        @DisplayName("should throw when registrationDeadline has passed")
+        void shouldThrowWhenDeadlinePassed() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            SiCardNumber siCard = SiCardNumber.of("123456");
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
+                    "Location", "Organizer",
+                    null, null, LocalDate.now().minusDays(1), EventStatus.ACTIVE, null,
+                    List.of(),
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(siCard).build())),
+                    null
+            );
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("deadline");
+        }
+
+        @Test
+        @DisplayName("should throw when editing on event date")
+        void shouldThrowWhenEditingOnEventDate() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            SiCardNumber siCard = SiCardNumber.of("123456");
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now(),
+                    "Location", "Organizer",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(),
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(siCard).build())),
+                    null
+            );
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("on or after event date");
+        }
+
+        @Test
+        @DisplayName("should throw when editing after event date")
+        void shouldThrowWhenEditingAfterEventDate() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            SiCardNumber siCard = SiCardNumber.of("123456");
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
+                    "Location", "Organizer",
+                    null, null, null, EventStatus.ACTIVE, null,
+                    List.of(),
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(siCard).build())),
+                    null
+            );
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("on or after event date");
+        }
+
+        @Test
+        @DisplayName("should emit RegistrationEditedEvent with old and new snapshots")
+        void shouldEmitRegistrationEditedEvent() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            SiCardNumber originalSiCard = SiCardNumber.of("123456");
+            Event event = activeEventWithRegisteredMember(memberId, originalSiCard);
+
+            SiCardNumber newSiCard = SiCardNumber.of("654321");
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(newSiCard)
+                    .build());
+
+            var domainEvents = event.getDomainEvents();
+            assertThat(domainEvents).hasSize(1);
+            assertThat(domainEvents.get(0)).isInstanceOf(RegistrationEditedEvent.class);
+
+            RegistrationEditedEvent emitted = (RegistrationEditedEvent) domainEvents.get(0);
+            assertThat(emitted.eventId()).isEqualTo(event.getId());
+            assertThat(emitted.memberId()).isEqualTo(memberId);
+            assertThat(emitted.oldSiCardNumber()).isEqualTo(originalSiCard);
+            assertThat(emitted.newSiCardNumber()).isEqualTo(newSiCard);
+            assertThat(emitted.oldCategory()).isNull();
+            assertThat(emitted.newCategory()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("editRegistration() – Skupina 2: kategorie")
+    class EditRegistrationCategory {
+
+        private static final List<String> CATEGORIES = List.of("M21", "W35");
+
+        private Event activeEventWithCategories() {
+            return EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .withCategories(CATEGORIES)
+                    .buildPublished();
+        }
+
+        private Event activeEventWithCategoryAndRegisteredMember(MemberId memberId, String category) {
+            Event event = activeEventWithCategories();
+            event.clearDomainEvents();
+            event.registerMember(memberId, SiCardNumber.of("123456"), category);
+            event.clearDomainEvents();
+            return event;
+        }
+
+        @Test
+        @DisplayName("should update category for event with categories")
+        void shouldUpdateCategoryForEventWithCategories() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .category("W35")
+                    .build());
+
+            assertThat(event.findRegistration(memberId).get().category()).isEqualTo("W35");
+        }
+
+        @Test
+        @DisplayName("should throw when category is null for event with categories")
+        void shouldThrowWhenCategoryNullForEventWithCategories() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .category(null)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Category is required");
+        }
+
+        @Test
+        @DisplayName("should throw when category is blank for event with categories")
+        void shouldThrowWhenCategoryBlankForEventWithCategories() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .category("   ")
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Category is required");
+        }
+
+        @Test
+        @DisplayName("should throw when category is not in the event's category list")
+        void shouldThrowWhenCategoryNotInEventList() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .category("H55")
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("not available");
+        }
+
+        @Test
+        @DisplayName("should ignore provided category for event without categories")
+        void shouldIgnoreProvidedCategoryForEventWithoutCategories() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .buildPublished();
+            event.clearDomainEvents();
+            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+            event.clearDomainEvents();
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321"))
+                    .category("M21")
+                    .build());
+
+            assertThat(event.findRegistration(memberId).get().category()).isNull();
         }
     }
 }

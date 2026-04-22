@@ -103,6 +103,41 @@ class EventRegistrationTest {
     }
 
     @Nested
+    @DisplayName("withChanges() method")
+    class WithChanges {
+
+        @Test
+        @DisplayName("should return new instance with new siCardNumber and category, preserving id and registeredAt")
+        void shouldReturnNewInstancePreservingIdAndRegisteredAt() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            UUID originalId = UUID.randomUUID();
+            SiCardNumber originalSiCard = SiCardNumber.of("123456");
+            Instant originalRegisteredAt = Instant.now().minusSeconds(60);
+            EventRegistration original = EventRegistration.reconstruct(originalId, memberId, originalSiCard, "M21", originalRegisteredAt);
+
+            SiCardNumber newSiCard = SiCardNumber.of("654321");
+            EventRegistration updated = original.withChanges(newSiCard, "W35");
+
+            assertThat(updated.id()).isEqualTo(originalId);
+            assertThat(updated.registeredAt()).isEqualTo(originalRegisteredAt);
+            assertThat(updated.memberId()).isEqualTo(memberId);
+            assertThat(updated.siCardNumber()).isEqualTo(newSiCard);
+            assertThat(updated.category()).isEqualTo("W35");
+        }
+
+        @Test
+        @DisplayName("should return a different instance (not the same reference)")
+        void shouldReturnDifferentInstance() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventRegistration original = EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now());
+
+            EventRegistration updated = original.withChanges(SiCardNumber.of("654321"), null);
+
+            assertThat(updated).isNotSameAs(original);
+        }
+    }
+
+    @Nested
     @DisplayName("Equality")
     class Equality {
 
