@@ -361,6 +361,72 @@ class EventRegistrationServiceTest {
     }
 
     @Nested
+    @DisplayName("editRegistration() method")
+    class EditRegistrationMethod {
+
+        private EventId eventId;
+        private Event activeEvent;
+
+        @BeforeEach
+        void setUp() {
+            eventId = EventId.generate();
+
+            activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.now().plusDays(10))
+                    .location("Test Location").organizer("OOB").build());
+            activeEvent.publish();
+            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
+        }
+
+        @Test
+        @DisplayName("should load event, delegate to aggregate, and save")
+        void shouldLoadEventDelegateAndSave() {
+            // Given
+            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
+            when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
+
+            // When
+            service.editRegistration(eventId, TEST_MEMBER_ID, command);
+
+            // Then
+            verify(eventRepository).findById(eventId);
+            verify(eventRepository).save(activeEvent);
+            assertThat(activeEvent.findRegistration(TEST_MEMBER_ID)).isPresent();
+            assertThat(activeEvent.findRegistration(TEST_MEMBER_ID).get().siCardNumber().value()).isEqualTo("654321");
+        }
+
+        @Test
+        @DisplayName("should propagate EventNotFoundException when event does not exist")
+        void shouldPropagateEventNotFoundExceptionWhenEventNotFound() {
+            // Given
+            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+            // When/Then
+            assertThatThrownBy(() -> service.editRegistration(eventId, TEST_MEMBER_ID, command))
+                    .isInstanceOf(EventNotFoundException.class);
+
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should propagate RegistrationNotFoundException when member is not registered")
+        void shouldPropagateRegistrationNotFoundExceptionWhenMemberNotRegistered() {
+            // Given
+            MemberId unregisteredMember = MemberId.fromUserId(UserId.newId());
+            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
+
+            // When/Then
+            assertThatThrownBy(() -> service.editRegistration(eventId, unregisteredMember, command))
+                    .isInstanceOf(RegistrationNotFoundException.class);
+
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+    }
+
+    @Nested
     @DisplayName("listRegistrations() method")
     class ListRegistrationsMethod {
 

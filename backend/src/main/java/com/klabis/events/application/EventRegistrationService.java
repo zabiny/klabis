@@ -41,6 +41,14 @@ public class EventRegistrationService implements EventRegistrationPort {
     }
 
     @Override
+    public void editRegistration(@NonNull EventId eventId, @NonNull MemberId memberId, Event.EditRegistrationCommand command) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        event.editRegistration(memberId, command);
+        eventRepository.save(event);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<EventRegistration> listRegistrations(@NonNull EventId eventId) {
         Event event = eventRepository.findById(eventId)

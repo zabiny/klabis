@@ -16,6 +16,8 @@ public interface EventRegistrationPort {
 
     void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId);
 
+    void editRegistration(@NonNull EventId eventId, @NonNull MemberId memberId, Event.EditRegistrationCommand command);
+
     List<EventRegistration> listRegistrations(@NonNull EventId eventId);
 
 }
