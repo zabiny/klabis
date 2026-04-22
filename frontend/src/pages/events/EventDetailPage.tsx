@@ -1,7 +1,7 @@
 import {type ReactElement, type ReactNode, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Badge, Button, Card, DetailRow, Skeleton} from '../../components/UI';
+import {Alert, Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
@@ -11,10 +11,12 @@ import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {Check, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
+import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
 
 interface EventDetail {
     name: string;
@@ -34,7 +36,15 @@ interface RegistrationData extends EntityModel<{
     lastName: string;
     registeredAt: string;
     category?: string;
-}> {}
+    [key: string]: unknown;
+}> {
+    _templates?: Record<string, HalFormsTemplate>;
+}
+
+interface RegistrationEditModalState {
+    item: RegistrationData;
+    template: HalFormsTemplate;
+}
 
 const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'> = {
     DRAFT: 'default',
@@ -103,6 +113,47 @@ export const EventDetailPage = (): ReactElement => {
     return <EventDetailContent resourceData={resourceData}/>;
 };
 
+interface RegistrationsTableProps {
+    event: EventDetail;
+    onOpenEditModal: (state: RegistrationEditModalState) => void;
+}
+
+const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): ReactElement => {
+    const renderActionsCell = ({item}: TableCellRenderProps) => {
+        const registration = item as unknown as RegistrationData;
+        const editTemplate = registration._templates?.edit;
+        if (!editTemplate) return null;
+
+        return (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={labels.templates.editRegistration}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenEditModal({item: registration, template: editTemplate});
+                    }}
+                >
+                    <Pencil className="w-4 h-4"/>
+                </Button>
+            </div>
+        );
+    };
+
+    return (
+        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
+            <TableCell column="firstName">{labels.fields.firstName}</TableCell>
+            <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+            {event.categories && event.categories.length > 0 && (
+                <TableCell column="category">{labels.fields.categories}</TableCell>
+            )}
+            <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
+            <TableCell column="_actions" dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
+        </HalEmbeddedTable>
+    );
+};
+
 interface EventDetailContentProps {
     resourceData: EventDetail & HalResponse;
 }
@@ -110,6 +161,7 @@ interface EventDetailContentProps {
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
     const {route} = useHalPageData<EventDetail>();
     const [isEditing, setIsEditing] = useState(false);
+    const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
 
     const event = resourceData;
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
@@ -180,6 +232,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="syncEventFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
                             <HalFormButton name="registerForEvent" modal={true} icon={<UserPlus className="w-4 h-4"/>}/>
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
+                            <HalFormButton name="editRegistration" modal={true} icon={<Pencil className="w-4 h-4"/>}/>
                         </div>
                     )}
                 </div>
@@ -253,37 +306,79 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                 {resourceData._links?.registrations && (
                     <div className="flex flex-col gap-4">
                         <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
-                        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
-                            <TableCell column="firstName">{labels.fields.firstName}</TableCell>
-                            <TableCell column="lastName">{labels.fields.lastName}</TableCell>
-                            {event.categories && event.categories.length > 0 && (
-                                <TableCell column="category">{labels.fields.categories}</TableCell>
-                            )}
-                            <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
-                        </HalEmbeddedTable>
+                        <HalSubresourceProvider subresourceLinkName="registrations">
+                            <RegistrationsTable
+                                event={event}
+                                onOpenEditModal={setRegistrationEditModal}
+                            />
+                        </HalSubresourceProvider>
                     </div>
                 )}
             </div>
         );
     };
 
+    const handleRegistrationEditClose = () => setRegistrationEditModal(null);
+
     if (isEditing && enrichedTemplate) {
         return (
-            <HalFormDisplay
-                template={enrichedTemplate}
-                templateName="updateEvent"
-                resourceData={resourceData as Record<string, unknown>}
-                pathname={route.pathname}
-                onClose={cancelEditing}
-                postprocessPayload={postprocessPayload}
-                successMessage={labels.ui.savedSuccessfully}
-                submitButtonLabel={labels.buttons.saveChanges}
-                submitIcon={<Check className="w-4 h-4"/>}
-                customLayout={renderContent}
-                fieldsFactory={eventFormFieldsFactory}
-            />
+            <>
+                <HalFormDisplay
+                    template={enrichedTemplate}
+                    templateName="updateEvent"
+                    resourceData={resourceData as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={cancelEditing}
+                    postprocessPayload={postprocessPayload}
+                    successMessage={labels.ui.savedSuccessfully}
+                    submitButtonLabel={labels.buttons.saveChanges}
+                    submitIcon={<Check className="w-4 h-4"/>}
+                    customLayout={renderContent}
+                    fieldsFactory={eventFormFieldsFactory}
+                />
+                {registrationEditModal && (
+                    <Modal
+                        isOpen={true}
+                        onClose={handleRegistrationEditClose}
+                        title={labels.dialogTitles.editRegistration}
+                        size="md"
+                    >
+                        <HalFormDisplay
+                            template={registrationEditModal.template}
+                            templateName="edit"
+                            resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
+                            pathname={route.pathname}
+                            resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
+                            onClose={handleRegistrationEditClose}
+                            navigateOnSuccess={false}
+                        />
+                    </Modal>
+                )}
+            </>
         );
     }
 
-    return renderContent() as ReactElement;
+    return (
+        <>
+            {renderContent() as ReactElement}
+            {registrationEditModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={handleRegistrationEditClose}
+                    title={labels.dialogTitles.editRegistration}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={registrationEditModal.template}
+                        templateName="edit"
+                        resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
+                        onClose={handleRegistrationEditClose}
+                        navigateOnSuccess={false}
+                    />
+                </Modal>
+            )}
+        </>
+    );
 };

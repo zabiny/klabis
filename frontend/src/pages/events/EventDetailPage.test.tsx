@@ -5,6 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
 import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventDetailPage} from './EventDetailPage';
 import {vi} from 'vitest';
@@ -59,6 +60,10 @@ vi.mock('../../api/hateoas', () => ({
         return error && typeof error === 'object' && 'validationErrors' in error;
     }),
     toFormValidationError: vi.fn((error) => error),
+    toHref: vi.fn((source: any) => {
+        if (Array.isArray(source)) return source[0]?.href ?? '';
+        return source?.href ?? '';
+    }),
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
@@ -409,6 +414,88 @@ describe('EventDetailPage', () => {
         it('shows category column when event has categories', () => {
             renderPage(createMockPageData(mockEventWithRegistrationsLink({categories: ['H21', 'D21', 'H35']})));
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
+        });
+
+        describe('edit button in registrations list row (Group 7)', () => {
+            const buildRegistrationRow = (overrides?: Record<string, unknown>) => ({
+                firstName: 'Jana',
+                lastName: 'Nováková',
+                registeredAt: '2025-03-10T10:00:00',
+                _links: {self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'}},
+                ...overrides,
+            });
+
+            const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
+                const resourceData = mockEventWithRegistrationsLink(eventOverrides);
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery)
+                    .mockReturnValue({data: registrationsListData, error: null} as any);
+                return renderPage(createMockPageData(resourceData));
+            };
+
+            it('shows Akce column header in registrations table when registrations link is present', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+                expect(screen.getByRole('columnheader', {name: /akce/i})).toBeInTheDocument();
+            });
+
+            it('shows edit button on row that has _templates.edit', () => {
+                const row = buildRegistrationRow({
+                    _templates: {edit: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
+                });
+                renderPageWithRegistrationRows([row]);
+                expect(screen.getByRole('button', {name: /upravit přihlášku/i})).toBeInTheDocument();
+            });
+
+            it('does not show edit button on row without _templates.edit', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+                expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
+            });
+
+            it('opens modal with HalFormDisplay when row edit button is clicked', () => {
+                const row = buildRegistrationRow({
+                    _templates: {edit: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
+                });
+                renderPageWithRegistrationRows([row]);
+
+                fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
+
+                expect(screen.getByRole('dialog')).toBeInTheDocument();
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('edit own registration button (Group 6)', () => {
+        it('shows editRegistration button when editRegistration template exists on root resource', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /upravit přihlášku/i})).toBeInTheDocument();
+        });
+
+        it('does not show editRegistration button when editRegistration template is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
+        });
+
+        it('opens modal with HalFormDisplay when editRegistration button is clicked', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
     });
 });
