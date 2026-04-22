@@ -59,9 +59,9 @@
 
 ## 9. Frontend — edit button visible for EVENTS:REGISTRATIONS holders in list
 
-- [ ] 9.1 Add test to `EventDetailPage.test.tsx`: given every row of the registrations list contains an `editRegistration` template, the edit button renders on every row
-- [ ] 9.2 Verify no code change is needed in `EventDetailPage.tsx` beyond existing template-driven rendering (button already conditional on `_templates.editRegistration`); fix if a defensive "own row only" check is found
-- [ ] 9.3 Run affected frontend tests — all green
+- [x] 9.1 Add test to `EventDetailPage.test.tsx`: given every row of the registrations list contains an `editRegistration` template, the edit button renders on every row
+- [x] 9.2 Verify no code change is needed in `EventDetailPage.tsx` beyond existing template-driven rendering (button already conditional on `_templates.editRegistration`); fix if a defensive "own row only" check is found (n/a — already template-driven)
+- [x] 9.3 Run affected frontend tests — all green
 
 ## 10. Verification
 

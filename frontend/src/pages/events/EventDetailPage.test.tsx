@@ -477,6 +477,43 @@ describe('EventDetailPage', () => {
                 expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
             });
         });
+
+        describe('edit button for EVENTS:REGISTRATIONS holder (Group 9)', () => {
+            const buildRegistrationRow = (memberId: string, overrides?: Record<string, unknown>) => ({
+                firstName: 'Jana',
+                lastName: 'Nováková',
+                registeredAt: '2025-03-10T10:00:00',
+                _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
+                ...overrides,
+            });
+
+            const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
+                const resourceData = mockEventWithRegistrationsLink(eventOverrides);
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery)
+                    .mockReturnValue({data: registrationsListData, error: null} as any);
+                return renderPage(createMockPageData(resourceData));
+            };
+
+            it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTRATIONS holder)', () => {
+                // The backend sends editRegistration template on every row for holders of EVENTS:REGISTRATIONS.
+                // The frontend must render the button purely from the template — no actingMember equality guard.
+                const editTemplate = mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'});
+                const rows = [
+                    buildRegistrationRow('member-1', {_templates: {editRegistration: editTemplate}}),
+                    buildRegistrationRow('member-2', {_templates: {editRegistration: editTemplate}}),
+                    buildRegistrationRow('member-3', {_templates: {editRegistration: editTemplate}}),
+                ];
+                renderPageWithRegistrationRows(rows);
+
+                const editButtons = screen.getAllByRole('button', {name: /upravit přihlášku/i});
+                expect(editButtons).toHaveLength(3);
+            });
+        });
     });
 
     describe('edit own registration button (Group 6)', () => {
