@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'frontend/**'
       - '.github/workflows/backend_publish.yml'
   workflow_dispatch:  # Manual trigger
 
@@ -16,6 +17,30 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: 'frontend/.nvmrc'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Build frontend
+      working-directory: frontend
+      run: |
+        npm ci
+        npm run build
+
+    - name: Stage frontend into backend static resources
+      run: |
+        set -euo pipefail
+        STATIC_DIR="backend/src/main/resources/static"
+        rm -f  "$STATIC_DIR/index.html"
+        rm -f  "$STATIC_DIR/silent-renew.html"
+        rm -f  "$STATIC_DIR/vite.svg"
+        rm -rf "$STATIC_DIR/assets"
+        cp -r frontend/dist/. "$STATIC_DIR/"
+        ls -la "$STATIC_DIR"
 
     - name: Set up JDK 21
       uses: actions/setup-java@v3
