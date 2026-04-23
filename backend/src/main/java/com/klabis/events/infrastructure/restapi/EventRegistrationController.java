@@ -1,6 +1,5 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
@@ -23,7 +22,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.jspecify.annotations.Nullable;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -41,7 +39,6 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static com.klabis.events.infrastructure.restapi.EventAffordanceSupport.hasEventsRegistrationsAuthority;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -181,15 +178,6 @@ class EventRegistrationController {
         return items;
     }
 
-    @Nullable
-    private MemberId resolveActingMember() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth instanceof KlabisJwtAuthenticationToken token) {
-            return token.getMemberIdUuid().map(MemberId::new).orElse(null);
-        }
-        return null;
-    }
-
     @GetMapping("/{memberId}")
     @OwnerVisible
     @HasAuthority(Authority.EVENTS_REGISTRATIONS)
@@ -205,25 +193,29 @@ class EventRegistrationController {
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        Event event = eventManagementService.getEvent(new EventId(eventId), hasEventsRegistrationsAuthority());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS));
         MemberId targetMember = new MemberId(memberId);
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
         EntityModel<RegistrationDto> entityModel = EntityModel.of(toRegistrationDto(registration));
-        addLinksForRegistration(entityModel, eventId, event, targetMember);
+        addLinksForRegistration(entityModel, eventId, event, targetMember, auth);
 
         return ResponseEntity.ok(entityModel);
     }
 
-    private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId) {
-        MemberId actingMember = resolveActingMember();
+    private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId, Authentication auth) {
+        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId)).ifPresent(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel();
-            if (event.areRegistrationsOpen() && memberId.equals(actingMember)) {
+            if (event.areRegistrationsOpen()) {
                 selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
                         .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null)));
+                if (memberId.equals(actingMember)) {
+                    selfLink = selfLink
+                            .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                }
             }
             entityModel.add(selfLink);
         });

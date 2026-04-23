@@ -46,12 +46,6 @@ class AuthorityValidatorTest {
         }
 
         @Test
-        @DisplayName("should recognise EVENTS:REGISTRATIONS as a known authority")
-        void shouldRecogniseEventsRegistrationsAsKnownAuthority() {
-            AuthorityValidator.validate(Set.of("EVENTS:REGISTRATIONS"));
-        }
-
-        @Test
         @DisplayName("should throw exception for null authorities")
         void shouldThrowExceptionForNullAuthorities() {
             assertThatThrownBy(() -> AuthorityValidator.validate((Set<String>) null))

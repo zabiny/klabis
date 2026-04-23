@@ -426,34 +426,34 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
         });
 
-        describe('edit button in registrations list row (Group 7)', () => {
-            const buildRegistrationRow = (overrides?: Record<string, unknown>) => ({
-                firstName: 'Jana',
-                lastName: 'Nováková',
-                registeredAt: '2025-03-10T10:00:00',
-                _links: {self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'}},
-                ...overrides,
-            });
+        const buildRegistrationRow = (memberId = 'member-1', overrides?: Record<string, unknown>) => ({
+            firstName: 'Jana',
+            lastName: 'Nováková',
+            registeredAt: '2025-03-10T10:00:00',
+            _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
+            ...overrides,
+        });
 
-            const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
-                const resourceData = mockEventWithRegistrationsLink(eventOverrides);
-                const registrationsListData = {
-                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
-                    _embedded: {registrationDtoList: rows},
-                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
-                };
-                vi.mocked(useAuthorizedQuery)
-                    .mockReturnValue({data: registrationsListData, error: null} as any);
-                return renderPage(createMockPageData(resourceData));
+        const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
+            const resourceData = mockEventWithRegistrationsLink(eventOverrides);
+            const registrationsListData = {
+                _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                _embedded: {registrationDtoList: rows},
+                page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
+            vi.mocked(useAuthorizedQuery)
+                .mockReturnValue({data: registrationsListData, error: null} as any);
+            return renderPage(createMockPageData(resourceData));
+        };
 
+        describe('edit button in registrations list row (Group 7)', () => {
             it('shows Akce column header in registrations table when registrations link is present', () => {
                 renderPageWithRegistrationRows([buildRegistrationRow()]);
                 expect(screen.getByRole('columnheader', {name: /akce/i})).toBeInTheDocument();
             });
 
             it('shows edit button on row that has _templates.editRegistration', () => {
-                const row = buildRegistrationRow({
+                const row = buildRegistrationRow('member-1', {
                     _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
                 });
                 renderPageWithRegistrationRows([row]);
@@ -466,7 +466,7 @@ describe('EventDetailPage', () => {
             });
 
             it('opens modal with HalFormDisplay when row edit button is clicked', () => {
-                const row = buildRegistrationRow({
+                const row = buildRegistrationRow('member-1', {
                     _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
                 });
                 renderPageWithRegistrationRows([row]);
@@ -479,29 +479,7 @@ describe('EventDetailPage', () => {
         });
 
         describe('edit button for EVENTS:REGISTRATIONS holder (Group 9)', () => {
-            const buildRegistrationRow = (memberId: string, overrides?: Record<string, unknown>) => ({
-                firstName: 'Jana',
-                lastName: 'Nováková',
-                registeredAt: '2025-03-10T10:00:00',
-                _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
-                ...overrides,
-            });
-
-            const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
-                const resourceData = mockEventWithRegistrationsLink(eventOverrides);
-                const registrationsListData = {
-                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
-                    _embedded: {registrationDtoList: rows},
-                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
-                };
-                vi.mocked(useAuthorizedQuery)
-                    .mockReturnValue({data: registrationsListData, error: null} as any);
-                return renderPage(createMockPageData(resourceData));
-            };
-
             it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTRATIONS holder)', () => {
-                // The backend sends editRegistration template on every row for holders of EVENTS:REGISTRATIONS.
-                // The frontend must render the button purely from the template — no actingMember equality guard.
                 const editTemplate = mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'});
                 const rows = [
                     buildRegistrationRow('member-1', {_templates: {editRegistration: editTemplate}}),
@@ -548,21 +526,6 @@ describe('EventDetailPage', () => {
 
     describe('registerForEvent — stay on page after registration (Group 8)', () => {
         it('clicking registerForEvent opens modal but does NOT navigate away', () => {
-            const data = mockEventDetailData({
-                _templates: {
-                    registerForEvent: mockHalFormsTemplate({method: 'POST', title: 'Přihlásit se'}),
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            fireEvent.click(screen.getByRole('button', {name: /přihlásit se/i}));
-
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(mockNavigate).not.toHaveBeenCalled();
-            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toBeInTheDocument();
-        });
-
-        it('registerForEvent button passes navigateOnSuccess=false so Location header is ignored', () => {
             const data = mockEventDetailData({
                 _links: {
                     self: {href: 'http://localhost:8443/api/events/1'},

@@ -133,7 +133,8 @@ public class EventController {
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
-        Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasEventsManageAuthority());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
         EventDto eventDto = EventDtoMapper.toDto(event);
 
@@ -178,8 +179,9 @@ public class EventController {
 
         validateSortFields(pageable.getSort());
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
-        Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasEventsManageAuthority());
+        Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
@@ -251,14 +253,8 @@ public class EventController {
 
 class EventAffordanceSupport {
 
-    static boolean hasEventsManageAuthority() {
-        return SecuritySpelEvaluator.hasAuthority(
-                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
-    }
-
-    static boolean hasEventsRegistrationsAuthority() {
-        return SecuritySpelEvaluator.hasAuthority(
-                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_REGISTRATIONS);
+    static boolean hasAuthority(Authentication auth, Authority authority) {
+        return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
     static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive) {
