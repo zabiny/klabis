@@ -67,5 +67,5 @@
 
 - [x] 10.1 Run full backend + frontend test suites via test-runner agent — all green
 - [x] 10.2 Run `openspec validate add-events-registrations-authority --strict`
-- [ ] 10.3 Manual QA via Playwright: register as admin, toggle `EVENTS:REGISTRATIONS` for a regular member, log in as that member, edit another member's registration; log in as a member without the authority and confirm the edit button is hidden on other rows
-- [ ] 10.4 Manual QA: register for an event and confirm the browser stays on the event detail page and the registration list reflects the new registration
+- [x] 10.3 Manual QA via Playwright: register as admin, toggle `EVENTS:REGISTRATIONS` for a regular member, log in as that member, edit another member's registration; log in as a member without the authority and confirm the edit button is hidden on other rows
+- [x] 10.4 Manual QA: register for an event and confirm the browser stays on the event detail page and the registration list reflects the new registration
