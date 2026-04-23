@@ -61,7 +61,7 @@ The system SHALL restrict permission updates to a predefined set of valid author
 
 #### Scenario: Valid authorities can be assigned
 
-- **WHEN** admin with MEMBERS:PERMISSIONS authority assigns any combination of valid authorities (MEMBERS:MANAGE, MEMBERS:READ, MEMBERS:PERMISSIONS, EVENTS:MANAGE, EVENTS:READ, CALENDAR:MANAGE) to a user
+- **WHEN** admin with MEMBERS:PERMISSIONS authority assigns any combination of valid authorities (MEMBERS:MANAGE, MEMBERS:READ, MEMBERS:PERMISSIONS, EVENTS:MANAGE, EVENTS:REGISTRATIONS, EVENTS:READ, CALENDAR:MANAGE, GROUPS:TRAINING) to a user
 - **THEN** the assignment succeeds
 
 #### Scenario: Invalid authority shows error

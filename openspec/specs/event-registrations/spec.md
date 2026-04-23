@@ -8,13 +8,15 @@ Covers how members register for and unregister from club events. Defines the reg
 
 ### Requirement: Register for Event
 
-The system SHALL allow authenticated members to register themselves for ACTIVE events with open registrations (future event date AND registration deadline not passed). Only users with an associated member profile can register. When the event has categories defined, the member MUST select a category.
+The system SHALL allow authenticated members to register themselves for ACTIVE events with open registrations (future event date AND registration deadline not passed). Only users with an associated member profile can register. When the event has categories defined, the member MUST select a category. After a successful registration the member remains on the event detail page and the registration list refreshes to include their new registration.
 
 #### Scenario: Member registers for an open event
 
 - **WHEN** authenticated member clicks the register button for an active event with open registrations
 - **AND** provides their SI card number
 - **THEN** the registration is created
+- **AND** the member stays on the event detail page
+- **AND** the registration list refreshes and shows the new registration
 - **AND** the event row shows an unregister button
 
 #### Scenario: Member registers for an event with categories
@@ -97,7 +99,7 @@ The system SHALL display the list of members registered for an event. Each regis
 
 ### Requirement: View Own Registration
 
-The system SHALL allow members to view their own registration details including their SI card number. Event coordinators and managers SHALL be able to view any member's registration details including their SI card number.
+The system SHALL allow members to view their own registration details including their SI card number. Users with the EVENTS:REGISTRATIONS authority SHALL be able to view any member's registration details including their SI card number.
 
 #### Scenario: Member views their own registration
 
@@ -106,24 +108,29 @@ The system SHALL allow members to view their own registration details including 
 - **AND** unregister action is shown if unregistration is still allowed
 - **AND** edit registration action is shown if registrations are still open
 
-#### Scenario: Event coordinator views a specific member's registration
+#### Scenario: User with EVENTS:REGISTRATIONS views a specific member's registration
 
-- **WHEN** authenticated event coordinator or manager views a member's registration for an event
+- **WHEN** authenticated user with EVENTS:REGISTRATIONS views a member's registration for an event
 - **THEN** the registration details are shown including the member's SI card number and registration time
+
+#### Scenario: User without EVENTS:REGISTRATIONS cannot view another member's registration
+
+- **WHEN** authenticated user without EVENTS:REGISTRATIONS attempts to view another member's registration details
+- **THEN** access is refused
 
 #### Scenario: Own registration page shows not found when not registered
 
 - **WHEN** authenticated member navigates to their own registration for an event they are not registered for
 - **THEN** the system shows a not-found message
 
-#### Scenario: Coordinator views registration for member who is not registered
+#### Scenario: User with EVENTS:REGISTRATIONS views registration for member who is not registered
 
-- **WHEN** event coordinator navigates to a registration for a member who is not registered for the event
+- **WHEN** user with EVENTS:REGISTRATIONS navigates to a registration for a member who is not registered for the event
 - **THEN** the system shows a not-found message
 
 ### Requirement: Edit Own Registration
 
-Members SHALL be able to change their existing event registration (SI card number and category) before the event starts, without having to unregister and register again. Editing preserves the original registration time so the member does not lose their place in the first-come-first-served order.
+Members SHALL be able to change their existing event registration (SI card number and category) before the event starts, without having to unregister and register again. Users with the EVENTS:REGISTRATIONS authority SHALL additionally be able to edit any member's registration under the same timing rules. Editing preserves the original registration time so the member does not lose their place in the first-come-first-served order.
 
 #### Scenario: Edit button is visible on own registration view when editing is still allowed
 
@@ -133,10 +140,16 @@ Members SHALL be able to change their existing event registration (SI card numbe
 
 #### Scenario: Edit button is visible on the member's own row in the registrations list
 
-- **GIVEN** a member is registered for an active event with an open registration window
+- **GIVEN** a member without EVENTS:REGISTRATIONS is registered for an active event with an open registration window
 - **WHEN** the member views the registrations list on the event detail page
 - **THEN** the row representing the member shows an "Upravit" action
 - **AND** no other row shows an "Upravit" action
+
+#### Scenario: Edit button is visible on every row for a user with EVENTS:REGISTRATIONS
+
+- **GIVEN** an active event with an open registration window and several registrations
+- **WHEN** a user with EVENTS:REGISTRATIONS views the registrations list on the event detail page
+- **THEN** every registration row shows an "Upravit" action
 
 #### Scenario: Edit button is hidden after the registration deadline
 
@@ -171,6 +184,14 @@ Members SHALL be able to change their existing event registration (SI card numbe
 - **THEN** the registration is updated with the new category
 - **AND** the registration time shown on the page is unchanged
 
+#### Scenario: User with EVENTS:REGISTRATIONS edits another member's registration
+
+- **GIVEN** a user with EVENTS:REGISTRATIONS views the registrations list for an active event with an open registration window
+- **WHEN** the user clicks "Upravit" on another member's row, changes the SI card number or category, and submits the form
+- **THEN** the registration is updated with the new values
+- **AND** the registration time shown on that row is unchanged
+- **AND** the edited member sees the updated values when they next view their registration
+
 #### Scenario: Edit form for an event without categories hides the category field
 
 - **WHEN** the member opens the edit form for an event that defines no categories
@@ -193,9 +214,9 @@ Members SHALL be able to change their existing event registration (SI card numbe
 - **WHEN** the member submits the edit form with an SI card number containing non-digits, or shorter than 4 digits, or longer than 8 digits, or blank
 - **THEN** the form shows the same validation feedback shown on the registration form (digits only, 4–8 characters, required)
 
-#### Scenario: Editing another member's registration is not possible
+#### Scenario: Editing another member's registration without EVENTS:REGISTRATIONS is not possible
 
-- **WHEN** a member attempts to open or submit the edit form for another member's registration
+- **WHEN** a member without EVENTS:REGISTRATIONS attempts to open or submit the edit form for another member's registration
 - **THEN** the edit action is not offered in the UI
 - **AND** a direct attempt to submit an edit for another member is refused
 
