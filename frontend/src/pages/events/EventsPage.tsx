@@ -12,6 +12,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
+import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
 import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
@@ -99,6 +100,12 @@ export const EventsPage = (): ReactElement => {
 
     const importTemplate = resourceData?._templates?.importEvent;
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
+
+    const orisImport = useOrisEventImport(
+        importTemplate?.target ?? '',
+        isImportModalOpen,
+        {onImported: () => setIsImportModalOpen(false)},
+    );
 
     const openActionModal = (event: EventListData, templateName: string) => {
         const template = event._templates?.[templateName];
@@ -255,7 +262,13 @@ export const EventsPage = (): ReactElement => {
             <ImportOrisEventModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
-                importHref={importTemplate.target!}
+                events={orisImport.events}
+                fetchState={orisImport.fetchState}
+                selectedRegion={orisImport.selectedRegion}
+                onRegionChange={orisImport.onRegionChange}
+                isSubmitting={orisImport.isSubmitting}
+                submitError={orisImport.submitError}
+                onImport={orisImport.onImport}
             />
         )}
 

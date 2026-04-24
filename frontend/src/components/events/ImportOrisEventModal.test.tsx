@@ -1,46 +1,31 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
-import {ImportOrisEventModal} from './ImportOrisEventModal';
-import {authorizedFetch} from '../../api/authorizedFetch';
-
-const mockNavigate = vi.fn();
-
-vi.mock('react-router-dom', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('react-router-dom')>();
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
-});
-
-vi.mock('../../utils/navigationPath', () => ({
-    extractNavigationPath: (url: string) => url.startsWith('/api') ? url.substring(4) : url,
-}));
-
-vi.mock('../../api/authorizedFetch', () => ({
-    authorizedFetch: vi.fn(),
-}));
-
-const mockAuthorizedFetch = vi.mocked(authorizedFetch);
-
-const defaultProps = {
-    isOpen: true,
-    onClose: vi.fn(),
-    importHref: '/api/events/import',
-};
+import {ImportOrisEventModal, type ImportOrisEventModalProps} from './ImportOrisEventModal';
 
 const orisEvents = [
     {id: 101, name: 'Jarní sprint', date: '2025-04-10', location: 'Brno', organizer: 'ZBM'},
     {id: 202, name: 'Letní závod', date: '2025-07-20', location: null, organizer: 'HBT'},
 ];
 
-const renderModal = (props = defaultProps) =>
+const defaultProps: ImportOrisEventModalProps = {
+    isOpen: true,
+    onClose: vi.fn(),
+    events: orisEvents,
+    fetchState: 'success',
+    selectedRegion: 'JIHOMORAVSKA',
+    onRegionChange: vi.fn(),
+    isSubmitting: false,
+    submitError: null,
+    onImport: vi.fn(),
+};
+
+const renderModal = (props: Partial<ImportOrisEventModalProps> = {}) =>
     render(
         <MemoryRouter>
-            <ImportOrisEventModal {...props} />
+            <ImportOrisEventModal {...defaultProps} {...props} />
         </MemoryRouter>,
     );
 
@@ -51,367 +36,171 @@ describe('ImportOrisEventModal', () => {
 
     describe('visibility', () => {
         it('does not render when isOpen is false', () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
-            const {container} = render(
-                <MemoryRouter>
-                    <ImportOrisEventModal {...defaultProps} isOpen={false} />
-                </MemoryRouter>,
-            );
+            const {container} = renderModal({isOpen: false});
             expect(container.firstChild).toBeNull();
         });
 
-        it('renders modal title when open', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
+        it('renders modal title when open', () => {
             renderModal();
-
-            expect(await screen.findByText('Import akce z ORIS')).toBeInTheDocument();
+            expect(screen.getByText('Import akce z ORIS')).toBeInTheDocument();
         });
     });
 
     describe('loading state', () => {
-        it('shows loading indicator while fetching ORIS events', () => {
-            mockAuthorizedFetch.mockReturnValue(new Promise(() => {}));
-
-            renderModal();
-
+        it('shows loading indicator when fetchState is loading', () => {
+            renderModal({fetchState: 'loading', events: []});
             expect(screen.getByText(/načítání/i)).toBeInTheDocument();
+        });
+
+        it('submit button is disabled while loading', () => {
+            renderModal({fetchState: 'loading', events: []});
+            expect(screen.getByRole('button', {name: /importovat/i})).toBeDisabled();
+        });
+    });
+
+    describe('fetch error state', () => {
+        it('shows error message when fetchState is error', () => {
+            renderModal({fetchState: 'error', events: []});
+            expect(screen.getByText('Nepodařilo se načíst akce z ORIS.')).toBeInTheDocument();
+        });
+
+        it('submit button is disabled when fetch error', () => {
+            renderModal({fetchState: 'error', events: []});
+            expect(screen.getByRole('button', {name: /importovat/i})).toBeDisabled();
         });
     });
 
     describe('event list', () => {
-        it('renders select with ORIS events formatted as "date — name"', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
+        it('renders select with ORIS events formatted as "date — name"', () => {
             renderModal();
-
-            expect(await screen.findByRole('combobox')).toBeInTheDocument();
+            expect(screen.getByRole('combobox')).toBeInTheDocument();
             expect(screen.getByText('2025-04-10 ZBM Jarní sprint — Brno')).toBeInTheDocument();
             expect(screen.getByText('2025-07-20 HBT Letní závod')).toBeInTheDocument();
         });
 
-        it('has no option pre-selected (placeholder shown)', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
+        it('has no option pre-selected (placeholder shown)', () => {
             renderModal();
-
-            await screen.findByRole('combobox');
             const select = screen.getByRole('combobox') as HTMLSelectElement;
             expect(select.value).toBe('');
         });
 
-        it('submit button is disabled when no option selected', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
+        it('submit button is disabled when no option selected', () => {
             renderModal();
-
-            await screen.findByRole('combobox');
-            const submitButton = screen.getByRole('button', {name: /importovat/i});
-            expect(submitButton).toBeDisabled();
+            expect(screen.getByRole('button', {name: /importovat/i})).toBeDisabled();
         });
 
         it('submit button becomes enabled after selecting an option', async () => {
             const user = userEvent.setup();
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
             renderModal();
 
-            await screen.findByRole('combobox');
             await user.selectOptions(screen.getByRole('combobox'), '101');
 
-            const submitButton = screen.getByRole('button', {name: /importovat/i});
-            expect(submitButton).toBeEnabled();
+            expect(screen.getByRole('button', {name: /importovat/i})).toBeEnabled();
         });
     });
 
     describe('empty list handling', () => {
-        it('shows empty message when no ORIS events returned', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => [],
-            } as Response);
-
-            renderModal();
-
-            expect(await screen.findByText('Žádné akce k importu.')).toBeInTheDocument();
+        it('shows empty message when events list is empty', () => {
+            renderModal({events: []});
+            expect(screen.getByText('Žádné akce k importu.')).toBeInTheDocument();
         });
 
-        it('submit button disabled when event list is empty', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => [],
-            } as Response);
-
-            renderModal();
-
-            await screen.findByText('Žádné akce k importu.');
-            const submitButton = screen.getByRole('button', {name: /importovat/i});
-            expect(submitButton).toBeDisabled();
-        });
-    });
-
-    describe('fetch error handling', () => {
-        it('shows error message when ORIS events fetch fails', async () => {
-            mockAuthorizedFetch.mockRejectedValue(new Error('Network error'));
-
-            renderModal();
-
-            expect(
-                await screen.findByText('Nepodařilo se načíst akce z ORIS.'),
-            ).toBeInTheDocument();
-        });
-
-        it('submit button disabled when fetch fails', async () => {
-            mockAuthorizedFetch.mockRejectedValue(new Error('Network error'));
-
-            renderModal();
-
-            await screen.findByText('Nepodařilo se načíst akce z ORIS.');
-            const submitButton = screen.getByRole('button', {name: /importovat/i});
-            expect(submitButton).toBeDisabled();
+        it('submit button is disabled when event list is empty', () => {
+            renderModal({events: []});
+            expect(screen.getByRole('button', {name: /importovat/i})).toBeDisabled();
         });
     });
 
     describe('submit', () => {
-        it('calls POST to importHref with selected orisId on submit', async () => {
+        it('calls onImport with the selected orisId on submit', async () => {
             const user = userEvent.setup();
-            mockAuthorizedFetch
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => orisEvents,
-                } as Response)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    status: 201,
-                    headers: new Headers({location: '/api/events/new-event-id'}),
-                } as Response);
+            const onImport = vi.fn();
+            renderModal({onImport});
 
-            renderModal();
-
-            await screen.findByRole('combobox');
             await user.selectOptions(screen.getByRole('combobox'), '101');
             await user.click(screen.getByRole('button', {name: /importovat/i}));
 
-            await waitFor(() => {
-                expect(mockAuthorizedFetch).toHaveBeenCalledWith(
-                    '/api/events/import',
-                    expect.objectContaining({
-                        method: 'POST',
-                        body: JSON.stringify({orisId: 101}),
-                    }),
-                    false,
-                );
-            });
+            expect(onImport).toHaveBeenCalledWith(101);
         });
 
-        it('shows loading state on submit button during submission', async () => {
+        it('does not call onImport when no event selected', async () => {
             const user = userEvent.setup();
-            let resolveImport: (value: Response) => void;
-            const importPromise = new Promise<Response>((resolve) => {
-                resolveImport = resolve;
-            });
+            const onImport = vi.fn();
+            renderModal({onImport});
 
-            mockAuthorizedFetch
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => orisEvents,
-                } as Response)
-                .mockReturnValueOnce(importPromise);
-
-            renderModal();
-
-            await screen.findByRole('combobox');
-            await user.selectOptions(screen.getByRole('combobox'), '101');
             await user.click(screen.getByRole('button', {name: /importovat/i}));
 
+            expect(onImport).not.toHaveBeenCalled();
+        });
+
+        it('shows loading state on submit button when isSubmitting is true', () => {
+            renderModal({isSubmitting: true});
             expect(screen.getByRole('button', {name: /importuji/i})).toBeDisabled();
-
-            resolveImport!({
-                ok: true,
-                status: 201,
-                headers: new Headers({location: '/api/events/new-event-id'}),
-            } as Response);
         });
     });
 
-    describe('success handling', () => {
-        it('closes modal and navigates to event detail from Location header on 201', async () => {
-            const user = userEvent.setup();
-            const onClose = vi.fn();
-
-            mockAuthorizedFetch
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => orisEvents,
-                } as Response)
-                .mockResolvedValueOnce({
-                    ok: true,
-                    status: 201,
-                    headers: new Headers({location: '/api/events/abc-123'}),
-                } as Response);
-
-            render(
-                <MemoryRouter>
-                    <ImportOrisEventModal {...defaultProps} onClose={onClose} />
-                </MemoryRouter>,
-            );
-
-            await screen.findByRole('combobox');
-            await user.selectOptions(screen.getByRole('combobox'), '101');
-            await user.click(screen.getByRole('button', {name: /importovat/i}));
-
-            await waitFor(() => {
-                expect(onClose).toHaveBeenCalled();
-                expect(mockNavigate).toHaveBeenCalledWith('/events/abc-123');
-            });
+    describe('error display', () => {
+        it('shows submitError when provided', () => {
+            renderModal({submitError: 'Tato akce již byla importována.'});
+            expect(screen.getByText('Tato akce již byla importována.')).toBeInTheDocument();
         });
-    });
 
-    describe('409 conflict handling', () => {
-        it('keeps modal open and shows conflict error on 409', async () => {
-            const user = userEvent.setup();
-            const onClose = vi.fn();
-
-            mockAuthorizedFetch
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => orisEvents,
-                } as Response)
-                .mockResolvedValueOnce({
-                    ok: false,
-                    status: 409,
-                    headers: new Headers(),
-                } as Response);
-
-            render(
-                <MemoryRouter>
-                    <ImportOrisEventModal {...defaultProps} onClose={onClose} />
-                </MemoryRouter>,
-            );
-
-            await screen.findByRole('combobox');
-            await user.selectOptions(screen.getByRole('combobox'), '101');
-            await user.click(screen.getByRole('button', {name: /importovat/i}));
-
-            expect(await screen.findByText('Tato akce již byla importována.')).toBeInTheDocument();
-            expect(onClose).not.toHaveBeenCalled();
+        it('shows generic submit error when provided', () => {
+            renderModal({submitError: 'Import akce se nezdařil. Zkuste to prosím znovu.'});
+            expect(screen.getByText('Import akce se nezdařil. Zkuste to prosím znovu.')).toBeInTheDocument();
         });
-    });
 
-    describe('generic error handling on submit', () => {
-        it('keeps modal open and shows generic error on non-409 failure', async () => {
-            const user = userEvent.setup();
-            const onClose = vi.fn();
-
-            mockAuthorizedFetch
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => orisEvents,
-                } as Response)
-                .mockResolvedValueOnce({
-                    ok: false,
-                    status: 500,
-                    headers: new Headers(),
-                } as Response);
-
-            render(
-                <MemoryRouter>
-                    <ImportOrisEventModal {...defaultProps} onClose={onClose} />
-                </MemoryRouter>,
-            );
-
-            await screen.findByRole('combobox');
-            await user.selectOptions(screen.getByRole('combobox'), '101');
-            await user.click(screen.getByRole('button', {name: /importovat/i}));
-
-            expect(
-                await screen.findByText('Import akce se nezdařil. Zkuste to prosím znovu.'),
-            ).toBeInTheDocument();
-            expect(onClose).not.toHaveBeenCalled();
+        it('does not show error paragraph when submitError is null', () => {
+            renderModal({submitError: null});
+            expect(screen.queryByText('Tato akce již byla importována.')).not.toBeInTheDocument();
         });
     });
 
     describe('region picker', () => {
-        it('renders three radio buttons for JIHOMORAVSKA, MORAVA, CR regions', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
+        it('renders three radio buttons for JIHOMORAVSKA, MORAVA, CR regions', () => {
             renderModal();
-
             expect(screen.getByRole('radio', {name: 'Jihomoravská'})).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'Žebříček Morava'})).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'ČR'})).toBeInTheDocument();
         });
 
-        it('JIHOMORAVSKA radio is selected by default', async () => {
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
-            renderModal();
-
+        it('JIHOMORAVSKA radio is selected by default', () => {
+            renderModal({selectedRegion: 'JIHOMORAVSKA'});
             expect(screen.getByRole('radio', {name: 'Jihomoravská'})).toBeChecked();
         });
 
-        it('picking ČR clears the prior Jihomoravská selection', async () => {
+        it('calls onRegionChange when a different region is picked', async () => {
             const user = userEvent.setup();
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
-            renderModal();
+            const onRegionChange = vi.fn();
+            renderModal({onRegionChange});
 
             await user.click(screen.getByRole('radio', {name: 'ČR'}));
 
-            expect(screen.getByRole('radio', {name: 'ČR'})).toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Jihomoravská'})).not.toBeChecked();
+            expect(onRegionChange).toHaveBeenCalledWith('CR');
+        });
+
+        it('clears selected event id when region changes', async () => {
+            const user = userEvent.setup();
+            renderModal();
+
+            await user.selectOptions(screen.getByRole('combobox'), '101');
+            expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('101');
+
+            await user.click(screen.getByRole('radio', {name: 'ČR'}));
+
+            expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('');
         });
     });
 
     describe('cancel/close handling', () => {
-        it('calls onClose when Cancel button is clicked without making a request', async () => {
+        it('calls onClose when Cancel button is clicked', async () => {
             const user = userEvent.setup();
             const onClose = vi.fn();
+            renderModal({onClose});
 
-            mockAuthorizedFetch.mockResolvedValue({
-                ok: true,
-                json: async () => orisEvents,
-            } as Response);
-
-            render(
-                <MemoryRouter>
-                    <ImportOrisEventModal {...defaultProps} onClose={onClose} />
-                </MemoryRouter>,
-            );
-
-            await screen.findByRole('combobox');
             await user.click(screen.getByRole('button', {name: /zrušit/i}));
 
             expect(onClose).toHaveBeenCalled();
-            expect(mockAuthorizedFetch).toHaveBeenCalledTimes(1);
         });
     });
 });

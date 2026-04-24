@@ -44,6 +44,18 @@ vi.mock('../../components/events/ImportOrisEventModal', () => ({
         ) : null,
 }));
 
+vi.mock('../../hooks/useOrisEventImport', () => ({
+    useOrisEventImport: vi.fn().mockReturnValue({
+        events: [],
+        fetchState: 'loading',
+        selectedRegion: 'JIHOMORAVSKA',
+        isSubmitting: false,
+        submitError: null,
+        onRegionChange: vi.fn(),
+        onImport: vi.fn(),
+    }),
+}));
+
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({
