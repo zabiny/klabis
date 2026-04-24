@@ -1,4 +1,4 @@
-import {type ReactElement, useEffect, useMemo, useRef, useState} from "react";
+import {type ReactElement, useMemo, useState} from "react";
 import {Link, useSearchParams} from "react-router-dom";
 import type {EntityModel, HalFormsTemplate, HalResourceLinks} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
@@ -12,7 +12,8 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {FetchError} from "../../api/authorizedFetch.ts";
-import {MembersFilterBar} from "../../components/members/MembersFilterBar.tsx";
+import {DEFAULT_MEMBER_STATUS, MembersFilterBar} from "../../components/members/MembersFilterBar.tsx";
+import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 
 type MemberSummaryData = EntityModel<{
     id: string,
@@ -40,7 +41,7 @@ interface MemberPermissionsDialogState {
 
 export const MembersPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
@@ -50,24 +51,11 @@ export const MembersPage = (): ReactElement => {
     const urlStatus = searchParams.get('status');
     const urlQ = searchParams.get('q') ?? '';
 
-    const defaultAppliedRef = useRef(false);
-    useEffect(() => {
-        if (defaultAppliedRef.current) return;
-        defaultAppliedRef.current = true;
-
-        if (!urlStatus) {
-            setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                next.set('status', 'ACTIVE');
-                return next;
-            }, {replace: true});
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    useDefaultSearchParam('status', DEFAULT_MEMBER_STATUS);
 
     const extraParams = useMemo((): Record<string, string> => {
         const params: Record<string, string> = {};
-        const status = urlStatus ?? 'ACTIVE';
-        if (status !== 'ALL') params.status = status;
+        if (urlStatus) params.status = urlStatus;
         if (urlQ && urlQ.length >= 2) params.q = urlQ;
         return params;
     }, [urlStatus, urlQ]);

@@ -48,11 +48,14 @@ export function FulltextSearchInput({
 
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
+                const trimmed = value.trim();
+                const effectiveValue = trimmed.length >= minChars ? trimmed : '';
                 setSearchParams((prev) => {
+                    const currentValue = prev.get(paramName) ?? '';
+                    if (effectiveValue === currentValue) return prev;
                     const next = new URLSearchParams(prev);
-                    const trimmed = value.trim();
-                    if (trimmed.length >= minChars) {
-                        next.set(paramName, trimmed);
+                    if (effectiveValue) {
+                        next.set(paramName, effectiveValue);
                     } else {
                         next.delete(paramName);
                     }

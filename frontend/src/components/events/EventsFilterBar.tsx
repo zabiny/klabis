@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
 import { useAuth } from '../../contexts/AuthContext2';
 import { labels } from '../../localization';
-import { FulltextSearchInput } from '../UI/FulltextSearchInput';
+import { FulltextSearchInput, PillGroup } from '../UI';
 import type { TimeWindow } from './eventsFilterUtils';
 
 export interface EventsFilterBarProps {
@@ -35,27 +35,12 @@ export function EventsFilterBar({
                 ariaLabel={labels.eventsFilter.search}
             />
 
-            <div
-                className="inline-flex rounded-md border border-border overflow-hidden"
-                role="group"
-                aria-label={labels.eventsFilter.timeWindowLabel}
-            >
-                {TIME_WINDOW_OPTIONS.map(({ value, label }) => (
-                    <button
-                        key={value}
-                        type="button"
-                        aria-pressed={timeWindow === value}
-                        onClick={() => onTimeWindowChange(value)}
-                        className={`px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset ${
-                            timeWindow === value
-                                ? 'bg-primary text-white'
-                                : 'bg-surface text-text-primary hover:bg-surface-hover'
-                        }`}
-                    >
-                        {label}
-                    </button>
-                ))}
-            </div>
+            <PillGroup<TimeWindow>
+                options={TIME_WINDOW_OPTIONS}
+                selectedValue={timeWindow}
+                onChange={onTimeWindowChange}
+                ariaLabel={labels.eventsFilter.timeWindowLabel}
+            />
 
             {hasMemberProfile && (
                 <label className="inline-flex items-center gap-2 text-sm text-text-primary cursor-pointer select-none">

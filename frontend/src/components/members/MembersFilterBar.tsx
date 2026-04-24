@@ -1,9 +1,11 @@
 import { type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { labels } from '../../localization';
-import { FulltextSearchInput } from '../UI/FulltextSearchInput';
+import { FulltextSearchInput, PillGroup } from '../UI';
 
 export type MemberStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
+
+export const DEFAULT_MEMBER_STATUS: MemberStatusFilter = 'ACTIVE';
 
 export interface MembersFilterBarProps {
     hasManageAuthority: boolean;
@@ -20,6 +22,7 @@ export function MembersFilterBar({ hasManageAuthority }: MembersFilterBarProps):
     const currentStatus = (searchParams.get('status') ?? 'ACTIVE') as MemberStatusFilter;
 
     const handleStatusChange = (status: MemberStatusFilter) => {
+        if (status === currentStatus) return;
         setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             next.set('status', status);
@@ -36,27 +39,12 @@ export function MembersFilterBar({ hasManageAuthority }: MembersFilterBarProps):
             />
 
             {hasManageAuthority && (
-                <div
-                    className="inline-flex rounded-md border border-border overflow-hidden"
-                    role="group"
-                    aria-label={labels.membersFilter.statusLabel}
-                >
-                    {STATUS_OPTIONS.map(({ value, label }) => (
-                        <button
-                            key={value}
-                            type="button"
-                            aria-pressed={currentStatus === value}
-                            onClick={() => handleStatusChange(value)}
-                            className={`px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset ${
-                                currentStatus === value
-                                    ? 'bg-primary text-white'
-                                    : 'bg-surface text-text-primary hover:bg-surface-hover'
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+                <PillGroup<MemberStatusFilter>
+                    options={STATUS_OPTIONS}
+                    selectedValue={currentStatus}
+                    onChange={handleStatusChange}
+                    ariaLabel={labels.membersFilter.statusLabel}
+                />
             )}
         </div>
     );
