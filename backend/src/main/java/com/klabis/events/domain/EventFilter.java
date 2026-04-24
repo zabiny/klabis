@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.time.LocalDate;
@@ -19,7 +20,8 @@ public record EventFilter(
         String organizer,
         LocalDate dateFrom,
         LocalDate dateTo,
-        String fulltextQuery
+        String fulltextQuery,
+        MemberId registeredBy
 ) {
 
     public EventFilter {
@@ -33,14 +35,14 @@ public record EventFilter(
      * No filtering — returns all events.
      */
     public static EventFilter none() {
-        return new EventFilter(Set.of(), null, null, null, null);
+        return new EventFilter(Set.of(), null, null, null, null, null);
     }
 
     /**
      * Filter to events whose status is one of the given statuses.
      */
     public static EventFilter byStatus(EventStatus... statuses) {
-        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null);
+        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null, null);
     }
 
     /**
@@ -50,7 +52,7 @@ public record EventFilter(
     public static EventFilter byNotHavingStatus(EventStatus... excluded) {
         EnumSet<EventStatus> excludedSet = EnumSet.copyOf(Arrays.asList(excluded));
         EnumSet<EventStatus> allowed = EnumSet.complementOf(excludedSet);
-        return new EventFilter(allowed, null, null, null, null);
+        return new EventFilter(allowed, null, null, null, null, null);
     }
 
     /**
@@ -82,9 +84,9 @@ public record EventFilter(
         EnumSet<EventStatus> remaining = EnumSet.copyOf(statuses);
         remaining.remove(excluded);
         if (remaining.isEmpty()) {
-            return new EventFilter(Set.of(), organizer, dateFrom, dateTo, fulltextQuery);
+            return new EventFilter(Set.of(), organizer, dateFrom, dateTo, fulltextQuery, registeredBy);
         }
-        return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery);
+        return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery, registeredBy);
     }
 
     /**
@@ -92,7 +94,15 @@ public record EventFilter(
      * Leading/trailing whitespace is trimmed; blank input clears the query (no filtering).
      */
     public EventFilter withFulltext(String query) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, query);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, query, registeredBy);
+    }
+
+    /**
+     * Returns a new filter identical to this one but restricted to events where the given
+     * member has a registration. Null clears the restriction.
+     */
+    public EventFilter withRegisteredBy(MemberId memberId) {
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, memberId);
     }
 
     /**
@@ -102,14 +112,14 @@ public record EventFilter(
      * exclusive-upper-bound semantics that the original SQL query used.
      */
     public static EventFilter activeEventsWithDateBefore(LocalDate date) {
-        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null);
+        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null, null);
     }
 
     public static EventFilter byOrganizer(String organizer) {
-        return new EventFilter(Set.of(), organizer, null, null, null);
+        return new EventFilter(Set.of(), organizer, null, null, null, null);
     }
 
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(Set.of(), null, from, to, null);
+        return new EventFilter(Set.of(), null, from, to, null, null);
     }
 }

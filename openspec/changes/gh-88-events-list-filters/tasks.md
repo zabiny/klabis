@@ -10,11 +10,11 @@
 
 ## 2. Backend foundation — domain & persistence for registeredBy
 
-- [ ] 2.1 Write failing repository tests: given an event with and without a registration for a given member, filter by `registeredBy` returns only the one with a matching registration.
-- [ ] 2.2 Extend `EventFilter` with `registeredBy: MemberId` field.
-- [ ] 2.3 Extend `EventRepositoryAdapter` JDBC query with `EXISTS (SELECT 1 FROM event_registrations er WHERE er.event_id = e.id AND er.member_id = :registeredBy)` clause, applied only when `registeredBy` is set.
-- [ ] 2.4 Add tests asserting the filter includes CANCELLED and FINISHED events with a matching registration; make them pass.
-- [ ] 2.5 Refactor.
+- [x] 2.1 Write failing repository tests: given an event with and without a registration for a given member, filter by `registeredBy` returns only the one with a matching registration.
+- [x] 2.2 Extend `EventFilter` with `registeredBy: MemberId` field.
+- [x] 2.3 Extend `EventRepositoryAdapter` JDBC query with `EXISTS (SELECT 1 FROM event_registrations er WHERE er.event_id = e.id AND er.member_id = :registeredBy)` clause, applied only when `registeredBy` is set.
+- [x] 2.4 Add tests asserting the filter includes CANCELLED and FINISHED events with a matching registration; make them pass.
+- [x] 2.5 Refactor.
 
 ## 3. Backend — REST controller wiring
 

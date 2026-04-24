@@ -796,4 +796,172 @@ class EventJdbcRepositoryTest {
             assertThat(result.getContent().get(0).getName()).isEqualTo("Čeřínek klasika");
         }
     }
+
+    @Nested
+    @DisplayName("Filter by registeredBy — member registration filter")
+    class FilterByRegisteredBy {
+
+        @Test
+        @DisplayName("should return only event where member is registered, not the one without registration")
+        void shouldReturnOnlyEventWithMatchingRegistration() {
+            MemberId registeredMember = new MemberId(TEST_MEMBER_1_ID);
+            MemberId otherMember = new MemberId(TEST_MEMBER_2_ID);
+
+            Event eventWithRegistration = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event With Registration")
+                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build());
+            eventWithRegistration.publish();
+            eventWithRegistration.registerMember(registeredMember, new SiCardNumber("111111"), null);
+            eventRepository.save(eventWithRegistration);
+
+            Event eventWithoutRegistration = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Without Registration")
+                    .eventDate(LocalDate.of(2026, 8, 11))
+                    .location("Brno")
+                    .organizer("PRG")
+                    .build());
+            eventWithoutRegistration.publish();
+            eventWithoutRegistration.registerMember(otherMember, new SiCardNumber("222222"), null);
+            eventRepository.save(eventWithoutRegistration);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withRegisteredBy(registeredMember),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Event With Registration");
+        }
+
+        @Test
+        @DisplayName("should return empty when member has no registrations")
+        void shouldReturnEmptyWhenMemberHasNoRegistrations() {
+            MemberId memberWithNoRegistrations = new MemberId(TEST_MEMBER_3_ID);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Some Event")
+                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build());
+            event.publish();
+            event.registerMember(new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null);
+            eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withRegisteredBy(memberWithNoRegistrations),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should include CANCELLED events with a matching registration")
+        void shouldIncludeCancelledEventsWithMatchingRegistration() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Ostrava")
+                    .organizer("OOB")
+                    .build());
+            cancelledEvent.publish();
+            cancelledEvent.registerMember(member, new SiCardNumber("111111"), null);
+            cancelledEvent.cancel();
+            eventRepository.save(cancelledEvent);
+
+            Event activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Praha")
+                    .organizer("PRG")
+                    .build());
+            activeEvent.publish();
+            eventRepository.save(activeEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withRegisteredBy(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Cancelled Event");
+        }
+
+        @Test
+        @DisplayName("should include FINISHED events with a matching registration")
+        void shouldIncludeFinishedEventsWithMatchingRegistration() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            // Register while ACTIVE (future date), then advance to FINISHED via persist + direct status transition
+            Event finishedEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Finished Event")
+                    .eventDate(LocalDate.of(2026, 12, 31))
+                    .location("Liberec")
+                    .organizer("OOB")
+                    .build());
+            finishedEvent.publish();
+            finishedEvent.registerMember(member, new SiCardNumber("111111"), null);
+            eventRepository.save(finishedEvent);
+            // Reload, finish, and re-save
+            Event reload = eventRepository.findById(finishedEvent.getId()).orElseThrow();
+            reload.finish();
+            eventRepository.save(reload);
+
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Praha")
+                    .organizer("PRG")
+                    .build());
+            eventRepository.save(draftEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withRegisteredBy(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Finished Event");
+        }
+
+        @Test
+        @DisplayName("should combine registeredBy with fulltext filter using AND semantics")
+        void shouldCombineRegisteredByWithFulltext() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event matchingEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Praha Open")
+                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build());
+            matchingEvent.publish();
+            matchingEvent.registerMember(member, new SiCardNumber("111111"), null);
+            eventRepository.save(matchingEvent);
+
+            Event registeredButNoMatch = Event.create(EventCreateEventBuilder.builder()
+                    .name("Brno kolo")
+                    .eventDate(LocalDate.of(2026, 8, 11))
+                    .location("Brno")
+                    .organizer("PRG")
+                    .build());
+            registeredButNoMatch.publish();
+            registeredButNoMatch.registerMember(member, new SiCardNumber("222222"), null);
+            eventRepository.save(registeredButNoMatch);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withRegisteredBy(member).withFulltext("Praha"),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Praha Open");
+        }
+    }
 }

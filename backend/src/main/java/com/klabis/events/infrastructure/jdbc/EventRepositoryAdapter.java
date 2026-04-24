@@ -6,6 +6,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Page;
@@ -94,15 +95,44 @@ class EventRepositoryAdapter implements EventRepository {
 
     @Override
     public Page<Event> findAll(EventFilter filter, Pageable pageable) {
-        if (filter.fulltextQuery() != null) {
-            List<UUID> matchingIds = findIdsByFulltext(filter.fulltextQuery());
-            if (matchingIds.isEmpty()) {
-                return new PageImpl<>(List.of(), pageable, 0);
-            }
-            return findAllWithMatchingIds(filter, pageable, matchingIds);
+        List<UUID> preFilteredIds = resolvePreFilteredIds(filter);
+
+        if (preFilteredIds != null && preFilteredIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        if (preFilteredIds != null) {
+            return findAllWithMatchingIds(filter, pageable, preFilteredIds);
         }
 
         return executeQuery(buildCriteriaQuery(filter), pageable);
+    }
+
+    /**
+     * Returns the intersection of IDs that satisfy the fulltext and/or registeredBy constraints,
+     * or null if neither constraint is active (meaning no pre-filtering is needed).
+     */
+    private List<UUID> resolvePreFilteredIds(EventFilter filter) {
+        List<UUID> fulltextIds = filter.fulltextQuery() != null
+                ? findIdsByFulltext(filter.fulltextQuery())
+                : null;
+
+        List<UUID> registeredByIds = filter.registeredBy() != null
+                ? findIdsByRegisteredMember(filter.registeredBy())
+                : null;
+
+        if (fulltextIds == null && registeredByIds == null) {
+            return null;
+        }
+        if (fulltextIds == null) {
+            return registeredByIds;
+        }
+        if (registeredByIds == null) {
+            return fulltextIds;
+        }
+
+        Set<UUID> registeredBySet = Set.copyOf(registeredByIds);
+        return fulltextIds.stream().filter(registeredBySet::contains).toList();
     }
 
     private Page<Event> findAllWithMatchingIds(EventFilter filter, Pageable pageable, List<UUID> matchingIds) {
@@ -148,9 +178,9 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Returns the Criteria conditions for all filter dimensions except fulltext.
-     * Fulltext requires a SQL function (unaccent) that the Criteria API cannot express;
-     * it is resolved separately via a raw SQL ID pre-fetch.
+     * Returns the Criteria conditions for filter dimensions handled by the Spring Data Criteria API.
+     * Fulltext and registeredBy cannot be expressed via Criteria (require raw SQL) and are
+     * resolved separately via a pre-fetch of matching IDs.
      */
     private List<Criteria> buildNonFulltextConditions(EventFilter filter) {
         List<Criteria> conditions = new ArrayList<>();
@@ -206,5 +236,22 @@ class EventRepositoryAdapter implements EventRepository {
                 .collect(Collectors.joining(" AND ")));
 
         return namedJdbc.queryForList(sql.toString(), params, UUID.class);
+    }
+
+    /**
+     * Returns the IDs of events that have a registration for the given member.
+     * Event status is intentionally not filtered — cancelled and finished events
+     * with a live registration are included (spec requirement).
+     */
+    private List<UUID> findIdsByRegisteredMember(MemberId memberId) {
+        String sql = """
+                SELECT id FROM events e
+                WHERE EXISTS (
+                    SELECT 1 FROM event_registrations er
+                    WHERE er.event_id = e.id AND er.member_id = :memberId
+                )
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
+        return namedJdbc.queryForList(sql, params, UUID.class);
     }
 }
