@@ -1,6 +1,9 @@
 import type {SortDirection} from '../../api';
+import {yesterdayOf} from '../../utils/dateUtils';
 
 export type TimeWindow = 'budouci' | 'probehle' | 'vse';
+
+export const REGISTERED_BY_ME = 'me' as const;
 
 export const DEFAULT_TIME_WINDOW: TimeWindow = 'budouci';
 
@@ -30,19 +33,6 @@ export function timeWindowToDateParams(window: TimeWindow, today: string): DateP
 }
 
 /**
- * Returns the ISO date string for the day before the given ISO date string.
- * Operates purely on the date components to avoid timezone edge cases.
- */
-function yesterdayOf(isoDate: string): string {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day - 1);
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-/**
  * Returns the default sort for a given time window.
  * Budoucí: ascending (nearest first); Proběhlé/Vše: descending (most recent first).
  */
@@ -68,13 +58,4 @@ export function getTimeWindowFromParams(
     return 'vse';
 }
 
-/**
- * Returns today's date as an ISO string (YYYY-MM-DD) in local time.
- */
-export function getTodayIso(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
+export {getTodayIso} from '../../utils/dateUtils';

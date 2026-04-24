@@ -219,7 +219,8 @@ class EventRepositoryAdapter implements EventRepository {
      * Multiple tokens are ANDed together.
      */
     private List<UUID> findIdsByFulltext(String query) {
-        String[] tokens = query.trim().split("\\s+");
+        // fulltextQuery is already trimmed and non-blank per EventFilter compact constructor invariant
+        String[] tokens = query.split("\\s+");
 
         StringBuilder sql = new StringBuilder("SELECT id FROM events WHERE ");
         MapSqlParameterSource params = new MapSqlParameterSource();

@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -340,7 +341,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 ))
         );
 
-        List<Event> savedEvents = new java.util.ArrayList<>();
+        List<Event> savedEvents = new ArrayList<>();
         for (Event event : activeEvents) {
             savedEvents.add(eventRepository.save(event));
         }

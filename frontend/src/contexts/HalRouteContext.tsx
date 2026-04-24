@@ -103,11 +103,16 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     });
 
     // Convert React Query status to context queryState
-    const queryState: 'idle' | 'pending' | 'success' | 'error' =
-        status === 'pending' ? 'pending' :
-            status === 'error' ? 'error' :
-                status === 'success' ? 'success' :
-                    'idle';
+    let queryState: 'idle' | 'pending' | 'success' | 'error';
+    if (status === 'pending') {
+        queryState = 'pending';
+    } else if (status === 'error') {
+        queryState = 'error';
+    } else if (status === 'success') {
+        queryState = 'success';
+    } else {
+        queryState = 'idle';
+    }
 
     const navigateToResource = (resource: HalResponse | Link, options?: { state?: unknown }): void => {
         let targetLink: Link;

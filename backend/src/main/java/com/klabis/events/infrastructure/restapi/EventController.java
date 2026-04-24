@@ -44,9 +44,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -183,9 +185,9 @@ public class EventController {
             @Parameter(description = "Filter by registration: only 'me' is currently accepted (optional)")
             @RequestParam(required = false) String registeredBy,
             @Parameter(description = "Filter events from this date (inclusive, yyyy-MM-dd, optional)")
-            @RequestParam(required = false) java.time.LocalDate dateFrom,
+            @RequestParam(required = false) LocalDate dateFrom,
             @Parameter(description = "Filter events up to this date (inclusive, yyyy-MM-dd, optional)")
-            @RequestParam(required = false) java.time.LocalDate dateTo,
+            @RequestParam(required = false) LocalDate dateTo,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
@@ -235,8 +237,8 @@ public class EventController {
             String organizer,
             UUID coordinator,
             String registeredBy,
-            java.time.LocalDate dateFrom,
-            java.time.LocalDate dateTo,
+            LocalDate dateFrom,
+            LocalDate dateTo,
             CurrentUserData currentUser) {
 
         EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
@@ -272,7 +274,7 @@ public class EventController {
     }
 
     private void validateSortFields(Sort sort) {
-        final var allowedSortFields = java.util.Set.of(
+        final var allowedSortFields = Set.of(
                 "id",
                 "name",
                 "eventDate",

@@ -22,6 +22,7 @@ import {
     getDefaultSortForTimeWindow,
     getTimeWindowFromParams,
     getTodayIso,
+    REGISTERED_BY_ME,
     timeWindowToDateParams,
     type TimeWindow,
 } from "../../components/events/eventsFilterUtils.ts";
@@ -127,13 +128,17 @@ export const EventsPage = (): ReactElement => {
     const urlDateFrom = searchParams.get('dateFrom');
     const urlDateTo = searchParams.get('dateTo');
     const urlQ = searchParams.get('q') ?? '';
-    const urlRegisteredByMe = searchParams.get('registeredBy') === 'me';
+    const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
 
     const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
 
     // Controlled search input with debounce
     const [searchInputValue, setSearchInputValue] = useState(urlQ);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+    }, []);
 
     // Sync input value when URL changes externally (e.g. back/forward)
     const prevUrlQ = useRef(urlQ);
@@ -205,7 +210,7 @@ export const EventsPage = (): ReactElement => {
         setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             if (checked) {
-                next.set('registeredBy', 'me');
+                next.set('registeredBy', REGISTERED_BY_ME);
             } else {
                 next.delete('registeredBy');
             }
@@ -218,8 +223,8 @@ export const EventsPage = (): ReactElement => {
         const params: Record<string, string> = {};
         if (urlDateFrom) params.dateFrom = urlDateFrom;
         if (urlDateTo) params.dateTo = urlDateTo;
-        if (urlQ && urlQ.trim().length >= MIN_SEARCH_LENGTH) params.q = urlQ.trim();
-        if (urlRegisteredByMe) params.registeredBy = 'me';
+        if (urlQ && urlQ.length >= MIN_SEARCH_LENGTH) params.q = urlQ;
+        if (urlRegisteredByMe) params.registeredBy = REGISTERED_BY_ME;
         return params;
     }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe]);
 
@@ -250,6 +255,7 @@ export const EventsPage = (): ReactElement => {
                 onRegisteredByMeChange={handleRegisteredByMeChange}
             />
 
+            {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}
             <HalEmbeddedTable<EventListData>
                 key={timeWindow}
                 collectionName={"eventSummaryDtoList"}
