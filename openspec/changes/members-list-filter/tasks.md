@@ -50,8 +50,8 @@
 
 ## 7. Documentation
 
-- [ ] 7.1 Create `docs/frontend-patterns.html` capturing the filter-bar patterns: pill group (3-valued exclusive selector), fulltext search (debounce/min-chars/URL/shared component), binary toggle (authority-gated checkbox), filter bar layout, default-filter injection pattern, empty-state copy template. Short, living document; expect future additions.
-- [ ] 7.2 Run `openspec validate members-list-filter --strict`.
+- [x] 7.1 Create `docs/frontend-patterns.html` capturing the filter-bar patterns: pill group (3-valued exclusive selector), fulltext search (debounce/min-chars/URL/shared component), binary toggle (authority-gated checkbox), filter bar layout, default-filter injection pattern, empty-state copy template. Short, living document; expect future additions.
+- [x] 7.2 Run `openspec validate members-list-filter --strict`.
 
 ## 8. Archive
 

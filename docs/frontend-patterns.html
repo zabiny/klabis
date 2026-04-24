@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Frontend UI Patterns — Klabis</title>
+<link rel="stylesheet" href="developerManual/style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <a href="developerManual/index.html">Developer Manual</a>
+    <span class="sep">›</span>
+    <span>Frontend UI Patterns</span>
+</header>
+
+<main class="page-main">
+<article>
+
+<h1>Frontend UI Patterns</h1>
+
+<p class="lead">
+    Katalog opakujících se vzorů pro UI komponenty nad filtry a seznamy. Vzory jsou usazené
+    v produkčním kódu (events, members); tento dokument je fixuje a slouží jako reference pro
+    další filtr-bary. Udržuje se krátký a živý — přidávejte další vzory, jakmile se opakuje
+    nějaký nový.
+</p>
+
+<h2>Filter bar layout</h2>
+
+<p>
+    Filter bar je vodorovný kontejner nad tabulkou. Všechny ovládací prvky (fulltext input,
+    pill-groupy, binární toggly) jsou zarovnané do jedné řady s flex-wrapem pro úzké viewport.
+</p>
+
+<pre><code>&lt;div className="flex flex-wrap items-center gap-3 p-3 bg-surface-raised rounded-md border border-border"&gt;
+    {/* fulltext + pill group + toggle */}
+&lt;/div&gt;</code></pre>
+
+<p>Kde najdeš příklady: <code>EventsFilterBar.tsx</code>, <code>MembersFilterBar.tsx</code>.</p>
+
+<h2>Fulltext search input (shared)</h2>
+
+<p>
+    <code>src/components/UI/FulltextSearchInput.tsx</code> — jediná sdílená komponenta pro
+    fulltextové hledání napříč listy. Pravidla:
+</p>
+
+<ul>
+    <li>Lokální state pro input (okamžitá vizuální odezva).</li>
+    <li>Debounce <strong>250 ms</strong> před zápisem do URL.</li>
+    <li>Minimum <strong>2 znaky</strong> po trimu; kratší dotaz odstraní query param z URL.</li>
+    <li>Jediný zdroj pravdy je URL query param (default <code>q</code>; název lze přepsat přes <code>paramName</code>).</li>
+    <li>Synchronizace při externí změně URL (back/forward, odkaz) — hodnota inputu se aktualizuje.</li>
+    <li>Placeholder i <code>aria-label</code> přichází jako props; žádné hardcoded stringy.</li>
+</ul>
+
+<pre><code>&lt;FulltextSearchInput
+    paramName="q"
+    placeholder={labels.membersFilter.searchPlaceholder}
+    ariaLabel={labels.membersFilter.search}
+/&gt;</code></pre>
+
+<h2>Pill group (3-valued exclusive selector)</h2>
+
+<p>
+    Tři vzájemně výlučné hodnoty (např. Aktivní / Neaktivní / Vše; Budoucí / Proběhlé / Vše).
+    Preferovaný ovládací prvek namísto dropdownu nebo zaškrtávátka — je diskrétní, symetrický
+    a přímo ukazuje všechny dostupné stavy.
+</p>
+
+<ul>
+    <li>ARIA: kontejner má <code>role="group"</code> + <code>aria-label</code>; aktivní pill nese <code>aria-pressed="true"</code>.</li>
+    <li>Vizuál: aktivní pill má <code>bg-primary text-white</code>, ostatní <code>bg-surface text-text-primary</code>.</li>
+    <li>URL binding: klik píše hodnotu enumu (<code>ACTIVE</code> / <code>INACTIVE</code> / <code>ALL</code>) do příslušného query paramu.</li>
+    <li>Výchozí hodnota: injectuje se na prvním renderu přes <code>setSearchParams(..., {replace: true})</code>, ne jako defaultní prop.</li>
+</ul>
+
+<h2>Binary toggle (authority-gated)</h2>
+
+<p>
+    Binární přepínač viditelný jen pro uživatele s určitou autoritou (např. checkbox "Moje přihlášky"
+    jen pro uživatele s <code>memberId</code>; status pill group v members jen pro MEMBERS:MANAGE).
+</p>
+
+<ul>
+    <li>Gate se odvozuje z HAL signálu (přítomnost template/linku), ne z parseování JWT.
+        Např. <code>resourceData?._templates?.registerMember</code> implikuje MEMBERS:MANAGE.</li>
+    <li>Když je skryto, backend API musí zapsaný parametr silent-ignorovat (ne 400/403),
+        aby URL tampering nepřepadl na error stránku.</li>
+</ul>
+
+<h2>Default filter injection</h2>
+
+<p>
+    "Užitečný default" — při prvním renderu stránky bez query paramů se výchozí hodnota zapíše
+    do URL přes <code>setSearchParams(prev =&gt; ..., { replace: true })</code>. Použij
+    <code>useRef</code> flag <code>defaultAppliedRef</code>, aby se efekt spustil jen jednou.
+</p>
+
+<pre><code>const defaultAppliedRef = useRef(false);
+useEffect(() =&gt; {
+    if (defaultAppliedRef.current) return;
+    defaultAppliedRef.current = true;
+
+    if (!searchParams.get('status')) {
+        setSearchParams((prev) =&gt; {
+            const next = new URLSearchParams(prev);
+            next.set('status', 'ACTIVE');
+            return next;
+        }, { replace: true });
+    }
+}, []); // eslint-disable-line react-hooks/exhaustive-deps</code></pre>
+
+<h2>Empty-state copy</h2>
+
+<p>
+    Pokud filtr/kombinace filtrů nevrátí žádné řádky, <code>HalEmbeddedTable</code> umí zobrazit
+    <code>emptyMessage</code>. Používej generický text:
+</p>
+
+<blockquote>
+    Žádní členové neodpovídají zadaným filtrům.<br>
+    Žádné akce neodpovídají zadaným filtrům.
+</blockquote>
+
+<p>
+    Kontextuální varianty podle typu filtru nejsou (zatím) potřeba — generický text stačí.
+</p>
+
+<h2>URL query params = single source of truth</h2>
+
+<p>
+    Všechny filtry žijí v URL. Reload, back/forward a sdílení odkazu fungují out-of-the-box bez
+    session storage ani server-side per-user preferencí. Komponenta filtr-baru čte stav přes
+    <code>useSearchParams</code> a zapisuje přes <code>setSearchParams</code>. API volání bere
+    stejné hodnoty z URL.
+</p>
+
+</article>
+</main>
+
+</body>
+</html>
