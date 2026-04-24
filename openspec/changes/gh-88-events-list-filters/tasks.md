@@ -40,9 +40,9 @@
 
 ## 5. Frontend — tests & verification
 
-- [ ] 5.1 Component tests: filter bar renders controls; hides "Moje" toggle for users without member profile.
-- [ ] 5.2 Integration-style test: changing time window updates the URL and the request's date params.
-- [ ] 5.3 Manual verification on `http://localhost:3000` (login as `ZBM9500` club member): fulltext, time window default + switch, "Moje" toggle, combination filters, empty state, sort behavior.
+- [x] 5.1 Component tests: filter bar renders controls; hides "Moje" toggle for users without member profile.
+- [x] 5.2 Integration-style test: changing time window updates the URL and the request's date params.
+- [x] 5.3 Manual verification on `http://localhost:3000` (login as `ZBM9500` club member): fulltext, time window default + switch, "Moje" toggle, combination filters, empty state, sort behavior.
 
 ## 6. Documentation & follow-ups
 
