@@ -27,26 +27,26 @@ The calendar does not solve this — calendar items represent the *club's* event
 
 ### New Capabilities
 
-<!-- None. This change extends an existing capability. -->
+- `dashboard`: a new UI capability describing what the user sees on the home dashboard page after login. First widget is "Moje nadcházející akce" — the next three events the current user is registered to, with a link into the filtered events list for the full view. Widgets appear based on whether they apply to the current user (members see the registrations widget; users without a member profile do not).
 
 ### Modified Capabilities
 
-- `events`: extend the `List Events` requirement with a new "only events I'm registered to" filter (toggle). Extend the `Events Table Display` requirement with the filter control on the events list filter bar.
+<!-- None. The events-list filter bar slice was delivered in `gh-88-events-list-filters` and is already reflected in the `events` spec; the remaining scope is the dashboard widget, covered by the new `dashboard` capability above. -->
 
 ## Impact
 
 **Affected specs:**
-- `openspec/specs/events/spec.md` — `List Events` gains a new filter dimension and associated scenarios (filter on, filter off, combined with other filters, empty result, interaction with DRAFT visibility). `Events Table Display` gains a scenario for the new filter control in the filter bar.
+- `openspec/specs/dashboard/spec.md` (new) — describes the home dashboard page, the "Moje nadcházející akce" widget, visibility rules, empty state, and the shortcut into the events list.
 
-**Affected code (backend, events module):** the events list query path must accept a new optional boolean filter and restrict the result set to events the authenticated user is registered to. The exact boundary between the `events` and `event-registrations` modules (a JOIN in the events JDBC query vs. the application service calling the registrations port for a set of event IDs) is an open design question (see Open Questions).
+**Affected code (backend):** new `DashboardController` in `common.ui` exposing `GET /api/dashboard` as a HAL link index. The `events` module contributes an `upcomingRegistrations` link via a postprocessor when the current user has a member profile; the link's target is a pre-built `/api/events` query. No events-module domain changes.
 
-**Affected code (frontend):** the events list page filter bar gains a new toggle/checkbox. State plumbs into the existing events query as a query parameter.
+**Affected code (frontend):** `UserDashboard` component fetches `/api/dashboard`, conditionally renders the "Moje nadcházející akce" widget based on the `upcomingRegistrations` link presence, and follows that link to load widget data. `mockMyEvents` is removed from `mockDashboardData.ts`.
 
-**APIs (REST):** additive — new optional query parameter on `GET /api/events`. HAL-Forms affordance for the new filter is attached to the events list representation. No breaking change.
+**APIs (REST):** additive — new `GET /api/dashboard` resource. No change to `/api/events` or any other existing endpoint.
 
 **Dependencies:** none added or removed.
 
-**Data:** none — the filter reuses existing registration records.
+**Data:** none — the widget reuses existing registration records via the events-list query.
 
 ## Open Questions
 
