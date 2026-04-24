@@ -1,9 +1,9 @@
 ## 1. Dashboard resource (backend)
 
-- [ ] 1.1 Write `@WebMvcTest` slice test for `DashboardController`: authenticated GET `/api/dashboard` returns HAL response with a `self` link; unauthenticated request is rejected by existing security chain
-- [ ] 1.2 Implement `DashboardController` in `common.ui` (sibling of `RootController`) with `GET /api/dashboard` returning `EntityModel<DashboardModel>` with a `self` link; use `MediaTypes.HAL_JSON_VALUE` and `HAL_FORMS_JSON_VALUE` like RootController
-- [ ] 1.3 Refactor: extract `DashboardModel` as a thin marker record if needed to match `RootModel` shape
-- [ ] 1.4 Verify the endpoint is reachable with the standard `openid` scope; adjust `@SecurityRequirement` to match
+- [x] 1.1 Write `@WebMvcTest` slice test for `DashboardController`: authenticated GET `/api/dashboard` returns HAL response with a `self` link; unauthenticated request is rejected by existing security chain
+- [x] 1.2 Implement `DashboardController` in `common.ui` (sibling of `RootController`) with `GET /api/dashboard` returning `EntityModel<DashboardModel>` with a `self` link; use `MediaTypes.HAL_JSON_VALUE` and `HAL_FORMS_JSON_VALUE` like RootController
+- [x] 1.3 Refactor: extract `DashboardModel` as a thin marker record if needed to match `RootModel` shape
+- [x] 1.4 Verify the endpoint is reachable with the standard `openid` scope; adjust `@SecurityRequirement` to match
 
 ## 2. Upcoming registrations link (backend, events module)
 
