@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Klabis Orienteering Club Management API",
-    "description": "RESTful API for managing orienteering club operations.\n\n## Features\n- Member registration and management\n- HATEOAS-compliant with HAL+FORMS media type\n- OAuth2 authentication and authorization\n- RFC 7807 Problem Details for errors\n\n## Authentication\nMost endpoints require OAuth2 authentication. Use the 'Authorize' button to authenticate.\n",
+    "description": "RESTful API for managing orienteering club operations.\n\n## Features\n- Member registration and management\n- HATEOAS-compliant with HAL+FORMS media type\n- OAuth2 authentication and authorization\n- RFC 7807 Problem Details for errors\n\n## Authentication\nMost endpoints require OAuth2 authentication. Use the \u0027Authorize\u0027 button to authenticate.\n",
     "contact": {
       "name": "Klabis Development Team",
       "email": "davca7@gmail.com"
@@ -37,6 +37,10 @@
       "description": "Member registration and management API"
     },
     {
+      "name": "ORIS",
+      "description": "ORIS orienteering system integration API"
+    },
+    {
       "name": "TrainingGroups",
       "description": "Training group management API"
     },
@@ -55,6 +59,10 @@
     {
       "name": "Members ",
       "description": "Member registration and management API"
+    },
+    {
+      "name": "Events",
+      "description": "ORIS event import API"
     },
     {
       "name": "Actuator",
@@ -79,6 +87,10 @@
     {
       "name": "Root",
       "description": "API root navigation"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard widget link index"
     }
   ],
   "paths": {
@@ -285,7 +297,7 @@
           "Event Registrations"
         ],
         "summary": "Get registration by member ID",
-        "description": "Get a member's event registration including SI card number. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority.",
+        "description": "Get a member\u0027s event registration including SI card number. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority.",
         "operationId": "getRegistration",
         "parameters": [
           {
@@ -394,7 +406,7 @@
           "Event Registrations"
         ],
         "summary": "Edit event registration",
-        "description": "Update SI card number and/or category for a member's registration. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when registrations are open.",
+        "description": "Update SI card number and/or category for a member\u0027s registration. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when registrations are open.",
         "operationId": "editRegistration",
         "parameters": [
           {
@@ -1186,7 +1198,7 @@
           "Members "
         ],
         "summary": "List members with pagination and sorting",
-        "description": "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort=field,direction). Default: page=0, size=10, sort=lastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev). Access is restricted to active members only - terminated members will receive 403 Forbidden.",
+        "description": "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort\u003dfield,direction). Default: page\u003d0, size\u003d10, sort\u003dlastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev). Access is restricted to active members only - terminated members will receive 403 Forbidden.",
         "operationId": "listMembers",
         "parameters": [
           {
@@ -1219,11 +1231,30 @@
             "schema": {
               "type": "array",
               "default": [
-                "lastName,ASC"
+                "lastName,ASC",
+                "firstName,ASC"
               ],
               "items": {
                 "type": "string"
               }
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1239,7 +1270,7 @@
             }
           },
           "400": {
-            "description": "Bad request - invalid argument",
+            "description": "Invalid filter parameter value",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1404,7 +1435,7 @@
           "Members "
         ],
         "summary": "Suspend member membership",
-        "description": "Suspends a member's membership with a specified reason. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to false and records suspension details including timestamp and user who performed suspension.",
+        "description": "Suspends a member\u0027s membership with a specified reason. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to false and records suspension details including timestamp and user who performed suspension.",
         "operationId": "suspendMember",
         "parameters": [
           {
@@ -1508,7 +1539,7 @@
           "Members "
         ],
         "summary": "Resume suspended member membership",
-        "description": "Resumes a suspended member's membership. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to true and records resume timestamp and user who performed resume.",
+        "description": "Resumes a suspended member\u0027s membership. Requires MEMBERS:MANAGE authority (admin-only). Sets active status to true and records resume timestamp and user who performed resume.",
         "operationId": "resumeMember",
         "parameters": [
           {
@@ -2574,7 +2605,7 @@
           "Events"
         ],
         "summary": "List events with pagination and filtering",
-        "description": "Retrieves a paginated list of events.\nSupports filtering by status and sorting by various fields.\nDefault: page=0, size=10, sort=eventDate,desc.\nAllowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.\n",
+        "description": "Retrieves a paginated list of events.\nSupports filtering by status and sorting by various fields.\nDefault: page\u003d0, size\u003d10, sort\u003deventDate,desc.\nAllowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.\n",
         "operationId": "listEvents",
         "parameters": [
           {
@@ -2590,6 +2621,63 @@
                 "FINISHED",
                 "CANCELLED"
               ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Fulltext search on event name and location (optional)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "organizer",
+            "in": "query",
+            "description": "Filter by organizer code (optional)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "coordinator",
+            "in": "query",
+            "description": "Filter by coordinator member UUID (optional)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "registeredBy",
+            "in": "query",
+            "description": "Filter by registration: only \u0027me\u0027 is currently accepted (optional)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "description": "Filter events from this date (inclusive, yyyy-MM-dd, optional)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "description": "Filter events up to this date (inclusive, yyyy-MM-dd, optional)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           },
           {
@@ -2790,6 +2878,100 @@
           },
           "201": {
             "description": "Event successfully created"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/events/{id}/sync-from-oris": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Sync event from ORIS",
+        "description": "Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and ACTIVE events with an orisId.",
+        "operationId": "syncEventFromOris",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Event UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Event synced from ORIS successfully"
           }
         },
         "security": [
@@ -3273,6 +3455,98 @@
           },
           "204": {
             "description": "Successfully unregistered"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/events/import": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Import event from ORIS",
+        "description": "Creates a new event in DRAFT status by importing data from ORIS.",
+        "operationId": "importEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Event imported successfully"
           }
         },
         "security": [
@@ -3782,7 +4056,7 @@
           "Password Setup"
         ],
         "summary": "Complete password setup",
-        "description": "Sets the user's password and activates the account",
+        "description": "Sets the user\u0027s password and activates the account",
         "operationId": "completePasswordSetup",
         "requestBody": {
           "content": {
@@ -5255,6 +5529,127 @@
         ]
       }
     },
+    "/api/oris/events": {
+      "get": {
+        "tags": [
+          "ORIS"
+        ],
+        "summary": "List upcoming ORIS events",
+        "description": "Returns events from ORIS available for import. Accepts multiple region parameters (OrisRegion enum names) to combine results.",
+        "operationId": "listOrisEvents",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PRAZSKA",
+                  "STREDOCESKA",
+                  "ZAPADOCESKA",
+                  "JIHOCESKA",
+                  "JESTEDSKA",
+                  "VYCHODOCESKA",
+                  "VYSOCINA",
+                  "MORAVSKOSLEZSKA",
+                  "HANACKA",
+                  "VALASSKA",
+                  "JIHOMORAVSKA",
+                  "CECHY",
+                  "MORAVA",
+                  "CR"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrisEventSummary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
     "/api/members/options": {
       "get": {
         "tags": [
@@ -5358,7 +5753,7 @@
         "tags": [
           "Invitations"
         ],
-        "summary": "List current user's pending invitations across all groups",
+        "summary": "List current user\u0027s pending invitations across all groups",
         "operationId": "getPendingInvitations",
         "responses": {
           "401": {
@@ -5632,6 +6027,98 @@
         ]
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "dashboard",
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelDashboardModel"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelDashboardModel"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "openid"
+            ]
+          }
+        ]
+      }
+    },
     "/api/auth/password-setup/validate": {
       "get": {
         "tags": [
@@ -5851,7 +6338,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint 'modulith'",
+        "summary": "Actuator web endpoint \u0027modulith\u0027",
         "operationId": "getApplicationModules",
         "responses": {
           "401": {
@@ -5942,7 +6429,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint 'metrics'",
+        "summary": "Actuator web endpoint \u0027metrics\u0027",
         "operationId": "listNames",
         "responses": {
           "401": {
@@ -6033,7 +6520,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint 'metrics-requiredMetricName'",
+        "summary": "Actuator web endpoint \u0027metrics-requiredMetricName\u0027",
         "operationId": "metric",
         "parameters": [
           {
@@ -6134,7 +6621,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint 'info'",
+        "summary": "Actuator web endpoint \u0027info\u0027",
         "operationId": "info",
         "responses": {
           "401": {
@@ -6225,7 +6712,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint 'health'",
+        "summary": "Actuator web endpoint \u0027health\u0027",
         "operationId": "health",
         "responses": {
           "401": {
@@ -7233,14 +7720,14 @@
         "properties": {
           "firstName": {
             "type": "string",
-            "description": "Guardian's first name",
+            "description": "Guardian\u0027s first name",
             "example": "Pavel",
             "maxLength": 100,
             "minLength": 0
           },
           "lastName": {
             "type": "string",
-            "description": "Guardian's last name",
+            "description": "Guardian\u0027s last name",
             "example": "Novák",
             "maxLength": 100,
             "minLength": 0
@@ -7255,13 +7742,13 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Guardian's email address",
+            "description": "Guardian\u0027s email address",
             "example": "pavel.novak@example.com",
             "minLength": 1
           },
           "phone": {
             "type": "string",
-            "description": "Guardian's phone number",
+            "description": "Guardian\u0027s phone number",
             "example": "+420987654321",
             "minLength": 1,
             "pattern": "^\\+?[0-9\\s\\-()]{7,20}$"
@@ -7281,14 +7768,14 @@
         "properties": {
           "firstName": {
             "type": "string",
-            "description": "Member's first name",
+            "description": "Member\u0027s first name",
             "example": "Jan",
             "maxLength": 100,
             "minLength": 0
           },
           "lastName": {
             "type": "string",
-            "description": "Member's last name",
+            "description": "Member\u0027s last name",
             "example": "Novák",
             "maxLength": 100,
             "minLength": 0
@@ -7296,7 +7783,7 @@
           "dateOfBirth": {
             "type": "string",
             "format": "date",
-            "description": "Member's date of birth",
+            "description": "Member\u0027s date of birth",
             "example": "2005-05-15"
           },
           "nationality": {
@@ -7308,7 +7795,7 @@
           },
           "gender": {
             "type": "string",
-            "description": "Member's gender",
+            "description": "Member\u0027s gender",
             "enum": [
               "MALE",
               "FEMALE"
@@ -7508,6 +7995,16 @@
           "siCardNumber"
         ]
       },
+      "ImportCommand": {
+        "type": "object",
+        "description": "ORIS import command with orisId",
+        "properties": {
+          "orisId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "CreateCategoryPreset": {
         "type": "object",
         "description": "Preset creation data",
@@ -7563,14 +8060,14 @@
         "properties": {
           "registrationNumber": {
             "type": "string",
-            "description": "The user's registration number (format: XXXYYDD)",
+            "description": "The user\u0027s registration number (format: XXXYYDD)",
             "example": "12345678",
             "minLength": 1,
             "pattern": "\\d{8}"
           },
           "email": {
             "type": "string",
-            "description": "The member's email address",
+            "description": "The member\u0027s email address",
             "example": "member@example.com",
             "minLength": 1
           }
@@ -7631,7 +8128,7 @@
           },
           "registrationNumber": {
             "type": "string",
-            "description": "The user's registration number",
+            "description": "The user\u0027s registration number",
             "example": "12345678"
           }
         }
@@ -8060,6 +8557,28 @@
           }
         }
       },
+      "OrisEventSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "location": {
+            "type": "string"
+          },
+          "organizer": {
+            "type": "string"
+          }
+        }
+      },
       "EntityModelMemberSummaryResponse": {
         "type": "object",
         "properties": {
@@ -8070,22 +8589,22 @@
           },
           "firstName": {
             "type": "string",
-            "description": "Member's first name",
+            "description": "Member\u0027s first name",
             "example": "Jan"
           },
           "lastName": {
             "type": "string",
-            "description": "Member's last name",
+            "description": "Member\u0027s last name",
             "example": "Novák"
           },
           "registrationNumber": {
             "type": "string",
-            "description": "Member's unique registration number",
+            "description": "Member\u0027s unique registration number",
             "example": "ZBM0501"
           },
           "email": {
             "type": "string",
-            "description": "Member's email address (visible to admins only)"
+            "description": "Member\u0027s email address (visible to admins only)"
           },
           "active": {
             "type": "boolean",
@@ -8735,6 +9254,14 @@
             "type": "string",
             "format": "date-time"
           },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "EntityModelDashboardModel": {
+        "type": "object",
+        "properties": {
           "_links": {
             "$ref": "#/components/schemas/Links"
           }

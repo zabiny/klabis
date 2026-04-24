@@ -28,10 +28,10 @@
 
 ## 4. Cleanup
 
-- [ ] 4.1 Remove `mockMyEvents` (and `MyEvent` type if unused elsewhere) from `frontend/src/pages/dashboard/mockDashboardData.ts`
-- [ ] 4.2 Verify admin dashboard mocks remain untouched
-- [ ] 4.3 Run frontend test suite via test-runner agent; fix regressions
-- [ ] 4.4 Regenerate OpenAPI TypeScript types if backend OpenAPI doc changed (`npm run openapi`)
+- [x] 4.1 Remove `mockMyEvents` (and `MyEvent` type if unused elsewhere) from `frontend/src/pages/dashboard/mockDashboardData.ts`
+- [x] 4.2 Verify admin dashboard mocks remain untouched
+- [x] 4.3 Run frontend test suite via test-runner agent; fix regressions
+- [x] 4.4 Regenerate OpenAPI TypeScript types if backend OpenAPI doc changed (`npm run openapi`)
 
 ## 5. Manual verification
 
