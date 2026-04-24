@@ -30,6 +30,7 @@ import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -173,6 +174,14 @@ public class EventController {
     public ResponseEntity<PagedModel<EntityModel<EventSummaryDto>>> listEvents(
             @Parameter(description = "Filter by event status (optional)")
             @RequestParam(required = false) EventStatus status,
+            @Parameter(description = "Fulltext search on event name and location (optional)")
+            @RequestParam(required = false) String q,
+            @Parameter(description = "Filter by organizer code (optional)")
+            @RequestParam(required = false) String organizer,
+            @Parameter(description = "Filter by coordinator member UUID (optional)")
+            @RequestParam(required = false) UUID coordinator,
+            @Parameter(description = "Filter by registration: only 'me' is currently accepted (optional)")
+            @RequestParam(required = false) String registeredBy,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
@@ -180,7 +189,13 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
+        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, currentUser);
+        if (filter == null) {
+            return ResponseEntity.ok(pagedResourcesAssembler.toModel(
+                    new PageImpl<>(List.of(), pageable, 0),
+                    event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
+            ));
+        }
         Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
@@ -188,7 +203,7 @@ public class EventController {
                 event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
         );
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable, null)).ifPresent(link -> {
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, pageable, null)).ifPresent(link -> {
             Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
             if (orisIntegrationActive) {
@@ -198,6 +213,52 @@ public class EventController {
         });
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    /**
+     * Builds an {@link EventFilter} from the query parameters received by {@code listEvents}.
+     * Returns {@code null} when the request implies an empty result without querying the
+     * repository — specifically when {@code registeredBy=me} is requested but the current
+     * user has no member profile (silent no-op per design decision).
+     *
+     * @throws IllegalArgumentException when {@code registeredBy} has an unsupported value
+     *         (anything other than {@code "me"}), which propagates to HTTP 400.
+     */
+    @Nullable
+    private EventFilter buildFilter(
+            EventStatus status,
+            String q,
+            String organizer,
+            UUID coordinator,
+            String registeredBy,
+            CurrentUserData currentUser) {
+
+        EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
+
+        if (q != null) {
+            filter = filter.withFulltext(q);
+        }
+
+        if (organizer != null) {
+            filter = filter.withOrganizer(organizer);
+        }
+
+        if (coordinator != null) {
+            filter = filter.withCoordinator(new MemberId(coordinator));
+        }
+
+        if (registeredBy != null) {
+            if (!"me".equals(registeredBy)) {
+                throw new IllegalArgumentException(
+                        "Unsupported registeredBy value: '" + registeredBy + "'. Only 'me' is currently accepted.");
+            }
+            if (!currentUser.isMember()) {
+                return null;
+            }
+            filter = filter.withRegisteredBy(currentUser.memberId());
+        }
+
+        return filter;
     }
 
     private void validateSortFields(Sort sort) {
@@ -337,7 +398,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             dtoModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         if (event.getStatus() != EventStatus.DRAFT) {
@@ -400,7 +461,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
         klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("category-presets")));

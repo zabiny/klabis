@@ -165,6 +165,7 @@ class EventFilterTest {
                     java.time.LocalDate.of(2026, 1, 1),
                     java.time.LocalDate.of(2026, 12, 31),
                     null,
+                    null,
                     null
             );
             EventFilter result = base.withExcludedStatus(EventStatus.DRAFT);

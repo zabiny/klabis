@@ -967,6 +967,117 @@ class EventControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/events — filter parameter wiring (tasks 3.1-3.7)")
+    class ListEventsFilterParamTests {
+
+        @Test
+        @DisplayName("q param is passed to service as EventFilter.fulltextQuery")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void qParamIsPassedAsFulltextQuery() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("q", "jihlava")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withFulltext("jihlava")), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("organizer param is passed to service as EventFilter.organizer")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void organizerParamIsPassedToFilter() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("organizer", "OOB")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.byOrganizer("OOB")), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("coordinator param is passed to service as EventFilter.coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void coordinatorParamIsPassedToFilter() throws Exception {
+            UUID coordinatorUuid = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+            MemberId coordinatorId = new MemberId(coordinatorUuid);
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("coordinator", coordinatorUuid.toString())
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withCoordinator(coordinatorId)), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("registeredBy=me is resolved to the current user's MemberId")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042",
+                authorities = {Authority.EVENTS_READ})
+        void registeredByMeIsResolvedToCurrentMemberId() throws Exception {
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("registeredBy", "me")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withRegisteredBy(memberId)), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("registeredBy with value other than 'me' returns 400 Bad Request")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042",
+                authorities = {Authority.EVENTS_READ})
+        void registeredByWithUnknownValueReturns400() throws Exception {
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("registeredBy", "someone-else")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("registeredBy=me for user without member profile returns 200 with empty page — silent no-op")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void registeredByMeForUserWithoutMemberProfileReturnsEmptyPage() throws Exception {
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("registeredBy", "me")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.page.totalElements").value(0));
+
+            verify(eventManagementService, never()).listEvents(any(), any(), anyBoolean());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/events — list row management affordances")
     class ListRowManagementAffordancesTests {
 

@@ -203,6 +203,10 @@ class EventRepositoryAdapter implements EventRepository {
             conditions.add(Criteria.where("event_date").lessThanOrEquals(filter.dateTo()));
         }
 
+        if (filter.coordinator() != null) {
+            conditions.add(Criteria.where("event_coordinator_id").is(filter.coordinator().uuid()));
+        }
+
         return conditions;
     }
 

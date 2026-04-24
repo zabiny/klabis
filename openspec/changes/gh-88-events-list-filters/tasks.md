@@ -18,14 +18,14 @@
 
 ## 3. Backend — REST controller wiring
 
-- [ ] 3.1 Write failing `@WebMvcTest` for `EventController.listEvents` accepting `q` parameter and passing it to the service as `EventFilter.fulltextQuery`.
-- [ ] 3.2 Add `@RequestParam(required = false) String q` to `EventController.listEvents`; map into `EventFilter`.
-- [ ] 3.3 Write failing test for `organizer` and `coordinator` params (spec lists them but controller doesn't wire them today).
-- [ ] 3.4 Add `@RequestParam` for `organizer` and `coordinator`; map into `EventFilter`.
-- [ ] 3.5 Write failing test for `registeredBy=me` → resolved to current user's `MemberId`.
-- [ ] 3.6 Add `@RequestParam String registeredBy`; in the controller, translate `"me"` to the acting user's member id. Reject any other value with 400.
-- [ ] 3.7 Write test: user without a member profile calling `GET /api/events?registeredBy=me` returns 200 with empty page (tied to the spec scenario). Make it pass.
-- [ ] 3.8 Refactor controller to keep the listing method readable.
+- [x] 3.1 Write failing `@WebMvcTest` for `EventController.listEvents` accepting `q` parameter and passing it to the service as `EventFilter.fulltextQuery`.
+- [x] 3.2 Add `@RequestParam(required = false) String q` to `EventController.listEvents`; map into `EventFilter`.
+- [x] 3.3 Write failing test for `organizer` and `coordinator` params (spec lists them but controller doesn't wire them today).
+- [x] 3.4 Add `@RequestParam` for `organizer` and `coordinator`; map into `EventFilter`.
+- [x] 3.5 Write failing test for `registeredBy=me` → resolved to current user's `MemberId`.
+- [x] 3.6 Add `@RequestParam String registeredBy`; in the controller, translate `"me"` to the acting user's member id. Reject any other value with 400.
+- [x] 3.7 Write test: user without a member profile calling `GET /api/events?registeredBy=me` returns 200 with empty page (tied to the spec scenario). Make it pass.
+- [x] 3.8 Refactor controller to keep the listing method readable.
 
 ## 4. Frontend — filter bar component
 
