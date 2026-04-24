@@ -35,13 +35,13 @@
 
 ## 5. Manual verification
 
-- [ ] 5.1 Start local environment via `runLocalEnvironment.sh`
-- [ ] 5.2 Log in as `ZBM9500` (member user), confirm widget appears on home dashboard with real registrations (or empty state if none)
-- [ ] 5.3 Click "Zobrazit všechny" — verify navigation lands on events list with "Moje přihlášky" active and time window "Budoucí"
-- [ ] 5.4 Log in as `ZBM9000` (admin) — verify admin dashboard is unaffected (still shows its own mocked upcoming-events preview)
-- [ ] 5.5 Log in as a user with no member profile (if available) — confirm the widget is not rendered
+- [x] 5.1 Start local environment via `runLocalEnvironment.sh`
+- [x] 5.2 Log in as `ZBM9500` (member user), confirm widget appears on home dashboard with real registrations (or empty state if none) — verified: 3 rows (Žďárský pohár, Jihlavský noční sprint, Pohár OOB – 2. kolo)
+- [x] 5.3 Click "Zobrazit všechny" — verify navigation lands on events list with "Moje přihlášky" active and time window "Budoucí" — verified
+- [x] 5.4 Log in as `ZBM9000` (admin) — widget renders for admin too because admin has a member profile (spec rule is member-profile presence, not admin/non-admin); admin navigation shows expected Administrace section
+- [ ] 5.5 Log in as a user with no member profile (if available) — NOT VERIFIED (no such test user exists locally); backend test covers this path
 
 ## 6. GitHub issue
 
-- [ ] 6.1 Add label `BackendCompleted` to GitHub issue #88 after backend tasks (1.* and 2.*) pass
-- [ ] 6.2 Post a short implementation summary comment on issue #88 linking the commit range once merged
+- [x] 6.1 Add label `BackendCompleted` to GitHub issue #88 after backend tasks (1.* and 2.*) pass
+- [x] 6.2 Post a short implementation summary comment on issue #88 linking the commit range once merged
