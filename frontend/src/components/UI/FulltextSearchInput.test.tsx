@@ -1,50 +1,32 @@
 import '@testing-library/jest-dom';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
 import { FulltextSearchInput } from './FulltextSearchInput';
 
-// Reads the URL param value and exposes it in a testid span — used to verify URL writes
-const ParamReader = ({ paramName = 'q' }: { paramName?: string }) => {
-    const [params] = useSearchParams();
-    const value = params.get(paramName) ?? '(none)';
-    return <span data-testid="param-value">{value}</span>;
-};
-
-// Renders a button that navigates to a new URL — simulates external URL changes (back/forward)
-const NavButton = ({ to, label }: { to: string; label: string }) => {
-    const navigate = useNavigate();
-    return <button onClick={() => navigate(to)}>{label}</button>;
-};
-
 const renderInput = ({
-    initialUrl = '/',
-    paramName,
-}: { initialUrl?: string; paramName?: string } = {}) => {
+    value = '',
+    onChange = vi.fn(),
+    minChars,
+    debounceMs,
+}: {
+    value?: string;
+    onChange?: ReturnType<typeof vi.fn>;
+    minChars?: number;
+    debounceMs?: number;
+} = {}) => {
     const utils = render(
-        <MemoryRouter initialEntries={[initialUrl]}>
-            <Routes>
-                <Route
-                    path="*"
-                    element={
-                        <>
-                            <FulltextSearchInput
-                                paramName={paramName}
-                                placeholder="Hledat..."
-                                ariaLabel="Fulltext hledání"
-                            />
-                            <ParamReader paramName={paramName ?? 'q'} />
-                        </>
-                    }
-                />
-            </Routes>
-        </MemoryRouter>,
+        <FulltextSearchInput
+            value={value}
+            onChange={onChange}
+            placeholder="Hledat..."
+            ariaLabel="Fulltext hledání"
+            minChars={minChars}
+            debounceMs={debounceMs}
+        />,
     );
-    return utils;
+    return { ...utils, onChange };
 };
 
-// Type into input using fireEvent (synchronous, compatible with fake timers)
 const typeInto = (input: HTMLElement, value: string) => {
     fireEvent.change(input, { target: { value } });
 };
@@ -61,34 +43,14 @@ describe('FulltextSearchInput', () => {
             expect(screen.getByRole('textbox', { name: 'Fulltext hledání' })).toBeInTheDocument();
         });
 
-        it('shows empty input when URL has no q param', () => {
-            renderInput();
+        it('shows empty input when value prop is empty', () => {
+            renderInput({ value: '' });
             expect(screen.getByRole('textbox')).toHaveValue('');
         });
 
-        it('shows initial value from URL q param', () => {
-            renderInput({ initialUrl: '/?q=abc' });
+        it('shows initial value from value prop', () => {
+            renderInput({ value: 'abc' });
             expect(screen.getByRole('textbox')).toHaveValue('abc');
-        });
-
-        it('shows initial value from custom paramName', () => {
-            render(
-                <MemoryRouter initialEntries={['/?search=hello']}>
-                    <Routes>
-                        <Route
-                            path="*"
-                            element={
-                                <FulltextSearchInput
-                                    paramName="search"
-                                    placeholder="Hledat..."
-                                    ariaLabel="Fulltext hledání"
-                                />
-                            }
-                        />
-                    </Routes>
-                </MemoryRouter>,
-            );
-            expect(screen.getByRole('textbox')).toHaveValue('hello');
         });
     });
 
@@ -101,22 +63,23 @@ describe('FulltextSearchInput', () => {
             vi.useRealTimers();
         });
 
-        it('does not write to URL before 250ms', () => {
-            renderInput();
+        it('does not call onChange before 250ms', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, 'abc');
 
-            // Advance only 100ms — debounce not yet fired
             act(() => {
                 vi.advanceTimersByTime(100);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('(none)');
+            expect(onChange).not.toHaveBeenCalled();
         });
 
-        it('writes to URL after 250ms debounce with >= 2 chars', () => {
-            renderInput();
+        it('calls onChange after 250ms debounce with >= 2 chars', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, 'abc');
@@ -125,27 +88,28 @@ describe('FulltextSearchInput', () => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('abc');
+            expect(onChange).toHaveBeenCalledOnce();
+            expect(onChange).toHaveBeenCalledWith('abc');
         });
 
-        it('resets debounce on each change — single URL update at end', () => {
-            renderInput();
+        it('resets debounce on each change — single onChange call at end', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, 'ab');
             act(() => {
                 vi.advanceTimersByTime(100);
             });
-            // Still inside debounce window — URL not yet updated
-            expect(screen.getByTestId('param-value')).toHaveTextContent('(none)');
+            expect(onChange).not.toHaveBeenCalled();
 
             typeInto(input, 'abc');
             act(() => {
                 vi.advanceTimersByTime(300);
             });
 
-            // Single final URL update with full value
-            expect(screen.getByTestId('param-value')).toHaveTextContent('abc');
+            expect(onChange).toHaveBeenCalledOnce();
+            expect(onChange).toHaveBeenCalledWith('abc');
         });
     });
 
@@ -158,8 +122,9 @@ describe('FulltextSearchInput', () => {
             vi.useRealTimers();
         });
 
-        it('does not set URL param when input has 1 char', () => {
-            renderInput();
+        it('emits "" when input has 1 char (below min-chars)', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, 'a');
@@ -167,11 +132,12 @@ describe('FulltextSearchInput', () => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('(none)');
+            expect(onChange).toHaveBeenCalledWith('');
         });
 
-        it('does not set URL param for whitespace-only input', () => {
-            renderInput();
+        it('emits "" for whitespace-only input', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, '  ');
@@ -179,11 +145,12 @@ describe('FulltextSearchInput', () => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('(none)');
+            expect(onChange).toHaveBeenCalledWith('');
         });
 
-        it('sets URL param when input has exactly 2 chars', () => {
-            renderInput();
+        it('emits trimmed value when input has exactly 2 chars', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, 'ab');
@@ -191,25 +158,25 @@ describe('FulltextSearchInput', () => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('ab');
+            expect(onChange).toHaveBeenCalledWith('ab');
         });
 
-        it('removes URL param when input falls below min chars after having been set', () => {
-            renderInput({ initialUrl: '/?q=abc' });
+        it('emits "" when input falls below min chars after a valid emit', () => {
+            const onChange = vi.fn();
+            renderInput({ value: 'abc', onChange });
             const input = screen.getByRole('textbox');
-            expect(input).toHaveValue('abc');
-            expect(screen.getByTestId('param-value')).toHaveTextContent('abc');
 
             typeInto(input, 'a');
             act(() => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('(none)');
+            expect(onChange).toHaveBeenCalledWith('');
         });
 
-        it('writes trimmed value to URL param', () => {
-            renderInput();
+        it('emits trimmed value', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
             typeInto(input, ' ab ');
@@ -217,69 +184,24 @@ describe('FulltextSearchInput', () => {
                 vi.advanceTimersByTime(300);
             });
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('ab');
+            expect(onChange).toHaveBeenCalledWith('ab');
+        });
+
+        it('clears the input and emits ""', () => {
+            const onChange = vi.fn();
+            renderInput({ value: 'abc', onChange });
+            const input = screen.getByRole('textbox');
+
+            typeInto(input, '');
+            act(() => {
+                vi.advanceTimersByTime(300);
+            });
+
+            expect(onChange).toHaveBeenCalledWith('');
         });
     });
 
-    describe('external URL sync', () => {
-        it('updates input when URL param changes externally (back/forward)', async () => {
-            const user = userEvent.setup();
-            render(
-                <MemoryRouter initialEntries={['/?q=abc']}>
-                    <Routes>
-                        <Route
-                            path="*"
-                            element={
-                                <>
-                                    <FulltextSearchInput
-                                        placeholder="Hledat..."
-                                        ariaLabel="Fulltext hledání"
-                                    />
-                                    <NavButton to="/?q=xyz" label="go-xyz" />
-                                </>
-                            }
-                        />
-                    </Routes>
-                </MemoryRouter>,
-            );
-
-            expect(screen.getByRole('textbox')).toHaveValue('abc');
-
-            await user.click(screen.getByRole('button', { name: 'go-xyz' }));
-
-            expect(screen.getByRole('textbox')).toHaveValue('xyz');
-        });
-
-        it('clears input when URL param is removed externally', async () => {
-            const user = userEvent.setup();
-            render(
-                <MemoryRouter initialEntries={['/?q=hello']}>
-                    <Routes>
-                        <Route
-                            path="*"
-                            element={
-                                <>
-                                    <FulltextSearchInput
-                                        placeholder="Hledat..."
-                                        ariaLabel="Fulltext hledání"
-                                    />
-                                    <NavButton to="/" label="go-home" />
-                                </>
-                            }
-                        />
-                    </Routes>
-                </MemoryRouter>,
-            );
-
-            expect(screen.getByRole('textbox')).toHaveValue('hello');
-
-            await user.click(screen.getByRole('button', { name: 'go-home' }));
-
-            expect(screen.getByRole('textbox')).toHaveValue('');
-        });
-    });
-
-    describe('custom paramName', () => {
+    describe('no-op guard', () => {
         beforeEach(() => {
             vi.useFakeTimers();
         });
@@ -288,16 +210,55 @@ describe('FulltextSearchInput', () => {
             vi.useRealTimers();
         });
 
-        it('writes to the custom param name in URL', () => {
-            renderInput({ paramName: 'search' });
+        it('does not call onChange a second time when effective value is unchanged', () => {
+            const onChange = vi.fn();
+            renderInput({ onChange });
             const input = screen.getByRole('textbox');
 
-            typeInto(input, 'test');
+            typeInto(input, 'abc');
             act(() => {
                 vi.advanceTimersByTime(300);
             });
+            expect(onChange).toHaveBeenCalledOnce();
 
-            expect(screen.getByTestId('param-value')).toHaveTextContent('test');
+            typeInto(input, 'abc');
+            act(() => {
+                vi.advanceTimersByTime(300);
+            });
+            expect(onChange).toHaveBeenCalledOnce();
+        });
+    });
+
+    describe('external value prop sync', () => {
+        it('updates visible input when value prop changes externally', () => {
+            const { rerender } = renderInput({ value: 'abc' });
+            expect(screen.getByRole('textbox')).toHaveValue('abc');
+
+            rerender(
+                <FulltextSearchInput
+                    value="xyz"
+                    onChange={vi.fn()}
+                    placeholder="Hledat..."
+                    ariaLabel="Fulltext hledání"
+                />,
+            );
+
+            expect(screen.getByRole('textbox')).toHaveValue('xyz');
+        });
+
+        it('clears visible input when value prop is reset to empty', () => {
+            const { rerender } = renderInput({ value: 'hello' });
+
+            rerender(
+                <FulltextSearchInput
+                    value=""
+                    onChange={vi.fn()}
+                    placeholder="Hledat..."
+                    ariaLabel="Fulltext hledání"
+                />,
+            );
+
+            expect(screen.getByRole('textbox')).toHaveValue('');
         });
     });
 });

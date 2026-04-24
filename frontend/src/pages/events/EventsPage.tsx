@@ -181,6 +181,18 @@ export const EventsPage = (): ReactElement => {
         });
     }, [setSearchParams]);
 
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (value) {
+                next.set('q', value);
+            } else {
+                next.delete('q');
+            }
+            return next;
+        });
+    }, [setSearchParams]);
+
     // Build extra params for the API call
     const extraParams = useMemo((): Record<string, string> => {
         const params: Record<string, string> = {};
@@ -214,6 +226,8 @@ export const EventsPage = (): ReactElement => {
                 onTimeWindowChange={handleTimeWindowChange}
                 registeredByMe={urlRegisteredByMe}
                 onRegisteredByMeChange={handleRegisteredByMeChange}
+                searchQuery={urlQ}
+                onSearchChange={handleSearchChange}
             />
 
             {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}

@@ -1,4 +1,4 @@
-import {type ReactElement, useMemo, useState} from "react";
+import {type ReactElement, useCallback, useMemo, useState} from "react";
 import {Link, useSearchParams} from "react-router-dom";
 import type {EntityModel, HalFormsTemplate, HalResourceLinks} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
@@ -41,7 +41,7 @@ interface MemberPermissionsDialogState {
 
 export const MembersPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
@@ -52,6 +52,18 @@ export const MembersPage = (): ReactElement => {
     const urlQ = searchParams.get('q') ?? '';
 
     useDefaultSearchParam('status', DEFAULT_MEMBER_STATUS);
+
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (value) {
+                next.set('q', value);
+            } else {
+                next.delete('q');
+            }
+            return next;
+        });
+    }, [setSearchParams]);
 
     const extraParams = useMemo((): Record<string, string> => {
         const params: Record<string, string> = {};
@@ -183,7 +195,11 @@ export const MembersPage = (): ReactElement => {
                         )}
                     </div>
                 </div>
-                <MembersFilterBar hasManageAuthority={hasManageAuthority}/>
+                <MembersFilterBar
+                    hasManageAuthority={hasManageAuthority}
+                    searchQuery={urlQ}
+                    onSearchChange={handleSearchChange}
+                />
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
                                                       defaultOrderBy={"lastName"}
                                                       hideEmptyColumns

@@ -9,6 +9,8 @@ export interface EventsFilterBarProps {
     onTimeWindowChange: (window: TimeWindow) => void;
     registeredByMe: boolean;
     onRegisteredByMeChange: (checked: boolean) => void;
+    searchQuery: string;
+    onSearchChange: (value: string) => void;
 }
 
 const TIME_WINDOW_OPTIONS: { value: TimeWindow; label: string }[] = [
@@ -22,6 +24,8 @@ export function EventsFilterBar({
     onTimeWindowChange,
     registeredByMe,
     onRegisteredByMeChange,
+    searchQuery,
+    onSearchChange,
 }: EventsFilterBarProps): ReactElement {
     const { getUser } = useAuth();
     const user = getUser();
@@ -30,7 +34,8 @@ export function EventsFilterBar({
     return (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-surface-raised rounded-md border border-border">
             <FulltextSearchInput
-                paramName="q"
+                value={searchQuery}
+                onChange={onSearchChange}
                 placeholder={labels.eventsFilter.searchPlaceholder}
                 ariaLabel={labels.eventsFilter.search}
             />

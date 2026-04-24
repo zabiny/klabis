@@ -1,8 +1,8 @@
 import { type ChangeEvent, type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 export interface FulltextSearchInputProps {
-    paramName?: string;
+    value: string;
+    onChange: (value: string) => void;
     placeholder: string;
     ariaLabel: string;
     className?: string;
@@ -11,20 +11,18 @@ export interface FulltextSearchInputProps {
 }
 
 export function FulltextSearchInput({
-    paramName = 'q',
+    value,
+    onChange,
     placeholder,
     ariaLabel,
     className,
     minChars = 2,
     debounceMs = 250,
 }: FulltextSearchInputProps): ReactElement {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const urlValue = searchParams.get(paramName) ?? '';
-
-    const [inputValue, setInputValue] = useState(urlValue);
+    const [inputValue, setInputValue] = useState(value);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastEmittedRef = useRef<string | null>(null);
 
-    // Cleanup debounce timer on unmount
     useEffect(
         () => () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -32,38 +30,25 @@ export function FulltextSearchInput({
         [],
     );
 
-    // Sync input when URL param changes externally (back/forward navigation)
-    const prevUrlValue = useRef(urlValue);
     useEffect(() => {
-        if (prevUrlValue.current !== urlValue && inputValue !== urlValue) {
-            setInputValue(urlValue);
-        }
-        prevUrlValue.current = urlValue;
-    }, [urlValue, inputValue]);
+        setInputValue(value);
+    }, [value]);
 
     const handleChange = useCallback(
         (e: ChangeEvent<HTMLInputElement>) => {
-            const value = e.target.value;
-            setInputValue(value);
+            const raw = e.target.value;
+            setInputValue(raw);
 
             if (debounceRef.current) clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
-                const trimmed = value.trim();
+                const trimmed = raw.trim();
                 const effectiveValue = trimmed.length >= minChars ? trimmed : '';
-                setSearchParams((prev) => {
-                    const currentValue = prev.get(paramName) ?? '';
-                    if (effectiveValue === currentValue) return prev;
-                    const next = new URLSearchParams(prev);
-                    if (effectiveValue) {
-                        next.set(paramName, effectiveValue);
-                    } else {
-                        next.delete(paramName);
-                    }
-                    return next;
-                });
+                if (effectiveValue === lastEmittedRef.current) return;
+                lastEmittedRef.current = effectiveValue;
+                onChange(effectiveValue);
             }, debounceMs);
         },
-        [setSearchParams, paramName, minChars, debounceMs],
+        [onChange, minChars, debounceMs],
     );
 
     return (

@@ -9,6 +9,8 @@ export const DEFAULT_MEMBER_STATUS: MemberStatusFilter = 'ACTIVE';
 
 export interface MembersFilterBarProps {
     hasManageAuthority: boolean;
+    searchQuery: string;
+    onSearchChange: (value: string) => void;
 }
 
 const STATUS_OPTIONS: { value: MemberStatusFilter; label: string }[] = [
@@ -17,7 +19,11 @@ const STATUS_OPTIONS: { value: MemberStatusFilter; label: string }[] = [
     { value: 'ALL', label: labels.membersFilter.statusAll },
 ];
 
-export function MembersFilterBar({ hasManageAuthority }: MembersFilterBarProps): ReactElement {
+export function MembersFilterBar({
+    hasManageAuthority,
+    searchQuery,
+    onSearchChange,
+}: MembersFilterBarProps): ReactElement {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentStatus = (searchParams.get('status') ?? 'ACTIVE') as MemberStatusFilter;
 
@@ -33,7 +39,8 @@ export function MembersFilterBar({ hasManageAuthority }: MembersFilterBarProps):
     return (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-surface-raised rounded-md border border-border">
             <FulltextSearchInput
-                paramName="q"
+                value={searchQuery}
+                onChange={onSearchChange}
                 placeholder={labels.membersFilter.searchPlaceholder}
                 ariaLabel={labels.membersFilter.search}
             />

@@ -24,11 +24,13 @@ const defaultProps: EventsFilterBarProps = {
     onTimeWindowChange: vi.fn(),
     registeredByMe: false,
     onRegisteredByMeChange: vi.fn(),
+    searchQuery: '',
+    onSearchChange: vi.fn(),
 };
 
-const renderFilterBar = (props = defaultProps, initialUrl = '/') =>
+const renderFilterBar = (props = defaultProps) =>
     render(
-        <MemoryRouter initialEntries={[initialUrl]}>
+        <MemoryRouter initialEntries={['/']}>
             <EventsFilterBar {...props} />
         </MemoryRouter>,
     );
@@ -69,8 +71,8 @@ describe('EventsFilterBar', () => {
             ).toBeInTheDocument();
         });
 
-        it('shows initial value from URL q param', () => {
-            renderFilterBar(defaultProps, '/?q=jihlava');
+        it('shows value from searchQuery prop', () => {
+            renderFilterBar({ ...defaultProps, searchQuery: 'jihlava' });
             expect(screen.getByDisplayValue('jihlava')).toBeInTheDocument();
         });
 

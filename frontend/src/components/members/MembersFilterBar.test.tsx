@@ -6,10 +6,19 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MembersFilterBar } from './MembersFilterBar';
 import { labels } from '../../localization';
 
-const renderFilterBar = (hasManageAuthority: boolean, initialUrl = '/') =>
+const renderFilterBar = (
+    hasManageAuthority: boolean,
+    initialUrl = '/',
+    searchQuery = '',
+    onSearchChange = vi.fn(),
+) =>
     render(
         <MemoryRouter initialEntries={[initialUrl]}>
-            <MembersFilterBar hasManageAuthority={hasManageAuthority} />
+            <MembersFilterBar
+                hasManageAuthority={hasManageAuthority}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
+            />
         </MemoryRouter>,
     );
 
@@ -24,6 +33,11 @@ describe('MembersFilterBar', () => {
             expect(
                 screen.getByPlaceholderText(labels.membersFilter.searchPlaceholder),
             ).toBeInTheDocument();
+        });
+
+        it('shows value from searchQuery prop', () => {
+            renderFilterBar(true, '/', 'jan');
+            expect(screen.getByDisplayValue('jan')).toBeInTheDocument();
         });
     });
 
