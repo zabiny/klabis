@@ -55,4 +55,4 @@
 
 ## 8. Archive
 
-- [ ] 8.1 On merge, archive `members-list-filter` via OpenSpec archive workflow.
+- [x] 8.1 On merge, archive `members-list-filter` via OpenSpec archive workflow.
