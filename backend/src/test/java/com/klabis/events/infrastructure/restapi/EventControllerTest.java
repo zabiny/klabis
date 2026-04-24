@@ -1075,6 +1075,62 @@ class EventControllerTest {
 
             verify(eventManagementService, never()).listEvents(any(), any(), anyBoolean());
         }
+
+        @Test
+        @DisplayName("dateFrom param is passed to service as EventFilter.dateFrom")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void dateFromParamIsPassedToFilter() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("dateFrom", "2026-06-01")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withDateRange(LocalDate.of(2026, 6, 1), null)), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("dateTo param is passed to service as EventFilter.dateTo")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void dateToParamIsPassedToFilter() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("dateTo", "2026-08-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withDateRange(null, LocalDate.of(2026, 8, 31))), any(), anyBoolean());
+        }
+
+        @Test
+        @DisplayName("dateFrom and dateTo params together are passed as EventFilter date range")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void dateFromAndDateToParamsArePassedToFilter() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("dateFrom", "2026-06-01")
+                                    .param("dateTo", "2026-08-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(
+                    eq(EventFilter.none().withDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31))),
+                    any(), anyBoolean());
+        }
     }
 
     @Nested

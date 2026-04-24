@@ -139,4 +139,12 @@ public record EventFilter(
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
         return new EventFilter(Set.of(), null, from, to, null, null, null);
     }
+
+    /**
+     * Returns a new filter identical to this one but with the given date range applied.
+     * Either bound may be null (meaning no restriction on that side).
+     */
+    public EventFilter withDateRange(LocalDate from, LocalDate to) {
+        return new EventFilter(statuses, organizer, from, to, fulltextQuery, registeredBy, coordinator);
+    }
 }

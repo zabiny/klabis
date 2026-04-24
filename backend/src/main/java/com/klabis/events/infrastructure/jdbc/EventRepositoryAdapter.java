@@ -239,7 +239,7 @@ class EventRepositoryAdapter implements EventRepository {
                 .map(clause -> "(" + clause + ")")
                 .collect(Collectors.joining(" AND ")));
 
-        return namedJdbc.queryForList(sql.toString(), params, UUID.class);
+        return namedJdbc.query(sql.toString(), params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 
     /**
@@ -256,6 +256,6 @@ class EventRepositoryAdapter implements EventRepository {
                 )
                 """;
         MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
-        return namedJdbc.queryForList(sql, params, UUID.class);
+        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 }
