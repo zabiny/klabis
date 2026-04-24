@@ -2,12 +2,75 @@ import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
 import {resolve} from 'path';
 import devtoolsJson from 'vite-plugin-devtools-json';
+import {VitePWA} from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
     plugins: [
         react(),
-        devtoolsJson()
+        devtoolsJson(),
+        VitePWA({
+            registerType: 'prompt',
+            injectRegister: false,
+            includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+            manifest: {
+                name: 'Klabis - Členská sekce',
+                short_name: 'Klabis',
+                description: 'Členská sekce klubu orientačního běhu',
+                lang: 'cs',
+                theme_color: '#0d9488',
+                background_color: '#ffffff',
+                display: 'standalone',
+                orientation: 'portrait',
+                scope: '/',
+                start_url: '/',
+                icons: [
+                    {
+                        src: 'pwa-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                    },
+                    {
+                        src: 'pwa-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                    },
+                    {
+                        src: 'pwa-512x512-maskable.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        purpose: 'maskable',
+                    },
+                ],
+            },
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+                // Never let the SW serve API, auth or silent-renew responses from cache
+                navigateFallback: '/index.html',
+                navigateFallbackDenylist: [
+                    /^\/api\//,
+                    /^\/oauth2\//,
+                    /^\/login/,
+                    /^\/\.well-known\//,
+                    /^\/silent-renew\.html$/,
+                ],
+                runtimeCaching: [
+                    {
+                        // Allow opaque/CORS responses for icons & fonts to be cached
+                        urlPattern: ({request}) => request.destination === 'font',
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'klabis-fonts',
+                            expiration: {maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365},
+                        },
+                    },
+                ],
+            },
+            devOptions: {
+                // Enable to test PWA install prompt on `npm run dev`
+                enabled: false,
+            },
+        }),
     ],
     resolve: {
         alias: {
