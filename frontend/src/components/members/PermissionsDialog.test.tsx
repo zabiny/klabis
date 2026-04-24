@@ -1,62 +1,27 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {vi} from 'vitest';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {PermissionsDialog, type PermissionsDialogProps} from './PermissionsDialog';
-import {ToastProvider} from '../../contexts/ToastContext';
 import {FetchError} from '../../api/authorizedFetch';
 
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn(),
-    useAuthorizedMutation: vi.fn(),
-}));
-
-const {useAuthorizedQuery, useAuthorizedMutation} = await import('../../hooks/useAuthorizedFetch');
-
-const mockUseAuthorizedQuery = useAuthorizedQuery as ReturnType<typeof vi.fn>;
-const mockUseAuthorizedMutation = useAuthorizedMutation as ReturnType<typeof vi.fn>;
-
-const createQueryClient = () =>
-    new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 const renderDialog = (props?: Partial<PermissionsDialogProps>) => {
-    const defaultProps = {
+    const defaultProps: PermissionsDialogProps = {
         isOpen: true,
         onClose: vi.fn(),
-        permissionsUrl: '/api/users/1/permissions',
         memberName: 'Jan Novák',
         memberRegistrationNumber: 'ZBM102',
+        permissions: ['MEMBERS:MANAGE'],
+        isLoading: false,
+        isSaving: false,
+        error: null,
+        onSave: vi.fn(),
     };
     const mergedProps = {...defaultProps, ...props};
 
-    return render(
-        <QueryClientProvider client={createQueryClient()}>
-            <ToastProvider>
-                <PermissionsDialog {...mergedProps} />
-            </ToastProvider>
-        </QueryClientProvider>,
-    );
+    return render(<PermissionsDialog {...mergedProps} />);
 };
 
 describe('PermissionsDialog', () => {
-    const defaultMutate = vi.fn();
-
-    beforeEach(() => {
-        mockUseAuthorizedQuery.mockReturnValue({
-            data: {
-                authorities: ['MEMBERS:MANAGE'],
-                _links: {self: {href: '/api/users/1/permissions'}},
-            },
-            isLoading: false,
-        });
-
-        mockUseAuthorizedMutation.mockReturnValue({
-            mutate: defaultMutate,
-            isPending: false,
-            error: null,
-        });
-    });
-
     describe('Header', () => {
         it('shows member name and registration number in dialog title', () => {
             renderDialog();
@@ -73,12 +38,7 @@ describe('PermissionsDialog', () => {
 
     describe('Loading state', () => {
         it('shows spinner while loading permissions', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: undefined,
-                isLoading: true,
-            });
-
-            renderDialog();
+            renderDialog({isLoading: true, permissions: undefined});
 
             expect(screen.queryByRole('switch')).not.toBeInTheDocument();
         });
@@ -114,15 +74,7 @@ describe('PermissionsDialog', () => {
         });
 
         it('reflects current state for GROUPS:TRAINING when assigned', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {
-                    authorities: ['GROUPS:TRAINING'],
-                    _links: {self: {href: '/api/users/1/permissions'}},
-                },
-                isLoading: false,
-            });
-
-            renderDialog();
+            renderDialog({permissions: ['GROUPS:TRAINING']});
 
             const toggle = screen.getByRole('switch', {name: /Správa tréninkových skupin/i});
             expect(toggle).toHaveAttribute('aria-checked', 'true');
@@ -149,15 +101,7 @@ describe('PermissionsDialog', () => {
         });
 
         it('reflects current state for EVENTS:REGISTRATIONS when assigned', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {
-                    authorities: ['EVENTS:REGISTRATIONS'],
-                    _links: {self: {href: '/api/users/1/permissions'}},
-                },
-                isLoading: false,
-            });
-
-            renderDialog();
+            renderDialog({permissions: ['EVENTS:REGISTRATIONS']});
 
             const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
             expect(toggle).toHaveAttribute('aria-checked', 'true');
@@ -183,13 +127,7 @@ describe('PermissionsDialog', () => {
         });
 
         it('disables toggles while saving', () => {
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: true,
-                error: null,
-            });
-
-            renderDialog();
+            renderDialog({isSaving: true});
 
             const switches = screen.getAllByRole('switch');
             switches.forEach(toggle => {
@@ -199,89 +137,42 @@ describe('PermissionsDialog', () => {
     });
 
     describe('Save action', () => {
-        it('calls PUT with selected authorities on save', async () => {
+        it('calls onSave with selected authorities on save', async () => {
             const user = userEvent.setup();
-            renderDialog();
+            const onSave = vi.fn();
+            renderDialog({onSave});
 
             await user.click(screen.getByText('Uložit oprávnění'));
 
-            expect(defaultMutate).toHaveBeenCalledWith(
-                {
-                    url: '/api/users/1/permissions',
-                    data: {authorities: expect.arrayContaining(['MEMBERS:MANAGE'])},
-                },
-                expect.objectContaining({onSuccess: expect.any(Function)}),
+            expect(onSave).toHaveBeenCalledWith(
+                expect.arrayContaining(['MEMBERS:MANAGE']),
             );
         });
 
-        it('calls mutate exactly once per save click', async () => {
+        it('calls onSave exactly once per save click', async () => {
             const user = userEvent.setup();
-            renderDialog();
+            const onSave = vi.fn();
+            renderDialog({onSave});
 
             await user.click(screen.getByText('Uložit oprávnění'));
 
-            expect(defaultMutate).toHaveBeenCalledTimes(1);
+            expect(onSave).toHaveBeenCalledTimes(1);
         });
 
-        it('does not call mutate when save button is disabled during pending', async () => {
+        it('does not call onSave when save button is disabled during pending', async () => {
             const user = userEvent.setup();
-            const guardedMutate = vi.fn();
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: guardedMutate,
-                isPending: true,
-                error: null,
-            });
-            renderDialog();
+            const onSave = vi.fn();
+            renderDialog({isSaving: true, onSave});
 
             const saveButton = screen.getByRole('button', {name: /Uložit oprávnění/i});
             expect(saveButton).toBeDisabled();
             await user.click(saveButton);
 
-            expect(guardedMutate).not.toHaveBeenCalled();
-        });
-
-        it('invalidates permissions query cache after successful save', async () => {
-            const user = userEvent.setup();
-            const queryClient = createQueryClient();
-            const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: false,
-                error: null,
-            });
-
-            render(
-                <QueryClientProvider client={queryClient}>
-                    <ToastProvider>
-                        <PermissionsDialog
-                            isOpen={true}
-                            onClose={vi.fn()}
-                            permissionsUrl="/api/users/1/permissions"
-                            memberName="Jan Novák"
-                        />
-                    </ToastProvider>
-                </QueryClientProvider>,
-            );
-
-            await user.click(screen.getByText('Uložit oprávnění'));
-
-            const [, callOptions] = defaultMutate.mock.calls[0];
-            callOptions!.onSuccess(undefined);
-
-            expect(invalidateQueriesSpy).toHaveBeenCalledWith(
-                expect.objectContaining({queryKey: ['authorized']}),
-            );
+            expect(onSave).not.toHaveBeenCalled();
         });
 
         it('shows spinner in save button while pending', () => {
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: true,
-                error: null,
-            });
-
-            renderDialog();
+            renderDialog({isSaving: true});
 
             const saveButton = screen.getByRole('button', {name: /Uložit oprávnění/i});
             expect(saveButton).toBeDisabled();
@@ -303,13 +194,7 @@ describe('PermissionsDialog', () => {
 
     describe('Error handling', () => {
         it('shows generic error message when save fails', () => {
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: false,
-                error: new Error('HTTP 500 (Internal Server Error)'),
-            });
-
-            renderDialog();
+            renderDialog({error: new Error('HTTP 500 (Internal Server Error)')});
 
             expect(screen.getByText(/Nepodařilo se uložit oprávnění/i)).toBeInTheDocument();
         });
@@ -323,25 +208,13 @@ describe('PermissionsDialog', () => {
                 undefined,
             );
 
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: false,
-                error: conflictError,
-            });
-
-            renderDialog();
+            renderDialog({error: conflictError});
 
             expect(screen.getByText(/Nelze odebrat oprávnění/i)).toBeInTheDocument();
         });
 
         it('keeps dialog open when error occurs', () => {
-            mockUseAuthorizedMutation.mockReturnValue({
-                mutate: defaultMutate,
-                isPending: false,
-                error: new Error('Some error'),
-            });
-
-            renderDialog();
+            renderDialog({error: new Error('Some error')});
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
@@ -352,15 +225,6 @@ describe('PermissionsDialog', () => {
             renderDialog({isOpen: false});
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
-
-        it('does not fetch permissions when dialog is closed', () => {
-            renderDialog({isOpen: false});
-
-            expect(mockUseAuthorizedQuery).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({enabled: false}),
-            );
         });
     });
 });

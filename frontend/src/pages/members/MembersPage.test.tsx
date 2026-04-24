@@ -51,6 +51,16 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
+vi.mock('../../hooks/usePermissionsEditor', () => ({
+    usePermissionsEditor: vi.fn().mockReturnValue({
+        permissions: undefined,
+        isLoading: false,
+        save: vi.fn(),
+        isSaving: false,
+        error: null,
+    }),
+}));
+
 const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
     resourceData,
     isLoading: false,

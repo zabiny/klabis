@@ -1,17 +1,18 @@
 import {useEffect, useState} from 'react';
-import {useQueryClient} from '@tanstack/react-query';
 import {Alert, Button, Modal, Spinner} from '../UI';
-import {useToast} from '../../contexts/ToastContext';
-import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import {FetchError} from '../../api/authorizedFetch';
 import {labels} from '../../localization';
+import {resolvePermissionErrorMessage} from '../../hooks/usePermissionsEditor';
 
 export interface PermissionsDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    permissionsUrl: string;
     memberName: string;
     memberRegistrationNumber?: string;
+    permissions: string[] | undefined;
+    isLoading: boolean;
+    isSaving: boolean;
+    error: Error | null | undefined;
+    onSave: (selectedAuthorities: string[]) => void;
 }
 
 const PERMISSION_COLORS: Record<string, string> = {
@@ -29,13 +30,6 @@ const PERMISSION_LABELS: Record<string, { label: string; description: string; co
         {label: value.label, description: value.description, color: PERMISSION_COLORS[key] ?? 'bg-gray-100 text-gray-600'},
     ])
 );
-
-interface PermissionsResponse {
-    authorities: string[];
-    _links?: {
-        self?: { href: string };
-    };
-}
 
 const PermissionIcon = ({color}: { color: string }) => (
     <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${color}`}>
@@ -65,38 +59,18 @@ const Toggle = ({checked, onChange, disabled, label}: { checked: boolean; onChan
     </button>
 );
 
-function resolveErrorMessage(error: Error): string {
-    if (error instanceof FetchError && error.responseStatus === 409) {
-        return labels.errors.removeLastPermissionsAdmin;
-    }
-    return labels.errors.savePermissionsFailed;
-}
-
-export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, memberRegistrationNumber}: PermissionsDialogProps) => {
-    const {addToast} = useToast();
-    const queryClient = useQueryClient();
+export const PermissionsDialog = ({isOpen, onClose, memberName, memberRegistrationNumber, permissions, isLoading, isSaving, error, onSave}: PermissionsDialogProps) => {
     const [selectedAuthorities, setSelectedAuthorities] = useState<Set<string>>(new Set());
-
-    const {data, isLoading} = useAuthorizedQuery<PermissionsResponse>(permissionsUrl, {
-        enabled: isOpen && !!permissionsUrl,
-        staleTime: 60_000,
-    });
 
     useEffect(() => {
         if (!isOpen) {
             setSelectedAuthorities(new Set());
             return;
         }
-        if (data?.authorities) {
-            setSelectedAuthorities(new Set(data.authorities));
+        if (permissions) {
+            setSelectedAuthorities(new Set(permissions));
         }
-    }, [data, isOpen]);
-
-    const putUrl = data?._links?.self?.href ?? permissionsUrl;
-
-    const {mutate, isPending, error} = useAuthorizedMutation({
-        method: 'PUT',
-    });
+    }, [permissions, isOpen]);
 
     const toggleAuthority = (authority: string) => {
         setSelectedAuthorities(prev => {
@@ -111,17 +85,8 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
     };
 
     const handleSave = () => {
-        if (isPending) return;
-        mutate(
-            {url: putUrl, data: {authorities: Array.from(selectedAuthorities)}},
-            {
-                onSuccess: () => {
-                    queryClient.invalidateQueries({queryKey: ['authorized']});
-                    addToast(labels.ui.permissionsSaved, 'success');
-                    onClose();
-                },
-            },
-        );
+        if (isSaving) return;
+        onSave(Array.from(selectedAuthorities));
     };
 
     const dialogTitle = memberRegistrationNumber
@@ -146,7 +111,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
                         variant="primary"
                         onClick={handleSave}
                         disabled={isLoading}
-                        loading={isPending}
+                        loading={isSaving}
                     >
                         {labels.buttons.savePermissions}
                     </Button>
@@ -165,7 +130,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
                 <div>
                     {error && (
                         <Alert severity="error" className="mb-4">
-                            {resolveErrorMessage(error)}
+                            {resolvePermissionErrorMessage(error)}
                         </Alert>
                     )}
                     <div className="divide-y divide-border">
@@ -180,7 +145,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
                                     label={info.label}
                                     checked={selectedAuthorities.has(authority)}
                                     onChange={() => toggleAuthority(authority)}
-                                    disabled={isLoading || isPending}
+                                    disabled={isLoading || isSaving}
                                 />
                             </div>
                         ))}

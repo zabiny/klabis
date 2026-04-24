@@ -14,6 +14,7 @@ import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDi
 import {FetchError} from "../../api/authorizedFetch.ts";
 import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "../../components/members/MembersFilterBar.tsx";
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
+import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
 type MemberSummaryData = EntityModel<{
     id: string,
@@ -180,6 +181,11 @@ export const MembersPage = (): ReactElement => {
         ? permissionsDialog.member.registrationNumber ?? undefined
         : undefined;
 
+    const permissionsEditor = usePermissionsEditor(
+        permissionsDialog?.permissionsUrl,
+        {enabled: !!permissionsDialog, onSaved: () => setPermissionsDialog(null)},
+    );
+
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold text-text-primary">{labels.sections.members}</h1>
@@ -219,9 +225,13 @@ export const MembersPage = (): ReactElement => {
             <PermissionsDialog
                 isOpen={!!permissionsDialog}
                 onClose={() => setPermissionsDialog(null)}
-                permissionsUrl={permissionsDialog?.permissionsUrl ?? ''}
                 memberName={memberName}
                 memberRegistrationNumber={memberRegistrationNumber}
+                permissions={permissionsEditor.permissions}
+                isLoading={permissionsEditor.isLoading}
+                isSaving={permissionsEditor.isSaving}
+                error={permissionsEditor.error}
+                onSave={permissionsEditor.save}
             />
 
             {actionModal && (

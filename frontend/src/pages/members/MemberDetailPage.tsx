@@ -1,5 +1,6 @@
 import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
+import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
@@ -407,7 +408,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         );
     };
 
-    const permissionsUrl = route.getResourceLink('permissions')?.href ?? '';
+    const permissionsUrl = route.getResourceLink('permissions')?.href;
+
+    const permissionsEditor = usePermissionsEditor(
+        permissionsUrl,
+        {enabled: isPermissionsDialogOpen, onSaved: () => setIsPermissionsDialogOpen(false)},
+    );
 
     const suspendTemplate = resourceData._templates?.suspendMember ?? null;
 
@@ -444,9 +450,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             <PermissionsDialog
                 isOpen={isPermissionsDialogOpen}
                 onClose={() => setIsPermissionsDialogOpen(false)}
-                permissionsUrl={permissionsUrl}
                 memberName={`${member.firstName} ${member.lastName}`}
                 memberRegistrationNumber={member.registrationNumber ?? undefined}
+                permissions={permissionsEditor.permissions}
+                isLoading={permissionsEditor.isLoading}
+                isSaving={permissionsEditor.isSaving}
+                error={permissionsEditor.error}
+                onSave={permissionsEditor.save}
             />
             {isEditing && enrichedTemplate ? (
                 <HalFormDisplay
