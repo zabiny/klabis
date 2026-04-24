@@ -7,11 +7,11 @@
 
 ## 2. Upcoming registrations link (backend, events module)
 
-- [ ] 2.1 Write `@WebMvcTest` slice test: authenticated user with a member profile gets `upcomingRegistrations` link on `/api/dashboard` whose href is `/api/events?registeredBy=me&dateFrom=<today>&sort=eventDate,ASC&size=3`
-- [ ] 2.2 Write `@WebMvcTest` slice test: authenticated user without a member profile gets `/api/dashboard` with no `upcomingRegistrations` link
-- [ ] 2.3 Implement `DashboardUpcomingRegistrationsLinkProcessor` in events module (follow `MemberPermissionsLinkProcessor` pattern) that adds the `upcomingRegistrations` link when the current authentication carries a `memberIdUuid` claim
-- [ ] 2.4 Refactor: extract the `dateFrom` "today" resolution to a small helper/clock abstraction already used elsewhere if present; otherwise inline with `LocalDate.now(clock)` where `clock` is injected
-- [ ] 2.5 Run relevant events-module and common-ui slice tests via test-runner agent
+- [x] 2.1 Write `@WebMvcTest` slice test: authenticated user with a member profile gets `upcomingRegistrations` link on `/api/dashboard` whose href is `/api/events?registeredBy=me&dateFrom=<today>&sort=eventDate,ASC&size=3`
+- [x] 2.2 Write `@WebMvcTest` slice test: authenticated user without a member profile gets `/api/dashboard` with no `upcomingRegistrations` link
+- [x] 2.3 Implement `DashboardUpcomingRegistrationsLinkProcessor` in events module (follow `MemberPermissionsLinkProcessor` pattern) that adds the `upcomingRegistrations` link when the current authentication carries a `memberIdUuid` claim
+- [x] 2.4 Refactor: extract the `dateFrom` "today" resolution to a small helper/clock abstraction already used elsewhere if present; otherwise inline with `LocalDate.now(clock)` where `clock` is injected
+- [x] 2.5 Run relevant events-module and common-ui slice tests via test-runner agent
 
 ## 3. Frontend widget driven by link presence
 
