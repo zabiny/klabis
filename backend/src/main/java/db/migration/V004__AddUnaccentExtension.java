@@ -36,15 +36,10 @@ public class V004__AddUnaccentExtension extends BaseJavaMigration {
     }
 
     private void registerH2Alias(Connection conn) throws Exception {
-        // H2 Java-source aliases use fully-qualified class names (no import statements).
+        // Reference a compiled static method so H2 doesn't need `javac` at runtime
+        // (JRE-only runtime images don't ship the compiler).
         conn.createStatement().execute(
-                "CREATE ALIAS IF NOT EXISTS UNACCENT AS $$\n"
-                        + "String unaccent(String input) {\n"
-                        + "    if (input == null) return null;\n"
-                        + "    String decomposed = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);\n"
-                        + "    return decomposed.replaceAll(\"\\\\p{InCombiningDiacriticalMarks}+\", \"\");\n"
-                        + "}\n"
-                        + "$$"
+                "CREATE ALIAS IF NOT EXISTS UNACCENT FOR \"com.klabis.common.jdbc.UnaccentFunction.unaccent\""
         );
     }
 }
