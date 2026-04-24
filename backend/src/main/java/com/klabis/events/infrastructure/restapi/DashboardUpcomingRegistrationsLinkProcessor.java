@@ -13,9 +13,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.LocalDate;
 
 /**
- * Contributes the {@code upcomingRegistrations} link to the dashboard resource for users
- * who have a member profile.
- * <p>
  * The link points at the pre-built events-list query the frontend follows verbatim to
  * populate the "Moje nadcházející akce" dashboard widget. Presence of the link is the
  * signal to the frontend that the widget should be rendered; absence means the current

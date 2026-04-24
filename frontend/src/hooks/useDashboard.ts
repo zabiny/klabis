@@ -16,6 +16,5 @@ function toDashboardData(response: HalResponse): DashboardData {
 export function useDashboard() {
     return useAuthorizedQuery('/api/dashboard', {
         select: (data) => toDashboardData(data as HalResponse),
-        retry: 1,
     });
 }

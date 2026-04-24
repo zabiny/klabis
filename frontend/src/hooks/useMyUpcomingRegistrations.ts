@@ -41,6 +41,5 @@ export function useMyUpcomingRegistrations(href: string | undefined) {
     return useAuthorizedQuery(href ?? '', {
         enabled: !!href,
         select: (data) => toUpcomingRegistrationsData(data as HalResponse),
-        retry: 1,
     });
 }
