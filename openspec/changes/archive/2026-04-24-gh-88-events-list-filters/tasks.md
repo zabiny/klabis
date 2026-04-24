@@ -52,5 +52,5 @@
 
 ## 7. Archive
 
-- [ ] 7.1 On merge, archive `gh-88-events-list-filters` via OpenSpec archive workflow.
-- [ ] 7.2 Leave GitHub issue #88 OPEN and leave `gh-88-my-registrations-filter` proposal OPEN — both continue to track the broader scope beyond this change.
+- [x] 7.1 On merge, archive `gh-88-events-list-filters` via OpenSpec archive workflow.
+- [x] 7.2 Leave GitHub issue #88 OPEN and leave `gh-88-my-registrations-filter` proposal OPEN — both continue to track the broader scope beyond this change.
