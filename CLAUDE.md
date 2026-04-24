@@ -86,9 +86,15 @@ browser_evaluate: async () => {
 - Prefer vertical slices (one feature/method end-to-end) over horizontal slices (one layer across all features) when breaking refactoring into phases
 - Each phase should be independently committable and testable
 
-## Backend Development
+## Right tools for actions
+
+### Backend Development
 
 For backend development, use the `backend-developer` agent which always loads `backend-patterns`, `developer:tdd-best-practices`, and `developer:spring-conventions` skills, and loads additional skills on-demand (e.g., `developer:spring-modulith`, `developer:spring-data-jdbc`, `developer:spring-hateoas-api`).
+
+### Commit changes to version system (git)
+
+Use git-operator for active git commands - especially when commiting changes to git repository
 
 ## Component-Specific Instructions
 
