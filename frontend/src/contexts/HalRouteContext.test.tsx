@@ -402,6 +402,77 @@ describe('useHalRoute Hook', () => {
             });
         });
     });
+
+    describe('getResourceLink — templated link filtering', () => {
+        it('returns the non-templated entry when self is an array with templated first', async () => {
+            const mockData = mockHalResponse({
+                _links: {
+                    self: [
+                        {href: '/api/events{?q,registeredBy}', templated: true},
+                        {href: '/api/events?page=0'},
+                    ],
+                },
+            });
+            mockFetchResponse(mockData);
+
+            const {result} = renderHook(() => useHalRoute(), {wrapper: createWrapper()});
+
+            await waitFor(() => {
+                expect(result.current.getResourceLink()).toEqual({href: '/api/events?page=0'});
+            });
+        });
+
+        it('returns the non-templated entry when self is an array with non-templated first', async () => {
+            const mockData = mockHalResponse({
+                _links: {
+                    self: [
+                        {href: '/api/events?page=0'},
+                        {href: '/api/events{?q,registeredBy}', templated: true},
+                    ],
+                },
+            });
+            mockFetchResponse(mockData);
+
+            const {result} = renderHook(() => useHalRoute(), {wrapper: createWrapper()});
+
+            await waitFor(() => {
+                expect(result.current.getResourceLink()).toEqual({href: '/api/events?page=0'});
+            });
+        });
+
+        it('returns the single link object without regression (non-templated)', async () => {
+            const mockData = mockHalResponse({
+                _links: {
+                    self: {href: '/api/members/123'},
+                },
+            });
+            mockFetchResponse(mockData);
+
+            const {result} = renderHook(() => useHalRoute(), {wrapper: createWrapper()});
+
+            await waitFor(() => {
+                expect(result.current.getResourceLink()).toEqual({href: '/api/members/123'});
+            });
+        });
+
+        it('returns null when all entries in the array are templated', async () => {
+            const mockData = mockHalResponse({
+                _links: {
+                    self: [
+                        {href: '/api/events{?q}', templated: true},
+                        {href: '/api/events{?registeredBy}', templated: true},
+                    ],
+                },
+            });
+            mockFetchResponse(mockData);
+
+            const {result} = renderHook(() => useHalRoute(), {wrapper: createWrapper()});
+
+            await waitFor(() => {
+                expect(result.current.getResourceLink()).toBeNull();
+            });
+        });
+    });
 });
 
 describe('HalSubresourceProvider', () => {

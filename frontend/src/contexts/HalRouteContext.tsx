@@ -136,7 +136,11 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         }
 
         const link = data?._links?.[linkName]
-        const href = Array.isArray(link) ? link[0]?.href : link?.href
+        const resolvedLink = Array.isArray(link)
+            ? link.find(l => !l.templated) ?? null
+            : link
+
+        const href = resolvedLink?.href
 
         if (!href) {
             return null
