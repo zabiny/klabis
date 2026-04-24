@@ -1,3 +1,20 @@
+## Already delivered in `gh-88-events-list-filters`
+
+The filter-bar slice of this proposal has already been implemented as change `gh-88-events-list-filters` (2026-04-24). Specifically:
+
+- **"Moje přihlášky" toggle on the events list** — visible to users with a member profile, hidden otherwise. Backed by a `registeredBy=me` query parameter on `GET /api/events`; the backend resolves `me` to the acting user's `MemberId` and applies an EXISTS subquery against the `event_registrations` child table.
+- **Default "Budoucí" time window and fulltext search (`q`)** — landed alongside the Moje toggle to give the events list a usable filter bar rather than three separate partial UIs.
+- **`organizer` and `coordinator` query parameters** — wired through the controller (they existed in the spec but had no controller binding before this change).
+
+Remaining scope that this `gh-88-my-registrations-filter` proposal should still cover:
+
+- Dashboard widget "Moje nejbližší přihlášky" (next N events I'm registered to), if desired.
+- Dedicated "Další závody" widget or a dashboard tile with related discovery.
+- Proxy-registration semantics once issue #54 lands (`registeredBy=<memberId>` for members a user can act for).
+- HAL-Forms search affordance for list filters — tracked as a separate foundation task (see `openspec/changes/gh-88-events-list-filters/tasks.md` 6.2).
+
+Open Questions 1 (filter placement) and 7 (dashboard integration) from the original proposal are answered by the delivered slice: the events-list filter bar is built (Option A + partial Option C); the dashboard widget stays in this proposal's scope as the only remaining Option C piece.
+
 ## Why
 
 GitHub issue #88 ("chci vedet kam jsem prihlasen", milestone `core`, labels `clen klubu`, `Events`, `hostujici clen`) asks for a way for a member to see every event they are currently registered to. The acceptance criterion says: *"v seznamu akcí si chci vyfiltrovat pouze akce na které jsem přihlášen"*.

@@ -46,9 +46,9 @@
 
 ## 6. Documentation & follow-ups
 
-- [ ] 6.1 Update `openspec/changes/gh-88-my-registrations-filter/proposal.md`: add a section "Already delivered in gh-88-events-list-filters" listing the "Moje přihlášky" filter on the events list, and narrow remaining scope to the follow-up items (e.g., dashboard widget, "Další závody" widget).
-- [ ] 6.2 Create a task-queue item (via `openspec-ext:task-queue` skill or manual file in `tasks/`) for the HAL-Forms search-affordance foundation: introduce a shared pattern for GET list endpoints to expose their filter dimensions via HAL-Forms templates, and migrate events list as the first consumer.
-- [ ] 6.3 Run `openspec validate gh-88-events-list-filters --strict` to confirm the proposal is still consistent with archived specs.
+- [x] 6.1 Update `openspec/changes/gh-88-my-registrations-filter/proposal.md`: add a section "Already delivered in gh-88-events-list-filters" listing the "Moje přihlášky" filter on the events list, and narrow remaining scope to the follow-up items (e.g., dashboard widget, "Další závody" widget).
+- [x] 6.2 Create a task-queue item (via `openspec-ext:task-queue` skill or manual file in `tasks/`) for the HAL-Forms search-affordance foundation: introduce a shared pattern for GET list endpoints to expose their filter dimensions via HAL-Forms templates, and migrate events list as the first consumer.
+- [x] 6.3 Run `openspec validate gh-88-events-list-filters --strict` to confirm the proposal is still consistent with archived specs.
 
 ## 7. Archive
 
