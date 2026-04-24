@@ -1,18 +1,22 @@
 import {useEffect, useState} from 'react';
 import {useRegisterSW} from 'virtual:pwa-register/react';
 
-/**
- * Renders the SW registration only when the backend exposes a manifest.
- * Backend hides the manifest (404) when the `pwa` Spring profile is off,
- * so this component must skip SW registration entirely in that case.
- */
+const SW_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
+// Backend returns 404 on the manifest when the `pwa` Spring profile is off.
+// useRegisterSW is a hook and cannot be called conditionally, so the probe gates
+// the inner component instead of being pushed into the hook itself.
 export function PWAUpdatePrompt() {
     const [pwaEnabled, setPwaEnabled] = useState<boolean | null>(null);
 
     useEffect(() => {
-        fetch('/manifest.webmanifest', {method: 'HEAD'})
+        const controller = new AbortController();
+        fetch('/manifest.webmanifest', {method: 'HEAD', signal: controller.signal})
             .then(r => setPwaEnabled(r.ok))
-            .catch(() => setPwaEnabled(false));
+            .catch(() => {
+                if (!controller.signal.aborted) setPwaEnabled(false);
+            });
+        return () => controller.abort();
     }, []);
 
     if (!pwaEnabled) return null;
@@ -20,16 +24,21 @@ export function PWAUpdatePrompt() {
 }
 
 function PWAUpdatePromptInner() {
+    const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
     const {
         needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
     } = useRegisterSW({
-        onRegisteredSW(_swUrl, registration) {
-            if (registration) {
-                setInterval(() => registration.update(), 60 * 60 * 1000);
-            }
+        onRegisteredSW(_swUrl, reg) {
+            if (reg) setRegistration(reg);
         },
     });
+
+    useEffect(() => {
+        if (!registration) return;
+        const id = setInterval(() => registration.update(), SW_UPDATE_CHECK_INTERVAL_MS);
+        return () => clearInterval(id);
+    }, [registration]);
 
     if (!needRefresh) return null;
 
