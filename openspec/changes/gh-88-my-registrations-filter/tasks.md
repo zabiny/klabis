@@ -15,16 +15,16 @@
 
 ## 3. Frontend widget driven by link presence
 
-- [ ] 3.1 Write test for `useDashboard` hook: mocks `/api/dashboard` response and returns the HAL resource; handles loading and error states
-- [ ] 3.2 Implement `useDashboard` hook (TanStack Query) fetching `/api/dashboard` via `authorizedFetch`
-- [ ] 3.3 Write test for `useMyUpcomingRegistrations(href)` hook: enabled only when href is present; follows the provided href and returns the events page
-- [ ] 3.4 Implement `useMyUpcomingRegistrations(href)` hook
-- [ ] 3.5 Write `UserDashboard` tests: widget hidden when dashboard response has no `upcomingRegistrations` link; widget shown with three event rows when link present and data returned; empty-state CTA shown when link present but zero events
-- [ ] 3.6 Replace `mockMyEvents` consumption in `UserDashboard` with link-driven rendering: use `getLinkHref(dashboard, 'upcomingRegistrations')` to decide whether to render the widget
-- [ ] 3.7 Wire widget rows to render event name, location, and formatted date; clicking a row navigates to the event detail page
-- [ ] 3.8 Wire "Zobrazit všechny" to route `/events?registeredBy=me&time=future`
-- [ ] 3.9 Add empty-state copy and secondary CTA ("Prohlédnout nadcházející akce klubu") linking to `/events?time=future`
-- [ ] 3.10 Add any new labels to `src/localization/labels.ts` (empty-state secondary CTA, widget title if not already present); reuse `labels.dashboard.noUpcomingEvents`
+- [x] 3.1 Write test for `useDashboard` hook: mocks `/api/dashboard` response and returns the HAL resource; handles loading and error states
+- [x] 3.2 Implement `useDashboard` hook (TanStack Query) fetching `/api/dashboard` via `authorizedFetch`
+- [x] 3.3 Write test for `useMyUpcomingRegistrations(href)` hook: enabled only when href is present; follows the provided href and returns the events page
+- [x] 3.4 Implement `useMyUpcomingRegistrations(href)` hook
+- [x] 3.5 Write `UserDashboard` tests: widget hidden when dashboard response has no `upcomingRegistrations` link; widget shown with three event rows when link present and data returned; empty-state CTA shown when link present but zero events
+- [x] 3.6 Replace `mockMyEvents` consumption in `UserDashboard` with link-driven rendering: use `getLinkHref(dashboard, 'upcomingRegistrations')` to decide whether to render the widget
+- [x] 3.7 Wire widget rows to render event name, location, and formatted date; clicking a row navigates to the event detail page
+- [x] 3.8 Wire "Zobrazit všechny" to route `/events?registeredBy=me&time=budouci` (frontend uses Czech `time` values; design.md's `time=future` was a drafting error)
+- [x] 3.9 Add empty-state copy and secondary CTA ("Prohlédnout nadcházející akce klubu") linking to `/events?time=budouci`
+- [x] 3.10 Add any new labels to `src/localization/labels.ts` (empty-state secondary CTA, widget title if not already present); reuse `labels.dashboard.noUpcomingEvents`
 
 ## 4. Cleanup
 

@@ -291,6 +291,8 @@ export const labels = {
         myEvents: 'Moje nadcházející akce',
         openSection: 'Otevřít',
         noUpcomingEvents: 'Žádné nadcházející akce',
+        showAll: 'Zobrazit všechny',
+        browseClubEvents: 'Prohlédnout nadcházející akce klubu',
     },
 
     permissions: {

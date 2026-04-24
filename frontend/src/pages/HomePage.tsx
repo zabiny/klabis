@@ -5,8 +5,11 @@ import {useRootNavigation} from "../hooks/useRootNavigation";
 import {useIsAdmin} from "../hooks/useIsAdmin";
 import {useAuth} from "../contexts/AuthContext2";
 import {labels} from "../localization/labels";
-import {mockMyEvents, mockStats, mockUpcomingEvents} from "./dashboard/mockDashboardData";
+import {mockStats, mockUpcomingEvents} from "./dashboard/mockDashboardData";
 import {formatDate} from "../utils/dateUtils";
+import {useDashboard} from "../hooks/useDashboard";
+import {useMyUpcomingRegistrations} from "../hooks/useMyUpcomingRegistrations";
+import {extractNavigationPath} from "../utils/navigationPath";
 
 const navigationCards = [
     {
@@ -179,6 +182,11 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
     memberId: string | null;
     menuItems: { rel: string }[]
 }) => {
+    const {data: dashboardData} = useDashboard()
+    const upcomingRegistrationsHref = dashboardData?.upcomingRegistrationsHref
+    const {data: registrationsData} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
+    const registrationItems = registrationsData?.items ?? []
+
     return (
         <div className="space-y-8 animate-fade-in">
             <div>
@@ -226,35 +234,59 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                 )}
             </div>
 
-            <div>
-                <h2 className="text-2xl font-display font-bold text-text-primary mb-4">
-                    {labels.dashboard.myEvents}
-                </h2>
-                <Card className="overflow-hidden">
-                    {mockMyEvents.length > 0 ? (
-                        <div className="divide-y divide-border">
-                            {mockMyEvents.map((event) => (
-                                <div key={event.id} className="flex items-center justify-between p-4 hover:bg-surface-hover transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
-                                            <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400"/>
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-text-primary">{event.name}</p>
-                                            <p className="text-sm text-text-secondary">{event.location}</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-sm text-text-secondary hidden sm:block">
-                                        {formatDate(event.eventDate)}
-                                    </span>
+            {upcomingRegistrationsHref && (
+                <div>
+                    <h2 className="text-2xl font-display font-bold text-text-primary mb-4">
+                        {labels.dashboard.myEvents}
+                    </h2>
+                    <Card className="overflow-hidden">
+                        {registrationItems.length > 0 ? (
+                            <>
+                                <div className="divide-y divide-border">
+                                    {registrationItems.map((event) => (
+                                        <RouterLink
+                                            key={event.selfHref}
+                                            to={extractNavigationPath(event.selfHref)}
+                                            className="flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+                                                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400"/>
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-text-primary">{event.name}</p>
+                                                    <p className="text-sm text-text-secondary">{event.location}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-sm text-text-secondary hidden sm:block">
+                                                {formatDate(event.eventDate)}
+                                            </span>
+                                        </RouterLink>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="p-6 text-center text-text-secondary">{labels.dashboard.noUpcomingEvents}</p>
-                    )}
-                </Card>
-            </div>
+                                <div className="p-4 border-t border-border">
+                                    <RouterLink
+                                        to="/events?registeredBy=me&time=budouci"
+                                        className="text-sm font-medium text-primary hover:underline"
+                                    >
+                                        {labels.dashboard.showAll}
+                                    </RouterLink>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-6 text-center">
+                                <p className="text-text-secondary mb-3">{labels.dashboard.noUpcomingEvents}</p>
+                                <RouterLink
+                                    to="/events?time=budouci"
+                                    className="text-sm font-medium text-primary hover:underline"
+                                >
+                                    {labels.dashboard.browseClubEvents}
+                                </RouterLink>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            )}
         </div>
     )
 }
