@@ -1594,6 +1594,62 @@ class MemberControllerApiTest {
                     )
             );
         }
+
+        @Test
+        @DisplayName("3.8 — self link is a concrete URL with applied filter params, not a URI template")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void selfLinkMustBeConcreteUrlNotUriTemplate() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "ACTIVE")
+                    .param("q", "novak")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("status=ACTIVE")))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("q=novak")))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
+        }
+
+        @Test
+        @DisplayName("3.9 — self link has no template variables when only status is provided (q absent)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void selfLinkHasNoTemplateVarsWhenOnlyStatusProvided() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "ACTIVE")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("status=ACTIVE")))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
+        }
+
+        @Test
+        @DisplayName("3.10 — self link has no template variables when only q is provided (status absent)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void selfLinkHasNoTemplateVarsWhenOnlyQProvided() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("q", "novak")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("q=novak")))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
+        }
     }
 
     @Nested

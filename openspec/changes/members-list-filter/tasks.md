@@ -44,9 +44,9 @@
 
 ## 6. Frontend — tests & verification
 
-- [ ] 6.1 Component tests: members filter bar renders controls; hides the status pill group for non-MANAGE users.
-- [ ] 6.2 Integration-style test: changing the status pill updates the URL and the request's `status` param.
-- [ ] 6.3 Manual verification on `http://localhost:3000` (`ZBM9500` regular member, `ZBM9000` admin): fulltext across first name / last name / registration number, case and diacritics insensitivity, multi-word AND, status pill switching (admin only), default "Aktivní" on first load, URL preservation on reload + back/forward, empty state.
+- [x] 6.1 Component tests: members filter bar renders controls; hides the status pill group for non-MANAGE users.
+- [x] 6.2 Integration-style test: changing the status pill updates the URL and the request's `status` param.
+- [x] 6.3 Manual verification on `http://localhost:3000` (`ZBM9500` regular member, `ZBM9000` admin): fulltext across first name / last name / registration number, case and diacritics insensitivity, multi-word AND, status pill switching (admin only), default "Aktivní" on first load, URL preservation on reload + back/forward, empty state.
 
 ## 7. Documentation
 

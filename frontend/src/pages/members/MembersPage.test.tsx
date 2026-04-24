@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -8,6 +8,8 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {labels} from '../../localization';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -303,5 +305,78 @@ describe('MembersPage — row data rendering', () => {
         const shieldButton = screen.getByRole('button', {name: /oprávnění/i});
         fireEvent.click(shieldButton);
         expect(navigateToResource).not.toHaveBeenCalled();
+    });
+});
+
+// Reads the current search string from the URL and exposes it in a testid span.
+const SearchReader = () => {
+    const location = useLocation();
+    return <span data-testid="search-string">{location.search || '(none)'}</span>;
+};
+
+const renderPageWithSearchReader = (initialUrl: string, pageData: any) => {
+    vi.mocked(useHalPageData).mockReturnValue(pageData);
+    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={[initialUrl]}>
+                <MembersPage/>
+                <SearchReader/>
+            </MemoryRouter>
+        </QueryClientProvider>
+    );
+};
+
+describe('MembersPage — filter bar integration', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as any);
+    });
+
+    it('auto-injects ?status=ACTIVE when no status param is present on mount', async () => {
+        const pageData = createMockPageData(null);
+        renderPageWithSearchReader('/members', pageData);
+        // useEffect fires after mount; wait for DOM update
+        expect(await screen.findByTestId('search-string')).toHaveTextContent('status=ACTIVE');
+    });
+
+    it('does NOT overwrite an existing status param on mount', () => {
+        const pageData = createMockPageData(null);
+        renderPageWithSearchReader('/members?status=INACTIVE', pageData);
+        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
+    });
+
+    it('clicking Neaktivní pill updates the URL to ?status=INACTIVE when hasManageAuthority is true', async () => {
+        const user = userEvent.setup();
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+            },
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+        const pageData = createMockPageData(resourceData);
+        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
+
+        await user.click(screen.getByRole('button', {name: labels.membersFilter.statusInactive}));
+        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
+    });
+
+    it('clicking Vše pill updates the URL to ?status=ALL when hasManageAuthority is true', async () => {
+        const user = userEvent.setup();
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+            },
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+        const pageData = createMockPageData(resourceData);
+        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
+
+        await user.click(screen.getByRole('button', {name: labels.membersFilter.statusAll}));
+        expect(screen.getByTestId('search-string')).toHaveTextContent('status=ALL');
     });
 });

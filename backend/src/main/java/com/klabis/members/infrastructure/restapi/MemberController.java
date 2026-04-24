@@ -41,7 +41,6 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -207,7 +206,14 @@ public class MemberController {
                 member -> entityModelWithDomain(memberMapper.toSummaryResponse(member), member)
         );
 
-        pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable).orElse(oldLink));
+        String qForLink = (q == null) ? "" : q;
+        String statusForLink = (status == null) ? "" : status;
+        klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, qForLink, statusForLink, null)).ifPresent(selfLinkBuilder -> {
+            Link selfLink = selfLinkBuilder.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
+                    .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)));
+            pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> selfLink);
+        });
 
         return ResponseEntity.ok(pagedModel);
     }
@@ -238,14 +244,6 @@ public class MemberController {
                     ),
                     null);
         }
-    }
-
-    private Optional<Link> buildCollectionSelfLink(Pageable pageable) {
-        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null, null, null)).map(selfLinkBuilder ->
-                (Link) selfLinkBuilder.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
-        );
     }
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
