@@ -567,4 +567,233 @@ class EventJdbcRepositoryTest {
             assertThat(found.get().getLocation()).isNull();
         }
     }
+
+    @Nested
+    @DisplayName("Fulltext filter — name and location matching")
+    class FulltextFilter {
+
+        @Test
+        @DisplayName("should match event by partial name (case-insensitive)")
+        void shouldMatchByPartialNameCaseInsensitive() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Podzimní Kolo Orientace")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Jarní závod")
+                    .eventDate(LocalDate.of(2026, 4, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("podzimni"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Podzimní Kolo Orientace");
+        }
+
+        @Test
+        @DisplayName("should match event by partial location (case-insensitive)")
+        void shouldMatchByPartialLocationCaseInsensitive() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Závod A")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Jihlava centrum")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Závod B")
+                    .eventDate(LocalDate.of(2026, 4, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("JIHLAVA"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Závod A");
+        }
+
+        @Test
+        @DisplayName("should match event by name without diacritics")
+        void shouldMatchByNameWithoutDiacritics() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Šárka Open")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Jarní kolo")
+                    .eventDate(LocalDate.of(2026, 4, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("sarka"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Šárka Open");
+        }
+
+        @Test
+        @DisplayName("should match event by location without diacritics")
+        void shouldMatchByLocationWithoutDiacritics() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Závod X")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Černava les")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Závod Y")
+                    .eventDate(LocalDate.of(2026, 4, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("cernav"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Závod X");
+        }
+
+        @Test
+        @DisplayName("should return all events when fulltext query is null")
+        void shouldReturnAllEventsWhenFulltextQueryIsNull() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Alpha")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Beta")
+                    .eventDate(LocalDate.of(2026, 4, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none(), pageable);
+
+            assertThat(result.getContent()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should return empty when fulltext query matches nothing")
+        void shouldReturnEmptyWhenNoMatch() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Závod v Praze")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("Ostrava"), pageable);
+
+            assertThat(result.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("multi-word search ANDs tokens — event matching both words is returned")
+        void shouldAndMultipleTokens() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Podzimní kolo orientace")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Jihlava")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Podzimní sprint")
+                    .eventDate(LocalDate.of(2026, 10, 6))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("podzimni kolo"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Podzimní kolo orientace");
+        }
+
+        @Test
+        @DisplayName("multi-word search excludes events missing any token")
+        void shouldExcludeEventsWithMissingToken() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Podzimní kolo")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Podzimní závod")
+                    .eventDate(LocalDate.of(2026, 10, 6))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("podzimni kolo"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Podzimní kolo");
+        }
+
+        @Test
+        @DisplayName("token can match name in one event and location in another")
+        void shouldMatchTokenInEitherNameOrLocation() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Praha Open")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location("Letna")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Letni zavod")
+                    .eventDate(LocalDate.of(2026, 7, 5))
+                    .location("Praha")
+                    .organizer("OOB")
+                    .build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Brno kolo")
+                    .eventDate(LocalDate.of(2026, 5, 5))
+                    .location("Brno")
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("Praha"), pageable);
+
+            assertThat(result.getContent()).hasSize(2);
+            assertThat(result.getContent())
+                    .extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Praha Open", "Letni zavod");
+        }
+
+        @Test
+        @DisplayName("should match event even when location is null (only name is searched)")
+        void shouldMatchByNameWhenLocationIsNull() {
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Čeřínek klasika")
+                    .eventDate(LocalDate.of(2026, 10, 5))
+                    .location(null)
+                    .organizer("OOB")
+                    .build()));
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none().withFulltext("cerinek"), pageable);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Čeřínek klasika");
+        }
+    }
 }

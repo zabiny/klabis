@@ -18,25 +18,29 @@ public record EventFilter(
         Set<EventStatus> statuses,
         String organizer,
         LocalDate dateFrom,
-        LocalDate dateTo
+        LocalDate dateTo,
+        String fulltextQuery
 ) {
 
     public EventFilter {
         statuses = statuses == null ? Set.of() : Set.copyOf(statuses);
+        if (fulltextQuery != null) {
+            fulltextQuery = fulltextQuery.trim().isEmpty() ? null : fulltextQuery.trim();
+        }
     }
 
     /**
      * No filtering — returns all events.
      */
     public static EventFilter none() {
-        return new EventFilter(Set.of(), null, null, null);
+        return new EventFilter(Set.of(), null, null, null, null);
     }
 
     /**
      * Filter to events whose status is one of the given statuses.
      */
     public static EventFilter byStatus(EventStatus... statuses) {
-        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null);
+        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null);
     }
 
     /**
@@ -46,7 +50,7 @@ public record EventFilter(
     public static EventFilter byNotHavingStatus(EventStatus... excluded) {
         EnumSet<EventStatus> excludedSet = EnumSet.copyOf(Arrays.asList(excluded));
         EnumSet<EventStatus> allowed = EnumSet.complementOf(excludedSet);
-        return new EventFilter(allowed, null, null, null);
+        return new EventFilter(allowed, null, null, null, null);
     }
 
     /**
@@ -78,9 +82,17 @@ public record EventFilter(
         EnumSet<EventStatus> remaining = EnumSet.copyOf(statuses);
         remaining.remove(excluded);
         if (remaining.isEmpty()) {
-            return new EventFilter(Set.of(), organizer, dateFrom, dateTo);
+            return new EventFilter(Set.of(), organizer, dateFrom, dateTo, fulltextQuery);
         }
-        return new EventFilter(remaining, organizer, dateFrom, dateTo);
+        return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery);
+    }
+
+    /**
+     * Returns a new filter identical to this one but with the given fulltext query applied.
+     * Leading/trailing whitespace is trimmed; blank input clears the query (no filtering).
+     */
+    public EventFilter withFulltext(String query) {
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, query);
     }
 
     /**
@@ -90,14 +102,14 @@ public record EventFilter(
      * exclusive-upper-bound semantics that the original SQL query used.
      */
     public static EventFilter activeEventsWithDateBefore(LocalDate date) {
-        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1));
+        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null);
     }
 
     public static EventFilter byOrganizer(String organizer) {
-        return new EventFilter(Set.of(), organizer, null, null);
+        return new EventFilter(Set.of(), organizer, null, null, null);
     }
 
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(Set.of(), null, from, to);
+        return new EventFilter(Set.of(), null, from, to, null);
     }
 }

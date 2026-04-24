@@ -1,12 +1,12 @@
 ## 1. Backend foundation — domain & persistence for fulltext
 
-- [ ] 1.1 Write failing repository tests for fulltext filter on event `name` (case-insensitive, diacritics-insensitive).
-- [ ] 1.2 Extend `EventFilter` value object with `fulltextQuery` field and a `withFulltext(String)` factory/wither.
-- [ ] 1.3 Ensure PostgreSQL `unaccent` extension is available (Flyway migration `CREATE EXTENSION IF NOT EXISTS unaccent`); add H2 alias/function so tests on H2 pass.
-- [ ] 1.4 Extend `EventRepositoryAdapter` JDBC query with unaccent-based `LIKE` against `name` + `location`, AND-ing tokens split on whitespace, each token OR'd across both columns.
-- [ ] 1.5 Green: tests for name and location matches pass.
-- [ ] 1.6 Add tests for multi-word AND semantics; make them pass.
-- [ ] 1.7 Refactor SQL composition to keep the repository adapter readable.
+- [x] 1.1 Write failing repository tests for fulltext filter on event `name` (case-insensitive, diacritics-insensitive).
+- [x] 1.2 Extend `EventFilter` value object with `fulltextQuery` field and a `withFulltext(String)` factory/wither.
+- [x] 1.3 Ensure PostgreSQL `unaccent` extension is available (Flyway migration `CREATE EXTENSION IF NOT EXISTS unaccent`); add H2 alias/function so tests on H2 pass.
+- [x] 1.4 Extend `EventRepositoryAdapter` JDBC query with unaccent-based `LIKE` against `name` + `location`, AND-ing tokens split on whitespace, each token OR'd across both columns.
+- [x] 1.5 Green: tests for name and location matches pass.
+- [x] 1.6 Add tests for multi-word AND semantics; make them pass.
+- [x] 1.7 Refactor SQL composition to keep the repository adapter readable.
 
 ## 2. Backend foundation — domain & persistence for registeredBy
 

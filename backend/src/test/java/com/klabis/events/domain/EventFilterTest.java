@@ -95,6 +95,49 @@ class EventFilterTest {
     }
 
     @Nested
+    @DisplayName("withFulltext()")
+    class WithFulltextTests {
+
+        @Test
+        @DisplayName("stores the trimmed query")
+        void storesTrimmedQuery() {
+            EventFilter filter = EventFilter.none().withFulltext("  jihlava  ");
+            assertThat(filter.fulltextQuery()).isEqualTo("jihlava");
+        }
+
+        @Test
+        @DisplayName("stores null when query is blank after trim")
+        void storesNullForBlankQuery() {
+            EventFilter filter = EventFilter.none().withFulltext("   ");
+            assertThat(filter.fulltextQuery()).isNull();
+        }
+
+        @Test
+        @DisplayName("stores null when called with null")
+        void storesNullForNullInput() {
+            EventFilter filter = EventFilter.none().withFulltext(null);
+            assertThat(filter.fulltextQuery()).isNull();
+        }
+
+        @Test
+        @DisplayName("preserves all other filter dimensions")
+        void preservesOtherDimensions() {
+            EventFilter base = EventFilter.byOrganizer("OOB");
+            EventFilter result = base.withFulltext("jihlava");
+            assertThat(result.organizer()).isEqualTo("OOB");
+            assertThat(result.statuses()).isEmpty();
+            assertThat(result.dateFrom()).isNull();
+            assertThat(result.dateTo()).isNull();
+        }
+
+        @Test
+        @DisplayName("none-filter has null fulltextQuery by default")
+        void noneFilterHasNullFulltextQuery() {
+            assertThat(EventFilter.none().fulltextQuery()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("withExcludedStatus()")
     class WithExcludedStatusTests {
 
@@ -120,7 +163,8 @@ class EventFilterTest {
                     java.util.Set.of(EventStatus.DRAFT, EventStatus.ACTIVE),
                     "OOB",
                     java.time.LocalDate.of(2026, 1, 1),
-                    java.time.LocalDate.of(2026, 12, 31)
+                    java.time.LocalDate.of(2026, 12, 31),
+                    null
             );
             EventFilter result = base.withExcludedStatus(EventStatus.DRAFT);
             assertThat(result.organizer()).isEqualTo("OOB");
