@@ -723,6 +723,123 @@ class MemberRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findAll() with fulltext filter")
+    class FulltextFilter {
+
+        private Member jan;
+        private Member novak;
+        private Member cermak;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            jan = aMember()
+                    .withRegistrationNumber("ZBM0100")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420111111200")
+                    .withNoGuardian()
+                    .build();
+
+            cermak = aMember()
+                    .withRegistrationNumber("ZBM0200")
+                    .withName("Petr", "Čermák")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withEmail("petr.cermak@example.com")
+                    .withPhone("+420111111201")
+                    .withNoGuardian()
+                    .build();
+
+            memberRepository.save(jan);
+            memberRepository.save(cermak);
+        }
+
+        @Test
+        @DisplayName("should match by firstName substring")
+        void shouldMatchByFirstNameSubstring() {
+            MemberFilter filter = MemberFilter.all().withFulltext("Jan");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Jan");
+        }
+
+        @Test
+        @DisplayName("should match by lastName substring")
+        void shouldMatchByLastNameSubstring() {
+            MemberFilter filter = MemberFilter.all().withFulltext("Nov");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
+        }
+
+        @Test
+        @DisplayName("should match by registrationNumber substring")
+        void shouldMatchByRegistrationNumberSubstring() {
+            MemberFilter filter = MemberFilter.all().withFulltext("ZBM0200");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Čermák");
+        }
+
+        @Test
+        @DisplayName("should match case-insensitively")
+        void shouldMatchCaseInsensitively() {
+            MemberFilter filter = MemberFilter.all().withFulltext("NOVAK");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
+        }
+
+        @Test
+        @DisplayName("should match diacritics-insensitively")
+        void shouldMatchDiacriticsInsensitively() {
+            MemberFilter filter = MemberFilter.all().withFulltext("cermak");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Čermák");
+        }
+
+        @Test
+        @DisplayName("should AND across tokens — multi-word query matches only members satisfying all tokens")
+        void shouldAndAcrossTokens() {
+            MemberFilter filter = MemberFilter.all().withFulltext("jan novak");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Jan");
+            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
+        }
+
+        @Test
+        @DisplayName("should not match when only one token matches across the columns")
+        void shouldNotMatchWhenOnlyOneTokenMatches() {
+            MemberFilter filter = MemberFilter.all().withFulltext("jan cermak");
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return all members when fulltextQuery is null")
+        void shouldReturnAllMembersWhenNoFulltext() {
+            Page<Member> page = memberRepository.findAll(MemberFilter.all(), Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(2);
+        }
+    }
+
+    @Nested
     @DisplayName("Birth number and bank account")
     class BirthNumberAndBankAccount {
 

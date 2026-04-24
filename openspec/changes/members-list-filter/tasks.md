@@ -1,11 +1,11 @@
 ## 1. Backend foundation — domain & persistence for fulltext
 
-- [ ] 1.1 Write failing repository tests for fulltext filter on `firstName`, `lastName`, and `registrationNumber` (case-insensitive, diacritics-insensitive).
-- [ ] 1.2 Extend `MemberFilter` value object with `fulltextQuery: String?` field and a `withFulltext(String)` wither. Trim input; null when blank.
-- [ ] 1.3 Extend `MemberRepositoryAdapter` JDBC query with unaccent-based `LIKE` across `first_name`, `last_name`, `registration_number`, AND-ing tokens split on whitespace, each token OR'd across the three columns. Reuse the pattern from `EventRepositoryAdapter.findIdsByFulltext`.
-- [ ] 1.4 Green: tests for single-column matches pass.
-- [ ] 1.5 Add tests for multi-word AND semantics; make them pass.
-- [ ] 1.6 Refactor SQL composition to keep the adapter readable.
+- [x] 1.1 Write failing repository tests for fulltext filter on `firstName`, `lastName`, and `registrationNumber` (case-insensitive, diacritics-insensitive).
+- [x] 1.2 Extend `MemberFilter` value object with `fulltextQuery: String?` field and a `withFulltext(String)` wither. Trim input; null when blank.
+- [x] 1.3 Extend `MemberRepositoryAdapter` JDBC query with unaccent-based `LIKE` across `first_name`, `last_name`, `registration_number`, AND-ing tokens split on whitespace, each token OR'd across the three columns. Reuse the pattern from `EventRepositoryAdapter.findIdsByFulltext`.
+- [x] 1.4 Green: tests for single-column matches pass.
+- [x] 1.5 Add tests for multi-word AND semantics; make them pass.
+- [x] 1.6 Refactor SQL composition to keep the adapter readable.
 
 ## 2. Backend foundation — status filter
 

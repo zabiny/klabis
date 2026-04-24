@@ -13,13 +13,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @SecondaryAdapter
@@ -34,10 +38,14 @@ class MemberRepositoryAdapter implements MemberRepository {
 
     private final MemberJdbcRepository jdbcRepository;
     private final JdbcAggregateTemplate jdbcAggregateTemplate;
+    private final NamedParameterJdbcTemplate namedJdbc;
 
-    public MemberRepositoryAdapter(MemberJdbcRepository jdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate) {
+    public MemberRepositoryAdapter(MemberJdbcRepository jdbcRepository,
+                                   JdbcAggregateTemplate jdbcAggregateTemplate,
+                                   NamedParameterJdbcTemplate namedJdbc) {
         this.jdbcRepository = jdbcRepository;
         this.jdbcAggregateTemplate = jdbcAggregateTemplate;
+        this.namedJdbc = namedJdbc;
     }
 
     @Override
@@ -91,7 +99,12 @@ class MemberRepositoryAdapter implements MemberRepository {
 
     @Override
     public List<Member> findAll(MemberFilter filter) {
-        Query criteriaQuery = buildCriteriaQuery(filter);
+        List<UUID> fulltextIds = resolveFulltextIds(filter);
+        if (fulltextIds != null && fulltextIds.isEmpty()) {
+            return List.of();
+        }
+
+        Query criteriaQuery = buildCriteriaQuery(filter, fulltextIds);
         return jdbcAggregateTemplate.findAll(criteriaQuery, MemberMemento.class)
                 .stream()
                 .map(MemberMemento::toMember)
@@ -100,23 +113,79 @@ class MemberRepositoryAdapter implements MemberRepository {
 
     @Override
     public Page<Member> findAll(MemberFilter filter, Pageable pageable) {
-        Pageable dbPageable = TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
-        Query criteriaQuery = buildCriteriaQuery(filter);
+        List<UUID> fulltextIds = resolveFulltextIds(filter);
+        if (fulltextIds != null && fulltextIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        Pageable dbPageable = pageable.isUnpaged() ? pageable : TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
+        Query criteriaQuery = buildCriteriaQuery(filter, fulltextIds);
 
         List<Member> results = jdbcAggregateTemplate.findAll(criteriaQuery.with(dbPageable), MemberMemento.class)
                 .stream()
                 .map(MemberMemento::toMember)
                 .toList();
 
-        long total = jdbcAggregateTemplate.count(criteriaQuery, MemberMemento.class);
+        long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, MemberMemento.class);
 
         return new PageImpl<>(results, pageable, total);
     }
 
-    private Query buildCriteriaQuery(MemberFilter filter) {
-        if (!filter.onlyActive()) {
+    /**
+     * Returns the list of member IDs matching the fulltext query, or null if no fulltext filter is active.
+     */
+    private List<UUID> resolveFulltextIds(MemberFilter filter) {
+        return filter.fulltextQuery() != null
+                ? findIdsByFulltext(filter.fulltextQuery())
+                : null;
+    }
+
+    private Query buildCriteriaQuery(MemberFilter filter, List<UUID> fulltextIds) {
+        List<Criteria> conditions = new ArrayList<>();
+
+        if (fulltextIds != null) {
+            conditions.add(Criteria.where("id").in(fulltextIds));
+        }
+
+        if (filter.onlyActive()) {
+            conditions.add(Criteria.where("active").isTrue());
+        }
+
+        if (conditions.isEmpty()) {
             return Query.empty();
         }
-        return Query.query(Criteria.where("active").isTrue());
+
+        Criteria combined = conditions.stream().reduce(Criteria::and).orElseThrow();
+        return Query.query(combined);
+    }
+
+    /**
+     * Returns IDs of members whose firstName, lastName, or registrationNumber contains every
+     * whitespace-separated token from the query, after stripping diacritics and lowercasing both sides.
+     * Each token must match at least one column (OR across columns). All tokens must match (AND across tokens).
+     */
+    private List<UUID> findIdsByFulltext(String query) {
+        String[] tokens = query.split("\\s+");
+
+        StringBuilder sql = new StringBuilder("SELECT id FROM members WHERE ");
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+        List<String> tokenClauses = new ArrayList<>();
+        for (int i = 0; i < tokens.length; i++) {
+            String paramName = "token" + i;
+            String likePattern = "%" + tokens[i].toLowerCase() + "%";
+            params.addValue(paramName, likePattern);
+            tokenClauses.add(
+                    "unaccent(lower(first_name)) LIKE unaccent(:" + paramName + ")"
+                            + " OR unaccent(lower(last_name)) LIKE unaccent(:" + paramName + ")"
+                            + " OR unaccent(lower(registration_number)) LIKE unaccent(:" + paramName + ")"
+            );
+        }
+
+        sql.append(tokenClauses.stream()
+                .map(clause -> "(" + clause + ")")
+                .collect(Collectors.joining(" AND ")));
+
+        return namedJdbc.query(sql.toString(), params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 }
