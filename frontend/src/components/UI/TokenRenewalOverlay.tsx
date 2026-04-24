@@ -1,22 +1,8 @@
-import {useEffect, useState} from 'react';
 import {Loader2} from 'lucide-react';
-import {RENEWAL_HIDE_EVENT, RENEWAL_SHOW_EVENT} from '../../api/tokenRenewalState';
+import {useTokenRenewalVisibility} from '../../hooks/useTokenRenewalVisibility';
 
 export const TokenRenewalOverlay = () => {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        const handleShow = () => setVisible(true);
-        const handleHide = () => setVisible(false);
-
-        window.addEventListener(RENEWAL_SHOW_EVENT, handleShow);
-        window.addEventListener(RENEWAL_HIDE_EVENT, handleHide);
-
-        return () => {
-            window.removeEventListener(RENEWAL_SHOW_EVENT, handleShow);
-            window.removeEventListener(RENEWAL_HIDE_EVENT, handleHide);
-        };
-    }, []);
+    const visible = useTokenRenewalVisibility();
 
     if (!visible) return null;
 
