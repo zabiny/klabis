@@ -14,7 +14,7 @@ interface PermissionsResponse {
 export interface UsePermissionsEditorResult {
     permissions: string[] | undefined;
     isLoading: boolean;
-    save: (authorities: string[]) => void;
+    onSave: (authorities: string[]) => void;
     isSaving: boolean;
     error: Error | null | undefined;
 }
@@ -49,7 +49,7 @@ export function usePermissionsEditor(
         method: 'PUT',
     });
 
-    const save = (authorities: string[]) => {
+    const onSave = (authorities: string[]) => {
         if (isPending) return;
         mutate(
             {url: putUrl, data: {authorities}},
@@ -66,7 +66,7 @@ export function usePermissionsEditor(
     return {
         permissions: data?.authorities,
         isLoading,
-        save,
+        onSave,
         isSaving: isPending,
         error: mutationError,
     };

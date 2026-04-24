@@ -11,10 +11,10 @@ export interface UsePasswordSetupOptions {
 }
 
 export interface UsePasswordSetupResult {
-    submit: (data: { password: string; passwordConfirmation: string }) => void;
+    onSubmit: (data: { password: string; passwordConfirmation: string }) => void;
     isSubmitting: boolean;
     serverError: string | null;
-    clearServerError: () => void;
+    onClearServerError: () => void;
     showSuccess: boolean;
 }
 
@@ -33,7 +33,7 @@ export function usePasswordSetup(
         }
     }, []);
 
-    const submit = useCallback(
+    const onSubmit = useCallback(
         async (data: { password: string; passwordConfirmation: string }) => {
             setServerError(null);
             setIsSubmitting(true);
@@ -72,15 +72,15 @@ export function usePasswordSetup(
         [token, options],
     );
 
-    const clearServerError = useCallback(() => {
+    const onClearServerError = useCallback(() => {
         setServerError(null);
     }, []);
 
     return {
-        submit,
+        onSubmit,
         isSubmitting,
         serverError,
-        clearServerError,
+        onClearServerError,
         showSuccess,
     };
 }

@@ -57,7 +57,7 @@ const PasswordSetupPage = () => {
         });
     };
 
-    const {submit, isSubmitting, serverError, clearServerError, showSuccess} = usePasswordSetup(
+    const passwordSetup = usePasswordSetup(
         token ?? '',
         {onSuccess: handleSuccess},
     );
@@ -108,13 +108,7 @@ const PasswordSetupPage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-surface-base p-4">
-            <PasswordSetupForm
-                onSubmit={submit}
-                isSubmitting={isSubmitting}
-                serverError={serverError}
-                onClearServerError={clearServerError}
-                showSuccess={showSuccess}
-            />
+            <PasswordSetupForm {...passwordSetup} />
         </div>
     );
 };

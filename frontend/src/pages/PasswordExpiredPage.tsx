@@ -5,7 +5,7 @@ import { useRequestNewToken } from '../hooks/useRequestNewToken';
 const PasswordExpiredPage = () => {
     const navigate = useNavigate();
 
-    const { submit, isSubmitting, serverError, clearServerError, showSuccess } = useRequestNewToken({
+    const tokenRequest = useRequestNewToken({
         onSuccess: () => {
             navigate('/login', {
                 state: {
@@ -17,13 +17,7 @@ const PasswordExpiredPage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-surface-base p-4">
-            <RequestNewTokenForm
-                onSubmit={submit}
-                isSubmitting={isSubmitting}
-                serverError={serverError}
-                onClearServerError={clearServerError}
-                showSuccess={showSuccess}
-            />
+            <RequestNewTokenForm {...tokenRequest} />
         </div>
     );
 };

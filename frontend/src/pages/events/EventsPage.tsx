@@ -262,13 +262,7 @@ export const EventsPage = (): ReactElement => {
             <ImportOrisEventModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
-                events={orisImport.events}
-                fetchState={orisImport.fetchState}
-                selectedRegion={orisImport.selectedRegion}
-                onRegionChange={orisImport.onRegionChange}
-                isSubmitting={orisImport.isSubmitting}
-                submitError={orisImport.submitError}
-                onImport={orisImport.onImport}
+                {...orisImport}
             />
         )}
 

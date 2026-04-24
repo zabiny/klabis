@@ -12,10 +12,10 @@ export interface UseRequestNewTokenOptions {
 }
 
 export interface UseRequestNewTokenResult {
-    submit: (data: { registrationNumber: string; email: string }) => void;
+    onSubmit: (data: { registrationNumber: string; email: string }) => void;
     isSubmitting: boolean;
     serverError: string | null;
-    clearServerError: () => void;
+    onClearServerError: () => void;
     showSuccess: boolean;
 }
 
@@ -33,7 +33,7 @@ export function useRequestNewToken(
         }
     }, []);
 
-    const submit = useCallback(
+    const onSubmit = useCallback(
         async (data: { registrationNumber: string; email: string }) => {
             setServerError(null);
             setIsSubmitting(true);
@@ -68,15 +68,15 @@ export function useRequestNewToken(
         [options],
     );
 
-    const clearServerError = useCallback(() => {
+    const onClearServerError = useCallback(() => {
         setServerError(null);
     }, []);
 
     return {
-        submit,
+        onSubmit,
         isSubmitting,
         serverError,
-        clearServerError,
+        onClearServerError,
         showSuccess,
     };
 }

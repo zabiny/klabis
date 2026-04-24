@@ -55,7 +55,7 @@ vi.mock('../../hooks/usePermissionsEditor', () => ({
     usePermissionsEditor: vi.fn().mockReturnValue({
         permissions: undefined,
         isLoading: false,
-        save: vi.fn(),
+        onSave: vi.fn(),
         isSaving: false,
         error: null,
     }),

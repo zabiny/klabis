@@ -227,11 +227,7 @@ export const MembersPage = (): ReactElement => {
                 onClose={() => setPermissionsDialog(null)}
                 memberName={memberName}
                 memberRegistrationNumber={memberRegistrationNumber}
-                permissions={permissionsEditor.permissions}
-                isLoading={permissionsEditor.isLoading}
-                isSaving={permissionsEditor.isSaving}
-                error={permissionsEditor.error}
-                onSave={permissionsEditor.save}
+                {...permissionsEditor}
             />
 
             {actionModal && (

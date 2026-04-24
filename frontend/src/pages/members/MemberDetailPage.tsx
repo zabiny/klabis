@@ -452,11 +452,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 onClose={() => setIsPermissionsDialogOpen(false)}
                 memberName={`${member.firstName} ${member.lastName}`}
                 memberRegistrationNumber={member.registrationNumber ?? undefined}
-                permissions={permissionsEditor.permissions}
-                isLoading={permissionsEditor.isLoading}
-                isSaving={permissionsEditor.isSaving}
-                error={permissionsEditor.error}
-                onSave={permissionsEditor.save}
+                {...permissionsEditor}
             />
             {isEditing && enrichedTemplate ? (
                 <HalFormDisplay
