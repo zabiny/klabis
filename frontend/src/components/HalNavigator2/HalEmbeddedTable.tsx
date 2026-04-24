@@ -32,6 +32,9 @@ export interface HalEmbeddedTableProps<T = any> {
     /** Hide columns where all values are empty */
     hideEmptyColumns?: boolean
 
+    /** Extra query parameters appended to the self-link URL before fetching */
+    extraParams?: Record<string, string>
+
     /** Column definitions (TableCell components) */
     children: React.ReactNode
 }
@@ -62,6 +65,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               defaultOrderDirection = 'asc',
                                                                               emptyMessage = 'Žádná data',
                                                                               hideEmptyColumns,
+                                                                              extraParams,
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
     const {route, isLoading} = useHalPageData()
@@ -90,7 +94,14 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
         )
     }
 
-    const tableLink = {href: selfLink.href};
+    const tableLinkHref = (() => {
+        if (!extraParams || Object.keys(extraParams).length === 0) return selfLink.href;
+        const url = new URL(selfLink.href);
+        Object.entries(extraParams).forEach(([key, value]) => url.searchParams.set(key, value));
+        return url.toString();
+    })();
+
+    const tableLink = {href: tableLinkHref};
 
     return (
         <KlabisTableWithQuery<T>

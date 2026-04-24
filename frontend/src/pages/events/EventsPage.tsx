@@ -1,4 +1,5 @@
-import {type ReactElement, useState} from "react";
+import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useSearchParams} from "react-router-dom";
 import type {EntityModel, HalFormsTemplate} from "../../api";
 import type {Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
@@ -15,6 +16,15 @@ import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFac
 import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
+import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
+import {
+    DEFAULT_TIME_WINDOW,
+    getDefaultSortForTimeWindow,
+    getTimeWindowFromParams,
+    getTodayIso,
+    timeWindowToDateParams,
+    type TimeWindow,
+} from "../../components/events/eventsFilterUtils.ts";
 
 type EventListData = EntityModel<{
     id: string,
@@ -78,10 +88,14 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
     );
 };
 
+const DEBOUNCE_MS = 250;
+const MIN_SEARCH_LENGTH = 2;
+
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const importTemplate = resourceData?._templates?.importEvent;
 
@@ -109,6 +123,108 @@ export const EventsPage = (): ReactElement => {
         );
     };
 
+    // Read filter state from URL (source of truth)
+    const urlDateFrom = searchParams.get('dateFrom');
+    const urlDateTo = searchParams.get('dateTo');
+    const urlQ = searchParams.get('q') ?? '';
+    const urlRegisteredByMe = searchParams.get('registeredBy') === 'me';
+
+    const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
+
+    // Controlled search input with debounce
+    const [searchInputValue, setSearchInputValue] = useState(urlQ);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Sync input value when URL changes externally (e.g. back/forward)
+    const prevUrlQ = useRef(urlQ);
+    useEffect(() => {
+        if (prevUrlQ.current !== urlQ && searchInputValue !== urlQ) {
+            setSearchInputValue(urlQ);
+        }
+        prevUrlQ.current = urlQ;
+    }, [urlQ, searchInputValue]);
+
+    // On first mount: if no date params in URL, apply the Budoucí default
+    const defaultAppliedRef = useRef(false);
+    useEffect(() => {
+        if (defaultAppliedRef.current) return;
+        defaultAppliedRef.current = true;
+
+        // Only apply default if neither dateFrom nor dateTo is present in URL
+        if (!urlDateFrom && !urlDateTo) {
+            const today = getTodayIso();
+            const {dateFrom} = timeWindowToDateParams(DEFAULT_TIME_WINDOW, today);
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev);
+                    if (dateFrom) next.set('dateFrom', dateFrom);
+                    return next;
+                },
+                {replace: true},
+            );
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchInputValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                const trimmed = value.trim();
+                if (trimmed.length >= MIN_SEARCH_LENGTH) {
+                    next.set('q', trimmed);
+                } else {
+                    next.delete('q');
+                }
+                return next;
+            });
+        }, DEBOUNCE_MS);
+    }, [setSearchParams]);
+
+    const handleTimeWindowChange = useCallback((window: TimeWindow) => {
+        const today = getTodayIso();
+        const {dateFrom, dateTo} = timeWindowToDateParams(window, today);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (dateFrom) {
+                next.set('dateFrom', dateFrom);
+            } else {
+                next.delete('dateFrom');
+            }
+            if (dateTo) {
+                next.set('dateTo', dateTo);
+            } else {
+                next.delete('dateTo');
+            }
+            return next;
+        });
+    }, [setSearchParams]);
+
+    const handleRegisteredByMeChange = useCallback((checked: boolean) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (checked) {
+                next.set('registeredBy', 'me');
+            } else {
+                next.delete('registeredBy');
+            }
+            return next;
+        });
+    }, [setSearchParams]);
+
+    // Build extra params for the API call
+    const extraParams = useMemo((): Record<string, string> => {
+        const params: Record<string, string> = {};
+        if (urlDateFrom) params.dateFrom = urlDateFrom;
+        if (urlDateTo) params.dateTo = urlDateTo;
+        if (urlQ && urlQ.trim().length >= MIN_SEARCH_LENGTH) params.q = urlQ.trim();
+        if (urlRegisteredByMe) params.registeredBy = 'me';
+        return params;
+    }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe]);
+
+    const defaultSort = getDefaultSortForTimeWindow(timeWindow);
+
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">{labels.sections.events}</h1>
 
@@ -124,11 +240,25 @@ export const EventsPage = (): ReactElement => {
                     <HalFormButton name="createEvent" modal={true} label={labels.templates.createEvent} fieldsFactory={eventFormFieldsFactory}/>
                 </div>
             </div>
+
+            <EventsFilterBar
+                searchQuery={searchInputValue}
+                onSearchChange={handleSearchChange}
+                timeWindow={timeWindow}
+                onTimeWindowChange={handleTimeWindowChange}
+                registeredByMe={urlRegisteredByMe}
+                onRegisteredByMeChange={handleRegisteredByMeChange}
+            />
+
             <HalEmbeddedTable<EventListData>
+                key={timeWindow}
                 collectionName={"eventSummaryDtoList"}
-                defaultOrderBy={"eventDate"}
+                defaultOrderBy={defaultSort.by}
+                defaultOrderDirection={defaultSort.direction}
+                extraParams={extraParams}
                 onRowClick={route.navigateToResource}
                 hideEmptyColumns={true}
+                emptyMessage={labels.eventsFilter.emptyState}
             >
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>

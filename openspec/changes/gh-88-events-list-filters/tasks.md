@@ -29,14 +29,14 @@
 
 ## 4. Frontend — filter bar component
 
-- [ ] 4.1 Add a filter bar component to the events list page with fulltext input, time window pill group (Budoucí / Proběhlé / Vše), and a "Moje přihlášky" checkbox.
-- [ ] 4.2 Wire URL query params as the single source of truth; back/forward and reload preserve state.
-- [ ] 4.3 Hide the "Moje přihlášky" checkbox when the current user has no member profile (derive from `CurrentUserData.memberId`).
-- [ ] 4.4 Implement widget → date param translation: Budoucí maps to `dateFrom=today`, Proběhlé maps to `dateTo=today-1`, Vše adds neither. Unit-test the mapping.
-- [ ] 4.5 Implement default sort per widget: Budoucí → `sort=eventDate,asc`, Proběhlé/Vše → `sort=eventDate,desc`. User-clicked column sort overrides this default.
-- [ ] 4.6 Debounce fulltext input at ~250 ms; ignore inputs shorter than 2 characters after trim.
-- [ ] 4.7 Empty-state message when the filtered result is empty.
-- [ ] 4.8 Localize filter-bar labels in `src/localization/labels.ts`.
+- [x] 4.1 Add a filter bar component to the events list page with fulltext input, time window pill group (Budoucí / Proběhlé / Vše), and a "Moje přihlášky" checkbox.
+- [x] 4.2 Wire URL query params as the single source of truth; back/forward and reload preserve state.
+- [x] 4.3 Hide the "Moje přihlášky" checkbox when the current user has no member profile (derive from `CurrentUserData.memberId`).
+- [x] 4.4 Implement widget → date param translation: Budoucí maps to `dateFrom=today`, Proběhlé maps to `dateTo=today-1`, Vše adds neither. Unit-test the mapping.
+- [x] 4.5 Implement default sort per widget: Budoucí → `sort=eventDate,asc`, Proběhlé/Vše → `sort=eventDate,desc`. User-clicked column sort overrides this default.
+- [x] 4.6 Debounce fulltext input at ~250 ms; ignore inputs shorter than 2 characters after trim.
+- [x] 4.7 Empty-state message when the filtered result is empty.
+- [x] 4.8 Localize filter-bar labels in `src/localization/labels.ts`.
 
 ## 5. Frontend — tests & verification
 

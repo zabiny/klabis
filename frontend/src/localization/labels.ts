@@ -307,6 +307,17 @@ export const labels = {
         familyGroup: 'Rodina',
     },
 
+    eventsFilter: {
+        search: 'Hledat',
+        searchPlaceholder: 'Hledat podle názvu nebo místa...',
+        timeWindowLabel: 'Zobrazit',
+        budouci: 'Budoucí',
+        probehle: 'Proběhlé',
+        vse: 'Vše',
+        mojePřihlaskyLabel: 'Moje přihlášky',
+        emptyState: 'Žádné akce neodpovídají zadaným filtrům.',
+    },
+
     suspensionWarning: {
         title: 'Varování: Správce skupin',
         description: 'Člen je posledním správcem následujících skupin. Před ukončením členství je nutné určit nástupce nebo skupiny rozpustit.',
