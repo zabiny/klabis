@@ -1239,6 +1239,94 @@ class MemberRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findAll() with StatusFilter")
+    class StatusFilterTest {
+
+        private Member activeMember;
+        private Member inactiveMember;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            activeMember = aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Active", "Member")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("active@example.com")
+                    .withPhone("+420111111900")
+                    .withNoGuardian()
+                    .withActive(true)
+                    .build();
+
+            inactiveMember = aMember()
+                    .withRegistrationNumber("ZBM9002")
+                    .withName("Inactive", "Member")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withEmail("inactive@example.com")
+                    .withPhone("+420111111901")
+                    .withNoGuardian()
+                    .withActive(false)
+                    .build();
+
+            memberRepository.save(activeMember);
+            memberRepository.save(inactiveMember);
+        }
+
+        @Test
+        @DisplayName("ACTIVE status returns only active members")
+        void shouldReturnOnlyActiveMembersForActiveStatus() {
+            MemberFilter filter = MemberFilter.activeOnly();
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getRegistrationNumber().getValue()).isEqualTo("ZBM9001");
+            assertThat(page.getContent()).allMatch(Member::isActive);
+        }
+
+        @Test
+        @DisplayName("INACTIVE status returns only deactivated members")
+        void shouldReturnOnlyInactiveMembersForInactiveStatus() {
+            MemberFilter filter = new MemberFilter(MemberFilter.StatusFilter.INACTIVE, null);
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getRegistrationNumber().getValue()).isEqualTo("ZBM9002");
+            assertThat(page.getContent()).noneMatch(Member::isActive);
+        }
+
+        @Test
+        @DisplayName("ALL status returns both active and inactive members")
+        void shouldReturnAllMembersForAllStatus() {
+            MemberFilter filter = MemberFilter.all();
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(2);
+            assertThat(page.getContent()).extracting(m -> m.getRegistrationNumber().getValue())
+                    .containsExactlyInAnyOrder("ZBM9001", "ZBM9002");
+        }
+
+        @Test
+        @DisplayName("withStatus wither preserves fulltextQuery and changes status")
+        void shouldWithStatusPreserveFulltextQuery() {
+            MemberFilter base = MemberFilter.all().withFulltext("Active");
+            MemberFilter withActive = base.withStatus(MemberFilter.StatusFilter.ACTIVE);
+
+            Page<Member> page = memberRepository.findAll(withActive, Pageable.unpaged());
+
+            assertThat(page.getContent()).hasSize(1);
+            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Active");
+        }
+    }
+
+    @Nested
     @DisplayName("License persistence")
     class LicensePersistence {
 

@@ -9,11 +9,11 @@
 
 ## 2. Backend foundation — status filter
 
-- [ ] 2.1 Write failing repository tests covering `StatusFilter` values ACTIVE, INACTIVE, ALL.
-- [ ] 2.2 Add a filter-only enum `MemberFilter.StatusFilter` (or equivalent location — implementation detail) with values ACTIVE, INACTIVE, ALL. `MemberFilter` gets a new field of this type (default ACTIVE for authenticated code paths; ALL for no-filter callers).
-- [ ] 2.3 Extend `MemberRepositoryAdapter` to translate the enum into the SQL predicate (`active = true`, `active = false`, no predicate for ALL).
-- [ ] 2.4 Update the existing `onlyActive`-based call sites: either keep `onlyActive` as a convenience constructor that maps to the new enum, or replace call sites — decide when implementing. `MembersImpl` / application services must still force non-MANAGE callers to the ACTIVE branch.
-- [ ] 2.5 Green tests.
+- [x] 2.1 Write failing repository tests covering `StatusFilter` values ACTIVE, INACTIVE, ALL.
+- [x] 2.2 Add a filter-only enum `MemberFilter.StatusFilter` (or equivalent location — implementation detail) with values ACTIVE, INACTIVE, ALL. `MemberFilter` gets a new field of this type (default ACTIVE for authenticated code paths; ALL for no-filter callers).
+- [x] 2.3 Extend `MemberRepositoryAdapter` to translate the enum into the SQL predicate (`active = true`, `active = false`, no predicate for ALL).
+- [x] 2.4 Update the existing `onlyActive`-based call sites: either keep `onlyActive` as a convenience constructor that maps to the new enum, or replace call sites — decide when implementing. `MembersImpl` / application services must still force non-MANAGE callers to the ACTIVE branch.
+- [x] 2.5 Green tests.
 
 ## 3. Backend — REST controller wiring
 

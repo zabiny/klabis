@@ -147,8 +147,10 @@ class MemberRepositoryAdapter implements MemberRepository {
             conditions.add(Criteria.where("id").in(fulltextIds));
         }
 
-        if (filter.onlyActive()) {
+        if (filter.status() == MemberFilter.StatusFilter.ACTIVE) {
             conditions.add(Criteria.where("active").isTrue());
+        } else if (filter.status() == MemberFilter.StatusFilter.INACTIVE) {
+            conditions.add(Criteria.where("active").isFalse());
         }
 
         if (conditions.isEmpty()) {
