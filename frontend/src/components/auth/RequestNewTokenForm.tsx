@@ -1,11 +1,14 @@
 import {type ChangeEvent, type FormEvent, useState} from 'react';
 import {Alert, Button, Card} from '../UI';
 import {TextField} from '../UI/forms/TextField';
-import {RateLimitError, requestNewToken, TokenRequestError, type TokenRequestRequest} from '../../api/passwordSetup';
 import {labels} from '../../localization';
 
 interface RequestNewTokenFormProps {
-    onSuccess: () => void;
+    onSubmit: (data: { registrationNumber: string; email: string }) => void;
+    isSubmitting: boolean;
+    serverError: string | null;
+    onClearServerError: () => void;
+    showSuccess: boolean;
 }
 
 interface FormData {
@@ -13,18 +16,18 @@ interface FormData {
     email: string;
 }
 
-/**
- * RequestNewTokenForm - Form for requesting a new password setup token
- */
-export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => {
+export const RequestNewTokenForm = ({
+    onSubmit,
+    isSubmitting,
+    serverError,
+    onClearServerError,
+    showSuccess,
+}: RequestNewTokenFormProps) => {
     const [formData, setFormData] = useState<FormData>({
         registrationNumber: '',
         email: '',
     });
     const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-    const [serverError, setServerError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
 
     const validateForm = (): boolean => {
         const newErrors: Partial<Record<keyof FormData, string>> = {};
@@ -43,46 +46,21 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        setServerError(null);
 
         if (!validateForm()) {
             return;
         }
 
-        setIsSubmitting(true);
-
-        try {
-            const request: TokenRequestRequest = {
-                registrationNumber: formData.registrationNumber.trim(),
-                email: formData.email.trim(),
-            };
-
-            await requestNewToken(request);
-            setShowSuccess(true);
-            setTimeout(() => {
-                onSuccess();
-            }, 3000);
-        } catch (error) {
-            if (error instanceof RateLimitError) {
-                const retryText = error.retryAfter
-                    ? labels.errors.rateLimitedRetryAfter.replace('{seconds}', String(error.retryAfter))
-                    : labels.errors.rateLimitedRetryLater;
-                setServerError(retryText);
-            } else if (error instanceof TokenRequestError) {
-                setServerError(error.detail.detail || labels.errors.requestFailed);
-            } else {
-                setServerError(labels.errors.unexpectedError);
-            }
-        } finally {
-            setIsSubmitting(false);
-        }
+        onSubmit({
+            registrationNumber: formData.registrationNumber.trim(),
+            email: formData.email.trim(),
+        });
     };
 
     const updateField = (field: keyof FormData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
-        // Clear error for this field when user starts typing
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
@@ -131,7 +109,7 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
             </div>
 
             {serverError && (
-                <Alert severity="error" className="mb-6" onClose={() => setServerError(null)}>
+                <Alert severity="error" className="mb-6" onClose={onClearServerError}>
                     {serverError}
                 </Alert>
             )}
