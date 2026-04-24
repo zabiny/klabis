@@ -318,6 +318,16 @@ export const labels = {
         emptyState: 'Žádné akce neodpovídají zadaným filtrům.',
     },
 
+    membersFilter: {
+        search: 'Hledat člena',
+        searchPlaceholder: 'Hledat podle jména nebo registračního čísla',
+        statusLabel: 'Stav členství',
+        statusActive: 'Aktivní',
+        statusInactive: 'Neaktivní',
+        statusAll: 'Vše',
+        emptyState: 'Žádní členové neodpovídají zadaným filtrům.',
+    },
+
     suspensionWarning: {
         title: 'Varování: Správce skupin',
         description: 'Člen je posledním správcem následujících skupin. Před ukončením členství je nutné určit nástupce nebo skupiny rozpustit.',

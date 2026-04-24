@@ -35,12 +35,12 @@
 
 ## 5. Frontend — members filter bar
 
-- [ ] 5.1 Add a filter bar component on the members list page with `<FulltextSearchInput />` and — for MEMBERS:MANAGE users — a pill group "Aktivní / Neaktivní / Vše".
-- [ ] 5.2 Wire URL query params as the single source of truth; on first render, inject the default `status=ACTIVE` via `setSearchParams(..., { replace: true })`. Back/forward and reload preserve state.
-- [ ] 5.3 Hide the status pill group when the current user does not have MEMBERS:MANAGE (derive from the root resource's authorities / `CurrentUserData`).
-- [ ] 5.4 Empty-state message when the filtered result is empty ("Žádní členové neodpovídají zadaným filtrům.").
-- [ ] 5.5 Localize filter-bar labels in `src/localization/labels.ts`.
-- [ ] 5.6 Remove the per-row active-status column from the members table component. Action affordances (suspend, resume, permissions link) stay in the action column. Update any component snapshots / tests that asserted the column's presence.
+- [x] 5.1 Add a filter bar component on the members list page with `<FulltextSearchInput />` and — for MEMBERS:MANAGE users — a pill group "Aktivní / Neaktivní / Vše".
+- [x] 5.2 Wire URL query params as the single source of truth; on first render, inject the default `status=ACTIVE` via `setSearchParams(..., { replace: true })`. Back/forward and reload preserve state.
+- [x] 5.3 Hide the status pill group when the current user does not have MEMBERS:MANAGE (derive from the root resource's authorities / `CurrentUserData`).
+- [x] 5.4 Empty-state message when the filtered result is empty ("Žádní členové neodpovídají zadaným filtrům.").
+- [x] 5.5 Localize filter-bar labels in `src/localization/labels.ts`.
+- [x] 5.6 Remove the per-row active-status column from the members table component. Action affordances (suspend, resume, permissions link) stay in the action column. Update any component snapshots / tests that asserted the column's presence.
 
 ## 6. Frontend — tests & verification
 

@@ -161,13 +161,20 @@ describe('MembersPage', () => {
         expect(screen.getByText('Jméno')).toBeInTheDocument();
     });
 
-    it('renders E-mail and Status columns', () => {
+    it('renders E-mail column', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('E-mail')).toBeInTheDocument();
-        expect(screen.getByText('Status')).toBeInTheDocument();
+    });
+
+    it('does NOT render Status column header', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+        };
+        renderPage(createMockPageData(resourceData));
+        expect(screen.queryByText('Status')).not.toBeInTheDocument();
     });
 
     it('renders Akce column header', () => {
@@ -187,22 +194,6 @@ describe('MembersPage', () => {
 describe('MembersPage — row data rendering', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-    });
-
-    it('shows Aktivní badge for active member', () => {
-        renderPageWithMembers([buildMemberRow({active: true})]);
-        expect(screen.getByText('Aktivní')).toBeInTheDocument();
-    });
-
-    it('shows Neaktivní badge for inactive member', () => {
-        renderPageWithMembers([buildMemberRow({active: false})]);
-        expect(screen.getByText('Neaktivní')).toBeInTheDocument();
-    });
-
-    it('does not show status badge when active is null', () => {
-        renderPageWithMembers([buildMemberRow({active: null})]);
-        expect(screen.queryByText('Aktivní')).not.toBeInTheDocument();
-        expect(screen.queryByText('Neaktivní')).not.toBeInTheDocument();
     });
 
     it('shows email value in email column', () => {
