@@ -80,7 +80,8 @@ public record EventFilter(
      */
     public EventFilter withExcludedStatus(EventStatus excluded) {
         if (statuses.isEmpty()) {
-            return EventFilter.byNotHavingStatus(excluded);
+            EnumSet<EventStatus> allowed = EnumSet.complementOf(EnumSet.of(excluded));
+            return new EventFilter(allowed, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator);
         }
         EnumSet<EventStatus> remaining = EnumSet.copyOf(statuses);
         remaining.remove(excluded);
