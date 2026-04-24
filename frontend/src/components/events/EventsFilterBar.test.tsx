@@ -1,59 +1,33 @@
 import '@testing-library/jest-dom';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { EventsFilterBar, type EventsFilterBarProps } from './EventsFilterBar';
+import { EventsFilterBar, type EventsFilterBarProps, type EventsFilterValue } from './EventsFilterBar';
 import { labels } from '../../localization';
-import { useAuth } from '../../contexts/AuthContext2';
 
-vi.mock('../../contexts/AuthContext2', () => ({
-    useAuth: vi.fn().mockReturnValue({
-        getUser: () => ({
-            memberId: 'M001',
-            firstName: 'Jana',
-            lastName: 'Novak',
-            id: 1,
-            userName: 'ZBM9500',
-        }),
-    }),
-}));
-
-const defaultProps: EventsFilterBarProps = {
+const defaultValue: EventsFilterValue = {
+    q: '',
     timeWindow: 'budouci',
-    onTimeWindowChange: vi.fn(),
     registeredByMe: false,
-    onRegisteredByMeChange: vi.fn(),
-    searchQuery: '',
-    onSearchChange: vi.fn(),
 };
 
-const renderFilterBar = (props = defaultProps) =>
+const defaultProps: EventsFilterBarProps = {
+    value: defaultValue,
+    onChange: vi.fn(),
+    showRegisteredByMeToggle: true,
+};
+
+const renderFilterBar = (props: Partial<EventsFilterBarProps> = {}) =>
     render(
         <MemoryRouter initialEntries={['/']}>
-            <EventsFilterBar {...props} />
+            <EventsFilterBar {...defaultProps} {...props} />
         </MemoryRouter>,
     );
-
-const mockUseAuthWithMember = () =>
-    vi.mocked(useAuth).mockReturnValue({
-        getUser: () => ({
-            memberId: 'M001',
-            firstName: 'Jana',
-            lastName: 'Novak',
-            id: 1,
-            userName: 'ZBM9500',
-        }),
-        isAuthenticated: true,
-        login: vi.fn(),
-        logout: vi.fn(),
-        isLoading: false,
-    });
 
 describe('EventsFilterBar', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mockUseAuthWithMember();
     });
 
     describe('search input', () => {
@@ -71,17 +45,20 @@ describe('EventsFilterBar', () => {
             ).toBeInTheDocument();
         });
 
-        it('shows value from searchQuery prop', () => {
-            renderFilterBar({ ...defaultProps, searchQuery: 'jihlava' });
+        it('shows value from value.q prop', () => {
+            renderFilterBar({ value: { ...defaultValue, q: 'jihlava' } });
             expect(screen.getByDisplayValue('jihlava')).toBeInTheDocument();
         });
 
-        it('accepts user input', async () => {
-            const user = userEvent.setup();
-            renderFilterBar();
+        it('calls onChange with updated q when user types 2+ chars', () => {
+            vi.useFakeTimers();
+            const onChange = vi.fn();
+            renderFilterBar({ value: { ...defaultValue, q: '' }, onChange });
             const input = screen.getByPlaceholderText(labels.eventsFilter.searchPlaceholder);
-            await user.type(input, 'test');
-            expect(input).toHaveValue('test');
+            fireEvent.change(input, { target: { value: 'ab' } });
+            act(() => { vi.advanceTimersByTime(300); });
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, q: 'ab' });
+            vi.useRealTimers();
         });
     });
 
@@ -100,78 +77,65 @@ describe('EventsFilterBar', () => {
         });
 
         it('highlights the active time window (Budoucí)', () => {
-            renderFilterBar({ ...defaultProps, timeWindow: 'budouci' });
+            renderFilterBar({ value: { ...defaultValue, timeWindow: 'budouci' } });
             const activeBtn = screen.getByRole('button', { name: labels.eventsFilter.budouci });
             expect(activeBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
         it('highlights the active time window (Proběhlé)', () => {
-            renderFilterBar({ ...defaultProps, timeWindow: 'probehle' });
+            renderFilterBar({ value: { ...defaultValue, timeWindow: 'probehle' } });
             const activeBtn = screen.getByRole('button', { name: labels.eventsFilter.probehle });
             expect(activeBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('calls onTimeWindowChange when Proběhlé is clicked', async () => {
-            const onTimeWindowChange = vi.fn();
-            renderFilterBar({ ...defaultProps, onTimeWindowChange });
+        it('calls onChange with updated timeWindow when Proběhlé is clicked', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({ onChange });
             await userEvent.click(screen.getByRole('button', { name: labels.eventsFilter.probehle }));
-            expect(onTimeWindowChange).toHaveBeenCalledWith('probehle');
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, timeWindow: 'probehle' });
         });
 
-        it('calls onTimeWindowChange when Vše is clicked', async () => {
-            const onTimeWindowChange = vi.fn();
-            renderFilterBar({ ...defaultProps, onTimeWindowChange });
+        it('calls onChange with updated timeWindow when Vše is clicked', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({ onChange });
             await userEvent.click(screen.getByRole('button', { name: labels.eventsFilter.vse }));
-            expect(onTimeWindowChange).toHaveBeenCalledWith('vse');
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, timeWindow: 'vse' });
         });
     });
 
     describe('"Moje přihlášky" checkbox', () => {
-        it('shows checkbox when user has a member profile', () => {
-            renderFilterBar();
+        it('shows checkbox when showRegisteredByMeToggle is true', () => {
+            renderFilterBar({ showRegisteredByMeToggle: true });
             expect(
                 screen.getByRole('checkbox', { name: labels.eventsFilter.mojePřihlaskyLabel }),
             ).toBeInTheDocument();
         });
 
-        it('hides checkbox when user has no member profile', () => {
-            vi.mocked(useAuth).mockReturnValue({
-                getUser: () => ({
-                    memberId: null,
-                    firstName: 'Admin',
-                    lastName: 'User',
-                    id: 2,
-                    userName: 'ZBM9000',
-                }),
-                isAuthenticated: true,
-                login: vi.fn(),
-                logout: vi.fn(),
-                isLoading: false,
-            });
-            renderFilterBar();
+        it('hides checkbox when showRegisteredByMeToggle is false', () => {
+            renderFilterBar({ showRegisteredByMeToggle: false });
             expect(
                 screen.queryByRole('checkbox', { name: labels.eventsFilter.mojePřihlaskyLabel }),
             ).not.toBeInTheDocument();
         });
 
-        it('reflects checked state from prop', () => {
-            renderFilterBar({ ...defaultProps, registeredByMe: true });
+        it('reflects checked state from value.registeredByMe', () => {
+            renderFilterBar({ value: { ...defaultValue, registeredByMe: true } });
             const checkbox = screen.getByRole('checkbox', {
                 name: labels.eventsFilter.mojePřihlaskyLabel,
             });
             expect(checkbox).toBeChecked();
         });
 
-        it('calls onRegisteredByMeChange when checkbox is toggled', async () => {
-            const onRegisteredByMeChange = vi.fn();
-            renderFilterBar({ ...defaultProps, onRegisteredByMeChange });
+        it('calls onChange with updated registeredByMe when checkbox is toggled', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({ onChange });
             const checkbox = screen.getByRole('checkbox', {
                 name: labels.eventsFilter.mojePřihlaskyLabel,
             });
             await act(async () => {
                 await userEvent.click(checkbox);
             });
-            expect(onRegisteredByMeChange).toHaveBeenCalledWith(true);
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, registeredByMe: true });
         });
     });
 });

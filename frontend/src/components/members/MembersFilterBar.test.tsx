@@ -1,24 +1,27 @@
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { MembersFilterBar } from './MembersFilterBar';
+import { MembersFilterBar, type MembersFilterValue } from './MembersFilterBar';
 import { labels } from '../../localization';
+import type { MembersFilterBarProps } from './MembersFilterBar';
 
-const renderFilterBar = (
-    hasManageAuthority: boolean,
-    initialUrl = '/',
-    searchQuery = '',
-    onSearchChange = vi.fn(),
-) =>
+const defaultValue: MembersFilterValue = {
+    q: '',
+    status: 'ACTIVE',
+};
+
+const defaultProps: MembersFilterBarProps = {
+    value: defaultValue,
+    onChange: vi.fn(),
+    hasManageAuthority: true,
+};
+
+const renderFilterBar = (props: Partial<MembersFilterBarProps> = {}) =>
     render(
-        <MemoryRouter initialEntries={[initialUrl]}>
-            <MembersFilterBar
-                hasManageAuthority={hasManageAuthority}
-                searchQuery={searchQuery}
-                onSearchChange={onSearchChange}
-            />
+        <MemoryRouter initialEntries={['/']}>
+            <MembersFilterBar {...defaultProps} {...props} />
         </MemoryRouter>,
     );
 
@@ -29,21 +32,32 @@ describe('MembersFilterBar', () => {
 
     describe('search input', () => {
         it('renders search input with correct placeholder', () => {
-            renderFilterBar(true);
+            renderFilterBar();
             expect(
                 screen.getByPlaceholderText(labels.membersFilter.searchPlaceholder),
             ).toBeInTheDocument();
         });
 
-        it('shows value from searchQuery prop', () => {
-            renderFilterBar(true, '/', 'jan');
+        it('shows value from value.q prop', () => {
+            renderFilterBar({ value: { ...defaultValue, q: 'jan' } });
             expect(screen.getByDisplayValue('jan')).toBeInTheDocument();
+        });
+
+        it('calls onChange with updated q when user types 2+ chars', () => {
+            vi.useFakeTimers();
+            const onChange = vi.fn();
+            renderFilterBar({ value: { ...defaultValue, q: '' }, onChange });
+            const input = screen.getByPlaceholderText(labels.membersFilter.searchPlaceholder);
+            fireEvent.change(input, { target: { value: 'ab' } });
+            act(() => { vi.advanceTimersByTime(300); });
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, q: 'ab' });
+            vi.useRealTimers();
         });
     });
 
     describe('status pill group', () => {
         it('renders three status pill buttons when hasManageAuthority is true', () => {
-            renderFilterBar(true);
+            renderFilterBar({ hasManageAuthority: true });
             expect(
                 screen.getByRole('button', { name: labels.membersFilter.statusActive }),
             ).toBeInTheDocument();
@@ -56,7 +70,7 @@ describe('MembersFilterBar', () => {
         });
 
         it('hides the pill group entirely when hasManageAuthority is false', () => {
-            renderFilterBar(false);
+            renderFilterBar({ hasManageAuthority: false });
             expect(
                 screen.queryByRole('button', { name: labels.membersFilter.statusActive }),
             ).not.toBeInTheDocument();
@@ -68,50 +82,41 @@ describe('MembersFilterBar', () => {
             ).not.toBeInTheDocument();
         });
 
-        it('Aktivní pill is active (aria-pressed=true) when URL has no status param (default)', () => {
-            renderFilterBar(true, '/');
+        it('Aktivní pill is active (aria-pressed=true) when value.status is ACTIVE', () => {
+            renderFilterBar({ value: { ...defaultValue, status: 'ACTIVE' } });
             expect(
                 screen.getByRole('button', { name: labels.membersFilter.statusActive }),
             ).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('Aktivní pill is active (aria-pressed=true) when URL has ?status=ACTIVE', () => {
-            renderFilterBar(true, '/?status=ACTIVE');
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusActive }),
-            ).toHaveAttribute('aria-pressed', 'true');
-        });
-
-        it('Neaktivní pill is active (aria-pressed=true) when URL has ?status=INACTIVE', () => {
-            renderFilterBar(true, '/?status=INACTIVE');
+        it('Neaktivní pill is active (aria-pressed=true) when value.status is INACTIVE', () => {
+            renderFilterBar({ value: { ...defaultValue, status: 'INACTIVE' } });
             expect(
                 screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
             ).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('Neaktivní pill is not active when URL has ?status=ACTIVE', () => {
-            renderFilterBar(true, '/?status=ACTIVE');
+        it('Neaktivní pill is not active when value.status is ACTIVE', () => {
+            renderFilterBar({ value: { ...defaultValue, status: 'ACTIVE' } });
             expect(
                 screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
             ).toHaveAttribute('aria-pressed', 'false');
         });
 
-        it('clicking Neaktivní writes ?status=INACTIVE to the URL', async () => {
+        it('calls onChange with updated status when Neaktivní is clicked', async () => {
+            const onChange = vi.fn();
             const user = userEvent.setup();
-            renderFilterBar(true, '/');
+            renderFilterBar({ onChange });
             await user.click(screen.getByRole('button', { name: labels.membersFilter.statusInactive }));
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
-            ).toHaveAttribute('aria-pressed', 'true');
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status: 'INACTIVE' });
         });
 
-        it('clicking Vše writes ?status=ALL to the URL', async () => {
+        it('calls onChange with updated status when Vše is clicked', async () => {
+            const onChange = vi.fn();
             const user = userEvent.setup();
-            renderFilterBar(true, '/');
+            renderFilterBar({ onChange });
             await user.click(screen.getByRole('button', { name: labels.membersFilter.statusAll }));
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusAll }),
-            ).toHaveAttribute('aria-pressed', 'true');
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status: 'ALL' });
         });
     });
 });

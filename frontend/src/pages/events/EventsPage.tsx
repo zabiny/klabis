@@ -16,7 +16,8 @@ import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFac
 import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
-import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
+import {EventsFilterBar, type EventsFilterValue} from "../../components/events/EventsFilterBar.tsx";
+import {useAuth} from "../../contexts/AuthContext2.tsx";
 import {
     DEFAULT_TIME_WINDOW,
     getDefaultSortForTimeWindow,
@@ -91,11 +92,13 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
+    const {getUser} = useAuth();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const importTemplate = resourceData?._templates?.importEvent;
+    const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const openActionModal = (event: EventListData, templateName: string) => {
         const template = event._templates?.[templateName];
@@ -150,46 +153,22 @@ export const EventsPage = (): ReactElement => {
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleTimeWindowChange = useCallback((window: TimeWindow) => {
+    const filterValue: EventsFilterValue = useMemo(() => ({
+        q: urlQ,
+        timeWindow,
+        registeredByMe: urlRegisteredByMe,
+    }), [urlQ, timeWindow, urlRegisteredByMe]);
+
+    const handleFilterChange = useCallback((next: EventsFilterValue) => {
         const today = getTodayIso();
-        const {dateFrom, dateTo} = timeWindowToDateParams(window, today);
+        const {dateFrom, dateTo} = timeWindowToDateParams(next.timeWindow, today);
         setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            if (dateFrom) {
-                next.set('dateFrom', dateFrom);
-            } else {
-                next.delete('dateFrom');
-            }
-            if (dateTo) {
-                next.set('dateTo', dateTo);
-            } else {
-                next.delete('dateTo');
-            }
-            return next;
-        });
-    }, [setSearchParams]);
-
-    const handleRegisteredByMeChange = useCallback((checked: boolean) => {
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            if (checked) {
-                next.set('registeredBy', REGISTERED_BY_ME);
-            } else {
-                next.delete('registeredBy');
-            }
-            return next;
-        });
-    }, [setSearchParams]);
-
-    const handleSearchChange = useCallback((value: string) => {
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            if (value) {
-                next.set('q', value);
-            } else {
-                next.delete('q');
-            }
-            return next;
+            const params = new URLSearchParams(prev);
+            if (dateFrom) { params.set('dateFrom', dateFrom); } else { params.delete('dateFrom'); }
+            if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
+            if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
+            if (next.registeredByMe) { params.set('registeredBy', REGISTERED_BY_ME); } else { params.delete('registeredBy'); }
+            return params;
         });
     }, [setSearchParams]);
 
@@ -222,12 +201,9 @@ export const EventsPage = (): ReactElement => {
             </div>
 
             <EventsFilterBar
-                timeWindow={timeWindow}
-                onTimeWindowChange={handleTimeWindowChange}
-                registeredByMe={urlRegisteredByMe}
-                onRegisteredByMeChange={handleRegisteredByMeChange}
-                searchQuery={urlQ}
-                onSearchChange={handleSearchChange}
+                value={filterValue}
+                onChange={handleFilterChange}
+                showRegisteredByMeToggle={showRegisteredByMeToggle}
             />
 
             {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}

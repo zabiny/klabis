@@ -1,5 +1,4 @@
 import { type ReactElement } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { labels } from '../../localization';
 import { FulltextSearchInput, PillGroup } from '../UI';
 
@@ -7,10 +6,15 @@ export type MemberStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
 
 export const DEFAULT_MEMBER_STATUS: MemberStatusFilter = 'ACTIVE';
 
+export type MembersFilterValue = {
+    q: string;
+    status: MemberStatusFilter;
+};
+
 export interface MembersFilterBarProps {
+    value: MembersFilterValue;
+    onChange: (next: MembersFilterValue) => void;
     hasManageAuthority: boolean;
-    searchQuery: string;
-    onSearchChange: (value: string) => void;
 }
 
 const STATUS_OPTIONS: { value: MemberStatusFilter; label: string }[] = [
@@ -20,27 +24,15 @@ const STATUS_OPTIONS: { value: MemberStatusFilter; label: string }[] = [
 ];
 
 export function MembersFilterBar({
+    value,
+    onChange,
     hasManageAuthority,
-    searchQuery,
-    onSearchChange,
 }: MembersFilterBarProps): ReactElement {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const currentStatus = (searchParams.get('status') ?? 'ACTIVE') as MemberStatusFilter;
-
-    const handleStatusChange = (status: MemberStatusFilter) => {
-        if (status === currentStatus) return;
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            next.set('status', status);
-            return next;
-        });
-    };
-
     return (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-surface-raised rounded-md border border-border">
             <FulltextSearchInput
-                value={searchQuery}
-                onChange={onSearchChange}
+                value={value.q}
+                onChange={(q) => onChange({ ...value, q })}
                 placeholder={labels.membersFilter.searchPlaceholder}
                 ariaLabel={labels.membersFilter.search}
             />
@@ -48,8 +40,8 @@ export function MembersFilterBar({
             {hasManageAuthority && (
                 <PillGroup<MemberStatusFilter>
                     options={STATUS_OPTIONS}
-                    selectedValue={currentStatus}
-                    onChange={handleStatusChange}
+                    selectedValue={value.status}
+                    onChange={(status) => onChange({ ...value, status })}
                     ariaLabel={labels.membersFilter.statusLabel}
                 />
             )}

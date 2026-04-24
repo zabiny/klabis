@@ -12,7 +12,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {FetchError} from "../../api/authorizedFetch.ts";
-import {DEFAULT_MEMBER_STATUS, MembersFilterBar} from "../../components/members/MembersFilterBar.tsx";
+import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "../../components/members/MembersFilterBar.tsx";
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 
 type MemberSummaryData = EntityModel<{
@@ -53,15 +53,17 @@ export const MembersPage = (): ReactElement => {
 
     useDefaultSearchParam('status', DEFAULT_MEMBER_STATUS);
 
-    const handleSearchChange = useCallback((value: string) => {
+    const filterValue: MembersFilterValue = useMemo(() => ({
+        q: urlQ,
+        status: (urlStatus ?? DEFAULT_MEMBER_STATUS) as MembersFilterValue['status'],
+    }), [urlQ, urlStatus]);
+
+    const handleFilterChange = useCallback((next: MembersFilterValue) => {
         setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            if (value) {
-                next.set('q', value);
-            } else {
-                next.delete('q');
-            }
-            return next;
+            const params = new URLSearchParams(prev);
+            params.set('status', next.status);
+            if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
+            return params;
         });
     }, [setSearchParams]);
 
@@ -196,9 +198,9 @@ export const MembersPage = (): ReactElement => {
                     </div>
                 </div>
                 <MembersFilterBar
+                    value={filterValue}
+                    onChange={handleFilterChange}
                     hasManageAuthority={hasManageAuthority}
-                    searchQuery={urlQ}
-                    onSearchChange={handleSearchChange}
                 />
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
                                                       defaultOrderBy={"lastName"}
