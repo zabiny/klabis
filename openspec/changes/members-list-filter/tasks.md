@@ -17,15 +17,15 @@
 
 ## 3. Backend — REST controller wiring
 
-- [ ] 3.1 Write failing `@WebMvcTest` for `MemberController.listMembers` accepting `q` parameter and mapping it to the service as `MemberFilter.fulltextQuery`.
-- [ ] 3.2 Add `@RequestParam(required = false) String q` to `MemberController.listMembers`; map into `MemberFilter`.
-- [ ] 3.3 Write failing test for `status=ACTIVE/INACTIVE/ALL` when caller has MEMBERS:MANAGE — value passes through to the filter.
-- [ ] 3.4 Add `@RequestParam(required = false) String status`; parse into the filter-only enum. Reject unrecognized values with 400.
-- [ ] 3.5 Write failing test for authority gate: non-MANAGE caller sending `status=INACTIVE` or `status=ALL` still gets only active members (silent ignore).
-- [ ] 3.6 Implement the authority gate — when caller lacks MEMBERS:MANAGE, force the filter's status to ACTIVE regardless of the `status` param.
-- [ ] 3.7 Update the controller's `PageableDefault` (or the service/adapter default) to include `firstName ASC` as a secondary sort after `lastName ASC`. Write a test for the fallback ordering.
-- [ ] 3.8 Add an E2E test (`MemberFilterE2ETest`, patterned on `EventFilterE2ETest`) that exercises `q` and `status` through the full MVC stack against the dev-profile H2 DB — slice tests alone did not catch the analogous runtime bugs on events.
-- [ ] 3.9 Refactor controller to keep the listing method readable.
+- [x] 3.1 Write failing `@WebMvcTest` for `MemberController.listMembers` accepting `q` parameter and mapping it to the service as `MemberFilter.fulltextQuery`.
+- [x] 3.2 Add `@RequestParam(required = false) String q` to `MemberController.listMembers`; map into `MemberFilter`.
+- [x] 3.3 Write failing test for `status=ACTIVE/INACTIVE/ALL` when caller has MEMBERS:MANAGE — value passes through to the filter.
+- [x] 3.4 Add `@RequestParam(required = false) String status`; parse into the filter-only enum. Reject unrecognized values with 400.
+- [x] 3.5 Write failing test for authority gate: non-MANAGE caller sending `status=INACTIVE` or `status=ALL` still gets only active members (silent ignore).
+- [x] 3.6 Implement the authority gate — when caller lacks MEMBERS:MANAGE, force the filter's status to ACTIVE regardless of the `status` param.
+- [x] 3.7 Update the controller's `PageableDefault` (or the service/adapter default) to include `firstName ASC` as a secondary sort after `lastName ASC`. Write a test for the fallback ordering.
+- [x] 3.8 Add an E2E test (`MemberFilterE2ETest`, patterned on `EventFilterE2ETest`) that exercises `q` and `status` through the full MVC stack against the dev-profile H2 DB — slice tests alone did not catch the analogous runtime bugs on events.
+- [x] 3.9 Refactor controller to keep the listing method readable.
 
 ## 4. Frontend — shared FulltextSearchInput component
 

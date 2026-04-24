@@ -1398,13 +1398,15 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("non-admin user receives only active members in paginated list")
+        @DisplayName("non-admin user receives only active members in paginated list (status forced to ACTIVE)")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void nonAdminUserReceivesOnlyActiveMembers() throws Exception {
             UUID activeMemberId = UUID.randomUUID();
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
 
-            when(memberRepository.findAll(eq(MemberFilter.activeOnly()), any(org.springframework.data.domain.Pageable.class)))
+            when(memberRepository.findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
+                    any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember)));
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -1415,21 +1417,182 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("admin user receives both active and inactive members in list")
+        @DisplayName("admin user with no status param defaults to ACTIVE filter")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminUserReceivesBothActiveAndInactiveMembers() throws Exception {
+        void adminUserDefaultsToActiveFilter() throws Exception {
+            UUID activeMemberId = UUID.randomUUID();
+            Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
+
+            when(memberRepository.findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
+                    any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(activeMember)));
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(1))
+                    .andExpect(jsonPath("$.page.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("admin user with status=ALL receives both active and inactive members")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminUserWithAllStatusReceivesBothActiveAndInactiveMembers() throws Exception {
             UUID activeMemberId = UUID.randomUUID();
             UUID inactiveMemberId = UUID.randomUUID();
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
             Member inactiveMember = MemberTestDataBuilder.aMemberWithId(inactiveMemberId).withActive(false).build();
 
-            when(memberRepository.findAll(eq(MemberFilter.all()), any(org.springframework.data.domain.Pageable.class)))
+            when(memberRepository.findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
+                    any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember, inactiveMember)));
 
-            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+            mockMvc.perform(get("/api/members").param("status", "ALL").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
                     .andExpect(jsonPath("$.page.totalElements").value(2));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/members — filter params")
+    class ListMembersFilterTests {
+
+        @Test
+        @DisplayName("3.1 — q param is passed as fulltextQuery in the filter")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldPassQParamAsFulltextQuery() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("q", "novak")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> "novak".equals(filter.fulltextQuery())),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.2 — q param absent means fulltextQuery is null in filter")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldPassNullFulltextQueryWhenQParamAbsent() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> filter.fulltextQuery() == null),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.3 — MANAGE caller with status=INACTIVE gets StatusFilter.INACTIVE in filter")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldPassInactiveStatusForManageCaller() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "INACTIVE")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.INACTIVE),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.3 — MANAGE caller with status=ALL gets StatusFilter.ALL in filter")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldPassAllStatusForManageCaller() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "ALL")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.3 — unrecognized status value returns 400")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldReturn400ForUnrecognizedStatusValue() throws Exception {
+            mockMvc.perform(get("/api/members")
+                    .param("status", "INVALID_VALUE")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("3.5 — non-MANAGE caller with status=INACTIVE is silently forced to ACTIVE")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldForceActiveStatusForNonManageCaller() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "INACTIVE")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.5 — non-MANAGE caller with status=ALL is silently forced to ACTIVE")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldForceActiveStatusWhenNonManageCallerRequestsAll() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("status", "ALL")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("3.7 — default sort includes firstName ASC as secondary tiebreak")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldHaveFirstNameAscAsSecondaryDefaultSort() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+
+            Mockito.verify(memberRepository).findAll(
+                    any(MemberFilter.class),
+                    argThat(pageable ->
+                            pageable.getSort().getOrderFor("lastName") != null &&
+                            pageable.getSort().getOrderFor("lastName").isAscending() &&
+                            pageable.getSort().getOrderFor("firstName") != null &&
+                            pageable.getSort().getOrderFor("firstName").isAscending()
+                    )
+            );
         }
     }
 

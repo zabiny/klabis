@@ -41,6 +41,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -123,7 +124,7 @@ public class MemberController {
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null)).toUri())
                 .build();
     }
 
@@ -154,7 +155,7 @@ public class MemberController {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null)).toUri())
                 .build();
     }
 
@@ -184,17 +185,20 @@ public class MemberController {
                           "Access is restricted to active members only - terminated members will receive 403 Forbidden."
     )
     @ApiResponse(responseCode = "200", description = "Paginated list of members retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid filter parameter value")
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
+            @PageableDefault(size = 10, sort = {"lastName", "firstName"}, direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
+            @Parameter(description = "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)")
+            @RequestParam(required = false) String q,
+            @Parameter(description = "Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.")
+            @RequestParam(required = false) String status,
             @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
-        MemberFilter filter = currentUser.hasAuthority(Authority.MEMBERS_MANAGE)
-                ? MemberFilter.all()
-                : MemberFilter.activeOnly();
+        MemberFilter filter = buildFilter(q, status, currentUser);
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
@@ -208,8 +212,36 @@ public class MemberController {
         return ResponseEntity.ok(pagedModel);
     }
 
-    private java.util.Optional<Link> buildCollectionSelfLink(Pageable pageable) {
-        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null)).map(selfLinkBuilder ->
+    private MemberFilter buildFilter(String q, String status, CurrentUserData currentUser) {
+        MemberFilter.StatusFilter resolvedStatus = parseStatus(status);
+
+        MemberFilter filter = new MemberFilter(resolvedStatus, q);
+
+        if (!currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            filter = filter.withStatus(MemberFilter.StatusFilter.ACTIVE);
+        }
+
+        return filter;
+    }
+
+    private MemberFilter.StatusFilter parseStatus(String status) {
+        if (status == null) {
+            return MemberFilter.StatusFilter.ACTIVE;
+        }
+        try {
+            return MemberFilter.StatusFilter.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ErrorResponseException(HttpStatus.BAD_REQUEST,
+                    ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                            "Invalid status filter value: " + status +
+                            ". Allowed values: ACTIVE, INACTIVE, ALL"
+                    ),
+                    null);
+        }
+    }
+
+    private Optional<Link> buildCollectionSelfLink(Pageable pageable) {
+        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null, null, null)).map(selfLinkBuilder ->
                 (Link) selfLinkBuilder.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
                         .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
@@ -270,7 +302,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
             return (Link) self;
         }).ifPresent(dtoModel::add);
 
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -300,7 +332,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }
