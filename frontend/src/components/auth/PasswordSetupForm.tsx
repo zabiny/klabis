@@ -2,17 +2,14 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { Button, Card, Alert } from '../UI';
 import { PasswordField } from './PasswordField';
 import { PasswordStrengthIndicator, type PasswordRequirement } from './PasswordStrengthIndicator';
-import {
-    completePasswordSetup,
-    PasswordSetupError,
-    type SetPasswordRequest,
-    type PasswordSetupResponse,
-} from '../../api/passwordSetup';
 import {labels} from '../../localization';
 
-interface PasswordSetupFormProps {
-    token: string;
-    onSuccess: (registrationNumber: string) => void;
+export interface PasswordSetupFormProps {
+    onSubmit: (data: { password: string; passwordConfirmation: string }) => void;
+    isSubmitting: boolean;
+    serverError: string | null;
+    onClearServerError: () => void;
+    showSuccess: boolean;
 }
 
 interface FormData {
@@ -25,21 +22,19 @@ interface ValidationErrors {
     passwordConfirmation?: string;
 }
 
-/**
- * PasswordSetupForm - Form for setting up user password
- * Validates password complexity and submits to backend
- */
-export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) => {
+export const PasswordSetupForm = ({
+    onSubmit,
+    isSubmitting,
+    serverError,
+    onClearServerError,
+    showSuccess,
+}: PasswordSetupFormProps) => {
     const [formData, setFormData] = useState<FormData>({
         password: '',
         passwordConfirmation: '',
     });
     const [errors, setErrors] = useState<ValidationErrors>({});
-    const [serverError, setServerError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
 
-    // Password requirements from spec
     const [requirements, setRequirements] = useState<PasswordRequirement[]>([
         { id: 'length', label: 'Minimálně 12 znaků', met: false },
         { id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: false },
@@ -48,7 +43,6 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
         { id: 'special', label: 'Alespoň 1 speciální znak', met: false },
     ]);
 
-    // Update requirements when password changes
     useEffect(() => {
         const password = formData.password;
         setRequirements([
@@ -63,13 +57,11 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
     const validateForm = (): boolean => {
         const newErrors: ValidationErrors = {};
 
-        // Check if password meets all requirements
         const allMet = requirements.every((req) => req.met);
         if (!allMet) {
             newErrors.password = labels.validation.passwordRequirements;
         }
 
-        // Check password confirmation
         if (formData.password !== formData.passwordConfirmation) {
             newErrors.passwordConfirmation = labels.validation.passwordsMismatch;
         }
@@ -78,65 +70,30 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        setServerError(null);
 
         if (!validateForm()) {
             return;
         }
 
-        setIsSubmitting(true);
-
-        try {
-            const request: SetPasswordRequest = {
-                token,
-                password: formData.password,
-                passwordConfirmation: formData.passwordConfirmation,
-            };
-
-            const response: PasswordSetupResponse = await completePasswordSetup(request);
-            setShowSuccess(true);
-            setTimeout(() => {
-                onSuccess(response.registrationNumber || '');
-            }, 2000);
-        } catch (error) {
-            if (error instanceof PasswordSetupError) {
-                const errorMessage = error.getErrorMessage();
-                if (error.status === 400) {
-                    setServerError(errorMessage);
-                } else if (error.status === 410) {
-                    setServerError(labels.errors.tokenExpired);
-                } else if (error.status === 404) {
-                    setServerError(labels.errors.tokenInvalid);
-                } else {
-                    setServerError(errorMessage);
-                }
-            } else {
-                setServerError(labels.errors.unexpectedError);
-            }
-        } finally {
-            setIsSubmitting(false);
-        }
+        onSubmit({ password: formData.password, passwordConfirmation: formData.passwordConfirmation });
     };
 
     const updateField = (field: keyof FormData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
-        // Clear error for this field when user starts typing
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
 
-        // Update requirements when password changes
         if (field === 'password') {
-            const newRequirements: PasswordRequirement[] = [
+            setRequirements([
                 { id: 'length', label: 'Minimálně 12 znaků', met: value.length >= 12 },
                 { id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: /[A-Z]/.test(value) },
                 { id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: /[a-z]/.test(value) },
                 { id: 'digit', label: 'Alespoň 1 číslo', met: /\d/.test(value) },
                 { id: 'special', label: 'Alespoň 1 speciální znak', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) },
-            ];
-            setRequirements(newRequirements);
+            ]);
         }
     };
 
@@ -185,7 +142,7 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
             </div>
 
             {serverError && (
-                <Alert severity="error" className="mb-6" onClose={() => setServerError(null)}>
+                <Alert severity="error" className="mb-6" onClose={onClearServerError}>
                     {serverError}
                 </Alert>
             )}

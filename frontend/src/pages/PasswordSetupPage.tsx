@@ -3,6 +3,7 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Alert, Button, Spinner} from '../components/UI';
 import {PasswordSetupForm} from '../components/auth/PasswordSetupForm';
 import {TokenValidationError, validateToken} from '../api/passwordSetup';
+import {usePasswordSetup} from '../hooks/usePasswordSetup';
 
 /**
  * PasswordSetupPage - Public page for setting up password via token from email
@@ -49,13 +50,17 @@ const PasswordSetupPage = () => {
     }, [token]);
 
     const handleSuccess = () => {
-        // Redirect to login page after successful password setup
         navigate('/login', {
             state: {
                 message: 'Účet byl úspěšně aktivován. Nyní se můžete přihlásit.',
             },
         });
     };
+
+    const {submit, isSubmitting, serverError, clearServerError, showSuccess} = usePasswordSetup(
+        token ?? '',
+        {onSuccess: handleSuccess},
+    );
 
     const handleRequestNewToken = () => {
         navigate('/password-setup/request');
@@ -103,7 +108,13 @@ const PasswordSetupPage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-surface-base p-4">
-            <PasswordSetupForm token={token!} onSuccess={handleSuccess} />
+            <PasswordSetupForm
+                onSubmit={submit}
+                isSubmitting={isSubmitting}
+                serverError={serverError}
+                onClearServerError={clearServerError}
+                showSuccess={showSuccess}
+            />
         </div>
     );
 };
