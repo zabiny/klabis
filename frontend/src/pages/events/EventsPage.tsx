@@ -89,9 +89,6 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
     );
 };
 
-const DEBOUNCE_MS = 250;
-const MIN_SEARCH_LENGTH = 2;
-
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -132,23 +129,6 @@ export const EventsPage = (): ReactElement => {
 
     const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
 
-    // Controlled search input with debounce
-    const [searchInputValue, setSearchInputValue] = useState(urlQ);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => () => {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-    }, []);
-
-    // Sync input value when URL changes externally (e.g. back/forward)
-    const prevUrlQ = useRef(urlQ);
-    useEffect(() => {
-        if (prevUrlQ.current !== urlQ && searchInputValue !== urlQ) {
-            setSearchInputValue(urlQ);
-        }
-        prevUrlQ.current = urlQ;
-    }, [urlQ, searchInputValue]);
-
     // On first mount: if no date params in URL, apply the Budoucí default
     const defaultAppliedRef = useRef(false);
     useEffect(() => {
@@ -169,23 +149,6 @@ export const EventsPage = (): ReactElement => {
             );
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleSearchChange = useCallback((value: string) => {
-        setSearchInputValue(value);
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                const trimmed = value.trim();
-                if (trimmed.length >= MIN_SEARCH_LENGTH) {
-                    next.set('q', trimmed);
-                } else {
-                    next.delete('q');
-                }
-                return next;
-            });
-        }, DEBOUNCE_MS);
-    }, [setSearchParams]);
 
     const handleTimeWindowChange = useCallback((window: TimeWindow) => {
         const today = getTodayIso();
@@ -223,7 +186,7 @@ export const EventsPage = (): ReactElement => {
         const params: Record<string, string> = {};
         if (urlDateFrom) params.dateFrom = urlDateFrom;
         if (urlDateTo) params.dateTo = urlDateTo;
-        if (urlQ && urlQ.length >= MIN_SEARCH_LENGTH) params.q = urlQ;
+        if (urlQ && urlQ.length >= 2) params.q = urlQ;
         if (urlRegisteredByMe) params.registeredBy = REGISTERED_BY_ME;
         return params;
     }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe]);
@@ -247,8 +210,6 @@ export const EventsPage = (): ReactElement => {
             </div>
 
             <EventsFilterBar
-                searchQuery={searchInputValue}
-                onSearchChange={handleSearchChange}
                 timeWindow={timeWindow}
                 onTimeWindowChange={handleTimeWindowChange}
                 registeredByMe={urlRegisteredByMe}

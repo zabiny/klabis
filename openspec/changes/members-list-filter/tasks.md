@@ -29,9 +29,9 @@
 
 ## 4. Frontend — shared FulltextSearchInput component
 
-- [ ] 4.1 Extract a `<FulltextSearchInput />` component from `EventsFilterBar.tsx` with props for URL param name, placeholder text, and the debounce/min-chars rules as defaults.
-- [ ] 4.2 Migrate `EventsFilterBar` to consume the shared component; existing events tests must still pass.
-- [ ] 4.3 Component tests for `<FulltextSearchInput />` (debounce, min-chars gate, URL binding).
+- [x] 4.1 Extract a `<FulltextSearchInput />` component from `EventsFilterBar.tsx` with props for URL param name, placeholder text, and the debounce/min-chars rules as defaults.
+- [x] 4.2 Migrate `EventsFilterBar` to consume the shared component; existing events tests must still pass.
+- [x] 4.3 Component tests for `<FulltextSearchInput />` (debounce, min-chars gate, URL binding).
 
 ## 5. Frontend — members filter bar
 
