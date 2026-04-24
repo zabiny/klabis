@@ -129,11 +129,12 @@ Feature-based profiles (composable independently):
 - **metrics** — enables custom Klabis metrics (Modulith event counters, listener latency)
 - **test** — for integration tests, isolated H2 database (auto-includes `h2` and `metrics` via profile group)
 - **local-dev** — **local developer machines only**. Registers a second OAuth2 client `klabis-web-local` (confidential, `CLIENT_SECRET_POST`, PKCE required, `AUTHORIZATION_CODE` + `REFRESH_TOKEN` grants). This enables refresh-token-based silent token renewal when the frontend runs on `http://localhost:3000` (cross-origin from the backend on `:8443`). Spring AS refuses to issue refresh tokens to public clients, so this profile adds a confidential workaround client that stays out of production entirely. See `openspec/changes/enable-refresh-tokens-for-local-dev` for full rationale. **Never activate in any deployed environment.**
+- **pwa** — opt-in. Exposes `manifest.webmanifest` and `sw.js` so browsers offer the "Install" affordance and register the PWA service worker. Without this profile, `PwaDisabledController` returns 404 on those paths, hiding the install prompt and skipping SW registration. Off by default to avoid stale caches in dev/staging — enable explicitly on production.
 
 Default active profiles: `h2,ssl,debug,metrics` (zero-config local dev, HTTPS on 8443, H2 database)
 `runLocalEnvironment.sh` adds `local-dev` automatically, so developers get refresh-token-based silent renew out of the box.
 
-Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
+Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa`
 
 **Email testing with MailHog:**
 1. Start the container: `docker compose up mailhog -d`

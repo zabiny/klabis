@@ -1,6 +1,25 @@
+import {useEffect, useState} from 'react';
 import {useRegisterSW} from 'virtual:pwa-register/react';
 
+/**
+ * Renders the SW registration only when the backend exposes a manifest.
+ * Backend hides the manifest (404) when the `pwa` Spring profile is off,
+ * so this component must skip SW registration entirely in that case.
+ */
 export function PWAUpdatePrompt() {
+    const [pwaEnabled, setPwaEnabled] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        fetch('/manifest.webmanifest', {method: 'HEAD'})
+            .then(r => setPwaEnabled(r.ok))
+            .catch(() => setPwaEnabled(false));
+    }, []);
+
+    if (!pwaEnabled) return null;
+    return <PWAUpdatePromptInner/>;
+}
+
+function PWAUpdatePromptInner() {
     const {
         needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
