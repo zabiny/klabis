@@ -37,8 +37,62 @@
         <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>, <code>hasAuthority(Authority)</code>.</td></tr>
         <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> vyhodnocující <code>@HasAuthority</code> + <code>@OwnerVisible</code>.</td></tr>
         <tr><td><code>FieldSecurityJacksonModule</code></td><td>Jackson modul, který při serializaci response filtruje pole bez oprávnění.</td></tr>
+        <tr><td><code>SpaFallbackFilter</code></td><td>Servlet filtr (<code>@Order(LOWEST_PRECEDENCE)</code>) — pro browser navigaci na SPA cestu, která neodpovídá žádnému static resource ani backendovému handleru, forwarduje na <code>/index.html</code>. Patří k routingu, ne k autorizaci, ale tvoří poslední článek serving chainu pod security vrstvami.</td></tr>
     </tbody>
 </table>
+
+<h2>HTTP request flow</h2>
+
+<p>
+    Když browser žádá URL na backendu, request prochází několika vrstvami v tomto pořadí:
+</p>
+
+<ol>
+    <li><strong>Spring Security filter chains</strong> (řazené podle <code>@Order</code>) —
+        autorizační server matcher (<code>@Order(1)</code>), <code>/login</code> form chain
+        (<code>@Order(2)</code>), <code>/docs/**</code> session-auth chain (<code>@Order(3)</code>),
+        <code>/h2-console/**</code> chain (<code>@Order(2)</code>, dev only),
+        SPA <code>text/html</code> chain (<code>@Order(4)</code>), API + actuator + Swagger chain
+        (<code>@Order(5)</code>). První, jehož <code>securityMatcher</code> sedí, request zpracuje;
+        ostatní jsou přeskočeny.</li>
+    <li><strong>DispatcherServlet</strong> mapuje request na <code>@Controller</code> /
+        <code>@RequestMapping</code> handler. Pokud najde, zavolá ho.</li>
+    <li><strong>ResourceHttpRequestHandler</strong> (přes <code>WelcomePageHandlerMapping</code>)
+        hledá soubor v <code>classpath:/static/</code>. <code>/index.html</code>, <code>/assets/**</code>,
+        <code>/docs/index.html</code>, <code>/swagger-ui/index.html</code>, <code>/silent-renew.html</code>,
+        ikony — všechno odsud.</li>
+    <li><strong>SpaFallbackFilter</strong> (<code>OncePerRequestFilter</code>, <code>LOWEST_PRECEDENCE</code>) —
+        teprve když všechny předchozí kroky selhaly:
+        <ul>
+            <li>Pokud request je <code>GET</code>, klient akceptuje <code>text/html</code>
+                a cesta není na vyloučeném prefixu (<code>/api/</code>, <code>/swagger-ui/</code>,
+                <code>/v3/api-docs</code>, <code>/docs/</code>, <code>/oauth2/</code>,
+                <code>/.well-known/</code>, <code>/actuator/</code>, <code>/h2-console/</code>,
+                <code>/error</code>) → forward na <code>/index.html</code> (SPA shell).</li>
+            <li>Jinak request projde dál a klient dostane standardní 404 (JSON pro API klienty,
+                HTML error page jinak).</li>
+        </ul>
+        Filtr rozhoduje předem: kontroluje
+        <code>resourceLoader.getResource("classpath:/static" + path).exists()</code> a pokud
+        soubor existuje, jen propustí request dál — žádné wrappování response.
+    </li>
+</ol>
+
+<aside class="note">
+    <strong>Rule of thumb:</strong> SPA shell (<code>/index.html</code>) se vrací <em>pouze</em>
+    když žádný předchozí handler request neobsloužil. Cokoli s vyhrazeným handlerem
+    (Swagger UI, OpenAPI, dev manuál, OAuth2 endpointy, silent-renew, statické assety, API)
+    nikdy nedostane SPA shell.
+</aside>
+
+<aside class="note">
+    <strong>PWA service worker</strong>: ve frontendu (<code>vite.config.ts</code>) je nakonfigurovaný
+    Workbox service worker s <code>NavigationRoute</code>, který v běžícím prohlížeči zachytává
+    navigační requesty na SPA scope a vrací cached <code>/index.html</code>. Jeho
+    <code>navigateFallbackDenylist</code> musí pokrývat stejné prefixy jako
+    <code>SpaFallbackFilter.EXCLUDED_PREFIXES</code> + <code>EXCLUDED_EXACT</code>, jinak SW přepíše
+    backend i pro URL, které backend obsluhuje (Swagger UI, dev manuál apod.).
+</aside>
 
 <h2>JWT a vlastní claims</h2>
 

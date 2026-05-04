@@ -24,12 +24,17 @@
 
 ## 4. End-to-end verification on the deployed environment
 
-- [ ] 4.1 Deploy the change to `https://api.klabis.otakar.io`
-- [ ] 4.2 In a browser: log in via SPA, then navigate to `/docs/index.html` — confirm developer manual renders (not the SPA 404)
-- [ ] 4.3 In a browser: open `/swagger-ui.html` directly — confirm Swagger UI renders
-- [ ] 4.4 Confirm SPA navigation (`/events`, `/members`, deep-link refresh) still works
+- [x] 4.1 Deploy the change to `https://api.klabis.otakar.io`
+- [x] 4.2 In a browser: log in via SPA, then navigate to `/docs/index.html` — confirm developer manual renders (not the SPA 404)
+- [x] 4.3 In a browser: open `/swagger-ui.html` directly — confirm Swagger UI renders
+- [x] 4.4 Confirm SPA navigation (`/events`, `/members`, deep-link refresh) still works
+
+  **Notes from end-to-end verification (2026-05-04):**
+  - The original servlet-filter implementation (`ContentCachingResponseWrapper` + post-hoc 404 capture) produced empty bodies for SPA routes because `ResourceHttpRequestHandler` writes through NIO channels that bypass the wrapper buffer, and Tomcat's error dispatch ran `BasicErrorController` even after `setStatus(404)` was suppressed. Replaced with a decide-upfront pattern (commit `50f239d6`) that checks `resourceLoader.getResource("classpath:/static" + path).exists()` before forwarding — no response wrapping needed.
+  - Removed `/login` and `/logout` from the exclusion list — Klabis SPA renders these as React routes (`POST /login` is intercepted by Spring Security's `UsernamePasswordAuthenticationFilter` in the security chain before our filter runs).
+  - Production verification surfaced a second, related bug NOT in scope of this change: the PWA service worker's `NavigationRoute` denylist was missing `/swagger-ui`, `/v3/api-docs`, `/docs`, `/actuator`, `/h2-console`, so the SW intercepted browser navigation to those paths and served the SPA shell from cache before the request could reach the backend. Fixed in commit `7f0efca3` (frontend `vite.config.ts` denylist extension) — strictly speaking this should have been a separate proposal, but it was bundled here because the bug only became reproducible once the backend filter started behaving correctly.
 
 ## 5. Documentation
 
-- [ ] 5.1 Update `docs/developerManual` with a short note on the routing chain (request flow: Spring Security chains → `DispatcherServlet` / `ResourceHttpRequestHandler` → `SpaFallbackFilter` 404 fallback)
-- [ ] 5.2 Sync the spec change into `openspec/specs/non-functional-requirements/spec.md` after archiving
+- [x] 5.1 Update `docs/developerManual` with a short note on the routing chain (request flow: Spring Security chains → `DispatcherServlet` / `ResourceHttpRequestHandler` → `SpaFallbackFilter` 404 fallback) — added "HTTP request flow" section to `06-security.html`, including a PWA service-worker callout (the SW denylist must mirror the filter's exclusion list)
+- [ ] 5.2 Sync the spec change into `openspec/specs/non-functional-requirements/spec.md` after archiving — deferred to the OpenSpec archive workflow (`openspec-archive-change` handles delta merge automatically)
