@@ -37,4 +37,4 @@
 ## 5. Documentation
 
 - [x] 5.1 Update `docs/developerManual` with a short note on the routing chain (request flow: Spring Security chains → `DispatcherServlet` / `ResourceHttpRequestHandler` → `SpaFallbackFilter` 404 fallback) — added "HTTP request flow" section to `06-security.html`, including a PWA service-worker callout (the SW denylist must mirror the filter's exclusion list)
-- [ ] 5.2 Sync the spec change into `openspec/specs/non-functional-requirements/spec.md` after archiving — deferred to the OpenSpec archive workflow (`openspec-archive-change` handles delta merge automatically)
+- [x] 5.2 Sync the spec change into `openspec/specs/non-functional-requirements/spec.md` — added "Reserved URL Paths Not Captured by SPA Fallback" Requirement (5 scenarios) between "HTTPS Protocol Enforcement" and "HTTP/2 Protocol Support" in the main spec
