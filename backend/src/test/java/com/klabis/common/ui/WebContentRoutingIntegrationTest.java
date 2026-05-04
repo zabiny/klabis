@@ -139,6 +139,28 @@ class WebContentRoutingIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET /login renders the SPA shell (React-based login form)")
+    void loginPageRendersSpaShell() throws Exception {
+        // The login page is a React route — Spring Security's formLogin only handles
+        // POST /login (UsernamePasswordAuthenticationFilter); GET /login must fall
+        // through to the SPA index.html so the React LoginPage renders.
+        MvcResult result = mockMvc.perform(get("/login")
+                        .accept(MediaType.TEXT_HTML))
+                .andReturn();
+
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        String forwarded = result.getResponse().getForwardedUrl();
+
+        assertThat(status).isEqualTo(200);
+        boolean rendersSpaShell = body.contains("<div id=\"root\">")
+                || "/index.html".equals(forwarded);
+        assertThat(rendersSpaShell)
+                .as("GET /login must render the React shell (body contains root div or forward to /index.html)")
+                .isTrue();
+    }
+
+    @Test
     @DisplayName("SPA filter does not forward to index.html for non-HTML 404s")
     void filterDoesNotForwardJsonAcceptOnUnknownPath() throws Exception {
         // Non-API unknown path with Accept: application/json — must stay as 404 JSON,
