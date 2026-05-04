@@ -45,14 +45,24 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
-                // Never let the SW serve API, auth or silent-renew responses from cache
+                // Never let the SW serve API, auth, or backend-rendered pages
+                // (Swagger UI, OpenAPI doc, developer manual, actuator, h2-console)
+                // from the SPA cache. The NavigationRoute scope is the entire origin,
+                // so any path the SPA does not own must be explicitly excluded.
                 navigateFallback: '/index.html',
                 navigateFallbackDenylist: [
                     /^\/api\//,
                     /^\/oauth2\//,
                     /^\/login/,
+                    /^\/logout/,
                     /^\/\.well-known\//,
                     /^\/silent-renew\.html$/,
+                    /^\/swagger-ui(\/|\.html$)/,
+                    /^\/v3\/api-docs/,
+                    /^\/docs\//,
+                    /^\/actuator\//,
+                    /^\/h2-console\//,
+                    /^\/error/,
                 ],
                 runtimeCaching: [
                     {
