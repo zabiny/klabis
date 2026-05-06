@@ -62,7 +62,7 @@ class EventRegistrationServiceTest {
             eventId = EventId.generate();
 
             activeEvent = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .name("Test Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB").build());
             activeEvent.publish(); // Make it ACTIVE
         }
@@ -107,7 +107,7 @@ class EventRegistrationServiceTest {
         void shouldRejectRegistrationForNonActiveEvent() {
             // Given
             Event draftEvent = Event.create(EventCreateEventBuilder.builder()
-                    .name("Draft Event").eventDate(LocalDate.of(2026, 7, 1))
+                    .name("Draft Event").eventDate(LocalDate.now().plusDays(45))
                     .location("Location").organizer("PRG").build());
             // Event is in DRAFT status
 
@@ -141,9 +141,9 @@ class EventRegistrationServiceTest {
         void shouldRejectRegistrationWhenDeadlinePassed() {
             // Given
             Event eventWithPastDeadline = Event.create(EventCreateEventBuilder.builder()
-                    .name("Deadline Event").eventDate(LocalDate.of(2026, 9, 15))
+                    .name("Deadline Event").eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location").organizer("OOB")
-                    .registrationDeadline(LocalDate.of(2026, 3, 1)).build());
+                    .registrationDeadline(LocalDate.now().minusDays(1)).build());
             eventWithPastDeadline.publish();
 
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -439,7 +439,7 @@ class EventRegistrationServiceTest {
             UUID member2Id = UUID.randomUUID();
 
             Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .name("Test Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB").build());
             event.publish();
             event.registerMember(new MemberId(member1Id), SiCardNumber.of("111111"), null);
@@ -462,7 +462,7 @@ class EventRegistrationServiceTest {
             // Given
             EventId eventId = EventId.generate();
             Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .name("Test Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB").build());
             event.publish();
 

@@ -167,7 +167,7 @@ class EventJdbcRepositoryTest {
             // Given
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Test Event with Registrations")
-                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location")
                     .organizer("Test OC")
                     .build());
@@ -525,7 +525,7 @@ class EventJdbcRepositoryTest {
         @DisplayName("should enforce unique constraint on (event_id, member_id) in registrations")
         void shouldEnforceUniqueConstraintOnEventIdAndMemberId() {
             // Given
-            Event event = Event.create(EventCreateEventBuilder.builder().name("Test Event").eventDate(LocalDate.of(2026, 8, 10)).location("Test Location").organizer("Test OC").build());
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Test Event").eventDate(LocalDate.now().plusDays(60)).location("Test Location").organizer("Test OC").build());
             event.publish();
 
             MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
@@ -809,7 +809,7 @@ class EventJdbcRepositoryTest {
 
             Event eventWithRegistration = Event.create(EventCreateEventBuilder.builder()
                     .name("Event With Registration")
-                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .eventDate(LocalDate.now().plusDays(60))
                     .location("Praha")
                     .organizer("OOB")
                     .build());
@@ -819,7 +819,7 @@ class EventJdbcRepositoryTest {
 
             Event eventWithoutRegistration = Event.create(EventCreateEventBuilder.builder()
                     .name("Event Without Registration")
-                    .eventDate(LocalDate.of(2026, 8, 11))
+                    .eventDate(LocalDate.now().plusDays(61))
                     .location("Brno")
                     .organizer("PRG")
                     .build());
@@ -843,7 +843,7 @@ class EventJdbcRepositoryTest {
 
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Some Event")
-                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .eventDate(LocalDate.now().plusDays(60))
                     .location("Praha")
                     .organizer("OOB")
                     .build());
@@ -866,7 +866,7 @@ class EventJdbcRepositoryTest {
 
             Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
                     .name("Cancelled Event")
-                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .eventDate(LocalDate.now().plusDays(30))
                     .location("Ostrava")
                     .organizer("OOB")
                     .build());
@@ -877,7 +877,7 @@ class EventJdbcRepositoryTest {
 
             Event activeEvent = Event.create(EventCreateEventBuilder.builder()
                     .name("Active Event")
-                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .eventDate(LocalDate.now().plusDays(120))
                     .location("Praha")
                     .organizer("PRG")
                     .build());
@@ -901,7 +901,7 @@ class EventJdbcRepositoryTest {
             // Register while ACTIVE (future date), then advance to FINISHED via persist + direct status transition
             Event finishedEvent = Event.create(EventCreateEventBuilder.builder()
                     .name("Finished Event")
-                    .eventDate(LocalDate.of(2026, 12, 31))
+                    .eventDate(LocalDate.now().plusDays(90))
                     .location("Liberec")
                     .organizer("OOB")
                     .build());
@@ -915,7 +915,7 @@ class EventJdbcRepositoryTest {
 
             Event draftEvent = Event.create(EventCreateEventBuilder.builder()
                     .name("Draft Event")
-                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .eventDate(LocalDate.now().plusDays(60))
                     .location("Praha")
                     .organizer("PRG")
                     .build());
@@ -937,7 +937,7 @@ class EventJdbcRepositoryTest {
 
             Event matchingEvent = Event.create(EventCreateEventBuilder.builder()
                     .name("Praha Open")
-                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .eventDate(LocalDate.now().plusDays(60))
                     .location("Praha")
                     .organizer("OOB")
                     .build());
@@ -947,7 +947,7 @@ class EventJdbcRepositoryTest {
 
             Event registeredButNoMatch = Event.create(EventCreateEventBuilder.builder()
                     .name("Brno kolo")
-                    .eventDate(LocalDate.of(2026, 8, 11))
+                    .eventDate(LocalDate.now().plusDays(61))
                     .location("Brno")
                     .organizer("PRG")
                     .build());
