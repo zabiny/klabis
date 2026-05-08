@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -552,6 +553,27 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("registrations link href must not contain URI template syntax")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void registrationsLinkHrefMustNotContainUriTemplateSyntax() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._links.registrations.href").value(not(containsString("{?sort}"))));
         }
 
         @Test

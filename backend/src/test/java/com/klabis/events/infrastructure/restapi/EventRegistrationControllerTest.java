@@ -262,6 +262,36 @@ class EventRegistrationControllerTest {
         }
 
         @Test
+        @DisplayName("self link href in registration list must not contain URI template syntax")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void selfLinkHrefMustNotContainUriTemplateSyntax() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event closedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .addRegistrations(registrations)
+                    .build();
+            closedEvent.publish();
+            closedEvent.finish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._links.self.href").value(not(containsString("{?sort}"))));
+        }
+
+        @Test
         @DisplayName("should include category in registration list when registration has category")
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldIncludeCategoryInRegistrationList() throws Exception {

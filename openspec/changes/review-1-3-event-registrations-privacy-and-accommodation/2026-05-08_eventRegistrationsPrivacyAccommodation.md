@@ -140,3 +140,19 @@ Removed `UUID memberId` component and its `UUID` import from the record. Updated
 
 **Test results:** 118/118 passed (EventRegistrationControllerTest + EventControllerTest + EventRegistrationE2ETest).
 
+### Bugfix: templated links — 2026-05-08
+
+**Problem:** After adding `@RequestParam(required = false) String sort` to `listRegistrations` in iteration 2, all `klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))` call sites produced links with an unexpanded URI template suffix `{?sort}`. The frontend `HalEmbeddedTable` used the literal URL including the template syntax, causing HTTP 400.
+
+**Fix:** Called `.expand()` on the resulting `Link` at both affected sites:
+- `EventRegistrationController.listRegistrations` — self-link on the registration collection response.
+- `EventDetailsPostprocessor.process()` — `registrations` link on the event detail response.
+
+`getAccommodationList` has no `@RequestParam` parameters so its link was unaffected.
+
+**Tests added:**
+- `EventRegistrationControllerTest.ListRegistrationsTests.selfLinkHrefMustNotContainUriTemplateSyntax` — asserts `$._links.self.href` does not contain `{?sort}`.
+- `EventControllerTest.GetEventTests.registrationsLinkHrefMustNotContainUriTemplateSyntax` — asserts `$._links.registrations.href` does not contain `{?sort}`.
+
+**Test results:** 108/108 passed (EventRegistrationControllerTest + EventControllerTest).
+

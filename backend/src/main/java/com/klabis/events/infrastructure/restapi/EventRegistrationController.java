@@ -157,7 +157,7 @@ class EventRegistrationController {
                 entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
         );
         klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))
-                .ifPresent(link -> collectionModel.add(link.withSelfRel()));
+                .ifPresent(link -> collectionModel.add(link.withSelfRel().expand()));
 
         return ResponseEntity.ok(collectionModel);
     }

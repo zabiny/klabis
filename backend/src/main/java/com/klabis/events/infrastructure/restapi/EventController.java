@@ -483,7 +483,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 
         if (event.getStatus() != EventStatus.DRAFT) {
             klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))
-                    .ifPresent(link -> dtoModel.add(link.withRel("registrations")));
+                    .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
         if (event.getEventCoordinatorId() != null) {
