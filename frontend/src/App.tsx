@@ -14,6 +14,7 @@ import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
 import {EventDetailPage} from "./pages/events/EventDetailPage.tsx";
+import {AccommodationListPage} from "./pages/events/AccommodationListPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
@@ -97,6 +98,7 @@ function App() {
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
                                     <Route path="/events/:id" element={<EventDetailPage/>}/>
+                                    <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>
                                     <Route path="/groups" element={<GroupsPage/>}/>
                                     <Route path="/groups/:id" element={<GroupDetailPage/>}/>
                                     <Route path="/training-groups" element={<TrainingGroupsPage/>}/>

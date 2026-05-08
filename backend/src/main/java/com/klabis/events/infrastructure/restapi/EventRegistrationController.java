@@ -12,11 +12,9 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.ActingMember;
-import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
-import org.springframework.security.access.AccessDeniedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -200,73 +198,6 @@ class EventRegistrationController {
             items.add(item);
         }
         return items;
-    }
-
-    @GetMapping("/accommodation-list")
-    @Operation(
-            summary = "Get accommodation list for an event",
-            description = """
-                    Returns the accommodation list for an event with personal details for each registered member.
-                    Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS authority.
-                    Fields that are not recorded for a member are returned as null.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "Accommodation list retrieved successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS")
-    public ResponseEntity<CollectionModel<AccommodationListItemDto>> getAccommodationList(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Event event = eventManagementService.getEvent(new EventId(eventId), false);
-
-        if (!isAuthorizedForAccommodationList(auth, event)) {
-            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
-        }
-
-        List<EventRegistration> registrations = event.getRegistrations();
-        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
-        Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
-
-        List<AccommodationListItemDto> items = registrations.stream()
-                .map(registration -> toAccommodationListItem(registration, accommodationIndex))
-                .toList();
-
-        CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(
-                items,
-                entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
-        );
-
-        return ResponseEntity.ok(collectionModel);
-    }
-
-    private boolean isAuthorizedForAccommodationList(Authentication auth, Event event) {
-        if (EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
-            return true;
-        }
-        MemberId coordinatorId = event.getEventCoordinatorId();
-        if (coordinatorId == null) {
-            return false;
-        }
-        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-        return coordinatorId.equals(actingMember);
-    }
-
-    private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {
-        MemberAccommodationDto accommodationData = accommodationIndex.get(registration.memberId());
-        if (accommodationData == null) {
-            return new AccommodationListItemDto(null, null, null, null, null, null, null, null, null);
-        }
-        return new AccommodationListItemDto(
-                accommodationData.firstName(),
-                accommodationData.lastName(),
-                accommodationData.identityCardNumber(),
-                accommodationData.identityCardValidityDate(),
-                accommodationData.dateOfBirth(),
-                accommodationData.addressStreet(),
-                accommodationData.addressCity(),
-                accommodationData.addressPostalCode(),
-                accommodationData.addressCountry()
-        );
     }
 
     @GetMapping("/{memberId}")

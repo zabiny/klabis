@@ -643,6 +643,36 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('accommodation list action (N11 task 3.5)', () => {
+        it('shows "Seznam pro ubytování" link when accommodation-list link is present', () => {
+            const data = mockEventDetailData({
+                _links: {
+                    self: {href: 'http://localhost:8443/api/events/1'},
+                    'accommodation-list': {href: 'http://localhost:8443/api/events/1/accommodation-list'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('link', {name: /seznam pro ubytování/i})).toBeInTheDocument();
+        });
+
+        it('does not show "Seznam pro ubytování" link when accommodation-list link is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByRole('link', {name: /seznam pro ubytování/i})).not.toBeInTheDocument();
+        });
+
+        it('"Seznam pro ubytování" link navigates to accommodation list route', () => {
+            const data = mockEventDetailData({
+                _links: {
+                    self: {href: 'http://localhost:8443/api/events/1'},
+                    'accommodation-list': {href: 'http://localhost:8443/api/events/1/accommodation-list'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            const link = screen.getByRole('link', {name: /seznam pro ubytování/i});
+            expect(link).toHaveAttribute('href', '/events/1/accommodation-list');
+        });
+    });
+
     describe('registerForEvent — stay on page after registration (Group 8)', () => {
         it('clicking registerForEvent opens modal but does NOT navigate away', () => {
             const data = mockEventDetailData({

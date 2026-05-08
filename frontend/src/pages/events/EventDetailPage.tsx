@@ -13,7 +13,7 @@ import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {labels, getEnumLabel} from '../../localization';
-import {Check, ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -231,6 +231,15 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="registerForEvent" modal={true} navigateOnSuccess={false} icon={<UserPlus className="w-4 h-4"/>}/>
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
                             <HalFormButton name="editRegistration" modal={true} icon={<Pencil className="w-4 h-4"/>}/>
+                            {resourceData._links?.['accommodation-list'] && (
+                                <Link
+                                    to={`${route.pathname}/accommodation-list`}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-bg-secondary"
+                                >
+                                    <List className="w-4 h-4"/>
+                                    {labels.buttons.accommodationList}
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>

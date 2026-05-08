@@ -21,6 +21,8 @@ export const labels = {
         edit: 'Upravit',
         save: 'Uložit změny',
         saveChanges: 'Uložit změny',
+        print: 'Tisknout',
+        accommodationList: 'Seznam pro ubytování',
         savePermissions: 'Uložit oprávnění',
         sendRequest: 'Odeslat žádost',
         setPassword: 'Nastavit heslo a aktivovat účet',
@@ -194,6 +196,7 @@ export const labels = {
     ui: {
         hide: 'Skrýt',
         reveal: 'Zobrazit',
+        notProvided: 'neuvedeno',
         form: 'Formulář',
         showRawJson: 'Zobrazit zdrojový JSON',
         completeJson: 'Úplná JSON data položky',
@@ -243,6 +246,10 @@ export const labels = {
         web: 'Web',
         registrationDeadline: 'Uzávěrka',
         coordinator: 'Koordinátor',
+        identityCardNumber: 'Číslo OP',
+        identityCardValidityDate: 'Platnost OP',
+        dateOfBirth: 'Datum narození',
+        address: 'Adresa',
     },
 
     sections: {
@@ -252,6 +259,7 @@ export const labels = {
         eventsList: 'Seznam akcí',
         eventInfo: 'INFORMACE O AKCI',
         registrations: 'Přihlášky',
+        accommodationList: 'Seznam pro ubytování',
         personalInfo: 'OSOBNÍ ÚDAJE',
         contact: 'KONTAKT',
         address: 'ADRESA',

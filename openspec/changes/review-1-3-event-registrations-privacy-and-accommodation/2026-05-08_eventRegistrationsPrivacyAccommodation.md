@@ -97,3 +97,30 @@ Implement three review notes (N9, N10, N11) sharing one authorization principle 
 
 **Test results:** 2361/2361 passed (all backend tests).
 
+**URL correction (post-iteration fix):** URL corrected to match proposal: `/api/events/{eventId}/accommodation-list`. Endpoint moved from `EventRegistrationController` (where it resolved to `/api/events/{eventId}/registrations/accommodation-list`) to `EventController` (direct `@GetMapping("/{eventId}/accommodation-list")`). `EventDetailsPostprocessor` link updated to use `methodOn(EventController.class).getAccommodationList(...)`. AccommodationListTests moved from `EventRegistrationControllerTest` to `EventControllerTest`. 106/106 tests pass.
+
+### Iteration 4 — 2026-05-08 (frontend, tasks 3.4, 3.5)
+
+**What changed:**
+- `src/localization/labels.ts` — added: `buttons.print`, `buttons.accommodationList`, `sections.accommodationList`, `ui.notProvided`, `tables.identityCardNumber`, `tables.identityCardValidityDate`, `tables.dateOfBirth`, `tables.address`.
+- `AccommodationListPage.tsx` (new, `pages/events/`) — standalone route component:
+  - Uses `useParams` to get event ID, fetches `/api/events/{id}` via `useAuthorizedQuery` to get the HAL `accommodation-list` link, then fetches the accommodation list from that link.
+  - Renders a plain HTML `<table>` with columns: jméno, příjmení, číslo OP, platnost OP, datum narození, adresa.
+  - Formats dates via existing `formatDate` (Czech locale `cs-CZ`).
+  - Renders `labels.ui.notProvided` ("neuvedeno") for null/absent fields.
+  - Renders `labels.buttons.print` ("Tisknout") button that calls `window.print()`.
+  - Back link to `/events/{id}`.
+  - Print-friendly styling via Tailwind `print:` variants (text/bg forced to black/white).
+- `AccommodationListPage.test.tsx` (new) — 17 tests covering: loading/error states, page structure (heading, event name, back link, Tisknout button), all 6 column headers, data rendering (names, idCard, dates, address), "neuvedeno" fallback for each missing field group, multiple rows, empty table.
+- `App.tsx` — added route `/events/:id/accommodation-list` → `AccommodationListPage`.
+- `EventDetailPage.tsx` — in the action bar section: when `resourceData._links?.['accommodation-list']` is present, renders a `Link` to `${route.pathname}/accommodation-list` with label "Seznam pro ubytování" (from `labels.buttons.accommodationList`). Used `List` icon from `lucide-react`.
+- `EventDetailPage.test.tsx` — added `accommodation list action (N11 task 3.5)` describe with 3 tests: link shown when HAL link present, not shown when absent, href points to correct frontend route.
+- `index.css` — added `@media print` block: hides nav/header/aside/bottom-nav, enforces `thead { display: table-header-group }` for repeating headers on print pages, forces black-on-white text.
+
+**Design choices:**
+- `AccommodationListPage` does not use `useHalPageData` because the route `/events/:id/accommodation-list` would map to a non-existent API path `/api/events/:id/accommodation-list`. Instead, it constructs the event URL from `useParams` and fetches it directly via `useAuthorizedQuery`.
+- Navigation from EventDetailPage uses `route.pathname + '/accommodation-list'` (frontend route) rather than following the HAL link href (which points to the API endpoint).
+- Address rendered as a single cell with flat fields joined by ", " — mirrors the flat-field model from `AccommodationListItemDto`.
+
+**Test results:** 1287/1287 passed (all frontend tests).
+

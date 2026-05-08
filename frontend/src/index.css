@@ -424,3 +424,30 @@
         pointer-events: none;
     }
 }
+
+@media print {
+    /* Hide navigation, header, and sidebar when printing */
+    nav,
+    header,
+    aside,
+    .bottom-nav,
+    [data-print="hidden"] {
+        display: none !important;
+    }
+
+    /* Ensure table headers repeat on each printed page */
+    thead {
+        display: table-header-group;
+    }
+
+    /* Avoid page breaks inside table rows */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* Legible black-on-white for all text */
+    body {
+        color: black !important;
+        background: white !important;
+    }
+}
