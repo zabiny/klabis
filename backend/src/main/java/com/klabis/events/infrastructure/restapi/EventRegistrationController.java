@@ -147,7 +147,7 @@ class EventRegistrationController {
         List<EventRegistration> registrations = event.getRegistrations();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
 
-        boolean callerCanSortByRegistrationTime = isAuthorizedForRegistrationTimeSort(auth, event);
+        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event);
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations, memberIndex, sort, callerCanSortByRegistrationTime);
 
         List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(sorted, memberIndex, event, eventId);
@@ -160,18 +160,6 @@ class EventRegistrationController {
                 .ifPresent(link -> collectionModel.add(link.withSelfRel()));
 
         return ResponseEntity.ok(collectionModel);
-    }
-
-    private boolean isAuthorizedForRegistrationTimeSort(Authentication auth, Event event) {
-        if (EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
-            return true;
-        }
-        MemberId coordinatorId = event.getEventCoordinatorId();
-        if (coordinatorId == null) {
-            return false;
-        }
-        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-        return coordinatorId.equals(actingMember);
     }
 
     private List<EntityModel<RegistrationSummaryDto>> buildRegistrationItems(

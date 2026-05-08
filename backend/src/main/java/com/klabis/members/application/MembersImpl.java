@@ -79,7 +79,6 @@ class MembersImpl implements Members {
         String addressPostalCode = member.getAddress() != null ? member.getAddress().postalCode() : null;
         String addressCountry = member.getAddress() != null ? member.getAddress().country() : null;
         return new MemberAccommodationDto(
-                member.getId().uuid(),
                 member.getFirstName(),
                 member.getLastName(),
                 identityCardNumber,

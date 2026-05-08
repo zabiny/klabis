@@ -124,3 +124,19 @@ Implement three review notes (N9, N10, N11) sharing one authorization principle 
 
 **Test results:** 1287/1287 passed (all frontend tests).
 
+### Code review fixes — 2026-05-08 (HIGH priority findings H1, H2, H3)
+
+**H1 — Deduplicated "coordinator OR EVENTS:REGISTRATIONS" authorization logic.**
+Added `EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(Authentication, Event)` static helper. Replaced three identical inline checks:
+- `EventRegistrationController.isAuthorizedForRegistrationTimeSort()` — private method removed; call site updated.
+- `EventController.isAuthorizedForAccommodationList()` — private method removed; call site updated.
+- `EventDetailsPostprocessor.process()` inline — replaced with single helper call.
+
+**H2 — `eventCoordinatorId` excluded from JSON output.**
+Added `@JsonIgnore` on `RegistrationSummaryDto.eventCoordinatorId` record component. The field-security advice reads record components directly (not via Jackson), so `@OwnerId` resolution for `@OwnerVisible` on `registrationTime` continues to work. Verified by `RegistrationTimePrivacyTests` — 118/118 passed.
+
+**H3 — Removed unused `memberId` field from `MemberAccommodationDto`.**
+Removed `UUID memberId` component and its `UUID` import from the record. Updated `MembersImpl.fromMemberToAccommodationDto` to omit the `member.getId().uuid()` argument. Updated 4 `MemberAccommodationDto` constructor calls in `EventControllerTest` (accommodation-list test fixtures).
+
+**Test results:** 118/118 passed (EventRegistrationControllerTest + EventControllerTest + EventRegistrationE2ETest).
+

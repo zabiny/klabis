@@ -1332,7 +1332,7 @@ class EventControllerTest {
             event.publish();
 
             MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
-                    memberId.value(), "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
                     java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
 
             when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
@@ -1367,7 +1367,7 @@ class EventControllerTest {
             event.publish();
 
             MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
-                    memberId.value(), "Jane", "Smith", null, null,
+                    "Jane", "Smith", null, null,
                     java.time.LocalDate.of(1990, 3, 10), "Oak Ave 5", "Brno", "60200", "CZ");
 
             when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
@@ -1418,7 +1418,7 @@ class EventControllerTest {
             event.publish();
 
             MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
-                    memberId.value(), "Alice", "Brown", null, null,
+                    "Alice", "Brown", null, null,
                     java.time.LocalDate.of(1992, 7, 20), "Park Rd 3", "Ostrava", "70200", "CZ");
 
             when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
@@ -1450,7 +1450,7 @@ class EventControllerTest {
             event.publish();
 
             MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
-                    memberId.value(), "Bob", "White", "XY999888", java.time.LocalDate.of(2026, 12, 31),
+                    "Bob", "White", "XY999888", java.time.LocalDate.of(2026, 12, 31),
                     java.time.LocalDate.of(1995, 11, 5), null, null, null, null);
 
             when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);

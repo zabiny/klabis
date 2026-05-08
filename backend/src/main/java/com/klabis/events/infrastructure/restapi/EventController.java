@@ -341,7 +341,7 @@ public class EventController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
 
-        if (!isAuthorizedForAccommodationList(auth, event)) {
+        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
         }
 
@@ -359,18 +359,6 @@ public class EventController {
         );
 
         return ResponseEntity.ok(collectionModel);
-    }
-
-    private boolean isAuthorizedForAccommodationList(Authentication auth, Event event) {
-        if (EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
-            return true;
-        }
-        MemberId coordinatorId = event.getEventCoordinatorId();
-        if (coordinatorId == null) {
-            return false;
-        }
-        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-        return coordinatorId.equals(actingMember);
     }
 
     private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {
@@ -441,6 +429,17 @@ class EventAffordanceSupport {
     static boolean shouldOfferRegistration(Event event) {
         return event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen();
     }
+
+    static boolean isCoordinatorOrHasRegistrationsAuthority(Authentication auth, Event event) {
+        if (hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
+            return true;
+        }
+        MemberId coordinatorId = event.getEventCoordinatorId();
+        if (coordinatorId == null) {
+            return false;
+        }
+        return coordinatorId.equals(resolveMemberId(auth));
+    }
 }
 
 @MvcComponent
@@ -493,9 +492,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAuthorizedForAccommodationList = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)
-                || (event.getEventCoordinatorId() != null && event.getEventCoordinatorId().equals(currentMemberId));
-        if (isAuthorizedForAccommodationList) {
+        if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             klabisLinkTo(methodOn(EventController.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }

@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.security.fieldsecurity.NullDeniedHandler;
 import com.klabis.common.security.fieldsecurity.OwnerId;
@@ -22,6 +23,6 @@ public record RegistrationSummaryDto(
         @OwnerVisible
         @HasAuthority(Authority.EVENTS_REGISTRATIONS)
         Instant registrationTime,
-        @OwnerId MemberId eventCoordinatorId
+        @JsonIgnore @OwnerId MemberId eventCoordinatorId
 ) {
 }
