@@ -1,7 +1,8 @@
 import {type ReactElement} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {Alert, Button, Skeleton} from '../../components/UI';
+import {Button, Skeleton} from '../../components/UI';
+import {ErrorPage} from '../ErrorPage.tsx';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {Printer} from 'lucide-react';
@@ -65,7 +66,11 @@ export const AccommodationListPage = (): ReactElement => {
 
     const error = eventError ?? listError;
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <ErrorPage error={error}/>;
+    }
+
+    if (eventData && !accommodationListUrl) {
+        return <ErrorPage error={{responseStatus: 403, message: 'HTTP 403: Forbidden'}}/>;
     }
 
     const items = listData?._embedded?.accommodationList ?? [];

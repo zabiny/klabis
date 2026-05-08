@@ -1,7 +1,8 @@
 import {type ReactElement, type ReactNode, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
+import {Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
+import {ErrorPage} from '../ErrorPage.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
@@ -103,7 +104,7 @@ export const EventDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <ErrorPage error={error}/>;
     }
 
     if (!resourceData) {

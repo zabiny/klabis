@@ -18,6 +18,17 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
 }));
 
+vi.mock('../ErrorPage', () => ({
+    ErrorPage: ({error}: any) => (
+        <div data-testid="error-page" data-status={error?.responseStatus}>
+            {error?.responseStatus === 403
+                ? <div data-testid="forbidden-page">Přístup odepřen</div>
+                : <div>{error?.message}</div>
+            }
+        </div>
+    ),
+}));
+
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
         getUser: vi.fn().mockReturnValue({
@@ -104,6 +115,17 @@ describe('AccommodationListPage', () => {
             } as any);
             renderPage();
             expect(screen.getByText(/fetch failed/i)).toBeInTheDocument();
+        });
+
+        it('shows ForbiddenPage when event fetch returns 403', () => {
+            const error = Object.assign(new Error('HTTP 403: Forbidden'), {responseStatus: 403});
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: undefined,
+                isLoading: false,
+                error,
+            } as any);
+            renderPage();
+            expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
         });
     });
 

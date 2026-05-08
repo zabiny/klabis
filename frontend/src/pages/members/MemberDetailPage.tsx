@@ -3,7 +3,8 @@ import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
+import {Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
+import {ErrorPage} from "../ErrorPage.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
@@ -78,7 +79,7 @@ export const MemberDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <ErrorPage error={error}/>;
     }
 
     if (!resourceData) {

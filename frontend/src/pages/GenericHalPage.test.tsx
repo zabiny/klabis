@@ -87,12 +87,17 @@ vi.mock('../hooks/useIsAdmin', () => ({
     useIsAdmin: vi.fn(() => ({isAdmin: true})),
 }));
 
-vi.mock('./NotFoundPage', () => {
-    return {
-        __esModule: true,
-        default: () => <div data-testid="not-found-page">404 Not Found</div>,
-    };
-});
+vi.mock('./ErrorPage', () => ({
+    ErrorPage: ({error}: any) => (
+        <div data-testid="error-page" data-message={error?.message}>
+            {error?.message?.includes('404') ? (
+                <div data-testid="not-found-page">404 Not Found</div>
+            ) : (
+                <div>{error?.message}</div>
+            )}
+        </div>
+    ),
+}));
 
 const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
 const useHalActions = vi.mocked(HalActionsModule.useHalActions);
@@ -184,7 +189,7 @@ describe('GenericHalPage Component', () => {
             expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
         });
 
-        it('should display error alert for non-404 errors', () => {
+        it('should display ErrorPage for non-404 errors', () => {
             const error = new Error('Failed to fetch data');
             useHalRoute.mockReturnValue({
                 resourceData: null,
@@ -198,25 +203,8 @@ describe('GenericHalPage Component', () => {
             });
 
             renderWithRouter(<GenericHalPage/>);
-            expect(screen.getByTestId('alert-error')).toBeInTheDocument();
-            expect(screen.getByText('Nepodařilo se načíst data z /api/items')).toBeInTheDocument();
+            expect(screen.getByTestId('error-page')).toBeInTheDocument();
             expect(screen.getByText(error.message)).toBeInTheDocument();
-        });
-
-        it('should display pathname in error message', () => {
-            useHalRoute.mockReturnValue({
-                resourceData: null,
-                isLoading: false,
-                error: new Error('Fetch failed'),
-                pathname: '/api/custom/path',
-                refetch: vi.fn(),
-                queryState: 'error',
-                navigateToResource: vi.fn(),
-                getResourceLink: vi.fn(),
-            });
-
-            renderWithRouter(<GenericHalPage/>);
-            expect(screen.getByText(/\/api\/custom\/path/)).toBeInTheDocument();
         });
     });
 

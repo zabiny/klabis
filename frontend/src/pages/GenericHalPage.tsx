@@ -6,7 +6,7 @@ import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection.tsx';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection.tsx';
 import {useHalPageData} from '../hooks/useHalPageData';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
-import NotFoundPage from "./NotFoundPage.tsx";
+import {ErrorPage} from './ErrorPage.tsx';
 
 /**
  * Generic page for displaying HAL resources
@@ -18,7 +18,7 @@ import NotFoundPage from "./NotFoundPage.tsx";
  * Used as a fallback for routes that don't have specialized pages
  */
 export const GenericHalPage = (): ReactElement => {
-    const {resourceData, isLoading, error, isCollection, route} = useHalPageData();
+    const {resourceData, isLoading, error, isCollection} = useHalPageData();
 
     if (isLoading) {
         return (
@@ -29,17 +29,7 @@ export const GenericHalPage = (): ReactElement => {
     }
 
     if (error) {
-        if (error.message.includes("HTTP 404")) {
-            return <NotFoundPage/>
-        }
-        return (
-            <Alert severity="error">
-                <div className="space-y-2">
-                    <p>Nepodařilo se načíst data z {route.pathname}</p>
-                    <p className="text-sm text-gray-600">{error.message}</p>
-                </div>
-            </Alert>
-        );
+        return <ErrorPage error={error}/>;
     }
 
     if (!resourceData) {
