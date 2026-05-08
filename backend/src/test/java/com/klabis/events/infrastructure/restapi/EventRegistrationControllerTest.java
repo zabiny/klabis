@@ -12,6 +12,7 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.*;
+import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -1070,6 +1071,165 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
 
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{eventId}/registrations/accommodation-list (N11)")
+    class AccommodationListTests {
+
+        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        @Test
+        @DisplayName("event coordinator gets 200 with accommodation items")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void coordinatorGets200WithAccommodationItems() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    memberId.value(), "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("John"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].lastName").value("Doe"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardNumber").value("AB123456"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].dateOfBirth").value("1985-05-15"));
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:REGISTRATIONS authority gets 200")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void eventsRegistrationsAuthorityGets200() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    memberId.value(), "Jane", "Smith", null, null,
+                    java.time.LocalDate.of(1990, 3, 10), "Oak Ave 5", "Brno", "60200", "CZ");
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Jane"));
+        }
+
+        @Test
+        @DisplayName("unauthorized member gets 403")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void unauthorizedMemberGets403() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("member with null identityCard has null identityCard fields in response")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void memberWithNullIdentityCardHasNullFieldsInResponse() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    memberId.value(), "Alice", "Brown", null, null,
+                    java.time.LocalDate.of(1992, 7, 20), "Park Rd 3", "Ostrava", "70200", "CZ");
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardNumber").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardValidityDate").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Alice"));
+        }
+
+        @Test
+        @DisplayName("member with null address has null address fields in response")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void memberWithNullAddressHasNullAddressFieldsInResponse() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    memberId.value(), "Bob", "White", "XY999888", java.time.LocalDate.of(2026, 12, 31),
+                    java.time.LocalDate.of(1995, 11, 5), null, null, null, null);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].addressStreet").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Bob"));
+        }
     }
 
 }

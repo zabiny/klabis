@@ -19,12 +19,12 @@ Reuses the existing `@OwnerVisible` + `@OwnerId` field-level authorization mecha
 
 ## 3. Accommodation list endpoint and UI (N11)
 
-- [ ] 3.1 Backend: add controller endpoint `GET /api/events/{eventId}/accommodation-list` returning JSON (HAL); guard with method-level "owner OR authority" — caller must match `event.eventCoordinatorId` OR have EVENTS:REGISTRATIONS authority. Use the existing `OwnershipResolver` (or `@PreAuthorize` SpEL referencing it) to express the rule; do not introduce a new annotation
-- [ ] 3.2 Service layer: assemble `AccommodationListItem` records for each registration by following the registration → member relation; include first name, last name, `identityCard.cardNumber`, `identityCard.validityDate`, `dateOfBirth`, and `address`. Missing nested values (no `identityCard`, no `address`) are returned as `null` — frontend handles fallback text
-- [ ] 3.3 Add HAL `accommodation-list` link to event detail response, exposed only to authorized callers (coordinator OR EVENTS:REGISTRATIONS)
+- [x] 3.1 Backend: add controller endpoint `GET /api/events/{eventId}/accommodation-list` returning JSON (HAL); guard with method-level "owner OR authority" — caller must match `event.eventCoordinatorId` OR have EVENTS:REGISTRATIONS authority. Use the existing `OwnershipResolver` (or `@PreAuthorize` SpEL referencing it) to express the rule; do not introduce a new annotation
+- [x] 3.2 Service layer: assemble `AccommodationListItem` records for each registration by following the registration → member relation; include first name, last name, `identityCard.cardNumber`, `identityCard.validityDate`, `dateOfBirth`, and `address`. Missing nested values (no `identityCard`, no `address`) are returned as `null` — frontend handles fallback text
+- [x] 3.3 Add HAL `accommodation-list` link to event detail response, exposed only to authorized callers (coordinator OR EVENTS:REGISTRATIONS)
 - [ ] 3.4 Frontend: add a route (e.g. `/events/:id/accommodation-list`) that fetches the endpoint and renders a print-friendly table; CSS `@media print` for legible printout; "Tisknout" button calls `window.print()`; render "neuvedeno" in cells where backend returned `null`
 - [ ] 3.5 Frontend: in event detail action bar, render "Seznam pro ubytování" action only when the `accommodation-list` link is present in the response; clicking navigates to the new route
-- [ ] 3.6 Integration tests (backend): authorized caller (coordinator + authority) → 200 JSON with expected items; unauthorized caller → 403; member with empty `identityCard` → corresponding fields are `null` in the response
+- [x] 3.6 Integration tests (backend): authorized caller (coordinator + authority) → 200 JSON with expected items; unauthorized caller → 403; member with empty `identityCard` → corresponding fields are `null` in the response
 - [ ] 3.7 Browser smoke test: log in as event coordinator, open accommodation list route, verify printable layout, content, and "neuvedeno" fallback for incomplete records
 
 ## 4. End-to-end verification on the deployed environment

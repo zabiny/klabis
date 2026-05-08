@@ -422,6 +422,14 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
                     .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
         }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthorizedForAccommodationList = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)
+                || (event.getEventCoordinatorId() != null && event.getEventCoordinatorId().equals(currentMemberId));
+        if (isAuthorizedForAccommodationList) {
+            klabisLinkTo(methodOn(EventRegistrationController.class).getAccommodationList(eventId))
+                    .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
+        }
     }
 }
 

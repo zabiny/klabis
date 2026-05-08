@@ -10,5 +10,7 @@ public interface Members {
 
     Map<MemberId, MemberDto> findByIds(Collection<MemberId> memberIds);
 
+    Map<MemberId, MemberAccommodationDto> findAccommodationDataByIds(Collection<MemberId> memberIds);
+
     Optional<MemberDto> findByRegistrationNumber(String registrationNumber);
 }

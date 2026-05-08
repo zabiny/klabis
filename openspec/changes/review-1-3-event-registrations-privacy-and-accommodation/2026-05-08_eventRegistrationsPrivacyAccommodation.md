@@ -78,3 +78,22 @@ Implement three review notes (N9, N10, N11) sharing one authorization principle 
 
 **Test results:** 1267/1267 passed (all frontend tests).
 
+### Iteration 3 — 2026-05-08 (backend, tasks 3.1, 3.2, 3.3, 3.6)
+
+**What changed:**
+- `Members` interface — added `findAccommodationDataByIds(Collection<MemberId>)` returning `Map<MemberId, MemberAccommodationDto>`.
+- `MemberAccommodationDto` (new, `members` root package) — cross-module read DTO with: `memberId`, `firstName`, `lastName`, `identityCardNumber`, `identityCardValidityDate`, `dateOfBirth`, `addressStreet`, `addressCity`, `addressPostalCode`, `addressCountry`. All fields nullable.
+- `MembersImpl` — added `findAccommodationDataByIds` implementation using `memberRepository.findAllByIds`; maps `Member.getIdentityCard()` and `Member.getAddress()` defensively (null-safe).
+- `AccommodationListItemDto` (new, `events.infrastructure.restapi`) — package-private record with `@Relation(collectionRelation="accommodationList")` and `@JsonInclude(NON_NULL)`.
+- `EventRegistrationController` — added `GET /api/events/{eventId}/registrations/accommodation-list` endpoint; authorization check via `isAuthorizedForAccommodationList()` using same `EventAffordanceSupport` helpers as the sort authorization check (no new annotation, no SpEL bean reference). Throws `AccessDeniedException` → 403 for unauthorized callers.
+- `EventDetailsPostprocessor` — added `accommodation-list` link to event detail response when caller is coordinator OR has `EVENTS:REGISTRATIONS`.
+- `EventRegistrationControllerTest` — added `AccommodationListTests` nested class with 5 tests: coordinator 200, EVENTS:REGISTRATIONS 200, unauthorized 403, null identityCard fields absent in JSON, null address fields absent in JSON.
+- `EventControllerTest` — added 3 tests in `GetEventTests`: accommodation-list link present for EVENTS:REGISTRATIONS user, link present for coordinator, link absent for regular member.
+
+**Design choices:**
+- No new annotation or SpEL `@PreAuthorize` with bean reference. The authorization logic is inline in the controller method using `isAuthorizedForAccommodationList()` — identical pattern to `isAuthorizedForRegistrationTimeSort()` added in iteration 2.
+- `MemberAccommodationDto` exposes address as flat fields (not nested object) to avoid exposing domain `Address` type cross-module. Frontend renders address from flat fields.
+- `@JsonInclude(NON_NULL)` on `AccommodationListItemDto` ensures missing fields (null identityCard, null address) are absent from JSON — frontend's "neuvedeno" fallback is handled by absence check.
+
+**Test results:** 2361/2361 passed (all backend tests).
+

@@ -671,6 +671,66 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("accommodation-list link present for EVENTS:REGISTRATIONS user")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS})
+        void accommodationListLinkPresentForEventsRegistrationsUser() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list'].href").exists());
+        }
+
+        @Test
+        @DisplayName("accommodation-list link present for event coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        void accommodationListLinkPresentForEventCoordinator() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list'].href").exists());
+        }
+
+        @Test
+        @DisplayName("accommodation-list link absent for regular member")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void accommodationListLinkAbsentForRegularMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list']").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should return empty embedded registrationDtoList when no registrations")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldEmbedEmptyRegistrationsListWhenNoRegistrations() throws Exception {

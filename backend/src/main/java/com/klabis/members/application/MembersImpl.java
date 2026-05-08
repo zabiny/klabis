@@ -1,5 +1,6 @@
 package com.klabis.members.application;
 
+import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -41,6 +42,17 @@ class MembersImpl implements Members {
     }
 
     @Override
+    public Map<MemberId, MemberAccommodationDto> findAccommodationDataByIds(Collection<MemberId> memberIds) {
+        if (memberIds.isEmpty()) {
+            return Map.of();
+        }
+        return memberRepository.findAllByIds(memberIds).stream()
+                .collect(Collectors.toMap(
+                        member -> new MemberId(member.getId().uuid()),
+                        this::fromMemberToAccommodationDto));
+    }
+
+    @Override
     public Optional<MemberDto> findByRegistrationNumber(String registrationNumber) {
         if (RegistrationNumber.isRegistrationNumber(registrationNumber)) {
             return memberRepository.findByRegistrationNumber(RegistrationNumber.of(registrationNumber))
@@ -57,5 +69,26 @@ class MembersImpl implements Members {
                 member.getEmail() != null ? member.getEmail().value() : null,
                 member.getRegistrationNumber() != null ? member.getRegistrationNumber().getValue() : null,
                 LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
+    }
+
+    private MemberAccommodationDto fromMemberToAccommodationDto(Member member) {
+        String identityCardNumber = member.getIdentityCard() != null ? member.getIdentityCard().cardNumber() : null;
+        java.time.LocalDate identityCardValidityDate = member.getIdentityCard() != null ? member.getIdentityCard().validityDate() : null;
+        String addressStreet = member.getAddress() != null ? member.getAddress().street() : null;
+        String addressCity = member.getAddress() != null ? member.getAddress().city() : null;
+        String addressPostalCode = member.getAddress() != null ? member.getAddress().postalCode() : null;
+        String addressCountry = member.getAddress() != null ? member.getAddress().country() : null;
+        return new MemberAccommodationDto(
+                member.getId().uuid(),
+                member.getFirstName(),
+                member.getLastName(),
+                identityCardNumber,
+                identityCardValidityDate,
+                member.getDateOfBirth(),
+                addressStreet,
+                addressCity,
+                addressPostalCode,
+                addressCountry
+        );
     }
 }
