@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -10,20 +11,26 @@ import java.util.Map;
 
 class RegistrationDtoMapper {
 
-    static RegistrationSummaryDto toDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex, Members members) {
+    static RegistrationSummaryDto toDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex, Members members, Event event) {
         MemberDto member = memberIndex.get(registration.memberId());
         if (member == null) {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        return new RegistrationSummaryDto(member.firstName(), member.lastName(), registration.category(), registration.registeredAt());
+        return new RegistrationSummaryDto(
+                member.firstName(),
+                member.lastName(),
+                registration.category(),
+                registration.registeredAt(),
+                event.getEventCoordinatorId()
+        );
     }
 
-    static List<RegistrationSummaryDto> toDtoList(List<EventRegistration> registrations, Members members) {
+    static List<RegistrationSummaryDto> toDtoList(List<EventRegistration> registrations, Members members, Event event) {
         List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(memberIds);
         return registrations.stream()
-                .map(r -> toDto(r, memberIndex, members))
+                .map(r -> toDto(r, memberIndex, members, event))
                 .toList();
     }
 }

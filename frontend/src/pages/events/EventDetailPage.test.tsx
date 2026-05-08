@@ -403,12 +403,11 @@ describe('EventDetailPage', () => {
             expect(screen.queryByRole('heading', {name: /přihlášky/i})).not.toBeInTheDocument();
         });
 
-        it('shows registrations table with correct columns when registrations link is present', () => {
+        it('shows registrations table with firstName and lastName columns when registrations link is present', () => {
             renderPage(createMockPageData(mockEventWithRegistrationsLink()));
             expect(screen.getByRole('table')).toBeInTheDocument();
             expect(screen.getByRole('columnheader', {name: 'Jméno'})).toBeInTheDocument();
             expect(screen.getByRole('columnheader', {name: 'Příjmení'})).toBeInTheDocument();
-            expect(screen.getByRole('columnheader', {name: 'Datum přihlášení'})).toBeInTheDocument();
         });
 
         it('does not show category column when event has no categories', () => {
@@ -426,12 +425,71 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
         });
 
+        describe('registrationTime column visibility (N9 privacy)', () => {
+            it('hides Datum přihlášení column when no rows have registrationTime field (non-authorized user)', () => {
+                const rows = [
+                    buildRegistrationRowWithoutTimestamp('member-1'),
+                    buildRegistrationRowWithoutTimestamp('member-2'),
+                ];
+                const resourceData = mockEventWithRegistrationsLink();
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                renderPage(createMockPageData(resourceData));
+
+                expect(screen.queryByRole('columnheader', {name: /datum přihlášení/i})).not.toBeInTheDocument();
+            });
+
+            it('shows Datum přihlášení column when rows have registrationTime field (authorized user)', () => {
+                const rows = [
+                    buildRegistrationRow('member-1'),
+                    buildRegistrationRow('member-2'),
+                ];
+                const resourceData = mockEventWithRegistrationsLink();
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                renderPage(createMockPageData(resourceData));
+
+                expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
+            });
+
+            it('shows Datum přihlášení column when at least one row has registrationTime', () => {
+                const rows = [
+                    buildRegistrationRowWithoutTimestamp('member-1'),
+                    buildRegistrationRow('member-2'),
+                ];
+                const resourceData = mockEventWithRegistrationsLink();
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                renderPage(createMockPageData(resourceData));
+
+                expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
+            });
+        });
+
         const buildRegistrationRow = (memberId = 'member-1', overrides?: Record<string, unknown>) => ({
             firstName: 'Jana',
             lastName: 'Nováková',
-            registeredAt: '2025-03-10T10:00:00',
+            registrationTime: '2025-03-10T10:00:00',
             _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
             ...overrides,
+        });
+
+        const buildRegistrationRowWithoutTimestamp = (memberId = 'member-1') => ({
+            firstName: 'Jana',
+            lastName: 'Nováková',
+            _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
         });
 
         const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {

@@ -291,6 +291,107 @@ class EventRegistrationControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/events/{id}/registrations — registrationTime privacy (N9)")
+    class RegistrationTimePrivacyTests {
+
+        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        @Test
+        @DisplayName("regular member does not see registrationTime in registration list")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void regularMemberDoesNotSeeRegistrationTime() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("event coordinator sees registrationTime in registration list")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void eventCoordinatorSeesRegistrationTime() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").exists());
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:REGISTRATIONS sees registrationTime in registration list")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void eventsRegistrationsAuthoritySeesRegistrationTime() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").exists());
+        }
+    }
+
+    @Nested
     @DisplayName("Registration Deadline Enforcement (task 4.3)")
     class RegistrationDeadlineEnforcementTests {
 

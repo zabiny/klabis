@@ -2,11 +2,11 @@
 
 Reuses the existing `@OwnerVisible` + `@OwnerId` field-level authorization mechanism — no new annotation, no new advice. The DTO marks `registrationTime` with `@OwnerVisible @HasAuthority(EVENTS_REGISTRATIONS)` and a sibling `eventCoordinatorId` field with `@OwnerId`. Existing field-security advice already grants visibility when the current user matches the owner ID or holds the named authority.
 
-- [ ] 1.1 Verify existing `@OwnerVisible` + `@OwnerId` semantics support the "owner OR authority" rule used here (read `OwnerVisible.java`, `RequestBodyFieldAuthorizationAdvice.java`, `DefaultOwnershipResolver.java`); if any aspect of the rule isn't covered, document the gap and extend the advice with the minimal addition required (do NOT introduce a new annotation)
-- [ ] 1.2 Update `EventRegistrationSummaryDto`: add `@OwnerVisible @HasAuthority(EVENTS_REGISTRATIONS)` to `registrationTime`; add new sibling `eventCoordinatorId` annotated with `@OwnerId`, populated by the mapper from the surrounding event's `eventCoordinatorId`
-- [ ] 1.3 Update the registration list mapper / service to ensure `eventCoordinatorId` is populated on every row of the response
-- [ ] 1.4 Add integration test on `EventRegistrationController.list`: regular member → response JSON has no `registrationTime`; event coordinator (member matches `eventCoordinatorId`) → includes `registrationTime`; EVENTS:REGISTRATIONS user → includes `registrationTime`
-- [ ] 1.5 Update frontend registration list table to skip rendering the timestamp column when the field is missing in the HAL+FORMS response
+- [x] 1.1 Verify existing `@OwnerVisible` + `@OwnerId` semantics support the "owner OR authority" rule used here (read `OwnerVisible.java`, `RequestBodyFieldAuthorizationAdvice.java`, `DefaultOwnershipResolver.java`); if any aspect of the rule isn't covered, document the gap and extend the advice with the minimal addition required (do NOT introduce a new annotation)
+- [x] 1.2 Update `EventRegistrationSummaryDto`: add `@OwnerVisible @HasAuthority(EVENTS_REGISTRATIONS)` to `registrationTime`; add new sibling `eventCoordinatorId` annotated with `@OwnerId`, populated by the mapper from the surrounding event's `eventCoordinatorId`
+- [x] 1.3 Update the registration list mapper / service to ensure `eventCoordinatorId` is populated on every row of the response
+- [x] 1.4 Add integration test on `EventRegistrationController.list`: regular member → response JSON has no `registrationTime`; event coordinator (member matches `eventCoordinatorId`) → includes `registrationTime`; EVENTS:REGISTRATIONS user → includes `registrationTime`
+- [x] 1.5 Update frontend registration list table to skip rendering the timestamp column when the field is missing in the HAL+FORMS response
 - [ ] 1.6 Browser smoke test (production-like): regular member sees registration list without timestamp column; admin (EVENTS:REGISTRATIONS) sees the column; coordinator of the specific event sees the column for that event
 
 ## 2. Sortable headers in registration list (N10)

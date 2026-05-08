@@ -127,7 +127,7 @@ class EventRegistrationE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Test"))
                 .andExpect(jsonPath("$._embedded.registrationDtoList[0].lastName").value("User"))
-                .andExpect(jsonPath("$._embedded.registrationDtoList[0].registeredAt").exists())
+                .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").doesNotExist())
                 .andExpect(jsonPath("$._embedded.registrationDtoList[0].siCardNumber").doesNotExist());
 
         // When: Unregister from event (before event date)

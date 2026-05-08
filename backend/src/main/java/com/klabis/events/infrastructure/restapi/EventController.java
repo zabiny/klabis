@@ -141,7 +141,7 @@ public class EventController {
 
         EventDto eventDto = EventDtoMapper.toDto(event);
 
-        List<RegistrationSummaryDto> registrationDtos = buildRegistrationDtos(new EventId(id));
+        List<RegistrationSummaryDto> registrationDtos = buildRegistrationDtos(event);
 
         EntityModel<EventDto> entityModel = entityModelWithDomain(eventDto, event);
         // Direct invocation is required because Spring HATEOAS RepresentationModelProcessor
@@ -156,9 +156,9 @@ public class EventController {
         return ResponseEntity.ok(model);
     }
 
-    private List<RegistrationSummaryDto> buildRegistrationDtos(EventId eventId) {
-        List<EventRegistration> registrations = eventRegistrationService.listRegistrations(eventId);
-        return RegistrationDtoMapper.toDtoList(registrations, members);
+    private List<RegistrationSummaryDto> buildRegistrationDtos(Event event) {
+        List<EventRegistration> registrations = eventRegistrationService.listRegistrations(event.getId());
+        return RegistrationDtoMapper.toDtoList(registrations, members, event);
     }
 
     @GetMapping

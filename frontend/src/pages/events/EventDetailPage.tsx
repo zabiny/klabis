@@ -34,7 +34,7 @@ interface EventDetail {
 interface RegistrationData extends EntityModel<{
     firstName: string;
     lastName: string;
-    registeredAt: string;
+    registrationTime?: string;
     category?: string;
     [key: string]: unknown;
 }> {
@@ -140,14 +140,14 @@ const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): 
     };
 
     return (
-        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
+        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns>
             <TableCell column="firstName">{labels.fields.firstName}</TableCell>
             <TableCell column="lastName">{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
                 <TableCell column="category">{labels.fields.categories}</TableCell>
             )}
-            <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
-            <TableCell column="_actions" dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
+            <TableCell column="registrationTime" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
+            <TableCell column="_actions" dataRender={renderActionsCell} alwaysVisible>{labels.tables.actions}</TableCell>
         </HalEmbeddedTable>
     );
 };

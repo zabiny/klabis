@@ -160,7 +160,7 @@ class EventRegistrationController {
 
         List<EntityModel<RegistrationSummaryDto>> items = new ArrayList<>();
         for (EventRegistration registration : registrations) {
-            RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members);
+            RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members, event);
             EntityModel<RegistrationSummaryDto> item = EntityModel.of(dto);
             UUID rowMemberId = registration.memberId().value();
             klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId))
