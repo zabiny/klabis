@@ -30,6 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -577,6 +578,243 @@ class EventRegistrationControllerTest {
                     eq(new EventId(eventId)),
                     eq(new MemberId(UUID.fromString(MEMBER_1_ID))),
                     any(Event.EditRegistrationCommand.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id}/registrations — sort parameter (N10)")
+    class RegistrationSortTests {
+
+        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String REGULAR_MEMBER_ID = "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
+        private Event buildEventWithRegistrations(MemberId coordinatorId, List<EventRegistration> registrations) {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+            event.finish();
+            return event;
+        }
+
+        @Test
+        @DisplayName("no sort parameter → default registrationTime ASC (first registered appears first)")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void defaultSortIsRegistrationTimeAsc() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+            Instant earlier = Instant.now().minus(10, ChronoUnit.MINUTES);
+            Instant later = Instant.now();
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier)
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Zeta", "alice@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Alpha", "bob@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Alice"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].firstName").value("Bob"));
+        }
+
+        @Test
+        @DisplayName("sort=firstName → results ordered by first name ascending")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void sortByFirstName() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Zdeněk", "Smith", "z@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Adam", "Jones", "a@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "firstName")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Adam"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].firstName").value("Zdeněk"));
+        }
+
+        @Test
+        @DisplayName("sort=lastName → results ordered by last name ascending")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void sortByLastName() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Žák", "j@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Beneš", "ja@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "lastName")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].lastName").value("Beneš"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].lastName").value("Žák"));
+        }
+
+        @Test
+        @DisplayName("sort=category → results ordered by category ascending")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void sortByCategory() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), "W21", Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), "M21", Instant.now())
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "category")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("M21"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].category").value("W21"));
+        }
+
+        @Test
+        @DisplayName("sort=registrationTime as authorized user (EVENTS:REGISTRATIONS) → ordered by registrationTime ascending")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void sortByRegistrationTimeAsAuthorizedUser() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+            Instant earlier = Instant.now().minus(10, ChronoUnit.MINUTES);
+            Instant later = Instant.now();
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier)
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "registrationTime")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Alice"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].firstName").value("Bob"));
+        }
+
+        @Test
+        @DisplayName("sort=registrationTime as unauthorized member → silently falls back to default sort (registrationTime ASC)")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void sortByRegistrationTimeAsUnauthorizedMemberFallsBackToDefault() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+            Instant earlier = Instant.now().minus(10, ChronoUnit.MINUTES);
+            Instant later = Instant.now();
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier)
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "registrationTime")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    // falls back to default registrationTime ASC — Alice registered earlier appears first
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Alice"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].firstName").value("Bob"));
+        }
+
+        @Test
+        @DisplayName("unknown sort field → silently falls back to default sort (registrationTime ASC), no 400/403")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void unknownSortFieldFallsBackToDefault() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+            Instant earlier = Instant.now().minus(10, ChronoUnit.MINUTES);
+            Instant later = Instant.now();
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier)
+            );
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .param("sort", "unknownField")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Alice"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].firstName").value("Bob"));
         }
     }
 

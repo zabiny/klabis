@@ -11,11 +11,11 @@ Reuses the existing `@OwnerVisible` + `@OwnerId` field-level authorization mecha
 
 ## 2. Sortable headers in registration list (N10)
 
-- [ ] 2.1 Extend the registration list endpoint to accept `sort` query param with values `firstName`, `lastName`, `category`, and (for authorized callers) `registrationTime`
-- [ ] 2.2 Server-side: if caller is unauthorized to view registration time, `sort=registrationTime` is silently ignored and default sort is applied. Same fallback for any unknown/unsupported sort field — no 400/403
-- [ ] 2.3 Default sort when no `sort` is provided remains `registrationTime ASC` (server-side; preserves first-come-first-served visual order even when the column is hidden)
-- [ ] 2.4 Frontend: enable sortable headers on `firstName`, `lastName`, `category` for everyone, and on `registrationTime` only when the column is visible
-- [ ] 2.5 Integration tests for each sort param + silent-fallback scenario (unauthorized `sort=registrationTime` and unknown field name → response sorted by default)
+- [x] 2.1 Extend the registration list endpoint to accept `sort` query param with values `firstName`, `lastName`, `category`, and (for authorized callers) `registrationTime`
+- [x] 2.2 Server-side: if caller is unauthorized to view registration time, `sort=registrationTime` is silently ignored and default sort is applied. Same fallback for any unknown/unsupported sort field — no 400/403
+- [x] 2.3 Default sort when no `sort` is provided remains `registrationTime ASC` (server-side; preserves first-come-first-served visual order even when the column is hidden)
+- [x] 2.4 Frontend: enable sortable headers on `firstName`, `lastName`, `category` for everyone, and on `registrationTime` only when the column is visible
+- [x] 2.5 Integration tests for each sort param + silent-fallback scenario (unauthorized `sort=registrationTime` and unknown field name → response sorted by default)
 
 ## 3. Accommodation list endpoint and UI (N11)
 

@@ -130,26 +130,48 @@ class EventRegistrationController {
             description = """
                     List all registrations for an event.
                     SI card numbers are not included for privacy protection.
+                    Supported sort fields: firstName, lastName, category, registrationTime.
+                    Default sort: registrationTime ASC.
+                    sort=registrationTime is silently ignored for members without EVENTS:REGISTRATIONS authority
+                    who are not the event coordinator. Unknown sort fields also fall back to default.
                     """
     )
     @ApiResponse(responseCode = "200", description = "List of registrations retrieved successfully")
     public ResponseEntity<CollectionModel<EntityModel<RegistrationSummaryDto>>> listRegistrations(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
+            @Parameter(description = "Sort field and optional direction, e.g. 'lastName' or 'lastName,desc'")
+            @RequestParam(required = false) String sort) {
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
         List<EventRegistration> registrations = event.getRegistrations();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
 
-        List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(registrations, memberIndex, event, eventId);
+        boolean callerCanSortByRegistrationTime = isAuthorizedForRegistrationTimeSort(auth, event);
+        List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations, memberIndex, sort, callerCanSortByRegistrationTime);
+
+        List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(sorted, memberIndex, event, eventId);
 
         CollectionModel<EntityModel<RegistrationSummaryDto>> collectionModel = CollectionModel.of(
                 items,
                 entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
         );
-        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
+        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))
                 .ifPresent(link -> collectionModel.add(link.withSelfRel()));
 
         return ResponseEntity.ok(collectionModel);
+    }
+
+    private boolean isAuthorizedForRegistrationTimeSort(Authentication auth, Event event) {
+        if (EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
+            return true;
+        }
+        MemberId coordinatorId = event.getEventCoordinatorId();
+        if (coordinatorId == null) {
+            return false;
+        }
+        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
+        return coordinatorId.equals(actingMember);
     }
 
     private List<EntityModel<RegistrationSummaryDto>> buildRegistrationItems(

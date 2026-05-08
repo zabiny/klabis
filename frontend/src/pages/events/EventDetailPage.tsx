@@ -140,13 +140,13 @@ const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): 
     };
 
     return (
-        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns>
-            <TableCell column="firstName">{labels.fields.firstName}</TableCell>
-            <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
+            <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
+            <TableCell column="lastName" sortable>{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
-                <TableCell column="category">{labels.fields.categories}</TableCell>
+                <TableCell column="category" sortable>{labels.fields.categories}</TableCell>
             )}
-            <TableCell column="registrationTime" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
+            <TableCell column="registrationTime" sortable dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
             <TableCell column="_actions" dataRender={renderActionsCell} alwaysVisible>{labels.tables.actions}</TableCell>
         </HalEmbeddedTable>
     );

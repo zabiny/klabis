@@ -425,6 +425,67 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
         });
 
+        describe('sortable column headers (N10)', () => {
+            it('firstName column header is sortable', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+                expect(screen.getByRole('button', {name: /sort by jméno/i})).toBeInTheDocument();
+            });
+
+            it('lastName column header is sortable', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+                expect(screen.getByRole('button', {name: /sort by příjmení/i})).toBeInTheDocument();
+            });
+
+            it('category column header is sortable when event has categories', () => {
+                const rowWithCategory = buildRegistrationRow('member-1', {category: 'H21'});
+                renderPageWithRegistrationRows([rowWithCategory], {categories: ['H21', 'D21']});
+                expect(screen.getByRole('button', {name: /sort by kategorie/i})).toBeInTheDocument();
+            });
+
+            it('registrationTime column header is sortable when column is visible (authorized user)', () => {
+                const rows = [buildRegistrationRow('member-1'), buildRegistrationRow('member-2')];
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                renderPage(createMockPageData(mockEventWithRegistrationsLink()));
+
+                expect(screen.getByRole('button', {name: /sort by datum přihlášení/i})).toBeInTheDocument();
+            });
+
+            it('registrationTime sort button is absent when column is hidden (non-authorized user)', () => {
+                const rows = [buildRegistrationRowWithoutTimestamp('member-1')];
+                const registrationsListData = {
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                };
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                renderPage(createMockPageData(mockEventWithRegistrationsLink()));
+
+                expect(screen.queryByRole('button', {name: /sort by datum přihlášení/i})).not.toBeInTheDocument();
+            });
+
+            it('clicking firstName sort button sends sort=firstName,asc query param', () => {
+                vi.mocked(useAuthorizedQuery).mockReturnValue({
+                    data: {
+                        _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                        _embedded: {registrationDtoList: [buildRegistrationRow()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    error: null,
+                } as any);
+                renderPage(createMockPageData(mockEventWithRegistrationsLink()));
+
+                fireEvent.click(screen.getByRole('button', {name: /sort by jméno/i}));
+
+                const lastCall = vi.mocked(useAuthorizedQuery).mock.calls.at(-1);
+                expect(lastCall?.[0]).toContain('sort=firstName%2Casc');
+            });
+        });
+
         describe('registrationTime column visibility (N9 privacy)', () => {
             it('hides Datum přihlášení column when no rows have registrationTime field (non-authorized user)', () => {
                 const rows = [
