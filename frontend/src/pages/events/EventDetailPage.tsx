@@ -9,7 +9,7 @@ import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {HalSubresourceProvider, useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
+import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
@@ -328,14 +328,20 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     <Card className="p-6">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.deadlines}</h3>
                         <ul className="space-y-1">
-                            {event.deadlines.map((deadline, index) => (
-                                <li key={deadline} className="flex items-center gap-2 text-text-primary">
-                                    <span>{formatDate(deadline)}</span>
-                                    {index === 0 && event.deadlines!.length === 1 && (
-                                        <span className="text-xs text-text-secondary"></span>
-                                    )}
-                                </li>
-                            ))}
+                            {(() => {
+                                const relevantIndex = getRelevantDeadlineIndex(event.deadlines!, getTodayIso());
+                                return event.deadlines!.map((deadline, index) => {
+                                    const isRelevant = index === relevantIndex;
+                                    return (
+                                        <li key={deadline} className="flex items-center gap-2 text-text-primary">
+                                            <span className={isRelevant ? 'font-bold text-primary' : undefined}>{formatDate(deadline)}</span>
+                                            {isRelevant && (
+                                                <span className="text-xs font-medium text-primary">{labels.ui.currentDeadline}</span>
+                                            )}
+                                        </li>
+                                    );
+                                });
+                            })()}
                         </ul>
                     </Card>
                 )}

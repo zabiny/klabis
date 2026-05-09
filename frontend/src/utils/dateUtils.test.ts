@@ -1,4 +1,4 @@
-import {formatDate} from './dateUtils';
+import {formatDate, getRelevantDeadlineIndex} from './dateUtils';
 
 describe('formatDate', () => {
     describe('Valid Dates', () => {
@@ -238,5 +238,39 @@ describe('formatDate', () => {
             const result2 = formatDate(dateString);
             expect(result1).toBe(result2);
         });
+    });
+});
+
+describe('getRelevantDeadlineIndex', () => {
+    it('returns 0 for a single deadline in the future', () => {
+        expect(getRelevantDeadlineIndex(['2099-12-31'], '2025-05-09')).toBe(0);
+    });
+
+    it('returns 0 for a single deadline that is today', () => {
+        expect(getRelevantDeadlineIndex(['2025-05-09'], '2025-05-09')).toBe(0);
+    });
+
+    it('returns 0 for a single deadline that is in the past', () => {
+        expect(getRelevantDeadlineIndex(['2020-01-01'], '2025-05-09')).toBe(0);
+    });
+
+    it('returns the index of the first future deadline when multiple deadlines exist', () => {
+        expect(getRelevantDeadlineIndex(['2020-01-01', '2099-12-31', '2099-12-31'], '2025-05-09')).toBe(1);
+    });
+
+    it('returns 0 as first future deadline when all deadlines are in future', () => {
+        expect(getRelevantDeadlineIndex(['2099-01-01', '2099-06-01', '2099-12-31'], '2025-05-09')).toBe(0);
+    });
+
+    it('returns last index when all deadlines have passed', () => {
+        expect(getRelevantDeadlineIndex(['2020-01-01', '2021-06-01', '2022-12-31'], '2025-05-09')).toBe(2);
+    });
+
+    it('returns index of first future deadline when first two have passed', () => {
+        expect(getRelevantDeadlineIndex(['2020-01-01', '2021-06-01', '2099-12-31'], '2025-05-09')).toBe(2);
+    });
+
+    it('treats today as not yet passed (deadline on today is still relevant)', () => {
+        expect(getRelevantDeadlineIndex(['2025-05-09', '2099-12-31'], '2025-05-09')).toBe(0);
     });
 });

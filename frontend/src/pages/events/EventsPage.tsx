@@ -8,7 +8,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
-import {formatDate} from "../../utils/dateUtils.ts";
+import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
@@ -249,17 +249,19 @@ export const EventsPage = (): ReactElement => {
                                const event = item as unknown as EventListData;
                                const deadlines = event.deadlines;
                                if (!deadlines || deadlines.length === 0) return null;
-                               const primary = deadlines[0];
-                               const others = deadlines.slice(1);
+                               const relevantIndex = getRelevantDeadlineIndex(deadlines, getTodayIso());
+                               const primary = deadlines[relevantIndex];
+                               const otherCount = deadlines.length - 1;
+                               const otherDates = deadlines.filter((_, i) => i !== relevantIndex).map(d => formatDate(d));
                                return (
                                    <span className="inline-flex items-center gap-1.5">
                                        <span>{formatDate(primary)}</span>
-                                       {others.length > 0 && (
+                                       {otherCount > 0 && (
                                            <span
-                                               title={others.map(d => formatDate(d)).join(', ')}
+                                               title={otherDates.join(', ')}
                                                className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-xs font-medium cursor-help"
                                            >
-                                               +{others.length}
+                                               +{otherCount}
                                            </span>
                                        )}
                                    </span>

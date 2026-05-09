@@ -132,6 +132,15 @@ describe('EventsPage', () => {
     });
 
     describe('deadlines column (6.4)', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2025-05-09'));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
         const buildEventRow = (overrides: Record<string, unknown> = {}) => ({
             id: 'evt-1',
             name: 'Jarní závod',
@@ -169,6 +178,21 @@ describe('EventsPage', () => {
         it('shows relevant deadline and badge when multiple deadlines present', () => {
             renderWithEvents([buildEventRow({deadlines: ['2025-03-01', '2025-04-01', '2025-04-15']})]);
             expect(screen.getByTitle(/1\. 4\. 2025|1\. 3\. 2025|15\. 4\. 2025/)).toBeInTheDocument();
+        });
+
+        it('shows first future deadline as relevant when first deadline has already passed', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2020-01-01', '2099-12-31']})]);
+            expect(screen.getByText('31. 12. 2099')).toBeInTheDocument();
+        });
+
+        it('shows last deadline as relevant when all deadlines have passed', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2020-01-01', '2021-06-01']})]);
+            expect(screen.getByText('1. 6. 2021')).toBeInTheDocument();
+        });
+
+        it('shows first deadline (index 0) for single deadline event', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2025-03-15']})]);
+            expect(screen.getByText('15. 3. 2025')).toBeInTheDocument();
         });
     });
 

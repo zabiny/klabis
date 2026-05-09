@@ -198,6 +198,7 @@ export const labels = {
     ui: {
         hide: 'Skrýt',
         reveal: 'Zobrazit',
+        currentDeadline: 'aktuální',
         notProvided: 'neuvedeno',
         form: 'Formulář',
         showRawJson: 'Zobrazit zdrojový JSON',

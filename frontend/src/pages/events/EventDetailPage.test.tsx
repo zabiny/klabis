@@ -674,6 +674,15 @@ describe('EventDetailPage', () => {
     });
 
     describe('deadlines section (6.3)', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2025-05-09'));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
         it('shows deadlines section heading when deadlines are present', () => {
             renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-03-01', '2025-04-01']})));
             expect(screen.getByText('UZÁVĚRKY PŘIHLÁŠEK')).toBeInTheDocument();
@@ -699,6 +708,40 @@ describe('EventDetailPage', () => {
         it('shows single deadline without a list', () => {
             renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-04-01']})));
             expect(screen.getByText('1. 4. 2025')).toBeInTheDocument();
+        });
+
+        it('marks a future single deadline as "aktuální"', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2099-12-31']})));
+            expect(screen.getByText('aktuální')).toBeInTheDocument();
+        });
+
+        it('marks a past single deadline as "aktuální" (only deadline, so it is relevant)', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2020-01-01']})));
+            expect(screen.getByText('aktuální')).toBeInTheDocument();
+        });
+
+        it('marks the first future deadline as "aktuální" when multiple deadlines exist', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-03-01', '2099-12-31']})));
+            const relevantLabel = screen.getByText('aktuální');
+            expect(relevantLabel).toBeInTheDocument();
+            const relevantItem = relevantLabel.closest('li');
+            expect(relevantItem).toHaveTextContent('31. 12. 2099');
+        });
+
+        it('marks the last deadline as "aktuální" when all deadlines have passed', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2020-01-01', '2021-06-01']})));
+            const relevantLabel = screen.getByText('aktuální');
+            expect(relevantLabel).toBeInTheDocument();
+            const relevantItem = relevantLabel.closest('li');
+            expect(relevantItem).toHaveTextContent('1. 6. 2021');
+        });
+
+        it('highlights relevant deadline with bold text', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2099-12-31']})));
+            const relevantLabel = screen.getByText('aktuální');
+            const relevantItem = relevantLabel.closest('li');
+            const dateSpan = relevantItem?.querySelector('span');
+            expect(dateSpan).toHaveClass('font-bold');
         });
     });
 

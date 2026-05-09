@@ -59,7 +59,7 @@ record CreateEventRequest(
             return RegistrationDeadlines.none();
         }
         return RegistrationDeadlines.of(
-                deadlines.size() > 0 ? deadlines.get(0) : null,
+                deadlines.get(0),
                 deadlines.size() > 1 ? deadlines.get(1) : null,
                 deadlines.size() > 2 ? deadlines.get(2) : null
         );

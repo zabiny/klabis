@@ -1,4 +1,13 @@
 /**
+ * Returns the index of the currently relevant deadline.
+ * The relevant deadline is the earliest one that is >= today; if all have passed, returns the last index.
+ */
+export function getRelevantDeadlineIndex(deadlines: string[], todayIso: string): number {
+    const firstFuture = deadlines.findIndex(d => d >= todayIso);
+    return firstFuture === -1 ? deadlines.length - 1 : firstFuture;
+}
+
+/**
  * Returns today's date as an ISO string (YYYY-MM-DD) in local time.
  */
 export function getTodayIso(): string {
