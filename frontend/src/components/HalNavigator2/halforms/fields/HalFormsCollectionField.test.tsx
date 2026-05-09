@@ -60,6 +60,21 @@ describe('HalFormsCollectionField', () => {
 
             expect(screen.getByText('Tagy')).toBeInTheDocument();
         });
+
+        it('falls back to getFieldLabel when prompt is not set', () => {
+            const props = createProps(createProp({prompt: undefined, name: 'deadlines'}));
+            renderWithFormik(props, []);
+
+            expect(screen.getByText('Uzávěrky přihlášek')).toBeInTheDocument();
+        });
+
+        it('falls back to getFieldLabel for categories field when prompt is not set', () => {
+            const props = createProps(createProp({prompt: undefined, name: 'categories'}));
+            renderWithFormik(props, []);
+
+            expect(screen.getByText('Kategorie')).toBeInTheDocument();
+        });
+
     });
 
     describe('adding items', () => {

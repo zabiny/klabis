@@ -60,4 +60,14 @@ describe('HalFormsTextArea', () => {
         renderWithFormik(createProp({maxLength: 500}), 'hello world');
         expect(screen.getByText('11 / 500')).toBeInTheDocument();
     });
+
+    it('falls back to getFieldLabel when prop.prompt is not set', () => {
+        renderWithFormik(createProp({prompt: undefined, name: 'cancellationReason'}));
+        expect(screen.getByText('Důvod zrušení (volitelné)')).toBeInTheDocument();
+    });
+
+    it('shows prop.name as label when neither prompt nor field label is available', () => {
+        renderWithFormik(createProp({prompt: undefined, name: 'unknownFieldXyz'}));
+        expect(screen.getByText('unknownFieldXyz')).toBeInTheDocument();
+    });
 });

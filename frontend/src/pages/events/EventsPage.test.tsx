@@ -196,6 +196,50 @@ describe('EventsPage', () => {
         });
     });
 
+    describe('cancel event action modal', () => {
+        const buildEventWithCancelTemplate = () => ({
+            id: 'evt-cancel',
+            name: 'Zrušitelná akce',
+            eventDate: '2025-06-15',
+            status: 'ACTIVE',
+            deadlines: ['2025-05-01'],
+            _links: {self: {href: '/api/events/cancel-evt'}},
+            _templates: {
+                cancelEvent: mockHalFormsTemplate({
+                    method: 'POST',
+                    target: '/api/events/cancel-evt/cancel',
+                    title: undefined,
+                    properties: [{name: 'cancellationReason', type: 'textarea', required: false}],
+                }),
+            },
+        });
+
+        const renderWithCancelableEvent = () => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: [buildEventWithCancelTemplate()]},
+                    page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            });
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('shows localized dialog title when backend does not send template.title', async () => {
+            const user = userEvent.setup();
+            renderWithCancelableEvent();
+
+            const cancelButton = await screen.findByTitle(labels.templates.cancelEvent);
+            await user.click(cancelButton);
+
+            expect(screen.getByTestId('modal-title')).toHaveTextContent('Zrušení akce');
+        });
+    });
+
     describe('"Importovat z ORIS" button', () => {
         it('shows button when importEvent template exists in HAL response', () => {
             const resourceData: HalResponse = {

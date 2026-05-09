@@ -1021,6 +1021,26 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.cancellationReason").value("Organizer is ill"));
         }
+
+        @Test
+        @DisplayName("cancelEvent HAL-Forms template should expose cancellationReason as textarea with maxLength 500")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void cancelEventTemplateShouldHaveCancellationReasonAsTextareaWithMaxLength() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.cancelEvent.properties[?(@.name=='cancellationReason')]").exists())
+                    .andExpect(jsonPath("$._templates.cancelEvent.properties[?(@.name=='cancellationReason')].type").value("textarea"))
+                    .andExpect(jsonPath("$._templates.cancelEvent.properties[?(@.name=='cancellationReason')].max").value(500));
+        }
     }
 
     @Nested

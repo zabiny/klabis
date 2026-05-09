@@ -10,7 +10,7 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
 import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {labels, getEnumLabel} from "../../localization";
+import {labels, getEnumLabel, getDialogTitleLabel, getTemplateLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
@@ -297,7 +297,7 @@ export const EventsPage = (): ReactElement => {
 
         {actionModal && (
             <Modal isOpen={true} onClose={() => setActionModal(null)}
-                   title={actionModal.template.title ?? actionModal.templateName} size="2xl">
+                   title={getDialogTitleLabel(actionModal.templateName) ?? getTemplateLabel(actionModal.templateName) ?? actionModal.template.title ?? actionModal.templateName} size="2xl">
                 <HalFormDisplay
                     template={actionModal.template}
                     templateName={actionModal.templateName}

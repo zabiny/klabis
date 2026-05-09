@@ -3,6 +3,7 @@ import type {FieldProps} from 'formik'
 import {Field} from 'formik'
 import {TextAreaField} from '../../../UI/forms'
 import type {HalFormsInputProps} from '../types.ts'
+import {getFieldLabel} from '../../../../localization'
 
 /**
  * HalFormsTextArea component - multiline textarea for HAL+Forms
@@ -18,13 +19,13 @@ export const HalFormsTextArea = ({
             {({field}: FieldProps<unknown>) => {
                 const fieldValue = field.value as string | undefined;
                 const currentLength = fieldValue?.length ?? 0;
-                const maxLength = prop.maxLength;
+                const maxLength = prop.maxLength ?? prop.max;
                 return (
                     <div>
                         <TextAreaField
                             {...field}
                             value={fieldValue}
-                            label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
+                            label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                             disabled={prop.readOnly || false}
                             required={prop.required}
                             error={errorText}
