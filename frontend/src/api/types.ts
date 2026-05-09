@@ -80,6 +80,9 @@ export interface HalFormsProperty {
     multi?: boolean;
     min?: number;
     max?: number;
+    // String length constraints from @Size on string fields
+    minLength?: number;
+    maxLength?: number;
 }
 
 // only update methods as template represents "request body"

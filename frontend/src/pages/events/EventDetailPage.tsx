@@ -14,7 +14,7 @@ import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {labels, getEnumLabel} from '../../localization';
-import {Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {AlertTriangle, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -25,7 +25,8 @@ interface EventDetail {
     location?: string | null;
     organizer?: string;
     websiteUrl?: string;
-    registrationDeadline?: string;
+    deadlines?: string[];
+    cancellationReason?: string;
     eventCoordinatorId?: {value: string};
     status?: string;
     categories?: string[];
@@ -271,9 +272,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 ) : null)}
                             </DetailRow>
                         )}
-                        {(isEditing || event.registrationDeadline) && (
-                            <DetailRow label={labels.fields.registrationDeadline}>
-                                {ri('registrationDeadline') ?? (event.registrationDeadline ? formatDate(event.registrationDeadline) : null)}
+                        {isEditing && (
+                            <DetailRow label={labels.fields.deadlines}>
+                                {ri('deadlines')}
                             </DetailRow>
                         )}
                         {(isEditing || (event.categories && event.categories.length > 0)) && (
@@ -309,6 +310,34 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         </Button>
                         {helpers?.renderField('submit')}
                     </div>
+                )}
+
+                {!isEditing && event.status === 'CANCELLED' && (
+                    <Card className="p-6 border-error">
+                        <h3 className="text-xs uppercase font-semibold text-error mb-4 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4"/>
+                            {labels.sections.eventCancelled}
+                        </h3>
+                        {event.cancellationReason && (
+                            <p className="text-text-primary">{event.cancellationReason}</p>
+                        )}
+                    </Card>
+                )}
+
+                {!isEditing && event.deadlines && event.deadlines.length > 0 && (
+                    <Card className="p-6">
+                        <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.deadlines}</h3>
+                        <ul className="space-y-1">
+                            {event.deadlines.map((deadline, index) => (
+                                <li key={deadline} className="flex items-center gap-2 text-text-primary">
+                                    <span>{formatDate(deadline)}</span>
+                                    {index === 0 && event.deadlines!.length === 1 && (
+                                        <span className="text-xs text-text-secondary"></span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
                 )}
 
                 {resourceData._links?.registrations && (

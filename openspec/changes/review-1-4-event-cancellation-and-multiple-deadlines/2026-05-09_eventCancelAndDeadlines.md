@@ -96,3 +96,23 @@ After each iteration: tests must pass, then commit.
 **BC note:** `registrationDeadline` field name dropped from both `EventDto` and `EventSummaryDto`; replaced by `deadlines` array. Frontend is the only client and will be updated in Iter 4.
 
 **Test status:** 243/244 passed; 1 pre-existing failure (`EventManagementE2ETest.shouldCreateEventWithoutLocation` — same as Iter 2, `$.location` isEmpty assertion fails on null field with NON_NULL serialization)
+
+### Iteration 4 — Frontend (form, cancel dialog, detail, table, labels)
+
+**Scope:** All frontend changes for N3 and N6.
+
+**Key files changed:**
+- `src/api/types.ts` — added `minLength?`/`maxLength?` to `HalFormsProperty` (for string-length constraints from Spring `@Size`)
+- `src/localization/labels.ts` — added `fields.deadlines`, `fields.cancellationReason`, `sections.deadlines`, `sections.eventCancelled`
+- `src/components/HalNavigator2/halforms/fields/HalFormsTextArea.tsx` — added char counter when `prop.maxLength` is set; applies to cancel dialog `cancellationReason` field
+- `src/pages/events/EventDetailPage.tsx` — updated `EventDetail` interface (`deadlines: string[]`, `cancellationReason?: string`); added "UZÁVĚRKY PŘIHLÁŠEK" card and "AKCE BYLA ZRUŠENA" card; removed old `registrationDeadline` display; `deadlines` edit via HAL-Forms template (HalFormsCollectionField auto-renders)
+- `src/pages/events/EventsPage.tsx` — updated `EventListData` type; replaced `registrationDeadline` column with `deadlines` column showing primary deadline + badge with tooltip for extras; added cancellation reason as tooltip on status cell
+
+**Notes on 6.1:** No form code changes needed — `halFormsFieldsFactory` already routes `multiple: true` + no options to `HalFormsCollectionField`, and `date` type renders via existing `HalFormsInput`. Sequential validation deferred to backend (backend returns 400 if out-of-order).
+
+**New tests:**
+- `HalFormsTextArea.test.tsx` (NEW) — 5 tests: label, no counter without maxLength, counter shown, counter updates on type, counter with initial value
+- `EventDetailPage.test.tsx` — 9 new tests: deadlines section (5), cancellation section (4)
+- `EventsPage.test.tsx` — 3 new tests: deadlines column header, single deadline, multiple deadlines badge
+
+**Test status:** 1317/1317 passed

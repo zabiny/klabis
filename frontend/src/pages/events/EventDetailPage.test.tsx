@@ -673,6 +673,63 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('deadlines section (6.3)', () => {
+        it('shows deadlines section heading when deadlines are present', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-03-01', '2025-04-01']})));
+            expect(screen.getByText('UZÁVĚRKY PŘIHLÁŠEK')).toBeInTheDocument();
+        });
+
+        it('does not show deadlines section when deadlines is empty array', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: []})));
+            expect(screen.queryByText('UZÁVĚRKY PŘIHLÁŠEK')).not.toBeInTheDocument();
+        });
+
+        it('does not show deadlines section when deadlines is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: undefined})));
+            expect(screen.queryByText('UZÁVĚRKY PŘIHLÁŠEK')).not.toBeInTheDocument();
+        });
+
+        it('shows all deadlines formatted in the section', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-03-01', '2025-04-01', '2025-04-10']})));
+            expect(screen.getByText('1. 3. 2025')).toBeInTheDocument();
+            expect(screen.getByText('1. 4. 2025')).toBeInTheDocument();
+            expect(screen.getByText('10. 4. 2025')).toBeInTheDocument();
+        });
+
+        it('shows single deadline without a list', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-04-01']})));
+            expect(screen.getByText('1. 4. 2025')).toBeInTheDocument();
+        });
+    });
+
+    describe('cancellation section (6.3)', () => {
+        it('shows cancellation block for CANCELLED event', () => {
+            renderPage(createMockPageData(mockEventDetailData({status: 'CANCELLED'})));
+            expect(screen.getByText('AKCE BYLA ZRUŠENA')).toBeInTheDocument();
+        });
+
+        it('does not show cancellation block for non-CANCELLED event', () => {
+            renderPage(createMockPageData(mockEventDetailData({status: 'ACTIVE'})));
+            expect(screen.queryByText('AKCE BYLA ZRUŠENA')).not.toBeInTheDocument();
+        });
+
+        it('shows cancellation reason when provided', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                status: 'CANCELLED',
+                cancellationReason: 'Zrušeno kvůli počasí',
+            })));
+            expect(screen.getByText('Zrušeno kvůli počasí')).toBeInTheDocument();
+        });
+
+        it('does not show reason text when cancellationReason is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                status: 'CANCELLED',
+                cancellationReason: undefined,
+            })));
+            expect(screen.getByText('AKCE BYLA ZRUŠENA')).toBeInTheDocument();
+        });
+    });
+
     describe('registerForEvent — stay on page after registration (Group 8)', () => {
         it('clicking registerForEvent opens modal but does NOT navigate away', () => {
             const data = mockEventDetailData({

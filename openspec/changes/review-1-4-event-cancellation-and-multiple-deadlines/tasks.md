@@ -36,12 +36,12 @@
 
 ## 6. Frontend — event form + cancel dialog + detail view
 
-- [ ] 6.1 Použít existující `HalFormsCollectionField` (renderuje se automaticky když property má `multiple: true` a žádné options/suggest, respektuje `min`/`max`, `frontend/src/components/HalNavigator2/halforms/fields/HalFormsCollectionField.tsx:21`). Form pro create/update event nesmí mít hardcoded deadline1/2/3 — musí čistě vyrenderovat to, co backend pošle v template (date items přes existující case `'date'` v `halFormsFieldsFactory`). Sekvenciální validace dat (rostoucí pořadí) client-side přes Yup nebo backend chyby.
-- [ ] 6.2 Update cancel dialog to include an optional textarea "Důvod zrušení" (max 500 chars, char counter)
-- [ ] 6.3 Update event detail page: add "Uzávěrky přihlášek" section listing all set deadlines chronologically, highlighting the currently relevant one; for cancelled events, show a "Akce byla zrušena" block with the reason if set
-- [ ] 6.4 Update events table column "Uzávěrka": show the relevant deadline; if more deadlines exist, render a small badge/icon with tooltip listing the others; for cancelled rows with reason, surface the reason as a tooltip on the status indicator
-- [ ] 6.5 Update `src/localization/labels.ts` with new labels: `deadlines`, `cancellationReason`, případně tlačítka „Přidat uzávěrku" / „Odebrat".
-- [ ] 6.6 Frontend tests: sekvenciální validace deadlines, deadline rendering v detail view a tabulce, cancel dialog s reason. (Array renderer `HalFormsCollectionField` má vlastní existující testy — netestovat znovu.)
+- [x] 6.1 Použít existující `HalFormsCollectionField` (renderuje se automaticky když property má `multiple: true` a žádné options/suggest, respektuje `min`/`max`, `frontend/src/components/HalNavigator2/halforms/fields/HalFormsCollectionField.tsx:21`). Form pro create/update event nesmí mít hardcoded deadline1/2/3 — musí čistě vyrenderovat to, co backend pošle v template (date items přes existující case `'date'` v `halFormsFieldsFactory`). Sekvenciální validace dat (rostoucí pořadí) client-side přes Yup nebo backend chyby.
+- [x] 6.2 Update cancel dialog to include an optional textarea "Důvod zrušení" (max 500 chars, char counter)
+- [x] 6.3 Update event detail page: add "Uzávěrky přihlášek" section listing all set deadlines chronologically, highlighting the currently relevant one; for cancelled events, show a "Akce byla zrušena" block with the reason if set
+- [x] 6.4 Update events table column "Uzávěrka": show the relevant deadline; if more deadlines exist, render a small badge/icon with tooltip listing the others; for cancelled rows with reason, surface the reason as a tooltip on the status indicator
+- [x] 6.5 Update `src/localization/labels.ts` with new labels: `deadlines`, `cancellationReason`, případně tlačítka „Přidat uzávěrku" / „Odebrat".
+- [x] 6.6 Frontend tests: sekvenciální validace deadlines, deadline rendering v detail view a tabulce, cancel dialog s reason. (Array renderer `HalFormsCollectionField` má vlastní existující testy — netestovat znovu.)
 
 ## 7. End-to-end verification
 

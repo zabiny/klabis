@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
@@ -128,6 +129,47 @@ describe('EventsPage', () => {
     it('renders page title "Akce"', () => {
         renderPage(createMockPageData(null));
         expect(screen.getByRole('heading', {name: 'Akce'})).toBeInTheDocument();
+    });
+
+    describe('deadlines column (6.4)', () => {
+        const buildEventRow = (overrides: Record<string, unknown> = {}) => ({
+            id: 'evt-1',
+            name: 'Jarní závod',
+            eventDate: '2025-04-15',
+            status: 'ACTIVE',
+            _links: {self: {href: '/api/events/1'}},
+            ...overrides,
+        });
+
+        const renderWithEvents = (rows: unknown[]) => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            });
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('shows Uzávěrka column header', () => {
+            renderWithEvents([buildEventRow()]);
+            expect(screen.getByRole('columnheader', {name: /uzávěrka/i})).toBeInTheDocument();
+        });
+
+        it('shows formatted deadline from deadlines[0] when one deadline present', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2025-03-15']})]);
+            expect(screen.getByText('15. 3. 2025')).toBeInTheDocument();
+        });
+
+        it('shows relevant deadline and badge when multiple deadlines present', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2025-03-01', '2025-04-01', '2025-04-15']})]);
+            expect(screen.getByTitle(/1\. 4\. 2025|1\. 3\. 2025|15\. 4\. 2025/)).toBeInTheDocument();
+        });
     });
 
     describe('"Importovat z ORIS" button', () => {

@@ -36,7 +36,8 @@ type EventListData = EntityModel<{
     location: string | null,
     organizer: string,
     websiteUrl?: string,
-    registrationDeadline?: string,
+    deadlines?: string[],
+    cancellationReason?: string,
     status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED'
 }> & {
     _templates?: Record<string, HalFormsTemplate>;
@@ -243,8 +244,27 @@ export const EventsPage = (): ReactElement => {
                                    <ExternalLink className="w-4 h-4"/>
                                </a>
                            ) : null}>{labels.tables.web}</TableCell>
-                <TableCell sortable alwaysVisible column={"registrationDeadline"}
-                           dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.registrationDeadline}</TableCell>
+                <TableCell alwaysVisible column={"deadlines"}
+                           dataRender={({item}) => {
+                               const event = item as unknown as EventListData;
+                               const deadlines = event.deadlines;
+                               if (!deadlines || deadlines.length === 0) return null;
+                               const primary = deadlines[0];
+                               const others = deadlines.slice(1);
+                               return (
+                                   <span className="inline-flex items-center gap-1.5">
+                                       <span>{formatDate(primary)}</span>
+                                       {others.length > 0 && (
+                                           <span
+                                               title={others.map(d => formatDate(d)).join(', ')}
+                                               className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-xs font-medium cursor-help"
+                                           >
+                                               +{others.length}
+                                           </span>
+                                       )}
+                                   </span>
+                               );
+                           }}>{labels.tables.registrationDeadline}</TableCell>
                 <TableCell column={"_links"}
                            dataRender={({item}) => {
                                const links = item._links as Record<string, Link> | undefined;
@@ -253,7 +273,14 @@ export const EventsPage = (): ReactElement => {
                                return <CoordinatorCellContent coordinatorLink={coordinatorLink}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
-                           dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
+                           dataRender={({value, item}) => {
+                               const label = typeof value === 'string' ? getEnumLabel('eventStatus', value) : '';
+                               const event = item as unknown as EventListData;
+                               if (event.status === 'CANCELLED' && event.cancellationReason) {
+                                   return <span title={event.cancellationReason}>{label}</span>;
+                               }
+                               return label;
+                           }}>{labels.tables.status}</TableCell>
                 <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>
