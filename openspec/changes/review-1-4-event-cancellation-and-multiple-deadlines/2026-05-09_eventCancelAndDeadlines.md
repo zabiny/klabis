@@ -69,3 +69,30 @@ After each iteration: tests must pass, then commit.
 - `OrisEventImportServiceTest` — 3 new ORIS mapping tests: single deadline, three deadlines, d1+d3 missing d2 → BusinessRuleViolationException
 
 **Test status:** 2408/2409 passed; 1 pre-existing failure unrelated to Iter 2 (`EventManagementE2ETest.shouldCreateEventWithoutLocation` — `$.location` isEmpty assertion)
+
+### Iteration 3 — REST API + HAL Forms for deadlines
+
+**Scope:** New request/response DTOs for deadlines; legacy `registrationDeadline` field dropped from responses. Cancel reason already done in Iter 1.
+
+**Key files changed:**
+- `CreateEventRequest.java` (NEW) — request record with `List<LocalDate> deadlines`, `@Size(min=1, max=3)`, `@AssertTrue isDeadlinesOrdered()`, `toRegistrationDeadlines()` helper
+- `UpdateEventRequest.java` (NEW) — same structure as CreateEventRequest for update endpoint
+- `EventController.java` — `createEvent` and `updateEvent` now accept `CreateEventRequest`/`UpdateEventRequest` instead of domain command records; mapping to domain commands done in controller
+- `EventDto.java` — replaced `registrationDeadline: LocalDate` with `deadlines: List<LocalDate>` (READ_ONLY HAL-Forms)
+- `EventSummaryDto.java` — same replacement
+- `EventDtoMapper.java` — `toDeadlineList()` helper converts `RegistrationDeadlines` VO to chronological `List<LocalDate>` (null when empty)
+
+**New tests (EventControllerTest):**
+- Create with 1 deadline → service called with correct deadline1 (verify arg)
+- Create with 3 deadlines → service called with all three deadlines mapped
+- Create with out-of-order deadlines → 400 Bad Request
+- Create with >3 deadlines → 400 Bad Request
+- Update with 2 deadlines → service called with correct deadlines
+- Update with out-of-order deadlines → 400 Bad Request
+- GET detail: single deadline exposed as `deadlines[0]`
+- GET detail: all three deadlines exposed as `deadlines[0..2]`
+- updateEvent HAL-Forms template: `deadlines` property has `multi: true`, `type: date`, `min: 1`, `max: 3`
+
+**BC note:** `registrationDeadline` field name dropped from both `EventDto` and `EventSummaryDto`; replaced by `deadlines` array. Frontend is the only client and will be updated in Iter 4.
+
+**Test status:** 243/244 passed; 1 pre-existing failure (`EventManagementE2ETest.shouldCreateEventWithoutLocation` — same as Iter 2, `$.location` isEmpty assertion fails on null field with NON_NULL serialization)

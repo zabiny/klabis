@@ -22,6 +22,7 @@ import java.util.List;
  * @param websiteUrl         event website URL (optional)
  * @param eventCoordinatorId event coordinator user ID (optional)
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
+ * @param deadlines          registration deadlines in chronological order (max 3)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record EventDto(
@@ -32,9 +33,9 @@ record EventDto(
         String organizer,
         String websiteUrl,
         MemberId eventCoordinatorId,
-        LocalDate registrationDeadline,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
         List<String> categories,
-        @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason
+        @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason,
+        @HalForms(access = HalForms.Access.READ_ONLY) List<LocalDate> deadlines
 ) {
 }

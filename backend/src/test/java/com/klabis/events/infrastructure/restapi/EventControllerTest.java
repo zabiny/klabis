@@ -73,12 +73,6 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
             Event createdEvent = EventTestDataBuilder.anEvent().withName("Spring Cup 2026").build();
-            Event.CreateEvent command = EventCreateEventBuilder.builder()
-                    .name("Spring Cup 2026")
-                    .eventDate(LocalDate.of(2026, 3, 15))
-                    .location("Forest Park")
-                    .organizer("OOB")
-                    .build();
 
             when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
 
@@ -86,7 +80,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(command))
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"location\":\"Forest Park\",\"organizer\":\"OOB\"}")
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
@@ -96,18 +90,11 @@ class EventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
-            Event.CreateEvent command = EventCreateEventBuilder.builder()
-                    .name("Test Event")
-                    .eventDate(LocalDate.of(2026, 5, 1))
-                    .location("Location")
-                    .organizer("OOB")
-                    .build();
-
             mockMvc.perform(
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(command))
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
                     )
                     .andExpect(status().isForbidden());
         }
@@ -116,18 +103,11 @@ class EventControllerTest {
         @DisplayName("should return 400 with invalid data")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn400WithInvalidData() throws Exception {
-            Event.CreateEvent command = EventCreateEventBuilder.builder()
-                    .name("")
-                    .eventDate(LocalDate.of(2026, 5, 1))
-                    .location("Location")
-                    .organizer("OOB")
-                    .build();
-
             mockMvc.perform(
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(command))
+                                    .content("{\"name\":\"\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
                     )
                     .andExpect(status().isBadRequest());
         }
@@ -150,28 +130,73 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should return 201 when registrationDeadline is provided")
+        @DisplayName("should return 201 when single deadline is provided in deadlines array")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void shouldCreateEventWithRegistrationDeadline() throws Exception {
+        void shouldCreateEventWithSingleDeadline() throws Exception {
             Event createdEvent = EventTestDataBuilder.anEvent().withName("Deadline Event 2026").build();
-            Event.CreateEvent command = EventCreateEventBuilder.builder()
-                    .name("Deadline Event 2026")
-                    .eventDate(LocalDate.of(2026, 8, 20))
-                    .location("Forest Park")
-                    .organizer("OOB")
-                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.of(2026, 8, 10)))
-                    .build();
-
             when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
 
             mockMvc.perform(
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(command))
+                                    .content("{\"name\":\"Deadline Event 2026\",\"eventDate\":\"2026-08-20\",\"location\":\"Forest Park\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-10\"]}")
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    cmd.registrationDeadlines().deadline1().map(d -> d.equals(LocalDate.of(2026, 8, 10))).orElse(false)
+                    && cmd.registrationDeadlines().deadline2().isEmpty()
+            ));
+        }
+
+        @Test
+        @DisplayName("should return 201 when three deadlines are provided in deadlines array")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldCreateEventWithThreeDeadlines() throws Exception {
+            Event createdEvent = EventTestDataBuilder.anEvent().withName("Multi-Deadline Event").build();
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Multi-Deadline Event\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\"]}")
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    cmd.registrationDeadlines().deadline1().map(d -> d.equals(LocalDate.of(2026, 8, 1))).orElse(false)
+                    && cmd.registrationDeadlines().deadline2().map(d -> d.equals(LocalDate.of(2026, 8, 15))).orElse(false)
+                    && cmd.registrationDeadlines().deadline3().map(d -> d.equals(LocalDate.of(2026, 9, 1))).orElse(false)
+            ));
+        }
+
+        @Test
+        @DisplayName("should return 400 when deadlines are out of order")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldRejectOutOfOrderDeadlines() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Bad Deadlines\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-15\",\"2026-08-01\"]}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 400 when more than 3 deadlines are provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldRejectMoreThanThreeDeadlines() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Too Many Deadlines\",\"eventDate\":\"2026-10-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\",\"2026-09-15\"]}")
+                    )
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -184,19 +209,12 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventSuccessfully() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
-                    .name("Updated Event")
-                    .eventDate(LocalDate.of(2026, 5, 15))
-                    .location("Updated Location")
-                    .organizer("PRG")
-                    .websiteUrl("https://updated.com")
-                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(updateCommand))
+                                    .content("{\"name\":\"Updated Event\",\"eventDate\":\"2026-05-15\",\"location\":\"Updated Location\",\"organizer\":\"PRG\",\"websiteUrl\":\"https://updated.com\"}")
                     )
                     .andExpect(status().isNoContent());
         }
@@ -206,17 +224,11 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateEvent command = EventUpdateEventBuilder.builder()
-                    .name("Updated Event")
-                    .eventDate(LocalDate.of(2026, 5, 1))
-                    .location("Location")
-                    .organizer("OOB")
-                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(command))
+                                    .content("{\"name\":\"Updated Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
                     )
                     .andExpect(status().isForbidden());
         }
@@ -226,42 +238,49 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventWithNullLocation() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
-                    .name("Updated Event No Location")
-                    .eventDate(LocalDate.of(2026, 5, 15))
-                    .location(null)
-                    .organizer("PRG")
-                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(updateCommand))
+                                    .content("{\"name\":\"Updated Event No Location\",\"eventDate\":\"2026-05-15\",\"organizer\":\"PRG\"}")
                     )
                     .andExpect(status().isNoContent());
         }
 
         @Test
-        @DisplayName("should return 204 when updating with registrationDeadline")
+        @DisplayName("should return 204 when updating with two deadlines")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void shouldUpdateEventWithRegistrationDeadline() throws Exception {
+        void shouldUpdateEventWithTwoDeadlines() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
-                    .name("Updated Race")
-                    .eventDate(LocalDate.of(2026, 9, 20))
-                    .location("Forest")
-                    .organizer("OOB")
-                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.of(2026, 9, 10)))
-                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(updateCommand))
+                                    .content("{\"name\":\"Updated Race\",\"eventDate\":\"2026-09-20\",\"location\":\"Forest\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-09-01\",\"2026-09-10\"]}")
                     )
                     .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.registrationDeadlines().deadline1().map(d -> d.equals(LocalDate.of(2026, 9, 1))).orElse(false)
+                    && cmd.registrationDeadlines().deadline2().map(d -> d.equals(LocalDate.of(2026, 9, 10))).orElse(false)
+            ));
+        }
+
+        @Test
+        @DisplayName("should return 400 when update deadlines are out of order")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldRejectOutOfOrderDeadlinesOnUpdate() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Bad Deadlines\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-09-10\",\"2026-09-01\"]}")
+                    )
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -775,9 +794,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should include registrationDeadline in event detail response")
+        @DisplayName("should include deadlines array in event detail response")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldIncludeRegistrationDeadlineInEventDetail() throws Exception {
+        void shouldIncludeDeadlinesInEventDetail() throws Exception {
             UUID eventId = UUID.randomUUID();
             LocalDate deadline = LocalDate.of(2026, 8, 10);
             Event event = EventTestDataBuilder.anEvent()
@@ -792,7 +811,34 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.registrationDeadline").value("2026-08-10"));
+                    .andExpect(jsonPath("$.deadlines").isArray())
+                    .andExpect(jsonPath("$.deadlines[0]").value("2026-08-10"));
+        }
+
+        @Test
+        @DisplayName("should include all three deadlines in event detail response when all are set")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeAllThreeDeadlinesInEventDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withRegistrationDeadlines(RegistrationDeadlines.of(
+                            LocalDate.of(2026, 7, 1),
+                            LocalDate.of(2026, 7, 15),
+                            LocalDate.of(2026, 8, 1)))
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deadlines").isArray())
+                    .andExpect(jsonPath("$.deadlines[0]").value("2026-07-01"))
+                    .andExpect(jsonPath("$.deadlines[1]").value("2026-07-15"))
+                    .andExpect(jsonPath("$.deadlines[2]").value("2026-08-01"));
         }
 
         @Test
@@ -859,6 +905,28 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.finishEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("updateEvent HAL-Forms template should have deadlines property with multi=true, min=1, max=3, type=date")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void updateEventTemplateShouldHaveDeadlinesPropertyMetadata() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')]").exists())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].type").value("date"))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].multi").value(true))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].min").value(1))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].max").value(3));
         }
     }
 
@@ -960,9 +1028,9 @@ class EventControllerTest {
     class ListEventsExtendedFieldsTests {
 
         @Test
-        @DisplayName("list item includes websiteUrl and registrationDeadline")
+        @DisplayName("list item includes websiteUrl and deadlines array")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldIncludeWebsiteUrlAndRegistrationDeadlineInListItem() throws Exception {
+        void shouldIncludeWebsiteUrlAndDeadlinesInListItem() throws Exception {
             LocalDate deadline = LocalDate.of(2026, 8, 10);
             Event event = EventTestDataBuilder.anEvent()
                     .withWebsiteUrl("https://example.com/event")
@@ -977,7 +1045,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].websiteUrl").value("https://example.com/event"))
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].registrationDeadline").value("2026-08-10"));
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].deadlines[0]").value("2026-08-10"));
         }
 
         @Test

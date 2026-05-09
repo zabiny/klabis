@@ -102,8 +102,18 @@ public class EventController {
     @ApiResponse(responseCode = "201", description = "Event successfully created")
     public ResponseEntity<Void> createEvent(
             @Parameter(description = "Event creation data")
-            @Valid @RequestBody Event.CreateEvent command) {
+            @Valid @RequestBody CreateEventRequest request) {
 
+        Event.CreateEvent command = new Event.CreateEvent(
+                request.name(),
+                request.eventDate(),
+                request.location(),
+                request.organizer(),
+                request.websiteUrl(),
+                request.eventCoordinatorId(),
+                request.toRegistrationDeadlines(),
+                request.categories()
+        );
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
@@ -120,8 +130,18 @@ public class EventController {
     @ApiResponse(responseCode = "204", description = "Event successfully updated")
     public ResponseEntity<Void> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") @Valid @RequestBody Event.UpdateEvent command) {
+            @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventRequest request) {
 
+        Event.UpdateEvent command = new Event.UpdateEvent(
+                request.name(),
+                request.eventDate(),
+                request.location(),
+                request.organizer(),
+                request.websiteUrl(),
+                request.eventCoordinatorId(),
+                request.toRegistrationDeadlines(),
+                request.categories()
+        );
         eventManagementService.updateEvent(new EventId(id), command);
         return ResponseEntity.noContent().build();
     }

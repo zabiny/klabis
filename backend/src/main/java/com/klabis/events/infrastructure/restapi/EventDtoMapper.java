@@ -1,6 +1,11 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.RegistrationDeadlines;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Stream;
 
 class EventDtoMapper {
 
@@ -13,10 +18,10 @@ class EventDtoMapper {
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
                 event.getEventCoordinatorId(),
-                event.getRegistrationDeadlines().deadline1().orElse(null),
                 event.getStatus(),
                 event.getCategories(),
-                event.getCancellationReason().orElse(null)
+                event.getCancellationReason().orElse(null),
+                toDeadlineList(event.getRegistrationDeadlines())
         );
     }
 
@@ -28,11 +33,23 @@ class EventDtoMapper {
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
-                event.getRegistrationDeadlines().deadline1().orElse(null),
                 event.getStatus(),
                 event.getCategories(),
-                event.getCancellationReason().orElse(null)
+                event.getCancellationReason().orElse(null),
+                toDeadlineList(event.getRegistrationDeadlines())
         );
+    }
+
+    private static List<LocalDate> toDeadlineList(RegistrationDeadlines deadlines) {
+        if (deadlines == null || deadlines.isEmpty()) {
+            return null;
+        }
+        return Stream.of(
+                        deadlines.deadline1().orElse(null),
+                        deadlines.deadline2().orElse(null),
+                        deadlines.deadline3().orElse(null))
+                .filter(d -> d != null)
+                .toList();
     }
 
     private EventDtoMapper() {

@@ -28,11 +28,11 @@
 
 ## 5. REST API + HAL forms
 
-- [ ] 5.1 Update create/update Event request DTOs to accept `deadlines: List<LocalDate>` s `@Size(min = 1, max = 3)` a sekvenční validací (vlastní validator nebo `@AssertTrue` metoda — sekvenčně rostoucí). Mapping v controlleru: List ↔ doménový `RegistrationDeadlines` VO. Cancel DTO: `cancellationReason: String` s `@Size(max = 500)`.
+- [x] 5.1 Update create/update Event request DTOs to accept `deadlines: List<LocalDate>` s `@Size(min = 1, max = 3)` a sekvenční validací (vlastní validator nebo `@AssertTrue` metoda — sekvenčně rostoucí). Mapping v controlleru: List ↔ doménový `RegistrationDeadlines` VO. Cancel DTO: `cancellationReason: String` s `@Size(max = 500)`.
 - [x] 5.2 Update cancel Event request DTO to accept optional `cancellationReason` (`CancelEventRequest` record with `@Size(max=500)`)
 - [x] 5.3 Update response DTO to expose `cancellationReason` on `EventDto` and `EventSummaryDto` (deadlines deferred to Iter 3)
-- [ ] 5.4 HAL-Forms metadata se generují automaticky ze Spring HATEOAS na základě JSR-303 anotací z task 5.1 (`@Size(min, max)` → `min`/`max` v HAL-Forms property, `List<LocalDate>` → `multiple: true` + `type: date`). Ověřit ve vygenerovaném výstupu (controller integration test), že `deadlines` má `multiple: true`, `min: 1`, `max: 3`, `type: date` a že `cancellationReason` má `maxLength: 500`. Případně doplnit `@PropertyMetadata` pokud jsou potřeba prompty/labels nad rámec automatiky.
-- [ ] 5.5 Controller integration tests for new fields. Žádná BC pro legacy `registrationDeadline` název — frontend je jediný klient a upraví se v rámci tohoto change.
+- [x] 5.4 HAL-Forms metadata se generují automaticky ze Spring HATEOAS na základě JSR-303 anotací z task 5.1 (`@Size(min, max)` → `min`/`max` v HAL-Forms property, `List<LocalDate>` → `multiple: true` + `type: date`). Ověřit ve vygenerovaném výstupu (controller integration test), že `deadlines` má `multiple: true`, `min: 1`, `max: 3`, `type: date` a že `cancellationReason` má `maxLength: 500`. Případně doplnit `@PropertyMetadata` pokud jsou potřeba prompty/labels nad rámec automatiky.
+- [x] 5.5 Controller integration tests for new fields. Žádná BC pro legacy `registrationDeadline` název — frontend je jediný klient a upraví se v rámci tohoto change.
 
 ## 6. Frontend — event form + cancel dialog + detail view
 
