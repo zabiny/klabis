@@ -14,9 +14,9 @@
 
 ## 3. Persistence layer
 
-- [ ] 3.1 Update `V001__initial_schema.sql`: add columns `cancellation_reason VARCHAR(500) NULL`, `registration_deadline_2 DATE NULL`, `registration_deadline_3 DATE NULL` to events table; verify the existing `registration_deadline` column can be reinterpreted as `registration_deadline_1` (or rename via migration if needed)
+- [ ] 3.1 Update `V001__initial_schema.sql`: rename `registration_deadline` → `registration_deadline_1`; add columns `registration_deadline_2 DATE NULL`, `registration_deadline_3 DATE NULL`, `cancellation_reason VARCHAR(500) NULL` to events table. (H2-only — žádná Flyway migrace, edituje se přímo DDL.)
 - [ ] 3.2 Update `EventMemento` to map all three deadline columns and the cancellation reason; reconstruct `RegistrationDeadlines` in `toEvent()`
-- [ ] 3.3 Persistence integration tests (TestContainer Postgres): persist an event with 3 deadlines + cancellation reason, reload, assert equality
+- [ ] 3.3 Persistence integration tests (H2): persist an event with 3 deadlines + cancellation reason, reload, assert equality
 - [ ] 3.4 Run persistence tests via test-runner — must pass
 
 ## 4. ORIS import
@@ -28,30 +28,29 @@
 
 ## 5. REST API + HAL forms
 
-- [ ] 5.1 Update create/update Event request DTOs to accept `deadline1`, `deadline2`, `deadline3` (each optional)
+- [ ] 5.1 Update create/update Event request DTOs to accept `deadlines: List<LocalDate>` s `@Size(min = 1, max = 3)` a sekvenční validací (vlastní validator nebo `@AssertTrue` metoda — sekvenčně rostoucí). Mapping v controlleru: List ↔ doménový `RegistrationDeadlines` VO. Cancel DTO: `cancellationReason: String` s `@Size(max = 500)`.
 - [ ] 5.2 Update cancel Event request DTO to accept optional `cancellationReason`
-- [ ] 5.3 Update response DTO to expose all set deadlines and the cancellation reason
-- [ ] 5.4 Update HAL-Forms templates exposed via the controller affordances — new fields with proper labels and constraints
-- [ ] 5.5 Controller integration tests for new fields; ensure backward compatibility for clients still sending only `deadline1` (or the legacy `registrationDeadline` field if that name was used in the API surface)
+- [ ] 5.3 Update response DTO to expose `deadlines: List<LocalDate>` (jen vyplněné) a `cancellationReason`
+- [ ] 5.4 HAL-Forms metadata se generují automaticky ze Spring HATEOAS na základě JSR-303 anotací z task 5.1 (`@Size(min, max)` → `min`/`max` v HAL-Forms property, `List<LocalDate>` → `multiple: true` + `type: date`). Ověřit ve vygenerovaném výstupu (controller integration test), že `deadlines` má `multiple: true`, `min: 1`, `max: 3`, `type: date` a že `cancellationReason` má `maxLength: 500`. Případně doplnit `@PropertyMetadata` pokud jsou potřeba prompty/labels nad rámec automatiky.
+- [ ] 5.5 Controller integration tests for new fields. Žádná BC pro legacy `registrationDeadline` název — frontend je jediný klient a upraví se v rámci tohoto change.
 
 ## 6. Frontend — event form + cancel dialog + detail view
 
-- [ ] 6.1 Update event create/update form (Formik) to include three deadline fields (date pickers) with sequenciality validation client-side; render server-side validation errors gracefully
+- [ ] 6.1 Použít existující `HalFormsCollectionField` (renderuje se automaticky když property má `multiple: true` a žádné options/suggest, respektuje `min`/`max`, `frontend/src/components/HalNavigator2/halforms/fields/HalFormsCollectionField.tsx:21`). Form pro create/update event nesmí mít hardcoded deadline1/2/3 — musí čistě vyrenderovat to, co backend pošle v template (date items přes existující case `'date'` v `halFormsFieldsFactory`). Sekvenciální validace dat (rostoucí pořadí) client-side přes Yup nebo backend chyby.
 - [ ] 6.2 Update cancel dialog to include an optional textarea "Důvod zrušení" (max 500 chars, char counter)
 - [ ] 6.3 Update event detail page: add "Uzávěrky přihlášek" section listing all set deadlines chronologically, highlighting the currently relevant one; for cancelled events, show a "Akce byla zrušena" block with the reason if set
 - [ ] 6.4 Update events table column "Uzávěrka": show the relevant deadline; if more deadlines exist, render a small badge/icon with tooltip listing the others; for cancelled rows with reason, surface the reason as a tooltip on the status indicator
-- [ ] 6.5 Update `src/localization/labels.ts` with new labels: `deadline1`, `deadline2`, `deadline3`, `cancellationReason`, etc.
-- [ ] 6.6 Frontend tests: form validation, deadline rendering in detail and table
+- [ ] 6.5 Update `src/localization/labels.ts` with new labels: `deadlines`, `cancellationReason`, případně tlačítka „Přidat uzávěrku" / „Odebrat".
+- [ ] 6.6 Frontend tests: sekvenciální validace deadlines, deadline rendering v detail view a tabulce, cancel dialog s reason. (Array renderer `HalFormsCollectionField` má vlastní existující testy — netestovat znovu.)
 
 ## 7. End-to-end verification
 
-- [ ] 7.1 Deploy to `https://api.klabis.otakar.io`
-- [ ] 7.2 Browser test: create a new (manual) event with all three deadlines; verify table column behaviour, detail page listing, and registration open/closed semantics across deadlines
-- [ ] 7.3 Browser test: import an ORIS event that has multiple entry dates (use a real ORIS event id from the production data — pick one before deploy); verify all deadlines imported correctly
+- [ ] 7.1 Spustit lokální prostředí (`./runLocalEnvironment.sh`) — backend na `https://localhost:8443`, frontend na `http://localhost:3000`. E2E ověření probíhá výhradně lokálně, žádný deploy.
+- [ ] 7.2 Browser test (`http://localhost:3000`): create a new (manual) event with all three deadlines; verify table column behaviour, detail page listing, and registration open/closed semantics across deadlines
+- [ ] 7.3 Browser test: import an ORIS event s více entry dates (vybrat reálné ORIS event id s EntryDate2/EntryDate3); verify all deadlines imported correctly
 - [ ] 7.4 Browser test: cancel an event with reason "Zrušeno kvůli počasí"; verify reason appears on event detail and as tooltip on row in events table
 - [ ] 7.5 Browser test: cancel an event without reason; verify no reason text shown but cancellation works
 
 ## 8. Documentation
 
-- [ ] 8.1 Update `docs/developerManual` with the new ORIS deadline mapping table
-- [ ] 8.2 Sync the spec change into `openspec/specs/events/spec.md` after archiving
+- [ ] 8.1 Sync the spec change into `openspec/specs/events/spec.md` after archiving

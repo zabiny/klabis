@@ -94,12 +94,11 @@ Zobrazení:
 
 - **[Risk] Existující ORIS-importované akce s 1 deadline po nasazení neukáží badge „další termíny"** → Mitigation: badge je conditional na počtu vyplněných deadlines; pokud d2/d3 chybí, badge se nezobrazí. Žádná regrese.
 - **[Risk] Validation rule "d2 requires d1" je restriktivní — co když organizátor chce jen "rozšířený" deadline bez prvního?** → Mitigation: tato situace je v praxi nepravděpodobná (deadlines představují "early bird → standard → late"). Pokud by se objevila, zvažujeme oslabení invariantu v samostatném proposalu.
-- **[Risk] Migrace dat na produkci je in-place (V001 aktualizace)** — protože H2/PostgreSQL DDL ALTER je destruktivní pokud běžící DB má jiné schéma → Mitigation: Postgres production deploy by měl projít přes `flyway repair` nebo nasazení s prázdnou DB. Memory `feedback_no_parallel_gradle.md` říká, že V001 se v projektu aktualizuje (ne nová migrace) — sledovat existing process. Pokud production už má data, vznikne potřeba `V004__add_more_deadlines.sql`.
 - **[Trade-off] `cancellationReason: Optional<String>`** — Optional v doménovém modelu vs. nullable string v DB. Memory `backend-patterns` preferuje Optional v API agregátu, nullable v memento. Konzistentní s ostatními optional fields (`location`, `websiteUrl`).
 
 ## Migration Plan
 
-1. **V001 update** — sloupec `cancellation_reason VARCHAR(500) NULL`, `registration_deadline_2 DATE NULL`, `registration_deadline_3 DATE NULL`. Test přes h2 (lokálně) a Postgres (TestContainers).
+1. **V001 update (H2-only)** — rename sloupce `registration_deadline` → `registration_deadline_1`; přidat `registration_deadline_2 DATE NULL`, `registration_deadline_3 DATE NULL`, `cancellation_reason VARCHAR(500) NULL`. Žádná Flyway migrace — projekt běží na H2 (vč. produkce) bez perzistentních dat, edituje se přímo DDL ve V001.
 2. **Domain:** `RegistrationDeadlines` value object + nové `Event.cancel(reason)` overload (zachovat původní bez reason pro BC) + Event field změny.
 3. **Persistence:** `EventMemento` rozšířit o 3 deadline columns + cancellation_reason.
 4. **ORIS import:** rozšířit mapování o `EntryDate2`/`EntryDate3`.
@@ -110,6 +109,6 @@ Zobrazení:
 
 ## Open Questions
 
-- ~~**V001 update vs. V004 nová migrace**~~ — **vyřešeno (2026-04-29):** production stále běží na H2 bez perzistentních dat, in-place update `V001__initial_schema.sql` je OK. Žádná separátní migrace.
+- ~~**V001 update vs. V004 nová migrace**~~ — **vyřešeno (2026-04-29):** production stále běží na H2 bez perzistentních dat, in-place update `V001__initial_schema.sql` je OK. Žádná separátní migrace. Sloupec `registration_deadline` se přejmenuje na `registration_deadline_1` přímo v DDL.
 - **Notifikace e-mailem o zrušení** — out of scope, ale následný proposal by měl počítat s `cancellationReason` jako součástí e-mail těla.
 - **„Aktuálně relevantní" deadline definice** — pokud jsou všechny v minulosti, ukazuje se „poslední". Alternativně by šlo řešit explicitním stavem (registrace uzavřeny). Default: poslední, member vidí v UI „uzávěrka 1.5.2025 (uzavřeno)" — KISS.
