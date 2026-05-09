@@ -74,7 +74,7 @@ class CalendarEventSyncIntegrationTest {
         ));
 
         // When & Then: CalendarItem should be created automatically
-        scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, EventStatus.ACTIVE, null, List.of(), List.of(), null)))
+        scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, EventStatus.ACTIVE, null, null, List.of(), List.of(), null)))
                 .andWaitForStateChange(() -> !calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(isPresent -> {
                     EventCalendarItem calendarItem = calendarRepository.findByEventId(eventId).stream()
@@ -144,7 +144,7 @@ class CalendarEventSyncIntegrationTest {
                 .findFirst().orElseThrow().getId();
 
         // When: Event is cancelled
-        scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, EventStatus.CANCELLED, null, List.of(), List.of(), null)))
+        scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, EventStatus.CANCELLED, null, null, List.of(), List.of(), null)))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(calendarItemIsGone -> {
                     assertThat(calendarRepository.findById(calendarItemId)).isEmpty();
@@ -175,7 +175,7 @@ class CalendarEventSyncIntegrationTest {
 
             scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(
                             eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, null, EventStatus.ACTIVE, null, List.of(), List.of(), null)))
+                            null, null, null, EventStatus.ACTIVE, null, null, List.of(), List.of(), null)))
                     .andWaitForStateChange(() -> !calendarRepository.findByEventId(eventId).isEmpty())
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -201,7 +201,7 @@ class CalendarEventSyncIntegrationTest {
 
             scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(
                             eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, DEADLINE_DATE, EventStatus.ACTIVE, null, List.of(), List.of(), null)))
+                            null, null, DEADLINE_DATE, EventStatus.ACTIVE, null, null, List.of(), List.of(), null)))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).size() >= 2)
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -350,7 +350,7 @@ class CalendarEventSyncIntegrationTest {
 
             scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(
                             eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, null, EventStatus.CANCELLED, null, List.of(), List.of(), null)))
+                            null, null, null, EventStatus.CANCELLED, null, null, List.of(), List.of(), null)))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                     .andVerify(ignored -> assertThat(calendarRepository.findByEventId(eventId)).isEmpty());
         }

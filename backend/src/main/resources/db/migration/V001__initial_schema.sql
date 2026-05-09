@@ -245,6 +245,9 @@ CREATE TABLE events
     -- Race categories available at this event (comma-separated, e.g. "M21,W35,D10"; null means no categories defined)
     categories           VARCHAR(2000) NULL,
 
+    -- Optional free-text reason provided when the event is cancelled (null when not cancelled or no reason given)
+    cancellation_reason  VARCHAR(500)  NULL,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,

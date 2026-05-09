@@ -267,7 +267,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.cancelEvent(eventId);
+            service.cancelEvent(eventId, Event.CancelEvent.withoutReason());
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -287,7 +287,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.cancelEvent(eventId);
+            service.cancelEvent(eventId, Event.CancelEvent.withoutReason());
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -301,7 +301,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.cancelEvent(new EventId(eventId)))
+            assertThatThrownBy(() -> service.cancelEvent(new EventId(eventId), Event.CancelEvent.withoutReason()))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }

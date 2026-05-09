@@ -267,7 +267,7 @@ class EventRegistrationServiceTest {
             Event eventOnToday = Event.reconstruct(
                     EventId.generate(), "Today Event", LocalDate.now(),
                     "Test Location", "OOB",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -290,7 +290,7 @@ class EventRegistrationServiceTest {
             Event pastEvent = Event.reconstruct(
                     EventId.generate(), "Past Event", LocalDate.now().minusDays(1),
                     "Test Location", "OOB",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -320,7 +320,7 @@ class EventRegistrationServiceTest {
                     null,
                     LocalDate.now().minusDays(1),
                     EventStatus.ACTIVE,
-                    null,
+                    null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),

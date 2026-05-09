@@ -277,6 +277,50 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("should cancel event with reason — reason is stored")
+        void shouldCancelEventWithReason() {
+            Event event = Event.create(defaultCreateEvent());
+            String reason = "Bad weather forecast";
+
+            event.cancel(new Event.CancelEvent(reason));
+
+            assertThat(event.getStatus()).isEqualTo(EventStatus.CANCELLED);
+            assertThat(event.getCancellationReason()).contains(reason);
+        }
+
+        @Test
+        @DisplayName("should cancel event without reason — reason is empty")
+        void shouldCancelEventWithoutReason() {
+            Event event = Event.create(defaultCreateEvent());
+
+            event.cancel(Event.CancelEvent.withoutReason());
+
+            assertThat(event.getStatus()).isEqualTo(EventStatus.CANCELLED);
+            assertThat(event.getCancellationReason()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should reject cancellation reason exceeding 500 characters")
+        void shouldRejectCancellationReasonExceeding500Characters() {
+            String tooLongReason = "x".repeat(501);
+
+            assertThatThrownBy(() -> new Event.CancelEvent(tooLongReason))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("500");
+        }
+
+        @Test
+        @DisplayName("should accept cancellation reason of exactly 500 characters")
+        void shouldAcceptCancellationReasonOf500Characters() {
+            String maxReason = "x".repeat(500);
+            Event event = Event.create(defaultCreateEvent());
+
+            event.cancel(new Event.CancelEvent(maxReason));
+
+            assertThat(event.getCancellationReason()).contains(maxReason);
+        }
+
+        @Test
         @DisplayName("should finish event: ACTIVE → FINISHED")
         void shouldFinishEventFromActive() {
             Event event = Event.create(defaultCreateEvent());
@@ -632,7 +676,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Test Location", "Test Organizer",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -651,7 +695,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Test Location", "Test Organizer",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -1386,7 +1430,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
                     "Location", "Organizer",
-                    null, null, LocalDate.now().minusDays(1), EventStatus.ACTIVE, null,
+                    null, null, LocalDate.now().minusDays(1), EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
@@ -1408,7 +1452,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
@@ -1430,7 +1474,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Location", "Organizer",
-                    null, null, null, EventStatus.ACTIVE, null,
+                    null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),

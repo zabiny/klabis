@@ -18,7 +18,7 @@ public interface EventManagementPort {
 
     void publishEvent(EventId eventId);
 
-    void cancelEvent(EventId eventId);
+    void cancelEvent(EventId eventId, Event.CancelEvent command);
 
     void finishExpiredActiveEvents(LocalDate currentDate);
 

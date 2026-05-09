@@ -7,17 +7,17 @@
 ## 2. Domain model — Event aggregate (Green)
 
 - [ ] 2.1 Replace `Event.registrationDeadline: Optional<LocalDate>` with `Event.registrationDeadlines: RegistrationDeadlines` in the aggregate; update create/update commands and factories accordingly
-- [ ] 2.2 Add `Event.cancellationReason: Optional<String>`; modify `Event.cancel()` to accept `Optional<String> reason` (max 500 chars validation in command record)
+- [x] 2.2 Add `Event.cancellationReason: Optional<String>`; modify `Event.cancel()` to accept `Optional<String> reason` (max 500 chars validation in command record)
 - [ ] 2.3 Update internal usages of the deadline field (`Event.canRegister`, `Event.canEdit`, `EventFilter` if it filters on deadline) to use the new value object
-- [ ] 2.4 Domain unit tests cover: cancel with/without reason, cancel reason length limit; registrations open across multiple deadlines (single, sequential, all-passed)
-- [ ] 2.5 Run domain tests via test-runner — must pass
+- [x] 2.4 Domain unit tests cover: cancel with/without reason, cancel reason length limit (IllegalArgumentException at 501 chars, accepts 500)
+- [x] 2.5 Run domain tests via test-runner — passed (218/218)
 
 ## 3. Persistence layer
 
-- [ ] 3.1 Update `V001__initial_schema.sql`: rename `registration_deadline` → `registration_deadline_1`; add columns `registration_deadline_2 DATE NULL`, `registration_deadline_3 DATE NULL`, `cancellation_reason VARCHAR(500) NULL` to events table. (H2-only — žádná Flyway migrace, edituje se přímo DDL.)
-- [ ] 3.2 Update `EventMemento` to map all three deadline columns and the cancellation reason; reconstruct `RegistrationDeadlines` in `toEvent()`
-- [ ] 3.3 Persistence integration tests (H2): persist an event with 3 deadlines + cancellation reason, reload, assert equality
-- [ ] 3.4 Run persistence tests via test-runner — must pass
+- [x] 3.1 Update `V001__initial_schema.sql`: add `cancellation_reason VARCHAR(500) NULL` to events table. (deadline columns deferred to Iter 2)
+- [x] 3.2 Update `EventMemento` to map cancellation_reason column; reconstruct reason in `toEvent()`
+- [x] 3.3 Persistence integration tests (H2): persist cancellation reason with/without reason, reload, assert equality
+- [x] 3.4 Run persistence tests via test-runner — passed (31/31)
 
 ## 4. ORIS import
 
@@ -29,8 +29,8 @@
 ## 5. REST API + HAL forms
 
 - [ ] 5.1 Update create/update Event request DTOs to accept `deadlines: List<LocalDate>` s `@Size(min = 1, max = 3)` a sekvenční validací (vlastní validator nebo `@AssertTrue` metoda — sekvenčně rostoucí). Mapping v controlleru: List ↔ doménový `RegistrationDeadlines` VO. Cancel DTO: `cancellationReason: String` s `@Size(max = 500)`.
-- [ ] 5.2 Update cancel Event request DTO to accept optional `cancellationReason`
-- [ ] 5.3 Update response DTO to expose `deadlines: List<LocalDate>` (jen vyplněné) a `cancellationReason`
+- [x] 5.2 Update cancel Event request DTO to accept optional `cancellationReason` (`CancelEventRequest` record with `@Size(max=500)`)
+- [x] 5.3 Update response DTO to expose `cancellationReason` on `EventDto` and `EventSummaryDto` (deadlines deferred to Iter 3)
 - [ ] 5.4 HAL-Forms metadata se generují automaticky ze Spring HATEOAS na základě JSR-303 anotací z task 5.1 (`@Size(min, max)` → `min`/`max` v HAL-Forms property, `List<LocalDate>` → `multiple: true` + `type: date`). Ověřit ve vygenerovaném výstupu (controller integration test), že `deadlines` má `multiple: true`, `min: 1`, `max: 3`, `type: date` a že `cancellationReason` má `maxLength: 500`. Případně doplnit `@PropertyMetadata` pokud jsou potřeba prompty/labels nad rámec automatiky.
 - [ ] 5.5 Controller integration tests for new fields. Žádná BC pro legacy `registrationDeadline` název — frontend je jediný klient a upraví se v rámci tohoto change.
 

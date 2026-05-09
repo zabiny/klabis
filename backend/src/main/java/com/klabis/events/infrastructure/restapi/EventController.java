@@ -314,13 +314,18 @@ public class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Cancel an event",
-            description = "Transitions event to CANCELLED status."
+            description = "Transitions event to CANCELLED status. An optional cancellation reason may be provided."
     )
     @ApiResponse(responseCode = "204", description = "Event cancelled successfully")
     public ResponseEntity<Void> cancelEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id) {
+            @Parameter(description = "Event UUID") @PathVariable UUID id,
+            @Parameter(description = "Optional cancellation details")
+            @Valid @RequestBody(required = false) CancelEventRequest request) {
 
-        eventManagementService.cancelEvent(new EventId(id));
+        Event.CancelEvent command = request != null
+                ? new Event.CancelEvent(request.cancellationReason())
+                : Event.CancelEvent.withoutReason();
+        eventManagementService.cancelEvent(new EventId(id), command);
         return ResponseEntity.noContent().build();
     }
 
@@ -381,6 +386,11 @@ public class EventController {
 
 }
 
+record CancelEventRequest(
+        @jakarta.validation.constraints.Size(max = 500, message = "Cancellation reason must not exceed 500 characters")
+        String cancellationReason
+) {}
+
 class EventAffordanceSupport {
 
     static boolean hasAuthority(Authentication auth, Authority authority) {
@@ -394,7 +404,7 @@ class EventAffordanceSupport {
             case DRAFT:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
                 if (orisIntegrationActive && event.getOrisId() != null) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
                 }
@@ -402,7 +412,7 @@ class EventAffordanceSupport {
 
             case ACTIVE:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
                 if (orisIntegrationActive && event.getOrisId() != null) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
                 }

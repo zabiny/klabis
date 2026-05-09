@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.ui.HalForms;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventStatus;
@@ -22,6 +23,7 @@ import java.util.List;
  * @param eventCoordinatorId event coordinator user ID (optional)
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 record EventDto(
         @HalForms(access = HalForms.Access.READ_ONLY) EventId id,
         String name,
@@ -32,6 +34,7 @@ record EventDto(
         MemberId eventCoordinatorId,
         LocalDate registrationDeadline,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories
+        List<String> categories,
+        @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason
 ) {
 }

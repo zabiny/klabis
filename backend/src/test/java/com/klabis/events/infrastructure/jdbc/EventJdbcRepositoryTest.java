@@ -547,6 +547,47 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Cancellation reason persistence")
+    class CancellationReasonPersistence {
+
+        @Test
+        @DisplayName("should persist cancellation reason when event is cancelled with reason")
+        void shouldPersistCancellationReason() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event To Cancel")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+            event.cancel(new Event.CancelEvent("Bad weather forecast"));
+
+            Event saved = eventRepository.save(event);
+            Event found = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(found.getStatus()).isEqualTo(EventStatus.CANCELLED);
+            assertThat(found.getCancellationReason()).contains("Bad weather forecast");
+        }
+
+        @Test
+        @DisplayName("should persist empty cancellation reason when event is cancelled without reason")
+        void shouldPersistNoCancellationReason() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event To Cancel No Reason")
+                    .eventDate(LocalDate.of(2026, 9, 11))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+            event.cancel();
+
+            Event saved = eventRepository.save(event);
+            Event found = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(found.getStatus()).isEqualTo(EventStatus.CANCELLED);
+            assertThat(found.getCancellationReason()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("Null location round-trip")
     class NullLocationRoundTrip {
 

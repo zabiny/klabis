@@ -39,6 +39,7 @@ record EventSummaryDto(
         LocalDate registrationDeadline,
         @HasAuthority(Authority.EVENTS_MANAGE)
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories
+        List<String> categories,
+        @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason
 ) {
 }

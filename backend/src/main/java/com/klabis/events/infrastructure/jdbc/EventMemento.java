@@ -75,6 +75,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("categories")
     private String categories;
 
+    @Column("cancellation_reason")
+    private String cancellationReason;
+
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
     @MappedCollection(idColumn = "event_id")
@@ -157,6 +160,7 @@ class EventMemento implements Persistable<UUID> {
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
         memento.categories = serialize(event.getCategories());
+        memento.cancellationReason = event.getCancellationReason().orElse(null);
     }
 
     /**
@@ -201,6 +205,7 @@ class EventMemento implements Persistable<UUID> {
                 coordinatorId,
                 this.registrationDeadline,
                 eventStatus,
+                this.cancellationReason,
                 this.orisId,
                 categoriesList,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),

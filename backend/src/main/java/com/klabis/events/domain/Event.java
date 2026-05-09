@@ -57,6 +57,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private MemberId eventCoordinatorId;
     private LocalDate registrationDeadline;
     private EventStatus status;
+    private String cancellationReason;
     private List<String> categories = new ArrayList<>();
 
     // Event registrations
@@ -219,6 +220,26 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     @RecordBuilder
+    public record CancelEvent(
+            @Size(max = 500, message = "Cancellation reason must not exceed 500 characters")
+            String cancellationReason
+    ) {
+        public CancelEvent {
+            if (cancellationReason != null && cancellationReason.length() > 500) {
+                throw new IllegalArgumentException("Cancellation reason must not exceed 500 characters");
+            }
+        }
+
+        public static CancelEvent withoutReason() {
+            return new CancelEvent(null);
+        }
+
+        public Optional<String> reason() {
+            return Optional.ofNullable(cancellationReason);
+        }
+    }
+
+    @RecordBuilder
     public record EditRegistrationCommand(
             SiCardNumber siCardNumber,
             String category
@@ -240,6 +261,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             MemberId eventCoordinatorId,
             LocalDate registrationDeadline,
             EventStatus status,
+            String cancellationReason,
             Integer orisId,
             List<String> categories,
             AuditMetadata auditMetadata) {
@@ -253,6 +275,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.eventCoordinatorId = eventCoordinatorId;
         this.registrationDeadline = registrationDeadline;
         this.status = status;
+        this.cancellationReason = cancellationReason;
         this.orisId = orisId;
         this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
         updateAuditMetadata(auditMetadata);
@@ -285,6 +308,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             MemberId eventCoordinatorId,
             LocalDate registrationDeadline,
             EventStatus status,
+            String cancellationReason,
             Integer orisId,
             List<String> categories,
             List<EventRegistration> registrations,
@@ -300,6 +324,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 eventCoordinatorId,
                 registrationDeadline,
                 status,
+                cancellationReason,
                 orisId,
                 categories,
                 auditMetadata
@@ -336,6 +361,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.registrationDeadline(),
                 EventStatus.DRAFT,
                 null,
+                null,
                 command.categories(),
                 null
         );
@@ -370,6 +396,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 null,
                 command.registrationDeadline(),
                 EventStatus.DRAFT,
+                null,
                 command.orisId(),
                 command.categories(),
                 null
@@ -454,6 +481,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return Collections.unmodifiableList(categories);
     }
 
+    public Optional<String> getCancellationReason() {
+        return Optional.ofNullable(cancellationReason);
+    }
+
     // ========== Domain Methods ==========
 
     /**
@@ -475,15 +506,25 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Cancels the event, transitioning it to CANCELLED status.
      * <p>
      * Business rule: Only DRAFT and ACTIVE events can be cancelled.
+     * An optional cancellation reason (max 500 chars) may be provided to communicate context to members.
      *
+     * @param command cancel command with optional reason
      * @throws IllegalStateException if transition is not allowed
      */
-    public void cancel() {
+    public void cancel(CancelEvent command) {
         status.validateTransition(EventStatus.CANCELLED);
         this.status = EventStatus.CANCELLED;
+        this.cancellationReason = command.cancellationReason();
 
         // Register domain event
         registerEvent(EventCancelledEvent.fromAggregate(this));
+    }
+
+    /**
+     * Cancels the event without a reason. Convenience overload.
+     */
+    public void cancel() {
+        cancel(CancelEvent.withoutReason());
     }
 
     /**

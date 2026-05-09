@@ -885,7 +885,7 @@ class EventControllerTest {
     class CancelEventTests {
 
         @Test
-        @DisplayName("should return 204 No Content")
+        @DisplayName("should return 204 No Content without body")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCancelEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -895,6 +895,63 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should accept cancellation reason and pass it to service")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldCancelEventWithReason() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String reason = "Bad weather forecast";
+
+            mockMvc.perform(
+                            post("/api/events/{id}/cancel", eventId)
+                                    .contentType("application/json")
+                                    .content("{\"cancellationReason\":\"" + reason + "\"}")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).cancelEvent(
+                    eq(new EventId(eventId)),
+                    argThat((Event.CancelEvent cmd) -> reason.equals(cmd.cancellationReason()))
+            );
+        }
+
+        @Test
+        @DisplayName("should reject cancellation reason exceeding 500 characters")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldRejectTooLongCancellationReason() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String tooLong = "x".repeat(501);
+
+            mockMvc.perform(
+                            post("/api/events/{id}/cancel", eventId)
+                                    .contentType("application/json")
+                                    .content("{\"cancellationReason\":\"" + tooLong + "\"}")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("event detail exposes cancellationReason when event is cancelled with reason")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeReasonInEventDetail() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withName("Cancelled Event")
+                    .build();
+            event.cancel(new Event.CancelEvent("Organizer is ill"));
+
+            when(eventManagementService.getEvent(any(EventId.class), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any(EventId.class))).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", event.getId().value())
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.cancellationReason").value("Organizer is ill"));
         }
     }
 

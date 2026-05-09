@@ -104,6 +104,7 @@ public class EventTestDataBuilder {
                 coordinatorId,
                 registrationDeadline,
                 EventStatus.DRAFT,
+                null,
                 orisId,
                 categories,
                 registrations,

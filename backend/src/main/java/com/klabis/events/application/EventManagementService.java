@@ -48,11 +48,11 @@ public class EventManagementService implements EventManagementPort {
 
     @Transactional
     @Override
-    public void cancelEvent(EventId eventId) {
+    public void cancelEvent(EventId eventId, Event.CancelEvent command) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        event.cancel();
+        event.cancel(command);
         eventRepository.save(event);
     }
 
