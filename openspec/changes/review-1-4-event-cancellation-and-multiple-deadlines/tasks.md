@@ -1,30 +1,30 @@
 ## 1. Domain model — RegistrationDeadlines value object (Red)
 
-- [ ] 1.1 Create `RegistrationDeadlines` value object record under `com.klabis.events.domain` with `Optional<LocalDate> deadline1, deadline2, deadline3` and validation invariants (sequenciality, monotonie, ≤ event date when used by Event)
-- [ ] 1.2 Unit tests for `RegistrationDeadlines`: empty / single / two / three deadlines, missing-prerequisite (d2 without d1), out-of-order, helper methods `last()`, `nextRelevant(today)`, `registrationsOpen(today)`
-- [ ] 1.3 Run new unit tests via test-runner — must pass
+- [x] 1.1 Create `RegistrationDeadlines` value object record under `com.klabis.events.domain` with `Optional<LocalDate> deadline1, deadline2, deadline3` and validation invariants (sequenciality, monotonie, ≤ event date when used by Event)
+- [x] 1.2 Unit tests for `RegistrationDeadlines`: empty / single / two / three deadlines, missing-prerequisite (d2 without d1), out-of-order, helper methods `last()`, `nextRelevant(today)`, `registrationsOpen(today)`
+- [x] 1.3 Run new unit tests via test-runner — must pass
 
 ## 2. Domain model — Event aggregate (Green)
 
-- [ ] 2.1 Replace `Event.registrationDeadline: Optional<LocalDate>` with `Event.registrationDeadlines: RegistrationDeadlines` in the aggregate; update create/update commands and factories accordingly
+- [x] 2.1 Replace `Event.registrationDeadline: Optional<LocalDate>` with `Event.registrationDeadlines: RegistrationDeadlines` in the aggregate; update create/update commands and factories accordingly
 - [x] 2.2 Add `Event.cancellationReason: Optional<String>`; modify `Event.cancel()` to accept `Optional<String> reason` (max 500 chars validation in command record)
-- [ ] 2.3 Update internal usages of the deadline field (`Event.canRegister`, `Event.canEdit`, `EventFilter` if it filters on deadline) to use the new value object
+- [x] 2.3 Update internal usages of the deadline field (`Event.canRegister`, `Event.canEdit`, `EventFilter` if it filters on deadline) to use the new value object
 - [x] 2.4 Domain unit tests cover: cancel with/without reason, cancel reason length limit (IllegalArgumentException at 501 chars, accepts 500)
 - [x] 2.5 Run domain tests via test-runner — passed (218/218)
 
 ## 3. Persistence layer
 
-- [x] 3.1 Update `V001__initial_schema.sql`: add `cancellation_reason VARCHAR(500) NULL` to events table. (deadline columns deferred to Iter 2)
-- [x] 3.2 Update `EventMemento` to map cancellation_reason column; reconstruct reason in `toEvent()`
-- [x] 3.3 Persistence integration tests (H2): persist cancellation reason with/without reason, reload, assert equality
-- [x] 3.4 Run persistence tests via test-runner — passed (31/31)
+- [x] 3.1 Update `V001__initial_schema.sql`: add `cancellation_reason VARCHAR(500) NULL` to events table; add `registration_deadline_2` and `registration_deadline_3` DATE columns.
+- [x] 3.2 Update `EventMemento` to map cancellation_reason column and new deadline_2/3 columns; reconstruct all fields in `toEvent()`
+- [x] 3.3 Persistence integration tests (H2): persist cancellation reason with/without reason, reload, assert equality; 3-deadline round-trip, single deadline, no deadlines
+- [x] 3.4 Run persistence tests via test-runner — passed
 
 ## 4. ORIS import
 
-- [ ] 4.1 Extend the ORIS-to-Event mapping to read `EntryDate2` and `EntryDate3` from the upstream ORIS payload and pass them into `RegistrationDeadlines`
-- [ ] 4.2 If ORIS feed contains out-of-order deadlines, importer fails loudly (logs the violation, returns 422 to the manager) — no silent fallback
-- [ ] 4.3 Integration test (mocked ORIS client): event with EntryDate1 only → 1 deadline; event with EntryDate1+2+3 → 3 deadlines; event with EntryDate1+3 (no 2) → import error
-- [ ] 4.4 Run ORIS-related tests via test-runner
+- [x] 4.1 Extend the ORIS-to-Event mapping to read `EntryDate2` and `EntryDate3` from the upstream ORIS payload and pass them into `RegistrationDeadlines`
+- [x] 4.2 If ORIS feed contains out-of-order deadlines, importer fails loudly (logs the violation, returns 422 to the manager) — no silent fallback
+- [x] 4.3 Integration test (mocked ORIS client): event with EntryDate1 only → 1 deadline; event with EntryDate1+2+3 → 3 deadlines; event with EntryDate1+3 (no 2) → import error
+- [x] 4.4 Run ORIS-related tests via test-runner — passed
 
 ## 5. REST API + HAL forms
 

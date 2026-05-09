@@ -6,6 +6,7 @@ import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.RegistrationDeadlines;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
@@ -68,6 +69,12 @@ class EventMemento implements Persistable<UUID> {
 
     @Column("registration_deadline")
     private LocalDate registrationDeadline;
+
+    @Column("registration_deadline_2")
+    private LocalDate registrationDeadline2;
+
+    @Column("registration_deadline_3")
+    private LocalDate registrationDeadline3;
 
     @Column("oris_id")
     private Integer orisId;
@@ -156,7 +163,10 @@ class EventMemento implements Persistable<UUID> {
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
         memento.eventCoordinatorId = event.getEventCoordinatorId() != null ? event.getEventCoordinatorId()
                 .value() : null;
-        memento.registrationDeadline = event.getRegistrationDeadline();
+        RegistrationDeadlines rd = event.getRegistrationDeadlines();
+        memento.registrationDeadline = rd.deadline1().orElse(null);
+        memento.registrationDeadline2 = rd.deadline2().orElse(null);
+        memento.registrationDeadline3 = rd.deadline3().orElse(null);
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
         memento.categories = serialize(event.getCategories());
@@ -195,6 +205,11 @@ class EventMemento implements Persistable<UUID> {
 
         List<String> categoriesList = deserialize(this.categories);
 
+        RegistrationDeadlines deadlines = RegistrationDeadlines.of(
+                this.registrationDeadline,
+                this.registrationDeadline2,
+                this.registrationDeadline3);
+
         return Event.reconstruct(
                 eventId,
                 this.name,
@@ -203,7 +218,7 @@ class EventMemento implements Persistable<UUID> {
                 this.organizer,
                 websiteUrlObj,
                 coordinatorId,
-                this.registrationDeadline,
+                deadlines,
                 eventStatus,
                 this.cancellationReason,
                 this.orisId,

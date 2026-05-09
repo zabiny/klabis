@@ -143,7 +143,7 @@ class EventRegistrationServiceTest {
             Event eventWithPastDeadline = Event.create(EventCreateEventBuilder.builder()
                     .name("Deadline Event").eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location").organizer("OOB")
-                    .registrationDeadline(LocalDate.now().minusDays(1)).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.now().minusDays(1))).build());
             eventWithPastDeadline.publish();
 
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -164,7 +164,7 @@ class EventRegistrationServiceTest {
             Event eventWithFutureDeadline = Event.create(EventCreateEventBuilder.builder()
                     .name("Future Deadline Event").eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location").organizer("OOB")
-                    .registrationDeadline(LocalDate.now().plusDays(30)).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.now().plusDays(30))).build());
             eventWithFutureDeadline.publish();
 
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -318,7 +318,7 @@ class EventRegistrationServiceTest {
                     "OOB",
                     null,
                     null,
-                    LocalDate.now().minusDays(1),
+                    RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
                     EventStatus.ACTIVE,
                     null, null,
                     List.of(),
@@ -344,7 +344,7 @@ class EventRegistrationServiceTest {
             Event eventWithFutureDeadline = Event.create(EventCreateEventBuilder.builder()
                     .name("Future Deadline Event").eventDate(LocalDate.now().plusDays(60))
                     .location("Test Location").organizer("OOB")
-                    .registrationDeadline(LocalDate.now().plusDays(30)).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.now().plusDays(30))).build());
             eventWithFutureDeadline.publish();
             eventWithFutureDeadline.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
 

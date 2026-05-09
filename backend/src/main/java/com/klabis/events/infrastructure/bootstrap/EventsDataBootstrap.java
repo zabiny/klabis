@@ -4,6 +4,7 @@ import com.klabis.common.bootstrap.BootstrapDataInitializer;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -68,7 +69,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 coordinator,
-                today.plusDays(38),
+                RegistrationDeadlines.single(today.plusDays(38)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50")
         )));
 
@@ -90,7 +91,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 "https://www.oob.cz/zavody/nocni-sprint",
                 coordinator,
-                today.plusDays(25),
+                RegistrationDeadlines.single(today.plusDays(25)),
                 List.of("M21", "W21", "M40", "W40")
         )));
 
@@ -112,7 +113,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 coordinator,
-                today.plusDays(48),
+                RegistrationDeadlines.single(today.plusDays(48)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65")
         )));
     }
@@ -126,7 +127,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50001",
                         coordinator,
-                        today.minusDays(55),
+                        RegistrationDeadlines.single(today.minusDays(55)),
                         List.of("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -136,7 +137,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.minusDays(45),
+                        RegistrationDeadlines.single(today.minusDays(45)),
                         List.of("M21", "W21", "M35", "W35")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -146,7 +147,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50002",
                         null,
-                        today.minusDays(37),
+                        RegistrationDeadlines.single(today.minusDays(37)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -156,7 +157,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.minusDays(25),
+                        RegistrationDeadlines.single(today.minusDays(25)),
                         List.of()
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -176,7 +177,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.minusDays(10),
+                        RegistrationDeadlines.single(today.minusDays(10)),
                         List.of("M21", "W21", "M35", "W35", "M50")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -186,7 +187,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50003",
                         null,
-                        today.plusDays(2),
+                        RegistrationDeadlines.single(today.plusDays(2)),
                         List.of("M21", "W21", "M35", "W35")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -196,7 +197,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.plusDays(8),
+                        RegistrationDeadlines.single(today.plusDays(8)),
                         List.of()
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -206,7 +207,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        today.plusDays(14),
+                        RegistrationDeadlines.single(today.plusDays(14)),
                         List.of("M21", "W21", "M40", "W40", "M55")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -216,7 +217,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.plusDays(18),
+                        RegistrationDeadlines.single(today.plusDays(18)),
                         List.of("M18", "W18", "M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -226,7 +227,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50004",
                         null,
-                        today.plusDays(22),
+                        RegistrationDeadlines.single(today.plusDays(22)),
                         List.of("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -236,7 +237,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.plusDays(28),
+                        RegistrationDeadlines.single(today.plusDays(28)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -246,7 +247,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50005",
                         null,
-                        today.plusDays(35),
+                        RegistrationDeadlines.single(today.plusDays(35)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40", "M50")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -256,7 +257,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.plusDays(41),
+                        RegistrationDeadlines.single(today.plusDays(41)),
                         List.of("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -266,7 +267,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50006",
                         null,
-                        today.plusDays(48),
+                        RegistrationDeadlines.single(today.plusDays(48)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -276,7 +277,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.plusDays(55),
+                        RegistrationDeadlines.single(today.plusDays(55)),
                         List.of()
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -286,7 +287,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        today.plusDays(7),
+                        RegistrationDeadlines.single(today.plusDays(7)),
                         List.of("M18", "W18")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -296,7 +297,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        today.minusDays(20),
+                        RegistrationDeadlines.single(today.minusDays(20)),
                         List.of("M21", "W21", "M35")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -316,7 +317,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50007",
                         coordinator,
-                        today.plusDays(31),
+                        RegistrationDeadlines.single(today.plusDays(31)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -326,7 +327,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        today.minusDays(7),
+                        RegistrationDeadlines.single(today.minusDays(7)),
                         List.of("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
@@ -336,7 +337,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50008",
                         coordinator,
-                        today.plusDays(50),
+                        RegistrationDeadlines.single(today.plusDays(50)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65", "W65")
                 ))
         );

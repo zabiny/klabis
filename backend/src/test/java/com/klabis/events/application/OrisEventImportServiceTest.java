@@ -214,6 +214,98 @@ class OrisEventImportServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("RegistrationDeadlines mapping")
+    class RegistrationDeadlinesMapping {
+
+        @Test
+        @DisplayName("should import event with single EntryDate1 → one deadline")
+        void shouldImportSingleDeadline() {
+            int orisId = 1001;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            LocalDate d1 = LocalDate.of(2026, 5, 15);
+            EventDetails details = Mockito.mock(EventDetails.class);
+            Mockito.when(details.name()).thenReturn("Race with one deadline");
+            Mockito.when(details.date()).thenReturn(LocalDate.of(2026, 6, 1));
+            Mockito.when(details.place()).thenReturn("Forest");
+            Mockito.when(details.org1()).thenReturn(org1);
+            Mockito.lenient().when(details.org2()).thenReturn(null);
+            Mockito.when(details.entryDate1()).thenReturn(d1.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.when(details.entryDate2()).thenReturn(null);
+            Mockito.when(details.entryDate3()).thenReturn(null);
+            Mockito.lenient().when(details.classes()).thenReturn(null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getRegistrationDeadlines().deadline1()).contains(d1);
+            assertThat(result.getRegistrationDeadlines().deadline2()).isEmpty();
+            assertThat(result.getRegistrationDeadlines().deadline3()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should import event with EntryDate1+2+3 → three deadlines")
+        void shouldImportThreeDeadlines() {
+            int orisId = 1002;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            LocalDate d1 = LocalDate.of(2026, 4, 1);
+            LocalDate d2 = LocalDate.of(2026, 5, 1);
+            LocalDate d3 = LocalDate.of(2026, 6, 1);
+            EventDetails details = Mockito.mock(EventDetails.class);
+            Mockito.when(details.name()).thenReturn("Race with three deadlines");
+            Mockito.when(details.date()).thenReturn(LocalDate.of(2026, 7, 1));
+            Mockito.when(details.place()).thenReturn("Forest");
+            Mockito.when(details.org1()).thenReturn(org1);
+            Mockito.lenient().when(details.org2()).thenReturn(null);
+            Mockito.when(details.entryDate1()).thenReturn(d1.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.when(details.entryDate2()).thenReturn(d2.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.when(details.entryDate3()).thenReturn(d3.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.lenient().when(details.classes()).thenReturn(null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getRegistrationDeadlines().deadline1()).contains(d1);
+            assertThat(result.getRegistrationDeadlines().deadline2()).contains(d2);
+            assertThat(result.getRegistrationDeadlines().deadline3()).contains(d3);
+        }
+
+        @Test
+        @DisplayName("should fail loudly when ORIS provides EntryDate1 and EntryDate3 but not EntryDate2")
+        void shouldFailWhenDeadline1And3PresentButNot2() {
+            int orisId = 1003;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            LocalDate d1 = LocalDate.of(2026, 4, 1);
+            LocalDate d3 = LocalDate.of(2026, 6, 1);
+            EventDetails details = Mockito.mock(EventDetails.class);
+            Mockito.lenient().when(details.name()).thenReturn("Bad ORIS data");
+            Mockito.lenient().when(details.date()).thenReturn(LocalDate.of(2026, 7, 1));
+            Mockito.lenient().when(details.place()).thenReturn("Forest");
+            Mockito.lenient().when(details.org1()).thenReturn(org1);
+            Mockito.lenient().when(details.org2()).thenReturn(null);
+            Mockito.when(details.entryDate1()).thenReturn(d1.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.when(details.entryDate2()).thenReturn(null);
+            Mockito.when(details.entryDate3()).thenReturn(d3.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
+            Mockito.lenient().when(details.classes()).thenReturn(null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isInstanceOf(com.klabis.common.exceptions.BusinessRuleViolationException.class)
+                    .hasMessageContaining("invalid registration deadlines");
+        }
+    }
+
     private EventDetails buildEventDetails(int id, String name, LocalDate date, String place,
                                            Organizer org1, Organizer org2) {
         EventDetails details = Mockito.mock(EventDetails.class);
@@ -223,6 +315,8 @@ class OrisEventImportServiceTest {
         Mockito.when(details.org1()).thenReturn(org1);
         Mockito.lenient().when(details.org2()).thenReturn(org2);
         Mockito.lenient().when(details.entryDate1()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.lenient().when(details.classes()).thenReturn(null);
         return details;
     }
@@ -237,6 +331,8 @@ class OrisEventImportServiceTest {
         Mockito.when(details.org1()).thenReturn(org1);
         Mockito.lenient().when(details.org2()).thenReturn(org2);
         Mockito.lenient().when(details.entryDate1()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.when(details.classes()).thenReturn(classes);
         return details;
     }

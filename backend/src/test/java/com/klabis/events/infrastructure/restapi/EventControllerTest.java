@@ -159,7 +159,7 @@ class EventControllerTest {
                     .eventDate(LocalDate.of(2026, 8, 20))
                     .location("Forest Park")
                     .organizer("OOB")
-                    .registrationDeadline(LocalDate.of(2026, 8, 10))
+                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.of(2026, 8, 10)))
                     .build();
 
             when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
@@ -252,7 +252,7 @@ class EventControllerTest {
                     .eventDate(LocalDate.of(2026, 9, 20))
                     .location("Forest")
                     .organizer("OOB")
-                    .registrationDeadline(LocalDate.of(2026, 9, 10))
+                    .registrationDeadlines(RegistrationDeadlines.single(LocalDate.of(2026, 9, 10)))
                     .build();
 
             mockMvc.perform(

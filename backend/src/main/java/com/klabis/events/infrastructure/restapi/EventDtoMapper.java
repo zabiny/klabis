@@ -13,7 +13,7 @@ class EventDtoMapper {
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
                 event.getEventCoordinatorId(),
-                event.getRegistrationDeadline(),
+                event.getRegistrationDeadlines().deadline1().orElse(null),
                 event.getStatus(),
                 event.getCategories(),
                 event.getCancellationReason().orElse(null)
@@ -28,7 +28,7 @@ class EventDtoMapper {
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
-                event.getRegistrationDeadline(),
+                event.getRegistrationDeadlines().deadline1().orElse(null),
                 event.getStatus(),
                 event.getCategories(),
                 event.getCancellationReason().orElse(null)

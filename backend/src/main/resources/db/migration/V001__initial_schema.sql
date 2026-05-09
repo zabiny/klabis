@@ -236,8 +236,10 @@ CREATE TABLE events
     event_coordinator_id UUID         NULL REFERENCES members (id) ON DELETE SET NULL,
     status               VARCHAR(20)  NOT NULL,
 
-    -- Registration deadline: last date when members can register/unregister (null means no deadline)
-    registration_deadline DATE         NULL,
+    -- Registration deadlines: up to 3 sequential deadlines (d2 requires d1, d3 requires d2; all non-decreasing)
+    registration_deadline  DATE         NULL,
+    registration_deadline_2 DATE        NULL,
+    registration_deadline_3 DATE        NULL,
 
     -- ORIS integration: source identifier for imported events (null for manually created events)
     oris_id              INTEGER      NULL UNIQUE,
@@ -270,7 +272,9 @@ COMMENT ON COLUMN events.location IS 'Location description (city, venue, etc.) â
 COMMENT ON COLUMN events.organizer IS 'Organizer code (e.g., OOB for OOB Zdar nad Sazavou)';
 COMMENT ON COLUMN events.website_url IS 'Optional URL to event website or ORIS';
 COMMENT ON COLUMN events.event_coordinator_id IS 'Optional reference to club member coordinating the event';
-COMMENT ON COLUMN events.registration_deadline IS 'Optional last date when members can register or unregister; null means no deadline';
+COMMENT ON COLUMN events.registration_deadline IS 'First (earliest) registration deadline; null means no deadlines configured';
+COMMENT ON COLUMN events.registration_deadline_2 IS 'Second registration deadline; requires registration_deadline to be set';
+COMMENT ON COLUMN events.registration_deadline_3 IS 'Third (latest) registration deadline; requires registration_deadline_2 to be set';
 COMMENT ON COLUMN events.status IS 'Event status (e.g., DRAFT, PUBLISHED, CANCELLED, COMPLETED)';
 COMMENT ON COLUMN events.created_at IS 'Timestamp when event was created';
 COMMENT ON COLUMN events.created_by IS 'User who created the event';

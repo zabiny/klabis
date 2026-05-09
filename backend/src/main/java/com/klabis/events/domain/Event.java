@@ -55,7 +55,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private WebsiteUrl websiteUrl;
     @Association
     private MemberId eventCoordinatorId;
-    private LocalDate registrationDeadline;
+    private RegistrationDeadlines registrationDeadlines;
     private EventStatus status;
     private String cancellationReason;
     private List<String> categories = new ArrayList<>();
@@ -85,7 +85,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String websiteUrl,
 
             MemberId eventCoordinatorId,
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             List<String> categories
     ) {
         public static CreateEvent from(Event event) {
@@ -96,7 +96,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
                     event.eventCoordinatorId,
-                    event.registrationDeadline,
+                    event.registrationDeadlines,
                     event.categories
             );
         }
@@ -123,7 +123,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
             MemberId eventCoordinatorId,
 
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             List<String> categories
     ) {
         public static UpdateEvent from(Event event) {
@@ -134,7 +134,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
                     event.eventCoordinatorId,
-                    event.registrationDeadline,
+                    event.registrationDeadlines,
                     event.categories
             );
         }
@@ -148,7 +148,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             List<String> categories
     ) {
         public static CreateEventFromOris from(Event event) {
@@ -159,7 +159,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.location,
                     event.organizer,
                     event.websiteUrl,
-                    event.registrationDeadline,
+                    event.registrationDeadlines,
                     event.categories
             );
         }
@@ -203,7 +203,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             List<String> categories
     ) {
         public static SyncFromOris from(Event event) {
@@ -213,7 +213,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.location,
                     event.organizer,
                     event.websiteUrl,
-                    event.registrationDeadline,
+                    event.registrationDeadlines,
                     event.categories
             );
         }
@@ -259,7 +259,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             EventStatus status,
             String cancellationReason,
             Integer orisId,
@@ -273,7 +273,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.organizer = organizer;
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
-        this.registrationDeadline = registrationDeadline;
+        this.registrationDeadlines = registrationDeadlines != null ? registrationDeadlines : RegistrationDeadlines.none();
         this.status = status;
         this.cancellationReason = cancellationReason;
         this.orisId = orisId;
@@ -306,7 +306,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
-            LocalDate registrationDeadline,
+            RegistrationDeadlines registrationDeadlines,
             EventStatus status,
             String cancellationReason,
             Integer orisId,
@@ -322,7 +322,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 organizer,
                 websiteUrl,
                 eventCoordinatorId,
-                registrationDeadline,
+                registrationDeadlines,
                 status,
                 cancellationReason,
                 orisId,
@@ -348,7 +348,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         validateName(command.name());
         validateEventDate(command.eventDate());
         validateOrganizer(command.organizer());
-        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
+        RegistrationDeadlines deadlines = command.registrationDeadlines() != null
+                ? command.registrationDeadlines() : RegistrationDeadlines.none();
+        validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
 
         Event event = new Event(
                 EventId.generate(),
@@ -358,7 +360,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
                 command.eventCoordinatorId(),
-                command.registrationDeadline(),
+                deadlines,
                 EventStatus.DRAFT,
                 null,
                 null,
@@ -384,7 +386,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         validateName(command.name());
         validateEventDate(command.eventDate());
         validateOrganizer(command.organizer());
-        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
+        RegistrationDeadlines deadlines = command.registrationDeadlines() != null
+                ? command.registrationDeadlines() : RegistrationDeadlines.none();
+        validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
 
         Event event = new Event(
                 EventId.generate(),
@@ -394,7 +398,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.organizer(),
                 command.websiteUrl(),
                 null,
-                command.registrationDeadline(),
+                deadlines,
                 EventStatus.DRAFT,
                 null,
                 command.orisId(),
@@ -427,11 +431,15 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
     }
 
-    private static void validateRegistrationDeadline(LocalDate registrationDeadline, LocalDate eventDate) {
-        if (registrationDeadline != null && eventDate != null && registrationDeadline.isAfter(eventDate)) {
-            throw new BusinessRuleViolationException("Registration deadline must be on or before event date") {
-            };
+    private static void validateDeadlinesAgainstEventDate(RegistrationDeadlines deadlines, LocalDate eventDate) {
+        if (deadlines == null || eventDate == null) {
+            return;
         }
+        deadlines.last().ifPresent(last -> {
+            if (last.isAfter(eventDate)) {
+                throw new BusinessRuleViolationException("Registration deadline must be on or before event date") {};
+            }
+        });
     }
 
     // ========== Getters ==========
@@ -465,8 +473,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return eventCoordinatorId;
     }
 
-    public LocalDate getRegistrationDeadline() {
-        return registrationDeadline;
+    public RegistrationDeadlines getRegistrationDeadlines() {
+        return registrationDeadlines;
     }
 
     public EventStatus getStatus() {
@@ -565,7 +573,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         validateName(command.name());
         validateEventDate(command.eventDate());
         validateOrganizer(command.organizer());
-        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
+        RegistrationDeadlines deadlines = command.registrationDeadlines() != null
+                ? command.registrationDeadlines() : RegistrationDeadlines.none();
+        validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
 
         this.name = command.name();
         this.eventDate = command.eventDate();
@@ -573,7 +583,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.organizer = command.organizer();
         this.websiteUrl = command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null;
         this.eventCoordinatorId = command.eventCoordinatorId();
-        this.registrationDeadline = command.registrationDeadline();
+        this.registrationDeadlines = deadlines;
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
@@ -606,7 +616,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.location = command.location();
         this.organizer = command.organizer();
         this.websiteUrl = command.websiteUrl();
-        this.registrationDeadline = command.registrationDeadline();
+        this.registrationDeadlines = command.registrationDeadlines() != null
+                ? command.registrationDeadlines() : RegistrationDeadlines.none();
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
@@ -713,7 +724,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             return Optional.of("Registration is only allowed for ACTIVE events");
         }
         LocalDate today = LocalDate.now();
-        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
+        if (!registrationDeadlines.registrationsOpen(today)) {
             return Optional.of("Registration deadline has passed");
         }
         if (!today.isBefore(eventDate)) {

@@ -5,6 +5,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.RegistrationDeadlines;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class EventTestDataBuilder {
     private String organizer = "Test Organizer";
     private WebsiteUrl websiteUrl = null;
     private MemberId coordinatorId = null;
-    private LocalDate registrationDeadline = null;
+    private RegistrationDeadlines registrationDeadlines = RegistrationDeadlines.none();
     private EventId eventId = new EventId(UUID.randomUUID());
     private Integer orisId = null;
     private List<EventRegistration> registrations = new ArrayList<>();
@@ -80,7 +81,14 @@ public class EventTestDataBuilder {
     }
 
     public EventTestDataBuilder withRegistrationDeadline(LocalDate registrationDeadline) {
-        this.registrationDeadline = registrationDeadline;
+        this.registrationDeadlines = registrationDeadline != null
+                ? RegistrationDeadlines.single(registrationDeadline)
+                : RegistrationDeadlines.none();
+        return this;
+    }
+
+    public EventTestDataBuilder withRegistrationDeadlines(RegistrationDeadlines registrationDeadlines) {
+        this.registrationDeadlines = registrationDeadlines != null ? registrationDeadlines : RegistrationDeadlines.none();
         return this;
     }
 
@@ -102,7 +110,7 @@ public class EventTestDataBuilder {
                 organizer,
                 websiteUrl,
                 coordinatorId,
-                registrationDeadline,
+                registrationDeadlines,
                 EventStatus.DRAFT,
                 null,
                 orisId,

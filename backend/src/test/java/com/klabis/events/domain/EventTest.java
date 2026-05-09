@@ -215,7 +215,7 @@ class EventTest {
                     .eventDate(eventDate)
                     .location("Location")
                     .organizer("Organizer")
-                    .registrationDeadline(invalidDeadline)
+                    .registrationDeadlines(RegistrationDeadlines.single(invalidDeadline))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration deadline");
@@ -231,10 +231,10 @@ class EventTest {
                     .eventDate(eventDate)
                     .location("Location")
                     .organizer("Organizer")
-                    .registrationDeadline(eventDate)
+                    .registrationDeadlines(RegistrationDeadlines.single(eventDate))
                     .build());
 
-            assertThat(event.getRegistrationDeadline()).isEqualTo(eventDate);
+            assertThat(event.getRegistrationDeadlines().deadline1()).contains(eventDate);
         }
     }
 
@@ -935,7 +935,7 @@ class EventTest {
             LocalDate deadline = LocalDate.now().plusDays(5);
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race with Deadline").eventDate(futureDate).location("Forest").organizer("Club")
-                    .registrationDeadline(deadline).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(deadline)).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isTrue();
@@ -948,7 +948,7 @@ class EventTest {
             LocalDate pastDeadline = LocalDate.now().minusDays(1);
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race Closed").eventDate(futureDate).location("Forest").organizer("Club")
-                    .registrationDeadline(pastDeadline).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(pastDeadline)).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isFalse();
@@ -961,10 +961,64 @@ class EventTest {
             LocalDate todayDeadline = LocalDate.now();
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race Deadline Today").eventDate(futureDate).location("Forest").organizer("Club")
-                    .registrationDeadline(todayDeadline).build());
+                    .registrationDeadlines(RegistrationDeadlines.single(todayDeadline)).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return true when ACTIVE event has multiple deadlines and last is in future")
+        void shouldReturnTrueWhenMultipleDeadlinesAndLastInFuture() {
+            LocalDate futureDate = LocalDate.now().plusDays(30);
+            RegistrationDeadlines deadlines = new RegistrationDeadlines(
+                    java.util.Optional.of(LocalDate.now().minusDays(5)),
+                    java.util.Optional.of(LocalDate.now().plusDays(10)),
+                    java.util.Optional.of(LocalDate.now().plusDays(20))
+            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Multi-Deadline Race").eventDate(futureDate).location("Forest").organizer("Club")
+                    .registrationDeadlines(deadlines).build());
+            event.publish();
+
+            assertThat(event.areRegistrationsOpen()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when ACTIVE event has multiple deadlines and all are in the past")
+        void shouldReturnFalseWhenAllDeadlinesPassed() {
+            LocalDate futureDate = LocalDate.now().plusDays(30);
+            RegistrationDeadlines deadlines = new RegistrationDeadlines(
+                    java.util.Optional.of(LocalDate.now().minusDays(20)),
+                    java.util.Optional.of(LocalDate.now().minusDays(10)),
+                    java.util.Optional.of(LocalDate.now().minusDays(1))
+            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("All Deadlines Passed Race").eventDate(futureDate).location("Forest").organizer("Club")
+                    .registrationDeadlines(deadlines).build());
+            event.publish();
+
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject create when any deadline exceeds event date")
+        void shouldRejectCreateWhenDeadlineExceedsEventDate() {
+            LocalDate eventDate = LocalDate.of(2026, 6, 1);
+            RegistrationDeadlines deadlines = RegistrationDeadlines.of(
+                    LocalDate.of(2026, 5, 1),
+                    LocalDate.of(2026, 6, 2),
+                    null
+            );
+
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Invalid Deadline Event")
+                    .eventDate(eventDate)
+                    .organizer("OOB")
+                    .registrationDeadlines(deadlines)
+                    .build()))
+                    .isInstanceOf(com.klabis.common.exceptions.BusinessRuleViolationException.class)
+                    .hasMessageContaining("deadline");
         }
     }
 
@@ -1231,7 +1285,7 @@ class EventTest {
                     .location("Synced Location")
                     .organizer("SYN")
                     .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"))
-                    .registrationDeadline(null)
+                    .registrationDeadlines(RegistrationDeadlines.none())
                     .categories(List.of("M21", "W35"))
                     .build();
         }
@@ -1329,7 +1383,7 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should update registrationDeadline from command")
+        @DisplayName("should update registrationDeadlines from command")
         void shouldUpdateRegistrationDeadline() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(100)
@@ -1339,18 +1393,19 @@ class EventTest {
                     .organizer("OLD")
                     .build());
 
+            LocalDate d1 = LocalDate.of(2026, 9, 5);
             Event.SyncFromOris commandWithDeadline = EventSyncFromOrisBuilder.builder()
                     .name("Updated")
                     .eventDate(LocalDate.of(2026, 9, 10))
                     .location("Location")
                     .organizer("SYN")
-                    .registrationDeadline(LocalDate.of(2026, 9, 5))
+                    .registrationDeadlines(RegistrationDeadlines.single(d1))
                     .categories(List.of())
                     .build();
 
             event.syncFromOris(commandWithDeadline);
 
-            assertThat(event.getRegistrationDeadline()).isEqualTo(LocalDate.of(2026, 9, 5));
+            assertThat(event.getRegistrationDeadlines().deadline1()).contains(d1);
         }
     }
 
@@ -1430,7 +1485,9 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
                     "Location", "Organizer",
-                    null, null, LocalDate.now().minusDays(1), EventStatus.ACTIVE, null, null,
+                    null, null,
+                    RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
+                    EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),

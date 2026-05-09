@@ -36,7 +36,7 @@ class EventDataProviderImpl implements EventDataProvider {
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
-                event.getRegistrationDeadline()
+                event.getRegistrationDeadlines().last().orElse(null)
         );
     }
 }

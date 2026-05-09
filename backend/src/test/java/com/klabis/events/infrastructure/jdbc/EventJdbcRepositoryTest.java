@@ -1005,4 +1005,69 @@ class EventJdbcRepositoryTest {
             assertThat(result.getContent().get(0).getName()).isEqualTo("Praha Open");
         }
     }
+
+    @Nested
+    @DisplayName("RegistrationDeadlines persistence — round-trip")
+    class RegistrationDeadlinesPersistence {
+
+        @Test
+        @DisplayName("should persist and reload event with three deadlines")
+        void shouldPersistAndReloadThreeDeadlines() {
+            LocalDate d1 = LocalDate.of(2026, 4, 1);
+            LocalDate d2 = LocalDate.of(2026, 5, 1);
+            LocalDate d3 = LocalDate.of(2026, 6, 1);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Three Deadline Race")
+                    .eventDate(LocalDate.of(2026, 7, 1))
+                    .organizer("OOB")
+                    .registrationDeadlines(new RegistrationDeadlines(
+                            java.util.Optional.of(d1),
+                            java.util.Optional.of(d2),
+                            java.util.Optional.of(d3)))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getRegistrationDeadlines().deadline1()).contains(d1);
+            assertThat(reloaded.getRegistrationDeadlines().deadline2()).contains(d2);
+            assertThat(reloaded.getRegistrationDeadlines().deadline3()).contains(d3);
+        }
+
+        @Test
+        @DisplayName("should persist and reload event with single deadline")
+        void shouldPersistAndReloadSingleDeadline() {
+            LocalDate d1 = LocalDate.of(2026, 5, 15);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Single Deadline Race")
+                    .eventDate(LocalDate.of(2026, 6, 1))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(d1))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getRegistrationDeadlines().deadline1()).contains(d1);
+            assertThat(reloaded.getRegistrationDeadlines().deadline2()).isEmpty();
+            assertThat(reloaded.getRegistrationDeadlines().deadline3()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should persist and reload event with no deadlines")
+        void shouldPersistAndReloadNoDeadlines() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Deadline Race")
+                    .eventDate(LocalDate.of(2026, 6, 1))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getRegistrationDeadlines().isEmpty()).isTrue();
+        }
+    }
 }

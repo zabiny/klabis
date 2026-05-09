@@ -8,6 +8,7 @@ import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.RegistrationDeadlines;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -201,7 +202,7 @@ class CalendarEventSyncIntegrationTest {
 
             scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(
                             eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, DEADLINE_DATE, EventStatus.ACTIVE, null, null, List.of(), List.of(), null)))
+                            null, null, RegistrationDeadlines.single(DEADLINE_DATE), EventStatus.ACTIVE, null, null, List.of(), List.of(), null)))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).size() >= 2)
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
