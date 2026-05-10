@@ -45,12 +45,12 @@
 
 ## 7. End-to-end verification
 
-- [ ] 7.1 Spustit lokální prostředí (`./runLocalEnvironment.sh`) — backend na `https://localhost:8443`, frontend na `http://localhost:3000`. E2E ověření probíhá výhradně lokálně, žádný deploy.
-- [ ] 7.2 Browser test (`http://localhost:3000`): create a new (manual) event with all three deadlines; verify table column behaviour, detail page listing, and registration open/closed semantics across deadlines
-- [ ] 7.3 Browser test: import an ORIS event s více entry dates (vybrat reálné ORIS event id s EntryDate2/EntryDate3); verify all deadlines imported correctly
-- [ ] 7.4 Browser test: cancel an event with reason "Zrušeno kvůli počasí"; verify reason appears on event detail and as tooltip on row in events table
-- [ ] 7.5 Browser test: cancel an event without reason; verify no reason text shown but cancellation works
+- [x] 7.1 Spustit lokální prostředí (`./runLocalEnvironment.sh`) — backend na `https://localhost:8443`, frontend na `http://localhost:3000`. E2E ověření probíhá výhradně lokálně, žádný deploy.
+- [x] 7.2 Browser test (`http://localhost:3000`): create a new (manual) event with all three deadlines; verify table column behaviour, detail page listing, and registration open/closed semantics across deadlines
+- [x] 7.3 Browser test: import an ORIS event s více entry dates (vybrat reálné ORIS event id s EntryDate2/EntryDate3); verify all deadlines imported correctly
+- [x] 7.4 Browser test: cancel an event with reason "Zrušeno kvůli počasí"; verify reason appears on event detail and as tooltip on row in events table
+- [x] 7.5 Browser test: cancel an event without reason; verify no reason text shown but cancellation works
 
 ## 8. Documentation
 
-- [ ] 8.1 Sync the spec change into `openspec/specs/events/spec.md` after archiving
+- [x] 8.1 Sync the spec change into `openspec/specs/events/spec.md` after archiving
