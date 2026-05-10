@@ -15,6 +15,7 @@ Společný kontext: obě úpravy se týkají frontendové vrstvy (forms a table)
   - Když uživatel otevře registrační form a má v profilu `siCardNumber`, pole „SI číslo" je předvyplněno touto hodnotou.
   - Hodnotu lze volně přepsat — nemění to profil uživatele, jen aktuální registraci.
   - Pokud uživatel v profilu nemá `siCardNumber`, pole zůstává prázdné (jako dnes).
+- **Mechanizmus:** GET endpoint pro detail registrace dostane volitelný boolean parametr `new` (default `false`). Při `new=false` (nebo neuvedeno) zachová stávající chování — 404 pokud registrace neexistuje. Při `new=true` server vrátí „defaults" pro novou registraci aktuálního uživatele na daný závod (siCardNumber předvyplněné z profilu, ostatní pole prázdná/výchozí). Affordance `registerForEvent` (nebo navazující navigační link) ukáže URL s `new=true`, takže frontend dostane prefill bez znalosti current user dat.
 
 ### K2 — Sémantické barvy action tlačítek v eventech
 
@@ -41,9 +42,10 @@ Společný kontext: obě úpravy se týkají frontendové vrstvy (forms a table)
 
 ## Impact
 
-- **Backend kód:** žádné změny.
+- **Backend kód:**
+  - **N2:** GET endpoint pro detail registrace přijme query parametr `new: boolean` (default false). Při `new=true` se neprovádí lookup existující registrace, ale vrátí se „defaults" payload pro aktuálního usera (siCardNumber z `Member.siCardNumber`, ostatní pole prázdná). Affordance `registerForEvent` na detailu eventu odkazuje na tento endpoint s `new=true`.
 - **Frontend kód:**
-  - **N2:** v `EventRegistrationForm` načíst aktuálního uživatele z `useCurrentMember` hook (nebo HAL link `me`); pokud `siCardNumber` je přítomný, nastavit jako Formik `initialValue`.
+  - **N2:** `EventRegistrationForm` (resp. generický HalFormDisplay flow) následuje affordance link, který vrátí prefill payload. Existující `getInitialValues()` mapping z template properties pak již obsahuje siCardNumber a Formik předvyplní pole bez další úpravy frontendu.
   - **K2:** rozšířit `KlabisTable` action button rendering o variant prop (primary / destructive / warning / neutral); HAL+FORMS template metadata mohou nést `actionType` field, který frontend mapuje na variant. Nebo: hardcoded mapping v frontendu na základě link relation name (jednodušší, méně server-side změn).
 - **Lokalizace:** žádné nové labely.
 - **Tests:** frontend tests pro Formik prefill a button color variants.
@@ -51,3 +53,4 @@ Společný kontext: obě úpravy se týkají frontendové vrstvy (forms a table)
 ## Open Questions
 
 - **Kde žije rozhodnutí o variantě (server vs. frontend)?** Tipuji frontend mapping podle link relation name (`register-for-event` → primary, `unregister-from-event` → warning, `cancel-event` → destructive, …). Server-side mapping by vyžadoval nový HAL+FORMS metadata field. Detail řeší design.md.
+- **Pojmenování / tvar query parametru `new`:** zda použít `?new=true` nebo alternativní semantiku (např. `?prefill=true`, samostatný resource `/registrations/template`). Vybráno: `new=true` na stejném GET endpointu — minimalizuje povrch API a frontend si vystačí s jednou variantou affordance URL.

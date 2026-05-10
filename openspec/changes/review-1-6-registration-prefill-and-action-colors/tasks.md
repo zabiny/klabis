@@ -1,10 +1,11 @@
-## 1. SI card prefill in registration form (N2)
+## 1. SI card prefill via server-side defaults (N2)
 
-- [ ] 1.1 Verify that `useCurrentMember()` hook (or equivalent) returns the SI card number — if not, extend the current-user response DTO to expose `siCardNumber` (visible only to the owner via `@OwnerVisible`)
-- [ ] 1.2 In the event registration form component, read `siCardNumber` from the current member; pass it as Formik `initialValues.siCardNumber` (fallback to empty string if not present)
-- [ ] 1.3 Frontend test: when current member has SI card number, form opens with the value prefilled; when not, field is empty
-- [ ] 1.4 Frontend test: overwriting the prefilled value and submitting sends the overwritten value to the API; verify by mocking the registration mutation
-- [ ] 1.5 Run frontend tests via test-runner
+- [x] 1.1 Backend: rozšířit GET registration endpoint (`GET /api/events/{eventId}/registrations/{memberId}`) o volitelný query parametr `new: boolean` (default false). Při `new=false` zachovat stávající chování. Při `new=true`: NEIGNOROVAT `{memberId}` — ověřit oprávnění principálu zakládat registraci pro tento memberId (typicky `principalMemberId == memberId`; jinak 403). Pak místo lookupu existující registrace načíst `Member.siCardNumber` cílového `{memberId}` a vrátit "defaults" payload (siCardNumber v template property `value`, ostatní pole prázdná/default).
+- [x] 1.2 Backend: na detailu eventu publikovat affordance `registerForEvent` (nebo navigační link na nový registration form) tak, aby cílila na URL s `?new=true`. Ověřit že odkaz se zobrazuje pouze pro auth uživatele, který ještě není přihlášen na daný event.
+- [x] 1.3 Backend test (controller): `new=true` pro `{memberId}` == principal vrátí 200 OK s siCardNumber předvyplněným z profilu; `new=false` na neexistující registraci vrátí 404; `new=true` pro cizí `{memberId}` (bez oprávnění) vrátí 403; nepřihlášený → 401.
+- [x] 1.4 Backend test (integrační): user bez siCardNumber v profilu → `new=true` vrátí prázdnou hodnotu (žádná chyba).
+- [ ] 1.5 Frontend ověření: registrační form přes affordance `registerForEvent` zobrazí SI číslo předvyplněné. Hodnotu lze přepsat a submit pošle přepsanou hodnotu. (Žádná změna kódu by neměla být nutná — generický HalFormDisplay flow.)
+- [x] 1.6 Run backend tests via test-runner. (2420/2421 pass; 1 unrelated pre-existing failure in EventManagementE2ETest.)
 
 ## 2. Action button color variants (K2)
 

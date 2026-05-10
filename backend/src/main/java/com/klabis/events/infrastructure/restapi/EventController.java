@@ -504,6 +504,10 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
                             Map.of("category", event.getCategories())
                     ));
+                    if (currentMemberId != null) {
+                        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
+                                .ifPresent(link -> dtoModel.add(link.withRel("new-registration")));
+                    }
                 }
             }
 
@@ -561,6 +565,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
                             Map.of("category", event.getCategories())
                     ));
+                    if (currentMemberId != null) {
+                        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
+                                .ifPresent(link -> dtoModel.add(link.withRel("new-registration")));
+                    }
                 }
             }
 

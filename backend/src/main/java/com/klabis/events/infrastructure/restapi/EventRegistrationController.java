@@ -28,6 +28,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -78,7 +79,7 @@ class EventRegistrationController {
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId)).toUri()
+                linkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId, false)).toUri()
         ).build();
     }
 
@@ -173,7 +174,7 @@ class EventRegistrationController {
             RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members, event);
             EntityModel<RegistrationSummaryDto> item = EntityModel.of(dto);
             UUID rowMemberId = registration.memberId().value();
-            klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId))
+            klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId, false))
                     .ifPresent(selfLinkBuilder -> {
                         if (event.areRegistrationsOpen()) {
                             item.add(selfLinkBuilder.withSelfRel()
@@ -194,18 +195,43 @@ class EventRegistrationController {
     @Operation(
             summary = "Get registration by member ID",
             description = "Get a member's event registration including SI card number. " +
-                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority."
+                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. " +
+                          "When new=true, returns prefilled defaults (siCardNumber from profile) for a not-yet-existing registration."
     )
-    @ApiResponse(responseCode = "200", description = "Registration retrieved successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS")
-    @ApiResponse(responseCode = "404", description = "Member not registered for this event")
+    @ApiResponse(responseCode = "200", description = "Registration retrieved successfully or defaults returned (new=true)")
+    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with mismatched memberId")
+    @ApiResponse(responseCode = "404", description = "Member not registered for this event (new=false only)")
     public ResponseEntity<EntityModel<RegistrationDto>> getRegistration(
             @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
+            @Parameter(description = "When true, returns default prefilled registration data instead of looking up an existing registration")
+            @RequestParam(required = false, defaultValue = "false") boolean newRegistration) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS));
         MemberId targetMember = new MemberId(memberId);
+
+        if (newRegistration) {
+            MemberId principalMemberId = EventAffordanceSupport.resolveMemberId(auth);
+            if (principalMemberId == null || !principalMemberId.equals(targetMember)) {
+                throw new AccessDeniedException(
+                        "Not authorized to request registration defaults for member " + memberId);
+            }
+            MemberDto memberDto = members.findById(targetMember)
+                    .orElseThrow(() -> new IllegalStateException("Member not found: " + targetMember));
+            RegistrationDto defaults = new RegistrationDto(
+                    memberDto.firstName(),
+                    memberDto.lastName(),
+                    memberDto.chipNumber(),
+                    null,
+                    null
+            );
+            Event event = eventManagementService.getEvent(new EventId(eventId), false);
+            EntityModel<RegistrationDto> entityModel = EntityModel.of(defaults);
+            addLinksForRegistration(entityModel, eventId, event, targetMember, auth);
+            return ResponseEntity.ok(entityModel);
+        }
+
+        Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS));
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
@@ -217,7 +243,7 @@ class EventRegistrationController {
 
     private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId, Authentication auth) {
         MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId)).ifPresent(selfLinkBuilder -> {
+        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId, false)).ifPresent(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel();
             if (event.areRegistrationsOpen()) {
                 selfLink = selfLink

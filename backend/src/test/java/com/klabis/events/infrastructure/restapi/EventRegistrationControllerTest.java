@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -1098,6 +1099,111 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{eventId}/registrations/{memberId}?new=true — SI prefill defaults (N2)")
+    class NewRegistrationDefaultsTests {
+
+        @Test
+        @DisplayName("new=true for memberId == principal returns 200 with siCardNumber prefilled from profile")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn200WithPrefillWhenPrincipalMatchesMemberId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, null, "123456")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siCardNumber").value("123456"))
+                    .andExpect(jsonPath("$.firstName").value("John"));
+        }
+
+        @Test
+        @DisplayName("new=true for different memberId (not the principal) returns 403")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
+        void shouldReturn403WhenPrincipalDiffersFromMemberId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("new=true unauthenticated returns 401")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("new=false on non-existing registration still returns 404 (regression)")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn404WhenNewFalseAndNoRegistration() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            Event eventWithoutRegistration = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            eventWithoutRegistration.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(eventWithoutRegistration);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "false")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("new=true for member without siCardNumber in profile returns 200 with empty siCardNumber value (no error)")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn200WithNullSiCardWhenMemberHasNoSiCard() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siCardNumber").value(nullValue()));
         }
 
     }

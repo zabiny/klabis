@@ -20,18 +20,27 @@ Aktuální stav:
 
 ## Decisions
 
-### Decision 1: SI prefill — frontend čte z aktuálního usera, ne z server-side template default
+### Decision 1: SI prefill — server-side defaults přes GET registrace s `new=true`
 
-Spring HATEOAS HAL+FORMS umožňuje populovat `value` na fieldu v template, což by realizovalo prefill server-side. Ale:
-- Hodnota je per-user (current authenticated member), což znamená, že server by musel render template v kontextu konkrétního usera.
-- Cache HAL response → cross-user leakage rizika, pokud není opatrné.
-- Frontend už beztak fetchne current member detail (header zobrazuje jméno).
+Rewritten 2026-05-10 na základě průzkumu kódu:
+- `useCurrentMember()` hook neexistuje. Z auth contextu (`useAuth()`) máme jen JWT claims (firstName, lastName, memberId,…) — nikoliv `siCardNumber`.
+- `MemberDetailsResponse` aktuálně nevrací `siCardNumber` (atribut existuje na `EventRegistration`, nikoliv jako veřejné pole detail DTO).
+- HAL+FORMS template properties už nativně podporují `value` pro prefill — používá se konzistentně napříč aplikací pro edit formuláře. Pro nový resource (registrace, která ještě neexistuje) lze stejný mechanismus rozšířit přes "new resource defaults" pattern.
 
-**Volba:** frontend čte `Member.siCardNumber` z `useCurrentMember()` (TanStack Query, cached) a nastaví Formik `initialValues.siCardNumber` z této hodnoty. Hookem se to ošetří jednou v `EventRegistrationForm`. Pokud je `siCardNumber` undefined nebo null, použije se prázdný string (current behaviour).
+**Volba:** GET endpoint pro detail registrace (`GET /api/events/{eventId}/registrations/{memberId}`) přijme volitelný query parametr `new: boolean` (default `false`):
+- `new=false` (nebo chybí): zachované stávající chování — 200 OK pokud registrace existuje, 404 jinak.
+- `new=true`: server nevyhledává existující registraci, místo toho vrátí 200 OK s "defaults" payload — pro aktuálně autentizovaného uživatele načte `Member.siCardNumber` z profilu a vloží ho do template property `siCardNumber.value`. Ostatní pole zůstanou prázdná / s aplikovanými defaulty z template.
+
+Affordance `registerForEvent` (publikovaná na detailu eventu pro aktuálně přihlášeného člena) odkazuje na URL s `new=true`. Frontend tedy nepotřebuje znát current user data ani fetchnout member detail — formulář se předvyplní stejným způsobem jako edit form.
+
+**Authorization:**
+- `new=true` neignoruje `{memberId}` z URL. Server ověří, že autentizovaný uživatel smí zakládat registraci pro daného `{memberId}` — typicky pouze pro sebe sama (memberId == principalMemberId). Pokud aplikace v budoucnu připustí registraci jménem jiného člena (např. trenér za závodníka), kontrola odpovídajícího oprávnění proběhne zde. Při neoprávněném `{memberId}` vrátí 403.
+- Defaultní/typický use case: affordance `registerForEvent` cílí na `{memberId}` rovnou autentizovaného principálu. Pole `siCardNumber` v defaults se vždy načítá z profilu právě toho `{memberId}` (tj. komu se registrace zakládá), nikoliv aktora.
 
 **Alternative considered:**
-- *Server-side prefill přes HAL+FORMS template `value` field* — vyžaduje user-aware template rendering; current code base toho nedělá; přidá komplexitu.
-- *Klient si pamatuje poslední použité SI číslo v localStorage* — nedeterministický (po výměně čipu za sezónu by uložená hodnota byla zastaralá). `Member.siCardNumber` je single source of truth.
+- *Frontend fetchne current member + extrahuje siCardNumber* — vyžaduje rozšíření MemberDetailsResponse o nové pole + nový hook + handle dvou query state v komponentě. Více kódu, více povrchu API.
+- *Samostatný resource `/registrations/template`* — sémanticky čistší, ale duplikuje URL pro stejnou operaci. `?new=true` je menší zásah do API.
+- *Klient pamatuje poslední použité SI v localStorage* — nedeterministické; `Member.siCardNumber` je single source of truth.
 
 ### Decision 2: Action button variant — frontend mapping podle link relation name
 
@@ -68,12 +77,13 @@ Existující theme (Tailwind) typicky definuje `bg-primary`, `bg-destructive`, `
 ## Risks / Trade-offs
 
 - **[Risk] Frontend mapping zaostává za backend changes (nová affordance bez variant entry)** → Mitigation: explicit fallback na `neutral` pro unknown relations; testy ověří, že všechny aktuálně používané relations mají mapping; review checklist zmiňuje update mapy při přidání nové affordance.
-- **[Risk] N2 — pokud uživatel nemá v profilu `siCardNumber` field exposed kvůli `@OwnerVisible` (např. `useCurrentMember` neobsahuje SI číslo), prefill nefunguje** → Mitigation: ověřit, že current user response obsahuje `siCardNumber` — pokud ne, rozšířit DTO. Probably ok, protože je to vlastní data uživatele (`@OwnerVisible` matchuje).
+- **[Risk] N2 — `new=true` cesta může omylem fungovat i pro neautentizovaného nebo cizího usera** → Mitigation: `{memberId}` se NEignoruje. Server ověří, že autentizovaný principál smí zakládat registraci pro daného `{memberId}` (typicky `principalMemberId == memberId` — sám pro sebe; jiné scénáře vyžadují explicitní oprávnění). Neoprávněný call → 403. Nepřihlášený → 401.
+- **[Risk] N2 — current user v profilu nemá `siCardNumber`** → Mitigation: server vrátí prázdnou hodnotu v template property; frontend přirozeně předvyplní prázdné pole (žádná chyba).
 - **[Trade-off] Hardcoded variant mapping v frontendu** vs. server-side — méně flexibilní, ale jednoznačnější a bez server-side komplexity. Při dalším škálování lze přejít na server-side metadata.
 
 ## Migration Plan
 
-1. **N2:** modifikovat `EventRegistrationForm` — number lines kódu. Test pro prefill behavior.
+1. **N2:** rozšířit GET registration controller o `new` query param + service metodu vracející defaults pro current usera. Frontend žádná změna v komponentě — affordance URL s `new=true` postačí. Test backend + e2e ověření.
 2. **K2:** rozšířit Button / Table renderer o variant prop, přidat `actionVariants.ts` mapping, update existing action buttons. Storybook / unit tests pro každý variant.
 3. **Smoke test po deployi:** ověřit prefill pro uživatele s/bez SI v profilu; ověřit barvy v tabulce akcí.
 
