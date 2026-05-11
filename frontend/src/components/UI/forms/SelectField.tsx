@@ -77,7 +77,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                         {...selectProps}
                     >
                         {placeholder && (
-                            <option value="" disabled>
+                            <option value="">
                                 {placeholder}
                             </option>
                         )}
