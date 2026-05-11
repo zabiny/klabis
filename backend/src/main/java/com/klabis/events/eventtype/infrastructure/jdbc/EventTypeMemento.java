@@ -1,0 +1,91 @@
+package com.klabis.events.eventtype.infrastructure.jdbc;
+
+import com.klabis.common.domain.AuditMetadata;
+import com.klabis.events.EventTypeId;
+import com.klabis.events.eventtype.domain.EventType;
+import org.springframework.data.annotation.*;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Table("event_types")
+class EventTypeMemento implements Persistable<UUID> {
+
+    @Id
+    @Column("id")
+    private UUID id;
+
+    @Column("name")
+    private String name;
+
+    @Column("color")
+    private String color;
+
+    @Column("sort_order")
+    private int sortOrder;
+
+    @CreatedDate
+    @Column("created_at")
+    private Instant createdAt;
+
+    @CreatedBy
+    @Column("created_by")
+    private String createdBy;
+
+    @LastModifiedDate
+    @Column("modified_at")
+    private Instant lastModifiedAt;
+
+    @LastModifiedBy
+    @Column("modified_by")
+    private String lastModifiedBy;
+
+    @Version
+    @Column("version")
+    private Long version;
+
+    @Transient
+    private boolean isNew = true;
+
+    protected EventTypeMemento() {
+    }
+
+    static EventTypeMemento from(EventType eventType) {
+        EventTypeMemento memento = new EventTypeMemento();
+        memento.id = eventType.getId().value();
+        memento.name = eventType.getName();
+        memento.color = eventType.getColor().orElse(null);
+        memento.sortOrder = eventType.getSortOrder();
+
+        memento.createdAt = eventType.getCreatedAt();
+        memento.createdBy = eventType.getCreatedBy();
+        memento.lastModifiedAt = eventType.getLastModifiedAt();
+        memento.lastModifiedBy = eventType.getLastModifiedBy();
+
+        memento.isNew = (eventType.getAuditMetadata() == null);
+        return memento;
+    }
+
+    EventType toEventType() {
+        return EventType.reconstruct(
+                new EventTypeId(this.id),
+                this.name,
+                this.color,
+                this.sortOrder,
+                new AuditMetadata(this.createdAt, this.createdBy, this.lastModifiedAt, this.lastModifiedBy, this.version)
+        );
+    }
+
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+}

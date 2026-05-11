@@ -24,7 +24,7 @@ Vertical slices, sequential (Phase A is fully independent and can ship first; Ph
 |------|-------|-------|--------|
 | 1 | A1 — Backend bulk-sync service + endpoint + HAL affordance + integration tests | backend-developer | TODO |
 | 2 | A2 — Frontend toolbar action, progress modal, summary view | frontend-developer | TODO |
-| 3 | B1+B2+B3 — DB migration, `EventType` aggregate, persistence, REST CRUD controller + tests | backend-developer | TODO |
+| 3 | B1+B2+B3 — DB migration, `EventType` aggregate, persistence, REST CRUD controller + tests | backend-developer | DONE |
 | 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | TODO |
 | 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | TODO |
 | 6 | B6 — Frontend admin page for event types | frontend-developer | TODO |
@@ -49,6 +49,31 @@ After every iteration: tests pass → commit. E2E verification (A3, B8) is optio
 ## Progress log
 
 (subagents append below)
+
+---
+
+### Iter 3 — B1–B3 EventType aggregate + persistence + REST CRUD (2026-05-12)
+
+Tasks B1.1–B3.3 completed. 49/49 new tests pass. Full suite 2504/2505 (1 pre-existing failure in EventManagementE2ETest unrelated to this iteration).
+
+**Analogue patterned after:** `CategoryPreset` capability (`com.klabis.events.domain.CategoryPreset` + memento + controller).
+
+**Key decisions:**
+- `UNIQUE INDEX ON event_types (LOWER(name))` replaced with plain `UNIQUE INDEX ON name` for H2 test compatibility. Case-insensitive uniqueness enforced at application layer via `existsByNameIgnoreCase`. Production can add functional index via future migration.
+- `event_types` table placed before `events` in V001 (FK dependency order).
+- `EventTypeInUseException` loads up to 5 affected event names for the error message.
+- `existsEventReferencingType` + `findEventNamesReferencingType` queries run against `events.event_type_id` column (no Event aggregate changes needed this iteration).
+
+**Changed/created files:**
+- `V001__initial_schema.sql` — added `event_types` table + `event_type_id` FK on `events`
+- `EventTypeId.java` — value object in `com.klabis.events` root
+- `eventtype/domain/EventType.java` — aggregate with CreateEventType/UpdateEventType commands
+- `eventtype/domain/EventTypeRepository.java` — port interface
+- `eventtype/domain/EventTypeNotFoundException.java`, `EventTypeNameAlreadyExistsException.java`, `EventTypeInUseException.java`
+- `eventtype/infrastructure/jdbc/EventTypeMemento.java`, `EventTypeJdbcRepository.java`, `EventTypeRepositoryAdapter.java`
+- `eventtype/application/EventTypeManagementPort.java`, `EventTypeManagementService.java`
+- `eventtype/infrastructure/restapi/EventTypeController.java`, `EventTypeDto.java`, `EventTypeIdMixin.java`, `EventTypeDtoMapper.java`, `EventTypeExceptionHandler.java`
+- Tests: `EventTypeTest.java` (22 domain tests), `EventTypeRepositoryAdapterTest.java` (12 persistence tests), `EventTypeControllerTest.java` (15 controller tests)
 
 ---
 

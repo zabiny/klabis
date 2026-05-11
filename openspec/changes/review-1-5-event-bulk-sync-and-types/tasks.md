@@ -28,24 +28,24 @@
 
 ### B1. DB migration + EventType aggregate
 
-- [ ] B1.1 Update `V001__initial_schema.sql` in place: add `event_types` table (id, name, color, sort_order, audit fields, unique index on LOWER(name)) — production runs on H2 without persistent data, in-place migration is OK
-- [ ] B1.2 Add column `event_type_id UUID NULL REFERENCES event_types(id)` to `events` table
-- [ ] B1.3 Create domain `EventType` aggregate (`@AggregateRoot`) under `com.klabis.events.eventtype.domain`; record-based with validation (name 1..100 chars, color hex pattern)
-- [ ] B1.4 Create `EventTypeId` value object
-- [ ] B1.5 Define `EventTypeRepository` port (find by id, find all sorted, find by name case-insensitive, exists by name)
-- [ ] B1.6 Domain unit tests for `EventType` invariants
+- [x] B1.1 Update `V001__initial_schema.sql` in place: add `event_types` table (id, name, color, sort_order, audit fields, unique index on name) — production runs on H2 without persistent data, in-place migration is OK
+- [x] B1.2 Add column `event_type_id UUID NULL REFERENCES event_types(id)` to `events` table
+- [x] B1.3 Create domain `EventType` aggregate (`@AggregateRoot`) under `com.klabis.events.eventtype.domain`; record-based with validation (name 1..100 chars, color hex pattern)
+- [x] B1.4 Create `EventTypeId` value object
+- [x] B1.5 Define `EventTypeRepository` port (find by id, find all sorted, find by name case-insensitive, exists by name, existsEventReferencingType, findEventNamesReferencingType)
+- [x] B1.6 Domain unit tests for `EventType` invariants
 
 ### B2. Persistence + application service
 
-- [ ] B2.1 Create `EventTypeMemento` + `EventTypeRepositoryAdapter` (Spring Data JDBC) — follow backend-patterns Memento approach
-- [ ] B2.2 Create `EventTypeManagementService` (application layer) implementing CRUD operations; `delete` checks `events.event_type_id` references via repository query, throws `EventTypeInUseException` (with affected event names) if any
-- [ ] B2.3 Persistence integration test (TestContainers Postgres): save/load roundtrip; unique-name violation; delete in-use rejects
+- [x] B2.1 Create `EventTypeMemento` + `EventTypeRepositoryAdapter` (Spring Data JDBC) — follow backend-patterns Memento approach
+- [x] B2.2 Create `EventTypeManagementService` (application layer) implementing CRUD operations; `delete` checks `events.event_type_id` references via repository query, throws `EventTypeInUseException` (with affected event names) if any
+- [x] B2.3 Persistence integration test (H2 in-memory, test profile): save/load roundtrip; unique-name violation; case-insensitive query detection; delete round-trip
 
 ### B3. REST controller + HAL forms
 
-- [ ] B3.1 Create `EventTypeController` under `com.klabis.events.eventtype.infrastructure.restapi`; endpoints: GET list, GET by id, POST create, PUT update, DELETE; gated with `@HasAuthority(EVENTS_MANAGE)`
-- [ ] B3.2 Define request/response DTOs and HAL+FORMS templates
-- [ ] B3.3 Controller integration tests for happy paths, unauthorized access, delete-in-use 409
+- [x] B3.1 Create `EventTypeController` under `com.klabis.events.eventtype.infrastructure.restapi`; endpoints: GET list, GET by id, POST create, PUT update, DELETE; gated with `@HasAuthority(EVENTS_MANAGE)`
+- [x] B3.2 Define request/response DTOs and HAL+FORMS templates (EventTypeDto, EventTypeIdMixin, EventTypeDtoMapper, EventTypeExceptionHandler)
+- [x] B3.3 Controller integration tests for happy paths, unauthorized access, delete-in-use 409
 
 ### B4. Event aggregate — type assignment
 

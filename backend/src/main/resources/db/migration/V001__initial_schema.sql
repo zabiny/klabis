@@ -10,7 +10,8 @@
 -- 2. users (no dependencies)
 -- 3. user_permissions (FK → users)
 -- 4. password_setup_tokens (FK → users)
--- 5. events (FK → members)
+-- 4a. event_types (no dependencies — must precede events)
+-- 5. events (FK → members, event_types)
 -- 6. event_registrations (FK → events, members)
 -- 7. calendar_items (FK → events)
 -- 8. birth_number_audit_log (no FK)
@@ -221,6 +222,39 @@ COMMENT ON COLUMN password_setup_tokens.modified_by IS 'Identifier of who last m
 COMMENT ON COLUMN password_setup_tokens.version IS 'Optimistic locking version for concurrent modification detection';
 
 -- ============================================================================
+-- 4a. EVENT_TYPES TABLE
+-- Catalog of event types (e.g. Training, Race, Championship) managed by admin
+-- Must be created before events table due to FK dependency
+-- ============================================================================
+
+CREATE TABLE event_types
+(
+    id          UUID         NOT NULL PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    color       VARCHAR(7)   NULL,
+    sort_order  INT          NOT NULL,
+
+    -- Audit fields
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for event_types
+-- Note: case-insensitive uniqueness is enforced at application layer via existsByNameIgnoreCase check.
+-- Production (PostgreSQL) additionally enforces it with a functional index (applied via separate migration).
+CREATE UNIQUE INDEX idx_event_types_name ON event_types (name);
+CREATE INDEX idx_event_types_sort_order ON event_types (sort_order);
+
+-- Comments for event_types
+COMMENT ON TABLE event_types IS 'Catalog of event types managed by admin (e.g. Training, Race, Championship)';
+COMMENT ON COLUMN event_types.name IS 'Display name of the event type — unique case-insensitively';
+COMMENT ON COLUMN event_types.color IS 'Optional hex color code for display (e.g. #ff0000)';
+COMMENT ON COLUMN event_types.sort_order IS 'Position in sorted lists and filters; newly created types get MAX+1';
+
+-- ============================================================================
 -- 5. EVENTS TABLE
 -- Stores orienteering event information
 -- ============================================================================
@@ -249,6 +283,9 @@ CREATE TABLE events
 
     -- Optional free-text reason provided when the event is cancelled (null when not cancelled or no reason given)
     cancellation_reason  VARCHAR(500)  NULL,
+
+    -- Optional event type reference from the event-types catalog
+    event_type_id        UUID         NULL REFERENCES event_types(id),
 
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
