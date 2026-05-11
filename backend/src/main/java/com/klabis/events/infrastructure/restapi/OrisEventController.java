@@ -3,6 +3,8 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
+import com.klabis.events.application.BulkSyncResult;
+import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.oris.OrisIntegrationComponent;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +34,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class OrisEventController {
 
     private final OrisEventImportPort orisEventImportPort;
+    private final OrisBulkSyncPort orisBulkSyncPort;
 
-    OrisEventController(OrisEventImportPort orisEventImportPort) {
+    OrisEventController(OrisEventImportPort orisEventImportPort, OrisBulkSyncPort orisBulkSyncPort) {
         this.orisEventImportPort = orisEventImportPort;
+        this.orisBulkSyncPort = orisBulkSyncPort;
     }
 
     @PostMapping(value = "/import", consumes = "application/json")
@@ -66,5 +71,20 @@ class OrisEventController {
 
         orisEventImportPort.syncEventFromOris(new EventId(id));
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/sync-from-oris/all-upcoming")
+    @HasAuthority(Authority.EVENTS_MANAGE)
+    @Operation(
+            summary = "Bulk sync all upcoming ORIS events",
+            description = "Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID. "
+                        + "Processes each event sequentially; partial failures are collected and returned in the summary. "
+                        + "Always returns 200 — check failureCount in the response body."
+    )
+    @ApiResponse(responseCode = "200", description = "Bulk sync completed; inspect failureCount for partial failures")
+    public ResponseEntity<EntityModel<BulkSyncResult>> syncAllUpcomingFromOris() {
+        BulkSyncResult result = orisBulkSyncPort.syncAllUpcoming();
+        EntityModel<BulkSyncResult> model = EntityModel.of(result);
+        return ResponseEntity.ok(model);
     }
 }

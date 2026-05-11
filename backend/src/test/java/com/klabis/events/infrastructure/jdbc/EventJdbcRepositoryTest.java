@@ -1332,4 +1332,90 @@ class EventJdbcRepositoryTest {
             assertThat(reloaded.getRegistrationDeadlines().isEmpty()).isTrue();
         }
     }
+
+    @Nested
+    @DisplayName("findAllUpcomingOrisEvents() — events eligible for bulk sync")
+    class FindAllUpcomingOrisEvents {
+
+        private static final LocalDate TODAY = LocalDate.of(2026, 6, 1);
+
+        @Test
+        @DisplayName("should return DRAFT and ACTIVE events with orisId and date >= today")
+        void shouldReturnEligibleDraftAndActiveEvents() {
+            Event draftOris = saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
+            Event activeOris = saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
+
+            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
+
+            assertThat(result).extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Future DRAFT", "Future ACTIVE");
+        }
+
+        @Test
+        @DisplayName("should exclude events without orisId even if status and date match")
+        void shouldExcludeNonOrisEvents() {
+            saveManualEvent("Manual future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1));
+            saveOrisEvent("ORIS future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1), 201);
+
+            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
+
+            assertThat(result).extracting(Event::getName).containsExactly("ORIS future DRAFT");
+        }
+
+        @Test
+        @DisplayName("should exclude events with status FINISHED or CANCELLED")
+        void shouldExcludeTerminalStatusEvents() {
+            saveOrisEvent("Past FINISHED", EventStatus.FINISHED, TODAY.plusDays(1), 301);
+            saveOrisEvent("Past CANCELLED", EventStatus.CANCELLED, TODAY.plusDays(1), 302);
+            saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1), 303);
+
+            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
+
+            assertThat(result).extracting(Event::getName).containsExactly("Future DRAFT");
+        }
+
+        @Test
+        @DisplayName("should exclude events whose eventDate is before today")
+        void shouldExcludePastEvents() {
+            saveOrisEvent("Past event", EventStatus.ACTIVE, TODAY.minusDays(1), 401);
+            saveOrisEvent("Today event", EventStatus.ACTIVE, TODAY, 402);
+            saveOrisEvent("Future event", EventStatus.ACTIVE, TODAY.plusDays(1), 403);
+
+            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
+
+            assertThat(result).extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Today event", "Future event");
+        }
+
+        private Event saveOrisEvent(String name, EventStatus status, LocalDate date, int orisId) {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId)
+                    .name(name)
+                    .eventDate(date)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+            if (status == EventStatus.ACTIVE) {
+                event.publish();
+            } else if (status == EventStatus.FINISHED) {
+                event.publish();
+                event.finish();
+            } else if (status == EventStatus.CANCELLED) {
+                event.cancel();
+            }
+            return eventRepository.save(event);
+        }
+
+        private Event saveManualEvent(String name, EventStatus status, LocalDate date) {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(date)
+                    .organizer("OOB")
+                    .build());
+            if (status == EventStatus.ACTIVE) {
+                event.publish();
+            }
+            return eventRepository.save(event);
+        }
+    }
 }

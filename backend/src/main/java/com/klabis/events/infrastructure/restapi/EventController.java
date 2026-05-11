@@ -237,11 +237,16 @@ public class EventController {
                 event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
         );
 
+        boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
+
         klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, pageable, null)).ifPresent(link -> {
             Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
             if (orisIntegrationActive) {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
+                if (hasManageAuthority) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
+                }
             }
             pagedModel.add(selfLink);
         });

@@ -7,10 +7,12 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
+import com.klabis.events.application.BulkSyncResult;
 import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
@@ -65,6 +67,9 @@ class OrisEventControllerTest {
 
     @MockitoBean
     private OrisEventImportPort orisEventImportPort;
+
+    @MockitoBean
+    private OrisBulkSyncPort orisBulkSyncPort;
 
     @Nested
     @DisplayName("POST /api/events/import")
@@ -304,6 +309,84 @@ class OrisEventControllerTest {
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(tpl("syncEventFromOris.target")).exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/events/sync-from-oris/all-upcoming — bulk sync")
+    class BulkSyncTests {
+
+        @Test
+        @DisplayName("should return 200 with successCount=3 and failureCount=0 when all events sync")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturnSuccessSummaryWhenAllSync() throws Exception {
+            BulkSyncResult result = new BulkSyncResult(3, 3, 0, List.of(
+                    new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race A", BulkSyncResult.SyncStatus.SYNCED, null),
+                    new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race B", BulkSyncResult.SyncStatus.SYNCED, null),
+                    new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race C", BulkSyncResult.SyncStatus.SYNCED, null)
+            ));
+            when(orisBulkSyncPort.syncAllUpcoming()).thenReturn(result);
+
+            mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalProcessed").value(3))
+                    .andExpect(jsonPath("$.successCount").value(3))
+                    .andExpect(jsonPath("$.failureCount").value(0));
+        }
+
+        @Test
+        @DisplayName("should return 200 with partial failure details when one event fails")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturnPartialFailureSummary() throws Exception {
+            EventId failedId = EventId.generate();
+            BulkSyncResult result = new BulkSyncResult(2, 1, 1, List.of(
+                    new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race A", BulkSyncResult.SyncStatus.SYNCED, null),
+                    new BulkSyncResult.EventSyncEntry(failedId, "Race B", BulkSyncResult.SyncStatus.FAILED, "ORIS endpoint returned 404")
+            ));
+            when(orisBulkSyncPort.syncAllUpcoming()).thenReturn(result);
+
+            mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalProcessed").value(2))
+                    .andExpect(jsonPath("$.successCount").value(1))
+                    .andExpect(jsonPath("$.failureCount").value(1))
+                    .andExpect(jsonPath("$.results[1].error").value("ORIS endpoint returned 404"))
+                    .andExpect(jsonPath("$.results[1].status").value("FAILED"));
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should expose bulk-sync-oris affordance in events list when caller has EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeBulkSyncAffordanceInEventsListForManager() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncAllUpcomingFromOris").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT expose bulk-sync-oris affordance in events list when caller lacks EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotExposeBulkSyncAffordanceWhenNotManager() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncAllUpcomingFromOris").doesNotExist());
         }
     }
 }
