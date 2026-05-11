@@ -298,6 +298,8 @@ describe('EventsPage', () => {
     describe('new-registration prefill flow', () => {
         const newRegistrationUrl = '/api/events/evt-1/registrations/M001?newRegistration=true';
 
+        const registerForEventTarget = '/api/events/evt-1/registrations';
+
         const buildEventWithNewRegistrationLink = (overrides: Record<string, unknown> = {}) => ({
             id: 'evt-1',
             name: 'Jarní závod',
@@ -306,6 +308,17 @@ describe('EventsPage', () => {
             _links: {
                 self: {href: '/api/events/evt-1'},
                 'newRegistration': {href: newRegistrationUrl},
+            },
+            _templates: {
+                registerForEvent: mockHalFormsTemplate({
+                    method: 'POST',
+                    target: registerForEventTarget,
+                    title: 'Přihlásit se',
+                    properties: [
+                        {name: 'siCardNumber', prompt: 'SI číslo', type: 'text'},
+                        {name: 'category', prompt: 'Kategorie', type: 'text'},
+                    ],
+                }),
             },
             ...overrides,
         });
@@ -328,7 +341,10 @@ describe('EventsPage', () => {
         });
 
         const renderWithEventHavingNewRegistrationLink = (siCardNumber?: string) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
+                if (options?.enabled === false) {
+                    return {data: undefined, isLoading: false, error: null} as any;
+                }
                 if (url.includes('newRegistration=true')) {
                     return {data: buildNewRegistrationResponse(siCardNumber), isLoading: false, error: null} as any;
                 }
@@ -379,7 +395,10 @@ describe('EventsPage', () => {
         it('submits overwritten siCardNumber value', async () => {
             const user = userEvent.setup();
             const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
+                if (options?.enabled === false) {
+                    return {data: undefined, isLoading: false, error: null} as any;
+                }
                 if (url.includes('newRegistration=true')) {
                     return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as any;
                 }
@@ -418,6 +437,53 @@ describe('EventsPage', () => {
                     expect.anything(),
                 );
             });
+        });
+
+        it('submits new registration via POST to registerForEvent URL, not PUT to editRegistration', async () => {
+            const user = userEvent.setup();
+            const mutateMock = vi.fn();
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
+                if (options?.enabled === false) {
+                    return {data: undefined, isLoading: false, error: null} as any;
+                }
+                if (url.includes('newRegistration=true')) {
+                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as any;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as any;
+            });
+            vi.mocked(useAuthorizedMutation).mockReturnValue({
+                mutate: mutateMock,
+                isPending: false,
+                error: null,
+            } as any);
+
+            renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            await screen.findByTestId('hal-forms-display');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                expect(mutateMock).toHaveBeenCalledWith(
+                    expect.objectContaining({url: registerForEventTarget}),
+                    expect.anything(),
+                );
+            });
+            // Must NOT submit to the editRegistration PUT URL
+            expect(mutateMock).not.toHaveBeenCalledWith(
+                expect.objectContaining({url: '/api/events/evt-1/registrations/M001'}),
+                expect.anything(),
+            );
         });
     });
 

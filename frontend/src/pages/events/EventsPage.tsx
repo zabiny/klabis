@@ -100,12 +100,12 @@ export const EventsPage = (): ReactElement => {
     const {getUser} = useAuth();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
-    const [newRegistrationUrl, setNewRegistrationUrl] = useState<string | null>(null);
+    const [newRegistrationState, setNewRegistrationState] = useState<{url: string; event: EventListData} | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const {data: newRegistrationData} = useAuthorizedQuery<Record<string, unknown>>(
-        newRegistrationUrl ?? '',
-        {enabled: newRegistrationUrl !== null, staleTime: 0, gcTime: 0, retry: false},
+        newRegistrationState?.url ?? '',
+        {enabled: newRegistrationState !== null, staleTime: 0, gcTime: 0, retry: false},
     );
 
     const importTemplate = resourceData?._templates?.importEvent;
@@ -134,7 +134,7 @@ export const EventsPage = (): ReactElement => {
                 {newRegLink && (
                     <Button key="newRegistration" variant={getActionVariant('newRegistration')} size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
                         e.stopPropagation();
-                        setNewRegistrationUrl(newRegLink.href);
+                        setNewRegistrationState({url: newRegLink.href, event});
                     }}>
                         <UserPlus className="w-4 h-4"/>
                     </Button>
@@ -329,23 +329,25 @@ export const EventsPage = (): ReactElement => {
         )}
 
         {(() => {
-            const newRegTemplates = newRegistrationData?._templates as Record<string, HalFormsTemplate> | undefined;
-            const editTemplate = newRegTemplates?.editRegistration;
-            if (!newRegistrationUrl || !newRegistrationData || !editTemplate) return null;
-            // Pass template target as pathname so HalFormDisplay uses the already-fetched
-            // resourceData instead of re-fetching (shouldFetchTargetData returns false when paths match).
-            const editTemplatePath = editTemplate.target
-                ? normalizeKlabisApiPath(editTemplate.target)
+            if (!newRegistrationState || !newRegistrationData) return null;
+            const eventTemplates = newRegistrationState.event._templates as Record<string, HalFormsTemplate> | undefined;
+            const registerTemplate = eventTemplates?.registerForEvent;
+            if (!registerTemplate) return null;
+            // Submit must use the registerForEvent template (POST) from the event resource,
+            // not editRegistration (PUT) from the prefill defaults — the registration does
+            // not yet exist. resourceData carries the prefilled siCardNumber from defaults.
+            const registerTemplatePath = registerTemplate.target
+                ? normalizeKlabisApiPath(registerTemplate.target)
                 : route.pathname;
             return (
-                <Modal isOpen={true} onClose={() => setNewRegistrationUrl(null)}
+                <Modal isOpen={true} onClose={() => setNewRegistrationState(null)}
                        title={labels.templates.registerForEvent} size="2xl">
                     <HalFormDisplay
-                        template={editTemplate}
-                        templateName="editRegistration"
+                        template={registerTemplate}
+                        templateName="registerForEvent"
                         resourceData={newRegistrationData}
-                        pathname={editTemplatePath}
-                        onClose={() => setNewRegistrationUrl(null)}
+                        pathname={registerTemplatePath}
+                        onClose={() => setNewRegistrationState(null)}
                         navigateOnSuccess={false}
                     />
                 </Modal>
