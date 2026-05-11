@@ -13,10 +13,10 @@
 
 ### A2. Frontend toolbar action + progress modal
 
-- [ ] A2.1 In `EventsListPage` toolbar render the affordance from HAL response (button "Synchronizovat všechny budoucí z ORIS")
-- [ ] A2.2 Click opens a modal with progress spinner and "Synchronizuji..." message; calls the endpoint
-- [ ] A2.3 On response, modal switches to summary view: "X úspěšně synchronizováno, Y chyb" + list of failures (event name + error)
-- [ ] A2.4 Frontend tests: button visible only when affordance is present; progress + summary states
+- [x] A2.1 In `EventsListPage` toolbar render the affordance from HAL response (button "Synchronizovat všechny budoucí z ORIS")
+- [x] A2.2 Click opens a modal with progress spinner and "Synchronizuji..." message; calls the endpoint
+- [x] A2.3 On response, modal switches to summary view: "X úspěšně synchronizováno, Y chyb" + list of failures (event name + error)
+- [x] A2.4 Frontend tests: button visible only when affordance is present; progress + summary states
 
 ### A3. End-to-end verification (Phase A)
 

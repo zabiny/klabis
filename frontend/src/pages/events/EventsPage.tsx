@@ -15,6 +15,7 @@ import {getActionVariant} from "../../utils/actionVariants.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel, getDialogTitleLabel, getTemplateLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
+import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
 import {Button, Modal} from "../../components/UI";
@@ -99,6 +100,7 @@ export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const {getUser} = useAuth();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
     const [newRegistrationState, setNewRegistrationState] = useState<{url: string; event: EventListData} | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -109,6 +111,7 @@ export const EventsPage = (): ReactElement => {
     );
 
     const importTemplate = resourceData?._templates?.importEvent;
+    const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
@@ -218,6 +221,11 @@ export const EventsPage = (): ReactElement => {
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-text-primary">{labels.sections.eventsList}</h2>
                 <div className="flex items-center gap-2">
+                    {bulkSyncTemplate && (
+                        <Button variant="secondary" onClick={() => setIsBulkSyncModalOpen(true)}>
+                            {labels.templates.syncAllUpcomingFromOris}
+                        </Button>
+                    )}
                     {importTemplate && (
                         <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
                             {labels.templates.importEvent}
@@ -311,6 +319,15 @@ export const EventsPage = (): ReactElement => {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 {...orisImport}
+            />
+        )}
+
+        {bulkSyncTemplate && (
+            <BulkSyncOrisModal
+                isOpen={isBulkSyncModalOpen}
+                onClose={() => setIsBulkSyncModalOpen(false)}
+                syncUrl={bulkSyncTemplate.target ?? '/api/events/sync-from-oris/all-upcoming'}
+                onSyncComplete={route.refetch}
             />
         )}
 

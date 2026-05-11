@@ -51,3 +51,19 @@ After every iteration: tests pass → commit. E2E verification (A3, B8) is optio
 (subagents append below)
 
 ---
+
+### Iter 2 — Frontend bulk sync toolbar + modal (2026-05-12)
+
+Implemented tasks A2.1–A2.4. All 1392 frontend tests pass.
+
+**Changed files:**
+- `frontend/src/localization/labels.ts` — added `templates.syncAllUpcomingFromOris`, `dialogTitles.syncAllUpcomingFromOris`, `bulkSync.*` labels
+- `frontend/src/components/events/BulkSyncOrisModal.tsx` — new component: triggers mutation on mount, shows spinner during `isPending`, switches to summary with success/failure counts + failure list on `isSuccess`
+- `frontend/src/pages/events/EventsPage.tsx` — wires `syncAllUpcomingFromOris` template to toolbar button + `BulkSyncOrisModal`; invokes `route.refetch` on sync complete
+- `frontend/src/components/events/BulkSyncOrisModal.test.tsx` — 6 new tests (progress state, summary state, onClose, mutation trigger)
+- `frontend/src/pages/events/EventsPage.test.tsx` — 3 new tests (button visible/absent, modal opens on click) + `BulkSyncOrisModal` mock
+
+**HAL template name:** `syncAllUpcomingFromOris` (derived from method name by Spring HATEOAS)
+**No blocked items.**
+
+---

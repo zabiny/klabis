@@ -45,6 +45,16 @@ vi.mock('../../components/events/ImportOrisEventModal', () => ({
         ) : null,
 }));
 
+vi.mock('../../components/events/BulkSyncOrisModal', () => ({
+    BulkSyncOrisModal: ({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) =>
+        isOpen ? (
+            <div data-testid="bulk-sync-oris-modal">
+                <span>Synchronizuji...</span>
+                <button onClick={onClose}>Zavřít</button>
+            </div>
+        ) : null,
+}));
+
 vi.mock('../../hooks/useOrisEventImport', () => ({
     useOrisEventImport: vi.fn().mockReturnValue({
         events: [],
@@ -594,6 +604,53 @@ describe('EventsPage', () => {
             renderPage(createMockPageData(null), '/events?registeredBy=me');
             const checkbox = screen.getByRole('checkbox', {name: labels.eventsFilter.mojePřihlaskyLabel});
             expect(checkbox).toBeChecked();
+        });
+    });
+
+    describe('"Synchronizovat všechny budoucí z ORIS" button (A2.1)', () => {
+        it('shows button when syncAllUpcomingFromOris template exists in HAL response', () => {
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {
+                    syncAllUpcomingFromOris: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/sync-from-oris/all-upcoming',
+                        title: 'Synchronizovat všechny budoucí z ORIS',
+                    }),
+                },
+            };
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getByRole('button', {name: labels.templates.syncAllUpcomingFromOris})).toBeInTheDocument();
+        });
+
+        it('does NOT show button when syncAllUpcomingFromOris template is absent', () => {
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {
+                    createEvent: mockHalFormsTemplate({method: 'POST', title: 'Přidat závod'}),
+                },
+            };
+            renderPage(createMockPageData(resourceData));
+            expect(screen.queryByRole('button', {name: labels.templates.syncAllUpcomingFromOris})).not.toBeInTheDocument();
+        });
+
+        it('opens BulkSyncOrisModal when button is clicked', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {
+                    syncAllUpcomingFromOris: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/sync-from-oris/all-upcoming',
+                        title: 'Synchronizovat všechny budoucí z ORIS',
+                    }),
+                },
+            };
+            renderPage(createMockPageData(resourceData));
+
+            await user.click(screen.getByRole('button', {name: labels.templates.syncAllUpcomingFromOris}));
+
+            expect(screen.getByTestId('bulk-sync-oris-modal')).toBeInTheDocument();
         });
     });
 });

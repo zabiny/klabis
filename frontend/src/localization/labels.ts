@@ -43,6 +43,7 @@ export const labels = {
         createEvent: 'Přidat akci',
         importEvent: 'Importovat z ORIS',
         syncEventFromOris: 'Synchronizovat z ORISu',
+        syncAllUpcomingFromOris: 'Synchronizovat všechny budoucí z ORIS',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
         resumeMember: 'Reaktivovat',
@@ -88,6 +89,14 @@ export const labels = {
         suspendMember: 'Ukončení členství',
         resumeMember: 'Reaktivace člena',
         importEvent: 'Import akce z ORIS',
+        syncAllUpcomingFromOris: 'Hromadná synchronizace z ORIS',
+    },
+
+    bulkSync: {
+        progress: 'Synchronizuji...',
+        successCount: (n: number) => `${n} úspěšně synchronizováno`,
+        failureCount: (n: number) => `${n} chyb`,
+        failuresHeading: 'Chyby:',
     },
 
     fields: {
