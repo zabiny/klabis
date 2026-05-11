@@ -10,6 +10,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
 import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
+import {getActionVariant} from "../../utils/actionVariants.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel, getDialogTitleLabel, getTemplateLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
@@ -130,7 +131,7 @@ export const EventsPage = (): ReactElement => {
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 {newRegLink && (
-                    <Button key="newRegistration" variant="ghost" size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
+                    <Button key="newRegistration" variant={getActionVariant('newRegistration')} size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
                         e.stopPropagation();
                         setNewRegistrationUrl(newRegLink.href);
                     }}>
@@ -138,7 +139,7 @@ export const EventsPage = (): ReactElement => {
                     </Button>
                 )}
                 {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => templates?.[name] && (
-                    <Button key={name} variant="ghost" size="sm" title={label} onClick={(e) => {
+                    <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
                         openActionModal(event, name);
                     }}>

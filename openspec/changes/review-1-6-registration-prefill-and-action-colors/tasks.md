@@ -9,12 +9,12 @@
 
 ## 2. Action button color variants (K2)
 
-- [ ] 2.1 Add `actionVariants.ts` utility under `frontend/src/utils/` with a record mapping link relation names to variant tokens (`primary`, `destructive`, `warning`, `neutral`); include explicit fallback to `neutral` for unknown relations
-- [ ] 2.2 Audit existing affordance link relations used on the events list — list them and assign variants per the spec (`register-for-event` → primary, `publish-event` → primary, `unregister-from-event` → warning, `cancel-event` → destructive, `update-event` → neutral, `sync-from-oris` → neutral, etc.)
-- [ ] 2.3 Update the action button renderer in `KlabisTable` (or the events list table) to look up the variant from the mapping and pass it as a prop to the underlying `Button` component
-- [ ] 2.4 Ensure the `Button` component supports the four variants via theme tokens (Tailwind classes like `bg-primary`, `bg-destructive`, `bg-warning`, `bg-neutral`); add the missing variants if any are not defined
-- [ ] 2.5 Frontend tests: render an events row with each action and assert the button has the expected variant class
-- [ ] 2.6 Visual / Storybook test: render each variant in isolation to verify color tokens
+- [x] 2.1 Add `actionVariants.ts` utility under `frontend/src/utils/` with a record mapping link relation names to variant tokens (`primary`, `destructive`, `warning`, `neutral`); include explicit fallback to `neutral` for unknown relations
+- [x] 2.2 Audit existing affordance link relations used on the events list — list them and assign variants per the spec (`register-for-event` → primary, `publish-event` → primary, `unregister-from-event` → warning, `cancel-event` → destructive, `update-event` → neutral, `sync-from-oris` → neutral, etc.)
+- [x] 2.3 Update the action button renderer in `KlabisTable` (or the events list table) to look up the variant from the mapping and pass it as a prop to the underlying `Button` component
+- [x] 2.4 Ensure the `Button` component supports the four variants via theme tokens (Tailwind classes like `bg-primary`, `bg-destructive`, `bg-warning`, `bg-neutral`); add the missing variants if any are not defined
+- [x] 2.5 Frontend tests: render an events row with each action and assert the button has the expected variant class
+- [x] 2.6 Visual / Storybook test: render each variant in isolation to verify color tokens
 
 ## 3. End-to-end verification
 

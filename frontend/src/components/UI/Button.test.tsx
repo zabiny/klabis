@@ -23,6 +23,11 @@ describe('Button Component', () => {
             expect(screen.getByRole('button', {name: 'Click me'})).toHaveClass('bg-error');
         });
 
+        it('should render warning variant', () => {
+            render(<Button variant="warning">Odhlásit se</Button>);
+            expect(screen.getByRole('button', {name: 'Odhlásit se'})).toHaveClass('bg-warning');
+        });
+
         it('should render danger-ghost variant with red text on soft background', () => {
             render(<Button variant="danger-ghost">Odhlásit</Button>);
             const btn = screen.getByRole('button', {name: 'Odhlásit'});

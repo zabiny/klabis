@@ -421,6 +421,48 @@ describe('EventsPage', () => {
         });
     });
 
+    describe('action button color variants (K2)', () => {
+        const buildEventWithTemplates = (templates: Record<string, unknown>) => ({
+            id: 'evt-color',
+            name: 'Barevná akce',
+            eventDate: '2025-09-01',
+            status: 'ACTIVE',
+            _links: {self: {href: '/api/events/evt-color'}},
+            _templates: templates,
+        });
+
+        const renderWithEventTemplates = (templates: Record<string, unknown>) => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: [buildEventWithTemplates(templates)]},
+                    page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            } as any);
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('renders cancelEvent button with danger (bg-error) class', async () => {
+            renderWithEventTemplates({
+                cancelEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/cancel'}),
+            });
+            const btn = await screen.findByTitle(labels.templates.cancelEvent);
+            expect(btn).toHaveClass('bg-error');
+        });
+
+        it('renders registerForEvent button with primary (bg-primary) class', async () => {
+            renderWithEventTemplates({
+                registerForEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/register'}),
+            });
+            const btn = await screen.findByTitle(labels.templates.registerForEvent);
+            expect(btn).toHaveClass('bg-primary');
+        });
+    });
+
     describe('filter bar', () => {
         it('renders filter bar above the events table', () => {
             renderPage(createMockPageData(null));

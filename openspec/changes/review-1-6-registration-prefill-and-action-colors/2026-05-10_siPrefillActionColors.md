@@ -90,6 +90,22 @@ Design.md, proposal.md, tasks.md aktualizovány na tento přístup. Specs delta 
 
 **Surprises:** `MemberDto` had no `chipNumber` field — added it as new last component with all existing constructors preserved as delegates to canonical 7-arg form.
 
+## Log — Iter 3: K2 action button color variants (2026-05-11)
+
+**Files changed:**
+- `frontend/src/components/UI/Button.tsx` — exported `ButtonVariant` type; added `warning` variant (`bg-warning hover:bg-amber-600 text-white`) mirroring the `danger` pattern; `variantClasses` typed as `Record<ButtonVariant, string>` for exhaustiveness.
+- `frontend/src/utils/actionVariants.ts` — new utility: `ACTION_VARIANT_MAP` maps camelCase affordance names (`registerForEvent`/`publishEvent`/`newRegistration` → `primary`; `unregisterFromEvent` → `warning`; `cancelEvent` → `danger`; `updateEvent`/`syncEventFromOris` → `secondary`); `getActionVariant(name)` returns `secondary` for unknown names. Policy comment references the spec.
+- `frontend/src/pages/events/EventsPage.tsx` — imported `getActionVariant`; `renderActionsCell` now calls `getActionVariant(name)` for both the `newRegistration` link button and each `ROW_ACTION_BUTTONS` entry instead of the previous hardcoded `variant="ghost"`.
+- `frontend/src/components/UI/Button.test.tsx` — added `warning` variant test asserting `bg-warning` class.
+- `frontend/src/utils/actionVariants.test.ts` — new: 8 unit tests covering all mapped names + unknown fallback.
+- `frontend/src/pages/events/EventsPage.test.tsx` — added 2 integration tests in `action button color variants (K2)` suite: `cancelEvent` button → `bg-error`; `registerForEvent` button → `bg-primary`.
+
+**Note on variant naming:** design.md used generic semantic names (`primary/destructive/warning/neutral`). Implementation uses the actual Button variant names (`primary/danger/warning/secondary`) — no parallel taxonomy introduced.
+
+**Tests:** 1353/1353 frontend tests pass (1342 before Iter 3; +11 new).
+
+Tasks 2.1–2.6 marked `[x]`.
+
 ## Log — Iter 2 frontend fixup: link rel rename + TS cast (2026-05-11)
 
 **Files changed:**
