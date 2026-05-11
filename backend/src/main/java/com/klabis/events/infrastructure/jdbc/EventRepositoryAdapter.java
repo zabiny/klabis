@@ -18,6 +18,7 @@ import org.springframework.data.relational.core.query.Query;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,8 @@ class EventRepositoryAdapter implements EventRepository {
             "name", "name",
             "location", "location",
             "organizer", "organizer",
-            "status", "status"
+            "status", "status",
+            "registrationDeadline", "registration_deadline"
     );
 
     public EventRepositoryAdapter(EventJdbcRepository jdbcRepository,
@@ -109,8 +111,9 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Returns the intersection of IDs that satisfy the fulltext and/or registeredBy constraints,
-     * or null if neither constraint is active (meaning no pre-filtering is needed).
+     * Returns the intersection of IDs that satisfy the fulltext, registeredBy,
+     * deadlineWithin, and/or notRegisteredBy constraints,
+     * or null if none of those constraints is active (meaning no pre-filtering is needed).
      */
     private List<UUID> resolvePreFilteredIds(EventFilter filter) {
         List<UUID> fulltextIds = filter.fulltextQuery() != null
@@ -121,18 +124,32 @@ class EventRepositoryAdapter implements EventRepository {
                 ? findIdsByRegisteredMember(filter.registeredBy())
                 : null;
 
-        if (fulltextIds == null && registeredByIds == null) {
+        LocalDate today = LocalDate.now();
+
+        List<UUID> deadlineWithinIds = filter.deadlineWithin() != null
+                ? findIdsByDeadlineWithin(today, today.plus(filter.deadlineWithin()))
+                : null;
+
+        List<UUID> notRegisteredByIds = filter.notRegisteredBy() != null
+                ? findIdsByNotRegisteredMember(filter.notRegisteredBy())
+                : null;
+
+        List<List<UUID>> activeSets = new ArrayList<>();
+        if (fulltextIds != null) activeSets.add(fulltextIds);
+        if (registeredByIds != null) activeSets.add(registeredByIds);
+        if (deadlineWithinIds != null) activeSets.add(deadlineWithinIds);
+        if (notRegisteredByIds != null) activeSets.add(notRegisteredByIds);
+
+        if (activeSets.isEmpty()) {
             return null;
         }
-        if (fulltextIds == null) {
-            return registeredByIds;
-        }
-        if (registeredByIds == null) {
-            return fulltextIds;
-        }
 
-        Set<UUID> registeredBySet = Set.copyOf(registeredByIds);
-        return fulltextIds.stream().filter(registeredBySet::contains).toList();
+        return activeSets.stream()
+                .reduce((a, b) -> {
+                    Set<UUID> bSet = Set.copyOf(b);
+                    return a.stream().filter(bSet::contains).toList();
+                })
+                .orElse(List.of());
     }
 
     private Page<Event> findAllWithMatchingIds(EventFilter filter, Pageable pageable, List<UUID> matchingIds) {
@@ -252,6 +269,54 @@ class EventRepositoryAdapter implements EventRepository {
         String sql = """
                 SELECT id FROM events e
                 WHERE EXISTS (
+                    SELECT 1 FROM event_registrations er
+                    WHERE er.event_id = e.id AND er.member_id = :memberId
+                )
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
+        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
+    }
+
+    /**
+     * Returns IDs of events whose nearest future registration deadline falls within
+     * {@code [today, deadlineUntil]} (both inclusive).
+     * <p>
+     * Nearest future deadline logic (mirrors {@link com.klabis.events.domain.RegistrationDeadlines#nextRelevant}):
+     * - If deadline1 is strictly after today → use deadline1
+     * - Else if deadline2 is strictly after today → use deadline2
+     * - Else if deadline3 is strictly after today → use deadline3
+     * - Else fall back to the last non-null deadline (all are past or today)
+     * <p>
+     * Events with no deadlines configured are excluded.
+     */
+    private List<UUID> findIdsByDeadlineWithin(LocalDate today, LocalDate deadlineUntil) {
+        String sql = """
+                SELECT id FROM events e
+                WHERE e.registration_deadline IS NOT NULL
+                  AND CASE
+                        WHEN e.registration_deadline > :today THEN e.registration_deadline
+                        WHEN e.registration_deadline_2 IS NOT NULL AND e.registration_deadline_2 > :today THEN e.registration_deadline_2
+                        WHEN e.registration_deadline_3 IS NOT NULL AND e.registration_deadline_3 > :today THEN e.registration_deadline_3
+                        ELSE COALESCE(e.registration_deadline_3, e.registration_deadline_2, e.registration_deadline)
+                      END BETWEEN :today AND :deadlineUntil
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("today", today)
+                .addValue("deadlineUntil", deadlineUntil);
+        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
+    }
+
+    /**
+     * Returns IDs of events where the given member does NOT have a registration.
+     * <p>
+     * Scalability note: this scans all events rows. For members with few registrations the
+     * result set can be large; in future consider adding a status/event_date pre-filter in SQL
+     * rather than intersecting the large list in Java.
+     */
+    private List<UUID> findIdsByNotRegisteredMember(MemberId memberId) {
+        String sql = """
+                SELECT id FROM events e
+                WHERE NOT EXISTS (
                     SELECT 1 FROM event_registrations er
                     WHERE er.event_id = e.id AND er.member_id = :memberId
                 )

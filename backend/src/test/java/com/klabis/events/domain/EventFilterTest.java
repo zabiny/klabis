@@ -1,8 +1,12 @@
 package com.klabis.events.domain;
 
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.time.Period;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -138,6 +142,80 @@ class EventFilterTest {
     }
 
     @Nested
+    @DisplayName("withDeadlineWithin()")
+    class WithDeadlineWithinTests {
+
+        @Test
+        @DisplayName("stores the period when set")
+        void storesPeriod() {
+            Period sevenDays = Period.ofDays(7);
+            EventFilter filter = EventFilter.none().withDeadlineWithin(sevenDays);
+            assertThat(filter.deadlineWithin()).isEqualTo(sevenDays);
+        }
+
+        @Test
+        @DisplayName("stores null when cleared")
+        void storesNullWhenCleared() {
+            EventFilter filter = EventFilter.none().withDeadlineWithin(Period.ofDays(7)).withDeadlineWithin(null);
+            assertThat(filter.deadlineWithin()).isNull();
+        }
+
+        @Test
+        @DisplayName("preserves all other filter dimensions")
+        void preservesOtherDimensions() {
+            EventFilter base = EventFilter.byStatus(EventStatus.ACTIVE).withOrganizer("OOB");
+            EventFilter result = base.withDeadlineWithin(Period.ofDays(7));
+            assertThat(result.statuses()).containsExactly(EventStatus.ACTIVE);
+            assertThat(result.organizer()).isEqualTo("OOB");
+            assertThat(result.notRegisteredBy()).isNull();
+        }
+
+        @Test
+        @DisplayName("none-filter has null deadlineWithin by default")
+        void noneFilterHasNullDeadlineWithin() {
+            assertThat(EventFilter.none().deadlineWithin()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("withNotRegisteredBy()")
+    class WithNotRegisteredByTests {
+
+        @Test
+        @DisplayName("stores the member ID when set")
+        void storesMemberId() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter filter = EventFilter.none().withNotRegisteredBy(member);
+            assertThat(filter.notRegisteredBy()).isEqualTo(member);
+        }
+
+        @Test
+        @DisplayName("stores null when cleared")
+        void storesNullWhenCleared() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter filter = EventFilter.none().withNotRegisteredBy(member).withNotRegisteredBy(null);
+            assertThat(filter.notRegisteredBy()).isNull();
+        }
+
+        @Test
+        @DisplayName("preserves all other filter dimensions")
+        void preservesOtherDimensions() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter base = EventFilter.byStatus(EventStatus.ACTIVE).withDeadlineWithin(Period.ofDays(7));
+            EventFilter result = base.withNotRegisteredBy(member);
+            assertThat(result.statuses()).containsExactly(EventStatus.ACTIVE);
+            assertThat(result.deadlineWithin()).isEqualTo(Period.ofDays(7));
+            assertThat(result.registeredBy()).isNull();
+        }
+
+        @Test
+        @DisplayName("none-filter has null notRegisteredBy by default")
+        void noneFilterHasNullNotRegisteredBy() {
+            assertThat(EventFilter.none().notRegisteredBy()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("withExcludedStatus()")
     class WithExcludedStatusTests {
 
@@ -164,6 +242,8 @@ class EventFilterTest {
                     "OOB",
                     java.time.LocalDate.of(2026, 1, 1),
                     java.time.LocalDate.of(2026, 12, 31),
+                    null,
+                    null,
                     null,
                     null,
                     null

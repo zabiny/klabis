@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.Optional;
 
 import java.util.UUID;
@@ -1003,6 +1004,267 @@ class EventJdbcRepositoryTest {
 
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getName()).isEqualTo("Praha Open");
+        }
+    }
+
+    @Nested
+    @DisplayName("Filter by deadlineWithin — nearest future deadline in window")
+    class FilterByDeadlineWithin {
+
+        @Test
+        @DisplayName("should return event whose single deadline falls within the window")
+        void shouldReturnEventWithDeadlineInWindow() {
+            LocalDate today = LocalDate.now();
+
+            Event eventInWindow = Event.create(EventCreateEventBuilder.builder()
+                    .name("In Window Event")
+                    .eventDate(today.plusDays(30))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(5)))
+                    .build());
+            eventInWindow.publish();
+            eventRepository.save(eventInWindow);
+
+            Event eventOutsideWindow = Event.create(EventCreateEventBuilder.builder()
+                    .name("Outside Window Event")
+                    .eventDate(today.plusDays(60))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(14)))
+                    .build());
+            eventOutsideWindow.publish();
+            eventRepository.save(eventOutsideWindow);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDeadlineWithin(Period.ofDays(7)),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("In Window Event");
+        }
+
+        @Test
+        @DisplayName("should return event whose second deadline is the nearest future one and it falls in window")
+        void shouldUseNearestFutureDeadlineWhenFirstIsInPast() {
+            LocalDate today = LocalDate.now();
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Second Deadline In Window")
+                    .eventDate(today.plusDays(30))
+                    .organizer("OOB")
+                    .registrationDeadlines(new RegistrationDeadlines(
+                            java.util.Optional.of(today.minusDays(5)),
+                            java.util.Optional.of(today.plusDays(4)),
+                            java.util.Optional.empty()))
+                    .build());
+            event.publish();
+            eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDeadlineWithin(Period.ofDays(7)),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Second Deadline In Window");
+        }
+
+        @Test
+        @DisplayName("should exclude event with no deadlines configured")
+        void shouldExcludeEventWithNoDeadlines() {
+            LocalDate today = LocalDate.now();
+
+            Event noDeadlineEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Deadline Event")
+                    .eventDate(today.plusDays(10))
+                    .organizer("OOB")
+                    .build());
+            noDeadlineEvent.publish();
+            eventRepository.save(noDeadlineEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDeadlineWithin(Period.ofDays(7)),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should include event whose deadline falls exactly on today (boundary)")
+        void shouldIncludeEventWithDeadlineOnToday() {
+            LocalDate today = LocalDate.now();
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Deadline Today")
+                    .eventDate(today.plusDays(30))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today))
+                    .build());
+            event.publish();
+            eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDeadlineWithin(Period.ofDays(7)),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Deadline Today");
+        }
+
+        @Test
+        @DisplayName("should include event whose deadline falls exactly on the last day of the window (boundary)")
+        void shouldIncludeEventWithDeadlineOnLastDayOfWindow() {
+            LocalDate today = LocalDate.now();
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Deadline On Window End")
+                    .eventDate(today.plusDays(30))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(7)))
+                    .build());
+            event.publish();
+            eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDeadlineWithin(Period.ofDays(7)),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Deadline On Window End");
+        }
+    }
+
+    @Nested
+    @DisplayName("Filter by notRegisteredBy — excludes events where member is registered")
+    class FilterByNotRegisteredBy {
+
+        @Test
+        @DisplayName("should return events where member is not registered, exclude those where member is registered")
+        void shouldReturnOnlyEventsWhereNotRegistered() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event registeredEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Registered Event")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            registeredEvent.publish();
+            registeredEvent.registerMember(member, new SiCardNumber("111111"), null);
+            eventRepository.save(registeredEvent);
+
+            Event notRegisteredEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Not Registered Event")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OOB")
+                    .build());
+            notRegisteredEvent.publish();
+            eventRepository.save(notRegisteredEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withNotRegisteredBy(member),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Not Registered Event");
+        }
+
+        @Test
+        @DisplayName("should return all events when member has no registrations")
+        void shouldReturnAllEventsWhenMemberHasNoRegistrations() {
+            MemberId memberWithNoRegistrations = new MemberId(TEST_MEMBER_3_ID);
+
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event A").eventDate(LocalDate.now().plusDays(10)).organizer("OOB").build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event B").eventDate(LocalDate.now().plusDays(11)).organizer("OOB").build()));
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withNotRegisteredBy(memberWithNoRegistrations),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should return empty when member is registered to all events")
+        void shouldReturnEmptyWhenMemberRegisteredToAllEvents() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(LocalDate.now().plusDays(30)).organizer("OOB").build());
+            event1.publish();
+            event1.registerMember(member, new SiCardNumber("111111"), null);
+            eventRepository.save(event1);
+
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(LocalDate.now().plusDays(31)).organizer("OOB").build());
+            event2.publish();
+            event2.registerMember(member, new SiCardNumber("222222"), null);
+            eventRepository.save(event2);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withNotRegisteredBy(member),
+                    Pageable.unpaged()
+            );
+
+            assertThat(result.getContent()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Combined deadlineWithin + notRegisteredBy — dashboard widget query")
+    class CombinedDeadlineAndNotRegisteredFilter {
+
+        @Test
+        @DisplayName("should return only ACTIVE events with deadline in window where member is not registered")
+        void shouldReturnActiveEventsWithDeadlineInWindowWhereNotRegistered() {
+            LocalDate today = LocalDate.now();
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            // Event A: ACTIVE, deadline in window, member NOT registered → should be in result
+            Event matchingEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Matching Event")
+                    .eventDate(today.plusDays(30))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(5)))
+                    .build());
+            matchingEvent.publish();
+            eventRepository.save(matchingEvent);
+
+            // Event B: ACTIVE, deadline in window, member IS registered → excluded by notRegisteredBy
+            Event alreadyRegistered = Event.create(EventCreateEventBuilder.builder()
+                    .name("Already Registered Event")
+                    .eventDate(today.plusDays(31))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(6)))
+                    .build());
+            alreadyRegistered.publish();
+            alreadyRegistered.registerMember(member, new SiCardNumber("111111"), null);
+            eventRepository.save(alreadyRegistered);
+
+            // Event C: ACTIVE, deadline outside window → excluded by deadlineWithin
+            Event deadlineOutsideWindow = Event.create(EventCreateEventBuilder.builder()
+                    .name("Outside Window Event")
+                    .eventDate(today.plusDays(60))
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(20)))
+                    .build());
+            deadlineOutsideWindow.publish();
+            eventRepository.save(deadlineOutsideWindow);
+
+            EventFilter filter = EventFilter.byStatus(EventStatus.ACTIVE)
+                    .withDeadlineWithin(Period.ofDays(7))
+                    .withNotRegisteredBy(member);
+
+            Page<Event> result = eventRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Matching Event");
         }
     }
 

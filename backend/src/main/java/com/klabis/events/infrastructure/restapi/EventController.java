@@ -48,6 +48,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -211,6 +212,10 @@ public class EventController {
             @RequestParam(required = false) LocalDate dateFrom,
             @Parameter(description = "Filter events up to this date (inclusive, yyyy-MM-dd, optional)")
             @RequestParam(required = false) LocalDate dateTo,
+            @Parameter(description = "Return events whose nearest future registration deadline falls within [today, today+period] (ISO-8601 duration, e.g. P7D, optional)")
+            @RequestParam(required = false) Period deadlineWithin,
+            @Parameter(description = "Exclude events where the given member is registered: only 'me' is currently accepted (optional)")
+            @RequestParam(required = false) String notRegisteredBy,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
@@ -218,7 +223,7 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, currentUser);
+        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, currentUser);
         if (filter == null) {
             return ResponseEntity.ok(pagedResourcesAssembler.toModel(
                     new PageImpl<>(List.of(), pageable, 0),
@@ -232,7 +237,7 @@ public class EventController {
                 event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
         );
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, pageable, null)).ifPresent(link -> {
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, pageable, null)).ifPresent(link -> {
             Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
             if (orisIntegrationActive) {
@@ -247,11 +252,11 @@ public class EventController {
     /**
      * Builds an {@link EventFilter} from the query parameters received by {@code listEvents}.
      * Returns {@code null} when the request implies an empty result without querying the
-     * repository — specifically when {@code registeredBy=me} is requested but the current
-     * user has no member profile (silent no-op per design decision).
+     * repository — specifically when {@code registeredBy=me} or {@code notRegisteredBy=me}
+     * is requested but the current user has no member profile (silent no-op per design decision).
      *
-     * @throws IllegalArgumentException when {@code registeredBy} has an unsupported value
-     *         (anything other than {@code "me"}), which propagates to HTTP 400.
+     * @throws IllegalArgumentException when {@code registeredBy} or {@code notRegisteredBy}
+     *         has an unsupported value (anything other than {@code "me"}), which propagates to HTTP 400.
      */
     @Nullable
     private EventFilter buildFilter(
@@ -262,6 +267,8 @@ public class EventController {
             String registeredBy,
             LocalDate dateFrom,
             LocalDate dateTo,
+            Period deadlineWithin,
+            String notRegisteredBy,
             CurrentUserData currentUser) {
 
         EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
@@ -282,6 +289,10 @@ public class EventController {
             filter = filter.withDateRange(dateFrom, dateTo);
         }
 
+        if (deadlineWithin != null) {
+            filter = filter.withDeadlineWithin(deadlineWithin);
+        }
+
         if (registeredBy != null) {
             if (!"me".equals(registeredBy)) {
                 throw new IllegalArgumentException(
@@ -291,6 +302,17 @@ public class EventController {
                 return null;
             }
             filter = filter.withRegisteredBy(currentUser.memberId());
+        }
+
+        if (notRegisteredBy != null) {
+            if (!"me".equals(notRegisteredBy)) {
+                throw new IllegalArgumentException(
+                        "Unsupported notRegisteredBy value: '" + notRegisteredBy + "'. Only 'me' is currently accepted.");
+            }
+            if (!currentUser.isMember()) {
+                return null;
+            }
+            filter = filter.withNotRegisteredBy(currentUser.memberId());
         }
 
         return filter;
@@ -514,7 +536,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             dtoModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         if (event.getStatus() != EventStatus.DRAFT) {
@@ -587,7 +609,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
         klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("category-presets")));

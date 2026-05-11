@@ -10,6 +10,7 @@ import {formatDate} from "../utils/dateUtils";
 import {useDashboard} from "../hooks/useDashboard";
 import {useMyUpcomingRegistrations} from "../hooks/useMyUpcomingRegistrations";
 import {extractNavigationPath} from "../utils/navigationPath";
+import {UpcomingDeadlinesWidget} from "../components/dashboard/UpcomingDeadlinesWidget";
 
 const navigationCards = [
     {
@@ -177,27 +178,18 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
     )
 }
 
-const UserDashboard = ({firstName, memberId, menuItems}: {
-    firstName: string;
+const UserDashboard = ({memberId, menuItems}: {
     memberId: string | null;
     menuItems: { rel: string }[]
 }) => {
     const {data: dashboardData} = useDashboard()
     const upcomingRegistrationsHref = dashboardData?.upcomingRegistrationsHref
+    const upcomingDeadlinesHref = dashboardData?.upcomingDeadlinesHref
     const {data: registrationsData} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
     const registrationItems = registrationsData?.items ?? []
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <div>
-                <h1 className="font-display text-5xl lg:text-6xl font-bold text-gradient-primary mb-3">
-                    {labels.dashboard.welcome}, {firstName}
-                </h1>
-                <p className="text-lg text-text-secondary max-w-3xl">
-                    {labels.dashboard.subtitle}
-                </p>
-            </div>
-
             <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {memberId && (
                     <RouterLink to={`/members/${memberId}`} className="group block">
@@ -287,6 +279,8 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                     </Card>
                 </div>
             )}
+
+            <UpcomingDeadlinesWidget upcomingDeadlinesHref={upcomingDeadlinesHref}/>
         </div>
     )
 }
@@ -303,7 +297,7 @@ const HomePage = () => {
         return <AdminDashboard firstName={firstName} menuItems={menuItems}/>
     }
 
-    return <UserDashboard firstName={firstName} memberId={memberId} menuItems={menuItems}/>
+    return <UserDashboard memberId={memberId} menuItems={menuItems}/>
 }
 
 export default HomePage

@@ -54,6 +54,38 @@ describe('useDashboard', () => {
         expect(result.current.data?.upcomingRegistrationsHref).toBe(href);
     });
 
+    it('returns upcomingDeadlinesHref when upcomingRegistrations link is present (member profile exists)', async () => {
+        const registrationsHref = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
+        mockFetchWithResponse({
+            _links: {
+                self: {href: '/api/dashboard'},
+                upcomingRegistrations: {href: registrationsHref},
+            },
+        });
+
+        const {result} = renderHook(() => useDashboard(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data?.upcomingDeadlinesHref).toBe(
+            '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc'
+        );
+    });
+
+    it('returns upcomingDeadlinesHref as undefined when upcomingRegistrations link is absent (no member profile)', async () => {
+        mockFetchWithResponse({
+            _links: {
+                self: {href: '/api/dashboard'},
+            },
+        });
+
+        const {result} = renderHook(() => useDashboard(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data?.upcomingDeadlinesHref).toBeUndefined();
+    });
+
     it('returns upcomingRegistrationsHref as undefined when link is absent', async () => {
         mockFetchWithResponse({
             _links: {

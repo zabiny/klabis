@@ -7,6 +7,7 @@ import * as RootNavigationModule from '../hooks/useRootNavigation';
 import * as AuthContext2Module from '../contexts/AuthContext2';
 import * as UseDashboardModule from '../hooks/useDashboard';
 import * as UseMyUpcomingRegistrationsModule from '../hooks/useMyUpcomingRegistrations';
+import * as UpcomingDeadlinesWidgetModule from '../components/dashboard/UpcomingDeadlinesWidget';
 import HomePage from './HomePage';
 
 vi.mock('../hooks/useRootNavigation', () => ({
@@ -29,10 +30,15 @@ vi.mock('../hooks/useMyUpcomingRegistrations', () => ({
     useMyUpcomingRegistrations: vi.fn(),
 }))
 
+vi.mock('../components/dashboard/UpcomingDeadlinesWidget', () => ({
+    UpcomingDeadlinesWidget: vi.fn(() => null),
+}))
+
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContext2Module.useAuth)
 const useDashboard = vi.mocked(UseDashboardModule.useDashboard)
 const useMyUpcomingRegistrations = vi.mocked(UseMyUpcomingRegistrationsModule.useMyUpcomingRegistrations)
+const UpcomingDeadlinesWidget = vi.mocked(UpcomingDeadlinesWidgetModule.UpcomingDeadlinesWidget)
 
 const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
     data,
@@ -166,13 +172,18 @@ describe('HomePage - Regular User Dashboard', () => {
             }),
             logout: vi.fn(),
         })
-        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined}))
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
         useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
     })
 
-    it('should display welcome message with user first name', () => {
+    it('should not display welcome message heading', () => {
         renderHomePage()
-        expect(screen.getByText(/Jana/)).toBeInTheDocument()
+        expect(screen.queryByText(/Vítejte v Klabis/)).not.toBeInTheDocument()
+    })
+
+    it('should not display subtitle', () => {
+        renderHomePage()
+        expect(screen.queryByText(/Moderní systém pro správu/)).not.toBeInTheDocument()
     })
 
     it('should display my profile quick link', () => {
@@ -214,7 +225,7 @@ describe('HomePage - UserDashboard widget: no upcomingRegistrations link', () =>
             }),
             logout: vi.fn(),
         })
-        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined}))
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
         useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
     })
 
@@ -248,7 +259,7 @@ describe('HomePage - UserDashboard widget: link present, events returned', () =>
             }),
             logout: vi.fn(),
         })
-        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href}))
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
         useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({
             items: [
                 {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha'},
@@ -314,7 +325,7 @@ describe('HomePage - UserDashboard widget: link present, no events (empty state)
             }),
             logout: vi.fn(),
         })
-        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href}))
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
         useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({items: []}))
     })
 
@@ -338,5 +349,47 @@ describe('HomePage - UserDashboard widget: link present, no events (empty state)
     it('does not render "Zobrazit všechny" when no events', () => {
         renderHomePage()
         expect(screen.queryByText('Zobrazit všechny')).not.toBeInTheDocument()
+    })
+})
+
+describe('HomePage - UserDashboard: UpcomingDeadlinesWidget integration', () => {
+    const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3'
+    const deadlinesHref = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc'
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        useRootNavigation.mockReturnValue(createMockQueryResult(regularNavItems))
+        useAuth.mockReturnValue({
+            isAuthenticated: true,
+            login: vi.fn(),
+            isLoading: false,
+            getUser: vi.fn().mockReturnValue({
+                firstName: 'Jana',
+                lastName: 'Horáková',
+                id: 2,
+                userName: 'jhorakova',
+                memberId: 'member-uuid-123',
+            }),
+            logout: vi.fn(),
+        })
+        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({items: []}))
+    })
+
+    it('passes upcomingDeadlinesHref to UpcomingDeadlinesWidget when member profile exists', () => {
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: deadlinesHref}))
+        renderHomePage()
+        expect(UpcomingDeadlinesWidget).toHaveBeenCalledWith(
+            expect.objectContaining({upcomingDeadlinesHref: deadlinesHref}),
+            undefined
+        )
+    })
+
+    it('passes undefined upcomingDeadlinesHref when no member profile', () => {
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
+        renderHomePage()
+        expect(UpcomingDeadlinesWidget).toHaveBeenCalledWith(
+            expect.objectContaining({upcomingDeadlinesHref: undefined}),
+            undefined
+        )
     })
 })
