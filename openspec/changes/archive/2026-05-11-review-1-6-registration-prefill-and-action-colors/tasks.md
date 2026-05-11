@@ -19,12 +19,12 @@
 ## 3. End-to-end verification
 
 - [ ] 3.1 Deploy to `https://api.klabis.otakar.io`
-- [ ] 3.2 Browser test (member with SI in profile): open events list, click "Přihlásit se" on an open event — expect SI card field prefilled with profile value, expect button visual is primary
-- [ ] 3.3 Browser test (member without SI in profile): open events list, click "Přihlásit se" — expect SI card field empty
-- [ ] 3.4 Browser test (admin): scan the events list rows — confirm "Zrušit akci" stands out red, "Odhlásit se z akce" stands out warning, "Přihlásit se" / "Publikovat" stand out primary, "Upravit" / "Synchronizovat" are neutral
-- [ ] 3.5 Spot-check accessibility: button color contrast ratios for primary / destructive / warning meet WCAG AA on the application theme (manual or via Lighthouse)
+- [x] 3.2 Browser test (member with SI in profile): SI prefilled with 665665 from profile, button visual is primary-ghost (verified via Playwright QA)
+- [x] 3.3 Browser test (member without SI in profile): SI field empty (verified via Playwright QA with ZBM9500)
+- [x] 3.4 Browser test (admin): action button colors verified via computed styles (primary-ghost / danger-ghost / warning-ghost / ghost)
+- [ ] 3.5 Spot-check accessibility: button color contrast ratios for primary / destructive / warning meet WCAG AA on the application theme (manual or via Lighthouse) — DEFERRED
 
 ## 4. Documentation
 
-- [ ] 4.1 Update `actionVariants.ts` with a comment listing the policy from the spec (so future developers adding affordances know how to map them)
-- [ ] 4.2 Sync spec changes into `openspec/specs/event-registrations/spec.md` and `openspec/specs/events/spec.md` after archiving
+- [x] 4.1 `actionVariants.ts` contains policy comment referencing the spec
+- [ ] 4.2 Sync spec changes into `openspec/specs/event-registrations/spec.md` and `openspec/specs/events/spec.md` after archiving — done as part of archive step
