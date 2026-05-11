@@ -446,20 +446,20 @@ describe('EventsPage', () => {
             }));
         };
 
-        it('renders cancelEvent button with danger (bg-error) class', async () => {
+        it('renders cancelEvent button with danger-ghost (text-red-600) class', async () => {
             renderWithEventTemplates({
                 cancelEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/cancel'}),
             });
             const btn = await screen.findByTitle(labels.templates.cancelEvent);
-            expect(btn).toHaveClass('bg-error');
+            expect(btn).toHaveClass('text-red-600');
         });
 
-        it('renders registerForEvent button with primary (bg-primary) class', async () => {
+        it('renders registerForEvent button with primary-ghost (text-primary) class', async () => {
             renderWithEventTemplates({
                 registerForEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/register'}),
             });
             const btn = await screen.findByTitle(labels.templates.registerForEvent);
-            expect(btn).toHaveClass('bg-primary');
+            expect(btn).toHaveClass('text-primary');
         });
     });
 

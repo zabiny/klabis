@@ -43,6 +43,20 @@ describe('Button Component', () => {
             expect(btn).toHaveClass('dark:bg-red-950/50');
             expect(btn).toHaveClass('dark:hover:bg-red-950');
         });
+
+        it('should render primary-ghost variant with primary text on subtle background', () => {
+            render(<Button variant="primary-ghost">Přihlásit se</Button>);
+            const btn = screen.getByRole('button', {name: 'Přihlásit se'});
+            expect(btn).toHaveClass('text-primary');
+            expect(btn).toHaveClass('bg-primary-subtle');
+        });
+
+        it('should render warning-ghost variant with warning text on subtle background', () => {
+            render(<Button variant="warning-ghost">Odhlásit se</Button>);
+            const btn = screen.getByRole('button', {name: 'Odhlásit se'});
+            expect(btn).toHaveClass('text-warning');
+            expect(btn).toHaveClass('bg-warning-bg');
+        });
     });
 
     describe('Loading state', () => {

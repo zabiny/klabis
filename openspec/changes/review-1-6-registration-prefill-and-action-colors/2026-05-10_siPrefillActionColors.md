@@ -113,3 +113,16 @@ Tasks 2.1–2.6 marked `[x]`.
 - `frontend/src/pages/events/EventsPage.test.tsx` — renamed mock `_links` key from `'new-registration'` to `'newRegistration'` in `buildEventWithNewRegistrationLink`; added `as any` cast to the two `useAuthorizedQuery.mockReturnValue(...)` calls in `renderWithEvents` and `renderWithCancelableEvent` (TS error: partial mock object not assignable to `UseQueryResult<unknown>` — same pattern already used in `renderWithEventHavingNewRegistrationLink`).
 
 **Tests:** 25/25 EventsPage tests pass; 0 new TS errors.
+
+## Log — K2 visual adjustment: ghost variants for event row action buttons (2026-05-11)
+
+The colored full-fill button variants (`primary`, `warning`, `danger`) used in Iter 3 were visually inconsistent with the icon-only `ghost` buttons in `MembersPage` — the filled backgrounds drew too much attention in table rows. Replaced with ghost equivalents that keep transparent backgrounds and convey semantic color only via icon/text color and a subtle hover tint, matching the visual weight of MembersPage action buttons.
+
+**Files changed:**
+- `frontend/src/components/UI/Button.tsx` — added `primary-ghost` variant (`text-primary bg-primary-subtle hover:bg-primary/20`, dark mode equivalent) and `warning-ghost` variant (`text-warning bg-warning-bg hover:bg-warning/20`, dark mode equivalent); `ButtonVariant` type extended accordingly. `danger-ghost` was already present and unchanged.
+- `frontend/src/utils/actionVariants.ts` — remapped all affordances to ghost variants: `registerForEvent`/`publishEvent`/`newRegistration` → `primary-ghost`; `unregisterFromEvent` → `warning-ghost`; `cancelEvent` → `danger-ghost`; `updateEvent`/`syncEventFromOris` and unknown fallback → `ghost`. Policy comment updated to describe ghost-variant rationale.
+- `frontend/src/utils/actionVariants.test.ts` — all 8 assertions updated to expect ghost variant strings.
+- `frontend/src/components/UI/Button.test.tsx` — added 2 variant tests: `primary-ghost` asserts `text-primary`+`bg-primary-subtle`; `warning-ghost` asserts `text-warning`+`bg-warning-bg`.
+- `frontend/src/pages/events/EventsPage.test.tsx` — K2 integration tests updated: `cancelEvent` asserts `text-red-600` (from `danger-ghost`); `registerForEvent` asserts `text-primary` (from `primary-ghost`).
+
+**Tests:** 1355/1355 frontend tests pass (+2 new Button variant tests).

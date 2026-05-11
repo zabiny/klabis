@@ -2,7 +2,7 @@ import type {ButtonHTMLAttributes, ReactNode} from 'react'
 import clsx from 'clsx'
 import {twMerge} from 'tailwind-merge'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'warning' | 'ghost' | 'danger-ghost'
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'warning' | 'ghost' | 'danger-ghost' | 'primary-ghost' | 'warning-ghost'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant
@@ -21,6 +21,8 @@ const variantClasses: Record<ButtonVariant, string> = {
     warning: 'bg-warning hover:bg-amber-600 text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
     ghost: 'bg-transparent hover:bg-surface-base text-text-primary active:bg-surface-raised disabled:opacity-50',
     'danger-ghost': 'text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/50 dark:hover:bg-red-950 disabled:opacity-50',
+    'primary-ghost': 'text-primary bg-primary-subtle hover:bg-primary/20 dark:text-primary dark:bg-primary/10 dark:hover:bg-primary/20 disabled:opacity-50',
+    'warning-ghost': 'text-warning bg-warning-bg hover:bg-warning/20 dark:text-warning dark:bg-warning/10 dark:hover:bg-warning/20 disabled:opacity-50',
 }
 
 const sizeClasses = {
