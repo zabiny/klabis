@@ -10,6 +10,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
 import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
+import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
 import {getActionVariant} from "../../utils/actionVariants.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel, getDialogTitleLabel, getTemplateLabel} from "../../localization";
@@ -334,7 +335,7 @@ export const EventsPage = (): ReactElement => {
             // Pass template target as pathname so HalFormDisplay uses the already-fetched
             // resourceData instead of re-fetching (shouldFetchTargetData returns false when paths match).
             const editTemplatePath = editTemplate.target
-                ? (() => { try { return new URL(editTemplate.target).pathname; } catch { return editTemplate.target; } })()
+                ? normalizeKlabisApiPath(editTemplate.target)
                 : route.pathname;
             return (
                 <Modal isOpen={true} onClose={() => setNewRegistrationUrl(null)}

@@ -33,7 +33,9 @@ Rewritten 2026-05-10 na základě průzkumu kódu:
 
 Frontend tedy nepotřebuje znát current user data ani fetchnout member detail — generic `HalFormDisplay` / `useHalFormData` flow se postará o prefill stejně jako u edit formu.
 
-**Affordance mechanizmus (důležité pro generic FE flow):** na detailu eventu (resp. v event summary v listu) se pro eligible uživatele publikuje HAL+FORMS template (např. `newRegistration`) jehož `target` URL obsahuje `?newRegistration=true` a metoda je shodná s tím, jakou používá edit form (typicky GET nejprve, pak POST/PUT s daty). NEPUBLIKUJEME zvláštní `new-registration` link rel — generic FE pattern očekává HAL+FORMS template, nikoliv navigační link.
+**Affordance mechanizmus (implementační realita):** ideálním stavem by bylo publikovat HAL+FORMS template (např. `newRegistration`) jehož `target` obsahuje `?newRegistration=true`. Spring HATEOAS 2.5.1 ale ve svém `HalFormsTemplateBuilder` aktivně filtruje GET affordances pryč z `_templates` JSON (`!model.hasHttpMethod(HttpMethod.GET)`), takže GET affordance nelze do `_templates` doručit bez forku knihovny.
+
+Implementace proto používá `_links` relaci `newRegistration` ukazující na `GET /api/events/{eventId}/registrations/{memberId}?newRegistration=true`. Frontend `EventsPage` má speciální page-level fetch tohoto linku a předá resource do `HalFormDisplay`, aby se prefill flow simuloval. Pokud budoucí Spring HATEOAS umožní GET affordances v `_templates`, můžeme přepnout na čistě generic flow bez page-level workaroundu.
 
 **Authorization:**
 - `new=true` neignoruje `{memberId}` z URL. Server ověří, že autentizovaný uživatel smí zakládat registraci pro daného `{memberId}` — typicky pouze pro sebe sama (memberId == principalMemberId). Pokud aplikace v budoucnu připustí registraci jménem jiného člena (např. trenér za závodníka), kontrola odpovídajícího oprávnění proběhne zde. Při neoprávněném `{memberId}` vrátí 403.

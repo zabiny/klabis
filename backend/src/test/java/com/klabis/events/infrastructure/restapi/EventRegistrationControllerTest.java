@@ -1104,7 +1104,7 @@ class EventRegistrationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/events/{eventId}/registrations/{memberId}?new=true — SI prefill defaults (N2)")
+    @DisplayName("GET /api/events/{eventId}/registrations/{memberId}?newRegistration=true — SI prefill defaults (N2)")
     class NewRegistrationDefaultsTests {
 
         @Test
@@ -1137,6 +1137,20 @@ class EventRegistrationControllerTest {
         @DisplayName("new=true for different memberId (not the principal) returns 403")
         @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
         void shouldReturn403WhenPrincipalDiffersFromMemberId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("new=true for admin with EVENTS:REGISTRATIONS authority but different memberId returns 403 — authority must not bypass principal==memberId check")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldReturn403WhenAdminWithEventsRegistrationsAuthorityCallsNewRegistrationForDifferentMember() throws Exception {
             UUID eventId = UUID.randomUUID();
 
             mockMvc.perform(
