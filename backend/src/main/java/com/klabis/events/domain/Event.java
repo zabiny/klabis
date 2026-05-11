@@ -640,6 +640,16 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     /**
+     * Applies a resolved event type from ORIS auto-mapping.
+     * Only sets the type when a catalog match was found; passing null is a no-op (preserves existing type).
+     */
+    public void applyAutoMappedEventType(EventTypeId resolvedTypeId) {
+        if (resolvedTypeId != null) {
+            this.eventTypeId = resolvedTypeId;
+        }
+    }
+
+    /**
      * Returns true when registrations are open: the event is ACTIVE, the event date is strictly in the future,
      * and the registration deadline (if set) has not passed.
      */

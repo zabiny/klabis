@@ -26,7 +26,7 @@ Vertical slices, sequential (Phase A is fully independent and can ship first; Ph
 | 2 | A2 — Frontend toolbar action, progress modal, summary view | frontend-developer | TODO |
 | 3 | B1+B2+B3 — DB migration, `EventType` aggregate, persistence, REST CRUD controller + tests | backend-developer | DONE |
 | 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | DONE |
-| 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | TODO |
+| 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | DONE |
 | 6 | B6 — Frontend admin page for event types | frontend-developer | TODO |
 | 7 | B7 — Frontend event form/table column/filter/detail badge + labels | frontend-developer | TODO |
 | 8 | Simplify pass + code review + fixes + docs (task 9) | mix | TODO |
@@ -90,6 +90,24 @@ Implemented tasks A2.1–A2.4. All 1392 frontend tests pass.
 
 **HAL template name:** `syncAllUpcomingFromOris` (derived from method name by Spring HATEOAS)
 **No blocked items.**
+
+---
+
+### Iter 5 — B5 ORIS import auto-mapping (2026-05-12)
+
+Tasks B5.1–B5.4 completed. 7 new tests pass. Full suite 2517/2518 (1 pre-existing failure in EventManagementE2ETest, unchanged).
+
+**Chosen ORIS field: `Level.nameCZ`**
+Level represents competition level (e.g., "Klub", "Oblastní přebor", "Mistrovství ČR") — maps naturally to Klabis event type categories. Discipline encodes sport variant (OB/MTBO/LOB), not event type.
+
+**Preserve behavior on no match:** During `syncEventFromOris`, when ORIS Level is null or has no catalog match the existing `eventTypeId` is preserved (not cleared). Rationale: manager may have manually set the type; ORIS doesn't know about the Klabis catalog. During initial `importEventFromOris`, no existing type exists so it simply remains empty.
+
+**Implementation approach: inline into `OrisEventImportService`** (no separate class). The lookup is a single null-safe helper `resolveEventTypeFromOrisLevel(Level)`. A dedicated `EventTypeAutoMapper` wrapper would be needless indirection. New `Event.applyAutoMappedEventType(EventTypeId)` domain method applies the resolved type; passing null is a no-op (preserves existing type).
+
+**Changed files:**
+- `domain/Event.java` — added `applyAutoMappedEventType(EventTypeId)` domain method
+- `application/OrisEventImportService.java` — added `EventTypeRepository` dependency; `resolveEventTypeFromOrisLevel()` private helper; both `importEventFromOris` and `syncEventFromOris` call `applyAutoMappedEventType` after the main sync
+- Tests: `OrisEventTypeAutoMappingTest.java` (7 tests: import match, import no match, import null level, import case-insensitive, sync match, sync preserve on no match, sync preserve on null level); updated `OrisEventImportServiceTest.java` constructor call to pass mock `EventTypeRepository`
 
 ---
 

@@ -56,10 +56,10 @@
 
 ### B5. ORIS import auto-mapping
 
-- [ ] B5.1 Identify the source field in the ORIS event payload (Level / Discipline) — document the chosen field in design.md
-- [ ] B5.2 Implement `EventTypeAutoMapper` helper that calls `EventTypeRepository.findByNameIgnoreCase(orisIdentifier)` during import; sets `event.eventType` to the match or leaves it empty
-- [ ] B5.3 No auto-create of catalog entries during import
-- [ ] B5.4 Integration test (mocked ORIS client): import with matching catalog entry → event has type; import with no match → event has no type; case-insensitive matching
+- [x] B5.1 Identify the source field in the ORIS event payload (Level / Discipline) — document the chosen field in design.md
+- [x] B5.2 Implement `EventTypeAutoMapper` helper that calls `EventTypeRepository.findByNameIgnoreCase(orisIdentifier)` during import; sets `event.eventType` to the match or leaves it empty
+- [x] B5.3 No auto-create of catalog entries during import
+- [x] B5.4 Integration test (mocked ORIS client): import with matching catalog entry → event has type; import with no match → event has no type; case-insensitive matching
 
 ### B6. Frontend — admin page for event types
 

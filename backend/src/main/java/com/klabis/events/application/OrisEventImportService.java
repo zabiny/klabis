@@ -4,9 +4,12 @@ import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
+import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
+import com.klabis.events.eventtype.domain.EventTypeRepository;
 import com.klabis.oris.OrisIntegrationComponent;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import org.slf4j.Logger;
@@ -32,13 +35,16 @@ class OrisEventImportService implements OrisEventImportPort {
     private final EventRepository eventRepository;
     private final OrisApiClient orisApiClient;
     private final OrisWebUrls orisWebUrls;
+    private final EventTypeRepository eventTypeRepository;
 
     OrisEventImportService(EventRepository eventRepository,
                            OrisApiClient orisApiClient,
-                           OrisWebUrls orisWebUrls) {
+                           OrisWebUrls orisWebUrls,
+                           EventTypeRepository eventTypeRepository) {
         this.eventRepository = eventRepository;
         this.orisApiClient = orisApiClient;
         this.orisWebUrls = orisWebUrls;
+        this.eventTypeRepository = eventTypeRepository;
     }
 
     @Transactional
@@ -62,6 +68,9 @@ class OrisEventImportService implements OrisEventImportPort {
                 .registrationDeadlines(registrationDeadlines)
                 .categories(categories)
                 .build());
+
+        // Auto-map event type from ORIS Level.nameCZ (case-insensitive catalog lookup)
+        event.applyAutoMappedEventType(resolveEventTypeFromOrisLevel(details.level()));
 
         try {
             return eventRepository.save(event);
@@ -96,6 +105,9 @@ class OrisEventImportService implements OrisEventImportPort {
                 .registrationDeadlines(registrationDeadlines)
                 .categories(categories)
                 .build());
+
+        // Auto-map event type from ORIS Level.nameCZ; preserves existing type when ORIS provides no match
+        event.applyAutoMappedEventType(resolveEventTypeFromOrisLevel(details.level()));
 
         eventRepository.save(event);
     }
@@ -132,6 +144,21 @@ class OrisEventImportService implements OrisEventImportPort {
                 .filter(c -> c.name() != null && !c.name().isBlank())
                 .map(EventClass::name)
                 .toList();
+    }
+
+    /**
+     * Resolves an EventTypeId by looking up the ORIS Level.nameCZ in the event type catalog (case-insensitive).
+     * Returns null when Level is absent or has no catalog match — callers must treat null as "no change".
+     * Chosen field: Level.nameCZ — represents competition level (e.g. "Klub", "Oblastní přebor", "Mistrovství ČR"),
+     * which maps naturally to Klabis event type categories. Discipline encodes sport variant (OB/MTBO/LOB), not type.
+     */
+    private EventTypeId resolveEventTypeFromOrisLevel(Level level) {
+        if (level == null || level.nameCZ() == null || level.nameCZ().isBlank()) {
+            return null;
+        }
+        return eventTypeRepository.findByNameIgnoreCase(level.nameCZ())
+                .map(eventType -> eventType.getId())
+                .orElse(null);
     }
 
     private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<String> incomingCategories) {
