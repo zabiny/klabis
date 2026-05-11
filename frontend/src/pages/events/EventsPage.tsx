@@ -1,5 +1,6 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useSearchParams} from "react-router-dom";
+import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {EntityModel, HalFormsTemplate} from "../../api";
 import type {Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
@@ -97,7 +98,13 @@ export const EventsPage = (): ReactElement => {
     const {getUser} = useAuth();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
+    const [newRegistrationUrl, setNewRegistrationUrl] = useState<string | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
+
+    const {data: newRegistrationData} = useAuthorizedQuery<Record<string, unknown>>(
+        newRegistrationUrl ?? '',
+        {enabled: newRegistrationUrl !== null, staleTime: 0, gcTime: 0, retry: false},
+    );
 
     const importTemplate = resourceData?._templates?.importEvent;
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
@@ -117,10 +124,20 @@ export const EventsPage = (): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
         const templates = event._templates;
+        const links = event._links as Record<string, {href: string}> | undefined;
+        const newRegLink = links?.['newRegistration'];
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {ROW_ACTION_BUTTONS.map(({name, icon: Icon, label}) => templates?.[name] && (
+                {newRegLink && (
+                    <Button key="newRegistration" variant="ghost" size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
+                        e.stopPropagation();
+                        setNewRegistrationUrl(newRegLink.href);
+                    }}>
+                        <UserPlus className="w-4 h-4"/>
+                    </Button>
+                )}
+                {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => templates?.[name] && (
                     <Button key={name} variant="ghost" size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
                         openActionModal(event, name);
@@ -308,5 +325,29 @@ export const EventsPage = (): ReactElement => {
                 />
             </Modal>
         )}
+
+        {(() => {
+            const newRegTemplates = newRegistrationData?._templates as Record<string, HalFormsTemplate> | undefined;
+            const editTemplate = newRegTemplates?.editRegistration;
+            if (!newRegistrationUrl || !newRegistrationData || !editTemplate) return null;
+            // Pass template target as pathname so HalFormDisplay uses the already-fetched
+            // resourceData instead of re-fetching (shouldFetchTargetData returns false when paths match).
+            const editTemplatePath = editTemplate.target
+                ? (() => { try { return new URL(editTemplate.target).pathname; } catch { return editTemplate.target; } })()
+                : route.pathname;
+            return (
+                <Modal isOpen={true} onClose={() => setNewRegistrationUrl(null)}
+                       title={labels.templates.registerForEvent} size="2xl">
+                    <HalFormDisplay
+                        template={editTemplate}
+                        templateName="editRegistration"
+                        resourceData={newRegistrationData}
+                        pathname={editTemplatePath}
+                        onClose={() => setNewRegistrationUrl(null)}
+                        navigateOnSuccess={false}
+                    />
+                </Modal>
+            );
+        })()}
     </div>;
 }

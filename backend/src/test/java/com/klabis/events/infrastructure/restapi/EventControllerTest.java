@@ -647,6 +647,76 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("event detail includes newRegistration link with ?newRegistration=true when user eligible and not registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
+        void shouldIncludeNewRegistrationLinkForEligibleUnregisteredMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+            Event activeEvent = spy(EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build());
+            activeEvent.publish();
+
+            doReturn(java.util.Optional.empty()).when(activeEvent).findRegistration(memberId);
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.newRegistration.href").value(
+                            containsString("newRegistration=true")));
+        }
+
+        @Test
+        @DisplayName("event detail does NOT include newRegistration link when user is already registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000001", authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeNewRegistrationLinkWhenUserAlreadyRegistered() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+            Event activeEvent = spy(EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build());
+            activeEvent.publish();
+
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(new SiCardNumber("12345")).build());
+            doReturn(java.util.Optional.of(registration)).when(activeEvent).findRegistration(memberId);
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.newRegistration").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("event detail does NOT include newRegistration link when no member profile")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeNewRegistrationLinkWhenNoMemberProfile() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.newRegistration").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should embed registrationDtoList in response")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldEmbedRegistrationsInEventResponse() throws Exception {
@@ -1122,6 +1192,26 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method")
                             .value("POST"));
+        }
+
+        @Test
+        @DisplayName("list item includes newRegistration link targeting ?newRegistration=true when member not registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
+                authorities = {Authority.EVENTS_READ})
+        void shouldIncludeNewRegistrationLinkOnListItemForUnregisteredMember() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.newRegistration.href")
+                            .value(containsString("newRegistration=true")));
         }
 
         @Test

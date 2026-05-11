@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
@@ -159,7 +159,7 @@ describe('EventsPage', () => {
                 },
                 isLoading: false,
                 error: null,
-            });
+            } as any);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
@@ -223,7 +223,7 @@ describe('EventsPage', () => {
                 },
                 isLoading: false,
                 error: null,
-            });
+            } as any);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
@@ -292,6 +292,132 @@ describe('EventsPage', () => {
             await user.click(screen.getByRole('button', {name: /importovat z oris/i}));
 
             expect(screen.getByText('Import akce z ORIS')).toBeInTheDocument();
+        });
+    });
+
+    describe('new-registration prefill flow', () => {
+        const newRegistrationUrl = '/api/events/evt-1/registrations/M001?newRegistration=true';
+
+        const buildEventWithNewRegistrationLink = (overrides: Record<string, unknown> = {}) => ({
+            id: 'evt-1',
+            name: 'Jarní závod',
+            eventDate: '2025-06-15',
+            status: 'ACTIVE',
+            _links: {
+                self: {href: '/api/events/evt-1'},
+                'newRegistration': {href: newRegistrationUrl},
+            },
+            ...overrides,
+        });
+
+        const buildNewRegistrationResponse = (siCardNumber?: string) => ({
+            siCardNumber: siCardNumber ?? '',
+            category: '',
+            _links: {self: {href: newRegistrationUrl}},
+            _templates: {
+                editRegistration: mockHalFormsTemplate({
+                    method: 'PUT',
+                    target: '/api/events/evt-1/registrations/M001',
+                    title: 'Přihlásit se',
+                    properties: [
+                        {name: 'siCardNumber', prompt: 'SI číslo', type: 'text', value: siCardNumber ?? ''},
+                        {name: 'category', prompt: 'Kategorie', type: 'text'},
+                    ],
+                }),
+            },
+        });
+
+        const renderWithEventHavingNewRegistrationLink = (siCardNumber?: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+                if (url.includes('newRegistration=true')) {
+                    return {data: buildNewRegistrationResponse(siCardNumber), isLoading: false, error: null} as any;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as any;
+            });
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('shows "Přihlásit se" button when event has new-registration link', async () => {
+            renderWithEventHavingNewRegistrationLink('12345');
+            expect(await screen.findByTitle(labels.templates.registerForEvent)).toBeInTheDocument();
+        });
+
+        it('opens registration form prefilled with siCardNumber when button clicked', async () => {
+            const user = userEvent.setup();
+            renderWithEventHavingNewRegistrationLink('12345');
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            const siInput = await screen.findByDisplayValue('12345');
+            expect(siInput).toBeInTheDocument();
+        });
+
+        it('opens registration form with empty SI field when member has no chip number', async () => {
+            const user = userEvent.setup();
+            renderWithEventHavingNewRegistrationLink('');
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            await screen.findByTestId('hal-forms-display');
+            const siInput = document.querySelector('input[name="siCardNumber"]') as HTMLInputElement | null;
+            expect(siInput).toBeInTheDocument();
+            expect(siInput).toHaveValue('');
+        });
+
+        it('submits overwritten siCardNumber value', async () => {
+            const user = userEvent.setup();
+            const mutateMock = vi.fn();
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+                if (url.includes('newRegistration=true')) {
+                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as any;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as any;
+            });
+            vi.mocked(useAuthorizedMutation).mockReturnValue({
+                mutate: mutateMock,
+                isPending: false,
+                error: null,
+            } as any);
+
+            renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            const siInput = await screen.findByDisplayValue('12345');
+            await user.clear(siInput);
+            await user.type(siInput, '99999');
+
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => {
+                expect(mutateMock).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: expect.objectContaining({siCardNumber: '99999'}),
+                    }),
+                    expect.anything(),
+                );
+            });
         });
     });
 

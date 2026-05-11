@@ -4,7 +4,7 @@
 - [x] 1.2 Backend: na detailu eventu publikovat affordance `registerForEvent` (nebo navigační link na nový registration form) tak, aby cílila na URL s `?new=true`. Ověřit že odkaz se zobrazuje pouze pro auth uživatele, který ještě není přihlášen na daný event.
 - [x] 1.3 Backend test (controller): `new=true` pro `{memberId}` == principal vrátí 200 OK s siCardNumber předvyplněným z profilu; `new=false` na neexistující registraci vrátí 404; `new=true` pro cizí `{memberId}` (bez oprávnění) vrátí 403; nepřihlášený → 401.
 - [x] 1.4 Backend test (integrační): user bez siCardNumber v profilu → `new=true` vrátí prázdnou hodnotu (žádná chyba).
-- [ ] 1.5 Frontend ověření: registrační form přes affordance `registerForEvent` zobrazí SI číslo předvyplněné. Hodnotu lze přepsat a submit pošle přepsanou hodnotu. (Žádná změna kódu by neměla být nutná — generický HalFormDisplay flow.)
+- [x] 1.5 Frontend ověření: registrační form přes affordance `registerForEvent` zobrazí SI číslo předvyplněné. Hodnotu lze přepsat a submit pošle přepsanou hodnotu.
 - [x] 1.6 Run backend tests via test-runner. (2420/2421 pass; 1 unrelated pre-existing failure in EventManagementE2ETest.)
 
 ## 2. Action button color variants (K2)

@@ -31,7 +31,9 @@ Rewritten 2026-05-10 na základě průzkumu kódu:
 - `new=false` (nebo chybí): zachované stávající chování — 200 OK pokud registrace existuje, 404 jinak.
 - `new=true`: server nevyhledává existující registraci, místo toho vrátí 200 OK s "defaults" payload — pro aktuálně autentizovaného uživatele načte `Member.siCardNumber` z profilu a vloží ho do template property `siCardNumber.value`. Ostatní pole zůstanou prázdná / s aplikovanými defaulty z template.
 
-Affordance `registerForEvent` (publikovaná na detailu eventu pro aktuálně přihlášeného člena) odkazuje na URL s `new=true`. Frontend tedy nepotřebuje znát current user data ani fetchnout member detail — formulář se předvyplní stejným způsobem jako edit form.
+Frontend tedy nepotřebuje znát current user data ani fetchnout member detail — generic `HalFormDisplay` / `useHalFormData` flow se postará o prefill stejně jako u edit formu.
+
+**Affordance mechanizmus (důležité pro generic FE flow):** na detailu eventu (resp. v event summary v listu) se pro eligible uživatele publikuje HAL+FORMS template (např. `newRegistration`) jehož `target` URL obsahuje `?newRegistration=true` a metoda je shodná s tím, jakou používá edit form (typicky GET nejprve, pak POST/PUT s daty). NEPUBLIKUJEME zvláštní `new-registration` link rel — generic FE pattern očekává HAL+FORMS template, nikoliv navigační link.
 
 **Authorization:**
 - `new=true` neignoruje `{memberId}` z URL. Server ověří, že autentizovaný uživatel smí zakládat registraci pro daného `{memberId}` — typicky pouze pro sebe sama (memberId == principalMemberId). Pokud aplikace v budoucnu připustí registraci jménem jiného člena (např. trenér za závodníka), kontrola odpovídajícího oprávnění proběhne zde. Při neoprávněném `{memberId}` vrátí 403.

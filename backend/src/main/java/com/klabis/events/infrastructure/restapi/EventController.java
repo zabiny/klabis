@@ -506,7 +506,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
-                                .ifPresent(link -> dtoModel.add(link.withRel("new-registration")));
+                                .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
                     }
                 }
             }
@@ -567,7 +567,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
-                                .ifPresent(link -> dtoModel.add(link.withRel("new-registration")));
+                                .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
                     }
                 }
             }
