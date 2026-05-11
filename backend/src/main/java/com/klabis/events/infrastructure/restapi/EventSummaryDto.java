@@ -6,6 +6,7 @@ import com.klabis.common.ui.HalForms;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventStatus;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
@@ -18,14 +19,15 @@ import java.util.List;
  * Contains essential event information for list views.
  * The status field is only visible to users with EVENTS:MANAGE authority.
  *
- * @param id        event unique identifier
- * @param name      event name
- * @param eventDate event date
- * @param location  event location
- * @param organizer event organizer
- * @param websiteUrl event website URL (optional)
- * @param status    event status — only visible to EVENTS:MANAGE holders
- * @param deadlines registration deadlines in chronological order (max 3)
+ * @param id          event unique identifier
+ * @param name        event name
+ * @param eventDate   event date
+ * @param location    event location
+ * @param organizer   event organizer
+ * @param websiteUrl  event website URL (optional)
+ * @param eventTypeId event type ID (optional)
+ * @param status      event status — only visible to EVENTS:MANAGE holders
+ * @param deadlines   registration deadlines in chronological order (max 3)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
@@ -36,6 +38,7 @@ record EventSummaryDto(
         String location,
         String organizer,
         String websiteUrl,
+        EventTypeId eventTypeId,
         @HasAuthority(Authority.EVENTS_MANAGE)
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
         List<String> categories,

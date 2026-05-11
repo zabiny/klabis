@@ -25,7 +25,7 @@ Vertical slices, sequential (Phase A is fully independent and can ship first; Ph
 | 1 | A1 — Backend bulk-sync service + endpoint + HAL affordance + integration tests | backend-developer | TODO |
 | 2 | A2 — Frontend toolbar action, progress modal, summary view | frontend-developer | TODO |
 | 3 | B1+B2+B3 — DB migration, `EventType` aggregate, persistence, REST CRUD controller + tests | backend-developer | DONE |
-| 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | TODO |
+| 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | DONE |
 | 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | TODO |
 | 6 | B6 — Frontend admin page for event types | frontend-developer | TODO |
 | 7 | B7 — Frontend event form/table column/filter/detail badge + labels | frontend-developer | TODO |
@@ -90,5 +90,27 @@ Implemented tasks A2.1–A2.4. All 1392 frontend tests pass.
 
 **HAL template name:** `syncAllUpcomingFromOris` (derived from method name by Spring HATEOAS)
 **No blocked items.**
+
+---
+
+### Iter 4 — B4 Wire eventTypeId into Event aggregate + REST + tests (2026-05-12)
+
+Tasks B4.1–B4.4 completed. 12/13 new E2E tests pass; 1 pre-existing failure (`shouldCreateEventWithoutLocation`) unchanged.
+
+**Key design decisions:**
+- REST representation: `eventTypeId` exposed as raw UUID field (same pattern as `eventCoordinatorId`). No embedded resolved object (name/color) in response — consumers follow the HAL link `event-type` → `GET /api/event-types/{id}` to resolve details.
+- `EventTypeController.getEventType` and class made `public` to allow cross-package `methodOn()` reference from `EventController` postprocessors.
+- `@JsonInclude(NON_NULL)` on `EventDto`/`EventSummaryDto` ensures absent `eventTypeId` is omitted from JSON.
+- `EventTypeIdMixin` (`@JsonValue`/`@JsonCreator`) handles UUID serialization — `eventTypeId` appears as plain UUID string in API responses.
+
+**Changed files:**
+- `domain/Event.java` — `@Association EventTypeId eventTypeId` field; `CreateEvent`/`UpdateEvent` gain `eventTypeId`; `reconstruct()` 15 params; `getEventTypeId()` returns `Optional<EventTypeId>`
+- `infrastructure/jdbc/EventMemento.java` — `event_type_id` UUID mapping added
+- `infrastructure/restapi/EventDto.java`, `EventSummaryDto.java` — `EventTypeId eventTypeId` component
+- `infrastructure/restapi/EventDtoMapper.java`, `CreateEventRequest.java`, `UpdateEventRequest.java` — eventTypeId wired through
+- `infrastructure/restapi/EventController.java` — passes eventTypeId to commands; postprocessors add `event-type` HAL link
+- `infrastructure/bootstrap/EventsDataBootstrap.java` — 27 `CreateEvent` calls updated with `null` eventTypeId
+- `eventtype/infrastructure/restapi/EventTypeController.java` — class and `getEventType` made `public`
+- Tests: `EventAssert.java`, `EventJdbcRepositoryTest.java` (2 persistence tests), `EventManagementE2ETest.java` (4 E2E tests), `EventTestDataBuilder.java`; fixed `Event.reconstruct` call sites in calendar/registration tests
 
 ---

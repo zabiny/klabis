@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
@@ -84,6 +85,9 @@ class EventMemento implements Persistable<UUID> {
 
     @Column("cancellation_reason")
     private String cancellationReason;
+
+    @Column("event_type_id")
+    private UUID eventTypeId;
 
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
@@ -171,6 +175,7 @@ class EventMemento implements Persistable<UUID> {
         memento.orisId = event.getOrisId();
         memento.categories = serialize(event.getCategories());
         memento.cancellationReason = event.getCancellationReason().orElse(null);
+        memento.eventTypeId = event.getEventTypeId().map(EventTypeId::value).orElse(null);
     }
 
     /**
@@ -210,6 +215,8 @@ class EventMemento implements Persistable<UUID> {
                 this.registrationDeadline2,
                 this.registrationDeadline3);
 
+        EventTypeId eventTypeIdObj = this.eventTypeId != null ? new EventTypeId(this.eventTypeId) : null;
+
         return Event.reconstruct(
                 eventId,
                 this.name,
@@ -218,6 +225,7 @@ class EventMemento implements Persistable<UUID> {
                 this.organizer,
                 websiteUrlObj,
                 coordinatorId,
+                eventTypeIdObj,
                 deadlines,
                 eventStatus,
                 this.cancellationReason,

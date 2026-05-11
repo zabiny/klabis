@@ -7,6 +7,7 @@ import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
+import com.klabis.events.eventtype.domain.EventTypeRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,6 +62,9 @@ class EventJdbcRepositoryTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private EventTypeRepository eventTypeRepository;
 
     /**
      * Fixed test member IDs for foreign key constraints.
@@ -142,6 +146,52 @@ class EventJdbcRepositoryTest {
             assertThat(retrieved.getEventCoordinatorId()).isNotNull();
             assertThat(retrieved.getEventCoordinatorId()).isEqualTo(coordinatorId);
             assertThat(retrieved.getStatus()).isEqualTo(EventStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("should persist and load eventTypeId (round-trip)")
+        void shouldPersistAndLoadEventTypeId() {
+            // Given — create an EventType to use as FK target
+            com.klabis.events.eventtype.domain.EventType eventType = eventTypeRepository.save(
+                    com.klabis.events.eventtype.domain.EventType.create(
+                            new com.klabis.events.eventtype.domain.EventType.CreateEventType("Trénink", "#00ff00", 1), 1));
+            EventTypeId expectedTypeId = eventType.getId();
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Typed Event")
+                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .eventTypeId(expectedTypeId)
+                    .build());
+
+            // When
+            Event saved = eventRepository.save(event);
+            Optional<Event> loaded = eventRepository.findById(saved.getId());
+
+            // Then
+            assertThat(loaded).isPresent();
+            EventAssert.assertThat(loaded.get()).hasEventTypeId(expectedTypeId);
+        }
+
+        @Test
+        @DisplayName("should persist and load event with no eventTypeId (null round-trip)")
+        void shouldPersistAndLoadEventWithNoEventTypeId() {
+            // Given
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Untyped Event")
+                    .eventDate(LocalDate.of(2026, 9, 5))
+                    .location("City")
+                    .organizer("OOB")
+                    .build());
+
+            // When
+            Event saved = eventRepository.save(event);
+            Optional<Event> loaded = eventRepository.findById(saved.getId());
+
+            // Then
+            assertThat(loaded).isPresent();
+            EventAssert.assertThat(loaded.get()).hasEventTypeId(null);
         }
 
         @Test

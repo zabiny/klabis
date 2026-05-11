@@ -49,10 +49,10 @@
 
 ### B4. Event aggregate — type assignment
 
-- [ ] B4.1 Add `Optional<EventTypeId> eventType` to `Event` aggregate; update create/update commands and factories
-- [ ] B4.2 Update `EventMemento` to map `event_type_id` column
-- [ ] B4.3 Update Event REST DTO + HAL forms templates to include `eventTypeId` (optional in create/update; populated in response with id + name + color resolved from the catalog)
-- [ ] B4.4 Integration tests: create event with type, update event to change type, clear type
+- [x] B4.1 Add `Optional<EventTypeId> eventType` to `Event` aggregate; update create/update commands and factories
+- [x] B4.2 Update `EventMemento` to map `event_type_id` column
+- [x] B4.3 Update Event REST DTO + HAL forms templates to include `eventTypeId` (optional in create/update; populated in response with id + HAL link to event-type catalog)
+- [x] B4.4 Integration tests: create event with type, update event to change type, clear type, persistence roundtrip
 
 ### B5. ORIS import auto-mapping
 

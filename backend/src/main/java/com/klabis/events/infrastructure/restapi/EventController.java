@@ -9,7 +9,9 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.eventtype.infrastructure.restapi.EventTypeController;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
@@ -113,6 +115,7 @@ public class EventController {
                 request.organizer(),
                 request.websiteUrl(),
                 request.eventCoordinatorId(),
+                request.eventTypeId(),
                 request.toRegistrationDeadlines(),
                 request.categories()
         );
@@ -141,6 +144,7 @@ public class EventController {
                 request.organizer(),
                 request.websiteUrl(),
                 request.eventCoordinatorId(),
+                request.eventTypeId(),
                 request.toRegistrationDeadlines(),
                 request.categories()
         );
@@ -554,6 +558,10 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
         }
 
+        event.getEventTypeId().ifPresent(eventTypeId ->
+                klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
+                        .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             klabisLinkTo(methodOn(EventController.class).getAccommodationList(eventId))
@@ -606,6 +614,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
             klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
                     .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
         }
+
+        event.getEventTypeId().ifPresent(eventTypeId ->
+                klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
+                        .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
     }
 }
 

@@ -33,7 +33,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @ExposesResourceFor(EventType.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
-class EventTypeController {
+public class EventTypeController {
 
     private final EventTypeManagementPort eventTypeManagementService;
 
@@ -72,7 +72,7 @@ class EventTypeController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(summary = "Get event type by ID", description = "Returns a single event type. Requires EVENTS:MANAGE authority.")
     @ApiResponse(responseCode = "200", description = "Event type found")
-    ResponseEntity<EntityModel<EventTypeDto>> getEventType(
+    public ResponseEntity<EntityModel<EventTypeDto>> getEventType(
             @Parameter(description = "Event type UUID") @PathVariable UUID id) {
 
         EventType eventType = eventTypeManagementService.getEventType(new EventTypeId(id));

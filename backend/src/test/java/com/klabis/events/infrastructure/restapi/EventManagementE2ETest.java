@@ -4,10 +4,13 @@ import com.klabis.E2ETest;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
+import com.klabis.events.eventtype.application.EventTypeManagementPort;
+import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,6 +68,9 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Autowired
     private EventManagementPort eventManagementPort;
+
+    @Autowired
+    private EventTypeManagementPort eventTypeManagementPort;
 
     @Test
     @DisplayName("Complete event lifecycle: create → publish → finish (via scheduler)")
@@ -483,6 +489,169 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("No Location Event"))
                 .andExpect(jsonPath("$.location").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Event with eventTypeId: create returns type in response and HAL link")
+    void shouldCreateEventWithEventTypeAndExposeItInResponse() throws Exception {
+        // Given — create an event type to reference
+        EventType eventType = eventTypeManagementPort.createEventType(
+                new EventType.CreateEventType("Trénink", "#0000ff", 1));
+        EventTypeId eventTypeId = eventType.getId();
+
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("Typed Training Event")
+                .eventDate(LocalDate.of(2026, 8, 15))
+                .location("Forest")
+                .organizer("OOB")
+                .eventTypeId(eventTypeId)
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // When: Retrieve the event
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventTypeId").value(eventTypeId.value().toString()))
+                .andExpect(jsonPath("$._links['event-type'].href").exists());
+    }
+
+    @Test
+    @DisplayName("Event without eventTypeId: eventTypeId field and link absent from response")
+    void shouldCreateEventWithoutEventTypeAndOmitFieldFromResponse() throws Exception {
+        // Given
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("Untyped Event")
+                .eventDate(LocalDate.of(2026, 9, 10))
+                .location("Park")
+                .organizer("OOB")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // When: Retrieve the event
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventTypeId").doesNotExist())
+                .andExpect(jsonPath("$._links['event-type']").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("Event update: change eventTypeId to a different type")
+    void shouldUpdateEventTypeId() throws Exception {
+        // Given — create two event types
+        EventType typeA = eventTypeManagementPort.createEventType(
+                new EventType.CreateEventType("Závod", "#ff0000", 1));
+        EventType typeB = eventTypeManagementPort.createEventType(
+                new EventType.CreateEventType("Sprint", "#00ff00", 2));
+
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("Changeable Event")
+                .eventDate(LocalDate.of(2026, 10, 5))
+                .location("City")
+                .organizer("OOB")
+                .eventTypeId(typeA.getId())
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // When: Update eventTypeId to typeB
+        Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
+                .name("Changeable Event")
+                .eventDate(LocalDate.of(2026, 10, 5))
+                .location("City")
+                .organizer("OOB")
+                .eventTypeId(typeB.getId())
+                .build();
+
+        mockMvc.perform(
+                        patch("/api/events/{id}", eventId)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(updateCommand))
+                )
+                .andExpect(status().isNoContent());
+
+        // Then: Response reflects updated eventTypeId
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventTypeId").value(typeB.getId().value().toString()));
+    }
+
+    @Test
+    @DisplayName("Event update: clear eventTypeId by setting it to null")
+    void shouldClearEventTypeIdOnUpdate() throws Exception {
+        // Given — create event with a type
+        EventType eventType = eventTypeManagementPort.createEventType(
+                new EventType.CreateEventType("Orientační závod", "#ff8800", 3));
+
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("Event To Clear Type")
+                .eventDate(LocalDate.of(2026, 11, 1))
+                .location("Woods")
+                .organizer("OOB")
+                .eventTypeId(eventType.getId())
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // When: Update with null eventTypeId (clear the type)
+        Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
+                .name("Event To Clear Type")
+                .eventDate(LocalDate.of(2026, 11, 1))
+                .location("Woods")
+                .organizer("OOB")
+                .eventTypeId(null)
+                .build();
+
+        mockMvc.perform(
+                        patch("/api/events/{id}", eventId)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(updateCommand))
+                )
+                .andExpect(status().isNoContent());
+
+        // Then: eventTypeId is absent from the response
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventTypeId").doesNotExist())
+                .andExpect(jsonPath("$._links['event-type']").doesNotExist());
     }
 
     private String extractEventIdFromLocation(MvcResult result) {

@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import org.assertj.core.api.AbstractAssert;
+import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.assertj.core.api.ListAssert;
@@ -102,6 +103,23 @@ public class EventAssert extends AbstractAssert<EventAssert, Event> {
                 failWithMessage("Expected event coordinator id to be <%s> but was <%s>",
                         expected,
                         actual.getEventCoordinatorId());
+            }
+        }
+        return this;
+    }
+
+    public EventAssert hasEventTypeId(EventTypeId expected) {
+        isNotNull();
+        Optional<EventTypeId> actual = this.actual.getEventTypeId();
+        if (expected == null) {
+            if (actual.isPresent()) {
+                failWithMessage("Expected eventTypeId to be absent but was <%s>", actual.get());
+            }
+        } else {
+            if (actual.isEmpty()) {
+                failWithMessage("Expected eventTypeId to be <%s> but was absent", expected);
+            } else if (!actual.get().equals(expected)) {
+                failWithMessage("Expected eventTypeId to be <%s> but was <%s>", expected, actual.get());
             }
         }
         return this;

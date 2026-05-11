@@ -676,7 +676,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Test Location", "Test Organizer",
-                    null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -695,7 +695,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Test Location", "Test Organizer",
-                    null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
@@ -1485,7 +1485,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
                     "Location", "Organizer",
-                    null, null,
+                    null, null, null,
                     RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
                     EventStatus.ACTIVE, null, null,
                     List.of(),
@@ -1509,7 +1509,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
-                    null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
@@ -1531,7 +1531,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Location", "Organizer",
-                    null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),

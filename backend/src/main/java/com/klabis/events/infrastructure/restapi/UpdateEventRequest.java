@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 import jakarta.validation.constraints.AssertTrue;
@@ -34,6 +35,8 @@ record UpdateEventRequest(
         String websiteUrl,
 
         MemberId eventCoordinatorId,
+
+        EventTypeId eventTypeId,
 
         @Size(min = 1, max = 3, message = "Between 1 and 3 deadlines are allowed")
         List<LocalDate> deadlines,
