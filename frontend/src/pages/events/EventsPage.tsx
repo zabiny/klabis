@@ -1,12 +1,11 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {useSearchParams} from "react-router-dom";
+import {Link as RouterLink, useSearchParams} from "react-router-dom";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {EntityModel, HalFormsTemplate} from "../../api";
 import type {Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
@@ -244,7 +243,11 @@ export const EventsPage = (): ReactElement => {
                             {labels.templates.importEvent}
                         </Button>
                     )}
-                    <HalFormButton name="createEvent" modal={true} label={labels.templates.createEvent} fieldsFactory={eventFormFieldsFactory}/>
+                    {resourceData?._templates?.createEvent && (
+                        <RouterLink to="/events/new">
+                            <Button variant="primary">{labels.templates.createEvent}</Button>
+                        </RouterLink>
+                    )}
                 </div>
             </div>
 

@@ -290,6 +290,7 @@ export const labels = {
         guardian: 'ZÁKONNÝ ZÁSTUPCE',
         deactivation: 'DEAKTIVACE',
         newMemberRegistration: 'Registrace nového člena',
+        newEvent: 'Nová akce',
         groups: 'Skupiny',
         groupsList: 'Moje skupiny',
         groupOwners: 'SPRÁVCI',
@@ -309,6 +310,10 @@ export const labels = {
         presetsListHeading: 'Seznam šablon',
         eventTypesList: 'Typy akcí',
         eventTypesListHeading: 'Seznam typů akcí',
+        eventBasicInfo: 'ZÁKLADNÍ INFORMACE',
+        eventCoordination: 'KOORDINACE',
+        eventDeadlines: 'UZÁVĚRKY PŘIHLÁŠEK',
+        eventCategories: 'KATEGORIE',
     },
 
     dashboard: {
