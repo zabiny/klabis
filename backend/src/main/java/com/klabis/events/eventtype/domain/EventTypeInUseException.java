@@ -11,7 +11,7 @@ public class EventTypeInUseException extends BusinessRuleViolationException {
     private final List<String> affectedEventNames;
 
     public EventTypeInUseException(EventTypeId eventTypeId, List<String> affectedEventNames) {
-        super("Event type '" + eventTypeId + "' is still in use by events: " + String.join(", ", affectedEventNames));
+        super("Event type is still used by: " + String.join(", ", affectedEventNames));
         this.eventTypeId = eventTypeId;
         this.affectedEventNames = List.copyOf(affectedEventNames);
     }

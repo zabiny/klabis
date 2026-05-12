@@ -1,6 +1,7 @@
 package com.klabis.events.eventtype.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -20,13 +21,14 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -45,22 +47,14 @@ public class EventTypeController {
     }
 
     @GetMapping
-    @HasAuthority(Authority.EVENTS_MANAGE)
-    @Operation(summary = "List all event types", description = "Returns all event types sorted by sort_order. Requires EVENTS:MANAGE authority.")
+    @HasAuthority(Authority.EVENTS_READ)
+    @Operation(summary = "List all event types", description = "Returns all event types sorted by sort_order. Requires EVENTS:READ authority.")
     @ApiResponse(responseCode = "200", description = "List of event types")
     public ResponseEntity<CollectionModel<EntityModel<EventTypeDto>>> listEventTypes() {
         List<EventType> eventTypes = eventTypeManagementService.listAllSorted();
 
         List<EntityModel<EventTypeDto>> items = eventTypes.stream()
-                .map(eventType -> {
-                    EventTypeDto dto = EventTypeDtoMapper.toDto(eventType);
-                    EntityModel<EventTypeDto> model = EntityModel.of(dto);
-                    klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventType.getId().value()))
-                            .ifPresent(link -> model.add(link.withSelfRel()
-                                    .andAffordances(klabisAfford(methodOn(EventTypeController.class).updateEventType(eventType.getId().value(), null)))
-                                    .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(eventType.getId().value())))));
-                    return model;
-                })
+                .map(eventType -> entityModelWithDomain(EventTypeDtoMapper.toDto(eventType), eventType))
                 .toList();
 
         CollectionModel<EntityModel<EventTypeDto>> collection = CollectionModel.of(items);
@@ -72,24 +66,14 @@ public class EventTypeController {
     }
 
     @GetMapping("/{id}")
-    @HasAuthority(Authority.EVENTS_MANAGE)
-    @Operation(summary = "Get event type by ID", description = "Returns a single event type. Requires EVENTS:MANAGE authority.")
+    @HasAuthority(Authority.EVENTS_READ)
+    @Operation(summary = "Get event type by ID", description = "Returns a single event type. Requires EVENTS:READ authority.")
     @ApiResponse(responseCode = "200", description = "Event type found")
     public ResponseEntity<EntityModel<EventTypeDto>> getEventType(
             @Parameter(description = "Event type UUID") @PathVariable UUID id) {
 
         EventType eventType = eventTypeManagementService.getEventType(new EventTypeId(id));
-        EventTypeDto dto = EventTypeDtoMapper.toDto(eventType);
-
-        EntityModel<EventTypeDto> model = EntityModel.of(dto);
-        klabisLinkTo(methodOn(EventTypeController.class).getEventType(id)).ifPresent(link ->
-                model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).updateEventType(id, null)))
-                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(id)))));
-        klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
-                .ifPresent(link -> model.add(link.withRel("collection")));
-
-        return ResponseEntity.ok(model);
+        return ResponseEntity.ok(entityModelWithDomain(EventTypeDtoMapper.toDto(eventType), eventType));
     }
 
     @PostMapping(consumes = "application/json")
@@ -131,10 +115,30 @@ public class EventTypeController {
 }
 
 @MvcComponent
+class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTypeDto, EventType> {
+
+    @Override
+    public void process(EntityModel<EventTypeDto> dtoModel, EventType eventType) {
+        UUID id = eventType.getId().value();
+        klabisLinkTo(methodOn(EventTypeController.class).getEventType(id)).ifPresent(link ->
+                dtoModel.add(link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).updateEventType(id, null)))
+                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(id)))));
+        klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+    }
+}
+
+@MvcComponent
 class EventTypesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(Authority.EVENTS_MANAGE.toString()))) {
+            return model;
+        }
         klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
                 .ifPresent(link -> model.add(link.withRel("event-types")));
         return model;

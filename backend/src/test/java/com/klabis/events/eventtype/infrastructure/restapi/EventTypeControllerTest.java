@@ -47,8 +47,8 @@ class EventTypeControllerTest {
     class ListEventTypesTests {
 
         @Test
-        @DisplayName("should return 200 with list of event types")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @DisplayName("should return 200 with list of event types for user with EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturnListOfEventTypes() throws Exception {
             EventType eventType = EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1);
             when(eventTypeManagementService.listAllSorted()).thenReturn(List.of(eventType));
@@ -61,8 +61,8 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("should expose createEventType template on collection self link")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @DisplayName("should expose createEventType template on collection self link for admin user with EVENTS:READ and EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCreateTemplate() throws Exception {
             when(eventTypeManagementService.listAllSorted()).thenReturn(List.of());
 
@@ -80,7 +80,7 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("should return 403 when missing EVENTS:MANAGE authority")
+        @DisplayName("should return 403 when user has no event authorities at all")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -93,8 +93,8 @@ class EventTypeControllerTest {
     class GetEventTypeTests {
 
         @Test
-        @DisplayName("should return 200 with event type details")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @DisplayName("should return 200 with event type details for user with EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturnEventTypeDetails() throws Exception {
             UUID id = UUID.randomUUID();
             EventType eventType = EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2);
@@ -108,7 +108,7 @@ class EventTypeControllerTest {
 
         @Test
         @DisplayName("should return 404 when event type not found")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturn404WhenNotFound() throws Exception {
             UUID id = UUID.randomUUID();
             when(eventTypeManagementService.getEventType(any(EventTypeId.class)))
@@ -119,8 +119,8 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("should expose updateEventType and deleteEventType templates")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @DisplayName("should expose updateEventType and deleteEventType templates for admin user with EVENTS:READ and EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeUpdateAndDeleteTemplates() throws Exception {
             UUID id = UUID.randomUUID();
             EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1), 1);
@@ -130,6 +130,14 @@ class EventTypeControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEventType.method").value("PUT"))
                     .andExpect(jsonPath("$._templates.deleteEventType.method").value("DELETE"));
+        }
+
+        @Test
+        @DisplayName("should return 403 when user has no event authorities at all")
+        @WithKlabisMockUser(authorities = {})
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(get("/api/event-types/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
         }
     }
 

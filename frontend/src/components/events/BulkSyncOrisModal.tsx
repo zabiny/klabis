@@ -20,17 +20,18 @@ interface BulkSyncResult {
 export interface BulkSyncOrisModalProps {
     isOpen: boolean;
     onClose: () => void;
-    syncUrl: string;
+    syncUrl: string | undefined;
     onSyncComplete: () => void;
 }
 
 export const BulkSyncOrisModal = ({isOpen, onClose, syncUrl, onSyncComplete}: BulkSyncOrisModalProps): ReactElement | null => {
-    const {mutate, isPending, data, isSuccess} = useAuthorizedMutation({
+    const {mutate, reset, isPending, data, isSuccess} = useAuthorizedMutation({
         method: 'POST',
     });
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && syncUrl) {
+            reset();
             mutate({url: syncUrl}, {onSuccess: onSyncComplete});
         }
     // syncUrl and onSyncComplete are stable for a given modal open — intentionally excluded

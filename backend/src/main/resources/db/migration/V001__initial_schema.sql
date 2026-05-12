@@ -243,8 +243,11 @@ CREATE TABLE event_types
 );
 
 -- Indexes for event_types
--- Note: case-insensitive uniqueness is enforced at application layer via existsByNameIgnoreCase check.
--- Production (PostgreSQL) additionally enforces it with a functional index (applied via separate migration).
+-- Case-insensitive uniqueness is enforced at application layer (existsByNameIgnoreCase).
+-- A functional index CREATE UNIQUE INDEX ON event_types (LOWER(name)) is the correct
+-- PostgreSQL constraint, but H2 2.x does not support functional indexes — rejected by the
+-- test suite. The plain index below enforces exact-case uniqueness at the DB level only;
+-- the application-layer check covers the case-insensitive invariant.
 CREATE UNIQUE INDEX idx_event_types_name ON event_types (name);
 CREATE INDEX idx_event_types_sort_order ON event_types (sort_order);
 

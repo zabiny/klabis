@@ -225,3 +225,39 @@ Task B7.4 frontend unblocked and completed. 7 new tests (4 in `EventsFilterBar`,
 - `frontend/src/pages/events/EventsPage.test.tsx` — 1 new test (URL persistence); 2 tests updated (specificity fix for `getByText` now matching `<option>` too)
 
 ---
+
+### Iter 8 — Code review fixes (2026-05-12)
+
+All 5 blocking/warning review findings addressed. Backend: 2525/2526 pass (1 pre-existing failure unchanged). Frontend: 1435/1435.
+
+**BLOCKING #1 — Read endpoints authority loosened to EVENTS_READ**
+- `listEventTypes()` and `getEventType()` now require `EVENTS_READ` (was `EVENTS_MANAGE`). Regular members can call both endpoints — this fixes the 403s in events list badge, type filter dropdown, and event form.
+- `EventTypesRootPostprocessor` still gates the admin nav link at `EVENTS_MANAGE` via an explicit `SecurityContextHolder` authority check before calling `klabisLinkTo`. The nav link "Typy akcí" appears only for admins.
+- Tests updated: all GET tests now use `EVENTS_READ` authority; admin tests use `{EVENTS_READ, EVENTS_MANAGE}` (realistic).
+
+**BLOCKING #3 — Case-insensitive DB index (H2 incompatibility — kept at app layer)**
+- `CREATE UNIQUE INDEX ON event_types (LOWER(name))` was attempted but H2 2.4.240 rejects functional indexes even in `MODE=PostgreSQL`. Reverted to plain `idx_event_types_name ON event_types (name)`. Application-layer `existsByNameIgnoreCase` remains the enforcing mechanism. Comment added in V001 explaining the trade-off.
+
+**WARNING #4 — Controller refactored to postprocessor pattern**
+- `EventTypeDetailsPostprocessor` (new `@MvcComponent`) handles all self/collection links and update/delete affordances for both `listEventTypes` and `getEventType`. Controller now calls `entityModelWithDomain(dto, eventType)`. Inline link-building removed from controller methods.
+
+**WARNING #5 — BulkSyncOrisModal double-fire fixed**
+- Added `reset()` call before `mutate()` in the `useEffect`. Stale mutation state is cleared on each open. `syncUrl` prop type widened to `string | undefined`; guard `if (isOpen && syncUrl)` prevents fire with undefined URL. Tests updated to include `reset: vi.fn()` in all mocks.
+
+**WARNING #7 — Hardcoded fallback URL removed**
+- `EventsPage.tsx` line 349: `?? '/api/events/sync-from-oris/all-upcoming'` fallback removed. `syncUrl={bulkSyncTemplate.target}`. Template is already gated by `{bulkSyncTemplate && ...}`.
+
+**SUGGESTION #8 — EventTypeInUseException no longer exposes UUIDs**
+- Error message changed from `"Event type '<UUID>' is still in use by events: <names>"` to `"Event type is still used by: <names>"`. UUID removed; only event names remain in the 409 response body.
+
+**Changed files:**
+- `backend/src/main/resources/db/migration/V001__initial_schema.sql` — plain unique index retained, expanded comment
+- `backend/src/main/java/com/klabis/events/eventtype/domain/EventTypeInUseException.java` — UUID removed from message
+- `backend/src/main/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypeController.java` — GET endpoints use EVENTS_READ; links moved to `EventTypeDetailsPostprocessor`; `EventTypesRootPostprocessor` gates nav link at EVENTS_MANAGE
+- `backend/src/test/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypeControllerTest.java` — tests aligned with EVENTS_READ authority
+- `backend/src/test/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypesRootPostprocessorTest.java` — rewritten with 3 authority-aware tests
+- `frontend/src/components/events/BulkSyncOrisModal.tsx` — `reset()` before `mutate()`; `syncUrl` prop type `string | undefined`
+- `frontend/src/components/events/BulkSyncOrisModal.test.tsx` — `reset: vi.fn()` added to all mocks
+- `frontend/src/pages/events/EventsPage.tsx` — fallback URL removed
+
+---

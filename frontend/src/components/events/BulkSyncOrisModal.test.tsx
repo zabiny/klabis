@@ -36,6 +36,7 @@ describe('BulkSyncOrisModal', () => {
         it('shows spinner and progress message while sync is pending', () => {
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn(),
+                reset: vi.fn(),
                 isPending: true,
                 data: undefined,
                 error: null,
@@ -54,6 +55,7 @@ describe('BulkSyncOrisModal', () => {
         it('shows success and failure counts when sync completes', () => {
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn(),
+                reset: vi.fn(),
                 isPending: false,
                 data: {
                     data: {
@@ -82,6 +84,7 @@ describe('BulkSyncOrisModal', () => {
         it('shows failure list with event name and error message', () => {
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn(),
+                reset: vi.fn(),
                 isPending: false,
                 data: {
                     data: {
@@ -108,6 +111,7 @@ describe('BulkSyncOrisModal', () => {
         it('shows close button after sync completes', () => {
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn(),
+                reset: vi.fn(),
                 isPending: false,
                 data: {
                     data: {totalProcessed: 0, successCount: 0, failureCount: 0, results: []},
@@ -129,6 +133,7 @@ describe('BulkSyncOrisModal', () => {
 
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn(),
+                reset: vi.fn(),
                 isPending: false,
                 data: {
                     data: {totalProcessed: 0, successCount: 0, failureCount: 0, results: []},
@@ -152,6 +157,7 @@ describe('BulkSyncOrisModal', () => {
             const mutate = vi.fn();
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate,
+                reset: vi.fn(),
                 isPending: false,
                 data: undefined,
                 error: null,

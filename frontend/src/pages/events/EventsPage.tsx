@@ -346,7 +346,7 @@ export const EventsPage = (): ReactElement => {
             <BulkSyncOrisModal
                 isOpen={isBulkSyncModalOpen}
                 onClose={() => setIsBulkSyncModalOpen(false)}
-                syncUrl={bulkSyncTemplate.target ?? '/api/events/sync-from-oris/all-upcoming'}
+                syncUrl={bulkSyncTemplate.target}
                 onSyncComplete={route.refetch}
             />
         )}
