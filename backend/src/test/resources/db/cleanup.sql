@@ -30,6 +30,9 @@ DELETE FROM calendar_items;
 -- DELETE FROM event_registrations;
 DELETE FROM events;
 
+-- Event types (must follow events due to FK: events.event_type_id → event_types.id)
+DELETE FROM event_types;
+
 -- User groups — unified table covering FREE (FreeGroup), TRAINING, FAMILY aggregate types
 -- Child tables cascade on user_groups delete, but explicit deletes preserve order clarity
 DELETE FROM user_group_invitations;

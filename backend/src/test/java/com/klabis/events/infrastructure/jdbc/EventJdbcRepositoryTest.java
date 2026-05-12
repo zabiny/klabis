@@ -55,6 +55,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @CleanupTestData
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
+        "DELETE FROM calendar_items",
+        "DELETE FROM events",
+        "DELETE FROM event_types",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'TEST001', 'Test', 'Member1', '2000-01-01', 'CZ', 'MALE', 'test1@example.com', '+420111111111', 'Street 1', 'City 1', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'TEST002', 'Test', 'Member2', '2000-01-01', 'CZ', 'MALE', 'test2@example.com', '+420111111112', 'Street 2', 'City 2', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('33333333-3333-3333-3333-333333333333', 'TEST003', 'Test', 'Member3', '2000-01-01', 'CZ', 'MALE', 'test3@example.com', '+420111111113', 'Street 3', 'City 3', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"
