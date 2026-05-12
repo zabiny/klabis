@@ -52,6 +52,30 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
         return <div className="space-y-6">{children}</div>;
     }
 
+    const formPanel = currentFormRequest.children ? (
+        <HalFormPanel
+            collectionUrl={`/api${route.pathname}`}
+            templateName={currentFormRequest.templateName}
+            fieldsFactory={currentFormRequest.fieldsFactory}
+            onSuccess={closeForm}
+            onCancel={closeForm}
+            navigateOnSuccess={currentFormRequest.navigateOnSuccess}
+        >
+            {currentFormRequest.children}
+        </HalFormPanel>
+    ) : (
+        <HalFormDisplay
+            template={template}
+            templateName={currentFormRequest.templateName}
+            resourceData={resourceData}
+            pathname={route.pathname}
+            onClose={closeForm}
+            onSubmitSuccess={closeForm}
+            fieldsFactory={currentFormRequest.fieldsFactory}
+            navigateOnSuccess={currentFormRequest.navigateOnSuccess}
+        />
+    );
+
     if (currentFormRequest.modal) {
         return (
             <>
@@ -62,39 +86,17 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
                     title={currentFormRequest.dialogTitle ?? template.title}
                     size="2xl"
                 >
-                    <HalFormDisplay
-                        template={template}
-                        templateName={currentFormRequest.templateName}
-                        resourceData={resourceData}
-                        pathname={route.pathname}
-                        onClose={closeForm}
-                        onSubmitSuccess={closeForm}
-                        fieldsFactory={currentFormRequest.fieldsFactory}
-                        navigateOnSuccess={currentFormRequest.navigateOnSuccess}
-                    />
+                    {formPanel}
                 </Modal>
             </>
         );
     }
 
-    // Inline branch: render HalFormPanel with children render-props
+    // Inline branch: form replaces page content
     if (!currentFormRequest.children) {
         console.warn(`HalFormsPageLayout: inline form request for "${currentFormRequest.templateName}" has no children render-props. Falling back to page content.`);
         return <div className="space-y-6">{children}</div>;
     }
 
-    return (
-        <div className="space-y-6">
-            <HalFormPanel
-                collectionUrl={`/api${route.pathname}`}
-                templateName={currentFormRequest.templateName}
-                fieldsFactory={currentFormRequest.fieldsFactory}
-                onSuccess={closeForm}
-                onCancel={closeForm}
-                navigateOnSuccess={currentFormRequest.navigateOnSuccess}
-            >
-                {currentFormRequest.children}
-            </HalFormPanel>
-        </div>
-    );
+    return <div className="space-y-6">{formPanel}</div>;
 }
