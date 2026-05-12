@@ -1,8 +1,7 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
-import type {EntityModel, HalFormsTemplate} from "../../api";
-import type {Link} from "../../api";
+import type {EntityModel, HalFormsTemplate, Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -13,7 +12,7 @@ import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
 import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
 import {getActionVariant} from "../../utils/actionVariants.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {labels, getEnumLabel, getDialogTitleLabel, getTemplateLabel} from "../../localization";
+import {getDialogTitleLabel, getEnumLabel, getTemplateLabel, labels} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
@@ -34,8 +33,8 @@ import {
     getTimeWindowFromParams,
     getTodayIso,
     REGISTERED_BY_ME,
-    timeWindowToDateParams,
     type TimeWindow,
+    timeWindowToDateParams,
 } from "../../components/events/eventsFilterUtils.ts";
 
 type EventListData = EntityModel<{

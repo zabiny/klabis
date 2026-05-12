@@ -92,6 +92,14 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
         );
     }
 
-    // Inline branch: form replaces page content
-    return <div className="space-y-6">{formPanel}</div>;
+    // Inline branch: form replaces page content; show a heading so user keeps context
+    const inlineTitle = currentFormRequest.dialogTitle ?? template.title;
+    return (
+        <div className="space-y-6">
+            {inlineTitle && (
+                <h1 className="text-3xl font-bold text-text-primary">{inlineTitle}</h1>
+            )}
+            {formPanel}
+        </div>
+    );
 }

@@ -94,6 +94,8 @@ export const labels = {
         resumeMember: 'Reaktivace člena',
         importEvent: 'Import akce z ORIS',
         syncAllUpcomingFromOris: 'Hromadná synchronizace z ORIS',
+        createEvent: 'Nová akce',
+        registerMember: 'Registrace nového člena',
     },
 
     bulkSync: {

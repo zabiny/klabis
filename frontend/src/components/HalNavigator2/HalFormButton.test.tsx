@@ -616,18 +616,18 @@ describe('HalFormButton Component', () => {
             const resourceData: HalResponse = {
                 id: 1,
                 _templates: {
-                    createEvent: mockHalFormsTemplate({title: 'Server Title'}),
+                    updateEvent: mockHalFormsTemplate({title: 'Server Title'}),
                 },
             };
             renderWithPageData(
-                <HalFormButton name="createEvent" modal={true}/>,
+                <HalFormButton name="updateEvent" modal={true}/>,
                 createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button');
             await user.click(button);
 
-            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Přidat akci');
+            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Upravit');
         });
 
         it('should fall back to template title when dialogTitle is not provided', async () => {
