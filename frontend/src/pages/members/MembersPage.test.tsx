@@ -130,7 +130,7 @@ describe('MembersPage', () => {
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
-    it('renders "Registrovat člena" link navigating to /members/new when registerMember template exists', () => {
+    it('renders "Registrovat člena" button when registerMember template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
             _templates: {
@@ -139,12 +139,11 @@ describe('MembersPage', () => {
             },
         };
         renderPage(createMockPageData(resourceData));
-        const link = screen.getByRole('link', {name: /registrovat člena/i});
-        expect(link).toBeInTheDocument();
-        expect(link).toHaveAttribute('href', '/members/new');
+        expect(screen.getByTestId('form-template-button-registerMember')).toBeInTheDocument();
+        expect(screen.getByText('Registrovat člena')).toBeInTheDocument();
     });
 
-    it('does NOT render "Registrovat člena" link when only default template exists (MEMBERS:READ only user)', () => {
+    it('does NOT render "Registrovat člena" button when only default template exists (MEMBERS:READ only user)', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
             _templates: {
@@ -152,15 +151,15 @@ describe('MembersPage', () => {
             },
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('link', {name: /registrovat člena/i})).not.toBeInTheDocument();
+        expect(screen.queryByTestId('form-template-button-registerMember')).not.toBeInTheDocument();
     });
 
-    it('does NOT render "Registrovat člena" link when no templates exist', () => {
+    it('does NOT render "Registrovat člena" button when no templates exist', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('link', {name: /registrovat člena/i})).not.toBeInTheDocument();
+        expect(screen.queryByTestId('form-template-button-registerMember')).not.toBeInTheDocument();
     });
 
     it('renders basic table columns: Registrační číslo, Příjmení, Jméno', () => {

@@ -1,9 +1,10 @@
 /**
  * Component for rendering a single HAL Forms template button
- * Shows a button that opens a form either in modal or inline on the current page
+ * Shows a button that opens a form either in modal or inline on the current page.
  *
- * - Modal mode: Requests form display via HalFormContext
- * - Inline mode: Navigates with query parameter (?form=templateName)
+ * - Modal mode: Requests form display via HalFormContext; HalFormsPageLayout renders the modal
+ * - Inline mode: Requests inline form via HalFormContext; HalFormsPageLayout replaces page content
+ *   with HalFormPanel, which receives the children render-props for custom layout
  *
  * Form rendering is delegated to HalFormsPageLayout
  */
@@ -12,7 +13,8 @@ import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
-import type {HalFormFieldFactory, RenderFormCallback} from './halforms';
+import type {HalFormFieldFactory} from './halforms';
+import type {HalFormPanelChildren} from './HalFormPanel';
 import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 
 /**
@@ -28,8 +30,21 @@ export interface HalFormButtonProps {
     /** Optional explicit button label — overrides template.title and templateName */
     label?: string;
 
-    /** Optional custom form layout - children or render callback */
-    customLayout?: ReactNode | RenderFormCallback;
+    /**
+     * Children render-props for custom form layout (inline mode).
+     * Receives helpers: renderInput, renderField, renderLabel, hasField, hasType.
+     *
+     * @example
+     * <HalFormButton name="createEvent" modal={false} fieldsFactory={eventFormFieldsFactory}>
+     *   {({renderInput, hasField}) => (
+     *     <div>
+     *       {hasField('name') && renderInput('name')}
+     *       {renderField('submit')}
+     *     </div>
+     *   )}
+     * </HalFormButton>
+     */
+    children?: HalFormPanelChildren;
 
     /** Optional custom field factory for overriding individual field rendering */
     fieldsFactory?: HalFormFieldFactory;
@@ -54,23 +69,28 @@ export interface HalFormButtonProps {
  * Component to display a button for a specific HAL Forms template
  *
  * Checks if a template with the given name exists in the current resource.
- * If it exists, renders a button. When clicked:
- * - In modal mode: Requests form display via HalFormContext (HalFormsPageLayout renders the modal)
- * - In non-modal mode: Navigates to current page with query parameter (?form=templateName)
- *   HalFormsPageLayout detects the parameter and renders the form inline
+ * If it exists, renders a button. When clicked, requests form display via HalFormContext.
+ * HalFormsPageLayout handles rendering (modal overlay or inline via HalFormPanel).
  *
  * Note: Forms always display on the current resource page (which contains the _templates).
- * The template's target URL is only used to fetch initial form values and as the submission endpoint.
+ * The template's target URL is only used as the submission endpoint.
  *
  * @example
  * // Modal mode (requires HalFormsPageLayout and HalFormProvider in parent tree)
  * <HalFormButton name="create" modal={true} />
  *
  * @example
- * // Inline mode (requires HalFormsPageLayout in parent tree)
- * <HalFormButton name="edit" modal={false} />
+ * // Inline mode with render-props children
+ * <HalFormButton name="edit" modal={false}>
+ *   {({renderInput, renderField}) => (
+ *     <div>
+ *       {renderInput('name')}
+ *       {renderField('submit')}
+ *     </div>
+ *   )}
+ * </HalFormButton>
  */
-export function HalFormButton({name, modal = true, label, customLayout, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -87,7 +107,7 @@ export function HalFormButton({name, modal = true, label, customLayout, fieldsFa
         displayHalForm({
             templateName: name,
             modal: modal,
-            customLayout,
+            children,
             fieldsFactory,
             dialogTitle: resolvedDialogTitle,
             navigateOnSuccess,

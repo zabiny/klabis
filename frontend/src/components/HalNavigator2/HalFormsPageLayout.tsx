@@ -1,8 +1,8 @@
 /**
- * Layout wrapper for pages that want to display HAL Forms
+ * Layout wrapper for pages that want to display HAL Forms.
  * Automatically handles:
- * - Query parameter detection (?form=templateName) for inline forms
- * - Context-based modal form requests
+ * - Context-based modal form requests (renders Modal + HalFormDisplay)
+ * - Context-based inline form requests (renders HalFormPanel with children render-props)
  *
  * Usage:
  * <HalFormsPageLayout>
@@ -10,21 +10,18 @@
  *     <p>Custom content...</p>
  * </HalFormsPageLayout>
  *
- * Modal forms are requested via useHalForm() context hook
+ * Forms are requested via HalFormButton (which calls useHalForm().displayHalForm()).
  */
 
 import {type ReactElement, type ReactNode} from 'react';
-import {useSearchParams} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData';
+import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
+import {HalFormPanel} from './HalFormPanel.tsx';
 import {Modal} from '../UI';
-import type {RenderFormCallback} from './halforms';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
-    /** Optional custom layouts per template name */
-    customLayouts?: Record<string, ReactNode | RenderFormCallback>;
 }
 
 /**
@@ -32,16 +29,16 @@ interface HalFormsPageLayoutProps {
  *
  * Automatically renders:
  * - Modal forms when requested via useHalForm() context with modal: true
- * - Inline forms when requested via URL query param (?form=templateName)
+ * - Inline forms when requested via useHalForm() context with modal: false
+ *   (uses HalFormPanel with children render-props from the request)
  * - Children content when no form is requested
  *
  * Handles:
  * - Template validation (shows children if template doesn't exist)
  * - Form display and lifecycle
  */
-export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayoutProps): ReactElement {
+export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactElement {
     const {resourceData, route} = useHalPageData();
-    const [, setSearchParams] = useSearchParams();
     const {currentFormRequest, closeForm} = useHalForm();
 
     if (!currentFormRequest || !resourceData) {
@@ -55,29 +52,13 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
         return <div className="space-y-6">{children}</div>;
     }
 
-    // Handle closing inline forms by clearing search params
-    const handleCloseForm = () => {
-        if (!currentFormRequest.modal) {
-            setSearchParams({});
-        } else {
-            closeForm();
-        }
-    };
-
-    // Handle success for inline forms by clearing search params
-    const handleSubmitSuccess = () => {
-        if (!currentFormRequest.modal) {
-            setSearchParams({});
-        }
-    };
-
     if (currentFormRequest.modal) {
         return (
             <>
                 <div className="space-y-6">{children}</div>
                 <Modal
                     isOpen={true}
-                    onClose={handleCloseForm}
+                    onClose={closeForm}
                     title={currentFormRequest.dialogTitle ?? template.title}
                     size="2xl"
                 >
@@ -86,9 +67,8 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         templateName={currentFormRequest.templateName}
                         resourceData={resourceData}
                         pathname={route.pathname}
-                        onClose={handleCloseForm}
+                        onClose={closeForm}
                         onSubmitSuccess={closeForm}
-                        customLayout={currentFormRequest.customLayout}
                         fieldsFactory={currentFormRequest.fieldsFactory}
                         navigateOnSuccess={currentFormRequest.navigateOnSuccess}
                     />
@@ -97,21 +77,24 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
         );
     }
 
+    // Inline branch: render HalFormPanel with children render-props
+    if (!currentFormRequest.children) {
+        console.warn(`HalFormsPageLayout: inline form request for "${currentFormRequest.templateName}" has no children render-props. Falling back to page content.`);
+        return <div className="space-y-6">{children}</div>;
+    }
+
     return (
         <div className="space-y-6">
-            <div className="border rounded-lg p-6">
-                <HalFormDisplay
-                    template={template}
-                    templateName={currentFormRequest.templateName}
-                    resourceData={resourceData}
-                    pathname={route.pathname}
-                    onClose={handleCloseForm}
-                    onSubmitSuccess={handleSubmitSuccess}
-                    customLayout={customLayouts?.[currentFormRequest.templateName]}
-                    fieldsFactory={currentFormRequest.fieldsFactory}
-                    navigateOnSuccess={currentFormRequest.navigateOnSuccess}
-                />
-            </div>
+            <HalFormPanel
+                collectionUrl={`/api${route.pathname}`}
+                templateName={currentFormRequest.templateName}
+                fieldsFactory={currentFormRequest.fieldsFactory}
+                onSuccess={closeForm}
+                onCancel={closeForm}
+                navigateOnSuccess={currentFormRequest.navigateOnSuccess}
+            >
+                {currentFormRequest.children}
+            </HalFormPanel>
         </div>
     );
 }

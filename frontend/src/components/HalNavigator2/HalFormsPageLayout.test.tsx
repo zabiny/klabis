@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import {act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
@@ -8,18 +9,35 @@ import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
 import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
 import {vi} from 'vitest';
 import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
-import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
+import {HalFormProvider, useHalForm} from '../../contexts/HalFormContext.tsx';
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose, customLayout}: HalFormDisplayProps) => (
+    HalFormDisplay: ({template, templateName, onClose}: HalFormDisplayProps) => (
         <div data-testid="hal-form-display">
             <h3>{template.title || templateName}</h3>
-            {customLayout && <div data-testid="custom-layout">Custom Layout Applied</div>}
             <button onClick={onClose} data-testid="form-close-button">Close Form</button>
         </div>
     ),
 }));
 
+vi.mock('./HalFormPanel.tsx', () => ({
+    HalFormPanel: ({templateName, children, onCancel}: any) => {
+        const helpers = {
+            renderInput: (name: string) => <input key={name} data-testid={`input-${name}`}/>,
+            renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
+            renderLabel: (name: string) => name,
+            hasField: () => true,
+            hasType: () => false,
+        };
+        return (
+            <div data-testid="hal-form-panel">
+                <h3>{templateName}</h3>
+                {children(helpers)}
+                <button onClick={onCancel} data-testid="panel-cancel-button">Cancel</button>
+            </div>
+        );
+    },
+}));
 
 vi.mock('../UI/Modal.tsx', () => ({
     Modal: ({isOpen, children, onClose, title}: any) => (
@@ -64,122 +82,163 @@ describe('HalFormsPageLayout', () => {
         );
     };
 
-    it('should render children content when no form parameter is found', () => {
-        const contextValue = {
-            resourceData: mockHalResponseWithForms(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
+    const baseContextValue = {
+        resourceData: mockHalResponseWithForms(),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+        pathname: '/api/test',
+        queryState: 'success' as const,
+        navigateToResource: vi.fn(),
+        getResourceLink: vi.fn(),
+    };
 
-        renderWithContext(contextValue);
-
-        expect(screen.getByText('Test Content')).toBeInTheDocument();
-        expect(screen.getByText('Custom content inside the layout')).toBeInTheDocument();
-    });
-
-    it('should NOT render children content when existing form parameter is present', () => {
-        const contextValue = {
-            resourceData: mockHalResponseWithForms(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
-
-        renderWithContext(contextValue, ['/api/test?form=create']);
-
-        expect(screen.queryByText('Test Content')).not.toBeInTheDocument();
-        expect(screen.queryByText('Custom content inside the layout')).not.toBeInTheDocument();
-    });
-
-    it('should render children content when form parameter references non-existent form', () => {
-        const contextValue = {
-            resourceData: mockHalResponseWithForms(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test?form=nonsense',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
-
-        renderWithContext(contextValue);
+    it('should render children content when no form is requested', () => {
+        renderWithContext(baseContextValue);
 
         expect(screen.getByText('Test Content')).toBeInTheDocument();
         expect(screen.getByText('Custom content inside the layout')).toBeInTheDocument();
     });
 
-    it('should display form when query parameter for existing form is present', () => {
-        const contextValue = {
-            resourceData: mockHalResponseWithForms(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
+    it('should not display form when no form is requested', () => {
+        renderWithContext(baseContextValue);
 
-        renderWithContext(contextValue, ['/api/test?form=create']);
-
-        // Form should be displayed
-        expect(screen.queryByTestId('hal-form-display')).toBeInTheDocument();
-    });
-
-    it('should NOT display form when no query parameter is present', () => {
-        const contextValue = {
-            resourceData: mockHalResponseWithForms(),
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
-
-        renderWithContext(contextValue);
-
-        // Form should not be displayed
         expect(screen.queryByTestId('hal-form-display')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('hal-form-panel')).not.toBeInTheDocument();
     });
 
     it('should not display form when resource data is missing', () => {
-        const contextValue = {
-            resourceData: null,
-            isLoading: false,
-            error: null,
-            refetch: vi.fn(),
-            pathname: '/api/test',
-            queryState: 'success' as const,
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        };
-
+        const contextValue = {...baseContextValue, resourceData: null};
         renderWithContext(contextValue);
 
-        // Form should not be displayed
         expect(screen.queryByTestId('hal-form-display')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('hal-form-panel')).not.toBeInTheDocument();
+    });
+
+    it('should render children content when form references non-existent template', () => {
+        const contextValue = {...baseContextValue, resourceData: mockHalResponseWithForms()};
+        renderWithContext(contextValue);
+
+        expect(screen.getByText('Test Content')).toBeInTheDocument();
     });
 
     describe('Modal Form Display (via Context)', () => {
-        it('should handle modal forms via HalFormContext integration', () => {
-            // Modal forms are now integrated with HalFormContext
-            // When useHalForm().requestForm() is called, HalFormsPageLayout
-            // listens to currentFormRequest and renders Modal
-            // This is tested through HalFormButton integration tests
-            expect(true).toBe(true);
+        it('should render modal when modal form is requested via context', async () => {
+            const TriggerModal = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({templateName: 'create', modal: true})}
+                        data-testid="trigger"
+                    >
+                        Open Modal
+                    </button>
+                );
+            };
+
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/api/test']}>
+                        <HalRouteContext.Provider value={baseContextValue}>
+                            <HalFormProvider>
+                                <TriggerModal/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            expect(screen.queryByTestId('hal-form-panel')).not.toBeInTheDocument();
         });
     });
 
+    describe('Inline Form Display (via Context)', () => {
+        it('should render HalFormPanel when inline form is requested via context', async () => {
+            const TriggerInline = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({
+                            templateName: 'create',
+                            modal: false,
+                            children: ({renderField}) => <div>{renderField('submit')}</div>,
+                        })}
+                        data-testid="trigger"
+                    >
+                        Open Inline
+                    </button>
+                );
+            };
+
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/api/test']}>
+                        <HalRouteContext.Provider value={baseContextValue}>
+                            <HalFormProvider>
+                                <TriggerInline/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+
+            expect(screen.getByTestId('hal-form-panel')).toBeInTheDocument();
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+            // Page content hidden when inline form is active
+            expect(screen.queryByText('Test Content')).not.toBeInTheDocument();
+        });
+
+        it('should fall back to page content when inline request has no children', async () => {
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const TriggerInlineNoChildren = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({templateName: 'create', modal: false})}
+                        data-testid="trigger"
+                    >
+                        Open Inline
+                    </button>
+                );
+            };
+
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/api/test']}>
+                        <HalRouteContext.Provider value={baseContextValue}>
+                            <HalFormProvider>
+                                <TriggerInlineNoChildren/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+
+            expect(screen.getByText('Test Content')).toBeInTheDocument();
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('no children render-props'));
+            consoleSpy.mockRestore();
+        });
+    });
 });

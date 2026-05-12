@@ -1,5 +1,5 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Link as RouterLink, useSearchParams} from "react-router-dom";
+import {useSearchParams} from "react-router-dom";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {EntityModel, HalFormsTemplate} from "../../api";
 import type {Link} from "../../api";
@@ -18,7 +18,10 @@ import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
-import {Button, Modal} from "../../components/UI";
+import {Button, DetailRow, Modal} from "../../components/UI";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {Section} from "../members/MemberSection.tsx";
+import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar, type EventsFilterValue} from "../../components/events/EventsFilterBar.tsx";
@@ -243,11 +246,60 @@ export const EventsPage = (): ReactElement => {
                             {labels.templates.importEvent}
                         </Button>
                     )}
-                    {resourceData?._templates?.createEvent && (
-                        <RouterLink to="/events/new">
-                            <Button variant="primary">{labels.templates.createEvent}</Button>
-                        </RouterLink>
-                    )}
+                    <HalFormButton name="createEvent" modal={false} fieldsFactory={eventFormFieldsFactory}>
+                        {({renderInput, renderField, hasField}: HalFormPanelRenderHelpers) => {
+                            const BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
+                            const COORDINATION_FIELDS = ['eventCoordinatorId', 'eventTypeId'];
+                            const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
+                            return (
+                                <div className="flex flex-col gap-8">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                        <div className="flex flex-col gap-6">
+                                            {hasFields(BASIC_FIELDS) && (
+                                                <Section title={labels.sections.eventBasicInfo}>
+                                                    {hasField('name') && <DetailRow label={labels.fields.name}>{renderInput('name')}</DetailRow>}
+                                                    {hasField('eventDate') && <DetailRow label={labels.fields.eventDate}>{renderInput('eventDate')}</DetailRow>}
+                                                    {hasField('location') && <DetailRow label={labels.fields.location}>{renderInput('location')}</DetailRow>}
+                                                    {hasField('organizer') && <DetailRow label={labels.fields.organizer}>{renderInput('organizer')}</DetailRow>}
+                                                    {hasField('websiteUrl') && <DetailRow label={labels.fields.websiteUrl}>{renderInput('websiteUrl')}</DetailRow>}
+                                                </Section>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-6">
+                                            {hasFields(COORDINATION_FIELDS) && (
+                                                <Section title={labels.sections.eventCoordination}>
+                                                    {hasField('eventCoordinatorId') && (
+                                                        <DetailRow label={labels.fields.eventCoordinatorId}>
+                                                            {renderInput('eventCoordinatorId')}
+                                                        </DetailRow>
+                                                    )}
+                                                    {hasField('eventTypeId') && (
+                                                        <DetailRow label={labels.fields.eventTypeId}>
+                                                            {renderInput('eventTypeId')}
+                                                        </DetailRow>
+                                                    )}
+                                                </Section>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {hasField('deadlines') && (
+                                        <Section title={labels.sections.eventDeadlines}>
+                                            {renderInput('deadlines')}
+                                        </Section>
+                                    )}
+                                    {hasField('categories') && (
+                                        <Section title={labels.sections.eventCategories}>
+                                            {renderInput('categories')}
+                                        </Section>
+                                    )}
+                                    <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
+                                        {renderField('cancel')}
+                                        {renderField('submit')}
+                                    </div>
+                                </div>
+                            );
+                        }}
+                    </HalFormButton>
                 </div>
             </div>
 

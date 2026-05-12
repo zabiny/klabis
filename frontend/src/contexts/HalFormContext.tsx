@@ -1,6 +1,6 @@
-import {createContext, type ReactElement, type ReactNode, useContext, useEffect, useState} from 'react';
-import {useLocation, useNavigate, useSearchParams as useSearchParamsRouter} from 'react-router-dom';
-import type {HalFormFieldFactory, RenderFormCallback} from '../components/HalNavigator2/halforms';
+import {createContext, type ReactNode, useContext, useState} from 'react';
+import type {HalFormFieldFactory} from '../components/HalNavigator2/halforms';
+import type {HalFormPanelChildren} from '../components/HalNavigator2/HalFormPanel';
 
 /**
  * Represents a request to display a form
@@ -12,8 +12,8 @@ export interface HalFormRequest {
     /** If true, form should be displayed in modal. If false, inline */
     modal: boolean;
 
-    /** Optional custom form layout */
-    customLayout?: ReactNode | RenderFormCallback;
+    /** Children render-props for custom form layout (inline mode) */
+    children?: HalFormPanelChildren;
 
     /** Optional custom field factory for overriding individual field rendering */
     fieldsFactory?: HalFormFieldFactory;
@@ -46,71 +46,14 @@ interface HalFormContextValue {
 const HalFormContext = createContext<HalFormContextValue | undefined>(undefined);
 
 /**
- * Safe hook to use useSearchParams that gracefully handles being outside Router context
- */
-function useSafeSearchParams() {
-    try {
-        return useSearchParamsRouter();
-    } catch {
-        return [new URLSearchParams(), () => {
-        }] as const;
-    }
-}
-
-function useSafeLocation() {
-    try {
-        return useLocation();
-    } catch {
-        return {pathname: '/', search: '', hash: '', state: null, key: 'default'};
-    }
-}
-
-function useSafeNavigate() {
-    try {
-        return useNavigate();
-    } catch {
-        return (() => {}) as ReturnType<typeof useNavigate>;
-    }
-}
-
-/**
  * Provider component for HalFormContext
  * Must wrap components that use useHalForm hook
- *
- * Automatically detects and handles:
- * - Modal form requests via requestForm()
- * - Inline form requests via URL query parameter (?form=templateName)
  */
-export function HalFormProvider({children}: { children: ReactNode }): ReactElement {
+export function HalFormProvider({children}: { children: ReactNode }) {
     const [currentFormRequest, setCurrentFormRequest] = useState<HalFormRequest | null>(null);
-    const [searchParams] = useSafeSearchParams();
-    const {pathname} = useSafeLocation();
-    const navigate = useSafeNavigate();
-
-    // Detect inline form requests from URL query parameter
-    useEffect(() => {
-        const inlineTemplateName = searchParams.get('form');
-        if (inlineTemplateName) {
-            setCurrentFormRequest({
-                templateName: inlineTemplateName,
-                modal: false,
-            });
-        } else {
-            // Only clear form if it was set by URL (modal: false)
-            // Preserve modal forms set via requestForm()
-            setCurrentFormRequest(prev =>
-                prev?.modal === false ? null : prev
-            );
-        }
-    }, [searchParams]);
 
     const requestForm = (request: HalFormRequest) => {
-        if (request.modal) {
-            setCurrentFormRequest(request);
-        } else {
-            // Display form inline on current page (target URL only used for form data/submission)
-            navigate(`${pathname}?form=${request.templateName}`);
-        }
+        setCurrentFormRequest(request);
     };
 
     const closeForm = () => {

@@ -289,8 +289,6 @@ export const labels = {
         documentsAndLicenses: 'DOKLADY A LICENCE',
         guardian: 'ZÁKONNÝ ZÁSTUPCE',
         deactivation: 'DEAKTIVACE',
-        newMemberRegistration: 'Registrace nového člena',
-        newEvent: 'Nová akce',
         groups: 'Skupiny',
         groupsList: 'Moje skupiny',
         groupOwners: 'SPRÁVCI',

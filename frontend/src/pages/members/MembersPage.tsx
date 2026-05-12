@@ -1,12 +1,16 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import {Link, useSearchParams} from "react-router-dom";
+import {useSearchParams} from "react-router-dom";
 import type {EntityModel, HalFormsTemplate, HalResourceLinks} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Button, Modal} from "../../components/UI";
+import {Button, DetailRow, Modal} from "../../components/UI";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {Section} from "./MemberSection.tsx";
+import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
+import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
@@ -194,13 +198,81 @@ export const MembersPage = (): ReactElement => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.membersList}</h2>
                     <div className="flex gap-2">
-                        {resourceData?._templates?.registerMember && (
-                            <Link to="/members/new">
-                                <Button variant="primary">
-                                    {labels.templates.registerMember}
-                                </Button>
-                            </Link>
-                        )}
+                        <HalFormButton name="registerMember" modal={false}>
+                            {({renderInput, renderField, hasField, hasType}: HalFormPanelRenderHelpers) => {
+                                const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
+                                const CONTACT_FIELDS = ['email', 'phone'];
+                                const ADDRESS_TYPE = 'AddressRequest';
+                                const SUPPLEMENTARY_FIELDS = ['chipNumber', 'bankAccountNumber', 'dietaryRestrictions'];
+                                const IDENTITY_CARD_TYPE = 'IdentityCardDto';
+                                const MEDICAL_COURSE_TYPE = 'MedicalCourseDto';
+                                const TRAINER_LICENSE_TYPE = 'TrainerLicenseDto';
+                                const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
+                                const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
+                                const GUARDIAN_TYPE = 'GuardianDTO';
+                                const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
+                                const hasDocumentFields = hasFields(DOCUMENT_FIELDS) || DOCUMENT_TYPES.some(t => hasType(t));
+                                return (
+                                    <div className="flex flex-col gap-8">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                            <div className="flex flex-col gap-6">
+                                                {hasFields(PERSONAL_FIELDS) && (
+                                                    <Section title={labels.sections.personalInfo}>
+                                                        {hasField('firstName') && <DetailRow label={labels.fields.firstName}>{renderInput('firstName')}</DetailRow>}
+                                                        {hasField('lastName') && <DetailRow label={labels.fields.lastName}>{renderInput('lastName')}</DetailRow>}
+                                                        {hasField('dateOfBirth') && <DetailRow label={labels.fields.dateOfBirth}>{renderInput('dateOfBirth')}</DetailRow>}
+                                                        {hasField('gender') && <DetailRow label={labels.fields.gender}>{renderInput('gender')}</DetailRow>}
+                                                        {hasField('nationality') && <DetailRow label={labels.fields.nationality}>{renderInput('nationality')}</DetailRow>}
+                                                        {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput}/>}
+                                                    </Section>
+                                                )}
+                                                {hasFields(CONTACT_FIELDS) && (
+                                                    <Section title={labels.sections.contact}>
+                                                        {hasField('email') && <DetailRow label={labels.fields.email}>{renderInput('email')}</DetailRow>}
+                                                        {hasField('phone') && <DetailRow label={labels.fields.phone}>{renderInput('phone')}</DetailRow>}
+                                                    </Section>
+                                                )}
+                                                {hasType(ADDRESS_TYPE) && (
+                                                    <Section title={labels.sections.address}>
+                                                        {renderInput('address')}
+                                                    </Section>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-6">
+                                                {hasFields(SUPPLEMENTARY_FIELDS) && (
+                                                    <Section title={labels.sections.supplementary}>
+                                                        {hasField('chipNumber') && <DetailRow label={labels.fields.chipNumber}>{renderInput('chipNumber')}</DetailRow>}
+                                                        {hasField('bankAccountNumber') && (
+                                                            <DetailRow label={labels.fields.bankAccountNumber}>
+                                                                {renderInput('bankAccountNumber')}
+                                                            </DetailRow>
+                                                        )}
+                                                        {hasField('dietaryRestrictions') && <DetailRow label={labels.fields.dietaryRestrictions}>{renderInput('dietaryRestrictions')}</DetailRow>}
+                                                    </Section>
+                                                )}
+                                                {hasType(GUARDIAN_TYPE) && (
+                                                    <Section title={labels.sections.guardian}>
+                                                        {renderInput('guardian')}
+                                                    </Section>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {hasDocumentFields && (
+                                            <Section title={labels.sections.documentsAndLicenses}>
+                                                {hasType(IDENTITY_CARD_TYPE) && renderInput('identityCard')}
+                                                {hasField('drivingLicenseGroup') && <DetailRow label={labels.fields.drivingLicenseGroup}>{renderInput('drivingLicenseGroup')}</DetailRow>}
+                                                {hasType(MEDICAL_COURSE_TYPE) && renderInput('medicalCourse')}
+                                                {hasType(TRAINER_LICENSE_TYPE) && renderInput('trainerLicense')}
+                                            </Section>
+                                        )}
+                                        <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
+                                            {renderField('cancel')}
+                                            {renderField('submit')}
+                                        </div>
+                                    </div>
+                                );
+                            }}
+                        </HalFormButton>
                     </div>
                 </div>
                 <MembersFilterBar

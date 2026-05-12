@@ -73,6 +73,24 @@ vi.mock('./HalFormDisplay.tsx', () => ({
     ),
 }));
 
+vi.mock('./HalFormPanel.tsx', () => ({
+    HalFormPanel: ({templateName, children}: any) => {
+        const helpers = {
+            renderInput: (name: string) => <input key={name} data-testid={`input-${name}`}/>,
+            renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
+            renderLabel: (name: string) => name,
+            hasField: () => true,
+            hasType: () => false,
+        };
+        return (
+            <div data-testid="hal-forms-display">
+                <h3>{templateName}</h3>
+                {children && children(helpers)}
+            </div>
+        );
+    },
+}));
+
 vi.mock('../UI/Modal.tsx', () => ({
     Modal: ({isOpen, children, onClose, title}: any) => (
         isOpen ? (
@@ -312,7 +330,7 @@ describe('HalFormButton Component', () => {
             expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
 
-        it('should pass custom layout to form when provided', async () => {
+        it('should open form when button clicked (modal mode)', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -320,43 +338,15 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            // createMockPageData(resourceData) replaced with createMockPageData call below
-
-            const customLayout = <div>Custom Form Layout</div>;
 
             renderWithPageData(
-                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
+                <HalFormButton name="create" modal={true}/>,
                 createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
-            // Form should be opened (custom layout is passed through context)
-            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
-        });
-
-        it('should work with callback-based custom layout', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                _templates: {
-                    create: mockHalFormsTemplate({title: 'Create'}),
-                },
-            };
-            // createMockPageData(resourceData) replaced with createMockPageData call below
-
-            const customLayout = (_renderField: any) => <div>Custom Callback Layout</div>;
-
-            renderWithPageData(
-                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
-                createMockPageData(resourceData)
-            );
-
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            // Form should be opened
             expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
         });
     });
@@ -376,7 +366,7 @@ describe('HalFormButton Component', () => {
             expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
         });
 
-        it('should navigate with form query parameter when button is clicked', async () => {
+        it('should display form inline (via HalFormPanel) when button is clicked', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -390,17 +380,17 @@ describe('HalFormButton Component', () => {
                 },
             };
             renderWithPageData(
-                <HalFormButton name="edit" modal={false}/>,
+                <HalFormButton name="edit" modal={false}>
+                    {({renderField}) => <div>{renderField('submit')}</div>}
+                </HalFormButton>,
                 createMockPageData(resourceData),
-                ['/members/123'] // Initial entry
+                ['/members/123']
             );
 
-            // Click button to navigate to URL with form query parameter
             const button = screen.getByRole('button', {name: /edit/i});
             await user.click(button);
 
-            // Form should be displayed inline on the page (not in a modal)
-            // This happens through HalFormsPageLayout detecting the ?form=edit parameter
+            // Form should be displayed inline (not in a modal)
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
             expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
@@ -414,7 +404,9 @@ describe('HalFormButton Component', () => {
                 },
             };
             renderWithPageData(
-                <HalFormButton name="create" modal={false}/>,
+                <HalFormButton name="create" modal={false}>
+                    {({renderField}) => <div>{renderField('submit')}</div>}
+                </HalFormButton>,
                 createMockPageData(resourceData)
             );
 
@@ -425,7 +417,7 @@ describe('HalFormButton Component', () => {
             expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
 
-        it('should use current pathname for query parameter regardless of template target', async () => {
+        it('should display inline form via context state regardless of template target URL', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -439,7 +431,9 @@ describe('HalFormButton Component', () => {
                 },
             };
             renderWithPageData(
-                <HalFormButton name="createEvent" modal={false}/>,
+                <HalFormButton name="createEvent" modal={false}>
+                    {({renderField}) => <div>{renderField('submit')}</div>}
+                </HalFormButton>,
                 createMockPageData(resourceData),
                 ['/members/123']
             );
@@ -447,8 +441,7 @@ describe('HalFormButton Component', () => {
             const button = screen.getByRole('button', {name: /přidat akci/i});
             await user.click(button);
 
-            // Form should display inline on current page (/members/123?form=createEvent)
-            // NOT navigate to /api/events
+            // Form should display inline via HalFormPanel
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
     });
@@ -507,7 +500,8 @@ describe('HalFormButton Component', () => {
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
-        it('should render form inline when inline form is requested via URL', () => {
+        it('should render form inline (via HalFormPanel) when button is clicked with modal=false', async () => {
+            const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
                 _templates: {
@@ -515,40 +509,20 @@ describe('HalFormButton Component', () => {
                 },
             };
             renderWithPageData(
-                <HalFormButton name="edit" modal={false}/>,
+                <HalFormButton name="edit" modal={false}>
+                    {({renderField}) => <div>{renderField('submit')}</div>}
+                </HalFormButton>,
                 createMockPageData(resourceData),
-                ['/members/123?form=edit'] // Start with form query param
+                ['/members/123']
             );
 
-            // HalFormsPageLayout should render the inline form
+            const button = screen.getByRole('button', {name: /edit/i});
+            await user.click(button);
+
+            // HalFormsPageLayout should render the inline form via HalFormPanel
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
 
             // Modal should not be rendered
-            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
-        });
-
-        it('should give precedence to modal over inline form', () => {
-            // This test verifies that when both modal and inline forms exist,
-            // the modal (from context) takes precedence and is rendered first
-            const resourceData: HalResponse = {
-                id: 1,
-                _templates: {
-                    create: mockHalFormsTemplate({title: 'Create'}),
-                    edit: mockHalFormsTemplate({title: 'Edit'}),
-                },
-            };
-            // createMockPageData(resourceData) replaced with createMockPageData call below
-
-            // Start with URL param for inline form
-            renderWithPageData(
-                <HalFormButton name="edit" modal={false}/>,
-                createMockPageData(resourceData),
-                ['/members/123?form=edit']
-            );
-
-            // Inline form should be displayed when URL param exists
-            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            expect(screen.getByText('Edit')).toBeInTheDocument();
             expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
     });

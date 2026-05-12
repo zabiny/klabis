@@ -13,13 +13,11 @@ import HomePage from "./pages/HomePage.tsx";
 import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
-import {EventCreatePage} from "./pages/events/EventCreatePage.tsx";
 import {EventDetailPage} from "./pages/events/EventDetailPage.tsx";
 import {AccommodationListPage} from "./pages/events/AccommodationListPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
-import {MemberRegistrationPage} from "./pages/members/MemberRegistrationPage.tsx";
 import {GroupsPage} from "./pages/groups/GroupsPage.tsx";
 import {GroupDetailPage} from "./pages/groups/GroupDetailPage.tsx";
 import {TrainingGroupsPage} from "./pages/training-groups/TrainingGroupsPage.tsx";
@@ -96,10 +94,8 @@ function App() {
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
                                     <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>
-                                    <Route path="/members/new" element={<MemberRegistrationPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
-                                    <Route path="/events/new" element={<EventCreatePage/>}/>
                                     <Route path="/events/:id" element={<EventDetailPage/>}/>
                                     <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>
                                     <Route path="/groups" element={<GroupsPage/>}/>

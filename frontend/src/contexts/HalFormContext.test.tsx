@@ -1,20 +1,13 @@
 import {act, renderHook} from '@testing-library/react';
-import {BrowserRouter, MemoryRouter} from 'react-router-dom';
+import {BrowserRouter} from 'react-router-dom';
 import {HalFormProvider, type HalFormRequest, useHalForm} from './HalFormContext';
 import {describe, expect, it, vi} from 'vitest';
 import type {ReactNode} from 'react';
-import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
 
 const createWrapper = () => ({children}: { children: ReactNode }) => (
     <BrowserRouter>
         <HalFormProvider>{children}</HalFormProvider>
     </BrowserRouter>
-);
-
-const createWrapperWithUrl = (initialUrl: string) => ({children}: { children: ReactNode }) => (
-    <MemoryRouter initialEntries={[initialUrl]}>
-        <HalFormProvider>{children}</HalFormProvider>
-    </MemoryRouter>
 );
 
 const createWrapperWithoutRouter = () => ({children}: { children: ReactNode }) => (
@@ -66,22 +59,20 @@ describe('HalFormContext', () => {
             expect(result.current.currentFormRequest).toEqual(formRequest);
         });
 
-        it('should update currentFormRequest with custom layout', () => {
+        it('should update currentFormRequest when inline form is requested', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
-            const customLayout: RenderFormCallback = () => <div>Custom Layout</div>;
-            const formRequest: HalFormRequest = {
+            const inlineRequest: HalFormRequest = {
                 templateName: 'create',
-                modal: true,
-                customLayout,
+                modal: false,
             };
 
             act(() => {
-                result.current.displayHalForm(formRequest);
+                result.current.displayHalForm(inlineRequest);
             });
 
-            expect(result.current.currentFormRequest).toEqual(formRequest);
-            expect(result.current.currentFormRequest?.customLayout).toBe(customLayout);
+            expect(result.current.currentFormRequest).toEqual(inlineRequest);
+            expect(result.current.currentFormRequest?.modal).toBe(false);
         });
 
         it('should allow multiple requestForm calls (last request wins)', () => {
@@ -108,24 +99,6 @@ describe('HalFormContext', () => {
             });
 
             expect(result.current.currentFormRequest?.templateName).toBe('delete');
-        });
-
-        it('should navigate with query parameter when inline (non-modal) form is requested', () => {
-            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapperWithUrl('/members/123')});
-
-            const inlineRequest: HalFormRequest = {
-                templateName: 'edit',
-                modal: false,
-            };
-
-            act(() => {
-                result.current.displayHalForm(inlineRequest);
-            });
-
-            // Inline request triggers URL navigation rather than direct state update
-            // The URL change via navigate() sets ?form=edit, which the useEffect detects
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(false);
         });
     });
 
@@ -162,6 +135,22 @@ describe('HalFormContext', () => {
 
             expect(result.current.currentFormRequest).toBeNull();
         });
+
+        it('should clear inline form request when closeForm is called', () => {
+            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
+
+            act(() => {
+                result.current.displayHalForm({templateName: 'create', modal: false});
+            });
+
+            expect(result.current.currentFormRequest?.modal).toBe(false);
+
+            act(() => {
+                result.current.closeForm();
+            });
+
+            expect(result.current.currentFormRequest).toBeNull();
+        });
     });
 
     describe('Provider Behavior', () => {
@@ -173,11 +162,7 @@ describe('HalFormContext', () => {
         });
 
         it('should provide context to multiple hook calls within same render', () => {
-            let callCount = 0;
-            const {result} = renderHook(() => {
-                callCount++;
-                return useHalForm();
-            }, {wrapper: createWrapper()});
+            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
             const formRequest: HalFormRequest = {
                 templateName: 'edit',
@@ -189,6 +174,33 @@ describe('HalFormContext', () => {
             });
 
             expect(result.current.currentFormRequest).toEqual(formRequest);
+        });
+
+        it('should work outside Router context', () => {
+            const {result} = renderHook(() => useHalForm(), {
+                wrapper: createWrapperWithoutRouter(),
+            });
+
+            expect(result.current).toBeDefined();
+            expect(result.current.currentFormRequest).toBeNull();
+        });
+
+        it('should allow modal requestForm to work outside Router context', () => {
+            const {result} = renderHook(() => useHalForm(), {
+                wrapper: createWrapperWithoutRouter(),
+            });
+
+            const modalRequest: HalFormRequest = {
+                templateName: 'edit',
+                modal: true,
+            };
+
+            act(() => {
+                result.current.displayHalForm(modalRequest);
+            });
+
+            expect(result.current.currentFormRequest?.templateName).toBe('edit');
+            expect(result.current.currentFormRequest?.modal).toBe(true);
         });
     });
 
@@ -241,166 +253,21 @@ describe('HalFormContext', () => {
             expect(result.current.currentFormRequest?.modal).toBe(true);
         });
 
-        it('should optionally contain customLayout in form request', () => {
+        it('should optionally contain children in form request', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
-            const customLayout: RenderFormCallback = (_form) => <div>Custom</div>;
+            const children = () => <div>Custom</div>;
             const formRequest: HalFormRequest = {
                 templateName: 'test',
-                modal: true,
-                customLayout,
+                modal: false,
+                children,
             };
 
             act(() => {
                 result.current.displayHalForm(formRequest);
             });
 
-            expect(result.current.currentFormRequest?.customLayout).toBeDefined();
-        });
-    });
-
-    describe('URL Query Parameter Detection', () => {
-        it('should detect URL parameter ?form=templateName and set inline form request', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/?form=edit'),
-            });
-
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(false);
-        });
-
-        it('should detect different template names from URL parameter', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/?form=create'),
-            });
-
-            expect(result.current.currentFormRequest?.templateName).toBe('create');
-            expect(result.current.currentFormRequest?.modal).toBe(false);
-        });
-
-        it('should have null currentFormRequest when no URL parameter is present', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/'),
-            });
-
-            expect(result.current.currentFormRequest).toBeNull();
-        });
-
-        it('should preserve modal forms when URL has no form parameter', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/'),
-            });
-
-            const modalRequest: HalFormRequest = {
-                templateName: 'edit',
-                modal: true,
-            };
-
-            act(() => {
-                result.current.displayHalForm(modalRequest);
-            });
-
-            expect(result.current.currentFormRequest?.modal).toBe(true);
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-        });
-
-        it('should not clear modal forms when URL parameter is absent', () => {
-            const {result, rerender} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/'),
-            });
-
-            const modalRequest: HalFormRequest = {
-                templateName: 'delete',
-                modal: true,
-            };
-
-            act(() => {
-                result.current.displayHalForm(modalRequest);
-            });
-
-            expect(result.current.currentFormRequest?.modal).toBe(true);
-
-            rerender();
-
-            expect(result.current.currentFormRequest?.modal).toBe(true);
-            expect(result.current.currentFormRequest?.templateName).toBe('delete');
-        });
-
-        it('should clear inline form when URL parameter is removed', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/?form=edit'),
-            });
-
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(false);
-
-            const {result: resultAfterUrlChange} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/'),
-            });
-
-            expect(resultAfterUrlChange.current.currentFormRequest).toBeNull();
-        });
-
-        it('should not crash when used outside Router context', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithoutRouter(),
-            });
-
-            expect(result.current).toBeDefined();
-            expect(result.current.currentFormRequest).toBeNull();
-        });
-
-        it('should allow modal requestForm to work outside Router context', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithoutRouter(),
-            });
-
-            const modalRequest: HalFormRequest = {
-                templateName: 'edit',
-                modal: true,
-            };
-
-            act(() => {
-                result.current.displayHalForm(modalRequest);
-            });
-
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(true);
-        });
-    });
-
-    describe('Inline Form Navigation', () => {
-        it('should use current pathname when navigating for inline form', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/members/123'),
-            });
-
-            act(() => {
-                result.current.displayHalForm({
-                    templateName: 'edit',
-                    modal: false,
-                });
-            });
-
-            // After navigate, useEffect picks up ?form=edit from URL
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(false);
-        });
-
-        it('should not set state directly for inline requests (navigates instead)', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithUrl('/members/123'),
-            });
-
-            act(() => {
-                result.current.displayHalForm({
-                    templateName: 'create',
-                    modal: false,
-                });
-            });
-
-            // Inline form is detected through URL parameter, not direct state
-            expect(result.current.currentFormRequest?.modal).toBe(false);
+            expect(result.current.currentFormRequest?.children).toBeDefined();
         });
     });
 });
