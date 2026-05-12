@@ -1,5 +1,5 @@
-import {act, renderHook} from '@testing-library/react';
-import {BrowserRouter} from 'react-router-dom';
+import {act, render, renderHook} from '@testing-library/react';
+import {BrowserRouter, MemoryRouter, Route, Routes, useNavigate} from 'react-router-dom';
 import {HalFormProvider, type HalFormRequest, useHalForm} from './HalFormContext';
 import {describe, expect, it, vi} from 'vitest';
 import type {ReactNode} from 'react';
@@ -10,9 +10,6 @@ const createWrapper = () => ({children}: { children: ReactNode }) => (
     </BrowserRouter>
 );
 
-const createWrapperWithoutRouter = () => ({children}: { children: ReactNode }) => (
-    <HalFormProvider>{children}</HalFormProvider>
-);
 
 describe('HalFormContext', () => {
     describe('useHalForm Hook', () => {
@@ -176,31 +173,42 @@ describe('HalFormContext', () => {
             expect(result.current.currentFormRequest).toEqual(formRequest);
         });
 
-        it('should work outside Router context', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithoutRouter(),
-            });
-
-            expect(result.current).toBeDefined();
-            expect(result.current.currentFormRequest).toBeNull();
-        });
-
-        it('should allow modal requestForm to work outside Router context', () => {
-            const {result} = renderHook(() => useHalForm(), {
-                wrapper: createWrapperWithoutRouter(),
-            });
-
-            const modalRequest: HalFormRequest = {
-                templateName: 'edit',
-                modal: true,
+        it('should reset currentFormRequest when pathname changes', () => {
+            const Probe = ({onReady}: {onReady: (ctx: ReturnType<typeof useHalForm>) => void}) => {
+                const ctx = useHalForm();
+                onReady(ctx);
+                return null;
             };
 
-            act(() => {
-                result.current.displayHalForm(modalRequest);
-            });
+            let ctx!: ReturnType<typeof useHalForm>;
+            const TestApp = () => (
+                <MemoryRouter initialEntries={['/events']}>
+                    <HalFormProvider>
+                        <Routes>
+                            <Route path="/events" element={<Probe onReady={(c) => { ctx = c; }}/>}/>
+                            <Route path="/members" element={<Probe onReady={(c) => { ctx = c; }}/>}/>
+                        </Routes>
+                        <NavigateButton/>
+                    </HalFormProvider>
+                </MemoryRouter>
+            );
 
-            expect(result.current.currentFormRequest?.templateName).toBe('edit');
-            expect(result.current.currentFormRequest?.modal).toBe(true);
+            const NavigateButton = () => {
+                const nav = useNavigate();
+                return <button data-testid="nav" onClick={() => nav('/members')}>go</button>;
+            };
+
+            const {getByTestId} = render(<TestApp/>);
+
+            act(() => {
+                ctx.displayHalForm({templateName: 'createEvent', modal: false});
+            });
+            expect(ctx.currentFormRequest?.templateName).toBe('createEvent');
+
+            act(() => {
+                getByTestId('nav').click();
+            });
+            expect(ctx.currentFormRequest).toBeNull();
         });
     });
 

@@ -45,13 +45,13 @@ describe('MemberFinancePage', () => {
     const renderPage = (ui: React.ReactElement, initialRoute = '/finances/123') => {
         return render(
             <QueryClientProvider client={queryClient}>
-                <HalFormProvider>
-                    <MemoryRouter initialEntries={[initialRoute]}>
+                <MemoryRouter initialEntries={[initialRoute]}>
+                    <HalFormProvider>
                         <HalRouteProvider>
                             {ui}
                         </HalRouteProvider>
-                    </MemoryRouter>
-                </HalFormProvider>
+                    </HalFormProvider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
     };
