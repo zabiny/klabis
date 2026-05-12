@@ -1,11 +1,15 @@
 package com.klabis.events.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.events.domain.SiCardNumber;
+import com.klabis.events.eventtype.application.EventTypeManagementPort;
+import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.eventtype.infrastructure.bootstrap.EventTypeDataBootstrap;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.slf4j.Logger;
@@ -19,16 +23,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@Order(3)
+@Order(4)
 class EventsDataBootstrap implements BootstrapDataInitializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EventsDataBootstrap.class);
 
     private final EventRepository eventRepository;
+    private final EventTypeManagementPort eventTypeManagement;
     private final Members members;
 
-    EventsDataBootstrap(EventRepository eventRepository, Members members) {
+    EventsDataBootstrap(EventRepository eventRepository, EventTypeManagementPort eventTypeManagement, Members members) {
         this.eventRepository = eventRepository;
+        this.eventTypeManagement = eventTypeManagement;
         this.members = members;
     }
 
@@ -55,13 +61,21 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
             LOG.warn("Bootstrap member (ZBM9500) not found — skipping registrations");
         }
 
-        createDraftEvents(today, coordinator);
-        createActiveEvents(today, coordinator, regularMember);
+        List<EventType> allTypes = eventTypeManagement.listAllSorted();
+        EventTypeId raceType = findTypeIdByName(allTypes, EventTypeDataBootstrap.RACE_TYPE_NAME);
+        EventTypeId trainingType = findTypeIdByName(allTypes, EventTypeDataBootstrap.TRAINING_TYPE_NAME);
+
+        if (raceType == null || trainingType == null) {
+            LOG.warn("Bootstrap event types (Závod / Trénink) not found — events will be created without type");
+        }
+
+        createDraftEvents(today, coordinator, raceType, trainingType);
+        createActiveEvents(today, coordinator, regularMember, raceType, trainingType);
 
         LOG.info("Created 5 DRAFT and 22 ACTIVE bootstrap events");
     }
 
-    private void createDraftEvents(LocalDate today, MemberId coordinator) {
+    private void createDraftEvents(LocalDate today, MemberId coordinator, EventTypeId raceType, EventTypeId trainingType) {
         eventRepository.save(Event.create(new Event.CreateEvent(
                 "Oblastní přebor – jarní kolo",
                 today.plusDays(45),
@@ -69,7 +83,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 coordinator,
-                null,
+                raceType,
                 RegistrationDeadlines.single(today.plusDays(38)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50")
         )));
@@ -81,7 +95,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 null,
-                null,
+                trainingType,
                 null,
                 List.of()
         )));
@@ -93,7 +107,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 "https://www.oob.cz/zavody/nocni-sprint",
                 coordinator,
-                null,
+                raceType,
                 RegistrationDeadlines.single(today.plusDays(25)),
                 List.of("M21", "W21", "M40", "W40")
         )));
@@ -105,7 +119,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 null,
-                null,
+                trainingType,
                 null,
                 List.of()
         )));
@@ -117,13 +131,13 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "OOB",
                 null,
                 coordinator,
-                null,
+                raceType,
                 RegistrationDeadlines.single(today.plusDays(48)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65")
         )));
     }
 
-    private void createActiveEvents(LocalDate today, MemberId coordinator, MemberId regularMember) {
+    private void createActiveEvents(LocalDate today, MemberId coordinator, MemberId regularMember, EventTypeId raceType, EventTypeId trainingType) {
         List<Event> activeEvents = List.of(
                 publishedEvent(new Event.CreateEvent(
                         "Šárecký pohár",
@@ -132,7 +146,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50001",
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(55)),
                         List.of("M21", "W21")
                 )),
@@ -143,7 +157,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(45)),
                         List.of("M21", "W21", "M35", "W35")
                 )),
@@ -154,7 +168,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50002",
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(37)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
@@ -165,7 +179,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(25)),
                         List.of()
                 )),
@@ -176,7 +190,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        null,
+                        raceType,
                         null,
                         List.of("M21", "W21")
                 )),
@@ -187,7 +201,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(10)),
                         List.of("M21", "W21", "M35", "W35", "M50")
                 )),
@@ -198,7 +212,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50003",
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(2)),
                         List.of("M21", "W21", "M35", "W35")
                 )),
@@ -209,7 +223,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(8)),
                         List.of()
                 )),
@@ -220,7 +234,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(14)),
                         List.of("M21", "W21", "M40", "W40", "M55")
                 )),
@@ -231,7 +245,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(18)),
                         List.of("M18", "W18", "M21", "W21")
                 )),
@@ -242,7 +256,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50004",
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(22)),
                         List.of("M21", "W21")
                 )),
@@ -253,7 +267,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(28)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
@@ -264,7 +278,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50005",
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(35)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40", "M50")
                 )),
@@ -275,7 +289,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(41)),
                         List.of("M21", "W21")
                 )),
@@ -286,7 +300,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50006",
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(48)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
@@ -297,7 +311,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(55)),
                         List.of()
                 )),
@@ -308,7 +322,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(7)),
                         List.of("M18", "W18")
                 )),
@@ -319,7 +333,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(20)),
                         List.of("M21", "W21", "M35")
                 )),
@@ -330,7 +344,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        null,
+                        trainingType,
                         null,
                         List.of()
                 )),
@@ -341,7 +355,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50007",
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(31)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
@@ -352,7 +366,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         null,
                         null,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.minusDays(7)),
                         List.of("M21", "W21")
                 )),
@@ -363,7 +377,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50008",
                         coordinator,
-                        null,
+                        raceType,
                         RegistrationDeadlines.single(today.plusDays(50)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65", "W65")
                 ))
@@ -405,6 +419,14 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
 
     private String resolveFirstCategory(Event event) {
         return event.getCategories().isEmpty() ? null : event.getCategories().get(0);
+    }
+
+    private static EventTypeId findTypeIdByName(List<EventType> types, String name) {
+        return types.stream()
+                .filter(t -> name.equalsIgnoreCase(t.getName()))
+                .findFirst()
+                .map(EventType::getId)
+                .orElse(null);
     }
 
     private static Event publishedEvent(Event.CreateEvent command) {
