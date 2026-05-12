@@ -88,5 +88,5 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 Update `docs/developerManual` with the chosen ORIS field for type auto-mapping and the EventType catalog overview
+- [x] 9.1 ~~Update `docs/developerManual`~~ — N/A: developerManual scope is framework/common only; events-module business logic is documented in OpenSpec specs (see 9.2)
 - [ ] 9.2 Sync the spec changes into `openspec/specs/events/spec.md` and create `openspec/specs/event-types/spec.md` after archiving
