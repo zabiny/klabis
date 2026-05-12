@@ -1,5 +1,5 @@
 import {type ReactElement, type ReactNode, useMemo, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
 import {ErrorPage} from '../ErrorPage.tsx';
@@ -164,7 +164,9 @@ interface EventDetailContentProps {
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
     const {route} = useHalPageData<EventDetail>();
     const {getById: getEventTypeById} = useEventTypes();
-    const [isEditing, setIsEditing] = useState(false);
+    const location = useLocation();
+    const initialEditing = !!(location.state as { editing?: boolean })?.editing;
+    const [isEditing, setIsEditing] = useState(initialEditing);
     const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
 
     const event = resourceData;
@@ -359,7 +361,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     </Card>
                 )}
 
-                {resourceData._links?.registrations && (
+                {!isEditing && resourceData._links?.registrations && (
                     <div className="flex flex-col gap-4">
                         <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
                         <HalSubresourceProvider subresourceLinkName="registrations">

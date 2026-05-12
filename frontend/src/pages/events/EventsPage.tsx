@@ -151,7 +151,11 @@ export const EventsPage = (): ReactElement => {
                 {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => templates?.[name] && (
                     <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
-                        openActionModal(event, name);
+                        if (name === 'updateEvent') {
+                            route.navigateToResource(event, {state: {editing: true}});
+                        } else {
+                            openActionModal(event, name);
+                        }
                     }}>
                         <Icon className="w-4 h-4"/>
                     </Button>
