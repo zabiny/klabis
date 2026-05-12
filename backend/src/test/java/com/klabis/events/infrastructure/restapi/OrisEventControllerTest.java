@@ -388,5 +388,19 @@ class OrisEventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.syncAllUpcomingFromOris").doesNotExist());
         }
+
+        @Test
+        @DisplayName("regression: syncAllUpcomingFromOris affordance present on filtered list (dateFrom param)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeBulkSyncAffordanceOnFilteredListWithDateFrom() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events")
+                            .param("dateFrom", "2026-05-12")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.syncAllUpcomingFromOris").exists());
+        }
     }
 }

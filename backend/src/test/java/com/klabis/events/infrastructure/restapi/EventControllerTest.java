@@ -269,6 +269,22 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("regression: PATCH with eventTypeId field must return 204 (not 405)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldAcceptPatchWithEventTypeId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            UUID typeId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Typed Event\",\"eventDate\":\"2026-06-01\",\"organizer\":\"OOB\",\"eventTypeId\":\"" + typeId + "\"}")
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
         @DisplayName("should return 400 when update deadlines are out of order")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldRejectOutOfOrderDeadlinesOnUpdate() throws Exception {
