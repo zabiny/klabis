@@ -233,15 +233,25 @@ interface UseHalPageDataReturn&lt;T&gt; {
 <dl class="api-list">
     <dt>HalFormButton</dt>
     <dd>Tlačítko pro otevření formuláře. Vrací <code>null</code>, pokud šablona neexistuje
-        v <code>_templates</code> (= uživatel nemá oprávnění). Modal nebo inline režim.</dd>
+        v <code>_templates</code> (= uživatel nemá oprávnění). Vlastní layout se předává přes
+        <code>children</code> render-props (totožné API jako <code>HalFormPanel</code>).
+        Modal nebo inline režim.</dd>
 
     <dt>HalFormsSection</dt>
     <dd>Vyrendruje tlačítka pro <strong>všechny</strong> dostupné šablony. Ideální když chcete
         zobrazit "všechny dostupné akce" bez explicitního výčtu.</dd>
 
     <dt>HalFormsPageLayout</dt>
-    <dd>Page wrapper, který orchestruje zobrazení formulářů — modal (z <code>HalFormContext</code>)
-        i inline (z URL parametru <code>?form=…</code>).</dd>
+    <dd>Page wrapper, který orchestruje zobrazení formulářů z <code>HalFormContext</code>.
+        Pro modal požadavek vyrendruje overlay s formulářem; pro inline požadavek nahradí svůj
+        <code>children</code> obsah za formulář (přes <code>HalFormPanel</code>).</dd>
+
+    <dt>HalFormPanel</dt>
+    <dd>Standalone HAL formulář jako kus stránky. Sám si načte <code>_templates</code>
+        z <code>collectionUrl</code>, vyřeší loading/error stavy a vyrendruje formulář přes
+        <code>children</code> render-props. Použij na stránkách, které chtějí formulář mimo
+        button-driven flow (typicky to ale není potřeba — pro inline form přes button už to
+        řeší <code>HalFormsPageLayout</code> sám).</dd>
 
     <dt>HalFormDisplay</dt>
     <dd>Skutečný renderer formuláře. Obvykle se nepoužívá přímo — volají ho výše uvedené.</dd>
@@ -258,51 +268,66 @@ interface UseHalPageDataReturn&lt;T&gt; {
 <table class="ref-table">
     <thead><tr><th></th><th>Modal (<code>modal=true</code>)</th><th>Inline (<code>modal=false</code>)</th></tr></thead>
     <tbody>
-        <tr><td>State</td><td>Ephemeral (Context API)</td><td>Persistent v URL (<code>?form=name</code>)</td></tr>
-        <tr><td>Sdílitelná URL</td><td>Ne</td><td>Ano</td></tr>
-        <tr><td>Browser history</td><td>Ne</td><td>Ano (back tlačítko zavře)</td></tr>
-        <tr><td>Render</td><td>Modal overlay</td><td>Místo <code>children</code> v <code>HalFormsPageLayout</code></td></tr>
-        <tr><td>Vlastní layout</td><td>Přes <code>customLayout</code> prop</td><td>Přes <code>customLayouts</code> na <code>HalFormsPageLayout</code></td></tr>
+        <tr><td>State</td><td>Ephemeral (<code>HalFormContext</code>)</td><td>Ephemeral (<code>HalFormContext</code>)</td></tr>
+        <tr><td>Sdílitelná URL</td><td>Ne</td><td>Ne</td></tr>
+        <tr><td>Render</td><td>Modal overlay nad stránkou</td><td>Místo <code>children</code> v <code>HalFormsPageLayout</code> (stránka zmizí)</td></tr>
+        <tr><td>Typický use-case</td><td>Krátké akce na detail stránce (potvrzení, jednoduchá editace)</td><td>Vytvoření entity ze seznamu — formulář "převezme" celou stránku, cancel se vrátí na seznam</td></tr>
     </tbody>
 </table>
 
+<aside class="note">
+    Dříve šel inline form zobrazit i přes URL parametr <code>?form=…</code>; ten byl odstraněn.
+    Inline form je dnes čistě ephemeral state v <code>HalFormContext</code>.
+</aside>
+
 <h3>Základní použití</h3>
 
-<pre class="signature"><code>&lt;HalFormsPageLayout&gt;
+<pre class="signature"><code>// Modal — krátká akce nad existujícím zdrojem
+&lt;HalFormsPageLayout&gt;
     &lt;h1&gt;Detail člena&lt;/h1&gt;
     &lt;HalFormButton name="updateMember" modal={true} /&gt;
-    &lt;HalFormButton name="suspendMember" modal={false} /&gt;
+    &lt;HalFormButton name="suspendMember" modal={true} /&gt;
 &lt;/HalFormsPageLayout&gt;</code></pre>
 
 <h3>Vlastní layout formuláře</h3>
 
 <p>
-    Výchozí layout vyrendruje pole pod sebou. Pro vlastní rozložení existují dva způsoby — přes
-    children s <code>HalFormsFormField</code> nebo přes callback s <code>renderField(name)</code>:
+    Layout formuláře se předává jako <code>children</code> render-props — funkce přijímá
+    <code>helpers</code> objekt a vrací JSX. Helpers jsou stejné pro <code>HalFormButton</code>
+    i <code>HalFormPanel</code>:
 </p>
 
-<pre class="signature"><code>// Způsob 1: children
-&lt;HalFormButton name="editMember" modal={true} customLayout={
-    &lt;div className="grid grid-cols-2 gap-4"&gt;
-        &lt;HalFormsFormField fieldName="firstName" /&gt;
-        &lt;HalFormsFormField fieldName="lastName" /&gt;
-        &lt;HalFormsFormField fieldName="submit" /&gt;
-    &lt;/div&gt;
-} /&gt;
+<pre class="signature"><code>interface HalFormPanelRenderHelpers {
+    renderInput: (fieldName: string) =&gt; ReactElement;   // jen input (bez labelu)
+    renderField: (fieldName: string) =&gt; ReactElement;   // celé pole vč. labelu/erroru
+    renderLabel: (fieldName: string) =&gt; string | undefined;
+    hasField: (fieldName: string) =&gt; boolean;            // existuje pole v template?
+    hasType:  (typeName: string) =&gt; boolean;             // existuje property tohoto type?
+}</code></pre>
 
-// Způsob 2: callback
-&lt;HalFormButton name="editMember" modal={true} customLayout={(renderField) =&gt; (
-    &lt;&gt;
-        {renderField('firstName')}
-        {renderField('lastName')}
-        {renderField('submit')}
-    &lt;/&gt;
-)} /&gt;</code></pre>
+<pre class="signature"><code>// Inline create form — nahradí seznam událostí formulářem
+&lt;HalFormButton name="createEvent" modal={false} fieldsFactory={eventFormFieldsFactory}&gt;
+    {({renderInput, renderField, hasField}) =&gt; (
+        &lt;&gt;
+            {hasField('name') &amp;&amp; renderInput('name')}
+            {hasField('eventDate') &amp;&amp; renderInput('eventDate')}
+            {renderField('cancel')}
+            {renderField('submit')}
+        &lt;/&gt;
+    )}
+&lt;/HalFormButton&gt;</code></pre>
+
+<p>
+    <code>HalFormPanel</code> má identické API — používá se, když chcete vyrenderovat formulář
+    bez button-driven flow (např. dedikovaná stránka). V projektu se preferuje varianta s
+    <code>HalFormButton modal={false}</code> + <code>HalFormsPageLayout</code> — odpadá nutnost
+    samostatné routy.
+</p>
 
 <aside class="note">
-    Pro <strong>inline</strong> formuláře nejde předat <code>customLayout</code> přes
-    <code>HalFormButton</code> — místo toho použijte <code>customLayouts</code> prop na
-    <code>HalFormsPageLayout</code> (mapa <code>templateName → layout</code>).
+    <strong>Pozn. k cancel tlačítku:</strong> v inline režimu volá <code>renderField('cancel')</code>
+    <code>closeForm()</code> z <code>HalFormContext</code> — vrátí zobrazení původního obsahu
+    stránky (seznam). Žádná navigace, žádné <code>useNavigate</code>.
 </aside>
 
 <h2>KlabisTable — tabulka pro HAL collection</h2>
