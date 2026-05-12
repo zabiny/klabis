@@ -167,11 +167,11 @@ describe('MemberRegistrationPage', () => {
             mockUseAuthorizedQuery(collectionWithTemplate);
         });
 
-        it('does not pass onSubmitSuccess to HalFormDisplay — navigation is handled by HalFormDisplay auto-navigation on POST+Location', () => {
+        it('passes onSubmitSuccess to HalFormDisplay so navigation to /members is triggered after registration', () => {
             renderPage();
 
             expect(vi.mocked(HalFormDisplay)).toHaveBeenCalledWith(
-                expect.not.objectContaining({onSubmitSuccess: expect.any(Function)}),
+                expect.objectContaining({onSubmitSuccess: expect.any(Function)}),
                 undefined
             );
         });

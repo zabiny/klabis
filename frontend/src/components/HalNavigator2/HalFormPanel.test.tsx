@@ -264,6 +264,38 @@ describe('HalFormPanel', () => {
             expect(capturedHasField!('nonExistentField')).toBe(false);
         });
 
+        it('should provide hasType returning true for types present in template properties', () => {
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: buildCollectionData({
+                    properties: [
+                        {name: 'foo', prompt: 'Foo', type: 'text'},
+                        {name: 'address', prompt: 'Address', type: 'AddressRequest'},
+                    ],
+                }),
+                isLoading: false,
+                error: null,
+            } as any);
+
+            let capturedHasType: ((type: string) => boolean) | null = null;
+
+            const Wrapper = createWrapper();
+            render(
+                <Wrapper>
+                    <HalFormPanel collectionUrl="/api/members" templateName="createEvent">
+                        {({hasType}: HalFormPanelRenderHelpers) => {
+                            capturedHasType = hasType;
+                            return <div data-testid="children">content</div>;
+                        }}
+                    </HalFormPanel>
+                </Wrapper>
+            );
+
+            expect(capturedHasType).not.toBeNull();
+            expect(capturedHasType!('AddressRequest')).toBe(true);
+            expect(capturedHasType!('text')).toBe(true);
+            expect(capturedHasType!('GuardianDTO')).toBe(false);
+        });
+
         it('should provide renderInput and renderField as functions', () => {
             mockUseAuthorizedQuery.mockReturnValue({
                 data: buildCollectionData(),

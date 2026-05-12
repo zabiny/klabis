@@ -8,6 +8,7 @@ import {labels} from '../../localization';
 
 export interface HalFormPanelRenderHelpers extends FormRenderHelpers {
     hasField: (fieldName: string) => boolean;
+    hasType: (typeName: string) => boolean;
 }
 
 export type HalFormPanelChildren = (helpers: HalFormPanelRenderHelpers) => ReactElement;
@@ -22,13 +23,14 @@ export interface HalFormPanelProps {
     onCancel?: () => void;
     navigateOnSuccess?: boolean;
     templateMissingMessage?: string;
+    successMessage?: string;
     children: HalFormPanelChildren;
 }
 
 export function HalFormPanel({
     collectionUrl, templateName, initialData = {}, pathname,
     fieldsFactory, onSuccess, onCancel, navigateOnSuccess,
-    templateMissingMessage, children,
+    templateMissingMessage, successMessage, children,
 }: HalFormPanelProps): ReactElement {
     const {data: collectionData, isLoading, error} = useAuthorizedQuery<HalResponse>(collectionUrl);
 
@@ -49,10 +51,12 @@ export function HalFormPanel({
 
     const resolvedPathname = pathname ?? collectionUrl.replace(/^\/api/, '');
     const fieldNameSet = new Set(template.properties.map(p => p.name));
+    const fieldTypeSet = new Set(template.properties.map(p => p.type));
 
     const customLayout: RenderFormCallback = (helpers) => children({
         ...helpers,
         hasField: (name: string) => fieldNameSet.has(name),
+        hasType: (typeName: string) => fieldTypeSet.has(typeName),
     });
 
     return (
@@ -65,6 +69,7 @@ export function HalFormPanel({
             onSubmitSuccess={onSuccess}
             fieldsFactory={fieldsFactory}
             navigateOnSuccess={navigateOnSuccess}
+            successMessage={successMessage}
             customLayout={customLayout}
         />
     );
