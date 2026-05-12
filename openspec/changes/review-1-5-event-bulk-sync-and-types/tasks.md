@@ -71,11 +71,11 @@
 
 ### B7. Frontend — events form + table column + filter
 
-- [ ] B7.1 Update event create/update Formik form with type dropdown loaded from `/api/event-types` (cached via TanStack Query)
-- [ ] B7.2 Update events table: new column "Typ" with color badge + name; column header conditionally rendered (responsive — hide on small screens?)
-- [ ] B7.3 Update event detail page: show type badge in header section
-- [ ] B7.4 Update events list filter bar: multi-select "Typ akce" filter; persists in URL same way as other filters
-- [ ] B7.5 Update `src/localization/labels.ts` with new labels
+- [x] B7.1 Update event create/update Formik form with type dropdown loaded from `/api/event-types` (cached via TanStack Query)
+- [x] B7.2 Update events table: new column "Typ" with color badge + name; hidden by hideEmptyColumns when no events have a type
+- [x] B7.3 Update event detail page: show type badge in header section (inline with status badge)
+- [x] B7.4 Backend extended: multi-value `@RequestParam(required = false) List<UUID> eventTypeId` added to `EventController.listEvents`; `EventFilter` gained `eventTypeIds` field + `withEventTypeIds(List<EventTypeId>)` fluent method; `EventRepositoryAdapter` filters via `Criteria.where("event_type_id").in(...)` when list is non-empty; self link round-trips the param values; 4 integration tests added to `EventJdbcRepositoryTest`; `EventFilterTest` compile fix (1 extra null arg). Frontend: "Typ akce" multi-select added to `EventsFilterBar`; URL persistence via repeated `?eventTypeId=` params; `extraParams` in `HalEmbeddedTable` extended to support `string[]` (append semantics); 7 new tests (4 in EventsFilterBar, 1 in EventsPage) pass.
+- [x] B7.5 Update `src/localization/labels.ts` with new labels (tables.eventType, eventsFilter.eventTypeSelectPlaceholder)
 
 ### B8. End-to-end verification (Phase B)
 

@@ -14,6 +14,8 @@ import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {labels, getEnumLabel} from '../../localization';
+import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
+import {useEventTypes} from '../../hooks/useEventTypes.ts';
 import {AlertTriangle, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
@@ -28,6 +30,7 @@ interface EventDetail {
     deadlines?: string[];
     cancellationReason?: string;
     eventCoordinatorId?: {value: string};
+    eventTypeId?: string | null;
     status?: string;
     categories?: string[];
     [key: string]: unknown;
@@ -160,6 +163,7 @@ interface EventDetailContentProps {
 
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
     const {route} = useHalPageData<EventDetail>();
+    const {getById: getEventTypeById} = useEventTypes();
     const [isEditing, setIsEditing] = useState(false);
     const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
 
@@ -207,13 +211,17 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-wrap">
                         <h1 className="text-3xl font-bold text-text-primary">{event.name}</h1>
                         {!isEditing && (
                             <Badge variant={statusVariant} size="sm">
                                 {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
                             </Badge>
                         )}
+                        {!isEditing && event.eventTypeId && (() => {
+                            const eventType = getEventTypeById(event.eventTypeId);
+                            return eventType ? <EventTypeBadge eventType={eventType}/> : null;
+                        })()}
                     </div>
 
                     {!isEditing && (
@@ -286,6 +294,11 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                         ))}
                                     </div>
                                 )}
+                            </DetailRow>
+                        )}
+                        {isEditing && (
+                            <DetailRow label={labels.fields.eventTypeId}>
+                                {ri('eventTypeId')}
                             </DetailRow>
                         )}
                         {isEditing && (

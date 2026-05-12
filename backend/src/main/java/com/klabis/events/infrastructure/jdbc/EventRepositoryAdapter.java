@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.pagination.TranslatedPageable;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
@@ -235,6 +236,13 @@ class EventRepositoryAdapter implements EventRepository {
 
         if (filter.coordinator() != null) {
             conditions.add(Criteria.where("event_coordinator_id").is(filter.coordinator().uuid()));
+        }
+
+        if (!filter.eventTypeIds().isEmpty()) {
+            List<UUID> typeIdValues = filter.eventTypeIds().stream()
+                    .map(EventTypeId::value)
+                    .toList();
+            conditions.add(Criteria.where("event_type_id").in(typeIdValues));
         }
 
         return conditions;

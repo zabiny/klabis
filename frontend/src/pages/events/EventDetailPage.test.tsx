@@ -794,4 +794,52 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('heading', {name: /přihlášky/i})).toBeInTheDocument();
         });
     });
+
+    describe('event type badge (B7.3)', () => {
+        const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+                if (url === '/api/event-types') {
+                    return {
+                        data: {_embedded: {eventTypeDtoList: eventTypes}},
+                        isLoading: false,
+                        error: null,
+                    } as any;
+                }
+                return {
+                    data: {
+                        _embedded: {registrationDtoList: []},
+                        page: {totalElements: 0, totalPages: 0, size: 10, number: 0},
+                        _links: {self: {href: url}},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as any;
+            });
+        };
+
+        it('shows event type name badge in header when event has eventTypeId', () => {
+            withEventTypesMock([{id: 'type-abc', name: 'Pohárový závod', color: '#3366FF', sortOrder: 1}]);
+            renderPage(createMockPageData(mockEventDetailData({eventTypeId: 'type-abc'})));
+            expect(screen.getByText('Pohárový závod')).toBeInTheDocument();
+        });
+
+        it('shows color dot for event type with color', () => {
+            withEventTypesMock([{id: 'type-abc', name: 'Trénink', color: '#00FF00', sortOrder: 1}]);
+            renderPage(createMockPageData(mockEventDetailData({eventTypeId: 'type-abc'})));
+            const dot = document.querySelector('[aria-hidden="true"]') as HTMLElement | null;
+            expect(dot).toBeInTheDocument();
+        });
+
+        it('does not show event type badge when event has no eventTypeId', () => {
+            withEventTypesMock([{id: 'type-abc', name: 'Trénink', sortOrder: 1}]);
+            renderPage(createMockPageData(mockEventDetailData({eventTypeId: undefined})));
+            expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
+        });
+
+        it('does not show event type badge when eventTypeId does not match catalog', () => {
+            withEventTypesMock([{id: 'type-abc', name: 'Trénink', sortOrder: 1}]);
+            renderPage(createMockPageData(mockEventDetailData({eventTypeId: 'unknown-type'})));
+            expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
+        });
+    });
 });

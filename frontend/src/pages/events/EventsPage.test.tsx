@@ -605,6 +605,27 @@ describe('EventsPage', () => {
             const checkbox = screen.getByRole('checkbox', {name: labels.eventsFilter.mojePřihlaskyLabel});
             expect(checkbox).toBeChecked();
         });
+
+        it('passes eventTypeIds from URL as repeated params to filter bar value', () => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+                if (url === '/api/event-types') {
+                    return {
+                        data: {_embedded: {eventTypeDtoList: [
+                            {id: 'et-A', name: 'Klub', sortOrder: 1},
+                            {id: 'et-B', name: 'Oblastní', sortOrder: 2},
+                        ]}},
+                        isLoading: false,
+                        error: null,
+                    } as any;
+                }
+                return {data: null, error: null} as any;
+            });
+            renderPage(createMockPageData(null), '/events?eventTypeId=et-A&eventTypeId=et-B');
+            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
+            const selectedValues = Array.from(select.selectedOptions).map(o => o.value);
+            expect(selectedValues).toContain('et-A');
+            expect(selectedValues).toContain('et-B');
+        });
     });
 
     describe('"Synchronizovat všechny budoucí z ORIS" button (A2.1)', () => {
@@ -651,6 +672,70 @@ describe('EventsPage', () => {
             await user.click(screen.getByRole('button', {name: labels.templates.syncAllUpcomingFromOris}));
 
             expect(screen.getByTestId('bulk-sync-oris-modal')).toBeInTheDocument();
+        });
+    });
+
+    describe('event type column (B7.2)', () => {
+        const buildEventWithType = (eventTypeId: string | null = null) => ({
+            id: 'evt-type-1',
+            name: 'Pohárový závod',
+            eventDate: '2025-06-01',
+            status: 'ACTIVE',
+            eventTypeId,
+            _links: {self: {href: '/api/events/evt-type-1'}},
+        });
+
+        const renderWithEventsAndTypes = (
+            events: unknown[],
+            eventTypes: {id: string; name: string; color?: string; sortOrder: number}[] = []
+        ) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+                if (url === '/api/event-types') {
+                    return {
+                        data: {_embedded: {eventTypeDtoList: eventTypes}},
+                        isLoading: false,
+                        error: null,
+                    } as any;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: events},
+                        page: {totalElements: events.length, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as any;
+            });
+            return renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+        };
+
+        it('shows "Typ" column header in events table when an event has a type', () => {
+            const eventTypes = [{id: 'type-abc', name: 'Trénink', color: '#00FF00', sortOrder: 1}];
+            renderWithEventsAndTypes([buildEventWithType('type-abc')], eventTypes);
+            expect(screen.getByRole('columnheader', {name: labels.tables.eventType})).toBeInTheDocument();
+        });
+
+        it('shows event type name badge when event has eventTypeId matching catalog', () => {
+            const eventTypes = [{id: 'type-abc', name: 'Trénink', color: '#00FF00', sortOrder: 1}];
+            renderWithEventsAndTypes([buildEventWithType('type-abc')], eventTypes);
+            const matches = screen.getAllByText('Trénink');
+            const badge = matches.find((el) => el.tagName.toLowerCase() !== 'option');
+            expect(badge).toBeInTheDocument();
+        });
+
+        it('shows no badge when event has no eventTypeId', () => {
+            const eventTypes = [{id: 'type-abc', name: 'Trénink', color: '#00FF00', sortOrder: 1}];
+            renderWithEventsAndTypes([buildEventWithType(null)], eventTypes);
+            // The name may appear in the event type filter dropdown as an <option>, but not as a badge span
+            const matches = screen.queryAllByText('Trénink');
+            const badge = matches.find((el) => el.tagName.toLowerCase() !== 'option');
+            expect(badge).not.toBeDefined();
+        });
+
+        it('shows no badge when event has eventTypeId not found in catalog', () => {
+            renderWithEventsAndTypes([buildEventWithType('unknown-type-id')], []);
+            expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
         });
     });
 });

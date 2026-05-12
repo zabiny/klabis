@@ -5,17 +5,25 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { EventsFilterBar, type EventsFilterBarProps, type EventsFilterValue } from './EventsFilterBar';
 import { labels } from '../../localization';
+import type { EventTypeCatalogItem } from '../../hooks/useEventTypes';
+
+const mockEventTypes: EventTypeCatalogItem[] = [
+    { id: 'et-1', name: 'Klub', sortOrder: 1 },
+    { id: 'et-2', name: 'Oblastní', sortOrder: 2, color: '#ff0000' },
+];
 
 const defaultValue: EventsFilterValue = {
     q: '',
     timeWindow: 'budouci',
     registeredByMe: false,
+    eventTypeIds: [],
 };
 
 const defaultProps: EventsFilterBarProps = {
     value: defaultValue,
     onChange: vi.fn(),
     showRegisteredByMeToggle: true,
+    eventTypes: [],
 };
 
 const renderFilterBar = (props: Partial<EventsFilterBarProps> = {}) =>
@@ -136,6 +144,63 @@ describe('EventsFilterBar', () => {
                 await userEvent.click(checkbox);
             });
             expect(onChange).toHaveBeenCalledWith({ ...defaultValue, registeredByMe: true });
+        });
+    });
+
+    describe('"Typ akce" multi-select', () => {
+        it('renders event type filter with label', () => {
+            renderFilterBar({ eventTypes: mockEventTypes });
+            expect(
+                screen.getByLabelText(labels.eventsFilter.eventTypeFilter),
+            ).toBeInTheDocument();
+        });
+
+        it('renders options for each event type plus placeholder', () => {
+            renderFilterBar({ eventTypes: mockEventTypes });
+            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter);
+            const options = Array.from((select as HTMLSelectElement).options).map(o => o.text);
+            expect(options).toContain(labels.eventsFilter.eventTypeSelectPlaceholder);
+            expect(options).toContain('Klub');
+            expect(options).toContain('Oblastní');
+        });
+
+        it('does not render event type filter when eventTypes is empty', () => {
+            renderFilterBar({ eventTypes: [] });
+            expect(
+                screen.queryByLabelText(labels.eventsFilter.eventTypeFilter),
+            ).not.toBeInTheDocument();
+        });
+
+        it('does not render event type filter when eventTypes is undefined', () => {
+            renderFilterBar({ eventTypes: undefined });
+            expect(
+                screen.queryByLabelText(labels.eventsFilter.eventTypeFilter),
+            ).not.toBeInTheDocument();
+        });
+
+        it('reflects selected eventTypeIds in the select value', () => {
+            renderFilterBar({
+                eventTypes: mockEventTypes,
+                value: { ...defaultValue, eventTypeIds: ['et-1'] },
+            });
+            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
+            const selectedValues = Array.from(select.selectedOptions).map(o => o.value);
+            expect(selectedValues).toContain('et-1');
+        });
+
+        it('calls onChange with updated eventTypeIds when an option is selected', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({ eventTypes: mockEventTypes, onChange });
+            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
+            await act(async () => {
+                Array.from(select.options).forEach((opt) => {
+                    opt.selected = opt.value === 'et-1';
+                });
+                fireEvent.change(select);
+            });
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ eventTypeIds: ['et-1'] }),
+            );
         });
     });
 });

@@ -269,6 +269,7 @@ export const labels = {
         identityCardValidityDate: 'Platnost OP',
         dateOfBirth: 'Datum narození',
         address: 'Adresa',
+        eventType: 'Typ',
     },
 
     sections: {
@@ -353,6 +354,8 @@ export const labels = {
         vse: 'Vše',
         mojePřihlaskyLabel: 'Moje přihlášky',
         emptyState: 'Žádné akce neodpovídají zadaným filtrům.',
+        eventTypeSelectPlaceholder: '— bez filtru —',
+        eventTypeFilter: 'Typ akce',
     },
 
     membersFilter: {

@@ -7,6 +7,7 @@ import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
+import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.events.eventtype.domain.EventTypeRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +27,8 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.List;
 import java.util.Optional;
-
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1466,6 +1467,130 @@ class EventJdbcRepositoryTest {
                 event.publish();
             }
             return eventRepository.save(event);
+        }
+    }
+
+    @Nested
+    @DisplayName("Filter by eventTypeIds — multi-value type filter")
+    class FilterByEventTypeIds {
+
+        @Test
+        @DisplayName("should return only events whose eventTypeId is in the requested list")
+        void shouldReturnOnlyEventsMatchingEventTypeIds() {
+            EventType typeA = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+            EventType typeB = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2));
+
+            Event eventWithTypeA = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Type A")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .eventTypeId(typeA.getId())
+                    .build());
+            eventRepository.save(eventWithTypeA);
+
+            Event eventWithTypeB = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Type B")
+                    .eventDate(LocalDate.of(2026, 8, 2))
+                    .organizer("OOB")
+                    .eventTypeId(typeB.getId())
+                    .build());
+            eventRepository.save(eventWithTypeB);
+
+            Event eventWithNoType = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event No Type")
+                    .eventDate(LocalDate.of(2026, 8, 3))
+                    .organizer("OOB")
+                    .build());
+            eventRepository.save(eventWithNoType);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withEventTypeIds(List.of(typeA.getId())),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Event Type A");
+        }
+
+        @Test
+        @DisplayName("should return events matching any of multiple requested type IDs (OR semantics)")
+        void shouldReturnEventsMatchingAnyOfMultipleTypeIds() {
+            EventType typeA = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+            EventType typeB = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2));
+
+            Event eventWithTypeA = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Type A")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .eventTypeId(typeA.getId())
+                    .build());
+            eventRepository.save(eventWithTypeA);
+
+            Event eventWithTypeB = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Type B")
+                    .eventDate(LocalDate.of(2026, 8, 2))
+                    .organizer("OOB")
+                    .eventTypeId(typeB.getId())
+                    .build());
+            eventRepository.save(eventWithTypeB);
+
+            Event eventWithNoType = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event No Type")
+                    .eventDate(LocalDate.of(2026, 8, 3))
+                    .organizer("OOB")
+                    .build());
+            eventRepository.save(eventWithNoType);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withEventTypeIds(List.of(typeA.getId(), typeB.getId())),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(2);
+            assertThat(result.getContent())
+                    .extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Event Type A", "Event Type B");
+        }
+
+        @Test
+        @DisplayName("should return all events when eventTypeIds list is empty")
+        void shouldReturnAllEventsWhenTypeIdListIsEmpty() {
+            EventType typeA = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event With Type").eventDate(LocalDate.of(2026, 8, 1)).organizer("OOB")
+                    .eventTypeId(typeA.getId()).build()));
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Without Type").eventDate(LocalDate.of(2026, 8, 2)).organizer("OOB").build()));
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withEventTypeIds(List.of()),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should return empty when no events match the requested type ID")
+        void shouldReturnEmptyWhenNoEventMatchesTypeId() {
+            EventType typeA = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Event No Type").eventDate(LocalDate.of(2026, 8, 1)).organizer("OOB").build()));
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withEventTypeIds(List.of(typeA.getId())),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).isEmpty();
         }
     }
 }

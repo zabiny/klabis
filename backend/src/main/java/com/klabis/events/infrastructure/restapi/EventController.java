@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -220,6 +221,8 @@ public class EventController {
             @RequestParam(required = false) Period deadlineWithin,
             @Parameter(description = "Exclude events where the given member is registered: only 'me' is currently accepted (optional)")
             @RequestParam(required = false) String notRegisteredBy,
+            @Parameter(description = "Filter by event type UUID (multi-value: ?eventTypeId=x&eventTypeId=y, optional)")
+            @RequestParam(required = false) List<UUID> eventTypeId,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
@@ -227,7 +230,7 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, currentUser);
+        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, eventTypeId, currentUser);
         if (filter == null) {
             return ResponseEntity.ok(pagedResourcesAssembler.toModel(
                     new PageImpl<>(List.of(), pageable, 0),
@@ -243,7 +246,7 @@ public class EventController {
 
         boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, pageable, null)).ifPresent(link -> {
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, eventTypeId, pageable, null)).ifPresent(link -> {
             Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
             if (orisIntegrationActive) {
@@ -278,6 +281,7 @@ public class EventController {
             LocalDate dateTo,
             Period deadlineWithin,
             String notRegisteredBy,
+            List<UUID> eventTypeId,
             CurrentUserData currentUser) {
 
         EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
@@ -322,6 +326,13 @@ public class EventController {
                 return null;
             }
             filter = filter.withNotRegisteredBy(currentUser.memberId());
+        }
+
+        if (eventTypeId != null && !eventTypeId.isEmpty()) {
+            List<EventTypeId> typeIds = eventTypeId.stream()
+                    .map(EventTypeId::new)
+                    .collect(Collectors.toList());
+            filter = filter.withEventTypeIds(typeIds);
         }
 
         return filter;
@@ -545,7 +556,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             dtoModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         if (event.getStatus() != EventStatus.DRAFT) {
@@ -626,7 +637,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
         klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("category-presets")));

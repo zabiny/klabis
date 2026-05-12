@@ -22,7 +22,9 @@ import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar, type EventsFilterValue} from "../../components/events/EventsFilterBar.tsx";
+import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
 import {useAuth} from "../../contexts/AuthContext2.tsx";
+import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {
     DEFAULT_TIME_WINDOW,
     getDefaultSortForTimeWindow,
@@ -42,7 +44,8 @@ type EventListData = EntityModel<{
     websiteUrl?: string,
     deadlines?: string[],
     cancellationReason?: string,
-    status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED'
+    status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED',
+    eventTypeId?: string | null,
 }> & {
     _templates?: Record<string, HalFormsTemplate>;
 }
@@ -99,6 +102,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const {getUser} = useAuth();
+    const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
@@ -159,6 +163,7 @@ export const EventsPage = (): ReactElement => {
     const urlDateTo = searchParams.get('dateTo');
     const urlQ = searchParams.get('q') ?? '';
     const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
+    const urlEventTypeIds = searchParams.getAll('eventTypeId');
 
     const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
 
@@ -187,7 +192,10 @@ export const EventsPage = (): ReactElement => {
         q: urlQ,
         timeWindow,
         registeredByMe: urlRegisteredByMe,
-    }), [urlQ, timeWindow, urlRegisteredByMe]);
+        eventTypeIds: urlEventTypeIds,
+    // urlEventTypeIds is a new array on every render — compare its join to avoid infinite loops
+     
+    }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFilterChange = useCallback((next: EventsFilterValue) => {
         const today = getTodayIso();
@@ -198,19 +206,23 @@ export const EventsPage = (): ReactElement => {
             if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
             if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
             if (next.registeredByMe) { params.set('registeredBy', REGISTERED_BY_ME); } else { params.delete('registeredBy'); }
+            params.delete('eventTypeId');
+            next.eventTypeIds.forEach((id) => params.append('eventTypeId', id));
             return params;
         });
     }, [setSearchParams]);
 
     // Build extra params for the API call
-    const extraParams = useMemo((): Record<string, string> => {
-        const params: Record<string, string> = {};
+    const extraParams = useMemo((): Record<string, string | string[]> => {
+        const params: Record<string, string | string[]> = {};
         if (urlDateFrom) params.dateFrom = urlDateFrom;
         if (urlDateTo) params.dateTo = urlDateTo;
         if (urlQ && urlQ.length >= 2) params.q = urlQ;
         if (urlRegisteredByMe) params.registeredBy = REGISTERED_BY_ME;
+        if (urlEventTypeIds.length > 0) params.eventTypeId = urlEventTypeIds;
         return params;
-    }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe, urlEventTypeIds.join(',')]);
 
     const defaultSort = getDefaultSortForTimeWindow(timeWindow);
 
@@ -239,6 +251,7 @@ export const EventsPage = (): ReactElement => {
                 value={filterValue}
                 onChange={handleFilterChange}
                 showRegisteredByMeToggle={showRegisteredByMeToggle}
+                eventTypes={eventTypes}
             />
 
             {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}
@@ -310,6 +323,13 @@ export const EventsPage = (): ReactElement => {
                                }
                                return label;
                            }}>{labels.tables.status}</TableCell>
+                <TableCell column={"eventTypeId"}
+                           dataRender={({item}) => {
+                               const event = item as unknown as EventListData;
+                               const eventType = getEventTypeById(event.eventTypeId);
+                               if (!eventType) return null;
+                               return <EventTypeBadge eventType={eventType}/>;
+                           }}>{labels.tables.eventType}</TableCell>
                 <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>

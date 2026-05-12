@@ -246,6 +246,7 @@ class EventFilterTest {
                     null,
                     null,
                     null,
+                    null,
                     null
             );
             EventFilter result = base.withExcludedStatus(EventStatus.DRAFT);

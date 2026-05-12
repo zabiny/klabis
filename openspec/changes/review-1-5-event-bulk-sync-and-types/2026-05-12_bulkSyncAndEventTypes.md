@@ -28,7 +28,7 @@ Vertical slices, sequential (Phase A is fully independent and can ship first; Ph
 | 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | DONE |
 | 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | DONE |
 | 6 | B6 — Frontend admin page for event types | frontend-developer | DONE |
-| 7 | B7 — Frontend event form/table column/filter/detail badge + labels | frontend-developer | TODO |
+| 7 | B7 — Frontend event form/table column/filter/detail badge + labels | frontend-developer | DONE |
 | 8 | Simplify pass + code review + fixes + docs (task 9) | mix | TODO |
 
 After every iteration: tests pass → commit. E2E verification (A3, B8) is optional manual step at the end.
@@ -164,5 +164,64 @@ Added `EventTypesRootPostprocessor` at the bottom of `EventTypeController.java` 
 **Changed files:**
 - `backend/src/main/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypeController.java` — `listEventTypes()` made `public`; `EventTypesRootPostprocessor` added at end of file
 - `backend/src/test/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypesRootPostprocessorTest.java` — new unit test
+
+---
+
+### Iter 7 — B7 Frontend event form/table column/detail badge + labels (2026-05-12)
+
+Tasks B7.1, B7.2, B7.3, B7.5 completed. **B7.4 BLOCKED** — backend filter support missing.
+21 new tests added. Full suite 1428/1428.
+
+**B7.1 — Event form type dropdown:** `EventTypeSelectField` component wraps `SelectField` with options loaded from `useEventTypes` hook (cached, 5 min staleTime). `eventFormFieldsFactory` intercepts `eventTypeId` field by name before delegating to `klabisFieldsFactory`. First option is "—" (empty = not set).
+
+**B7.2 — Events table "Typ" column:** Added `eventTypeId` column using `EventTypeBadge` + `getById` lookup from `useEventTypes`. Column is hidden via existing `hideEmptyColumns` when no events have a type assigned.
+
+**B7.3 — Event detail badge:** `EventTypeBadge` shown inline with the status badge in the header. Also wired `eventTypeId` into the edit form row so it appears when editing.
+
+**B7.4 BLOCKED:** Backend `EventController.listEvents` has no `eventTypeId` `@RequestParam`. Required backend change: add `@RequestParam(required = false) UUID eventTypeId` to `listEvents`, extend `EventFilter` with `withEventTypeId`, add JDBC predicate in `EventJdbcRepository`, and update HAL `self` link in `listEvents`.
+
+**B7.5 — Labels:** Added `tables.eventType` = "Typ" and `eventsFilter.eventTypeSelectPlaceholder` = "— bez filtru —" to `labels.ts`.
+
+**New/changed files:**
+- `frontend/src/hooks/useEventTypes.ts` — new hook (6 tests)
+- `frontend/src/components/events/EventTypeBadge.tsx` — new component (3 tests)
+- `frontend/src/components/events/EventTypeSelectField.tsx` — new Formik select field
+- `frontend/src/components/events/eventFormFieldsFactory.tsx` — intercept `eventTypeId` (4 tests)
+- `frontend/src/pages/events/EventsPage.tsx` — Typ column + useEventTypes (4 new tests)
+- `frontend/src/pages/events/EventDetailPage.tsx` — type badge in header + edit row (4 new tests)
+- `frontend/src/localization/labels.ts` — tables.eventType, eventsFilter.eventTypeSelectPlaceholder
+
+---
+
+### B7.4 backend — multi-value eventTypeId filter on listEvents (2026-05-12)
+
+Task B7.4 unblocked. Added multi-value `?eventTypeId=x&eventTypeId=y` filter to `GET /api/events`. Spring binds `List<UUID>` automatically; the controller converts to `List<EventTypeId>` and delegates to a new `EventFilter.withEventTypeIds(List<EventTypeId>)` fluent method. The JDBC adapter applies `Criteria.where("event_type_id").in(...)` only when the list is non-empty, so absent param = no restriction. The `self` link round-trips the list value via the updated `methodOn(EventController.class).listEvents(...)` call. Also fixed one direct `EventFilter` constructor call in `EventFilterTest` (needed an extra null arg for the new field). 4 new integration tests in `EventJdbcRepositoryTest.FilterByEventTypeIds`; all 56 repository tests + 82 controller tests + 4 E2E filter tests pass (142 total, 1 pre-existing failure in `EventManagementE2ETest` unchanged).
+
+**Changed files:**
+- `backend/src/main/java/com/klabis/events/domain/EventFilter.java` — new `eventTypeIds` field + `withEventTypeIds` fluent method; all constructors updated
+- `backend/src/main/java/com/klabis/events/infrastructure/jdbc/EventRepositoryAdapter.java` — `buildNonFulltextConditions` adds `event_type_id IN (...)` predicate
+- `backend/src/main/java/com/klabis/events/infrastructure/restapi/EventController.java` — `listEvents` gains `List<UUID> eventTypeId` param; `buildFilter` applies it; self link updated; two `methodOn` call-sites updated to 13-arg signature
+- `backend/src/test/java/com/klabis/events/infrastructure/jdbc/EventJdbcRepositoryTest.java` — new `FilterByEventTypeIds` nested class (4 tests)
+- `backend/src/test/java/com/klabis/events/domain/EventFilterTest.java` — one constructor call updated (extra null arg)
+
+---
+
+### B7.4 frontend — "Typ akce" multi-select filter (2026-05-12)
+
+Task B7.4 frontend unblocked and completed. 7 new tests (4 in `EventsFilterBar`, 1 in `EventsPage`); 2 pre-existing `EventsPage` tests updated for query specificity. Full suite 1435/1435.
+
+**Implementation:**
+- `EventsFilterBar` gains `eventTypeIds: string[]` on `EventsFilterValue` and optional `eventTypes?: EventTypeCatalogItem[]` prop. When `eventTypes` is non-empty, a `<select multiple>` is rendered with a placeholder option and one option per catalog item. Selection changes produce `onChange` with updated `eventTypeIds`.
+- `EventsPage` reads `?eventTypeId=` (multi-value via `searchParams.getAll`) from URL, passes as `eventTypeIds` in `filterValue`. `handleFilterChange` clears and re-appends all selected ids. `extraParams` typed to `Record<string, string | string[]>`; `eventTypeId` set as `string[]` when non-empty.
+- `HalEmbeddedTable.extraParams` extended from `Record<string, string>` to `Record<string, string | string[]>`. Array values use `url.searchParams.append()` to produce repeated params; string values use `set()` unchanged.
+- Label `eventsFilter.eventTypeFilter = 'Typ akce'` added to `labels.ts`.
+
+**Changed files:**
+- `frontend/src/localization/labels.ts` — added `eventsFilter.eventTypeFilter`
+- `frontend/src/components/HalNavigator2/HalEmbeddedTable.tsx` — `extraParams` type extended; `append` used for array values
+- `frontend/src/components/events/EventsFilterBar.tsx` — `EventsFilterValue.eventTypeIds` added; `eventTypes` prop + multi-select rendered
+- `frontend/src/pages/events/EventsPage.tsx` — `eventTypes` destructured from `useEventTypes`; URL read/write for `eventTypeId`; `extraParams` wired
+- `frontend/src/components/events/EventsFilterBar.test.tsx` — 4 new tests for "Typ akce" multi-select
+- `frontend/src/pages/events/EventsPage.test.tsx` — 1 new test (URL persistence); 2 tests updated (specificity fix for `getByText` now matching `<option>` too)
 
 ---

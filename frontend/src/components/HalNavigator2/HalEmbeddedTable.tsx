@@ -32,8 +32,8 @@ export interface HalEmbeddedTableProps<T = any> {
     /** Hide columns where all values are empty */
     hideEmptyColumns?: boolean
 
-    /** Extra query parameters appended to the self-link URL before fetching */
-    extraParams?: Record<string, string>
+    /** Extra query parameters appended to the self-link URL before fetching. String values use set(); string[] values use append() for multi-value params. */
+    extraParams?: Record<string, string | string[]>
 
     /** Column definitions (TableCell components) */
     children: React.ReactNode
@@ -97,7 +97,13 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
     const tableLinkHref = (() => {
         if (!extraParams || Object.keys(extraParams).length === 0) return selfLink.href;
         const url = new URL(selfLink.href);
-        Object.entries(extraParams).forEach(([key, value]) => url.searchParams.set(key, value));
+        Object.entries(extraParams).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                value.forEach((v) => url.searchParams.append(key, v));
+            } else {
+                url.searchParams.set(key, value);
+            }
+        });
         return url.toString();
     })();
 
