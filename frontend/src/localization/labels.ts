@@ -8,6 +8,7 @@ export const labels = {
         'training-groups': 'Tréninkové skupiny',
         'family-groups': 'Rodinné skupiny',
         'category-presets': 'Šablony kategorií',
+        'event-types': 'Typy akcí',
     },
 
     buttons: {
@@ -77,6 +78,9 @@ export const labels = {
         createCategoryPreset: 'Přidat šablonu',
         updateCategoryPreset: 'Upravit šablonu',
         deleteCategoryPreset: 'Smazat šablonu',
+        createEventType: 'Přidat typ akce',
+        updateEventType: 'Upravit typ akce',
+        deleteEventType: 'Smazat typ akce',
     },
 
     dialogTitles: {
@@ -134,6 +138,9 @@ export const labels = {
         memberCount: 'Počet členů',
         ageRange: 'Věkové rozmezí',
         reason: 'Důvod zrušení (volitelné)',
+        color: 'Barva',
+        sortOrder: 'Pořadí',
+        eventTypeId: 'Typ akce',
     },
 
     enums: {
@@ -299,6 +306,8 @@ export const labels = {
         familyGroupMembers: 'ČLENOVÉ',
         categoryPresetsList: 'Šablony kategorií',
         presetsListHeading: 'Seznam šablon',
+        eventTypesList: 'Typy akcí',
+        eventTypesListHeading: 'Seznam typů akcí',
     },
 
     dashboard: {

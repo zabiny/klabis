@@ -1,0 +1,127 @@
+import {type ReactElement, useState} from "react";
+import type {EntityModel, HalFormsTemplate} from "../../api";
+import {TableCell} from "../../components/KlabisTable";
+import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
+import {useHalPageData} from "../../hooks/useHalPageData.ts";
+import {toHref} from "../../api/hateoas.ts";
+import {labels} from "../../localization";
+import {Button, Modal} from "../../components/UI";
+import {Pencil, Trash2} from "lucide-react";
+import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+
+type EventTypeListItem = EntityModel<{
+    id: string;
+    name: string;
+    color?: string;
+    sortOrder: number;
+}> & {
+    _templates?: Record<string, HalFormsTemplate>;
+};
+
+interface ActionModalState {
+    item: EventTypeListItem;
+    templateName: string;
+    template: HalFormsTemplate;
+}
+
+export const EventTypesPage = (): ReactElement => {
+    const {route} = useHalPageData();
+    const [actionModal, setActionModal] = useState<ActionModalState | null>(null);
+
+    const openActionModal = (item: EventTypeListItem, templateName: string) => {
+        const template = item._templates?.[templateName];
+        if (!template) return;
+        setActionModal({item, templateName, template});
+    };
+
+    const renderColorSwatch = ({value}: TableCellRenderProps) => {
+        const color = value as string | undefined;
+        if (!color) return null;
+        return (
+            <span
+                className="inline-block w-5 h-5 rounded border border-zinc-300"
+                style={{backgroundColor: color}}
+                title={color}
+            />
+        );
+    };
+
+    const renderActionsCell = ({item}: TableCellRenderProps) => {
+        const eventType = item as unknown as EventTypeListItem;
+        const hasEditTemplate = !!eventType._templates?.updateEventType;
+        const hasDeleteTemplate = !!eventType._templates?.deleteEventType;
+
+        return (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {hasEditTemplate && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={labels.buttons.edit}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openActionModal(eventType, 'updateEventType');
+                        }}
+                    >
+                        <Pencil className="w-4 h-4"/>
+                    </Button>
+                )}
+                {hasDeleteTemplate && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={labels.templates.deleteEventType}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openActionModal(eventType, 'deleteEventType');
+                        }}
+                    >
+                        <Trash2 className="w-4 h-4"/>
+                    </Button>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="flex flex-col gap-8">
+            <h1 className="text-3xl font-bold text-text-primary">{labels.nav['event-types']}</h1>
+
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.eventTypesListHeading}</h2>
+                    <HalFormButton name="createEventType" modal={true} label={labels.templates.createEventType} navigateOnSuccess={false}/>
+                </div>
+                <HalEmbeddedTable<EventTypeListItem>
+                    collectionName={"eventTypeDtoList"}
+                    defaultOrderBy={"sortOrder"}
+                >
+                    <TableCell column={"color"} dataRender={renderColorSwatch}>{labels.fields.color}</TableCell>
+                    <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>
+                    <TableCell sortable column={"sortOrder"}>{labels.fields.sortOrder}</TableCell>
+                    <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
+                </HalEmbeddedTable>
+            </div>
+
+            {actionModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setActionModal(null)}
+                    title={actionModal.template.title ?? labels.templates[actionModal.templateName as keyof typeof labels.templates]}
+                    size="md"
+                >
+                    <HalFormDisplay
+                        template={actionModal.template}
+                        templateName={actionModal.templateName}
+                        resourceData={actionModal.item as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        resourceUrl={actionModal.item._links?.self ? toHref(actionModal.item._links.self) : undefined}
+                        onClose={() => setActionModal(null)}
+                    />
+                </Modal>
+            )}
+        </div>
+    );
+};

@@ -27,7 +27,7 @@ Vertical slices, sequential (Phase A is fully independent and can ship first; Ph
 | 3 | B1+B2+B3 — DB migration, `EventType` aggregate, persistence, REST CRUD controller + tests | backend-developer | DONE |
 | 4 | B4 — Wire `eventType` into `Event` aggregate + REST DTO/forms + tests | backend-developer | DONE |
 | 5 | B5 — ORIS import auto-mapping helper + tests | backend-developer | DONE |
-| 6 | B6 — Frontend admin page for event types | frontend-developer | TODO |
+| 6 | B6 — Frontend admin page for event types | frontend-developer | DONE |
 | 7 | B7 — Frontend event form/table column/filter/detail badge + labels | frontend-developer | TODO |
 | 8 | Simplify pass + code review + fixes + docs (task 9) | mix | TODO |
 
@@ -74,6 +74,30 @@ Tasks B1.1–B3.3 completed. 49/49 new tests pass. Full suite 2504/2505 (1 pre-e
 - `eventtype/application/EventTypeManagementPort.java`, `EventTypeManagementService.java`
 - `eventtype/infrastructure/restapi/EventTypeController.java`, `EventTypeDto.java`, `EventTypeIdMixin.java`, `EventTypeDtoMapper.java`, `EventTypeExceptionHandler.java`
 - Tests: `EventTypeTest.java` (22 domain tests), `EventTypeRepositoryAdapterTest.java` (12 persistence tests), `EventTypeControllerTest.java` (15 controller tests)
+
+---
+
+### Iter 6 — B6 Frontend admin page for event types (2026-05-12)
+
+Tasks B6.1–B6.5 completed. 15 new tests pass. Full suite 1407/1407.
+
+**Pattern:** Follows `CategoryPresetsPage` exactly — `HalEmbeddedTable` + per-row action buttons (edit/delete) open `HalFormDisplay` inside `Modal`. Create button via `HalFormButton`. 409 conflict errors rendered automatically by `HalFormDisplay` error display.
+
+**Key decisions:**
+- `event-types` added to `ADMIN_RELS` in `useRootNavigation.ts` — nav link classified as admin section item (visible only when backend returns it, i.e. user has EVENTS:MANAGE authority).
+- Color swatch rendered as `<span>` with `style.backgroundColor` and `title` attribute showing hex value.
+- `defaultOrderBy="sortOrder"` on `HalEmbeddedTable` to match backend sort semantics.
+
+**BLOCKED — backend change required:**
+- `EventTypeController.java` needs a `EventTypesRootPostprocessor` (inner class) that adds `klabisLinkTo(methodOn(EventTypeController.class).listEventTypes()).ifPresent(link -> model.add(link.withRel("event-types")))` to `EntityModel<RootModel>`. Without this, the nav link is never returned in `/api` response and "Typy akcí" never appears in the sidebar. Pattern to follow: `EventsRootPostprocessor` in `EventController.java` (lines ~625–635). This is a backend change — outside frontend-developer scope.
+
+**Changed/created files:**
+- `frontend/src/localization/labels.ts` — added `nav['event-types']`, `templates.createEventType/updateEventType/deleteEventType`, `sections.eventTypesList/eventTypesListHeading`, `fields.color/sortOrder/eventTypeId`
+- `frontend/src/hooks/useRootNavigation.ts` — added `'event-types'` to `ADMIN_RELS`
+- `frontend/src/pages/Layout.tsx` — added `ListChecks` icon for `event-types` rel
+- `frontend/src/App.tsx` — added `/event-types` route → `EventTypesPage`
+- `frontend/src/pages/events/EventTypesPage.tsx` — new admin page (list + create/edit/delete modals)
+- `frontend/src/pages/events/EventTypesPage.test.tsx` — 15 tests
 
 ---
 
@@ -130,5 +154,15 @@ Tasks B4.1–B4.4 completed. 12/13 new E2E tests pass; 1 pre-existing failure (`
 - `infrastructure/bootstrap/EventsDataBootstrap.java` — 27 `CreateEvent` calls updated with `null` eventTypeId
 - `eventtype/infrastructure/restapi/EventTypeController.java` — class and `getEventType` made `public`
 - Tests: `EventAssert.java`, `EventJdbcRepositoryTest.java` (2 persistence tests), `EventManagementE2ETest.java` (4 E2E tests), `EventTestDataBuilder.java`; fixed `Event.reconstruct` call sites in calendar/registration tests
+
+---
+
+### Iter 6 (backend complement) — EventTypesRootPostprocessor (2026-05-12)
+
+Added `EventTypesRootPostprocessor` at the bottom of `EventTypeController.java` — a `@MvcComponent` that implements `RepresentationModelProcessor<EntityModel<RootModel>>` and appends an `event-types` HAL link via `klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())`, which is authority-gated by the existing `@HasAuthority(Authority.EVENTS_MANAGE)` on `listEventTypes()`. Also made `listEventTypes()` `public` (was package-private) so the cross-package `methodOn(...)` invocation compiles. 1 new unit test passes; `EventTypeControllerTest` 18/18 unchanged.
+
+**Changed files:**
+- `backend/src/main/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypeController.java` — `listEventTypes()` made `public`; `EventTypesRootPostprocessor` added at end of file
+- `backend/src/test/java/com/klabis/events/eventtype/infrastructure/restapi/EventTypesRootPostprocessorTest.java` — new unit test
 
 ---

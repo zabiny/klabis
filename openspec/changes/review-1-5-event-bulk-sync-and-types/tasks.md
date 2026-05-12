@@ -63,11 +63,11 @@
 
 ### B6. Frontend — admin page for event types
 
-- [ ] B6.1 Add navigation link "Typy akcí" under ADMINISTRACE (visible to EVENTS:MANAGE only)
-- [ ] B6.2 Create `EventTypesPage` (table list with sort by sort_order, name, color preview); reuse `KlabisTable` and HAL navigator patterns
-- [ ] B6.3 Create modal forms for create/edit (name, color picker, sort_order)
-- [ ] B6.4 Delete with confirm dialog; show backend 409 conflict message when in use
-- [ ] B6.5 Frontend tests for the admin page
+- [x] B6.1 Add navigation link "Typy akcí" under ADMINISTRACE (visible to EVENTS:MANAGE only)
+- [x] B6.2 Create `EventTypesPage` (table list with sort by sort_order, name, color preview); reuse `KlabisTable` and HAL navigator patterns
+- [x] B6.3 Create modal forms for create/edit (name, color picker, sort_order)
+- [x] B6.4 Delete with confirm dialog; show backend 409 conflict message when in use
+- [x] B6.5 Frontend tests for the admin page
 
 ### B7. Frontend — events form + table column + filter
 

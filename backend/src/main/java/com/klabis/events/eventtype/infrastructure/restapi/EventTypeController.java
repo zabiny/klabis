@@ -1,5 +1,7 @@
 package com.klabis.events.eventtype.infrastructure.restapi;
 
+import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventTypeId;
@@ -16,6 +18,7 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,7 +48,7 @@ public class EventTypeController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(summary = "List all event types", description = "Returns all event types sorted by sort_order. Requires EVENTS:MANAGE authority.")
     @ApiResponse(responseCode = "200", description = "List of event types")
-    ResponseEntity<CollectionModel<EntityModel<EventTypeDto>>> listEventTypes() {
+    public ResponseEntity<CollectionModel<EntityModel<EventTypeDto>>> listEventTypes() {
         List<EventType> eventTypes = eventTypeManagementService.listAllSorted();
 
         List<EntityModel<EventTypeDto>> items = eventTypes.stream()
@@ -124,5 +127,16 @@ public class EventTypeController {
 
         eventTypeManagementService.deleteEventType(new EventTypeId(id));
         return ResponseEntity.noContent().build();
+    }
+}
+
+@MvcComponent
+class EventTypesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
+                .ifPresent(link -> model.add(link.withRel("event-types")));
+        return model;
     }
 }
