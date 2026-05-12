@@ -1549,23 +1549,6 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("updateEvent template on list row carries explicit target pointing to the event detail URL")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void updateEventTemplateOnListRowHasExplicitTarget() throws Exception {
-            EventId eventId = new EventId(UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
-            Event draftEvent = EventTestDataBuilder.anEventWithId(eventId).build();
-
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
-                    .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath(tpl("updateEvent.target")).exists())
-                    .andExpect(jsonPath(tpl("updateEvent.target"))
-                            .value(containsString(eventId.value().toString())));
-        }
-
-        @Test
         @DisplayName("ACTIVE event row carries updateEvent, cancelEvent affordances but NOT finishEvent")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void activeRowCarriesEditCancelButNotFinishAffordances() throws Exception {

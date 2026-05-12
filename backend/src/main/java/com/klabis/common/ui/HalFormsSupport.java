@@ -19,7 +19,6 @@ import org.springframework.hateoas.mediatype.html.HtmlInputType;
 import org.springframework.hateoas.server.core.DummyInvocationUtils;
 import org.springframework.hateoas.server.core.LastInvocationAware;
 import org.springframework.hateoas.server.core.MethodInvocation;
-import org.springframework.hateoas.server.core.SpringAffordanceBuilder;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -34,7 +33,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -127,58 +125,6 @@ public class HalFormsSupport {
         } finally {
             PROPERTY_OPTIONS_CONTEXT.remove();
         }
-    }
-
-    /**
-     * Like {@link #klabisAfford}, but forces an explicit {@code target} field in the HAL-FORMS template even when
-     * the affordance URL matches the enclosing model's self link.
-     *
-     * Spring HATEOAS omits {@code target} when the affordance URL equals the self link href, expecting the
-     * client to fall back to the document's self link.  For embedded list-row items this is wrong: the
-     * "self" the client falls back to is the collection URL, not the row URL.  Calling this helper with the
-     * row's self link ensures a concrete relative path is stored as the affordance model's target link so
-     * that the comparison in {@code HalFormsTemplateBuilder} always fails and {@code target} is always
-     * serialized.
-     *
-     * @param invocation  the result of {@code methodOn(Ctrl.class).someAction(...)} — same as {@link #klabisAfford}
-     * @param rowSelfLink the row's own self link; its path component becomes the affordance's stored target href
-     */
-    public static List<Affordance> klabisAffordWithExplicitTarget(Object invocation, Link rowSelfLink) {
-        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
-
-        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
-            return Collections.emptyList();
-        }
-
-        MethodInvocation methodInvocation = lastInvocationAware.getLastInvocation();
-        Method method = methodInvocation.getMethod();
-        Class<?> declaringClass = method.getDeclaringClass();
-
-        String absoluteHref = rowSelfLink.getHref();
-        String relativeHref = toRelativePath(absoluteHref);
-
-        List<Affordance> affordances = SpringAffordanceBuilder.getAffordances(declaringClass, method, relativeHref);
-
-        return affordances.stream()
-                .map(a -> modifyAffordanceForHalForms(a, lastInvocationAware))
-                .toList();
-    }
-
-    private static String toRelativePath(String href) {
-        try {
-            URI uri = URI.create(href);
-            if (uri.isAbsolute()) {
-                String path = uri.getRawPath();
-                String query = uri.getRawQuery();
-                String fragment = uri.getRawFragment();
-                StringBuilder relative = new StringBuilder(path);
-                if (query != null) relative.append('?').append(query);
-                if (fragment != null) relative.append('#').append(fragment);
-                return relative.toString();
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        return href;
     }
 
     private record MethodAuthMeta(HasAuthority hasAuthority, OwnerVisible ownerVisible, int ownerIdParamIndex) {

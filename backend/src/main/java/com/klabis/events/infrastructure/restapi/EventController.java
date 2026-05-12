@@ -482,44 +482,6 @@ class EventAffordanceSupport {
         return selfLink;
     }
 
-    /**
-     * Variant of {@link #addManagementAffordances} used for embedded list-row items.
-     *
-     * Spring HATEOAS omits {@code target} from a template when the affordance URL equals the
-     * enclosing entity's self link href — per the HAL-FORMS spec the client should fall back to self.
-     * In a list row the "self" the browser-side HalFormButton sees is the collection URL, not the
-     * row URL, so the PATCH ends up at the wrong endpoint (405).  Building affordances with an
-     * explicit relative path as target ensures {@code target} is always serialized.
-     */
-    static Link addManagementAffordancesWithExplicitTarget(Link selfLink, Event event, boolean orisIntegrationActive) {
-        UUID eventId = event.getId().value();
-
-        switch (event.getStatus()) {
-            case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAffordWithExplicitTarget(methodOn(EventController.class).updateEvent(eventId, null), selfLink));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
-                if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
-                }
-                break;
-
-            case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAffordWithExplicitTarget(methodOn(EventController.class).updateEvent(eventId, null), selfLink));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
-                if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
-                }
-                break;
-
-            case FINISHED:
-            case CANCELLED:
-                break;
-        }
-
-        return selfLink;
-    }
-
     @Nullable
     static MemberId resolveMemberId(Authentication auth) {
         if (auth instanceof KlabisJwtAuthenticationToken token) {
@@ -628,8 +590,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 SecurityContextHolder.getContext().getAuthentication());
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordancesWithExplicitTarget(
-                    selfLinkBuilder.withSelfRel(), event, orisIntegrationActive);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null

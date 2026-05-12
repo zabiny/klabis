@@ -8,6 +8,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
+import {toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
 import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
 import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
@@ -359,6 +360,7 @@ export const EventsPage = (): ReactElement => {
                     templateName={actionModal.templateName}
                     resourceData={actionModal.event as unknown as Record<string, unknown>}
                     pathname={route.pathname}
+                    resourceUrl={actionModal.event._links?.self ? toHref(actionModal.event._links.self) : undefined}
                     onClose={() => setActionModal(null)}
                     fieldsFactory={actionModal.templateName === 'updateEvent' ? eventFormFieldsFactory : undefined}
                 />
