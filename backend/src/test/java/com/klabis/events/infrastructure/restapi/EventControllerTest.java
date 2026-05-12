@@ -204,6 +204,19 @@ class EventControllerTest {
     @DisplayName("PATCH /api/events/{id}")
     class UpdateEventTests {
 
+        private Event defaultExistingEvent;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUpExistingEvent() {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withLocation("Existing Location")
+                    .withOrganizer("OOB")
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+        }
+
         @Test
         @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
@@ -234,7 +247,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should return 204 when location is null in update")
+        @DisplayName("should return 204 when location is absent — location kept from existing event")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventWithNullLocation() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -297,6 +310,49 @@ class EventControllerTest {
                                     .content("{\"name\":\"Bad Deadlines\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-09-10\",\"2026-09-01\"]}")
                     )
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("regression: PATCH with only eventTypeId succeeds and passes eventTypeId to service")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldPatchOnlyEventTypeId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            UUID typeId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"eventTypeId\":\"" + typeId + "\"}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    new com.klabis.events.EventTypeId(typeId).equals(cmd.eventTypeId())
+                    && "Existing Event".equals(cmd.name())
+                    && "OOB".equals(cmd.organizer())
+            ));
+        }
+
+        @Test
+        @DisplayName("regression: PATCH with empty body is a no-op and returns 204")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldAcceptEmptyBodyAsNoOp() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    "Existing Event".equals(cmd.name())
+                    && LocalDate.of(2026, 5, 1).equals(cmd.eventDate())
+                    && "OOB".equals(cmd.organizer())
+            ));
         }
     }
 
@@ -1490,6 +1546,23 @@ class EventControllerTest {
                     .andExpect(jsonPath(tpl("updateEvent.method")).value("PATCH"))
                     .andExpect(jsonPath(tpl("publishEvent.target")).exists())
                     .andExpect(jsonPath(tpl("cancelEvent.target")).exists());
+        }
+
+        @Test
+        @DisplayName("updateEvent template on list row carries explicit target pointing to the event detail URL")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void updateEventTemplateOnListRowHasExplicitTarget() throws Exception {
+            EventId eventId = new EventId(UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+            Event draftEvent = EventTestDataBuilder.anEventWithId(eventId).build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(tpl("updateEvent.target")).exists())
+                    .andExpect(jsonPath(tpl("updateEvent.target"))
+                            .value(containsString(eventId.value().toString())));
         }
 
         @Test

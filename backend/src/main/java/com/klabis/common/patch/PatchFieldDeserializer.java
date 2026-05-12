@@ -4,6 +4,7 @@ import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.BeanProperty;
 import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.deser.std.StdDeserializer;
 import org.springframework.boot.jackson.JacksonComponent;
 import tools.jackson.databind.DatabindException;
@@ -14,19 +15,20 @@ import java.util.Objects;
 @JacksonComponent
 class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> {
 
-    private final Class<?> contentType;
+    private final JavaType contentType;
 
     public PatchFieldDeserializer() {
-        this(PatchField.class);
+        super(PatchField.class);
+        this.contentType = null;
     }
 
-    public PatchFieldDeserializer(Class<?> contentType) {
+    private PatchFieldDeserializer(JavaType contentType) {
         super(PatchField.class);
         this.contentType = contentType;
     }
 
     public ValueDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) throws DatabindException {
-        Class<?> contentType = Objects.requireNonNull(property.getType()).containedType(0).getRawClass();
+        JavaType contentType = Objects.requireNonNull(property.getType()).containedType(0);
         return new PatchFieldDeserializer(contentType);
     }
 
@@ -36,7 +38,9 @@ class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> {
             return PatchField.of(null);
         }
 
-        Object value = p.readValueAs(contentType);
+        Object value = contentType != null
+                ? p.readValueAs(contentType)
+                : p.readValueAs(Object.class);
         return PatchField.of(value);
     }
 
