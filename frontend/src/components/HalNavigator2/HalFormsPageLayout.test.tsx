@@ -204,7 +204,6 @@ describe('HalFormsPageLayout', () => {
         });
 
         it('should fall back to page content when inline request has no children', async () => {
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
             const TriggerInlineNoChildren = () => {
                 const {displayHalForm} = useHalForm();
                 return (
@@ -236,9 +235,9 @@ describe('HalFormsPageLayout', () => {
                 screen.getByTestId('trigger').click();
             });
 
-            expect(screen.getByText('Test Content')).toBeInTheDocument();
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('no children render-props'));
-            consoleSpy.mockRestore();
+            // When inline request has no children, it falls back to HalFormDisplay (default form layout)
+            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+            expect(screen.queryByText('Test Content')).not.toBeInTheDocument();
         });
     });
 });

@@ -93,10 +93,5 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
     }
 
     // Inline branch: form replaces page content
-    if (!currentFormRequest.children) {
-        console.warn(`HalFormsPageLayout: inline form request for "${currentFormRequest.templateName}" has no children render-props. Falling back to page content.`);
-        return <div className="space-y-6">{children}</div>;
-    }
-
     return <div className="space-y-6">{formPanel}</div>;
 }
