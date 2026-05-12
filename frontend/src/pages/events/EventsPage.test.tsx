@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
@@ -606,7 +606,7 @@ describe('EventsPage', () => {
             expect(checkbox).toBeChecked();
         });
 
-        it('passes eventTypeIds from URL as repeated params to filter bar value', () => {
+        it('reflects eventTypeId from URL by pressing the matching pill', () => {
             vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
                 if (url === '/api/event-types') {
                     return {
@@ -620,11 +620,10 @@ describe('EventsPage', () => {
                 }
                 return {data: null, error: null} as any;
             });
-            renderPage(createMockPageData(null), '/events?eventTypeId=et-A&eventTypeId=et-B');
-            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
-            const selectedValues = Array.from(select.selectedOptions).map(o => o.value);
-            expect(selectedValues).toContain('et-A');
-            expect(selectedValues).toContain('et-B');
+            renderPage(createMockPageData(null), '/events?eventTypeId=et-A');
+            const group = screen.getByRole('group', {name: labels.eventsFilter.eventTypeFilter});
+            const klubBtn = within(group).getByRole('button', {name: 'Klub'});
+            expect(klubBtn).toHaveAttribute('aria-pressed', 'true');
         });
     });
 
@@ -727,9 +726,12 @@ describe('EventsPage', () => {
         it('shows no badge when event has no eventTypeId', () => {
             const eventTypes = [{id: 'type-abc', name: 'Trénink', color: '#00FF00', sortOrder: 1}];
             renderWithEventsAndTypes([buildEventWithType(null)], eventTypes);
-            // The name may appear in the event type filter dropdown as an <option>, but not as a badge span
+            // The name may appear in the event type filter as a pill button, but not as a badge span
             const matches = screen.queryAllByText('Trénink');
-            const badge = matches.find((el) => el.tagName.toLowerCase() !== 'option');
+            const badge = matches.find((el) => {
+                const tag = el.tagName.toLowerCase();
+                return tag !== 'option' && tag !== 'button';
+            });
             expect(badge).not.toBeDefined();
         });
 

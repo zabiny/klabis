@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { EventsFilterBar, type EventsFilterBarProps, type EventsFilterValue } from './EventsFilterBar';
-import { labels } from '../../localization';
-import type { EventTypeCatalogItem } from '../../hooks/useEventTypes';
+import {MemoryRouter} from 'react-router-dom';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {EventsFilterBar, type EventsFilterBarProps, type EventsFilterValue} from './EventsFilterBar';
+import {labels} from '../../localization';
+import type {EventTypeCatalogItem} from '../../hooks/useEventTypes';
 
 const mockEventTypes: EventTypeCatalogItem[] = [
     { id: 'et-1', name: 'Klub', sortOrder: 1 },
@@ -147,59 +147,74 @@ describe('EventsFilterBar', () => {
         });
     });
 
-    describe('"Typ akce" multi-select', () => {
-        it('renders event type filter with label', () => {
+    describe('"Typ akce" pill group', () => {
+        it('renders event type filter group with label', () => {
             renderFilterBar({ eventTypes: mockEventTypes });
             expect(
-                screen.getByLabelText(labels.eventsFilter.eventTypeFilter),
+                screen.getByRole('group', { name: labels.eventsFilter.eventTypeFilter }),
             ).toBeInTheDocument();
         });
 
-        it('renders options for each event type plus placeholder', () => {
+        it('renders a pill for each event type plus "Vše"', () => {
             renderFilterBar({ eventTypes: mockEventTypes });
-            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter);
-            const options = Array.from((select as HTMLSelectElement).options).map(o => o.text);
-            expect(options).toContain(labels.eventsFilter.eventTypeSelectPlaceholder);
-            expect(options).toContain('Klub');
-            expect(options).toContain('Oblastní');
+            const group = screen.getByRole('group', { name: labels.eventsFilter.eventTypeFilter });
+            expect(
+                within(group).getByRole('button', { name: labels.eventsFilter.eventTypeAll }),
+            ).toBeInTheDocument();
+            expect(group).toHaveTextContent('Klub');
+            expect(group).toHaveTextContent('Oblastní');
         });
 
         it('does not render event type filter when eventTypes is empty', () => {
             renderFilterBar({ eventTypes: [] });
             expect(
-                screen.queryByLabelText(labels.eventsFilter.eventTypeFilter),
+                screen.queryByRole('group', { name: labels.eventsFilter.eventTypeFilter }),
             ).not.toBeInTheDocument();
         });
 
         it('does not render event type filter when eventTypes is undefined', () => {
             renderFilterBar({ eventTypes: undefined });
             expect(
-                screen.queryByLabelText(labels.eventsFilter.eventTypeFilter),
+                screen.queryByRole('group', { name: labels.eventsFilter.eventTypeFilter }),
             ).not.toBeInTheDocument();
         });
 
-        it('reflects selected eventTypeIds in the select value', () => {
+        it('marks "Vše" as active when no event type is selected', () => {
+            renderFilterBar({ eventTypes: mockEventTypes });
+            const group = screen.getByRole('group', { name: labels.eventsFilter.eventTypeFilter });
+            const allBtn = within(group).getByRole('button', { name: labels.eventsFilter.eventTypeAll });
+            expect(allBtn).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('reflects selected eventTypeIds by pressing matching pill', () => {
             renderFilterBar({
                 eventTypes: mockEventTypes,
                 value: { ...defaultValue, eventTypeIds: ['et-1'] },
             });
-            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
-            const selectedValues = Array.from(select.selectedOptions).map(o => o.value);
-            expect(selectedValues).toContain('et-1');
+            const klubBtn = screen.getByRole('button', { name: 'Klub' });
+            expect(klubBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('calls onChange with updated eventTypeIds when an option is selected', async () => {
+        it('calls onChange with the selected eventTypeId when a pill is clicked', async () => {
             const onChange = vi.fn();
             renderFilterBar({ eventTypes: mockEventTypes, onChange });
-            const select = screen.getByLabelText(labels.eventsFilter.eventTypeFilter) as HTMLSelectElement;
-            await act(async () => {
-                Array.from(select.options).forEach((opt) => {
-                    opt.selected = opt.value === 'et-1';
-                });
-                fireEvent.change(select);
-            });
+            await userEvent.click(screen.getByRole('button', { name: 'Klub' }));
             expect(onChange).toHaveBeenCalledWith(
                 expect.objectContaining({ eventTypeIds: ['et-1'] }),
+            );
+        });
+
+        it('calls onChange with empty eventTypeIds when "Vše" is clicked', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({
+                eventTypes: mockEventTypes,
+                value: { ...defaultValue, eventTypeIds: ['et-1'] },
+                onChange,
+            });
+            const group = screen.getByRole('group', { name: labels.eventsFilter.eventTypeFilter });
+            await userEvent.click(within(group).getByRole('button', { name: labels.eventsFilter.eventTypeAll }));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ eventTypeIds: [] }),
             );
         });
     });

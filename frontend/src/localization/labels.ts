@@ -361,6 +361,7 @@ export const labels = {
         emptyState: 'Žádné akce neodpovídají zadaným filtrům.',
         eventTypeSelectPlaceholder: '— bez filtru —',
         eventTypeFilter: 'Typ akce',
+        eventTypeAll: 'Vše',
     },
 
     membersFilter: {
