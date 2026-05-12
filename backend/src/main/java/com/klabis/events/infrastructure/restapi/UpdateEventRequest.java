@@ -39,7 +39,7 @@ record UpdateEventRequest(
 
         PatchField<EventTypeId> eventTypeId,
 
-        @Size(min = 1, max = 3, message = "Between 1 and 3 deadlines are allowed")
+        @Size(max = 3, message = "At most 3 deadlines are allowed")
         PatchField<List<LocalDate>> deadlines,
 
         PatchField<List<String>> categories

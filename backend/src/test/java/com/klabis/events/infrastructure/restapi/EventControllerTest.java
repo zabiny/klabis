@@ -1050,7 +1050,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("updateEvent HAL-Forms template should have deadlines property with multi=true, min=1, max=3, type=date")
+        @DisplayName("updateEvent HAL-Forms template should have deadlines property with multi=true, max=3, type=date (deadlines are optional)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void updateEventTemplateShouldHaveDeadlinesPropertyMetadata() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -1067,7 +1067,6 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')]").exists())
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].type").value("date"))
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].multi").value(true))
-                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].min").value(1))
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].max").value(3));
         }
     }
