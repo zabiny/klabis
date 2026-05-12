@@ -3,6 +3,7 @@ import {Modal} from '../UI/Modal';
 import {Button} from '../UI/Button';
 import {Spinner} from '../UI/Spinner';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {labels} from '../../localization';
 
 interface BulkSyncResult {
@@ -28,11 +29,17 @@ export const BulkSyncOrisModal = ({isOpen, onClose, syncUrl, onSyncComplete}: Bu
     const {mutate, reset, isPending, data, isSuccess} = useAuthorizedMutation({
         method: 'POST',
     });
+    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     useEffect(() => {
         if (isOpen && syncUrl) {
             reset();
-            mutate({url: syncUrl}, {onSuccess: onSyncComplete});
+            mutate({url: syncUrl}, {
+                onSuccess: async () => {
+                    await invalidateAllCaches();
+                    onSyncComplete();
+                },
+            });
         }
     // syncUrl and onSyncComplete are stable for a given modal open — intentionally excluded
     // eslint-disable-next-line react-hooks/exhaustive-deps
