@@ -2,6 +2,33 @@
  * Utility functions for HAL Forms handling
  */
 
+import type {HalFormsProperty, HalFormsTemplate} from '../api';
+
+export function enrichTemplateWithReadOnlyFields(
+    template: HalFormsTemplate,
+    resourceData: Record<string, unknown>,
+    fieldTypeOverrides?: Record<string, string>
+): HalFormsTemplate {
+    const templateFieldNames = new Set(template.properties.map(p => p.name));
+
+    const readOnlyProps: HalFormsProperty[] = Object.keys(resourceData)
+        .filter(key => !templateFieldNames.has(key) && !key.startsWith('_'))
+        .filter(key => {
+            const value = resourceData[key];
+            return value === null || value === undefined || typeof value !== 'object';
+        })
+        .map(key => ({
+            name: key,
+            type: fieldTypeOverrides?.[key] ?? 'text',
+            readOnly: true,
+        }));
+
+    return {
+        ...template,
+        properties: [...template.properties, ...readOnlyProps],
+    };
+}
+
 /**
  * Normalize an API path by removing /api prefix if present
  * Backend HAL links don't include /api prefix, but frontend needs to add it when making requests

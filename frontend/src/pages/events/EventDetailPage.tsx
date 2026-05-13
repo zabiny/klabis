@@ -11,8 +11,9 @@ import {HalSubresourceProvider, useHalRoute} from '../../contexts/HalRouteContex
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
-import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
+import {enrichTemplateWithReadOnlyFields} from '../../utils/halFormsUtils.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
@@ -57,30 +58,6 @@ const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warnin
     FINISHED: 'info',
     CANCELLED: 'error',
 };
-
-function enrichTemplateWithReadOnlyFields(
-    template: HalFormsTemplate,
-    resourceData: Record<string, unknown>
-): HalFormsTemplate {
-    const templateFieldNames = new Set(template.properties.map(p => p.name));
-
-    const readOnlyProps: HalFormsProperty[] = Object.keys(resourceData)
-        .filter(key => !templateFieldNames.has(key) && !key.startsWith('_'))
-        .filter(key => {
-            const value = resourceData[key];
-            return value === null || value === undefined || typeof value !== 'object';
-        })
-        .map(key => ({
-            name: key,
-            type: 'text',
-            readOnly: true,
-        }));
-
-    return {
-        ...template,
-        properties: [...template.properties, ...readOnlyProps],
-    };
-}
 
 const CoordinatorDisplay = (): ReactElement => {
     const {resourceData, navigateToResource} = useHalRoute();

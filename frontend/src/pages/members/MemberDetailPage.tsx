@@ -9,7 +9,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
-import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
+import type {HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Check, Dumbbell, Heart, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
@@ -17,6 +17,7 @@ import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditi
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {FetchError} from "../../api/authorizedFetch.ts";
+import {enrichTemplateWithReadOnlyFields} from "../../utils/halFormsUtils.ts";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
@@ -44,30 +45,6 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
 const MEMBER_FIELD_TYPES: Record<string, string> = {
     gender: 'Gender',
 };
-
-function enrichTemplateWithReadOnlyFields(
-    template: HalFormsTemplate,
-    resourceData: Record<string, unknown>
-): HalFormsTemplate {
-    const templateFieldNames = new Set(template.properties.map(p => p.name));
-
-    const readOnlyProps: HalFormsProperty[] = Object.keys(resourceData)
-        .filter(key => !templateFieldNames.has(key) && !key.startsWith('_'))
-        .filter(key => {
-            const value = resourceData[key];
-            return value === null || value === undefined || typeof value !== 'object';
-        })
-        .map(key => ({
-            name: key,
-            type: MEMBER_FIELD_TYPES[key] ?? 'text',
-            readOnly: true,
-        }));
-
-    return {
-        ...template,
-        properties: [...template.properties, ...readOnlyProps],
-    };
-}
 
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
@@ -117,7 +94,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
     const enrichedTemplate = useMemo(() => {
         if (!isEditing || !template) return null;
-        return enrichTemplateWithReadOnlyFields(template, resourceData);
+        return enrichTemplateWithReadOnlyFields(template, resourceData, MEMBER_FIELD_TYPES);
     }, [isEditing, template, resourceData]);
 
     const enrichedFieldNames = useMemo(() =>
