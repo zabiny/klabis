@@ -1,8 +1,9 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
+import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResourceLinks} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -165,95 +166,65 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
             </div>
 
             {addMemberTemplate && addMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setAddMemberModal(false)}
+                <HalFormModal
                     title={labels.templates.addTrainingGroupMember}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={addMemberTemplate as HalFormsTemplate}
-                        templateName="addTrainingGroupMember"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => { setAddMemberModal(false); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                        excludeMemberIds={memberIds}
-                    />
-                </Modal>
+                    template={addMemberTemplate as HalFormsTemplate}
+                    templateName="addTrainingGroupMember"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => { setAddMemberModal(false); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                    excludeMemberIds={memberIds}
+                />
             )}
 
             {removeMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveMemberModal(null)}
+                <HalFormModal
                     title={removeMemberModal.template.title ?? labels.templates.removeTrainingGroupMember}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeMemberModal.template}
-                        templateName={removeMemberModal.templateName}
-                        resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                        pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self!))}
-                        onClose={() => { setRemoveMemberModal(null); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeMemberModal.template}
+                    templateName={removeMemberModal.templateName}
+                    resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
+                    pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self!))}
+                    onClose={() => { setRemoveMemberModal(null); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {addTrainerTemplate && addTrainerModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setAddTrainerModal(false)}
+                <HalFormModal
                     title={labels.templates.addTrainer}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={addTrainerTemplate as HalFormsTemplate}
-                        templateName="addTrainer"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => { setAddTrainerModal(false); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                        excludeMemberIds={trainerIds}
-                    />
-                </Modal>
+                    template={addTrainerTemplate as HalFormsTemplate}
+                    templateName="addTrainer"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => { setAddTrainerModal(false); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                    excludeMemberIds={trainerIds}
+                />
             )}
 
             {removeTrainerModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveTrainerModal(null)}
+                <HalFormModal
                     title={labels.templates.removeTrainer}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeTrainerModal.template}
-                        templateName="removeTrainer"
-                        resourceData={{}}
-                        pathname={removeTrainerModal.trainerSelfHref ? extractNavigationPath(removeTrainerModal.trainerSelfHref) : route.pathname}
-                        onClose={() => { setRemoveTrainerModal(null); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeTrainerModal.template}
+                    templateName="removeTrainer"
+                    resourceData={{}}
+                    pathname={removeTrainerModal.trainerSelfHref ? extractNavigationPath(removeTrainerModal.trainerSelfHref) : route.pathname}
+                    onClose={() => { setRemoveTrainerModal(null); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {deleteTemplate && deleteModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setDeleteModal(false)}
+                <HalFormModal
                     title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteTrainingGroup}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={deleteTemplate as HalFormsTemplate}
-                        templateName="deleteTrainingGroup"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setDeleteModal(false)}
-                        onSubmitSuccess={() => navigate('/training-groups')}
-                    />
-                </Modal>
+                    template={deleteTemplate as HalFormsTemplate}
+                    templateName="deleteTrainingGroup"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setDeleteModal(false)}
+                    onSubmitSuccess={() => navigate('/training-groups')}
+                />
             )}
         </div>
     );

@@ -2,7 +2,7 @@ import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
-import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
+import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
@@ -186,76 +186,52 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
             )}
 
             {addMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={closeAddMember}
+                <HalFormModal
                     title={addMemberModal.role === 'parent' ? labels.templates.addFamilyGroupParent : labels.templates.addFamilyGroupChild}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={addMemberModal.template}
-                        templateName={addMemberModal.role === 'parent' ? 'addFamilyGroupParent' : 'addFamilyGroupChild'}
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => { closeAddMember(); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                        excludeMemberIds={allCurrentMemberIds}
-                    />
-                </Modal>
+                    template={addMemberModal.template}
+                    templateName={addMemberModal.role === 'parent' ? 'addFamilyGroupParent' : 'addFamilyGroupChild'}
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => { closeAddMember(); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                    excludeMemberIds={allCurrentMemberIds}
+                />
             )}
 
             {removeParentModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveParentModal(null)}
+                <HalFormModal
                     title={labels.templates.removeFamilyGroupParent}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeParentModal.template}
-                        templateName="removeFamilyGroupParent"
-                        resourceData={{}}
-                        pathname={removeParentModal.parentSelfHref ? extractNavigationPath(removeParentModal.parentSelfHref) : route.pathname}
-                        onClose={() => { setRemoveParentModal(null); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeParentModal.template}
+                    templateName="removeFamilyGroupParent"
+                    resourceData={{}}
+                    pathname={removeParentModal.parentSelfHref ? extractNavigationPath(removeParentModal.parentSelfHref) : route.pathname}
+                    onClose={() => { setRemoveParentModal(null); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {removeChildModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveChildModal(null)}
+                <HalFormModal
                     title={labels.templates.removeFamilyGroupChild}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeChildModal.template}
-                        templateName="removeFamilyGroupChild"
-                        resourceData={{}}
-                        pathname={extractNavigationPath(removeChildModal.childSelfHref)}
-                        onClose={() => { setRemoveChildModal(null); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeChildModal.template}
+                    templateName="removeFamilyGroupChild"
+                    resourceData={{}}
+                    pathname={extractNavigationPath(removeChildModal.childSelfHref)}
+                    onClose={() => { setRemoveChildModal(null); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {deleteTemplate && deleteModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setDeleteModal(false)}
+                <HalFormModal
                     title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteFamilyGroup}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={deleteTemplate as HalFormsTemplate}
-                        templateName="deleteFamilyGroup"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setDeleteModal(false)}
-                        onSubmitSuccess={() => navigate('/family-groups')}
-                    />
-                </Modal>
+                    template={deleteTemplate as HalFormsTemplate}
+                    templateName="deleteFamilyGroup"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setDeleteModal(false)}
+                    onSubmitSuccess={() => navigate('/family-groups')}
+                />
             )}
         </div>
     );

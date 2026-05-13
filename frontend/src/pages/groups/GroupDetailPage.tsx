@@ -1,8 +1,9 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
+import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
@@ -248,137 +249,95 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
             </div>
 
             {addMemberTemplate && addMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setAddMemberModal(false)}
+                <HalFormModal
                     title={labels.templates.addGroupMember}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={addMemberTemplate}
-                        templateName="addGroupMember"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setAddMemberModal(false)}
-                        successMessage={labels.ui.savedSuccessfully}
-                        excludeMemberIds={currentMemberIds}
-                    />
-                </Modal>
+                    template={addMemberTemplate}
+                    templateName="addGroupMember"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setAddMemberModal(false)}
+                    successMessage={labels.ui.savedSuccessfully}
+                    excludeMemberIds={currentMemberIds}
+                />
             )}
 
             {inviteMemberTemplate && inviteMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setInviteMemberModal(false)}
+                <HalFormModal
                     title={labels.templates.inviteMember}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={inviteMemberTemplate}
-                        templateName="inviteMember"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setInviteMemberModal(false)}
-                        successMessage={labels.ui.savedSuccessfully}
-                        excludeMemberIds={currentMemberIds}
-                    />
-                </Modal>
+                    template={inviteMemberTemplate}
+                    templateName="inviteMember"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setInviteMemberModal(false)}
+                    successMessage={labels.ui.savedSuccessfully}
+                    excludeMemberIds={currentMemberIds}
+                />
             )}
 
             {removeMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveMemberModal(null)}
+                <HalFormModal
                     title={removeMemberModal.template.title ?? labels.templates.removeGroupMember}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeMemberModal.template}
-                        templateName={removeMemberModal.templateName}
-                        resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                        pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self))}
-                        onClose={() => setRemoveMemberModal(null)}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeMemberModal.template}
+                    templateName={removeMemberModal.templateName}
+                    resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
+                    pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self))}
+                    onClose={() => setRemoveMemberModal(null)}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {addOwnerTemplate && addOwnerModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setAddOwnerModal(false)}
+                <HalFormModal
                     title={labels.templates.addGroupOwner}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={addOwnerTemplate}
-                        templateName="addGroupOwner"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                        includeOnlyMemberIds={currentMemberIds}
-                    />
-                </Modal>
+                    template={addOwnerTemplate}
+                    templateName="addGroupOwner"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                    includeOnlyMemberIds={currentMemberIds}
+                />
             )}
 
             {removeOwnerModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setRemoveOwnerModal(null)}
+                <HalFormModal
                     title={labels.templates.removeGroupOwner}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={removeOwnerModal.template}
-                        templateName="removeGroupOwner"
-                        resourceData={{}}
-                        pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
-                        onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
-                        successMessage={labels.ui.savedSuccessfully}
-                    />
-                </Modal>
+                    template={removeOwnerModal.template}
+                    templateName="removeGroupOwner"
+                    resourceData={{}}
+                    pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
+                    onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
+                    successMessage={labels.ui.savedSuccessfully}
+                />
             )}
 
             {deleteTemplate && deleteModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setDeleteModal(false)}
+                <HalFormModal
                     title={deleteTemplate.title ?? labels.templates.deleteGroup}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={deleteTemplate}
-                        templateName="deleteGroup"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setDeleteModal(false)}
-                        onSubmitSuccess={() => navigate('/groups')}
-                    />
-                </Modal>
+                    template={deleteTemplate}
+                    templateName="deleteGroup"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setDeleteModal(false)}
+                    onSubmitSuccess={() => navigate('/groups')}
+                />
             )}
 
             {cancelInvitationModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setCancelInvitationModal(null)}
+                <HalFormModal
                     title={cancelInvitationModal.template.title ?? labels.templates.cancelInvitation}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={withReasonProperty(cancelInvitationModal.template)}
-                        templateName="cancelInvitation"
-                        resourceData={cancelInvitationModal.invitation as unknown as Record<string, unknown>}
-                        pathname={extractNavigationPath(toHref(cancelInvitationModal.invitation._links.self ?? {href: ''}))}
-                        onClose={() => setCancelInvitationModal(null)}
-                        onSubmitSuccess={() => {
-                            setCancelInvitationModal(null);
-                            void route.refetch();
-                        }}
-                        successMessage={labels.ui.savedSuccessfully}
-                        navigateOnSuccess={false}
-                    />
-                </Modal>
+                    template={withReasonProperty(cancelInvitationModal.template)}
+                    templateName="cancelInvitation"
+                    resourceData={cancelInvitationModal.invitation as unknown as Record<string, unknown>}
+                    pathname={extractNavigationPath(toHref(cancelInvitationModal.invitation._links.self ?? {href: ''}))}
+                    onClose={() => setCancelInvitationModal(null)}
+                    onSubmitSuccess={() => {
+                        setCancelInvitationModal(null);
+                        void route.refetch();
+                    }}
+                    successMessage={labels.ui.savedSuccessfully}
+                    navigateOnSuccess={false}
+                />
             )}
         </div>
     );
