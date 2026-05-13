@@ -37,8 +37,18 @@ vi.mock('../components/Icons', () => ({
     LogoutIcon: () => <div data-testid="logout-icon">Logout Icon</div>,
 }))
 
-const DESKTOP_WIDTH = 768
-const MOBILE_WIDTH = 767
+const mockMatchMedia = (isLargeScreen: boolean) => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(min-width: 768px)' ? isLargeScreen : false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+    })) as any
+}
 
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContext2Module.useAuth)
@@ -119,8 +129,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Desktop sidebar', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(true)
         })
 
         it('should render sidebar on large screens', async () => {
@@ -157,8 +166,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Mobile bottom navigation', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: MOBILE_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(false)
         })
 
         it('should render bottom navigation on small screens', async () => {
@@ -195,8 +203,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Sidebar menu items (desktop)', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(true)
         })
 
         it('should render menu items from useRootNavigation', async () => {
@@ -248,8 +255,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Header and user info', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(true)
         })
 
         it('should display user name in header', async () => {
@@ -314,8 +320,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Desktop sidebar — two-section rendering', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(true)
         })
 
         it('renders both main heading and Administrace heading when both sections are present, and groups items correctly', async () => {
@@ -407,8 +412,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Mobile bottom nav — main-only filtering', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: MOBILE_WIDTH})
-            window.dispatchEvent(new Event('resize'))
+            mockMatchMedia(false)
         })
 
         it('does not render admin items in the bottom nav when admin items are present', async () => {
