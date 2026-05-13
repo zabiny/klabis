@@ -105,24 +105,25 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
 
 
 // --- Read-only field display ---
+
+function formatReadOnlyValue(rawValue: unknown): string {
+    if (rawValue == null || rawValue === '') {
+        return '\u2014';
+    } else if (Array.isArray(rawValue)) {
+        return rawValue.join(', ');
+    } else if (typeof rawValue === 'object') {
+        return JSON.stringify(rawValue);
+    } else {
+        return String(rawValue);
+    }
+}
+
 const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-
-    let displayValue: string;
-    if (rawValue == null || rawValue === '') {
-        displayValue = '\u2014';
-    } else if (Array.isArray(rawValue)) {
-        displayValue = rawValue.join(', ');
-    } else if (typeof rawValue === 'object') {
-        displayValue = JSON.stringify(rawValue);
-    } else {
-        displayValue = String(rawValue);
-    }
-
     return (
         <FieldWrapper label={prop.prompt || prop.name}>
-            <span className="py-2.5 text-text-primary">{displayValue}</span>
+            <span className="py-2.5 text-text-primary">{formatReadOnlyValue(rawValue)}</span>
         </FieldWrapper>
     );
 };
@@ -130,19 +131,7 @@ const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
 const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-
-    let displayValue: string;
-    if (rawValue == null || rawValue === '') {
-        displayValue = '\u2014';
-    } else if (Array.isArray(rawValue)) {
-        displayValue = rawValue.join(', ');
-    } else if (typeof rawValue === 'object') {
-        displayValue = JSON.stringify(rawValue);
-    } else {
-        displayValue = String(rawValue);
-    }
-
-    return <span className="text-text-primary">{displayValue}</span>;
+    return <span className="text-text-primary">{formatReadOnlyValue(rawValue)}</span>;
 };
 
 // --- Render funkce pro pole ---
@@ -215,6 +204,130 @@ const HalFormsFormContext = React.createContext<HalFormsFormContextType>({
     renderLabel: () => undefined,
 });
 
+// --- Inner form content rendered inside Formik context ---
+interface HalFormsFormContentProps {
+    template: HalFormsTemplate,
+    onCancel?: () => void,
+    submitButtonLabel: string,
+    submitIcon?: ReactNode,
+    fieldsFactory: HalFormFieldFactory,
+    externalIsSubmitting: boolean,
+    renderForm?: RenderFormCallback,
+    children?: ReactNode,
+}
+
+const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
+    template,
+    onCancel,
+    submitButtonLabel,
+    submitIcon,
+    fieldsFactory,
+    externalIsSubmitting,
+    renderForm,
+    children,
+}) => {
+    const {isSubmitting: formikIsSubmitting, errors, touched} = useFormikContext<Record<string, unknown>>();
+    const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
+
+    const renderPseudoField = (fieldName: string): ReactElement | null => {
+        if (fieldName === "submit") {
+            return <Button
+                type="submit"
+                disabled={isFormProcessing}
+                variant="primary"
+                size="md"
+                loading={isFormProcessing}
+                startIcon={isFormProcessing ? <Spinner size="sm"/> : submitIcon}
+            >
+                {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
+            </Button>;
+        }
+        if (fieldName === "cancel") {
+            return <Button
+                type="button"
+                disabled={isFormProcessing || !onCancel}
+                variant="secondary"
+                size="md"
+                onClick={() => onCancel && onCancel()}
+            >
+                {UI_MESSAGES.CANCEL}
+            </Button>;
+        }
+        return null;
+    };
+
+    const createFormHelpers = (): FormRenderHelpers => {
+        const renderFieldCallback = (fieldName: string): ReactElement => {
+            const pseudo = renderPseudoField(fieldName);
+            if (pseudo) return pseudo;
+            const prop = template.properties.find(p => p.name === fieldName);
+            if (!prop) {
+                return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
+            }
+            return renderFieldInternal(prop, errors, touched, fieldsFactory) as ReactElement;
+        };
+
+        const renderInputCallback = (fieldName: string): ReactElement => {
+            const pseudo = renderPseudoField(fieldName);
+            if (pseudo) return pseudo;
+            const prop = template.properties.find(p => p.name === fieldName);
+            if (!prop) {
+                return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
+            }
+            return renderFieldInternal(prop, errors, touched, fieldsFactory, 'input') as ReactElement;
+        };
+
+        const renderLabelCallback = (fieldName: string): string | undefined => {
+            const prop = template.properties.find(p => p.name === fieldName);
+            return prop?.prompt || prop?.name;
+        };
+
+        return {
+            renderField: renderFieldCallback,
+            renderInput: renderInputCallback,
+            renderLabel: renderLabelCallback,
+        };
+    };
+
+    const contextValue: HalFormsFormContextType = useMemo(
+        () => createFormHelpers(),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [template, errors, touched, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
+    );
+
+    let formContent: ReactElement;
+    if (children) {
+        formContent = <HalFormsFormContext value={contextValue}>
+            {children}
+        </HalFormsFormContext>;
+    } else if (renderForm) {
+        formContent = renderForm(createFormHelpers());
+    } else {
+        const helpers = createFormHelpers();
+        formContent = <>
+            {(template.title ? <h2 className="mb-6">{template.title}</h2> : <></>)}
+
+            {template.properties.map((prop) => (
+                <div key={prop.name}
+                     className={`transition-all duration-200 ${isFormProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {renderFieldInternal(prop, errors, touched, fieldsFactory)}
+                </div>
+            ))}
+
+            <div className="flex gap-3 mt-6">
+                {helpers.renderField('submit')}
+                {onCancel && helpers.renderField('cancel')}
+            </div>
+        </>;
+    }
+
+    return (
+        <Form className="space-y-4">
+            {formContent}
+        </Form>
+    );
+};
+
 // --- Hlavní komponenta ---
 const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 data,
@@ -255,105 +368,17 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                     setSubmitting(false)
                 }
             }}>
-            {({isSubmitting: formikIsSubmitting, errors, touched}) => {
-                const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
-
-                const renderPseudoField = (fieldName: string): ReactElement | null => {
-                    if (fieldName === "submit") {
-                        return <Button
-                            type="submit"
-                            disabled={isFormProcessing}
-                            variant="primary"
-                            size="md"
-                            loading={isFormProcessing}
-                            startIcon={isFormProcessing ? <Spinner size="sm"/> : submitIcon}
-                        >
-                            {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
-                        </Button>;
-                    }
-                    if (fieldName === "cancel") {
-                        return <Button
-                            type="button"
-                            disabled={isFormProcessing || !onCancel}
-                            variant="secondary"
-                            size="md"
-                            onClick={() => onCancel && onCancel()}
-                        >
-                            {UI_MESSAGES.CANCEL}
-                        </Button>;
-                    }
-                    return null;
-                };
-
-                const createFormHelpers = (): FormRenderHelpers => {
-                    const renderFieldCallback = (fieldName: string): ReactElement => {
-                        const pseudo = renderPseudoField(fieldName);
-                        if (pseudo) return pseudo;
-                        const prop = template.properties.find(p => p.name === fieldName);
-                        if (!prop) {
-                            return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
-                        }
-                        return renderFieldInternal(prop, errors, touched, fieldsFactory) as ReactElement;
-                    };
-
-                    const renderInputCallback = (fieldName: string): ReactElement => {
-                        const pseudo = renderPseudoField(fieldName);
-                        if (pseudo) return pseudo;
-                        const prop = template.properties.find(p => p.name === fieldName);
-                        if (!prop) {
-                            return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
-                        }
-                        return renderFieldInternal(prop, errors, touched, fieldsFactory, 'input') as ReactElement;
-                    };
-
-                    const renderLabelCallback = (fieldName: string): string | undefined => {
-                        const prop = template.properties.find(p => p.name === fieldName);
-                        return prop?.prompt || prop?.name;
-                    };
-
-                    return {
-                        renderField: renderFieldCallback,
-                        renderInput: renderInputCallback,
-                        renderLabel: renderLabelCallback,
-                    };
-                };
-
-                let formContent: ReactElement;
-                if (children) {
-                    const contextValue: HalFormsFormContextType = useMemo(
-                        () => createFormHelpers(),
-                        [template, errors, touched, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
-                    );
-                    formContent = <HalFormsFormContext value={contextValue}>
-                        {children}
-                    </HalFormsFormContext>;
-                } else if (renderForm) {
-                    formContent = renderForm(createFormHelpers());
-                } else {
-                    const helpers = createFormHelpers();
-                    formContent = <>
-                        {(template.title ? <h2 className="mb-6">{template.title}</h2> : <></>)}
-
-                        {template.properties.map((prop) => (
-                            <div key={prop.name}
-                                 className={`transition-all duration-200 ${isFormProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
-                                {renderFieldInternal(prop, errors, touched, fieldsFactory)}
-                            </div>
-                        ))}
-
-                        <div className="flex gap-3 mt-6">
-                            {helpers.renderField('submit')}
-                            {onCancel && helpers.renderField('cancel')}
-                        </div>
-                    </>;
-                }
-
-                return (
-                    <Form className="space-y-4">
-                        {formContent}
-                    </Form>
-                );
-            }}
+            <HalFormsFormContent
+                template={template}
+                onCancel={onCancel}
+                submitButtonLabel={submitButtonLabel}
+                submitIcon={submitIcon}
+                fieldsFactory={fieldsFactory}
+                externalIsSubmitting={externalIsSubmitting}
+                renderForm={renderForm}
+            >
+                {children}
+            </HalFormsFormContent>
         </Formik>
     );
 };
