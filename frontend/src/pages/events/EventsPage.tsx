@@ -1,5 +1,4 @@
-import {type ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {useSearchParams} from "react-router-dom";
+import {type ReactElement, useState} from "react";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {EntityModel, HalFormsTemplate, Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
@@ -23,19 +22,12 @@ import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
-import {EventsFilterBar, type EventsFilterValue} from "../../components/events/EventsFilterBar.tsx";
+import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
 import {useAuth} from "../../contexts/AuthContext2.tsx";
 import {useEventTypes} from "../../hooks/useEventTypes.ts";
-import {
-    DEFAULT_TIME_WINDOW,
-    getDefaultSortForTimeWindow,
-    getTimeWindowFromParams,
-    getTodayIso,
-    REGISTERED_BY_ME,
-    type TimeWindow,
-    timeWindowToDateParams,
-} from "../../components/events/eventsFilterUtils.ts";
+import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
+import {useEventsFilterState} from "./useEventsFilterState.ts";
 
 type EventListData = EntityModel<{
     id: string,
@@ -109,7 +101,7 @@ export const EventsPage = (): ReactElement => {
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
     const [newRegistrationState, setNewRegistrationState] = useState<{url: string; event: EventListData} | null>(null);
-    const [searchParams, setSearchParams] = useSearchParams();
+    const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
 
     const {data: newRegistrationData} = useAuthorizedQuery<Record<string, unknown>>(
         newRegistrationState?.url ?? '',
@@ -163,74 +155,6 @@ export const EventsPage = (): ReactElement => {
             </div>
         );
     };
-
-    // Read filter state from URL (source of truth)
-    const urlDateFrom = searchParams.get('dateFrom');
-    const urlDateTo = searchParams.get('dateTo');
-    const urlQ = searchParams.get('q') ?? '';
-    const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
-    const urlEventTypeIds = searchParams.getAll('eventTypeId');
-
-    const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
-
-    // On first mount: if no date params in URL, apply the Budoucí default
-    const defaultAppliedRef = useRef(false);
-    useEffect(() => {
-        if (defaultAppliedRef.current) return;
-        defaultAppliedRef.current = true;
-
-        // Only apply default if neither dateFrom nor dateTo is present in URL
-        if (!urlDateFrom && !urlDateTo) {
-            const today = getTodayIso();
-            const {dateFrom} = timeWindowToDateParams(DEFAULT_TIME_WINDOW, today);
-            setSearchParams(
-                (prev) => {
-                    const next = new URLSearchParams(prev);
-                    if (dateFrom) next.set('dateFrom', dateFrom);
-                    return next;
-                },
-                {replace: true},
-            );
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const filterValue: EventsFilterValue = useMemo(() => ({
-        q: urlQ,
-        timeWindow,
-        registeredByMe: urlRegisteredByMe,
-        eventTypeIds: urlEventTypeIds,
-    // urlEventTypeIds is a new array on every render — compare its join to avoid infinite loops
-     
-    }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleFilterChange = useCallback((next: EventsFilterValue) => {
-        const today = getTodayIso();
-        const {dateFrom, dateTo} = timeWindowToDateParams(next.timeWindow, today);
-        setSearchParams((prev) => {
-            const params = new URLSearchParams(prev);
-            if (dateFrom) { params.set('dateFrom', dateFrom); } else { params.delete('dateFrom'); }
-            if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
-            if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
-            if (next.registeredByMe) { params.set('registeredBy', REGISTERED_BY_ME); } else { params.delete('registeredBy'); }
-            params.delete('eventTypeId');
-            next.eventTypeIds.forEach((id) => params.append('eventTypeId', id));
-            return params;
-        });
-    }, [setSearchParams]);
-
-    // Build extra params for the API call
-    const extraParams = useMemo((): Record<string, string | string[]> => {
-        const params: Record<string, string | string[]> = {};
-        if (urlDateFrom) params.dateFrom = urlDateFrom;
-        if (urlDateTo) params.dateTo = urlDateTo;
-        if (urlQ && urlQ.length >= 2) params.q = urlQ;
-        if (urlRegisteredByMe) params.registeredBy = REGISTERED_BY_ME;
-        if (urlEventTypeIds.length > 0) params.eventTypeId = urlEventTypeIds;
-        return params;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe, urlEventTypeIds.join(',')]);
-
-    const defaultSort = getDefaultSortForTimeWindow(timeWindow);
 
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">{labels.sections.events}</h1>
@@ -315,7 +239,7 @@ export const EventsPage = (): ReactElement => {
 
             {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}
             <HalEmbeddedTable<EventListData>
-                key={timeWindow}
+                key={filterValue.timeWindow}
                 collectionName={"eventSummaryDtoList"}
                 defaultOrderBy={defaultSort.by}
                 defaultOrderDirection={defaultSort.direction}
