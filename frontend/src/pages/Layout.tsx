@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
+import {useMediaQuery} from '../hooks'
 import {Alert, Button, Spinner, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
@@ -53,19 +54,10 @@ const Layout = () => {
     const navigate = useNavigate()
     const {logout, getUser, isAuthenticated} = useAuth()
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
-    const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768)
+    const isLargeScreen = useMediaQuery('(min-width: 768px)')
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
     const mainItems = menuItems.filter(item => item.section === 'main')
     const adminItems = menuItems.filter(item => item.section === 'admin')
-
-    // Track screen size changes for responsive sidebar
-    useEffect(() => {
-        const handleResize = () => {
-            setIsLargeScreen(window.innerWidth >= 768)
-        }
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
 
     useEffect(() => {
         if (isAuthenticated) {
