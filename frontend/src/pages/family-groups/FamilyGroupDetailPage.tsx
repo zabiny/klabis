@@ -1,15 +1,14 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
-import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Trash2, UserMinus, UserPlus} from 'lucide-react';
-import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
-import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
+import {Trash2, UserPlus} from 'lucide-react';
+import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
+import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
 
 interface FamilyGroupParent {
     memberId: string;
@@ -125,24 +124,13 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
                             const removeParentTpl = parent._templates?.removeFamilyGroupParent;
                             const selfHref = parent._links?.self?.href ?? '';
                             return (
-                                <DetailRow key={parent.memberId} label="">
-                                    <div className="flex items-center justify-between w-full">
-                                        <HalRouteProvider routeLink={parent._links.member}>
-                                            <MemberNameWithRegNumber/>
-                                        </HalRouteProvider>
-                                        {removeParentTpl && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600"
-                                                aria-label={labels.templates.removeFamilyGroupParent}
-                                                onClick={() => setRemoveParentModal({template: removeParentTpl, parentSelfHref: selfHref})}
-                                            >
-                                                <UserMinus className="w-4 h-4"/>
-                                            </Button>
-                                        )}
-                                    </div>
-                                </DetailRow>
+                                <MemberRowWithRemove
+                                    key={parent.memberId}
+                                    memberId={parent.memberId}
+                                    memberLink={parent._links.member}
+                                    removeAriaLabel={labels.templates.removeFamilyGroupParent}
+                                    onRemove={removeParentTpl ? () => setRemoveParentModal({template: removeParentTpl, parentSelfHref: selfHref}) : undefined}
+                                />
                             );
                         })}
                     </dl>
@@ -152,54 +140,21 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
             <div className="flex flex-col gap-4">
                 <h2 className="text-xl font-bold text-text-primary">{labels.sections.familyGroupChildren}</h2>
 
-                {children.length === 0 ? (
-                    <p className="text-sm text-text-tertiary">Skupina nemá žádné děti.</p>
-                ) : (
-                    <Card className="p-0 overflow-hidden">
-                        <table className="w-full text-sm">
-                            <thead>
-                            <tr className="border-b border-border bg-slate-50 dark:bg-zinc-800">
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.fields.memberId}
-                                </th>
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.tables.joinedAt}
-                                </th>
-                                <th className="px-4 py-3"/>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {children.map((child) => (
-                                <tr key={child.memberId}
-                                    className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                                    <td className="px-4 py-3">
-                                        <HalRouteProvider routeLink={child._links.member}>
-                                            <MemberNameWithRegNumber/>
-                                        </HalRouteProvider>
-                                    </td>
-                                    <td className="px-4 py-3 text-text-secondary">{formatDate(child.joinedAt)}</td>
-                                    <td className="px-4 py-3 text-right">
-                                        {child._templates?.removeFamilyGroupChild && child._links.self && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600"
-                                                aria-label={labels.templates.removeFamilyGroupChild}
-                                                onClick={() => setRemoveChildModal({
-                                                    template: child._templates!.removeFamilyGroupChild,
-                                                    childSelfHref: child._links.self!.href,
-                                                })}
-                                            >
-                                                <UserMinus className="w-4 h-4"/>
-                                            </Button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </Card>
-                )}
+                <GroupMembersTable
+                    emptyMessage="Skupina nemá žádné děti."
+                    members={children.map((child) => ({
+                        memberId: child.memberId,
+                        joinedAt: child.joinedAt,
+                        memberLink: child._links.member,
+                        removeAriaLabel: labels.templates.removeFamilyGroupChild,
+                        onRemove: child._templates?.removeFamilyGroupChild && child._links.self
+                            ? () => setRemoveChildModal({
+                                template: child._templates!.removeFamilyGroupChild,
+                                childSelfHref: child._links.self!.href,
+                            })
+                            : undefined,
+                    }))}
+                />
             </div>
 
             {addMemberRolePicker && (

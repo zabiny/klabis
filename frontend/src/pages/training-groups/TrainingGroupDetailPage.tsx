@@ -1,16 +1,15 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormsTemplate, HalResourceLinks} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
-import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {Pencil, Trash2, UserMinus, UserPlus} from 'lucide-react';
-import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
-import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
+import {Pencil, Trash2, UserPlus} from 'lucide-react';
+import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
+import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
 import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupTrainer} from './types.ts';
 
 interface MemberActionModalState {
@@ -126,24 +125,13 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                             const removeTrainerTpl = trainer._templates?.removeTrainer;
                             const selfHref = trainer._links?.self ? toHref(trainer._links.self) : '';
                             return trainer._links.member ? (
-                                <DetailRow key={trainer.memberId} label="">
-                                    <div className="flex items-center justify-between w-full">
-                                        <HalRouteProvider routeLink={trainer._links.member as HalResourceLinks}>
-                                            <MemberNameWithRegNumber/>
-                                        </HalRouteProvider>
-                                        {removeTrainerTpl && selfHref && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600"
-                                                aria-label={labels.templates.removeTrainer}
-                                                onClick={() => setRemoveTrainerModal({template: removeTrainerTpl, trainerSelfHref: selfHref})}
-                                            >
-                                                <UserMinus className="w-4 h-4"/>
-                                            </Button>
-                                        )}
-                                    </div>
-                                </DetailRow>
+                                <MemberRowWithRemove
+                                    key={trainer.memberId}
+                                    memberId={trainer.memberId}
+                                    memberLink={trainer._links.member as HalResourceLinks}
+                                    removeAriaLabel={labels.templates.removeTrainer}
+                                    onRemove={removeTrainerTpl && selfHref ? () => setRemoveTrainerModal({template: removeTrainerTpl, trainerSelfHref: selfHref}) : undefined}
+                                />
                             ) : null;
                         })}
                     </dl>
@@ -164,53 +152,16 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                     )}
                 </div>
 
-                {members.length === 0 ? (
-                    <p className="text-sm text-text-tertiary">Skupina nemá žádné členy.</p>
-                ) : (
-                    <Card className="p-0 overflow-hidden">
-                        <table className="w-full text-sm">
-                            <thead>
-                            <tr className="border-b border-border bg-slate-50 dark:bg-zinc-800">
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.fields.memberId}
-                                </th>
-                                <th className="text-left px-4 py-3 font-medium text-text-secondary">
-                                    {labels.tables.joinedAt}
-                                </th>
-                                <th className="px-4 py-3"/>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {members.map((member) => (
-                                <tr key={member.memberId}
-                                    className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                                    <td className="px-4 py-3">
-                                        {member._links.member && (
-                                            <HalRouteProvider routeLink={member._links.member as HalResourceLinks}>
-                                                <MemberNameWithRegNumber/>
-                                            </HalRouteProvider>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-text-secondary">{formatDate(member.joinedAt)}</td>
-                                    <td className="px-4 py-3 text-right">
-                                        {member._templates?.removeTrainingGroupMember && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600"
-                                                aria-label={labels.templates.removeTrainingGroupMember}
-                                                onClick={() => handleRemoveMember(member)}
-                                            >
-                                                <UserMinus className="w-4 h-4"/>
-                                            </Button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </Card>
-                )}
+                <GroupMembersTable
+                    emptyMessage="Skupina nemá žádné členy."
+                    members={members.map((member) => ({
+                        memberId: member.memberId,
+                        joinedAt: member.joinedAt,
+                        memberLink: member._links.member as HalResourceLinks | undefined,
+                        removeAriaLabel: labels.templates.removeTrainingGroupMember,
+                        onRemove: member._templates?.removeTrainingGroupMember ? () => handleRemoveMember(member) : undefined,
+                    }))}
+                />
             </div>
 
             {addMemberTemplate && addMemberModal && (
