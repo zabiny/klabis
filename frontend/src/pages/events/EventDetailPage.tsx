@@ -1,4 +1,4 @@
-import {type ReactElement, type ReactNode, useMemo, useState} from 'react';
+import {type ReactElement, type ReactNode, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
@@ -13,7 +13,7 @@ import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from 
 import type {EntityModel} from '../../api';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
-import {enrichTemplateWithReadOnlyFields} from '../../utils/halFormsUtils.ts';
+import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
@@ -143,7 +143,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const {getById: getEventTypeById} = useEventTypes();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
-    const [isEditing, setIsEditing] = useState(initialEditing);
     const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
 
     const event = resourceData;
@@ -152,28 +151,8 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;
 
-    const enrichedTemplate = useMemo(() => {
-        if (!isEditing || !template) return null;
-        return enrichTemplateWithReadOnlyFields(template, resourceData as Record<string, unknown>);
-    }, [isEditing, template, resourceData]);
-
-    const enrichedFieldNames = useMemo(() =>
-        enrichedTemplate
-            ? new Set(enrichedTemplate.properties.map(p => p.name))
-            : new Set<string>(),
-        [enrichedTemplate]);
-
-    const originalEditableFieldNames = useMemo(() =>
-        template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),
-        [template]);
-
-    const startEditing = () => setIsEditing(true);
-    const cancelEditing = () => setIsEditing(false);
-
-    const postprocessPayload = (payload: Record<string, unknown>): Record<string, unknown> =>
-        Object.fromEntries(
-            Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
-        );
+    const {isEditing, enrichedTemplate, enrichedFieldNames, startEditing, cancelEditing, postprocessPayload} =
+        useInlineEditing(template, resourceData as Record<string, unknown>, {initialEditing});
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>

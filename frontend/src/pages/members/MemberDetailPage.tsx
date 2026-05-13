@@ -1,4 +1,4 @@
-import {type ReactElement, type ReactNode, useMemo, useState} from "react";
+import {type ReactElement, type ReactNode, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
@@ -17,7 +17,7 @@ import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditi
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {parseSuspensionWarning409} from "./suspensionUtils.ts";
-import {enrichTemplateWithReadOnlyFields} from "../../utils/halFormsUtils.ts";
+import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
@@ -74,7 +74,6 @@ interface MemberDetailContentProps {
 }
 
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
-    const [isEditing, setIsEditing] = useState(initialEditing);
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
@@ -92,34 +91,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
 
-    const enrichedTemplate = useMemo(() => {
-        if (!isEditing || !template) return null;
-        return enrichTemplateWithReadOnlyFields(template, resourceData, MEMBER_FIELD_TYPES);
-    }, [isEditing, template, resourceData]);
-
-    const enrichedFieldNames = useMemo(() =>
-            enrichedTemplate
-                ? new Set(enrichedTemplate.properties.map(p => p.name))
-                : new Set<string>(),
-        [enrichedTemplate]);
-
-    const startEditing = () => setIsEditing(true);
-    const cancelEditing = () => {
-        if (initialEditing) {
-            navigate(-1);
-        } else {
-            setIsEditing(false);
-        }
-    };
-
-    const originalEditableFieldNames = useMemo(() =>
-            template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),
-        [template]);
-
-    const postprocessPayload = (payload: Record<string, unknown>): Record<string, unknown> =>
-        Object.fromEntries(
-            Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
-        );
+    const {isEditing, enrichedTemplate, enrichedFieldNames, startEditing, cancelEditing, postprocessPayload} =
+        useInlineEditing(template, resourceData as Record<string, unknown>, {
+            initialEditing,
+            fieldTypeOverrides: MEMBER_FIELD_TYPES,
+            onCancel: initialEditing ? () => navigate(-1) : undefined,
+        });
 
 
     const renderContent = (helpers?: FormRenderHelpers) => {
