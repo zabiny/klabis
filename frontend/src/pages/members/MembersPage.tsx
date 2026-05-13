@@ -15,7 +15,7 @@ import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {FetchError} from "../../api/authorizedFetch.ts";
+import {parseSuspensionWarning409} from "./suspensionUtils.ts";
 import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "../../components/members/MembersFilterBar.tsx";
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
@@ -85,16 +85,6 @@ export const MembersPage = (): ReactElement => {
         setActionModal({member, templateName, template});
     };
 
-    const parseSuspensionWarning409 = (error: unknown): AffectedGroup[] | null => {
-        if (!(error instanceof FetchError) || error.responseStatus !== 409) return null;
-        try {
-            const body = JSON.parse(error.responseBody ?? '{}');
-            if (Array.isArray(body.affectedGroups)) return body.affectedGroups as AffectedGroup[];
-        } catch {
-            // not a structured 409
-        }
-        return null;
-    };
 
     const openPermissionsDialog = (member: MemberSummaryData) => {
         const permissionsLink = member._links?.permissions;

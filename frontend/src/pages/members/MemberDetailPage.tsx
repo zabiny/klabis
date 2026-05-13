@@ -16,7 +16,7 @@ import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {FetchError} from "../../api/authorizedFetch.ts";
+import {parseSuspensionWarning409} from "./suspensionUtils.ts";
 import {enrichTemplateWithReadOnlyFields} from "../../utils/halFormsUtils.ts";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -121,16 +121,6 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
         );
 
-    const parseSuspensionWarning409 = (error: unknown): AffectedGroup[] | null => {
-        if (!(error instanceof FetchError) || error.responseStatus !== 409) return null;
-        try {
-            const body = JSON.parse(error.responseBody ?? '{}');
-            if (Array.isArray(body.affectedGroups)) return body.affectedGroups as AffectedGroup[];
-        } catch {
-            // not a structured 409
-        }
-        return null;
-    };
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>
