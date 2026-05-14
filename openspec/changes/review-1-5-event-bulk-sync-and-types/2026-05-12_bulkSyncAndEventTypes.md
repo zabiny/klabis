@@ -52,6 +52,12 @@ After every iteration: tests pass → commit. E2E verification (A3, B8) is optio
 
 ---
 
+### Iter 8 verification — Full suite before simplify pass (2026-05-14)
+
+Backend full suite: **2529/2530 pass** (1 pre-existing failure in `EventManagementE2ETest.shouldCreateEventWithoutLocation`, unrelated to proposal). Green state confirmed. Ready for simplify + review pass.
+
+---
+
 ### Iter 3 — B1–B3 EventType aggregate + persistence + REST CRUD (2026-05-12)
 
 Tasks B1.1–B3.3 completed. 49/49 new tests pass. Full suite 2504/2505 (1 pre-existing failure in EventManagementE2ETest unrelated to this iteration).
@@ -230,6 +236,10 @@ Task B7.4 frontend unblocked and completed. 7 new tests (4 in `EventsFilterBar`,
 
 All 5 blocking/warning review findings addressed. Backend: 2525/2526 pass (1 pre-existing failure unchanged). Frontend: 1435/1435.
 
+### Pre-simplify pass verification (2026-05-14)
+
+Frontend full test suite: **1435/1435 pass**. Green state confirmed. Ready for simplify pass.
+
 **BLOCKING #1 — Read endpoints authority loosened to EVENTS_READ**
 - `listEventTypes()` and `getEventType()` now require `EVENTS_READ` (was `EVENTS_MANAGE`). Regular members can call both endpoints — this fixes the 403s in events list badge, type filter dropdown, and event form.
 - `EventTypesRootPostprocessor` still gates the admin nav link at `EVENTS_MANAGE` via an explicit `SecurityContextHolder` authority check before calling `klabisLinkTo`. The nav link "Typy akcí" appears only for admins.
@@ -259,5 +269,29 @@ All 5 blocking/warning review findings addressed. Backend: 2525/2526 pass (1 pre
 - `frontend/src/components/events/BulkSyncOrisModal.tsx` — `reset()` before `mutate()`; `syncUrl` prop type `string | undefined`
 - `frontend/src/components/events/BulkSyncOrisModal.test.tsx` — `reset: vi.fn()` added to all mocks
 - `frontend/src/pages/events/EventsPage.tsx` — fallback URL removed
+
+---
+
+### Iter 8 — Simplify pass (2026-05-14)
+
+Reviewed all NEW/CHANGED files in the proposal scope for reuse, quality, efficiency.
+
+**Fixed (low-priority, low-risk):**
+- **EventTypeSelectField.tsx** — `disabled={prop.readOnly || isLoading || false}` had a dead `|| false` operand. Now `disabled={prop.readOnly || isLoading}`.
+- **EventController.java** — `eventTypeId.stream().map(EventTypeId::new).collect(Collectors.toList())` replaced with `.toList()` (Java 16+); removed now-unused `java.util.stream.Collectors` import.
+- **EventsPage.tsx** — `BASIC_FIELDS` / `COORDINATION_FIELDS` arrays were re-allocated on every render inside the create-form render callback. Lifted to module-scope `CREATE_FORM_BASIC_FIELDS` / `CREATE_FORM_COORDINATION_FIELDS` constants.
+
+**Verified:** `EventControllerTest` 85/85 backend pass, `EventsPage` 36/36 + `BulkSyncOrisModal` 6/6 frontend pass.
+
+**Not fixed (rationale):**
+- **`EventTypeManagementService.deleteEventType`** issues 3 reads (findById, existsEventReferencingType, findEventNamesReferencingType) before delete. Could be one query, but separate calls give clearer error messages and the path is admin-only (not hot). Acceptable.
+- **`EventType.create` / `update`** duplicate Bean Validation (`@NotBlank`, `@Size`, `@Pattern`) with domain-side `Assert.hasText` / `validateColor`. Intentional — controller validation is for API requests, domain invariants protect against direct service/persistence calls. Matches existing project pattern (e.g. `CategoryPreset`).
+- **`EventTypesRootPostprocessor`** explicit authority check is needed because the nav link itself is unconditional; the endpoint `@HasAuthority` only guards execution, not link visibility. Same pattern as other admin root postprocessors.
+- **`EventTypeJdbcRepository.findEventNamesReferencingType` / `existsEventReferencingType`** query the `events` table from within the event-types module. Strictly a leaky abstraction across sub-aggregates, but matches the existing FK relationship and is needed for the 409 error payload. Refactoring to a cross-module event/query would be over-engineering at this scope.
+- **`OrisBulkSyncService`** catches `Exception` to keep the loop tolerant of partial failures — this is the documented behaviour and matches the proposal.
+- **`EventTypeMemento.toEvent`** local `eventTypeIdObj` variable — cosmetic, leaving as is for readability.
+- **`EventType` aggregate naming sortOrder** validation duplicated in `create`/`update` — acceptable, mirrors other Klabis aggregates.
+
+No high/medium-priority issues found.
 
 ---

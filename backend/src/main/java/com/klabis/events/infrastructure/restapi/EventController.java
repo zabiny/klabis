@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -323,7 +322,7 @@ public class EventController {
         if (eventTypeId != null && !eventTypeId.isEmpty()) {
             List<EventTypeId> typeIds = eventTypeId.stream()
                     .map(EventTypeId::new)
-                    .collect(Collectors.toList());
+                    .toList();
             filter = filter.withEventTypeIds(typeIds);
         }
 

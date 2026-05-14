@@ -93,6 +93,9 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
     );
 };
 
+const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
+const CREATE_FORM_COORDINATION_FIELDS = ['eventCoordinatorId', 'eventTypeId'];
+
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const {getUser} = useAuth();
@@ -175,14 +178,12 @@ export const EventsPage = (): ReactElement => {
                     )}
                     <HalFormButton name="createEvent" modal={false} fieldsFactory={eventFormFieldsFactory}>
                         {({renderInput, renderField, hasField}: HalFormPanelRenderHelpers) => {
-                            const BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
-                            const COORDINATION_FIELDS = ['eventCoordinatorId', 'eventTypeId'];
                             const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
                             return (
                                 <div className="flex flex-col gap-8">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                         <div className="flex flex-col gap-6">
-                                            {hasFields(BASIC_FIELDS) && (
+                                            {hasFields(CREATE_FORM_BASIC_FIELDS) && (
                                                 <Section title={labels.sections.eventBasicInfo}>
                                                     {hasField('name') && <DetailRow label={labels.fields.name}>{renderInput('name')}</DetailRow>}
                                                     {hasField('eventDate') && <DetailRow label={labels.fields.eventDate}>{renderInput('eventDate')}</DetailRow>}
@@ -193,7 +194,7 @@ export const EventsPage = (): ReactElement => {
                                             )}
                                         </div>
                                         <div className="flex flex-col gap-6">
-                                            {hasFields(COORDINATION_FIELDS) && (
+                                            {hasFields(CREATE_FORM_COORDINATION_FIELDS) && (
                                                 <Section title={labels.sections.eventCoordination}>
                                                     {hasField('eventCoordinatorId') && (
                                                         <DetailRow label={labels.fields.eventCoordinatorId}>

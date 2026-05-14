@@ -27,7 +27,7 @@ export function EventTypeSelectField({prop, renderMode = 'field'}: HalFormsInput
                         value={fieldValue}
                         label={renderMode === 'field' ? (prop.prompt || labels.fields.eventTypeId) : undefined}
                         placeholder={isLoading ? labels.ui.loading : undefined}
-                        disabled={prop.readOnly || isLoading || false}
+                        disabled={prop.readOnly || isLoading}
                         required={prop.required}
                         options={options}
                         className="w-full"

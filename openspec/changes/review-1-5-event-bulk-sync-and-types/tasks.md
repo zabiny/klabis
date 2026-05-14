@@ -2,14 +2,14 @@
 
 ### A1. Backend service + endpoint
 
-- [ ] A1.1 Add `OrisBulkSyncService` (application layer in `com.klabis.events.application` or under existing ORIS sync package); method `syncAllUpcoming()` returns `BulkSyncResult(totalProcessed, successCount, failureCount, results)`
-- [ ] A1.2 Service iterates events matching `status IN (DRAFT, ACTIVE) AND eventDate >= today AND orisEventId IS NOT NULL`, delegates to existing per-event ORIS sync, catches per-event exceptions, accumulates result list
-- [ ] A1.3 Add REST endpoint `POST /api/events/sync-from-oris/all-upcoming` (or chosen path) on `EventController` (or new `OrisEventController`); guarded with `@HasAuthority(EVENTS_MANAGE)`; returns `BulkSyncResult` as JSON
-- [ ] A1.4 Add HAL+FORMS affordance `bulk-sync-oris` to events list response, exposed only to callers with EVENTS:MANAGE
-- [ ] A1.5 Integration test: 3 matching events, all sync OK → response has successCount=3, failureCount=0
-- [ ] A1.6 Integration test: 3 matching events, 1 fails (mock ORIS client to throw) → successCount=2, failureCount=1, results list contains the failed event id + error
-- [ ] A1.7 Integration test: events with status FINISHED / CANCELLED / past date / non-ORIS → not processed
-- [ ] A1.8 Run tests via test-runner
+- [x] A1.1 Add `OrisBulkSyncService` (application layer in `com.klabis.events.application` or under existing ORIS sync package); method `syncAllUpcoming()` returns `BulkSyncResult(totalProcessed, successCount, failureCount, results)`
+- [x] A1.2 Service iterates events matching `status IN (DRAFT, ACTIVE) AND eventDate >= today AND orisEventId IS NOT NULL`, delegates to existing per-event ORIS sync, catches per-event exceptions, accumulates result list
+- [x] A1.3 Add REST endpoint `POST /api/events/sync-from-oris/all-upcoming` (or chosen path) on `EventController` (or new `OrisEventController`); guarded with `@HasAuthority(EVENTS_MANAGE)`; returns `BulkSyncResult` as JSON
+- [x] A1.4 Add HAL+FORMS affordance `bulk-sync-oris` to events list response, exposed only to callers with EVENTS:MANAGE
+- [x] A1.5 Integration test: 3 matching events, all sync OK → response has successCount=3, failureCount=0
+- [x] A1.6 Integration test: 3 matching events, 1 fails (mock ORIS client to throw) → successCount=2, failureCount=1, results list contains the failed event id + error
+- [x] A1.7 Integration test: events with status FINISHED / CANCELLED / past date / non-ORIS → not processed
+- [x] A1.8 Run tests via test-runner
 
 ### A2. Frontend toolbar action + progress modal
 
