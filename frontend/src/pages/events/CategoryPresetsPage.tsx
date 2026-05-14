@@ -83,6 +83,7 @@ export const CategoryPresetsPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<CategoryPresetListItem>
                     collectionName={"categoryPresetDtoList"}
+                    tableId="category-presets"
                     defaultOrderBy={"name"}
                 >
                     <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>

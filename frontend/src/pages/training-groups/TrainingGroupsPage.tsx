@@ -37,6 +37,7 @@ export const TrainingGroupsPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<TrainingGroupSummaryItem>
                     collectionName="trainingGroupSummaryResponseList"
+                    tableId="groups.training"
                     defaultOrderBy="name"
                     onRowClick={route.navigateToResource}
                     emptyMessage="Nejste členem žádné tréninkové skupiny."

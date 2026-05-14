@@ -238,9 +238,9 @@ export const EventsPage = (): ReactElement => {
                 eventTypes={eventTypes}
             />
 
-            {/* key={timeWindow} forces a remount when the time window changes, resetting internal sort state */}
             <HalEmbeddedTable<EventListData>
                 key={filterValue.timeWindow}
+                tableId={`events.${filterValue.timeWindow}`}
                 collectionName={"eventSummaryDtoList"}
                 defaultOrderBy={defaultSort.by}
                 defaultOrderDirection={defaultSort.direction}

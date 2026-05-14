@@ -6,6 +6,7 @@ import {CardView} from './CardView'
 import type {SortDirection} from '../../api'
 import {ErrorDisplay} from '../UI'
 import {useMediaQuery} from '../../hooks/useMediaQuery'
+import {RotateCcw} from 'lucide-react'
 
 // Extract column definitions from children (TableCell components)
 const extractColumns = (children: ReactNode): ColumnDef[] => {
@@ -75,6 +76,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                                                    page,
                                                                    error,
                                                                    onSortChange,
+                                                                   onSortReset,
                                                                    onPageChange,
                                                                    onRowsPerPageChange,
                                                                    onRowClick,
@@ -190,19 +192,34 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                         className="px-4 py-3 text-left text-sm font-semibold text-text-primary"
                                     >
                                         {col.sortable ? (
-                                            <button
-                                                className="inline-flex items-center gap-2 cursor-pointer hover:text-text-secondary"
-                                                onClick={() => handleSort(col.name)}
-                                                aria-sort={currentSort?.by === col.name ? (currentSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                                                aria-label={`Sort by ${String(col.label)}${currentSort?.by === col.name ? ` (${currentSort.direction})` : ''}`}
-                                            >
-                                                {col.label}
-                                                {currentSort?.by === col.name && (
-                                                    <span className="text-xs" aria-hidden="true">
-                                                        {currentSort.direction === 'asc' ? '↑' : '↓'}
-                                                    </span>
+                                            <span className="inline-flex items-center gap-1">
+                                                <button
+                                                    className="inline-flex items-center gap-2 cursor-pointer hover:text-text-secondary"
+                                                    onClick={() => handleSort(col.name)}
+                                                    aria-sort={currentSort?.by === col.name ? (currentSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                                    aria-label={`Sort by ${String(col.label)}${currentSort?.by === col.name ? ` (${currentSort.direction})` : ''}`}
+                                                >
+                                                    {col.label}
+                                                    {currentSort?.by === col.name && (
+                                                        <span className="text-xs" aria-hidden="true">
+                                                            {currentSort.direction === 'asc' ? '↑' : '↓'}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                                {onSortReset && currentSort?.by === col.name && (
+                                                    <button
+                                                        className="inline-flex items-center text-text-secondary hover:text-text-primary"
+                                                        title="Resetovat řazení"
+                                                        aria-label="Resetovat řazení"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            onSortReset()
+                                                        }}
+                                                    >
+                                                        <RotateCcw size={12}/>
+                                                    </button>
                                                 )}
-                                            </button>
+                                            </span>
                                         ) : (
                                             col.label
                                         )}

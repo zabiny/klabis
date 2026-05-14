@@ -120,6 +120,7 @@ export const GroupsPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<GroupSummary>
                     collectionName="groupSummaryResponseList"
+                    tableId="groups.free"
                     defaultOrderBy="name"
                     onRowClick={route.navigateToResource}
                     emptyMessage="Nejste členem žádné skupiny."

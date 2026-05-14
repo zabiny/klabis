@@ -424,6 +424,80 @@ describe('KlabisTable - Pure UI Component', () => {
         })
     })
 
+    describe('Sort Reset Affordance', () => {
+        it('shows reset button on sorted column when onSortReset is provided', async () => {
+            const onSortReset = vi.fn()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    currentSort={{by: 'name', direction: 'asc'}}
+                    onSortReset={onSortReset}
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                    <TableCell column="email" sortable>Email</TableCell>
+                </KlabisTable>
+            )
+
+            expect(screen.getByTitle('Resetovat řazení')).toBeInTheDocument()
+        })
+
+        it('calls onSortReset when reset button is clicked without triggering sort toggle', async () => {
+            const onSortReset = vi.fn()
+            const onSortChange = vi.fn()
+            const user = userEvent.setup()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    currentSort={{by: 'name', direction: 'asc'}}
+                    onSortChange={onSortChange}
+                    onSortReset={onSortReset}
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTable>
+            )
+
+            const resetButton = screen.getByTitle('Resetovat řazení')
+            await user.click(resetButton)
+
+            expect(onSortReset).toHaveBeenCalledOnce()
+            expect(onSortChange).not.toHaveBeenCalled()
+        })
+
+        it('does not show reset button when onSortReset is not provided', () => {
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    currentSort={{by: 'name', direction: 'asc'}}
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTable>
+            )
+
+            expect(screen.queryByTitle('Resetovat řazení')).not.toBeInTheDocument()
+        })
+
+        it('does not show reset button when no column is currently sorted', () => {
+            const onSortReset = vi.fn()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    onSortReset={onSortReset}
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTable>
+            )
+
+            expect(screen.queryByTitle('Resetovat řazení')).not.toBeInTheDocument()
+        })
+    })
+
     describe('Pagination Options', () => {
         it('adds current page size if not in options list', () => {
             render(

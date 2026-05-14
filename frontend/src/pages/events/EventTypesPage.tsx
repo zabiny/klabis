@@ -96,6 +96,7 @@ export const EventTypesPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<EventTypeListItem>
                     collectionName={"eventTypeDtoList"}
+                    tableId="event-types"
                     defaultOrderBy={"sortOrder"}
                 >
                     <TableCell column={"color"} dataRender={renderColorSwatch}>{labels.fields.color}</TableCell>

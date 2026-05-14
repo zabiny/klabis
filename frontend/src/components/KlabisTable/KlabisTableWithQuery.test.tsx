@@ -1,6 +1,7 @@
 import {render, screen, waitFor} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
+import {MemoryRouter} from 'react-router-dom'
 import {KlabisTableWithQuery} from './KlabisTableWithQuery'
 import {TableCell} from './TableCell'
 import {createMockResponse} from '../../__mocks__/mockFetch'
@@ -451,6 +452,117 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
                     expect.stringContaining('size=25'),
                     expect.any(Object)
                 )
+            })
+        })
+    })
+
+    describe('Sort Persistence (tableId)', () => {
+        const renderWithQueryAndRouter = (component: React.ReactElement) => {
+            return render(
+                <MemoryRouter>
+                    <QueryClientProvider client={queryClient}>
+                        {component}
+                    </QueryClientProvider>
+                </MemoryRouter>
+            )
+        }
+
+        it('shows reset button when tableId is set and column is sorted, and clicking it clears localStorage and reverts API request to default sort', async () => {
+            // Pre-populate a non-default sort (desc) to simulate a previously persisted preference
+            localStorage.setItem('klabis.table.test-table.sort', 'name,desc')
+
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            const user = userEvent.setup()
+
+            renderWithQueryAndRouter(
+                <KlabisTableWithQuery
+                    link={mockHalLink}
+                    tableId="test-table"
+                    defaultOrderBy="name"
+                    defaultOrderDirection="asc"
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice')).toBeInTheDocument()
+            })
+
+            // Initial fetch used the persisted desc sort
+            expect(fetchSpy).toHaveBeenCalledWith(
+                expect.stringContaining('sort=name%2Cdesc'),
+                expect.any(Object)
+            )
+
+            const resetButton = screen.getByTitle('Resetovat řazení')
+            await user.click(resetButton)
+
+            // localStorage entry is removed
+            await waitFor(() => {
+                expect(localStorage.getItem('klabis.table.test-table.sort')).toBeNull()
+            })
+
+            // Next fetch uses the default sort (asc) — confirming table reverted to default
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('sort=name%2Casc'),
+                    expect.any(Object)
+                )
+            })
+        })
+
+        it('does not show reset button when tableId is NOT provided', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            renderWithQueryAndRouter(
+                <KlabisTableWithQuery
+                    link={mockHalLink}
+                    defaultOrderBy="name"
+                    defaultOrderDirection="asc"
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice')).toBeInTheDocument()
+            })
+
+            expect(screen.queryByTitle('Resetovat řazení')).not.toBeInTheDocument()
+        })
+
+        it('writes sort to localStorage with correct key when tableId is provided and sort changes', async () => {
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            const user = userEvent.setup()
+
+            renderWithQueryAndRouter(
+                <KlabisTableWithQuery
+                    link={mockHalLink}
+                    tableId="test-table"
+                    defaultOrderBy="name"
+                    defaultOrderDirection="asc"
+                >
+                    <TableCell column="name" sortable>Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice')).toBeInTheDocument()
+            })
+
+            // Click sort header to trigger sort change
+            const sortHeader = screen.getByText('Name')
+            await user.click(sortHeader)
+
+            // Verify localStorage key was written with the tableId-scoped key
+            await waitFor(() => {
+                expect(localStorage.getItem('klabis.table.test-table.sort')).toBe('name,desc')
             })
         })
     })

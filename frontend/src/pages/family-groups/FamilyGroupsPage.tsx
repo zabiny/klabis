@@ -35,6 +35,7 @@ export const FamilyGroupsPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<FamilyGroupSummaryItem>
                     collectionName="familyGroupSummaryResponseList"
+                    tableId="groups.family"
                     defaultOrderBy="name"
                     onRowClick={route.navigateToResource}
                     emptyMessage="Nejste členem žádné rodinné skupiny."

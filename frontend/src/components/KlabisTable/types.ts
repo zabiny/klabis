@@ -1,5 +1,7 @@
 import React from "react";
 import {type SortDirection} from "../../api";
+import {type SortState} from "../../hooks/useTableSort";
+export type {SortState};
 
 // Cell rendering props
 export interface TableCellRenderProps {
@@ -36,12 +38,6 @@ export interface ColumnDef {
     dataRender?: (props: TableCellRenderProps) => React.ReactNode;
 }
 
-// Sort state representation
-export interface SortState {
-    by: string;
-    direction: SortDirection;
-}
-
 // Pure UI table component props
 // This is the pure presentation component with no data fetching
 export interface KlabisTableProps<T extends Record<string, unknown>> {
@@ -54,6 +50,7 @@ export interface KlabisTableProps<T extends Record<string, unknown>> {
 
     // User interaction callbacks
     onSortChange?: (column: string, direction: SortDirection) => void;
+    onSortReset?: () => void;
     onPageChange?: (page: number) => void;
     onRowsPerPageChange?: (rowsPerPage: number) => void;
     onRowClick?: (item: T) => void;

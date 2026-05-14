@@ -32,6 +32,9 @@ export interface HalEmbeddedTableProps<T = any> {
     /** Hide columns where all values are empty */
     hideEmptyColumns?: boolean
 
+    /** Stable identifier for this table — enables sort persistence in localStorage */
+    tableId?: string
+
     /** Extra query parameters appended to the self-link URL before fetching. String values use set(); string[] values use append() for multi-value params. */
     extraParams?: Record<string, string | string[]>
 
@@ -65,6 +68,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               defaultOrderDirection = 'asc',
                                                                               emptyMessage = 'Žádná data',
                                                                               hideEmptyColumns,
+                                                                              tableId,
                                                                               extraParams,
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
@@ -118,6 +122,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
             defaultOrderDirection={defaultOrderDirection}
             emptyMessage={emptyMessage}
             hideEmptyColumns={hideEmptyColumns}
+            tableId={tableId}
         >
             {children}
         </KlabisTableWithQuery>
