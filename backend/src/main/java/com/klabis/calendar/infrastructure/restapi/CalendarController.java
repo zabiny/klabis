@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.application.CalendarFilter;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
@@ -86,19 +88,13 @@ class CalendarController {
 
         Sort sortObj = parseAndValidateSort(sort);
 
-        if (Boolean.TRUE.equals(mySchedule) && (currentUser == null || currentUser.memberId() == null)) {
-            CollectionModel<EntityModel<CalendarItemDto>> emptyModel = CollectionModel.of(List.of());
-            klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort, mySchedule, null))
-                    .ifPresent(selfLinkBuilder -> emptyModel.add(selfLinkBuilder.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)))));
-            addMonthNavigationLinks(emptyModel, effectiveStartDate, effectiveEndDate, sort, mySchedule);
-            return ResponseEntity.ok(emptyModel);
-        }
+        boolean myScheduleRequested = Boolean.TRUE.equals(mySchedule);
+        MemberId myScheduleMemberId = myScheduleRequested && currentUser != null ? currentUser.memberId() : null;
 
-        MemberId myScheduleMemberId = resolveMyScheduleMemberId(mySchedule, currentUser);
+        CalendarFilter filter = new CalendarFilter(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId);
 
         List<EntityModel<CalendarItemDto>> items = calendarManagementService
-                .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleMemberId)
+                .listCalendarItems(filter, Pageable.unpaged())
                 .stream().map(calendarItem -> entityModelWithDomain(toDto(calendarItem), calendarItem)).toList();
 
         CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(items);
@@ -110,14 +106,6 @@ class CalendarController {
         addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort, mySchedule);
 
         return ResponseEntity.ok(collectionModel);
-    }
-
-    @Nullable
-    private static MemberId resolveMyScheduleMemberId(@Nullable Boolean mySchedule, CurrentUserData currentUser) {
-        if (Boolean.TRUE.equals(mySchedule) && currentUser != null && currentUser.memberId() != null) {
-            return currentUser.memberId();
-        }
-        return null;
     }
 
     private void addMonthNavigationLinks(CollectionModel<EntityModel<CalendarItemDto>> collectionModel,

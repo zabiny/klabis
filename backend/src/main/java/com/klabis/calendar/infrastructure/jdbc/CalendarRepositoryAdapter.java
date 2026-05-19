@@ -10,6 +10,9 @@ import org.jmolecules.ddd.annotation.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @SecondaryAdapter
 @Repository
@@ -36,6 +39,17 @@ class CalendarRepositoryAdapter implements CalendarRepository {
     @Override
     public List<CalendarItem> findByDateRange(LocalDate startDate, LocalDate endDate) {
         return jdbcRepository.findByDateRange(startDate, endDate).stream()
+                .map(CalendarMemento::toCalendarItem)
+                .toList();
+    }
+
+    @Override
+    public List<CalendarItem> findEventDateItemsByDateRangeAndEventIds(LocalDate startDate, LocalDate endDate, Set<EventId> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        Set<UUID> uuids = eventIds.stream().map(EventId::value).collect(Collectors.toSet());
+        return jdbcRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, uuids).stream()
                 .map(CalendarMemento::toCalendarItem)
                 .toList();
     }

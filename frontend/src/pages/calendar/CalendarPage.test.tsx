@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import CalendarPage from './CalendarPage.tsx';
@@ -118,11 +118,18 @@ describe('CalendarPage Component', () => {
     });
 
     // Helper function to render with router and query params
+    const locationRef: {current: ReturnType<typeof useLocation> | null} = {current: null};
+    const LocationCapture = () => {
+        locationRef.current = useLocation();
+        return null;
+    };
     const renderWithRouter = (ui: React.ReactElement, initialRoute: string = '/calendar') => {
+        locationRef.current = null;
         return render(
             <QueryClientProvider client={queryClient}>
                 <MemoryRouter initialEntries={[initialRoute]}>
                     {ui}
+                    <LocationCapture/>
                 </MemoryRouter>
             </QueryClientProvider>
         );
@@ -390,9 +397,7 @@ describe('CalendarPage Component', () => {
             const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
             await user.click(toggle);
 
-            expect(mockNavigate).toHaveBeenCalledOnce();
-            const navigatedPath: string = mockNavigate.mock.calls[0][0];
-            expect(navigatedPath).toContain('mySchedule=true');
+            expect(locationRef.current?.search).toContain('mySchedule=true');
         });
 
         it('6.2 clicking toggle when ON navigates to URL with mySchedule removed', async () => {
@@ -404,9 +409,7 @@ describe('CalendarPage Component', () => {
             const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
             await user.click(toggle);
 
-            expect(mockNavigate).toHaveBeenCalledOnce();
-            const navigatedPath: string = mockNavigate.mock.calls[0][0];
-            expect(navigatedPath).not.toContain('mySchedule');
+            expect(locationRef.current?.search).not.toContain('mySchedule');
         });
     });
 

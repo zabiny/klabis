@@ -67,7 +67,7 @@
 
 - [x] 11.1 Run the full backend test suite via the `test-runner` agent and confirm it is green
 - [x] 11.2 Run the full frontend test suite via the `test-runner` agent and confirm it is green
-- [ ] 11.3 Manually exercise the feature end-to-end against `runLocalEnvironment.sh`: log in as the seeded admin (`ZBM9000`) and the seeded member (`ZBM9500`), turn the filter on/off, navigate months, share the URL between sessions
+- [x] 11.3 Manually exercise the feature end-to-end against `runLocalEnvironment.sh`: log in as the seeded admin (`ZBM9000`) and the seeded member (`ZBM9500`), turn the filter on/off, navigate months, share the URL between sessions
 - [x] 11.4 Confirm `lint` / type-check on the frontend is clean
 
 ## 12. Frontend bundle refresh

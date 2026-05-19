@@ -29,19 +29,20 @@ interface CalendarItem {
 const CalendarPage = () => {
     const {resourceData, isLoading, error} = useHalPageData();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const myScheduleActive = searchParams.get('mySchedule') === 'true';
 
     const handleMyScheduleToggle = () => {
-        const newParams = new URLSearchParams(searchParams.toString());
-        if (myScheduleActive) {
-            newParams.delete('mySchedule');
-        } else {
-            newParams.set('mySchedule', 'true');
-        }
-        const paramString = newParams.toString();
-        navigate(paramString ? `?${paramString}` : '?');
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (myScheduleActive) {
+                next.delete('mySchedule');
+            } else {
+                next.set('mySchedule', 'true');
+            }
+            return next;
+        });
     };
 
     const currentDate = useMemo(() => {

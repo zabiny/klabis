@@ -57,3 +57,26 @@ All frontend tests green (1469/1469).
 No banner / empty-state copy introduced (per design). Toggle visible at all times.
 
 ---
+
+### 2026-05-20 — Backend simplification (three changes in one pass)
+
+**Change 1 — `EventScheduleQuery` collapsed to single SQL method.**
+`findEventIdsByRegistration` + `findEventIdsByCoordinator` (two separate queries that hydrated full `Event` aggregates) replaced by one `findEventIdsForMemberSchedule(MemberId, LocalDate, LocalDate)` implemented with a single `NamedParameterJdbcTemplate` SQL query:
+`SELECT e.id FROM events WHERE event_date BETWEEN :from AND :to AND (coordinator_id = :memberId OR EXISTS (SELECT 1 FROM event_registrations WHERE event_id = e.id AND member_id = :memberId))`.
+Date-range predicate reuses the same column semantics as `EventFilter.withDateRange` (maps to `event_date >= from AND event_date <= to`).
+
+**Change 2 — Item filter pushed into `CalendarRepository`.**
+New method `findEventDateItemsByDateRangeAndEventIds(from, to, Set<EventId>)` added to `CalendarRepository` + `CalendarJdbcRepository` (SQL: `WHERE kind = 'EVENT_DATE' AND event_id IN (:ids) AND date-overlap`). Short-circuit: when `eventIds` is empty, returns `List.of()` without hitting DB. `CalendarManagementService.filterForMySchedule` eliminated — the service now calls the new repo method directly. The in-Java `HashSet.addAll` union is gone.
+
+**Change 3 — Controller early-return eliminated.**
+Duplicate link-building branch removed from `CalendarController`. Port signature changed: `listCalendarItems(..., boolean myScheduleRequested, @Nullable MemberId myScheduleMemberId)` — two explicit parameters instead of overloading `null` with two different meanings. When `mySchedule=true && no member profile`, controller passes `(true, null)` → service short-circuits via empty `Set.of()` → repo returns empty without DB call. Single happy-path link-building now handles all cases.
+
+**Tests:** All 64 calendar module tests + 56 events module tests + 9 integration tests green (129/129). Existing test `shouldReturnEmptyWhenMyScheduleTrueAndNoMemberProfile` updated: now verifies the service IS called with `(true, null)` and returns empty (no longer `verifyNoInteractions`).
+
+---
+
+### 2026-05-20 — Backend simplification finding H: CalendarFilter record
+
+`CalendarManagementPort.listCalendarItems` previously spread five parameters across every layer (`startDate`, `endDate`, `sort`, `boolean myScheduleRequested`, `@Nullable MemberId myScheduleMemberId`). These domain inputs are now bundled into a `CalendarFilter` record in `com.klabis.calendar.application`. The port signature became `listCalendarItems(CalendarFilter filter, Pageable pageable)` — `Pageable` kept separate as a framework-driven concern; `Sort` moved inside `CalendarFilter` because it is domain input. `CalendarController` constructs one `CalendarFilter` instance and delegates; `CalendarManagementService` unpacks it. The null-means-no-profile semantic for `myScheduleMemberId` is unchanged. All 109 affected tests updated and green.
+
+---

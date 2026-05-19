@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +20,19 @@ interface CalendarJdbcRepository extends CrudRepository<CalendarMemento, UUID> {
             """)
     List<CalendarMemento> findByDateRange(@Param("startDate") LocalDate startDate,
                                           @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            SELECT * FROM calendar_items
+            WHERE kind = 'EVENT_DATE'
+              AND event_id IN (:eventIds)
+              AND start_date <= :endDate
+              AND end_date >= :startDate
+            ORDER BY start_date ASC, name ASC
+            """)
+    List<CalendarMemento> findEventDateItemsByDateRangeAndEventIds(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("eventIds") Collection<UUID> eventIds);
 
     @Query("""
             SELECT * FROM calendar_items
