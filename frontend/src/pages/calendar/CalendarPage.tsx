@@ -7,6 +7,7 @@ import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {labels} from '../../localization';
+import {Filter} from 'lucide-react';
 
 interface CalendarItem {
     id: string;
@@ -29,6 +30,19 @@ const CalendarPage = () => {
     const {resourceData, isLoading, error} = useHalPageData();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    const myScheduleActive = searchParams.get('mySchedule') === 'true';
+
+    const handleMyScheduleToggle = () => {
+        const newParams = new URLSearchParams(searchParams.toString());
+        if (myScheduleActive) {
+            newParams.delete('mySchedule');
+        } else {
+            newParams.set('mySchedule', 'true');
+        }
+        const paramString = newParams.toString();
+        navigate(paramString ? `?${paramString}` : '?');
+    };
 
     const currentDate = useMemo(() => {
         // Primary: use startDate from self link (reflects actual fetched month)
@@ -179,7 +193,24 @@ const CalendarPage = () => {
                         →
                     </Button>
                 </div>
-                <HalFormButton name="createCalendarItem" modal={true} label={labels.templates.createCalendarItem}/>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={handleMyScheduleToggle}
+                        aria-pressed={myScheduleActive}
+                        className={`
+                            flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-colors
+                            ${myScheduleActive
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-surface-raised text-text-primary border-border hover:bg-surface-hover'
+                            }
+                        `}
+                    >
+                        <Filter size={14}/>
+                        {labels.ui.mySchedule}
+                    </button>
+                    <HalFormButton name="createCalendarItem" modal={true} label={labels.templates.createCalendarItem}/>
+                </div>
             </div>
 
             {/* Calendar */}

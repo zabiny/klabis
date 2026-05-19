@@ -3,6 +3,9 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.*;
+import com.klabis.events.EventId;
+import com.klabis.events.EventScheduleQuery;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,11 +34,14 @@ class CalendarManagementServiceTest {
     @Mock
     private CalendarRepository calendarRepository;
 
+    @Mock
+    private EventScheduleQuery eventScheduleQuery;
+
     private CalendarManagementService testedSubject;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new CalendarManagementService(calendarRepository);
+        testedSubject = new CalendarManagementService(calendarRepository, eventScheduleQuery);
     }
 
     @Nested
@@ -62,7 +69,7 @@ class CalendarManagementServiceTest {
             when(calendarRepository.findByDateRange(startDate, endDate))
                     .thenReturn(List.of(item1, item2));
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), null);
 
             assertThat(result).hasSize(2);
             assertThat(result.get(0).getName()).isEqualTo("March Training");
@@ -77,7 +84,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), null);
 
             assertThat(result).isEmpty();
         }
@@ -90,7 +97,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), null);
 
             assertThat(result).isEmpty();
         }
@@ -101,7 +108,7 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2024, 1, 1);
             LocalDate endDate = LocalDate.of(2025, 1, 2);
 
-            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Date range must not exceed 366 days")
                     .hasMessageContaining("368");
@@ -113,9 +120,203 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2025, 1, 1);
             LocalDate endDate = LocalDate.of(2026, 1, 2);
 
-            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Date range must not exceed 366 days");
+        }
+
+        @Test
+        @DisplayName("should return only EVENT_DATE items for events where member is registered when mySchedule is set")
+        void shouldReturnOnlyEventDateItemsForRegisteredMemberWhenMyScheduleSet() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventId registeredEventId = new EventId(UUID.randomUUID());
+            EventId otherEventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem myEventItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("My Event")
+                    .withStartDate(LocalDate.of(2026, 6, 15))
+                    .withEndDate(LocalDate.of(2026, 6, 15))
+                    .buildEventLinked(registeredEventId.value());
+
+            EventCalendarItem otherEventItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Other Event")
+                    .withStartDate(LocalDate.of(2026, 6, 20))
+                    .withEndDate(LocalDate.of(2026, 6, 20))
+                    .buildEventLinked(otherEventId.value());
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of(registeredEventId));
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(myEventItem, otherEventItem));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("My Event");
+        }
+
+        @Test
+        @DisplayName("should return only EVENT_DATE items for events where member is coordinator when mySchedule is set")
+        void shouldReturnOnlyEventDateItemsForCoordinatorWhenMyScheduleSet() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventId coordinatedEventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem coordinatedItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Coordinated Event")
+                    .withStartDate(LocalDate.of(2026, 6, 10))
+                    .withEndDate(LocalDate.of(2026, 6, 10))
+                    .buildEventLinked(coordinatedEventId.value());
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of(coordinatedEventId));
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(coordinatedItem));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Coordinated Event");
+        }
+
+        @Test
+        @DisplayName("should union registration and coordinator event IDs when mySchedule is set")
+        void shouldUnionRegistrationAndCoordinatorEventIds() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventId registeredEventId = new EventId(UUID.randomUUID());
+            EventId coordinatedEventId = new EventId(UUID.randomUUID());
+            EventId bothEventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem registeredItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Registered Event")
+                    .withStartDate(LocalDate.of(2026, 6, 5))
+                    .withEndDate(LocalDate.of(2026, 6, 5))
+                    .buildEventLinked(registeredEventId.value());
+
+            EventCalendarItem coordinatedItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Coordinated Event")
+                    .withStartDate(LocalDate.of(2026, 6, 10))
+                    .withEndDate(LocalDate.of(2026, 6, 10))
+                    .buildEventLinked(coordinatedEventId.value());
+
+            EventCalendarItem bothItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Both Event")
+                    .withStartDate(LocalDate.of(2026, 6, 15))
+                    .withEndDate(LocalDate.of(2026, 6, 15))
+                    .buildEventLinked(bothEventId.value());
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of(registeredEventId, bothEventId));
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of(coordinatedEventId, bothEventId));
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(registeredItem, coordinatedItem, bothItem));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).hasSize(3);
+            assertThat(result).extracting(CalendarItem::getName)
+                    .containsExactlyInAnyOrder("Registered Event", "Coordinated Event", "Both Event");
+        }
+
+        @Test
+        @DisplayName("should exclude EVENT_REGISTRATION_DATE (deadline) items when mySchedule is set")
+        void shouldExcludeDeadlineItemsWhenMyScheduleSet() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventId eventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem eventDateItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("My Event")
+                    .withStartDate(LocalDate.of(2026, 6, 15))
+                    .withEndDate(LocalDate.of(2026, 6, 15))
+                    .buildEventLinked(eventId.value());
+
+            EventCalendarItem deadlineItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Přihlášky - My Event")
+                    .withStartDate(LocalDate.of(2026, 6, 5))
+                    .withEndDate(LocalDate.of(2026, 6, 5))
+                    .buildRegistrationDeadlineLinked(eventId.value());
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of(eventId));
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(eventDateItem, deadlineItem));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("My Event");
+        }
+
+        @Test
+        @DisplayName("should exclude manual items when mySchedule is set")
+        void shouldExcludeManualItemsWhenMyScheduleSet() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventId eventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem myEventItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("My Event")
+                    .withStartDate(LocalDate.of(2026, 6, 15))
+                    .withEndDate(LocalDate.of(2026, 6, 15))
+                    .buildEventLinked(eventId.value());
+
+            ManualCalendarItem manualItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Club Meeting")
+                    .withStartDate(LocalDate.of(2026, 6, 20))
+                    .withEndDate(LocalDate.of(2026, 6, 20))
+                    .buildManual();
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of(eventId));
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(myEventItem, manualItem));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("My Event");
+        }
+
+        @Test
+        @DisplayName("should return empty list when member has no involvement when mySchedule is set")
+        void shouldReturnEmptyWhenMemberHasNoInvolvement() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            EventCalendarItem item = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Some Event")
+                    .withStartDate(LocalDate.of(2026, 6, 15))
+                    .withEndDate(LocalDate.of(2026, 6, 15))
+                    .buildEventLinked(UUID.randomUUID());
+
+            when(eventScheduleQuery.findEventIdsByRegistration(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(eventScheduleQuery.findEventIdsByCoordinator(memberId, startDate, endDate))
+                    .thenReturn(Set.of());
+            when(calendarRepository.findByDateRange(startDate, endDate))
+                    .thenReturn(List.of(item));
+
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), memberId);
+
+            assertThat(result).isEmpty();
         }
     }
 

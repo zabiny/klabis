@@ -5,7 +5,17 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import CalendarPage from './CalendarPage.tsx';
 import {vi} from 'vitest';
+import userEvent from '@testing-library/user-event';
 import {useHalPageData} from '../../hooks/useHalPageData';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
 // Mock child components
 vi.mock('../../components/UI', () => ({
@@ -77,6 +87,7 @@ describe('CalendarPage Component', () => {
         });
 
         vi.clearAllMocks();
+        mockNavigate.mockReset();
     });
 
     // Helper function to create a complete mock context for useHalPageData
@@ -346,6 +357,170 @@ describe('CalendarPage Component', () => {
             const {unmount: unmountSep} = renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-09-15');
             expect(screen.getByText(/září 2025/i)).toBeInTheDocument();
             unmountSep();
+        });
+    });
+
+    describe('Task 6: Můj rozvrh toggle', () => {
+        it('6.1 renders "Můj rozvrh" toggle that is OFF by default when URL has no mySchedule param', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar');
+
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toBeInTheDocument();
+            expect(toggle).toHaveAttribute('aria-pressed', 'false');
+        });
+
+        it('6.1 renders "Můj rozvrh" toggle that is ON when URL has mySchedule=true', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true');
+
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toBeInTheDocument();
+            expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('6.2 clicking toggle when OFF navigates to URL with mySchedule=true appended', async () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-06-15');
+
+            const user = userEvent.setup();
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            await user.click(toggle);
+
+            expect(mockNavigate).toHaveBeenCalledOnce();
+            const navigatedPath: string = mockNavigate.mock.calls[0][0];
+            expect(navigatedPath).toContain('mySchedule=true');
+        });
+
+        it('6.2 clicking toggle when ON navigates to URL with mySchedule removed', async () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            const user = userEvent.setup();
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            await user.click(toggle);
+
+            expect(mockNavigate).toHaveBeenCalledOnce();
+            const navigatedPath: string = mockNavigate.mock.calls[0][0];
+            expect(navigatedPath).not.toContain('mySchedule');
+        });
+    });
+
+    describe('Task 7: Toggle drives API call', () => {
+        it('7.1 when mySchedule=true is in the URL, the toggle is active', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true');
+
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('7.3 calendar renders filtered items when mySchedule=true and API returns only event-date items', () => {
+            const filteredItems = [
+                {
+                    id: 'abc-123',
+                    name: 'My Event',
+                    description: null,
+                    startDate: '2025-06-10',
+                    endDate: '2025-06-10',
+                    eventId: 'evt-1',
+                    _links: {
+                        self: {href: '/api/calendar-items/abc-123'},
+                        event: {href: '/api/events/evt-1'},
+                    },
+                },
+            ];
+
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData(filteredItems)));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            expect(screen.getByText('My Event')).toBeInTheDocument();
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        });
+    });
+
+    describe('Task 8: Empty grid with active filter', () => {
+        it('8.1 renders empty month grid (no item chips) and toggle stays ON when API returns no items', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData([])));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+            // Calendar grid still renders (weekday headers present)
+            expect(screen.getByText('Pondělí')).toBeInTheDocument();
+        });
+
+        it('8.2 no banner or empty-state message is shown when filtered result is empty', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData([])));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            // No alert element should be present
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Task 9: URL/shareable state and month navigation', () => {
+        it('9.2 deep-linked URL with mySchedule=true renders calendar with toggle ON', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            const toggle = screen.getByRole('button', {name: /můj rozvrh/i});
+            expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('9.1 clicking prev month when mySchedule=true follows HAL prev link (which carries mySchedule)', () => {
+            const dataWithPrevLink = {
+                ...mockCalendarData(),
+                _links: {
+                    self: {href: '/api/calendar?startDate=2025-06-01&endDate=2025-06-30&mySchedule=true'},
+                    prev: {href: '/api/calendar?startDate=2025-05-01&endDate=2025-05-31&mySchedule=true'},
+                    next: {href: '/api/calendar?startDate=2025-07-01&endDate=2025-07-31&mySchedule=true'},
+                },
+            };
+
+            mockUseHalPageData.mockReturnValue(createMockContext(dataWithPrevLink));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            const prevButton = screen.getByRole('button', {name: /předchozí měsíc/i});
+            prevButton.click();
+
+            expect(mockNavigate).toHaveBeenCalledOnce();
+            const navigatedPath: string = mockNavigate.mock.calls[0][0];
+            expect(navigatedPath).toContain('mySchedule=true');
+        });
+
+        it('9.1 clicking next month when mySchedule=true follows HAL next link (which carries mySchedule)', () => {
+            const dataWithNextLink = {
+                ...mockCalendarData(),
+                _links: {
+                    self: {href: '/api/calendar?startDate=2025-06-01&endDate=2025-06-30&mySchedule=true'},
+                    prev: {href: '/api/calendar?startDate=2025-05-01&endDate=2025-05-31&mySchedule=true'},
+                    next: {href: '/api/calendar?startDate=2025-07-01&endDate=2025-07-31&mySchedule=true'},
+                },
+            };
+
+            mockUseHalPageData.mockReturnValue(createMockContext(dataWithNextLink));
+
+            renderWithRouter(<CalendarPage/>, '/calendar?mySchedule=true&referenceDate=2025-06-15');
+
+            const nextButton = screen.getByRole('button', {name: /následující měsíc/i});
+            nextButton.click();
+
+            expect(mockNavigate).toHaveBeenCalledOnce();
+            const navigatedPath: string = mockNavigate.mock.calls[0][0];
+            expect(navigatedPath).toContain('mySchedule=true');
         });
     });
 });

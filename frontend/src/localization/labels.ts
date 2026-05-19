@@ -242,6 +242,7 @@ export const labels = {
         calendarSubtitle: 'Kalendář akcí a důležitých dat',
         prevMonth: 'Předchozí měsíc',
         nextMonth: 'Následující měsíc',
+        mySchedule: 'Můj rozvrh',
         emailSent: 'Email byl odeslán',
         emailSentDescription: 'Pokud je váš účet stále čekající na aktivaci, obdržíte email s odkazem pro nastavení hesla. Zkontrolujte prosím svou schránku.',
         passwordSetSuccess: 'Heslo úspěšně nastaveno',

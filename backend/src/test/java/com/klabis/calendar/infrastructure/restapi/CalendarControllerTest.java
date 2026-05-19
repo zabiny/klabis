@@ -9,6 +9,7 @@ import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -67,7 +70,7 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 20))
                     .buildEventLinked(eventId);
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item1, item2));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull())).thenReturn(List.of(item1, item2));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -97,7 +100,7 @@ class CalendarControllerTest {
                     .withEndDate(today)
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any(), isNull())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -135,7 +138,7 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 15))
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -165,7 +168,7 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 15))
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -177,6 +180,136 @@ class CalendarControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")))
                     .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")));
+        }
+
+        @Test
+        @DisplayName("should pass null memberId to service when mySchedule param is absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        void shouldPassNullMemberIdWhenMyScheduleAbsent() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull()))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), isNull());
+        }
+
+        @Test
+        @DisplayName("should pass null memberId to service when mySchedule=false")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        void shouldPassNullMemberIdWhenMyScheduleFalse() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull()))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .param("mySchedule", "false")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), isNull());
+        }
+
+        @Test
+        @DisplayName("should pass current user memberId to service when mySchedule=true")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        void shouldPassMemberIdWhenMyScheduleTrue() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+            MemberId expectedMemberId = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(expectedMemberId)))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .param("mySchedule", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk());
+
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), eq(expectedMemberId));
+        }
+
+        @Test
+        @DisplayName("should return empty result when mySchedule=true and user has no member profile")
+        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        void shouldReturnEmptyWhenMyScheduleTrueAndNoMemberProfile() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .param("mySchedule", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded").doesNotExist());
+
+            org.mockito.Mockito.verifyNoInteractions(calendarManagementService);
+        }
+
+        @Test
+        @DisplayName("should preserve mySchedule=true in self, next and prev links")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        void shouldPreserveMyScheduleInNavigationLinks() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+            MemberId memberId = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(memberId)))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .param("mySchedule", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("mySchedule=true")))
+                    .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("mySchedule=true")))
+                    .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("mySchedule=true")));
+        }
+
+        @Test
+        @DisplayName("should not include mySchedule=true literal in links when filter is absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        void shouldNotIncludeMyScheduleInLinksWhenAbsent() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull()))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("mySchedule=true"))));
         }
     }
 
@@ -554,7 +687,7 @@ class CalendarControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void createTemplateShouldHaveDescriptionAsNotRequired() throws Exception {
             CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem().buildManual();
-            when(calendarManagementService.listCalendarItems(any(), any(), any())).thenReturn(List.of(createdItem));
+            when(calendarManagementService.listCalendarItems(any(), any(), any(), isNull())).thenReturn(List.of(createdItem));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -616,7 +749,7 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2025, 6, 7))
                     .buildRegistrationDeadlineLinked(sharedEventId);
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), isNull()))
                     .thenReturn(List.of(eventDateItem, deadlineItem));
 
             mockMvc.perform(

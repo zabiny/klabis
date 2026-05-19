@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
+import com.klabis.events.EventScheduleQuery;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +58,9 @@ class CalendarEventSyncIntegrationTest {
 
     @MockitoBean
     private EventDataProvider eventDataProviderMock;
+
+    @MockitoBean
+    private EventScheduleQuery eventScheduleQuery;
 
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")

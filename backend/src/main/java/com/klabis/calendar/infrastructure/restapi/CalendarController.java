@@ -11,6 +11,9 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.infrastructure.restapi.EventController;
+import com.klabis.members.ActingUser;
+import com.klabis.members.CurrentUserData;
+import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,6 +21,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
@@ -58,6 +62,8 @@ class CalendarController {
                     If dates not provided, defaults to current month.
                     Maximum date range is 1 year (366 days).
                     Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
+                    When mySchedule=true, returns only EVENT_DATE items linked to events where the current
+                    user is an active participant or event coordinator.
                     """
     )
     @ApiResponse(responseCode = "200", description = "List of calendar items retrieved successfully")
@@ -70,39 +76,63 @@ class CalendarController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Sorting parameters (default: startDate,asc)")
-            @RequestParam(defaultValue = "startDate,asc") String sort) {
+            @RequestParam(defaultValue = "startDate,asc") String sort,
+            @Parameter(description = "When true, restricts results to EVENT_DATE items for events where the current user is a participant or coordinator")
+            @RequestParam(required = false) Boolean mySchedule,
+            @ActingUser CurrentUserData currentUser) {
 
         LocalDate effectiveStartDate = startDate != null ? startDate : getCurrentMonthFirstDay();
         LocalDate effectiveEndDate = endDate != null ? endDate : getCurrentMonthLastDay();
 
         Sort sortObj = parseAndValidateSort(sort);
 
-        List<EntityModel<CalendarItemDto>> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj)
+        if (Boolean.TRUE.equals(mySchedule) && (currentUser == null || currentUser.memberId() == null)) {
+            CollectionModel<EntityModel<CalendarItemDto>> emptyModel = CollectionModel.of(List.of());
+            klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort, mySchedule, null))
+                    .ifPresent(selfLinkBuilder -> emptyModel.add(selfLinkBuilder.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)))));
+            addMonthNavigationLinks(emptyModel, effectiveStartDate, effectiveEndDate, sort, mySchedule);
+            return ResponseEntity.ok(emptyModel);
+        }
+
+        MemberId myScheduleMemberId = resolveMyScheduleMemberId(mySchedule, currentUser);
+
+        List<EntityModel<CalendarItemDto>> items = calendarManagementService
+                .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleMemberId)
                 .stream().map(calendarItem -> entityModelWithDomain(toDto(calendarItem), calendarItem)).toList();
 
         CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(items);
 
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort))
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort, mySchedule, null))
                 .ifPresent(selfLinkBuilder -> collectionModel.add(selfLinkBuilder.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)))));
 
-        addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort);
+        addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort, mySchedule);
 
         return ResponseEntity.ok(collectionModel);
+    }
+
+    @Nullable
+    private static MemberId resolveMyScheduleMemberId(@Nullable Boolean mySchedule, CurrentUserData currentUser) {
+        if (Boolean.TRUE.equals(mySchedule) && currentUser != null && currentUser.memberId() != null) {
+            return currentUser.memberId();
+        }
+        return null;
     }
 
     private void addMonthNavigationLinks(CollectionModel<EntityModel<CalendarItemDto>> collectionModel,
                                           LocalDate currentStartDate,
                                           LocalDate currentEndDate,
-                                          String sort) {
+                                          String sort,
+                                          @Nullable Boolean mySchedule) {
         LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
         LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort))
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort, mySchedule, null))
                 .ifPresent(link -> collectionModel.add(link.withRel("next")));
 
         LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
         LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort))
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort, mySchedule, null))
                 .ifPresent(link -> collectionModel.add(link.withRel("prev")));
     }
 
@@ -262,7 +292,7 @@ class CalendarItemPostprocessor extends ModelWithDomainPostprocessor<CalendarIte
         });
 
         LocalDate today = LocalDate.now();
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc"))
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc", null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -275,7 +305,7 @@ class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityMo
         klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
                 LocalDate.now().withDayOfMonth(1),
                 LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()),
-                "startDate,asc"
+                "startDate,asc", null, null
         )).ifPresent(link -> model.add(link.withRel("calendar")));
         return model;
     }
