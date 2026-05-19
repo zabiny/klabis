@@ -23,16 +23,38 @@ interface CalendarJdbcRepository extends CrudRepository<CalendarMemento, UUID> {
 
     @Query("""
             SELECT * FROM calendar_items
-            WHERE kind = 'EVENT_DATE'
+            WHERE kind IN (:kinds)
+              AND start_date <= :endDate
+              AND end_date >= :startDate
+            ORDER BY start_date ASC, name ASC
+            """)
+    List<CalendarMemento> findByDateRangeAndKinds(@Param("startDate") LocalDate startDate,
+                                                   @Param("endDate") LocalDate endDate,
+                                                   @Param("kinds") Collection<String> kinds);
+
+    @Query("""
+            SELECT * FROM calendar_items
+            WHERE event_id IN (:eventIds)
+              AND start_date <= :endDate
+              AND end_date >= :startDate
+            ORDER BY start_date ASC, name ASC
+            """)
+    List<CalendarMemento> findByDateRangeAndEventIds(@Param("startDate") LocalDate startDate,
+                                                      @Param("endDate") LocalDate endDate,
+                                                      @Param("eventIds") Collection<UUID> eventIds);
+
+    @Query("""
+            SELECT * FROM calendar_items
+            WHERE kind IN (:kinds)
               AND event_id IN (:eventIds)
               AND start_date <= :endDate
               AND end_date >= :startDate
             ORDER BY start_date ASC, name ASC
             """)
-    List<CalendarMemento> findEventDateItemsByDateRangeAndEventIds(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            @Param("eventIds") Collection<UUID> eventIds);
+    List<CalendarMemento> findByDateRangeAndKindsAndEventIds(@Param("startDate") LocalDate startDate,
+                                                              @Param("endDate") LocalDate endDate,
+                                                              @Param("kinds") Collection<String> kinds,
+                                                              @Param("eventIds") Collection<UUID> eventIds);
 
     @Query("""
             SELECT * FROM calendar_items

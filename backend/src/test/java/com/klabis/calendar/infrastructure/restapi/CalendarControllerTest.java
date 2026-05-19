@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,8 +26,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,7 +71,8 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 20))
                     .buildEventLinked(eventId);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any())).thenReturn(List.of(item1, item2));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
+                    .thenReturn(List.of(item1, item2));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -100,7 +102,8 @@ class CalendarControllerTest {
                     .withEndDate(today)
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(firstDay) && f.endDate().equals(lastDay) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any(), eq(false), isNull()))
+                    .thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -138,7 +141,8 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 15))
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
+                    .thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -168,7 +172,8 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 15))
                     .buildManual();
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any())).thenReturn(List.of(item));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
+                    .thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -189,7 +194,7 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -200,7 +205,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isOk());
 
-            verify(calendarManagementService).listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any());
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull());
         }
 
         @Test
@@ -210,7 +215,7 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -222,7 +227,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isOk());
 
-            verify(calendarManagementService).listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any());
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull());
         }
 
         @Test
@@ -233,7 +238,7 @@ class CalendarControllerTest {
             LocalDate endDate = LocalDate.of(2026, 3, 31);
             MemberId expectedMemberId = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && f.myScheduleRequested() && expectedMemberId.equals(f.myScheduleMemberId())), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(true), eq(expectedMemberId)))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -245,7 +250,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isOk());
 
-            verify(calendarManagementService).listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && f.myScheduleRequested() && expectedMemberId.equals(f.myScheduleMemberId())), any());
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), eq(true), eq(expectedMemberId));
         }
 
         @Test
@@ -255,7 +260,7 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && f.myScheduleRequested() && f.myScheduleMemberId() == null), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(true), isNull()))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -268,7 +273,7 @@ class CalendarControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded").doesNotExist());
 
-            verify(calendarManagementService).listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && f.myScheduleRequested() && f.myScheduleMemberId() == null), any());
+            verify(calendarManagementService).listCalendarItems(eq(startDate), eq(endDate), any(), eq(true), isNull());
         }
 
         @Test
@@ -279,7 +284,7 @@ class CalendarControllerTest {
             LocalDate endDate = LocalDate.of(2026, 3, 31);
             MemberId memberId = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && f.myScheduleRequested() && memberId.equals(f.myScheduleMemberId())), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(true), eq(memberId)))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -302,7 +307,7 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
                     .thenReturn(List.of());
 
             mockMvc.perform(
@@ -690,7 +695,8 @@ class CalendarControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void createTemplateShouldHaveDescriptionAsNotRequired() throws Exception {
             CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem().buildManual();
-            when(calendarManagementService.listCalendarItems(argThat(f -> !f.myScheduleRequested() && f.myScheduleMemberId() == null), any())).thenReturn(List.of(createdItem));
+            when(calendarManagementService.listCalendarItems(any(), any(), any(), eq(false), isNull()))
+                    .thenReturn(List.of(createdItem));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -752,7 +758,7 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2025, 6, 7))
                     .buildRegistrationDeadlineLinked(sharedEventId);
 
-            when(calendarManagementService.listCalendarItems(argThat(f -> f.startDate().equals(startDate) && f.endDate().equals(endDate) && !f.myScheduleRequested() && f.myScheduleMemberId() == null), any()))
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any(), eq(false), isNull()))
                     .thenReturn(List.of(eventDateItem, deadlineItem));
 
             mockMvc.perform(

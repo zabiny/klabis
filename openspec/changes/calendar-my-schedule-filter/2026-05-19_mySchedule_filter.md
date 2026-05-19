@@ -80,3 +80,27 @@ Duplicate link-building branch removed from `CalendarController`. Port signature
 `CalendarManagementPort.listCalendarItems` previously spread five parameters across every layer (`startDate`, `endDate`, `sort`, `boolean myScheduleRequested`, `@Nullable MemberId myScheduleMemberId`). These domain inputs are now bundled into a `CalendarFilter` record in `com.klabis.calendar.application`. The port signature became `listCalendarItems(CalendarFilter filter, Pageable pageable)` — `Pageable` kept separate as a framework-driven concern; `Sort` moved inside `CalendarFilter` because it is domain input. `CalendarController` constructs one `CalendarFilter` instance and delegates; `CalendarManagementService` unpacks it. The null-means-no-profile semantic for `myScheduleMemberId` is unchanged. All 109 affected tests updated and green.
 
 ---
+
+### 2026-05-20 — CalendarFilter moved to domain layer as pure repository criterion
+
+`com.klabis.calendar.application.CalendarFilter` (the port-layer bundle) was deleted.
+A new `com.klabis.calendar.domain.CalendarFilter` record was introduced as a pure repository criterion with four fields:
+- `startDate`, `endDate` — date-range bounds (validated non-null, endDate >= startDate)
+- `Set<CalendarItemKind> itemTypes` — empty = no restriction on kind
+- `Set<EventId> eventIds` — empty = no restriction on event link
+
+Static factory `CalendarFilter.dateRange(from, to)` plus `withItemTypes(...)` / `withEventIds(...)` fluent builders match the `EventFilter` convention used in the events module.
+
+`CalendarRepository` replaced `findByDateRange` and `findEventDateItemsByDateRangeAndEventIds` with a single `findByFilter(CalendarFilter, Sort)`. `Sort` is a separate parameter (not embedded in the filter). `CalendarRepositoryAdapter` dispatches to one of four `CalendarJdbcRepository` query methods depending on which filter dimensions are active.
+
+`CalendarManagementPort.listCalendarItems` reverted to explicit individual parameters (`LocalDate startDate, LocalDate endDate, Sort sort, boolean myScheduleRequested, @Nullable MemberId myScheduleMemberId`) — the application-layer filter object is gone. Service builds a domain `CalendarFilter` internally.
+
+Key service behaviour for mySchedule:
+- `myScheduleRequested=false` → plain `CalendarFilter.dateRange(from, to)`, no kind/eventId restriction.
+- `myScheduleRequested=true, memberId=null` → return `List.of()` without touching repo.
+- `myScheduleRequested=true, eventIds=∅` (no involvement) → return `List.of()` without touching repo (short-circuit preserved from earlier change).
+- `myScheduleRequested=true, eventIds non-empty` → filter with `EVENT_DATE` kind + event-ID restriction.
+
+2546/2548 tests green (2 pre-existing failures unchanged).
+
+---

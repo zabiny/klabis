@@ -1,13 +1,17 @@
 package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
+import com.klabis.calendar.domain.CalendarFilter;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.events.EventId;
 import com.klabis.events.EventScheduleQuery;
-import org.springframework.data.domain.Pageable;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -30,18 +34,29 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional(readOnly = true)
     @Override
-    public List<CalendarItem> listCalendarItems(CalendarFilter filter, Pageable pageable) {
-        validateDateRange(filter.startDate(), filter.endDate());
+    public List<CalendarItem> listCalendarItems(LocalDate startDate, LocalDate endDate, Sort sort,
+                                                boolean myScheduleRequested, @Nullable MemberId myScheduleMemberId) {
+        validateDateRange(startDate, endDate);
 
-        if (!filter.myScheduleRequested()) {
-            return calendarRepository.findByDateRange(filter.startDate(), filter.endDate());
+        if (!myScheduleRequested) {
+            return calendarRepository.findByFilter(CalendarFilter.dateRange(startDate, endDate), sort);
         }
 
-        Set<EventId> myEventIds = filter.myScheduleMemberId() != null
-                ? eventScheduleQuery.findEventIdsForMemberSchedule(filter.myScheduleMemberId(), filter.startDate(), filter.endDate())
-                : Set.of();
+        if (myScheduleMemberId == null) {
+            return List.of();
+        }
 
-        return calendarRepository.findEventDateItemsByDateRangeAndEventIds(filter.startDate(), filter.endDate(), myEventIds);
+        Set<EventId> myEventIds = eventScheduleQuery.findEventIdsForMemberSchedule(myScheduleMemberId, startDate, endDate);
+
+        if (myEventIds.isEmpty()) {
+            return List.of();
+        }
+
+        CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
+                .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                .withEventIds(myEventIds);
+
+        return calendarRepository.findByFilter(filter, sort);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

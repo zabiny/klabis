@@ -1,7 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.calendar.application.CalendarFilter;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
@@ -23,7 +22,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.jspecify.annotations.Nullable;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
@@ -91,10 +89,8 @@ class CalendarController {
         boolean myScheduleRequested = Boolean.TRUE.equals(mySchedule);
         MemberId myScheduleMemberId = myScheduleRequested && currentUser != null ? currentUser.memberId() : null;
 
-        CalendarFilter filter = new CalendarFilter(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId);
-
         List<EntityModel<CalendarItemDto>> items = calendarManagementService
-                .listCalendarItems(filter, Pageable.unpaged())
+                .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId)
                 .stream().map(calendarItem -> entityModelWithDomain(toDto(calendarItem), calendarItem)).toList();
 
         CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(items);

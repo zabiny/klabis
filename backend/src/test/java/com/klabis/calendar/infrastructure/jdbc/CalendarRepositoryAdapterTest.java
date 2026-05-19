@@ -2,6 +2,7 @@ package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemKind;
+import com.klabis.calendar.domain.CalendarFilter;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
 import com.klabis.calendar.domain.EventCalendarItem;
@@ -15,15 +16,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -132,12 +137,12 @@ class CalendarRepositoryAdapterTest {
     }
 
     @Nested
-    @DisplayName("findByDateRange()")
-    class FindByDateRangeTests {
+    @DisplayName("findByFilter()")
+    class FindByFilterTests {
 
         @Test
-        @DisplayName("should find by date range and convert mementos to CalendarItems")
-        void shouldFindByDateRangeAndConvertMementosToCalendarItems() {
+        @DisplayName("should delegate to findByDateRange when filter has no item types or event ID restrictions")
+        void shouldDelegateToFindByDateRangeWhenNoRestrictions() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
 
@@ -163,12 +168,90 @@ class CalendarRepositoryAdapterTest {
 
             when(jdbcRepositoryMock.findByDateRange(startDate, endDate)).thenReturn(mementos);
 
-            List<CalendarItem> result = testedSubject.findByDateRange(startDate, endDate);
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
+            List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(CalendarItem::getName)
                     .containsExactly("Event 1", "Event 2");
             verify(jdbcRepositoryMock).findByDateRange(startDate, endDate);
+        }
+
+        @Test
+        @DisplayName("should delegate to findByDateRangeAndKinds when filter restricts item types only")
+        void shouldDelegateToFindByDateRangeAndKindsWhenItemTypesRestricted() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+
+            ManualCalendarItem item = ManualCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "Manual Event", null,
+                    LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10),
+                    new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
+
+            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
+            when(jdbcRepositoryMock.findByDateRangeAndKinds(eq(startDate), eq(endDate), any()))
+                    .thenReturn(mementos);
+
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
+                    .withItemTypes(Set.of(CalendarItemKind.MANUAL));
+            List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Manual Event");
+            verify(jdbcRepositoryMock).findByDateRangeAndKinds(eq(startDate), eq(endDate), any());
+        }
+
+        @Test
+        @DisplayName("should delegate to findByDateRangeAndEventIds when filter restricts event IDs only")
+        void shouldDelegateToFindByDateRangeAndEventIdsWhenEventIdsRestricted() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            EventId eventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem item = EventCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "Event Date Item", null,
+                    LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
+                    eventId, CalendarItemKind.EVENT_DATE,
+                    new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
+
+            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
+            when(jdbcRepositoryMock.findByDateRangeAndEventIds(eq(startDate), eq(endDate), any()))
+                    .thenReturn(mementos);
+
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
+                    .withEventIds(Set.of(eventId));
+            List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Event Date Item");
+            verify(jdbcRepositoryMock).findByDateRangeAndEventIds(eq(startDate), eq(endDate), any());
+        }
+
+        @Test
+        @DisplayName("should delegate to findByDateRangeAndKindsAndEventIds when filter restricts both item types and event IDs")
+        void shouldDelegateToFindByDateRangeAndKindsAndEventIdsWhenBothRestricted() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            EventId eventId = new EventId(UUID.randomUUID());
+
+            EventCalendarItem item = EventCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "My Schedule Event", null,
+                    LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
+                    eventId, CalendarItemKind.EVENT_DATE,
+                    new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
+
+            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
+            when(jdbcRepositoryMock.findByDateRangeAndKindsAndEventIds(eq(startDate), eq(endDate), any(), any()))
+                    .thenReturn(mementos);
+
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(Set.of(eventId));
+            List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("My Schedule Event");
+            verify(jdbcRepositoryMock).findByDateRangeAndKindsAndEventIds(eq(startDate), eq(endDate), any(), any());
         }
 
         @Test
@@ -178,7 +261,8 @@ class CalendarRepositoryAdapterTest {
             LocalDate endDate = LocalDate.of(2026, 6, 30);
             when(jdbcRepositoryMock.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.findByDateRange(startDate, endDate);
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
+            List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
 
             assertThat(result).isEmpty();
         }

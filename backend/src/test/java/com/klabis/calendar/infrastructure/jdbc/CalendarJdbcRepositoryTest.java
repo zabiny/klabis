@@ -15,12 +15,14 @@ import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -159,8 +161,8 @@ class CalendarJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByDateRange() - date range queries")
-    class FindByDateRangeTests {
+    @DisplayName("findByFilter() - date range queries with no restrictions")
+    class FindByFilterDateRangeTests {
 
         @Test
         @DisplayName("should find items within date range")
@@ -189,9 +191,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item3);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 10),
-                    LocalDate.of(2026, 6, 20));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 20)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Event 2");
@@ -216,9 +218,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(itemOnEnd);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(2);
             assertThat(result).extracting(CalendarItem::getName)
@@ -236,9 +238,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(multiDay);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Summer Camp");
@@ -257,9 +259,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Overlapping Event");
@@ -276,9 +278,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Overlapping Event");
@@ -295,9 +297,9 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).isEmpty();
         }
@@ -329,13 +331,72 @@ class CalendarJdbcRepositoryTest {
                     .build());
             calendarRepository.save(item3);
 
-            List<CalendarItem> result = calendarRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30));
+            List<CalendarItem> result = calendarRepository.findByFilter(
+                    CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                    Sort.by("startDate"));
 
             assertThat(result).hasSize(3);
             assertThat(result).extracting(CalendarItem::getName)
                     .containsExactly("C Event", "A Event", "B Event");
+        }
+    }
+
+    @Nested
+    @DisplayName("findByFilter() - with EVENT_DATE kind and event ID restriction (mySchedule)")
+    class FindByFilterMyScheduleTests {
+
+        @Test
+        @DisplayName("should return only EVENT_DATE items linked to given event IDs")
+        void shouldReturnOnlyEventDateItemsLinkedToGivenEventIds() {
+            EventId event1Id = new EventId(TEST_EVENT_1_ID);
+            EventCalendarItem event1Item = EventCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "Event 1 Date",
+                    "Prague - OOB", LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
+                    event1Id, CalendarItemKind.EVENT_DATE, null);
+            calendarRepository.save(event1Item);
+
+            ManualCalendarItem manualItem = ManualCalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+                    .name("Manual June Event")
+                    .description("Not in my schedule")
+                    .startDate(LocalDate.of(2026, 6, 20))
+                    .endDate(LocalDate.of(2026, 6, 20))
+                    .build());
+            calendarRepository.save(manualItem);
+
+            CalendarFilter filter = CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(Set.of(event1Id));
+
+            List<CalendarItem> result = calendarRepository.findByFilter(filter, Sort.by("startDate"));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Event 1 Date");
+            assertThat(result.get(0)).isInstanceOf(EventCalendarItem.class);
+        }
+
+        @Test
+        @DisplayName("should not return EVENT_REGISTRATION_DATE items even if linked to matching event")
+        void shouldNotReturnRegistrationDateItemsWhenFilteringByEventDateKind() {
+            EventId event1Id = new EventId(TEST_EVENT_1_ID);
+
+            EventCalendarItem eventDate = EventCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "Event 1 Date",
+                    null, LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
+                    event1Id, CalendarItemKind.EVENT_DATE, null);
+            calendarRepository.save(eventDate);
+
+            EventCalendarItem registrationDate = EventCalendarItem.createForRegistrationDeadline(
+                    "Event 1", event1Id, LocalDate.of(2026, 6, 1));
+            calendarRepository.save(registrationDate);
+
+            CalendarFilter filter = CalendarFilter.dateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(Set.of(event1Id));
+
+            List<CalendarItem> result = calendarRepository.findByFilter(filter, Sort.by("startDate"));
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Event 1 Date");
         }
     }
 

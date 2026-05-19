@@ -1,6 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.*;
 import com.klabis.events.EventId;
@@ -11,9 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -68,10 +71,11 @@ class CalendarManagementServiceTest {
                     .withEndDate(LocalDate.of(2026, 3, 20))
                     .buildManual();
 
-            when(calendarRepository.findByDateRange(startDate, endDate))
+            when(calendarRepository.findByFilter(
+                    eq(CalendarFilter.dateRange(startDate, endDate)), any()))
                     .thenReturn(List.of(item1, item2));
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), false, null), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null);
 
             assertThat(result).hasSize(2);
             assertThat(result.get(0).getName()).isEqualTo("March Training");
@@ -84,9 +88,11 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
+            when(calendarRepository.findByFilter(
+                    eq(CalendarFilter.dateRange(startDate, endDate)), any()))
+                    .thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), false, null), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null);
 
             assertThat(result).isEmpty();
         }
@@ -97,9 +103,9 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2024, 1, 1);
             LocalDate endDate = LocalDate.of(2024, 12, 31);
 
-            when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
+            when(calendarRepository.findByFilter(any(), any())).thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), false, null), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null);
 
             assertThat(result).isEmpty();
         }
@@ -110,7 +116,7 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2024, 1, 1);
             LocalDate endDate = LocalDate.of(2025, 1, 2);
 
-            assertThatThrownBy(() -> testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), false, null), Pageable.unpaged()))
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Date range must not exceed 366 days")
                     .hasMessageContaining("368");
@@ -122,7 +128,7 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2025, 1, 1);
             LocalDate endDate = LocalDate.of(2026, 1, 2);
 
-            assertThatThrownBy(() -> testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), false, null), Pageable.unpaged()))
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Date range must not exceed 366 days");
         }
@@ -143,10 +149,14 @@ class CalendarManagementServiceTest {
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(memberId, startDate, endDate))
                     .thenReturn(Set.of(registeredEventId));
-            when(calendarRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, Set.of(registeredEventId)))
+
+            CalendarFilter expectedFilter = CalendarFilter.dateRange(startDate, endDate)
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(Set.of(registeredEventId));
+            when(calendarRepository.findByFilter(eq(expectedFilter), any()))
                     .thenReturn(List.of(myEventItem));
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), true, memberId), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), true, memberId);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("My Event");
@@ -168,10 +178,14 @@ class CalendarManagementServiceTest {
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(memberId, startDate, endDate))
                     .thenReturn(Set.of(coordinatedEventId));
-            when(calendarRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, Set.of(coordinatedEventId)))
+
+            CalendarFilter expectedFilter = CalendarFilter.dateRange(startDate, endDate)
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(Set.of(coordinatedEventId));
+            when(calendarRepository.findByFilter(eq(expectedFilter), any()))
                     .thenReturn(List.of(coordinatedItem));
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), true, memberId), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), true, memberId);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Coordinated Event");
@@ -208,10 +222,14 @@ class CalendarManagementServiceTest {
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(memberId, startDate, endDate))
                     .thenReturn(allEventIds);
-            when(calendarRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, allEventIds))
+
+            CalendarFilter expectedFilter = CalendarFilter.dateRange(startDate, endDate)
+                    .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
+                    .withEventIds(allEventIds);
+            when(calendarRepository.findByFilter(eq(expectedFilter), any()))
                     .thenReturn(List.of(registeredItem, coordinatedItem, bothItem));
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), true, memberId), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), true, memberId);
 
             assertThat(result).hasSize(3);
             assertThat(result).extracting(CalendarItem::getName)
@@ -227,12 +245,11 @@ class CalendarManagementServiceTest {
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(memberId, startDate, endDate))
                     .thenReturn(Set.of());
-            when(calendarRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, Set.of()))
-                    .thenReturn(List.of());
 
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), true, memberId), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), true, memberId);
 
             assertThat(result).isEmpty();
+            verify(calendarRepository, never()).findByFilter(any(), any());
         }
 
         @Test
@@ -241,13 +258,27 @@ class CalendarManagementServiceTest {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
 
-            when(calendarRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, Set.of()))
-                    .thenReturn(List.of());
-
-            List<CalendarItem> result = testedSubject.listCalendarItems(new CalendarFilter(startDate, endDate, Sort.unsorted(), true, null), Pageable.unpaged());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), true, null);
 
             assertThat(result).isEmpty();
             verifyNoInteractions(eventScheduleQuery);
+            verifyNoInteractions(calendarRepository);
+        }
+
+        @Test
+        @DisplayName("should pass sort parameter to repository when querying without mySchedule")
+        void shouldPassSortToRepositoryWhenNoMySchedule() {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+            Sort sort = Sort.by(Sort.Direction.DESC, "startDate");
+
+            when(calendarRepository.findByFilter(any(), eq(sort))).thenReturn(List.of());
+
+            testedSubject.listCalendarItems(startDate, endDate, sort, false, null);
+
+            ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+            verify(calendarRepository).findByFilter(any(), sortCaptor.capture());
+            assertThat(sortCaptor.getValue()).isEqualTo(sort);
         }
     }
 

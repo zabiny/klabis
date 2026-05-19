@@ -1,13 +1,16 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
+import com.klabis.calendar.CalendarItemKind;
+import com.klabis.calendar.domain.CalendarFilter;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.data.domain.Sort;
 
-import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,19 +40,29 @@ class CalendarRepositoryAdapter implements CalendarRepository {
     }
 
     @Override
-    public List<CalendarItem> findByDateRange(LocalDate startDate, LocalDate endDate) {
-        return jdbcRepository.findByDateRange(startDate, endDate).stream()
-                .map(CalendarMemento::toCalendarItem)
-                .toList();
-    }
+    public List<CalendarItem> findByFilter(CalendarFilter filter, Sort sort) {
+        boolean hasKinds = !filter.itemTypes().isEmpty();
+        boolean hasEventIds = !filter.eventIds().isEmpty();
 
-    @Override
-    public List<CalendarItem> findEventDateItemsByDateRangeAndEventIds(LocalDate startDate, LocalDate endDate, Set<EventId> eventIds) {
-        if (eventIds.isEmpty()) {
-            return List.of();
+        List<CalendarMemento> mementos;
+        if (hasKinds && hasEventIds) {
+            mementos = jdbcRepository.findByDateRangeAndKindsAndEventIds(
+                    filter.startDate(), filter.endDate(),
+                    toKindStrings(filter.itemTypes()),
+                    toUuids(filter.eventIds()));
+        } else if (hasKinds) {
+            mementos = jdbcRepository.findByDateRangeAndKinds(
+                    filter.startDate(), filter.endDate(),
+                    toKindStrings(filter.itemTypes()));
+        } else if (hasEventIds) {
+            mementos = jdbcRepository.findByDateRangeAndEventIds(
+                    filter.startDate(), filter.endDate(),
+                    toUuids(filter.eventIds()));
+        } else {
+            mementos = jdbcRepository.findByDateRange(filter.startDate(), filter.endDate());
         }
-        Set<UUID> uuids = eventIds.stream().map(EventId::value).collect(Collectors.toSet());
-        return jdbcRepository.findEventDateItemsByDateRangeAndEventIds(startDate, endDate, uuids).stream()
+
+        return mementos.stream()
                 .map(CalendarMemento::toCalendarItem)
                 .toList();
     }
@@ -64,5 +77,13 @@ class CalendarRepositoryAdapter implements CalendarRepository {
     @Override
     public void delete(CalendarItem calendarItem) {
         jdbcRepository.deleteById(calendarItem.getId().value());
+    }
+
+    private static Collection<String> toKindStrings(Set<CalendarItemKind> kinds) {
+        return kinds.stream().map(CalendarItemKind::name).collect(Collectors.toSet());
+    }
+
+    private static Collection<UUID> toUuids(Set<EventId> eventIds) {
+        return eventIds.stream().map(EventId::value).collect(Collectors.toSet());
     }
 }
