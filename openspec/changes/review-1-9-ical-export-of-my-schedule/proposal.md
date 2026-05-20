@@ -92,8 +92,11 @@ iCalendar feed je nová schopnost modulu `calendar` — žádný samostatný `ic
 - Audit log není potřeba (low-stakes data).
 - Rate limiting — jeden uživatel / klient by neměl polling > 1× za 15 min. Resilience4j (existing infrastructure) per-token rate limit. **Out of scope této change** (přidat až pokud bude problém).
 
+## Resolved Decisions
+
+- **URL forma — query parameter.** `GET /ical/my-schedule.ics?token=<token>`. Varianta path param (`/ical/<token>/my-schedule.ics`) zamítnuta — query param je běžný a univerzální, autentizační strategie (filter podle přítomnosti `token` query parametru, viz Impact) na něm staví.
+
 ## Open Questions
 
-- **URL forma:** `/ical/my-schedule.ics?token=<token>` vs. `/ical/<token>/my-schedule.ics` — některé kalendářové klienty mají potíže s query stringy. Test obojího před deployem. Default: query param (běžný a flexibilní).
 - **Cache headers:** `Cache-Control: no-store` (live feed) vs. krátký max-age (např. 600s, sníží zátěž)? Default: `max-age=600` — kalendářoví klienti polluji obvykle 1× za hodinu, krátká cache server-side šetří.
 - **Klubový čas akcí:** event má jen datum (`LocalDate`), ne čas. iCal whole-day event funguje, ale uživatelé mohou chtít vidět čas (start závodu typicky známý). Nech do iCal `DTSTART;VALUE=DATE` (whole-day) — pokud později přibude čas v Event aggregátu, iCal export se naturalně rozšíří.
