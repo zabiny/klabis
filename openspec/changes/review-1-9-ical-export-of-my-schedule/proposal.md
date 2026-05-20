@@ -8,10 +8,12 @@ Standardní řešení: **iCalendar feed (RFC 5545)** — Klabis vystaví URL, kt
 
 ## What Changes
 
-### Nová capability `ical-export`
+### Rozšíření capability `calendar-items` o iCalendar feed
 
-- **Subscribe URL pro „Můj rozvrh":** `GET /ical/my-schedule.ics?token=<userToken>` vrací iCalendar feed (`text/calendar`) obsahující VEVENT pro každou akci, na které uživatel buď má aktivní registraci, nebo je koordinátorem. Sjednocení obou množin (deduplicated by event id) — totéž, co `EventScheduleQuery.findEventIdsForMemberSchedule` v backendu.
-- **Autentizace přes personal access token (PAT)** — kalendářové aplikace neumějí OAuth2 flow; potřebujeme dlouhožijící token v URL. Token je per-user, randomly generovaný, uchovávaný v profilu uživatele. Lze rotate / revoke.
+iCalendar feed je nová schopnost modulu `calendar` — žádný samostatný `ical-export` modul nevzniká. Modul `calendar` už dnes konzumuje `EventScheduleQuery` pro web filtr „Můj rozvrh"; iCal feed je druhý výstup té samé domény.
+
+- **Subscribe URL pro „Můj rozvrh":** `GET /ical/my-schedule.ics?token=<userToken>` vrací iCalendar feed (`text/calendar`) obsahující VEVENT pro každou akci, na které uživatel buď má aktivní registraci, nebo je koordinátorem. Sjednocení obou množin (deduplicated by event id) — totéž, co `EventScheduleQuery.findEventIdsForMemberSchedule`.
+- **Autentizace přes personal access token (PAT)** — kalendářové aplikace neumějí OAuth2 flow; potřebujeme dlouhožijící token v URL. Token je per-user, randomly generovaný. Lze rotate / revoke.
 - **Mapování:**
   - VEVENT.UID = Klabis EventId (deterministické, aby update existujícího eventu nezdvojil event v kalendáři).
   - VEVENT.SUMMARY = event.name.
@@ -24,7 +26,7 @@ Standardní řešení: **iCalendar feed (RFC 5545)** — Klabis vystaví URL, kt
 - **Token management:**
   - Token se generuje jednou (lazy) — při prvním kliknutí na „Vytvořit kalendářový feed" v profilu.
   - „Vygenerovat nový token" akce — invaliduje starou URL (přestane fungovat), vytvoří novou. Použije se, pokud uživatel URL omylem zveřejnil.
-  - Tokeny jsou stored hashed v DB (jako hesla — viz `members` spec o cryptographic hashing).
+  - Token žije v **samostatné tabulce** vlastněné modulem `calendar` (viz Impact) — `User` aggregát v `common.users` se nemění.
 
 ### Out of scope
 
@@ -38,36 +40,55 @@ Standardní řešení: **iCalendar feed (RFC 5545)** — Klabis vystaví URL, kt
 
 ### New Capabilities
 
-- `ical-export` — subscribe URL feed pro „Můj rozvrh" ve formátu iCalendar.
+<!-- None. iCal feed je rozšíření existující capability calendar-items. -->
 
 ### Modified Capabilities
 
-- `members` (drobně):
-  - User profile / nastavení: nová sekce „Kalendářový feed" s tlačítkem „Zobrazit URL" + „Vygenerovat nový token".
-- `users`:
-  - Modifikace user aggregátu o personal access token field (cryptographically hashed).
+- `calendar-items`: přidána iCalendar subscribe feed schopnost — feed URL `GET /ical/my-schedule.ics?token=...` se sémantikou „Můj rozvrh", per-user token management.
+- `members` (drobně): User profile / nastavení — nová sekce „Kalendářový feed" s tlačítkem „Zobrazit URL" + „Vygenerovat nový token".
 
 ## Impact
 
-- **Backend kód:**
-  - Nový endpoint `GET /ical/my-schedule.ics` — accept query param `token`, ověří proti DB, vyhledá user → events „Můj rozvrh" (registrations ∪ coordinator role) přes existující `EventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to)`, sestaví iCalendar response.
-  - Výchozí rozsah dat feedu: poslední 30 dní + následujících 12 měsíců (configurable). Bez date range parametru — kalendářové klienty refreshují periodicky, full window stačí.
-  - User aggregát rozšířit o `iCalToken` (hashed string + token preview pro UI):
-    - Migration: nový sloupec.
-    - Service: `generateIcalToken(userId)` (idempotent or rotates), `validateIcalToken(rawToken) -> Optional<UserId>`.
-  - REST endpoint pro management tokenu (zobrazení obscured / regenerace): `GET /api/me/ical-token`, `POST /api/me/ical-token/regenerate`.
-  - iCalendar serialization (existující knihovna `biweekly` nebo manuálně — pole jsou jednoduchá, manuál = méně závislostí).
-- **Frontend kód:**
-  - V profilu uživatele přidat sekci „Kalendářový feed":
-    - Tlačítko „Zobrazit URL" — ukáže URL s tokenem, button „Kopírovat".
-    - Tlačítko „Vygenerovat nový token" — confirm dialog → regenerate.
-    - Help text: „Přidejte tuto URL do svého kalendáře (Google Calendar, Outlook, Apple Calendar…). Kalendář se bude automaticky aktualizovat, jak budete přihlašovat / odhlašovat akce, nebo když vám organizátor přidá / odebere roli koordinátora."
-- **Reused infrastructure:**
-  - `EventScheduleQuery` (port v `com.klabis.events`, dnes konzumovaný `calendar` modulem pro web filter „Můj rozvrh") — iCal modul ho použije se stejnou semantikou. Žádný nový query port, žádná duplicitní logika union(participant, coordinator).
-- **Bezpečnost:**
-  - Token je jediný gating mechanismus pro `/ical/my-schedule.ics` — pokud někdo URL zachytí, vidí účast i koordinátorské role uživatele. Pro Klabis je to akceptovatelné riziko (data nejsou ultra-citlivá), ale uživatel to musí vědět.
-  - Audit log není potřeba (low-stakes data).
-  - Rate limiting — jeden uživatel / klient by neměl polling > 1× za 15 min. Resilience4j (existing infrastructure) per-token rate limit. **Out of scope této change** (přidat až pokud bude problém).
+### Změny mimo modul `calendar`
+
+- **`events` modul — otevření `events.domain` pro public access:**
+  - Modul `calendar` potřebuje plný `Event` aggregát (status pro `STATUS:CANCELLED`, coordinator pro `Role: koordinátor`). To dnes `EventData` neposkytuje a `events.domain` je modul-interní.
+  - Řešení: `events.domain` (zejména interface `Events` a aggregát `Event`) se otevře pro čtení ostatním modulům — `Events.findById` / `Events.findAll` se stanou součástí veřejného API modulu `events`. Modul `calendar` je bude konzumovat přímo (stejný vztah, jaký už má přes `EventScheduleQuery`).
+  - Žádné rozšíření `EventData` není potřeba — `calendar` použije `Events` interface a fetchne celý `Event`.
+- **`common.ui` — `SpaFallbackFilter`:** přidat `/ical` do `EXCLUDED_PREFIXES`, aby GET na `/ical/my-schedule.ics` s `Accept: text/html` nebyl forwardován na SPA shell. Triviální jednořádková změna, **nezávislá na review-1-1** (dělá se v rámci této change).
+- **`common.security` — nový Spring Security filter chain:** chain pro `/ical/**` ordered před SPA fallback, který bypassuje JWT auth a deleguje validaci na token-validační službu modulu `calendar`. Globální security konfigurace.
+
+### Token storage — separátní tabulka (žádná změna `common.users`)
+
+- `User` aggregát v `common.users` se **nemění**.
+- Nová tabulka vlastněná modulem `calendar`, např. `calendar_feed_token`:
+  - `user_id` (FK / reference na `users.id`) — vlastník tokenu.
+  - `token_hash` — cryptographically hashed token (jako hesla).
+  - `token_lookup` — non-secret prefix tokenu pro indexovaný lookup (constant-time validace, viz design).
+  - `last_set_at` — kdy byl token naposledy vygenerován (zobrazeno v profilu).
+  - feed details dle potřeby (např. budoucí per-feed konfigurace).
+- Migrace: nová tabulka (do `V001` in-place, viz Review #1 — H2 bez perzistentních dat).
+- Domain + service modulu `calendar`: aggregát/entita pro feed token, služba `generate / regenerate / validate`.
+
+### Backend kód (modul `calendar`)
+
+- Nový endpoint `GET /ical/my-schedule.ics` — accept query param `token`, ověří proti tabulce, vyhledá user → `MemberId` → events „Můj rozvrh" (registrations ∪ coordinator role) přes `EventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to)`, načte plné `Event` aggregáty přes `Events`, sestaví iCalendar response.
+- Výchozí rozsah dat feedu: poslední 30 dní + následujících 12 měsíců (configurable). Bez date range parametru — kalendářové klienty refreshují periodicky, full window stačí.
+- REST endpoint pro management tokenu (zobrazení obscured / regenerace): `GET /api/me/ical-token`, `POST /api/me/ical-token`.
+- iCalendar serialization — ruční (pole jsou jednoduchá, žádná knihovna navíc).
+
+### Frontend kód
+
+- V profilu uživatele přidat sekci „Kalendářový feed":
+  - Tlačítko „Zobrazit URL" — ukáže URL s tokenem, button „Kopírovat".
+  - Tlačítko „Vygenerovat nový token" — confirm dialog → regenerate.
+  - Help text: „Přidejte tuto URL do svého kalendáře (Google Calendar, Outlook, Apple Calendar…). Kalendář se bude automaticky aktualizovat, jak budete přihlašovat / odhlašovat akce, nebo když vám organizátor přidá / odebere roli koordinátora."
+
+### Bezpečnost
+
+- Token je jediný gating mechanismus pro `/ical/my-schedule.ics` — pokud někdo URL zachytí, vidí účast i koordinátorské role uživatele. Pro Klabis je to akceptovatelné riziko (data nejsou ultra-citlivá), ale uživatel to musí vědět.
+- Audit log není potřeba (low-stakes data).
+- Rate limiting — jeden uživatel / klient by neměl polling > 1× za 15 min. Resilience4j (existing infrastructure) per-token rate limit. **Out of scope této change** (přidat až pokud bude problém).
 
 ## Open Questions
 

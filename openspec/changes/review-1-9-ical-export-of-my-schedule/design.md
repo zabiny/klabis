@@ -6,16 +6,18 @@ Hlavní výzva: autentizace. Kalendářové aplikace (Google Calendar, Apple Cal
 
 Sémantika obsahu feedu odpovídá filtru „Můj rozvrh" v aplikaci (`calendar-my-schedule-filter`, archivováno 2026-05-20): sjednocení akcí, kde uživatel má aktivní registraci, a akcí, kde je event coordinator. Cíl je, aby externí kalendář ukazoval to samé, co web filter — žádná druhá definice „mého rozvrhu".
 
+Feed je schopnost modulu `calendar`, ne samostatný modul. `calendar` už dnes konzumuje `EventScheduleQuery` pro web filtr; iCal feed je druhý výstup té samé domény.
+
 ## Goals / Non-Goals
 
 **Goals:**
 - Subscribe URL `/ical/my-schedule.ics?token=...` vrací iCal feed s „Mým rozvrhem" daného uživatele (participant ∪ coordinator).
-- Token je per-user, hashed v DB, regenerovatelný uživatelem.
+- Token je per-user, hashed, uložený v samostatné tabulce modulu `calendar`, regenerovatelný uživatelem.
 - Feed je deterministický (UID = eventId) — re-fetch updatuje existující eventy v kalendáři, neduplikuje.
 - Zrušená akce → VEVENT.STATUS:CANCELLED → externí kalendář ji označí škrtnutím / odstraní.
 - Odhlášený uživatel (a zároveň ne koordinátor téže akce) → VEVENT zmizí z feedu → externí kalendář ji odstraní při dalším refreshi.
 - Přidaná koordinátorská role → VEVENT se objeví ve feedu na další refresh.
-- Reuse `EventScheduleQuery.findEventIdsForMemberSchedule` — žádná duplikace OR semantiky v `ical-export` modulu.
+- Reuse `EventScheduleQuery.findEventIdsForMemberSchedule` — žádná duplikace OR semantiky.
 
 **Non-Goals:**
 - Veřejný feed bez tokenu.
@@ -24,28 +26,43 @@ Sémantika obsahu feedu odpovídá filtru „Můj rozvrh" v aplikaci (`calendar-
 - Multi-user feed (admin vidí přihlášky všech členů).
 - Family-member registrations.
 - Deputy / zástupný koordinátor (čeká na proposal `#83`).
+- Změna `User` aggregátu v `common.users`.
 - Ne-UTF-8 character handling (Klabis je UTF-8 napříč).
 
 ## Decisions
 
-### Decision 1: PAT — per-user single token, hashed v DB, opaque string
+### Decision 1: PAT — token v samostatné tabulce vlastněné modulem `calendar`
 
-User aggregát dostane field `iCalAccessTokenHash: Optional<String>` (hashed) + `iCalAccessTokenLastSet: Optional<Instant>` (audit / displayed v UI jako „naposledy regenerováno").
+`User` aggregát v `common.users` (shared kernel) se **nemění**. Token feedu žije v nové tabulce / aggregátu vlastněném modulem `calendar`:
+
+```
+calendar_feed_token
+  user_id       — reference na users.id (vlastník)
+  token_hash    — hashed token (passwordEncoder, jako hesla)
+  token_lookup  — non-secret prefix raw tokenu, indexovaný (lookup)
+  last_set_at   — kdy byl token naposledy vygenerován (UI „naposledy regenerováno")
+```
 
 Token je opaque base64url string (32 bytes random = 256 bit). Generování:
 ```
 String raw = base64Url(SecureRandom 32 bytes);
-String hash = passwordEncoder.encode(raw);  // BCrypt or Argon2
+String hash = passwordEncoder.encode(raw);   // BCrypt or Argon2
+String lookup = raw.substring(0, 8);          // non-secret index prefix
 ```
-DB uchovává jen hash. Raw token se uživateli zobrazí **jen jednou** při generování — pokud zapomene, musí regenerovat.
+DB uchovává jen hash + lookup prefix. Raw token se uživateli zobrazí **jen jednou** při generování — pokud zapomene, musí regenerovat.
+
+Validace: vyhledej řádek podle `token_lookup` (indexed, O(1)), pak `passwordEncoder.matches(raw, token_hash)` — vyhne se brute-force scanu přes všechny uživatele.
+
+**Why separátní tabulka a ne pole na `User`:** `User` je shared-kernel aggregát v `common.users`. Feed token je čistě záležitost modulu `calendar` — patří do jeho vlastní persistence, ne do sdíleného jádra. Modul `calendar` tak vlastní celý lifecycle tokenu bez zásahu do `common`.
 
 **Alternative considered:**
+- *Pole `iCalAccessTokenHash` na `User` aggregátu* — zaplevelilo by shared kernel modul-specifickým konceptem a vynutilo by změnu `backend-patterns` skillu. Zamítnuto.
 - *Plain text token v DB* — leaky, pokud někdo pumpne DB.
-- *Stateless JWT s expirací* — kalendářové klienty neumějí refresh, expirace by feed přerušila každých N dní. JWT stateless = nemožno revoke jediný token bez rotace klíčů.
+- *Stateless JWT s expirací* — kalendářové klienty neumějí refresh, expirace by feed přerušila každých N dní; JWT stateless = nemožno revoke jediný token bez rotace klíčů.
 
 ### Decision 2: Token regenerace = single token per user (overwrite)
 
-Uživatel má v daný okamžik 0 nebo 1 token. „Vygenerovat nový token" overwrite-uje hash a invaliduje předchozí URL. Žádný history / multiple tokens — KISS.
+Uživatel má v daný okamžik 0 nebo 1 řádek v `calendar_feed_token`. „Vygenerovat nový token" overwrite-uje `token_hash` + `token_lookup` + `last_set_at` a invaliduje předchozí URL. Žádný history / multiple tokens — KISS.
 
 ### Decision 3: URL forma — query param `?token=`
 
@@ -55,18 +72,21 @@ Test alternativ:
 - Path param `/ical/<token>/my-schedule.ics` — některé kalendářové klienty (Google Calendar) ho přijmou bez problémů, ale je méně standardní pattern.
 - Query param je univerzální. Default zvolen tato varianta.
 
-### Decision 4: Obsah feedu = „Můj rozvrh" sjednocení, reuse `EventScheduleQuery`
+### Decision 4: Obsah feedu = „Můj rozvrh" sjednocení, reuse `EventScheduleQuery` + `Events`
 
-Místo dvou samostatných query (registrations, coordinated events) a unionu v `ical-export` modulu se použije existující port `EventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to)` z `com.klabis.events`. Vrací `Set<EventId>` v jednom SQL query (date overlap + `coordinator_id = :id OR EXISTS (registration with member_id = :id)`).
+Modul `calendar` použije existující port `EventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to)` z `com.klabis.events` — vrací `Set<EventId>` v jednom SQL query (date overlap + `coordinator_id = :id OR EXISTS (registration with member_id = :id)`).
 
-`ical-export` modul potom:
-1. `Set<EventId> ids = eventScheduleQuery.findEventIdsForMemberSchedule(member, from, to)`
-2. `List<Event> events = events.findAllByIds(ids)` (nebo loop — záleží na existujícím portu)
-3. Serializace VEVENT.
+Pro VEVENT serializaci je potřeba plný `Event` aggregát (status pro `STATUS:CANCELLED`, coordinator pro `Role: koordinátor`). Dnešní `EventData` DTO tyto údaje neposkytuje. **Řešení: `events.domain` se otevře pro public access** — interface `Events` (`findById`, `findAll`) a aggregát `Event` budou součástí veřejného API modulu `events`. Modul `calendar` je bude konzumovat přímo (Spring Modulith povolí závislost `calendar → events`, jakou už `calendar` má přes `EventScheduleQuery` a `EventDataProvider`).
 
-**Důsledek pro architekturu:** `ical-export` modul závisí na `events` (stejně jako `calendar-items`). Žádná nová logika union; změna sémantiky „Můj rozvrh" v jednom místě se projeví v obou consumerech (web + iCal).
+Flow v modulu `calendar`:
+1. `Set<EventId> ids = eventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to)`
+2. `List<Event> events = ids.stream().map(events::findById).flatMap(Optional::stream).toList()` (přes `Events` interface)
+3. Pro každý event: `boolean isCoordinator = event.coordinatorId().equals(memberId)` — určí text `Role: koordinátor` v DESCRIPTION. Žádná další DB query, data jsou v `Event`.
+4. Serializace VEVENT.
 
-**Determinace role v DESCRIPTION:** pokud feed potřebuje rozlišit „participant" vs „koordinátor" v textu VEVENT.DESCRIPTION, musí to udělat sám (`EventScheduleQuery` to nepředává, jen IDs). Implementace: pro každé event id zkontroluj `event.coordinatorId == memberId` (data už načtená v `events`) — žádná další DB query.
+**Důsledek pro architekturu:** žádná nová logika union; změna sémantiky „Můj rozvrh" v jednom místě (`EventScheduleQuery`) se projeví v obou consumerech (web filter + iCal feed).
+
+**Why ne rozšíření `EventData`:** `EventData` je úzké DTO pro event-driven sync handlery. Přidávat na něj `status` + `coordinatorId` jen kvůli feedu by ho rozšiřovalo o pole, která ostatní consumeři nepotřebují. Otevřít `Events` (read-only query API, k tomu navržené) je čistší — `calendar` dostane plný aggregát a vybere si pole sám.
 
 ### Decision 5: Výchozí časové okno feedu — [-30 dní, +12 měsíců]
 
@@ -97,17 +117,19 @@ END:VCALENDAR
 
 Unit test pokrývá escape rules a deterministic UID.
 
-**Alternative considered:**
-- `biweekly` library — robustnější, ale zbytečná složitost pro náš subset.
-- Spring template engine — overkill.
-
 ### Decision 7: Cache headers — `max-age=600`
 
 Kalendářoví klienti typicky polluji 1× za hodinu nebo víckrát. Server-side cache 10 minut šetří DB queries; uživatel vidí změnu max po 10 min latence — akceptovatelné.
 
 `Cache-Control: max-age=600, public, no-transform`. Žádné per-user cache (každý token má jiný feed obsah, ETag by se nehodil).
 
-### Decision 8: Frontend — sekce v profilu uživatele
+### Decision 8: Security a routing pro `/ical/...`
+
+- **Spring Security chain** pro `/ical/**` — vlastní filter chain (`com.klabis.common.security`), ordered před SPA fallback, který bypassuje JWT auth a deleguje na token-validační službu modulu `calendar`.
+- **`SpaFallbackFilter` exclusion** — do `EXCLUDED_PREFIXES` v `com.klabis.common.ui.SpaFallbackFilter` přidat `/ical`, aby GET na `/ical/my-schedule.ics` s `Accept: text/html` nebyl forwardován na SPA shell. Triviální jednořádková změna; **nezávislá na review-1-1** — dělá se v rámci této change.
+- `/ical/...` je vlastní top-level path mimo `/api/` prefix (ten je rezervovaný pro OAuth2-protected endpointy).
+
+### Decision 9: Frontend — sekce v profilu uživatele
 
 Stránka `MyProfile` (member detail self-view) má novou sekci „Kalendářový feed":
 - Pokud token zatím není vygenerován: tlačítko „Vytvořit kalendářový feed" → POST regenerate, ukáže URL.
@@ -116,23 +138,25 @@ Stránka `MyProfile` (member detail self-view) má novou sekci „Kalendářový
 
 ## Risks / Trade-offs
 
-- **[Risk] Token leak (uživatel veřejně publikuje URL)** → Mitigation: regenerace invaliduje starou URL. Help text v UI varuje. Token v query stringu může být v server logs — server logs ale neukládáme token surface (audit log). Pokud by se ukázalo problémem, přesun na Authorization Bearer s OAuth2 flow je možný.
+- **[Risk] Otevření `events.domain` zvětšuje public surface modulu `events`** → `Events` interface i aggregát `Event` se stanou public. Mitigation: `Events` je už dnes navržené jako „public query API for Event aggregate" (viz jeho Javadoc) — fakticky se jen formálně zveřejní balíček. Závislost `calendar → events` už existuje.
+- **[Risk] Token leak (uživatel veřejně publikuje URL)** → Mitigation: regenerace invaliduje starou URL. Help text v UI varuje. Token v query stringu může být v server logs — server logs token surface neukládáme do audit logu. Pokud by se ukázalo problémem, přesun na Authorization Bearer s OAuth2 flow je možný.
 - **[Risk] Polling load** → Mitigation: cache 10 min + rate limit follow-up.
 - **[Risk] Deterministický UID = pokud Klabis EventId změní (nemělo by se stávat), kalendář ztratí historii** → Mitigation: UUID je stabilní per-event aggregate, žádné re-create.
-- **[Risk] Sémantická drift mezi web filtrem a iCal feedem** → Mitigation: oba consumeři používají `EventScheduleQuery.findEventIdsForMemberSchedule`. Změna semantiky (např. přidání deputy coordinator přes `#83`) se projeví v jediné portu a tím v obou výstupech současně.
-- **[Trade-off] Žádný iCal pro klubový kalendář** — uživatelé chtějí všechny akce, ne jen vlastní účast/koordinaci? Web filter „Můj rozvrh" je výchozí OFF, takže uživatelé v hlavním kalendáři běžně vidí všechny akce. Pro iCal je „Můj rozvrh" záměrně default — kalendář externího uživatele nemá zaplevelovat klubovými akcemi, na kterých nehraje žádnou roli. Pokud bude poptávka, follow-up `my-club.ics` feed nebo parameter.
+- **[Risk] Sémantická drift mezi web filtrem a iCal feedem** → Mitigation: oba consumeři používají `EventScheduleQuery.findEventIdsForMemberSchedule`. Změna semantiky (např. přidání deputy coordinator přes `#83`) se projeví v jediném portu a tím v obou výstupech současně.
+- **[Trade-off] Žádný iCal pro klubový kalendář** — uživatelé chtějí všechny akce? Web filter „Můj rozvrh" je výchozí OFF, v hlavním kalendáři uživatelé vidí všechny akce. Pro iCal je „Můj rozvrh" záměrně default — externí kalendář nemá zaplevelovat klubovými akcemi, na kterých uživatel nehraje roli. Follow-up `my-club.ics` možný.
 
 ## Migration Plan
 
-1. **DB migration:** přidat sloupce `ical_token_hash VARCHAR(255) NULL`, `ical_token_last_set TIMESTAMP NULL` na `users` tabulce.
-2. **Domain + service:** User aggregát rozšířit, `IcalTokenService` (generate/regenerate/validate).
-3. **REST endpoint:** `GET /ical/my-schedule.ics?token=...` (mimo `/api/` prefix, žádné OAuth2 — token je gating).
-4. **REST API pro management:** `POST /api/me/ical-token/regenerate`, `GET /api/me/ical-token` (vrací `{ url: "...?token=...", lastSetAt: ... }`).
-5. **Frontend:** sekce v profilu.
-6. **Smoke test:** vygenerovat token, otevřít URL v prohlížeči (HTTPS), ověřit iCal output včetně koordinátorské role v DESCRIPTION, přidat do Google Calendar, ověřit zobrazení.
+1. **`events` modul:** otevřít `events.domain` (interface `Events`, aggregát `Event`) pro public access — formálně zveřejnit balíček, ověřit Spring Modulith pravidla.
+2. **DB migration:** nová tabulka `calendar_feed_token` (`user_id`, `token_hash`, `token_lookup`, `last_set_at`) — do `V001` in-place.
+3. **Domain + service (modul `calendar`):** feed-token aggregát/entita + `IcalTokenService` (generate/regenerate/validate).
+4. **REST endpoint:** `GET /ical/my-schedule.ics?token=...` (mimo `/api/` prefix, žádné OAuth2 — token je gating).
+5. **Security + routing:** nový security chain pro `/ical/**`; `/ical` do `SpaFallbackFilter.EXCLUDED_PREFIXES`.
+6. **REST API pro management:** `POST /api/me/ical-token`, `GET /api/me/ical-token`.
+7. **Frontend:** sekce v profilu.
+8. **Smoke test:** vygenerovat token, otevřít URL v prohlížeči (HTTPS), ověřit iCal output včetně koordinátorské role v DESCRIPTION, přidat do Google Calendar, ověřit zobrazení.
 
 ## Open Questions
 
-- **`/ical/...` mimo `/api/` prefix vs. `/api/ical/...`** — kalendářové klienty potřebují URL bez auth header. `/api/` prefix v naší aplikaci je rezervovaný pro OAuth2 protected endpointy. Alternativa: `/ical/` jako vlastní top-level path. Default: vlastní top-level cesta `/ical/...`. Vyžaduje úpravu serving routingu (může se shodovat s proposalem 1.1 — SPA filter musí `/ical/` vyloučit).
-- **Spring Security chain pro `/ical/...`** — vlastní filter chain, který bypassuje JWT auth a deleguje na `IcalTokenService.validate(token)`.
+- **Token storage modul:** tabulka `calendar_feed_token` je vlastněná modulem `calendar`. Token management REST API (`/api/me/ical-token`) — controller patří taktéž do modulu `calendar` (vystavuje token modulu `calendar`), i když je namountovaný pod `/api/me/...`. Potvrdit při implementaci.
 - **Co když user nemá žádné registrace ani koordinátorskou roli?** Feed obsahuje jen `BEGIN:VCALENDAR / END:VCALENDAR` bez VEVENT — validní empty calendar.

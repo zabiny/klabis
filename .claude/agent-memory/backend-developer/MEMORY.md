@@ -31,6 +31,10 @@
 - Original test used month 71 as invalid; after adding 71-82 support, month 71 became valid
 - Updated test to use month 83 (outside all valid ranges: 01-12, 21-32, 51-62, 71-82)
 
+### Never use Optional as method parameter
+- See [feedback_optional_parameter.md](feedback_optional_parameter.md)
+- Use `boolean flag + @Nullable T value` instead for tri-state parameters
+
 ### Field-level authorization on records (Jackson BeanSerializerModifier)
 - See [feedback_field_level_auth_pattern.md](feedback_field_level_auth_pattern.md) for full pattern
 - Annotations (`@PreAuthorize`, `@HasAuthority`, `@HandleAuthorizationDenied`) go directly on record components — no interface required
