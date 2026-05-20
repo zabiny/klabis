@@ -123,11 +123,40 @@ Kalendářoví klienti typicky polluji 1× za hodinu nebo víckrát. Server-side
 
 `Cache-Control: max-age=600, public, no-transform`. Žádné per-user cache (každý token má jiný feed obsah, ETag by se nehodil).
 
-### Decision 8: Security a routing pro `/ical/...`
+### Decision 8: Security pro `/ical/...` — autentizační strategie podle `token` parametru
 
-- **Spring Security chain** pro `/ical/**` — vlastní filter chain (`com.klabis.common.security`), ordered před SPA fallback, který bypassuje JWT auth a deleguje na token-validační službu modulu `calendar`.
-- **`SpaFallbackFilter` exclusion** — do `EXCLUDED_PREFIXES` v `com.klabis.common.ui.SpaFallbackFilter` přidat `/ical`, aby GET na `/ical/my-schedule.ics` s `Accept: text/html` nebyl forwardován na SPA shell. Triviální jednořádková změna; **nezávislá na review-1-1** — dělá se v rámci této change.
-- `/ical/...` je vlastní top-level path mimo `/api/` prefix (ten je rezervovaný pro OAuth2-protected endpointy).
+Místo samostatného filter chainu se stávající resource-server filter chain rozšíří o **autentizační strategii**, která vybírá způsob autentizace podle requestu. Žádný druhý chain, žádný bypass.
+
+**Mechanismus — vlastní `AuthenticationFilter` před `BearerTokenAuthenticationFilter`:**
+
+- Nový `IcalTokenAuthenticationFilter` + `IcalTokenAuthenticationProvider` žijí v **infrastructure vrstvě modulu `calendar`** (`com.klabis.calendar.infrastructure.security`), ne v `common.security`. Důvod: oba závisejí výhradně na token-službě modulu `calendar` (`IcalTokenService`) — je to security *adapter* modulu `calendar`, žádný sdílený security primitiv. `common.security` zůstává nedotčený s výjimkou bodu níže.
+- Registrace filtru do existujícího resource-server chainu: modul `calendar` přispěje filter do chainu přes mechanismus, který projekt už používá pro skládání security konfigurace napříč moduly (obdoba `WebSecurityCommonConfiguration` discovery). Pokud takový extension point ještě neexistuje v podobě použitelné pro přidání filtru, zavede se v `common.security` minimální hook (`SecurityFilterChain` customizer / `@Bean` typu, který chain skládá) — to je jediný možný zásah do `common.security` a má být co nejtenčí. Konkrétní podobu potvrdit při implementaci proti aktuálnímu stavu `WebSecurityCommonConfiguration` / `ResourceServerSecurityConfiguration`.
+- Filter se zařadí **před** `BearerTokenAuthenticationFilter`.
+- Filter má `RequestMatcher` omezený na `/ical/**` — pro ostatní cesty se neaktivuje (`shouldNotFilter`).
+- Pokud request na `/ical/**` nese query param `token`:
+  - Filter vytvoří neautentizovaný `IcalTokenAuthenticationToken(rawToken)` a předá ho `AuthenticationManager`u.
+  - Vlastní `IcalTokenAuthenticationProvider` token zvaliduje přes token-službu modulu `calendar` (`IcalTokenService.validate`), a při úspěchu vrátí autentizovaný principal (user identity), který resource-server controller dál použije.
+  - Při neúspěchu → `AuthenticationException` → standardní `AuthenticationEntryPoint` vrátí 401.
+- Pokud request na `/ical/**` query param `token` **nenese**, filter neudělá nic — request propadne dál na `BearerTokenAuthenticationFilter` a autentizuje se standardně přes OAuth2 (užitečné např. pro interní/diagnostické volání feedu z přihlášené session).
+
+**Působnost je striktně `/ical/**`.** `?token=` na `/api/**` se ignoruje — alternativní autentizace nikdy neobejde OAuth2 mimo iCal cesty. Tím se nezvětšuje attack surface zbytku aplikace.
+
+```mermaid
+flowchart LR
+    A[Request] --> B{path /ical/**?}
+    B -- ne --> E[BearerTokenAuthenticationFilter OAuth2]
+    B -- ano --> C{query param token?}
+    C -- ano --> D[IcalTokenAuthenticationProvider validate]
+    C -- ne --> E
+    D --> F[Resource controller]
+    E --> F
+```
+
+**Why filter + provider a ne `AuthenticationManagerResolver`:** `AuthenticationManagerResolver<HttpServletRequest>` na resource serveru by také fungoval, ale je svázaný s `BearerTokenAuthenticationFilter`, který očekává token v `Authorization` hlavičce. iCal token je v query stringu, takže by se stejně musel doplnit custom `BearerTokenResolver` — dvě customizace místo jedné. Samostatný `AuthenticationFilter` před bearer filtrem je přímočařejší a drží iCal logiku na jednom místě.
+
+**`SpaFallbackFilter` exclusion** — do `EXCLUDED_PREFIXES` v `com.klabis.common.ui.SpaFallbackFilter` přidat `/ical`, aby GET na `/ical/my-schedule.ics` s `Accept: text/html` nebyl forwardován na SPA shell. Triviální jednořádková změna; **nezávislá na review-1-1** — dělá se v rámci této change.
+
+`/ical/...` je vlastní top-level path mimo `/api/` prefix (ten je rezervovaný pro OAuth2-protected endpointy).
 
 ### Decision 9: Frontend — sekce v profilu uživatele
 
@@ -151,7 +180,7 @@ Stránka `MyProfile` (member detail self-view) má novou sekci „Kalendářový
 2. **DB migration:** nová tabulka `calendar_feed_token` (`user_id`, `token_hash`, `token_lookup`, `last_set_at`) — do `V001` in-place.
 3. **Domain + service (modul `calendar`):** feed-token aggregát/entita + `IcalTokenService` (generate/regenerate/validate).
 4. **REST endpoint:** `GET /ical/my-schedule.ics?token=...` (mimo `/api/` prefix, žádné OAuth2 — token je gating).
-5. **Security + routing:** nový security chain pro `/ical/**`; `/ical` do `SpaFallbackFilter.EXCLUDED_PREFIXES`.
+5. **Security + routing:** `IcalTokenAuthenticationFilter` + `IcalTokenAuthenticationProvider` v `calendar.infrastructure.security`, zařazené do resource-server chainu před `BearerTokenAuthenticationFilter`; `/ical` do `SpaFallbackFilter.EXCLUDED_PREFIXES`.
 6. **REST API pro management:** `POST /api/me/ical-token`, `GET /api/me/ical-token`.
 7. **Frontend:** sekce v profilu.
 8. **Smoke test:** vygenerovat token, otevřít URL v prohlížeči (HTTPS), ověřit iCal output včetně koordinátorské role v DESCRIPTION, přidat do Google Calendar, ověřit zobrazení.

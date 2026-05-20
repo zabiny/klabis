@@ -33,13 +33,16 @@
 - [ ] 5.3 Escape rules for SUMMARY/LOCATION/DESCRIPTION: backslash, comma, semicolon, newline (per RFC 5545)
 - [ ] 5.4 Unit tests with golden output: 0 events, 1 event registered, 1 event coordinated, event with both roles, cancelled event, special characters in name/location
 
-## 6. Feed endpoint + security chain
+## 6. Feed endpoint + iCal-token authentication
 
-- [ ] 6.1 Add Spring Security filter chain matcher `/ical/**` (in `common.security`) ordered before SPA fallback; chain bypasses JWT auth and delegates to `IcalTokenService.validate(token)` from the query param
-- [ ] 6.2 Add `/ical` to `EXCLUDED_PREFIXES` in `com.klabis.common.ui.SpaFallbackFilter` so the feed URL is never forwarded to the SPA shell (independent of review-1-1)
-- [ ] 6.3 Controller `IcalFeedController` (calendar module) with `@GetMapping("/ical/my-schedule.ics")`; reads `?token=`, validates, calls the application service, renders feed
-- [ ] 6.4 Response: `Content-Type: text/calendar; charset=UTF-8`; `Cache-Control: max-age=600`
-- [ ] 6.5 Integration tests: valid token → 200 with iCal body; invalid token → 401; user with empty schedule → 200 empty calendar; event with coordinator-only role present; cancelled events → STATUS:CANCELLED in output
+- [ ] 6.1 `IcalTokenAuthenticationProvider` in `com.klabis.calendar.infrastructure.security` — accepts an `IcalTokenAuthenticationToken`, validates via `IcalTokenService.validate(token)`, returns an authenticated principal on success or throws `AuthenticationException`
+- [ ] 6.2 `IcalTokenAuthenticationFilter` in `com.klabis.calendar.infrastructure.security` — `RequestMatcher` limited to `/ical/**`; when the request carries a `token` query param, builds an unauthenticated `IcalTokenAuthenticationToken` and delegates to the `AuthenticationManager`; when absent, does nothing (request falls through to OAuth2)
+- [ ] 6.3 Register the filter into the existing resource-server `SecurityFilterChain` before `BearerTokenAuthenticationFilter`, using the project's cross-module security composition mechanism; introduce a minimal extension hook in `common.security` only if no usable one exists (verify against `WebSecurityCommonConfiguration` / `ResourceServerSecurityConfiguration`)
+- [ ] 6.4 Add `/ical` to `EXCLUDED_PREFIXES` in `com.klabis.common.ui.SpaFallbackFilter` so the feed URL is never forwarded to the SPA shell (independent of review-1-1)
+- [ ] 6.5 Controller `IcalFeedController` (calendar module) with `@GetMapping("/ical/my-schedule.ics")` — relies on the authenticated principal from the filter, calls the application service, renders feed
+- [ ] 6.6 Response: `Content-Type: text/calendar; charset=UTF-8`; `Cache-Control: max-age=600`
+- [ ] 6.7 Security tests: `/ical/**` with valid `token` → authenticated; with invalid/unknown `token` → 401; `/ical/**` without `token` → falls through to OAuth2; `?token=` on `/api/**` is ignored (no auth bypass)
+- [ ] 6.8 Integration tests: valid token → 200 with iCal body; user with empty schedule → 200 empty calendar; event with coordinator-only role present; cancelled events → STATUS:CANCELLED in output
 
 ## 7. Token management API
 

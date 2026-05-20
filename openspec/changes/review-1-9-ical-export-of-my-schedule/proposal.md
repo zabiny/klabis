@@ -56,7 +56,9 @@ iCalendar feed je nová schopnost modulu `calendar` — žádný samostatný `ic
   - Řešení: `events.domain` (zejména interface `Events` a aggregát `Event`) se otevře pro čtení ostatním modulům — `Events.findById` / `Events.findAll` se stanou součástí veřejného API modulu `events`. Modul `calendar` je bude konzumovat přímo (stejný vztah, jaký už má přes `EventScheduleQuery`).
   - Žádné rozšíření `EventData` není potřeba — `calendar` použije `Events` interface a fetchne celý `Event`.
 - **`common.ui` — `SpaFallbackFilter`:** přidat `/ical` do `EXCLUDED_PREFIXES`, aby GET na `/ical/my-schedule.ics` s `Accept: text/html` nebyl forwardován na SPA shell. Triviální jednořádková změna, **nezávislá na review-1-1** (dělá se v rámci této change).
-- **`common.security` — nový Spring Security filter chain:** chain pro `/ical/**` ordered před SPA fallback, který bypassuje JWT auth a deleguje validaci na token-validační službu modulu `calendar`. Globální security konfigurace.
+- **Security — iCal-token autentizační strategie (filter ve `calendar.infrastructure`):** žádný samostatný filter chain. Stávající resource-server filter chain dostane nový `AuthenticationFilter` zařazený **před** `BearerTokenAuthenticationFilter`. Filter působí jen na `/ical/**`: pokud request nese query param `token`, vytvoří iCal-token `Authentication` a deleguje na vlastní `AuthenticationProvider` (validace přes token-službu modulu `calendar`); jinak nic nedělá a request propadne na standardní OAuth2 autentizaci. Mimo `/ical/**` se chování nemění — `?token=` nemůže obejít OAuth2.
+  - `IcalTokenAuthenticationFilter` + `IcalTokenAuthenticationProvider` žijí v `com.klabis.calendar.infrastructure.security` — jsou to security adaptery modulu `calendar`, ne sdílené primitivy.
+  - Do `common.security` se zasahuje pouze pokud chybí extension point pro přidání filtru do chainu napříč moduly — pak se zavede minimální hook. Jinak `common.security` zůstává nedotčený.
 
 ### Token storage — separátní tabulka (žádná změna `common.users`)
 
