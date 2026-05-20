@@ -552,6 +552,30 @@ COMMENT ON TABLE category_presets IS 'Reusable category preset templates for eve
 COMMENT ON COLUMN category_presets.categories IS 'Comma-separated category names (e.g. "M21,W35,D10"; null means empty preset)';
 
 -- ============================================================================
+-- 25. CALENDAR_FEED_TOKEN TABLE
+-- Per-user personal access token for iCalendar feed authentication.
+-- Owned by the calendar module — User aggregate in common.users is not modified.
+-- ============================================================================
+
+CREATE TABLE calendar_feed_token
+(
+    user_id     UUID         NOT NULL PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    token_hash  VARCHAR(255) NOT NULL,
+    token_lookup VARCHAR(16) NOT NULL,
+    last_set_at TIMESTAMP    NOT NULL
+);
+
+-- Indexed lookup: find token row by non-secret prefix before bcrypt comparison (O(1), no full-table scan)
+CREATE INDEX idx_calendar_feed_token_lookup ON calendar_feed_token (token_lookup);
+
+-- Comments for calendar_feed_token
+COMMENT ON TABLE calendar_feed_token IS 'Per-user PAT for iCalendar feed. One row per user (upsert on regenerate). Owned by the calendar module.';
+COMMENT ON COLUMN calendar_feed_token.user_id IS 'Owner user ID — primary key (single token per user)';
+COMMENT ON COLUMN calendar_feed_token.token_hash IS 'BCrypt/Argon2 hash of the raw token (never stored plain)';
+COMMENT ON COLUMN calendar_feed_token.token_lookup IS 'Non-secret 8-char prefix of the raw base64url token, used for indexed pre-filter before bcrypt comparison';
+COMMENT ON COLUMN calendar_feed_token.last_set_at IS 'When the token was last generated or regenerated';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

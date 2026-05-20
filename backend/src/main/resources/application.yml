@@ -102,6 +102,11 @@ springdoc:
         - /actuator/**
 
 klabis:
+  ical:
+    window:
+      past: ${KLABIS_ICAL_WINDOW_PAST:P30D}
+      future: ${KLABIS_ICAL_WINDOW_FUTURE:P12M}
+
   club:
     code: ${KLABIS_CLUB_CODE:ZBM}
     name: ${KLABIS_CLUB_NAME:Klub orientačního běhu}

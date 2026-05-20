@@ -8,6 +8,7 @@ import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.Events;
 import com.klabis.events.domain.RegistrationDeadlines;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -61,6 +62,9 @@ class CalendarEventSyncIntegrationTest {
 
     @MockitoBean
     private EventScheduleQuery eventScheduleQuery;
+
+    @MockitoBean
+    private Events events;
 
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")

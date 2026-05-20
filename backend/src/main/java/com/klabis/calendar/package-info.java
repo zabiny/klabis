@@ -10,8 +10,12 @@
  * <p>
  * Event-linked items are read-only; only manual items can be edited or deleted.
  * <p>
- * This module consumes domain events from the Events module but does not depend on it directly,
- * following Spring Modulith's event-driven architecture.
+ * This module depends on the events module for:
+ * <ul>
+ *   <li>Domain events (EventPublishedEvent, EventUpdatedEvent, EventCancelledEvent)</li>
+ *   <li>Cross-module query port (EventScheduleQuery)</li>
+ *   <li>Event aggregate read access (Events, Event) via the events.domain named interface</li>
+ * </ul>
  */
 @org.springframework.modulith.ApplicationModule(displayName = "Kalendář")
 package com.klabis.calendar;

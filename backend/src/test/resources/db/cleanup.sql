@@ -15,6 +15,9 @@ DELETE FROM oauth2_authorization;
 -- OAuth2 registered clients
 DELETE FROM oauth2_registered_client;
 
+-- Calendar feed tokens (owned by calendar module, FK → users with cascade)
+DELETE FROM calendar_feed_token;
+
 -- Users aggregate (password tokens and user permissions are deleted through cascade)
 -- DELETE FROM password_setup_tokens;
 -- DELETE FROM user_permissions;
