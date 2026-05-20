@@ -9,9 +9,12 @@ import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -21,10 +24,23 @@ import java.util.stream.Collectors;
 @Repository
 class CalendarRepositoryAdapter implements CalendarRepository {
 
-    private final CalendarJdbcRepository jdbcRepository;
+    private static final Sort DEFAULT_SORT = Sort.by(Sort.Order.asc("start_date"), Sort.Order.asc("name"));
 
-    public CalendarRepositoryAdapter(CalendarJdbcRepository jdbcRepository) {
+    private static final Map<String, String> DOMAIN_TO_DB_COLUMN = Map.of(
+            "startDate", "start_date",
+            "endDate", "end_date",
+            "name", "name",
+            "kind", "kind",
+            "eventId", "event_id"
+    );
+
+    private final CalendarJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
+
+    CalendarRepositoryAdapter(CalendarJdbcRepository jdbcRepository,
+                               JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.jdbcRepository = jdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
@@ -41,35 +57,28 @@ class CalendarRepositoryAdapter implements CalendarRepository {
 
     @Override
     public List<CalendarItem> findByFilter(CalendarFilter filter, Sort sort) {
-        boolean hasKinds = !filter.itemTypes().isEmpty();
-        boolean hasEventIds = !filter.eventIds().isEmpty();
+        Criteria criteria = buildDateRangeCriteria(filter);
 
-        List<CalendarMemento> mementos;
-        if (hasKinds && hasEventIds) {
-            mementos = jdbcRepository.findByDateRangeAndKindsAndEventIds(
-                    filter.startDate(), filter.endDate(),
-                    toKindStrings(filter.itemTypes()),
-                    toUuids(filter.eventIds()));
-        } else if (hasKinds) {
-            mementos = jdbcRepository.findByDateRangeAndKinds(
-                    filter.startDate(), filter.endDate(),
-                    toKindStrings(filter.itemTypes()));
-        } else if (hasEventIds) {
-            mementos = jdbcRepository.findByDateRangeAndEventIds(
-                    filter.startDate(), filter.endDate(),
-                    toUuids(filter.eventIds()));
-        } else {
-            mementos = jdbcRepository.findByDateRange(filter.startDate(), filter.endDate());
+        if (!filter.itemTypes().isEmpty()) {
+            criteria = criteria.and("kind").in(toKindStrings(filter.itemTypes()));
         }
 
-        return mementos.stream()
+        if (!filter.eventIds().isEmpty()) {
+            criteria = criteria.and("event_id").in(toUuids(filter.eventIds()));
+        }
+
+        Sort effectiveSort = sort.isUnsorted() ? DEFAULT_SORT : withNameTiebreaker(translateSort(sort));
+        Query query = Query.query(criteria).sort(effectiveSort);
+
+        return jdbcAggregateTemplate.findAll(query, CalendarMemento.class).stream()
                 .map(CalendarMemento::toCalendarItem)
                 .toList();
     }
 
     @Override
     public List<CalendarItem> findByEventId(EventId eventId) {
-        return jdbcRepository.findByEventId(eventId.value()).stream()
+        Criteria criteria = Criteria.where("event_id").is(eventId.value());
+        return jdbcAggregateTemplate.findAll(Query.query(criteria), CalendarMemento.class).stream()
                 .map(CalendarMemento::toCalendarItem)
                 .toList();
     }
@@ -79,11 +88,35 @@ class CalendarRepositoryAdapter implements CalendarRepository {
         jdbcRepository.deleteById(calendarItem.getId().value());
     }
 
-    private static Collection<String> toKindStrings(Set<CalendarItemKind> kinds) {
+    private static Criteria buildDateRangeCriteria(CalendarFilter filter) {
+        return Criteria.where("start_date").lessThanOrEquals(filter.endDate())
+                .and("end_date").greaterThanOrEquals(filter.startDate());
+    }
+
+    private static Sort translateSort(Sort sort) {
+        List<Sort.Order> orders = sort.stream()
+                .map(order -> new Sort.Order(
+                        order.getDirection(),
+                        DOMAIN_TO_DB_COLUMN.getOrDefault(order.getProperty(), order.getProperty()),
+                        order.getNullHandling()))
+                .toList();
+        return Sort.by(orders);
+    }
+
+    /**
+     * Appends {@code name ASC} as a stable tiebreaker when it is not already present,
+     * preserving the same secondary ordering the previous hard-coded SQL provided.
+     */
+    private static Sort withNameTiebreaker(Sort sort) {
+        boolean hasName = sort.stream().anyMatch(o -> "name".equals(o.getProperty()));
+        return hasName ? sort : sort.and(Sort.by(Sort.Order.asc("name")));
+    }
+
+    private static Set<String> toKindStrings(Set<CalendarItemKind> kinds) {
         return kinds.stream().map(CalendarItemKind::name).collect(Collectors.toSet());
     }
 
-    private static Collection<UUID> toUuids(Set<EventId> eventIds) {
+    private static Set<UUID> toUuids(Set<EventId> eventIds) {
         return eventIds.stream().map(EventId::value).collect(Collectors.toSet());
     }
 }

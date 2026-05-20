@@ -104,3 +104,19 @@ Key service behaviour for mySchedule:
 2546/2548 tests green (2 pre-existing failures unchanged).
 
 ---
+
+### 2026-05-20 — CalendarRepositoryAdapter rewritten to use Criteria API (JdbcAggregateTemplate)
+
+Replaced the 4 hard-coded `@Query` variants in `CalendarJdbcRepository` + the branch dispatch in `CalendarRepositoryAdapter` with a single dynamic `Criteria`-based query built from `CalendarFilter` and `Sort`, mirroring the pattern already used in `EventRepositoryAdapter`.
+
+**Changes:**
+- `CalendarJdbcRepository`: stripped all 5 `@Query` methods (`findByDateRange`, `findByDateRangeAndKinds`, `findByDateRangeAndEventIds`, `findByDateRangeAndKindsAndEventIds`, `findByEventId`). Interface now extends only `CrudRepository<CalendarMemento, UUID>`.
+- `CalendarRepositoryAdapter`: injected `JdbcAggregateTemplate`. `findByFilter` builds `Criteria.where("start_date").lessThanOrEquals(...).and("end_date").greaterThanOrEquals(...)` then conditionally `.and("kind").in(...)` and `.and("event_id").in(...)` depending on filter. `findByEventId` rewritten with `Criteria.where("event_id").is(...)`.
+- Sort: domain property names (`startDate`) translated to column names (`start_date`) via `DOMAIN_TO_DB_COLUMN` map. `name ASC` appended as stable tiebreaker (preserves existing secondary sort from old hard-coded SQL). When `Sort.unsorted()`, falls back to `start_date ASC, name ASC` default.
+- `CalendarRepositoryAdapterTest`: unit test rewritten to mock `JdbcAggregateTemplate` instead of the now-removed `@Query` methods. New tests verify default sort fallback and domain-to-column name translation.
+
+**Pattern used:** column names in `Criteria.where(...)` (same as `EventRepositoryAdapter`), NOT Java property names.
+
+All 36 affected tests green. Pre-existing failure count unchanged.
+
+---

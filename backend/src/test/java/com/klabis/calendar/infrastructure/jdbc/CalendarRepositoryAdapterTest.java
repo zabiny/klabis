@@ -14,13 +14,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.data.relational.core.query.Query;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -39,11 +41,14 @@ class CalendarRepositoryAdapterTest {
     @Mock
     private CalendarJdbcRepository jdbcRepositoryMock;
 
+    @Mock
+    private JdbcAggregateTemplate jdbcAggregateTemplateMock;
+
     private CalendarRepositoryAdapter testedSubject;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new CalendarRepositoryAdapter(jdbcRepositoryMock);
+        testedSubject = new CalendarRepositoryAdapter(jdbcRepositoryMock, jdbcAggregateTemplateMock);
     }
 
     @Nested
@@ -141,45 +146,29 @@ class CalendarRepositoryAdapterTest {
     class FindByFilterTests {
 
         @Test
-        @DisplayName("should delegate to findByDateRange when filter has no item types or event ID restrictions")
-        void shouldDelegateToFindByDateRangeWhenNoRestrictions() {
+        @DisplayName("should delegate to JdbcAggregateTemplate with date-range-only criteria when filter has no item types or event IDs")
+        void shouldDelegateToTemplateWithDateRangeCriteriaWhenNoRestrictions() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
 
-            ManualCalendarItem item1 = ManualCalendarItem.reconstruct(
-                    CalendarItemId.generate(),
-                    "Event 1",
-                    "Description 1",
-                    LocalDate.of(2026, 6, 10),
-                    LocalDate.of(2026, 6, 10),
+            ManualCalendarItem item = ManualCalendarItem.reconstruct(
+                    CalendarItemId.generate(), "Event 1", "Description 1",
+                    LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10),
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
-
-            ManualCalendarItem item2 = ManualCalendarItem.reconstruct(
-                    CalendarItemId.generate(),
-                    "Event 2",
-                    "Description 2",
-                    LocalDate.of(2026, 6, 20),
-                    LocalDate.of(2026, 6, 20),
-                    new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
-
-            List<CalendarMemento> mementos = List.of(
-                    CalendarMemento.from(item1),
-                    CalendarMemento.from(item2));
-
-            when(jdbcRepositoryMock.findByDateRange(startDate, endDate)).thenReturn(mementos);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of(CalendarMemento.from(item)));
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
             List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
 
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(CalendarItem::getName)
-                    .containsExactly("Event 1", "Event 2");
-            verify(jdbcRepositoryMock).findByDateRange(startDate, endDate);
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Event 1");
+            verify(jdbcAggregateTemplateMock).findAll(any(Query.class), eq(CalendarMemento.class));
         }
 
         @Test
-        @DisplayName("should delegate to findByDateRangeAndKinds when filter restricts item types only")
-        void shouldDelegateToFindByDateRangeAndKindsWhenItemTypesRestricted() {
+        @DisplayName("should apply kind filter in Criteria when filter restricts item types")
+        void shouldApplyKindCriteriaWhenItemTypesRestricted() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
 
@@ -187,10 +176,8 @@ class CalendarRepositoryAdapterTest {
                     CalendarItemId.generate(), "Manual Event", null,
                     LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 10),
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
-
-            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
-            when(jdbcRepositoryMock.findByDateRangeAndKinds(eq(startDate), eq(endDate), any()))
-                    .thenReturn(mementos);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of(CalendarMemento.from(item)));
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
                     .withItemTypes(Set.of(CalendarItemKind.MANUAL));
@@ -198,12 +185,12 @@ class CalendarRepositoryAdapterTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Manual Event");
-            verify(jdbcRepositoryMock).findByDateRangeAndKinds(eq(startDate), eq(endDate), any());
+            verify(jdbcAggregateTemplateMock).findAll(any(Query.class), eq(CalendarMemento.class));
         }
 
         @Test
-        @DisplayName("should delegate to findByDateRangeAndEventIds when filter restricts event IDs only")
-        void shouldDelegateToFindByDateRangeAndEventIdsWhenEventIdsRestricted() {
+        @DisplayName("should apply event_id filter in Criteria when filter restricts event IDs")
+        void shouldApplyEventIdCriteriaWhenEventIdsRestricted() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
             EventId eventId = new EventId(UUID.randomUUID());
@@ -213,10 +200,8 @@ class CalendarRepositoryAdapterTest {
                     LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
                     eventId, CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
-
-            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
-            when(jdbcRepositoryMock.findByDateRangeAndEventIds(eq(startDate), eq(endDate), any()))
-                    .thenReturn(mementos);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of(CalendarMemento.from(item)));
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
                     .withEventIds(Set.of(eventId));
@@ -224,12 +209,12 @@ class CalendarRepositoryAdapterTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("Event Date Item");
-            verify(jdbcRepositoryMock).findByDateRangeAndEventIds(eq(startDate), eq(endDate), any());
+            verify(jdbcAggregateTemplateMock).findAll(any(Query.class), eq(CalendarMemento.class));
         }
 
         @Test
-        @DisplayName("should delegate to findByDateRangeAndKindsAndEventIds when filter restricts both item types and event IDs")
-        void shouldDelegateToFindByDateRangeAndKindsAndEventIdsWhenBothRestricted() {
+        @DisplayName("should apply both kind and event_id filters in Criteria when both are restricted")
+        void shouldApplyBothKindAndEventIdCriteriaWhenBothRestricted() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
             EventId eventId = new EventId(UUID.randomUUID());
@@ -239,10 +224,8 @@ class CalendarRepositoryAdapterTest {
                     LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 15),
                     eventId, CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
-
-            List<CalendarMemento> mementos = List.of(CalendarMemento.from(item));
-            when(jdbcRepositoryMock.findByDateRangeAndKindsAndEventIds(eq(startDate), eq(endDate), any(), any()))
-                    .thenReturn(mementos);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of(CalendarMemento.from(item)));
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate)
                     .withItemTypes(Set.of(CalendarItemKind.EVENT_DATE))
@@ -251,20 +234,64 @@ class CalendarRepositoryAdapterTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("My Schedule Event");
-            verify(jdbcRepositoryMock).findByDateRangeAndKindsAndEventIds(eq(startDate), eq(endDate), any(), any());
+            verify(jdbcAggregateTemplateMock).findAll(any(Query.class), eq(CalendarMemento.class));
         }
 
         @Test
-        @DisplayName("should return empty list when no items in date range")
-        void shouldReturnEmptyListWhenNoItemsInDateRange() {
+        @DisplayName("should return empty list when JdbcAggregateTemplate returns no results")
+        void shouldReturnEmptyListWhenNoResults() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
-            when(jdbcRepositoryMock.findByDateRange(startDate, endDate)).thenReturn(List.of());
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of());
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
             List<CalendarItem> result = testedSubject.findByFilter(filter, Sort.unsorted());
 
             assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should apply default sort (start_date ASC, name ASC) when Sort is unsorted")
+        void shouldApplyDefaultSortWhenSortIsUnsorted() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of());
+
+            ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
+            testedSubject.findByFilter(filter, Sort.unsorted());
+
+            verify(jdbcAggregateTemplateMock).findAll(queryCaptor.capture(), eq(CalendarMemento.class));
+            Sort sort = queryCaptor.getValue().getSort();
+            assertThat(sort.isSorted()).isTrue();
+            List<Sort.Order> orders = sort.toList();
+            assertThat(orders).hasSize(2);
+            assertThat(orders.get(0).getProperty()).isEqualTo("start_date");
+            assertThat(orders.get(0).getDirection()).isEqualTo(Sort.Direction.ASC);
+            assertThat(orders.get(1).getProperty()).isEqualTo("name");
+            assertThat(orders.get(1).getDirection()).isEqualTo(Sort.Direction.ASC);
+        }
+
+        @Test
+        @DisplayName("should translate domain property names to column names in sort")
+        void shouldTranslateDomainPropertyNamesToColumnNamesInSort() {
+            LocalDate startDate = LocalDate.of(2026, 6, 1);
+            LocalDate endDate = LocalDate.of(2026, 6, 30);
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of());
+
+            ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+            CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
+            testedSubject.findByFilter(filter, Sort.by("startDate").ascending().and(Sort.by("name")));
+
+            verify(jdbcAggregateTemplateMock).findAll(queryCaptor.capture(), eq(CalendarMemento.class));
+            Sort sort = queryCaptor.getValue().getSort();
+            List<Sort.Order> orders = sort.toList();
+            assertThat(orders.get(0).getProperty()).isEqualTo("start_date");
         }
     }
 
@@ -273,8 +300,8 @@ class CalendarRepositoryAdapterTest {
     class FindByEventIdTests {
 
         @Test
-        @DisplayName("should find by event ID and return EventCalendarItem in a list")
-        void shouldFindByEventIdAndReturnEventCalendarItemInList() {
+        @DisplayName("should delegate to JdbcAggregateTemplate with event_id criteria")
+        void shouldDelegateToTemplateWithEventIdCriteria() {
             UUID eventUuid = UUID.randomUUID();
             EventId eventId = new EventId(eventUuid);
 
@@ -288,22 +315,23 @@ class CalendarRepositoryAdapterTest {
                     CalendarItemKind.EVENT_DATE,
                     new AuditMetadata(Instant.now(), "test", Instant.now(), "test", 0L));
 
-            CalendarMemento memento = CalendarMemento.from(calendarItem);
-            when(jdbcRepositoryMock.findByEventId(eventUuid)).thenReturn(List.of(memento));
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of(CalendarMemento.from(calendarItem)));
 
             List<CalendarItem> result = testedSubject.findByEventId(eventId);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0)).isInstanceOf(EventCalendarItem.class);
             assertThat(((EventCalendarItem) result.get(0)).getEventId()).isEqualTo(eventId);
-            verify(jdbcRepositoryMock).findByEventId(eventUuid);
+            verify(jdbcAggregateTemplateMock).findAll(any(Query.class), eq(CalendarMemento.class));
         }
 
         @Test
         @DisplayName("should return empty list when no calendar item linked to event")
         void shouldReturnEmptyListWhenNoCalendarItemLinkedToEvent() {
             EventId eventId = new EventId(UUID.randomUUID());
-            when(jdbcRepositoryMock.findByEventId(eventId.value())).thenReturn(List.of());
+            when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
+                    .thenReturn(List.of());
 
             List<CalendarItem> result = testedSubject.findByEventId(eventId);
 
