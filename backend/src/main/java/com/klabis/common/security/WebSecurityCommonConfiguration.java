@@ -202,6 +202,11 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
      * <p>
      * This ensures API endpoints (which typically accept application/json or application/hal+json)
      * are NOT matched by the SPA filter chain, even if they share similar path patterns.
+     * <p>
+     * {@code /ical/**} is explicitly excluded regardless of Accept header: calendar clients
+     * and browsers both request iCal feeds with {@code text/html} or {@code *}{@code /*}, which would
+     * otherwise match the {@code /{path1}/{path2}} SPA pattern and bypass the resource-server
+     * chain where {@code IcalTokenAuthenticationFilter} lives.
      */
     private RequestMatcher createHtmlRequestMatcher() {
         ContentNegotiationStrategy negotiationStrategy = new HeaderContentNegotiationStrategy();
@@ -223,9 +228,13 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
                 matcher.matcher("/{path1}/{path2}/{path3}")
         );
 
-        // Combine: (SPA routes AND accepts HTML) OR static resources
+        // /ical/** must never be claimed by the SPA chain: calendar clients send text/html or */*
+        // which would match /{path1}/{path2} and prevent IcalTokenAuthenticationFilter from running.
+        RequestMatcher notIcal = request -> !request.getRequestURI().startsWith("/ical/");
+
+        // Combine: (SPA routes AND not /ical/** AND accepts HTML) OR static resources
         return new OrRequestMatcher(
-                request -> spaRoutesMatcher.matches(request) && htmlMatcher.matches(request),
+                request -> spaRoutesMatcher.matches(request) && notIcal.matches(request) && htmlMatcher.matches(request),
                 matcher.matcher("/static/**"),
                 matcher.matcher("/index.html"),
                 matcher.matcher("/favicon.ico")

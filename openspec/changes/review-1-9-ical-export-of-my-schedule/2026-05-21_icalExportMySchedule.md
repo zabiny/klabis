@@ -148,3 +148,15 @@ Tasks 9 (e2e deploy verification) and 10 (developer manual) are handled separate
 ### Code review fix — duplicate helpText (2026-05-21)
 
 `CalendarFeedSection` rendered `l.helpText` twice: once in the inline calendar-icon intro (line 88) and once inside the `HelpText` block (line 44). Fixed by adding a distinct `intro` label ("Přihlaste se k odběru svých akcí v externím kalendáři.") to `labels.calendarFeed` and using it for the inline intro. The detailed `HelpText` block (with client instructions and "Můj rozvrh" note) is the sole occurrence of `helpText`. 17/17 CalendarFeedSection tests green, TypeScript build clean.
+
+### Bug fix — SPA chain claiming /ical/** with Accept: text/html (2026-05-21)
+
+**Root cause:** `WebSecurityCommonConfiguration.createHtmlRequestMatcher()` included a `/{path1}/{path2}` pattern. When a browser or calendar client requests `/ical/my-schedule.ics?token=...` with `Accept: text/html` (or `*/*`), the `spaFilterChain` (Order 4) matched it before `defaultSecurityFilterChain` (Order 5). The SPA chain has no `IcalTokenAuthenticationFilter`, so the principal stayed anonymous and the controller threw `IllegalStateException`.
+
+**Fix:** Added a `notIcal` negative condition (`request.getRequestURI().startsWith("/ical/")` → false) inside `createHtmlRequestMatcher()` so `/ical/**` is never claimed by the SPA chain regardless of the `Accept` header. The `SpaFallbackFilter.EXCLUDED_PREFIXES` entry for `/ical` was already correct (prevents SPA HTML forwarding) but does not affect security chain selection.
+
+**Tests added to `IcalFeedControllerTest`:**
+- `validToken_withWildcardAccept_returns200` — `Accept: */*` + valid token → 200 `text/calendar` (request reaches resource-server chain).
+- `invalidToken_withTextHtmlAccept_returns401` — `Accept: text/html` + invalid token → 401 (not a SPA 200/HTML response).
+
+46/46 iCal-related tests green.

@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.http.MediaType.TEXT_HTML_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -87,6 +88,33 @@ class IcalFeedControllerTest {
         @DisplayName("token param on /api/** → does not bypass OAuth2 (401 without Bearer)")
         void tokenOnApiPath_doesNotBypassOAuth2() throws Exception {
             mockMvc.perform(get("/api/calendar-items").param("token", validRawToken))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("valid token with Accept: */* (browser default) → 200 text/calendar")
+        void validToken_withWildcardAccept_returns200() throws Exception {
+            // Browsers open iCal subscription URLs with Accept: */* or Accept: text/html.
+            // The /{path1}/{path2} SPA route pattern would match /ical/my-schedule.ics —
+            // this test verifies the spaFilterChain exclusion keeps /ical/** in the resource-server chain
+            // so IcalTokenAuthenticationFilter can authenticate the request.
+            mockMvc.perform(get("/ical/my-schedule.ics")
+                            .param("token", validRawToken)
+                            .header("Accept", "*/*"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith("text/calendar"));
+        }
+
+        @Test
+        @DisplayName("invalid token with Accept: text/html → 401, resource-server chain rejects it (not SPA 200)")
+        void invalidToken_withTextHtmlAccept_returns401() throws Exception {
+            // Before the fix, the SPA chain (Order 4) would claim /ical/my-schedule.ics when
+            // Accept: text/html is present (matching /{path1}/{path2}), returning 200 HTML instead
+            // of delegating to IcalTokenAuthenticationFilter. After the fix, the invalid token
+            // must reach the resource-server chain and be rejected with 401.
+            mockMvc.perform(get("/ical/my-schedule.ics")
+                            .param("token", "thisisaninvalidtoken1234567890")
+                            .header("Accept", TEXT_HTML_VALUE))
                     .andExpect(status().isUnauthorized());
         }
     }
