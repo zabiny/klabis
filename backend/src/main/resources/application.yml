@@ -103,6 +103,7 @@ springdoc:
 
 klabis:
   ical:
+    base-url: ${KLABIS_BASE_URL:https://localhost:8443}
     window:
       past: ${KLABIS_ICAL_WINDOW_PAST:P30D}
       future: ${KLABIS_ICAL_WINDOW_FUTURE:P12M}

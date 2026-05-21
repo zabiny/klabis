@@ -41,7 +41,7 @@ class IcalFeedController {
     IcalFeedController(
             IcalFeedPort icalFeedPort,
             ICalendarRenderer icalRenderer,
-            @Value("${klabis.password-setup.base-url:https://localhost:8443}") String baseUrl) {
+            @Value("${klabis.ical.base-url:https://localhost:8443}") String baseUrl) {
         this.icalFeedPort = icalFeedPort;
         this.icalRenderer = icalRenderer;
         this.baseUrl = baseUrl;

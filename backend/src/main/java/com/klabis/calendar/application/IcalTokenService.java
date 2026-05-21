@@ -14,8 +14,6 @@ import java.util.Optional;
 @Service
 class IcalTokenService implements IcalTokenPort {
 
-    private static final int LOOKUP_LENGTH = 8;
-
     private final CalendarFeedTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -25,45 +23,41 @@ class IcalTokenService implements IcalTokenPort {
     }
 
     @Override
-    @Transactional
-    public String generate(UserId userId) {
+    public Optional<IcalTokenPort.TokenState> getTokenState(UserId userId) {
         Assert.notNull(userId, "userId must not be null");
-        return createOrRotate(userId);
+        return tokenRepository.findByUserId(userId)
+                .map(token -> new IcalTokenPort.TokenState(token.getTokenLookup(), token.getLastSetAt()));
     }
 
     @Override
     @Transactional
-    public String regenerate(UserId userId) {
+    public IcalTokenPort.GenerateResult generateOrRotate(UserId userId) {
         Assert.notNull(userId, "userId must not be null");
-        return createOrRotate(userId);
+        Optional<CalendarFeedToken> existing = tokenRepository.findByUserId(userId);
+        if (existing.isPresent()) {
+            CalendarFeedToken token = existing.get();
+            String raw = token.regenerate(passwordEncoder);
+            CalendarFeedToken saved = tokenRepository.save(token);
+            return new IcalTokenPort.GenerateResult(raw, saved.getLastSetAt());
+        }
+
+        CalendarFeedToken.Result result = CalendarFeedToken.generate(userId, passwordEncoder);
+        CalendarFeedToken saved = tokenRepository.save(result.token());
+        return new IcalTokenPort.GenerateResult(result.rawToken(), saved.getLastSetAt());
     }
 
     @Override
     public Optional<UserId> validate(String rawToken) {
-        if (rawToken == null || rawToken.length() < LOOKUP_LENGTH) {
+        if (rawToken == null || rawToken.length() < CalendarFeedToken.LOOKUP_LENGTH) {
             return Optional.empty();
         }
 
-        String lookup = rawToken.substring(0, LOOKUP_LENGTH);
+        String lookup = rawToken.substring(0, CalendarFeedToken.LOOKUP_LENGTH);
         List<CalendarFeedToken> candidates = tokenRepository.findByTokenLookup(lookup);
 
         return candidates.stream()
                 .filter(token -> passwordEncoder.matches(rawToken, token.getTokenHash()))
                 .map(CalendarFeedToken::getUserId)
                 .findFirst();
-    }
-
-    private String createOrRotate(UserId userId) {
-        Optional<CalendarFeedToken> existing = tokenRepository.findByUserId(userId);
-        if (existing.isPresent()) {
-            CalendarFeedToken token = existing.get();
-            String raw = token.regenerate(passwordEncoder);
-            tokenRepository.save(token);
-            return raw;
-        }
-
-        CalendarFeedToken.Result result = CalendarFeedToken.generate(userId, passwordEncoder);
-        tokenRepository.save(result.token());
-        return result.rawToken();
     }
 }

@@ -56,7 +56,11 @@ class IcalTokenAuthenticationFilter extends OncePerRequestFilter {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authenticated);
             SecurityContextHolder.setContext(context);
-            chain.doFilter(request, response);
+            try {
+                chain.doFilter(request, response);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
         } catch (AuthenticationException ex) {
             SecurityContextHolder.clearContext();
             response.setStatus(HttpStatus.UNAUTHORIZED.value());

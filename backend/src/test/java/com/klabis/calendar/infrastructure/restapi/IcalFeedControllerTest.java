@@ -52,7 +52,7 @@ class IcalFeedControllerTest {
                 "VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'ZBM8100', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)");
         jdbcTemplate.execute("INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) " +
                 "VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'ZBM8100', 'Test', 'Member', '1990-01-01', 'CZ', 'MALE', 'test@test.cz', '+420111111111', 'Street 1', 'City', '10000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)");
-        validRawToken = icalTokenPort.generate(USER_ID);
+        validRawToken = icalTokenPort.generateOrRotate(USER_ID).rawToken();
     }
 
     @Nested

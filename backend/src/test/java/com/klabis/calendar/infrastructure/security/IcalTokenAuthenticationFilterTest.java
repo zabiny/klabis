@@ -54,14 +54,21 @@ class IcalTokenAuthenticationFilterTest {
             MockHttpServletRequest request = icalRequest("validraw");
             MockHttpServletResponse response = new MockHttpServletResponse();
 
+            // Capture the security context while the chain runs (before the finally block clears it)
+            java.util.concurrent.atomic.AtomicReference<org.springframework.security.core.Authentication> capturedAuth =
+                    new java.util.concurrent.atomic.AtomicReference<>();
+            doAnswer(inv -> {
+                capturedAuth.set(SecurityContextHolder.getContext().getAuthentication());
+                return null;
+            }).when(filterChain).doFilter(request, response);
+
             filter.doFilter(request, response, filterChain);
 
             verify(filterChain).doFilter(request, response);
-            assertThat(SecurityContextHolder.getContext().getAuthentication())
+            assertThat(capturedAuth.get())
                     .isInstanceOf(IcalTokenAuthenticationToken.class)
                     .matches(auth -> auth.isAuthenticated());
-            assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
-                    .isEqualTo(USER_ID);
+            assertThat(capturedAuth.get().getPrincipal()).isEqualTo(USER_ID);
         }
 
         @Test

@@ -3,25 +3,32 @@ package com.klabis.calendar.application;
 import com.klabis.common.users.UserId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @PrimaryPort
 public interface IcalTokenPort {
 
     /**
-     * Generates a new token for the user. If a token already exists it is regenerated (overwritten).
-     *
-     * @return the raw token (shown to the user once — not stored)
+     * Returns the token state for the user: the lookup prefix (first 8 chars of raw token)
+     * and {@code lastSetAt}, or empty if no token exists yet.
+     * <p>
+     * The lookup prefix is NOT the raw token — it is the non-secret index prefix stored in the DB.
+     * It is safe to expose it but conveys no information about the full token.
      */
-    String generate(UserId userId);
+    Optional<TokenState> getTokenState(UserId userId);
+
+    record TokenState(String tokenLookup, Instant lastSetAt) {}
 
     /**
-     * Regenerates (rotates) the token for the user, invalidating the previous URL.
+     * Generates a new token for the user, or rotates the existing one if it already exists.
+     * The previous subscribe URL immediately stops working upon rotation.
      *
-     * @return the new raw token
-     * @throws com.klabis.common.exceptions.BusinessRuleViolationException if no token exists for the user yet
+     * @return the raw token and the persisted {@code lastSetAt} timestamp (both shown/used once)
      */
-    String regenerate(UserId userId);
+    GenerateResult generateOrRotate(UserId userId);
+
+    record GenerateResult(String rawToken, Instant lastSetAt) {}
 
     /**
      * Validates a raw token from the iCal feed URL query param.

@@ -86,3 +86,65 @@ Tasks 9 (e2e deploy verification) and 10 (developer manual) are handled separate
 **Pre-existing failure (unchanged):** `EventManagementE2ETest.should create and retrieve event without a location`.
 
 **Compile-error fix:** `IcalFeedController` no longer imports or casts to the concrete `IcalTokenAuthenticationToken`; it reads the `UserId` principal via the standard `Authentication.getPrincipal()` contract, allowing `IcalTokenAuthenticationToken` and its constructors to revert to package-private visibility. Unused imports `BadCredentialsException` and `List` removed from `IcalTokenAuthenticationFilterTest`. 14/14 tests green.
+
+### Iter 4 — 2026-05-21 (task 7)
+
+**Task 7.1+7.2 — Token management API (`GET`/`POST /api/me/ical-token`):**
+- `IcalTokenPort` extended with `getTokenState(UserId) → Optional<TokenState>` where `TokenState` is a nested record `(tokenLookup, lastSetAt)`. Implemented in `IcalTokenService` (trivial repository lookup).
+- `IcalTokenController` (package-private `@RestController`) in `calendar.infrastructure.restapi`:
+  - `GET /api/me/ical-token` — resolves `@ActingUser UserId`, calls `getTokenState`. Returns `IcalTokenResponse(url, lastSetAt)`: masked URL (full token portion replaced by `••••••••…`) when token exists, `url=null` when no token. Self link with `generateToken` affordance (POST).
+  - `POST /api/me/ical-token` — calls `icalTokenPort.generate()` (create-or-rotate semantics), returns the full subscribe URL exactly once with `lastSetAt=Instant.now()`.
+  - Response record `IcalTokenResponse(String url, Instant lastSetAt)` declared at package level in same file.
+  - `IcalTokenRootPostprocessor` (`@MvcComponent`) adds `ical-token` link to root model.
+  - Base URL reuses `${klabis.password-setup.base-url}` property consistent with `IcalFeedController`.
+
+**`revealUrl` decision:** tasks.md mentioned a `revealUrl` affordance for retrieving the full token. This is cryptographically impossible — the raw token is only known at generate time; only `token_hash` and `token_lookup` (first 8 chars) are stored. Showing the last 4 chars (as Decision 9 UI mockup suggests) would require storing them plaintext, which weakens the "shown once" security guarantee. Resolution: `GET` returns a fully masked URL and a `regenerate` (POST) affordance; no `revealUrl` endpoint exists. Frontend (Iter 5) must rely on POST to expose the token.
+
+**Task 7.3 — Integration tests:**
+- `IcalTokenControllerTest` (`@E2ETest`) — 9 tests:
+  - `GET`: no-token returns `url=null`; token exists returns masked URL + `lastSetAt`; masked URL does not contain raw token; response includes `generateToken` POST affordance; unauthenticated → 401.
+  - `POST`: no token → generates, returns full URL; existing token → regenerates, old token invalidated; POST returns full URL without mask characters; unauthenticated → 401.
+- 36/36 iCal-related tests green (IcalTokenControllerTest + IcalFeedControllerTest + IcalTokenServiceTest + IcalFeedServiceTest).
+
+**Pre-existing failure (unchanged):** `EventManagementE2ETest.should create and retrieve event without a location`.
+
+### Iter 5 — 2026-05-21 (task 8)
+
+**Task 8 — Frontend "Kalendářový feed" section in MemberDetailPage:**
+
+- `CalendarFeedSection` component (`frontend/src/pages/members/CalendarFeedSection.tsx`) — standalone section component accepting `icalTokenHref` prop:
+  - Fetches `GET /api/me/ical-token` via `useAuthorizedQuery` to read current token state.
+  - **No token:** shows "Vytvořit kalendářový feed" button → POST → reveals full URL with copy button and warning that this is shown only once.
+  - **Token exists:** shows masked URL + lastSetAt date + "Vygenerovat nový token" button. Clicking opens a Modal confirm dialog (warns that previous URL stops working). Confirming POSTs and then shows the new full URL with copy button.
+  - **CopyButton** sub-component with clipboard write + 2-second "Zkopírováno" feedback.
+  - **HelpText** sub-component with Google Calendar / Apple Calendar / Outlook instructions and a note about "Můj rozvrh" filter consistency.
+
+- `MemberDetailPage.tsx` updated: imports `CalendarFeedSection`, fetches root `/api` resource (staleTime 5 min) to extract `ical-token` href, renders `CalendarFeedSection` below deactivation section when not in edit mode and when link is present.
+
+- `labels.ts` updated: new `calendarFeed` category with 16 Czech labels covering all states (create, regenerate, copy, confirm dialog, help text).
+
+- **UX decision:** tasks.md 8.3 mentioned "Zobrazit celou URL" toggle but the task description and TCF note clarify honest UX — masked URL on returning visit + full URL only after (re)generation. Implemented accordingly: no reveal toggle (token hashed, irrecoverable); copy button shown only when full URL is available after POST.
+
+- **17 frontend tests** covering: loading state, no-token state (button, help text, Můj rozvrh, POST call, disabled during pending), token-exists state (masked URL, lastSetAt, confirm dialog open/cancel/confirm, POST call), post-success state (full URL display, copy button).
+
+- All 1486 frontend tests green. TypeScript build clean.
+
+### Code review fixes — backend (2026-05-21)
+
+**HIGH-1 — Collapsed `generate()`/`regenerate()` into `generateOrRotate()`:** Both port methods were functionally identical (both delegated to `createOrRotate()`). Merged into a single `IcalTokenPort.generateOrRotate(UserId)` returning a new `GenerateResult(rawToken, lastSetAt)` record. Updated `IcalTokenService`, `IcalTokenController` (POST handler), `IcalTokenControllerTest`, `IcalFeedControllerTest`, `IcalTokenServiceTest` accordingly. Removed the false `@throws` Javadoc and the no-longer-needed `import java.time.Instant` from the port.
+
+**HIGH-2 — Eliminated duplicate `LOOKUP_LENGTH`:** Made `CalendarFeedToken.LOOKUP_LENGTH` `public static final`. Removed the private copy from `IcalTokenService`; `validate()` now references `CalendarFeedToken.LOOKUP_LENGTH` directly as the single source of truth.
+
+**HIGH-3 — RFC 5545 line folding:** Added `appendLine(StringBuilder, String)` to `ICalendarRenderer` that folds lines exceeding 75 octets at UTF-8 octet boundaries (CRLF + leading SPACE per RFC 5545 §3.1). All property lines are now emitted via `appendLine`. Added `shouldFoldLongDescriptionLines` unit test verifying no physical line exceeds 75 octets and at least one folded continuation exists. Fixed `shouldIncludeWebsiteUrlInDescription` to unfold before asserting logical content.
+
+**MEDIUM — POST response uses persisted `lastSetAt`:** `generateOrRotate()` returns `GenerateResult` carrying both `rawToken` and the persisted `lastSetAt` (from the saved aggregate). Controller builds the response from `result.lastSetAt()` instead of `Instant.now()`.
+
+**MEDIUM — Dedicated `klabis.ical.base-url` property:** Added `klabis.ical.base-url: ${KLABIS_BASE_URL:https://localhost:8443}` to `application.yml`. Both `IcalFeedController` and `IcalTokenController` now inject from `${klabis.ical.base-url:...}` instead of the unrelated `klabis.password-setup.base-url`.
+
+**MEDIUM — SecurityContext cleared on downstream exception:** `IcalTokenAuthenticationFilter.doFilterInternal` wraps `chain.doFilter(...)` in a `try/finally` block that calls `SecurityContextHolder.clearContext()`, matching Spring's `BearerTokenAuthenticationFilter` pattern. Updated the valid-token filter test to capture the authentication during chain execution (via `doAnswer`) instead of reading the context after the filter returns.
+
+**53/53 iCal-related tests green.**
+
+### Code review fix — duplicate helpText (2026-05-21)
+
+`CalendarFeedSection` rendered `l.helpText` twice: once in the inline calendar-icon intro (line 88) and once inside the `HelpText` block (line 44). Fixed by adding a distinct `intro` label ("Přihlaste se k odběru svých akcí v externím kalendáři.") to `labels.calendarFeed` and using it for the inline intro. The detailed `HelpText` block (with client instructions and "Můj rozvrh" note) is the sole occurrence of `helpText`. 17/17 CalendarFeedSection tests green, TypeScript build clean.

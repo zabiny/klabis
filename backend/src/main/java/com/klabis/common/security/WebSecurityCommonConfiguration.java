@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -69,9 +70,10 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
             AccessDeniedHandler accessDeniedHandler,
             CorsConfigurationSource corsConfigurationSource,
             Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter,
-            AccountStatusValidationFilter accountStatusValidationFilter) throws Exception {
+            AccountStatusValidationFilter accountStatusValidationFilter,
+            ObjectProvider<ResourceServerCustomizer> resourceServerCustomizers) throws Exception {
 
-        final String[] PATHS = {"/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"};
+        final String[] PATHS = {"/api/**", "/ical/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"};
 
         http
                 .securityMatcher(PATHS)
@@ -79,6 +81,7 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/password-setup/**").permitAll()
+                        .requestMatchers("/ical/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -103,6 +106,14 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
                         .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
                 )
                 .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));
+
+        resourceServerCustomizers.orderedStream().forEach(customizer -> {
+            try {
+                customizer.customize(http);
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to apply ResourceServerCustomizer: " + customizer.getClass().getSimpleName(), e);
+            }
+        });
 
         return http.build();
     }

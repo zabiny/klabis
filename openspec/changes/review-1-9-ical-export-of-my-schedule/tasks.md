@@ -46,18 +46,18 @@
 
 ## 7. Token management API
 
-- [ ] 7.1 `GET /api/me/ical-token` — returns `{ url, lastSetAt }` if token exists, else `{ url: null }`; URL is the masked subscribe URL (last 4 chars only) plus a separate `revealUrl` link
-- [ ] 7.2 `POST /api/me/ical-token` — generate or regenerate token; returns the raw URL once (with full token); updates `lastSetAt`
-- [ ] 7.3 Integration tests for both endpoints (authenticated, regular user only)
+- [x] 7.1 `GET /api/me/ical-token` — returns `{ url, lastSetAt }` if token exists, else `{ url: null }`; URL is the masked subscribe URL (full token replaced by ••••••••…); no `revealUrl` — raw token is hashed in DB and irrecoverable (see TCF note)
+- [x] 7.2 `POST /api/me/ical-token` — generate or regenerate token; returns the raw URL once (with full token); updates `lastSetAt`
+- [x] 7.3 Integration tests for both endpoints (authenticated, regular user only)
 
 ## 8. Frontend — profile section
 
-- [ ] 8.1 In `MyProfile` page add "Kalendářový feed" section
-- [ ] 8.2 If no token: show "Vytvořit kalendářový feed" button → POST regenerate → display the URL once with copy button
-- [ ] 8.3 If token exists: show masked URL + "Zobrazit celou URL" toggle + "Kopírovat" + "Vygenerovat nový token" (with confirm dialog warning that the previous URL will stop working)
-- [ ] 8.4 Help text in CS with brief instructions for Google Calendar / Apple Calendar / Outlook; mention that the feed mirrors the "Můj rozvrh" filter (registrations + events you coordinate)
-- [ ] 8.5 Localization labels in `src/localization/labels.ts`
-- [ ] 8.6 Frontend tests for the section
+- [x] 8.1 In `MyProfile` page add "Kalendářový feed" section
+- [x] 8.2 If no token: show "Vytvořit kalendářový feed" button → POST regenerate → display the URL once with copy button
+- [x] 8.3 If token exists: show masked URL + "Vygenerovat nový token" button (with confirm dialog warning that the previous URL will stop working); after regeneration full URL is shown with copy button
+- [x] 8.4 Help text in CS with brief instructions for Google Calendar / Apple Calendar / Outlook; mention that the feed mirrors the "Můj rozvrh" filter (registrations + events you coordinate)
+- [x] 8.5 Localization labels in `src/localization/labels.ts`
+- [x] 8.6 Frontend tests for the section (17 tests)
 
 ## 9. End-to-end verification
 

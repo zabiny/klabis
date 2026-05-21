@@ -47,8 +47,8 @@ class IcalTokenServiceTest {
     }
 
     @Nested
-    @DisplayName("generate()")
-    class GenerateTests {
+    @DisplayName("generateOrRotate()")
+    class GenerateOrRotateTests {
 
         @Test
         @DisplayName("should create and save a new token when none exists")
@@ -57,9 +57,10 @@ class IcalTokenServiceTest {
             when(passwordEncoder.encode(anyString())).thenReturn("hashed");
             when(tokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            String raw = service.generate(USER_ID);
+            IcalTokenPort.GenerateResult result = service.generateOrRotate(USER_ID);
 
-            assertThat(raw).isNotBlank();
+            assertThat(result.rawToken()).isNotBlank();
+            assertThat(result.lastSetAt()).isNotNull();
             ArgumentCaptor<CalendarFeedToken> captor = ArgumentCaptor.forClass(CalendarFeedToken.class);
             verify(tokenRepository).save(captor.capture());
             assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
@@ -74,49 +75,18 @@ class IcalTokenServiceTest {
             when(passwordEncoder.encode(anyString())).thenReturn("newhash");
             when(tokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            String raw = service.generate(USER_ID);
+            IcalTokenPort.GenerateResult result = service.generateOrRotate(USER_ID);
 
-            assertThat(raw).isNotBlank();
+            assertThat(result.rawToken()).isNotBlank();
+            assertThat(result.lastSetAt()).isNotNull();
             verify(tokenRepository).save(existing);
         }
 
         @Test
         @DisplayName("should reject null userId")
         void shouldRejectNullUserId() {
-            assertThatThrownBy(() -> service.generate(null))
+            assertThatThrownBy(() -> service.generateOrRotate(null))
                     .isInstanceOf(IllegalArgumentException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("regenerate()")
-    class RegenerateTests {
-
-        @Test
-        @DisplayName("should rotate token when one already exists")
-        void shouldRotateExistingToken() {
-            CalendarFeedToken existing = CalendarFeedToken.reconstruct(USER_ID, "oldhash", "oldlook", Instant.now());
-            when(tokenRepository.findByUserId(USER_ID)).thenReturn(Optional.of(existing));
-            when(passwordEncoder.encode(anyString())).thenReturn("newhash");
-            when(tokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-            String raw = service.regenerate(USER_ID);
-
-            assertThat(raw).isNotBlank();
-            verify(tokenRepository).save(existing);
-        }
-
-        @Test
-        @DisplayName("should create new token when none exists")
-        void shouldCreateNewTokenWhenNoneExists() {
-            when(tokenRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
-            when(passwordEncoder.encode(anyString())).thenReturn("hashed");
-            when(tokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-            String raw = service.regenerate(USER_ID);
-
-            assertThat(raw).isNotBlank();
-            verify(tokenRepository).save(any());
         }
     }
 

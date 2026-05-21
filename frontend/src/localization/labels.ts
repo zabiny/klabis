@@ -385,6 +385,28 @@ export const labels = {
         groupTypeFamilyGroup: 'Rodinná skupina',
         groupTypeFreeGroup: 'Volná skupina',
     },
+
+    calendarFeed: {
+        sectionTitle: 'KALENDÁŘOVÝ FEED',
+        intro: 'Přihlaste se k odběru svých akcí v externím kalendáři.',
+        createButton: 'Vytvořit kalendářový feed',
+        regenerateButton: 'Vygenerovat nový token',
+        copyButton: 'Kopírovat',
+        copiedButton: 'Zkopírováno',
+        generatedAt: 'Vygenerováno',
+        confirmRegenerateTitle: 'Vygenerovat nový token?',
+        confirmRegenerateMessage: 'Předchozí URL přestane fungovat. Všechna zařízení, která ji používají, se přestanou synchronizovat, dokud nezadáte novou URL.',
+        confirmRegenerateAction: 'Vygenerovat',
+        fullUrlLabel: 'URL kalendářového feedu',
+        fullUrlNote: 'Tuto URL uvidíte pouze nyní. Uložte ji nebo přidejte do svého kalendáře. Pokud ji ztratíte, vygenerujte nový token.',
+        maskedUrlLabel: 'Subscribe URL (zamaskovaná)',
+        helpTitle: 'Jak přidat do kalendáře',
+        helpText: 'Přidejte tuto URL do svého kalendáře — Google Calendar, Apple Calendar nebo Outlook. Kalendář se automaticky aktualizuje, jak budete přihlašovat nebo odhlašovat akce, nebo když vám organizátor přidá či odebere roli koordinátora.',
+        helpMyScheduleNote: 'Feed obsahuje stejné akce jako filtr „Můj rozvrh" v aplikaci — akce, kde máte aktivní přihlášku nebo jste koordinátorem.',
+        helpGoogle: 'Google Calendar: Jiné kalendáře → Přidat URL',
+        helpApple: 'Apple Calendar: Soubor → Nový odběr kalendáře',
+        helpOutlook: 'Outlook: Přidat kalendář → Odebírat z webu',
+    },
 } as const;
 
 export type Labels = typeof labels;

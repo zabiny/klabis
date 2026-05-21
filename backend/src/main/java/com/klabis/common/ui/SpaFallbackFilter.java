@@ -32,7 +32,7 @@ class SpaFallbackFilter extends OncePerRequestFilter {
     private static final String STATIC_LOCATION = "classpath:/static";
 
     private static final List<String> EXCLUDED_PREFIXES = List.of(
-            "/api", "/swagger-ui", "/v3/api-docs", "/docs",
+            "/api", "/ical", "/swagger-ui", "/v3/api-docs", "/docs",
             "/oauth2", "/.well-known", "/actuator", "/h2-console",
             "/error"
     );

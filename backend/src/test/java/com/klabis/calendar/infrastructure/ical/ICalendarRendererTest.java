@@ -153,7 +153,9 @@ class ICalendarRendererTest {
                     BASE_URL, DTSTAMP
             );
 
-            assertThat(result).contains("Web akce: https://event.example.com");
+            // Unfold RFC 5545 folded lines (CRLF + SPACE is a continuation) before asserting logical content
+            String unfolded = result.replace("\r\n ", "");
+            assertThat(unfolded).contains("Web akce: https://event.example.com");
         }
 
         @Test
@@ -182,6 +184,40 @@ class ICalendarRendererTest {
             );
 
             assertThat(result).contains("SUMMARY:Path\\\\To\\\\Event" + CRLF);
+        }
+
+        @Test
+        @DisplayName("should fold DESCRIPTION lines exceeding 75 octets per RFC 5545 §3.1")
+        void shouldFoldLongDescriptionLines() {
+            String longOrganizer = "A".repeat(80);
+            Event event = buildEvent(FIXED_UUID, "Akce", LocalDate.of(2026, 6, 15),
+                    null, longOrganizer, null, COORDINATOR_ID, EventStatus.ACTIVE);
+
+            String result = renderer.render(
+                    List.of(new EventScheduleEntry(event, false)),
+                    BASE_URL, DTSTAMP
+            );
+
+            // Each physical line (before CRLF) must be at most 75 octets
+            String[] lines = result.split("\r\n", -1);
+            for (String line : lines) {
+                int octetLength = line.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                org.assertj.core.api.Assertions.assertThat(octetLength)
+                        .as("line exceeds 75 octets: %s", line)
+                        .isLessThanOrEqualTo(75);
+            }
+
+            // Folded continuation lines start with a single space
+            boolean hasfolding = false;
+            for (String line : lines) {
+                if (line.startsWith(" ")) {
+                    hasfolding = true;
+                    break;
+                }
+            }
+            org.assertj.core.api.Assertions.assertThat(hasfolding)
+                    .as("expected at least one folded continuation line starting with SPACE")
+                    .isTrue();
         }
 
         @Test

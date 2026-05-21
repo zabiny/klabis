@@ -35,15 +35,15 @@ public class ICalendarRenderer {
     public String render(List<EventScheduleEntry> entries, String baseUrl, Instant dtstamp) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("BEGIN:VCALENDAR").append(CRLF);
-        sb.append("VERSION:2.0").append(CRLF);
-        sb.append("PRODID:-//Klabis//Klabis Member Portal//CS").append(CRLF);
+        appendLine(sb, "BEGIN:VCALENDAR");
+        appendLine(sb, "VERSION:2.0");
+        appendLine(sb, "PRODID:-//Klabis//Klabis Member Portal//CS");
 
         for (EventScheduleEntry entry : entries) {
             appendVEvent(sb, entry.event(), entry.isCoordinator(), baseUrl, dtstamp);
         }
 
-        sb.append("END:VCALENDAR").append(CRLF);
+        appendLine(sb, "END:VCALENDAR");
 
         return sb.toString();
     }
@@ -54,29 +54,63 @@ public class ICalendarRenderer {
         String dtend = DATE_FORMAT.format(event.getEventDate().plusDays(1));
         String uid = event.getId().value() + "@klabis";
 
-        sb.append("BEGIN:VEVENT").append(CRLF);
-        sb.append("UID:").append(uid).append(CRLF);
-        sb.append("DTSTAMP:").append(DTSTAMP_FORMAT.format(dtstamp)).append(CRLF);
-        sb.append("DTSTART;VALUE=DATE:").append(dtstart).append(CRLF);
-        sb.append("DTEND;VALUE=DATE:").append(dtend).append(CRLF);
-        sb.append("SUMMARY:").append(escapeText(event.getName())).append(CRLF);
+        appendLine(sb, "BEGIN:VEVENT");
+        appendLine(sb, "UID:" + uid);
+        appendLine(sb, "DTSTAMP:" + DTSTAMP_FORMAT.format(dtstamp));
+        appendLine(sb, "DTSTART;VALUE=DATE:" + dtstart);
+        appendLine(sb, "DTEND;VALUE=DATE:" + dtend);
+        appendLine(sb, "SUMMARY:" + escapeText(event.getName()));
 
         if (event.getLocation() != null && !event.getLocation().isBlank()) {
-            sb.append("LOCATION:").append(escapeText(event.getLocation())).append(CRLF);
+            appendLine(sb, "LOCATION:" + escapeText(event.getLocation()));
         }
 
-        sb.append("URL:").append(eventDetailUrl).append(CRLF);
+        appendLine(sb, "URL:" + eventDetailUrl);
 
         String description = buildDescription(event, eventDetailUrl, isCoordinator);
-        sb.append("DESCRIPTION:").append(escapeText(description)).append(CRLF);
+        appendLine(sb, "DESCRIPTION:" + escapeText(description));
 
         if (event.getStatus() == EventStatus.CANCELLED) {
-            sb.append("STATUS:CANCELLED").append(CRLF);
+            appendLine(sb, "STATUS:CANCELLED");
         } else {
-            sb.append("STATUS:CONFIRMED").append(CRLF);
+            appendLine(sb, "STATUS:CONFIRMED");
         }
 
-        sb.append("END:VEVENT").append(CRLF);
+        appendLine(sb, "END:VEVENT");
+    }
+
+    /**
+     * Appends a single iCalendar content line to the buffer, folding at 75-octet boundaries
+     * per RFC 5545 §3.1. Long lines are split with CRLF + single SPACE continuation.
+     * Folding is octet-based (UTF-8 bytes) to correctly handle multi-byte characters.
+     */
+    private void appendLine(StringBuilder sb, String line) {
+        byte[] bytes = line.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (bytes.length <= 75) {
+            sb.append(line).append(CRLF);
+            return;
+        }
+
+        int offset = 0;
+        boolean first = true;
+        while (offset < bytes.length) {
+            int limit = first ? 75 : 74; // first line: 75 octets; continuation: 74 octets (1 used by leading space)
+            int end = Math.min(offset + limit, bytes.length);
+
+            // Walk back if the cut falls in the middle of a multi-byte UTF-8 sequence
+            while (end < bytes.length && (bytes[end] & 0xC0) == 0x80) {
+                end--;
+            }
+
+            if (!first) {
+                sb.append(' ');
+            }
+            sb.append(new String(bytes, offset, end - offset, java.nio.charset.StandardCharsets.UTF_8));
+            sb.append(CRLF);
+
+            offset = end;
+            first = false;
+        }
     }
 
     private String buildDescription(Event event, String eventDetailUrl, boolean isCoordinator) {

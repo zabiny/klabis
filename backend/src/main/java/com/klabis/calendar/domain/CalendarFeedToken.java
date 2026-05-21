@@ -20,7 +20,7 @@ import java.util.Base64;
 public class CalendarFeedToken {
 
     private static final int TOKEN_BYTES = 32;
-    private static final int LOOKUP_LENGTH = 8;
+    public static final int LOOKUP_LENGTH = 8;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Identity
