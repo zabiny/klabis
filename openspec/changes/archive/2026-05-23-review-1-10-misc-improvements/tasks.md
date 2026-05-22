@@ -27,4 +27,4 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Sync spec changes into `openspec/specs/users/spec.md` and `openspec/specs/events/spec.md` after archiving
+- [x] 4.1 Sync spec changes into `openspec/specs/users/spec.md` and `openspec/specs/events/spec.md` after archiving
