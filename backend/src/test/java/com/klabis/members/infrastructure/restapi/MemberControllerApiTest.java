@@ -65,7 +65,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
-        com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class})
+        com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class,
+        com.klabis.calendar.infrastructure.restapi.IcalTokenMemberDetailLinkProcessor.class})
 @WithPostprocessors
 class MemberControllerApiTest {
 
@@ -478,6 +479,42 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
                     .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("member viewing own profile — ical-token link is present")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void ownProfileShouldIncludeIcalTokenLink() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+                    .thenReturn(java.util.Optional.empty());
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+                    .thenReturn(java.util.Optional.empty());
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['ical-token'].href").value(org.hamcrest.Matchers.containsString("/api/me/ical-token")));
+        }
+
+        @Test
+        @DisplayName("member viewing another member's profile — ical-token link is absent")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
+        void otherMemberProfileShouldNotIncludeIcalTokenLink() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+                    .thenReturn(java.util.Optional.empty());
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+                    .thenReturn(java.util.Optional.empty());
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['ical-token']").doesNotExist());
         }
     }
 

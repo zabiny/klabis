@@ -18,7 +18,6 @@ import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 import {parseSuspensionWarning409} from "./suspensionUtils.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
-import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -81,14 +80,11 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
     const navigate = useNavigate();
 
-    const {data: rootData} = useAuthorizedQuery<HalResponse>('/api', {
-        staleTime: 5 * 60 * 1000,
-        select: (data) => data as HalResponse,
-    });
-    const icalTokenHref = rootData?._links?.['ical-token'] != null
-        ? (Array.isArray(rootData._links['ical-token'])
-            ? (rootData._links['ical-token'][0] as {href: string}).href
-            : (rootData._links['ical-token'] as {href: string}).href)
+    const icalTokenLink = resourceData._links?.['ical-token'];
+    const icalTokenHref = icalTokenLink != null
+        ? (Array.isArray(icalTokenLink)
+            ? (icalTokenLink[0] as {href: string}).href
+            : (icalTokenLink as {href: string}).href)
         : null;
 
     const member = resourceData;

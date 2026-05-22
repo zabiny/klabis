@@ -644,6 +644,45 @@ describe('MemberDetailPage', () => {
         });
     });
 
+    describe('calendar feed section', () => {
+        it('shows CalendarFeedSection when ical-token link is present on member detail resource', () => {
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123'},
+                    'ical-token': {href: '/api/me/ical-token'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('heading', {name: /Kalendářový feed/i})).toBeInTheDocument();
+        });
+
+        it('does NOT show CalendarFeedSection when ical-token link is absent on member detail resource', () => {
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('heading', {name: /Kalendářový feed/i})).not.toBeInTheDocument();
+        });
+
+        it('does NOT show CalendarFeedSection in edit mode even when ical-token link is present', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123'},
+                    'ical-token': {href: '/api/me/ical-token'},
+                },
+                _templates: {updateMember: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.queryByRole('heading', {name: /Kalendářový feed/i})).not.toBeInTheDocument();
+        });
+    });
+
     describe('legacy compatibility', () => {
         it('shows "Ukončit členství" button when terminate template exists (label overrides template title)', () => {
             const data = mockMemberDetailData({

@@ -1,8 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.application.IcalTokenPort;
-import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +11,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -109,14 +106,3 @@ class IcalTokenController {
 }
 
 record IcalTokenResponse(String url, Instant lastSetAt) {}
-
-@MvcComponent
-class IcalTokenRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
-
-    @Override
-    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
-                .ifPresent(link -> model.add(link.withRel("ical-token")));
-        return model;
-    }
-}
