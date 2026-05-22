@@ -317,7 +317,7 @@ describe('EventDetailPage', () => {
                 {name: 'location', prompt: 'Místo', type: 'text', value: 'Brno - Bystrc'},
                 {name: 'organizer', prompt: 'Pořadatel', type: 'text', value: 'OB Brno'},
                 {name: 'websiteUrl', prompt: 'Webová stránka', type: 'url', value: 'https://obbrno.cz/zavody/jaro2025'},
-                {name: 'eventCoordinatorId', prompt: 'Koordinátor', type: 'text', value: '42'},
+                {name: 'eventCoordinatorId', prompt: 'Vedoucí', type: 'text', value: '42'},
             ],
         });
 

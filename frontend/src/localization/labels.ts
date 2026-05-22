@@ -106,7 +106,7 @@ export const labels = {
     },
 
     fields: {
-        eventCoordinatorId: 'Koordinátor',
+        eventCoordinatorId: 'Vedoucí',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
         deadlines: 'Uzávěrky přihlášek',
@@ -267,7 +267,7 @@ export const labels = {
         joinedAt: 'Datum vstupu',
         web: 'Web',
         registrationDeadline: 'Uzávěrka',
-        coordinator: 'Koordinátor',
+        coordinator: 'Vedoucí',
         identityCardNumber: 'Číslo OP',
         identityCardValidityDate: 'Platnost OP',
         dateOfBirth: 'Datum narození',
@@ -312,7 +312,7 @@ export const labels = {
         eventTypesList: 'Typy akcí',
         eventTypesListHeading: 'Seznam typů akcí',
         eventBasicInfo: 'ZÁKLADNÍ INFORMACE',
-        eventCoordination: 'KOORDINACE',
+        eventCoordination: 'VEDENÍ AKCE',
         eventDeadlines: 'UZÁVĚRKY PŘIHLÁŠEK',
         eventCategories: 'KATEGORIE',
     },

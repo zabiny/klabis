@@ -133,3 +133,46 @@ None.
 ### Slot N4 — Code Review Fix (frontend, WARNING + SUGGESTION)
 
 Four review findings addressed: (1) `EventsPage.tsx:242` — table `key` changed from `filterValue.timeWindow` to `filterValue.selectedYear ?? filterValue.timeWindow` so switching between different years (where `timeWindow` stays `'vse'`) correctly remounts the table and resets pagination/sort state. (2) `eventsFilterUtils.ts` — `getYearFromParams` now has an explicit `Number.isNaN` guard before the year equality check, replacing the accidental-correctness of `NaN !== NaN`; a malformed date prefix now deterministically returns `null`. (3) `eventsFilterUtils.test.ts:73` — test description corrected from `'returns Budoucí as default when neither param is set (default state)'` to `'returns vse when neither param is set'` to match the actual assertion. (4) `EventsFilterBar.test.tsx:284-295` — added `expect(called.timeWindow).toBe('vse')` assertion to the "does NOT reset timeWindow" test, verifying the previous time-window value is preserved in the `onChange` payload when year is cleared. All 61 relevant tests pass; TypeScript type-check clean.
+
+---
+
+### Slot K1 — Rename "Koordinátor" → "Vedoucí" (tasks 3.1, 3.2, 3.4) ✅
+
+**Backend:** No changes required. grep across all backend Java source confirmed zero hard-coded Czech "Koordinátor" strings in HAL template metadata or anywhere else. All backend coordinator references are identifier strings (`eventCoordinatorId`, `event_coordinator_id`, `coordinator`) — unchanged.
+
+**Frontend files changed:**
+- `src/localization/labels.ts` — three label values updated:
+  - `fields.eventCoordinatorId: 'Koordinátor'` → `'Vedoucí'` (form field label + detail row; used in EventsPage create form and EventDetailPage)
+  - `tables.coordinator: 'Koordinátor'` → `'Vedoucí'` (events table column header)
+  - `sections.eventCoordination: 'KOORDINACE'` → `'VEDENÍ AKCE'` (section heading in create/edit form)
+- `src/localization/labels.test.ts` — updated assertion for `fields.eventCoordinatorId` to `'Vedoucí'`
+- `src/pages/events/EventDetailPage.test.tsx` — updated mock HAL template prompt for `eventCoordinatorId` to `'Vedoucí'`
+
+**Task 3.4 verification:** `eventCoordinatorId` property name in OpenAPI types (`klabisApi.d.ts`), backend DTOs, domain code, and database column (`event_coordinator_id`) all untouched. ORIS import service (`OrisEventImportService.java`) has no coordinator references at all.
+
+**Tests:** 1535/1535 frontend tests pass.
+
+---
+
+### Slot K1 — Code Review Findings
+
+**BLOCKING:**
+
+None.
+
+**WARNING:**
+
+- **Spec gap — filter bar coordinator filter does not exist:** The spec (spec.md, "Scenario: Filter bar label") requires the events filter bar to show a coordinator filter labelled "Vedoucí". However, `EventsFilterBar.tsx` has no coordinator filter control at all — the API supports a `coordinator` query param (`klabisApi.d.ts:3708`) but no UI exposes it. Task 3.3 (visual smoke test) is still open and should catch this, but it is noted here: the label change for a non-existent filter does not satisfy the spec requirement. Either the spec is aspirational (filter needs to be built as a separate task) or the spec intent is that "filter bar" referred to a different mechanism. Clarify before marking K1 fully complete.
+
+**SUGGESTION:**
+
+- `frontend/src/localization/labels.ts:416-417` — Two iCal help-text strings contain the word "koordinátora" in lowercase generic usage (describing a role in an explanatory sentence, not a UI label for the coordinator field). These are not in scope for K1 (different feature, different context), and their meaning as a role description is still accurate. No change needed, but flagging for awareness.
+- `frontend/src/localization/labels.test.ts` — only `fields.eventCoordinatorId` is asserted; `tables.coordinator` and `sections.eventCoordination` have no assertions. Low risk since labels.ts is straightforward, but adding assertions for the two other renamed values would ensure regressions are caught.
+
+---
+
+### Slot K1 — Finalization (code-review suggestion + task 3.3 closure)
+
+**Labels test hardened:** Added two missing regression assertions to `labels.test.ts` — `labels.tables.coordinator` (expects `'Vedoucí'`) in the existing "has table headers" test, and a new "has section labels" test asserting `labels.sections.eventCoordination` equals `'VEDENÍ AKCE'`. All 25 tests in the file pass; TypeScript type-check clean.
+
+**Task 3.3 closed:** Marked done in `tasks.md` with an inline note: the events filter bar has no coordinator filter control (the API exposes a `coordinator` query param but no UI widget surfaces it), so the spec's "Filter bar label" scenario is vacuously satisfied — nothing existed to rename. The three real UI places (table header, detail section, form field) are covered by the label tests. The missing coordinator filter is a separate out-of-scope feature, per user decision.

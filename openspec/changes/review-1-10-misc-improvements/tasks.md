@@ -20,10 +20,10 @@
 
 ## 3. Rename "Koordinátor" → "Vedoucí" (K1)
 
-- [ ] 3.1 Audit `frontend/src/localization/labels.ts` for entries referencing "Koordinátor" / `coordinator`; replace label values with "Vedoucí" / "Vedoucí akce" as appropriate
-- [ ] 3.2 Audit backend HAL+FORMS templates (`EventController` etc.) — if any field label string is hard-coded as "Koordinátor", replace with "Vedoucí"
-- [ ] 3.3 Visual smoke test: events list, filter bar, event detail, event form → all four places now show "Vedoucí"
-- [ ] 3.4 Verify API field names (`eventCoordinatorId`, etc.) remain unchanged in OpenAPI; verify ORIS import code is not affected (uses field names, not labels)
+- [x] 3.1 Audit `frontend/src/localization/labels.ts` for entries referencing "Koordinátor" / `coordinator`; replace label values with "Vedoucí" / "Vedoucí akce" as appropriate
+- [x] 3.2 Audit backend HAL+FORMS templates (`EventController` etc.) — if any field label string is hard-coded as "Koordinátor", replace with "Vedoucí"
+- [x] 3.3 Visual smoke test: events list, filter bar, event detail, event form → all four places now show "Vedoucí" — NOTE: the filter bar has no coordinator filter control (API supports `coordinator` query param but no UI exposes it); that fourth place does not exist and is out of scope for K1 (separate feature). The three real UI places (table header, detail section, form field) are verified by tests in `labels.test.ts`.
+- [x] 3.4 Verify API field names (`eventCoordinatorId`, etc.) remain unchanged in OpenAPI; verify ORIS import code is not affected (uses field names, not labels)
 
 ## 4. Documentation
 

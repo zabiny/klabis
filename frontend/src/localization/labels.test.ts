@@ -30,7 +30,7 @@ describe('labels', () => {
     });
 
     it('has field labels', () => {
-        expect(labels.fields.eventCoordinatorId).toBe('Koordinátor');
+        expect(labels.fields.eventCoordinatorId).toBe('Vedoucí');
         expect((labels.fields as Record<string, string>).category).toBe('Kategorie');
         expect(labels.fields.eventDate).toBe('Datum konání');
         expect(labels.fields.location).toBe('Místo');
@@ -106,6 +106,11 @@ describe('labels', () => {
         expect(labels.tables.value).toBe('Hodnota');
         expect(labels.tables.items).toBe('Položky');
         expect(labels.tables.details).toBe('Detaily');
+        expect(labels.tables.coordinator).toBe('Vedoucí');
+    });
+
+    it('has section labels', () => {
+        expect(labels.sections.eventCoordination).toBe('VEDENÍ AKCE');
     });
 });
 
