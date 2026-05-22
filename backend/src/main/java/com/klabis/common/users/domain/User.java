@@ -180,15 +180,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         return activated;
     }
 
-    /**
-     * Changes the password of this active user account.
-     *
-     * <p>Returns a new User instance with the new password hash.
-     * Registers a {@link PasswordChangedEvent} for audit purposes.
-     *
-     * @param newPasswordHash the BCrypt-hashed new password
-     * @return new User instance with updated password hash
-     */
     public User changePassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 

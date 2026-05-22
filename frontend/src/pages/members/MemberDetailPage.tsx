@@ -89,6 +89,9 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             : (icalTokenLink as {href: string}).href)
         : null;
 
+    // The ical-token link is only present on the authenticated user's own profile
+    const isOwnProfile = icalTokenHref != null;
+
     const member = resourceData;
     const address = member.address;
     const guardian = member.guardian;
@@ -265,7 +268,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.templates.updateMember}
                                 </Button>
                             )}
-                            {icalTokenHref && (
+                            {isOwnProfile && (
                                 <Button
                                     variant="secondary"
                                     onClick={() => setIsChangePasswordOpen(true)}

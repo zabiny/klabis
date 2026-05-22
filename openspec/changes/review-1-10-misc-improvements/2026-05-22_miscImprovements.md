@@ -171,6 +171,18 @@ None.
 
 ---
 
+### Slot N1 — Code cleanup (LOW review findings, follow-up commit)
+
+Removed the hand-written `toString()` override from `PasswordChangedEvent` record (no redaction, identical to the default record `toString`). Removed the Javadoc on `User.changePassword()` that narrated what the code does rather than why. All 49 affected tests pass.
+
+---
+
+### Slot N1 — Code cleanup (change-password feature, review-1-10 follow-up)
+
+Three code-quality fixes applied to the change-password frontend feature: (1) Introduced `isOwnProfile` boolean in `MemberDetailPage` (derived from `icalTokenHref != null`) so the "Změnit heslo" button is gated on an explicitly named condition rather than reusing the iCal variable name — intent is now clear without coupling to iCal naming. (2) Extracted a shared `buildPasswordRequirements(password)` function to `src/components/auth/passwordRequirements.ts`; a single `RULE_DEFINITIONS` array (id, label, test) is the sole source of truth for the 5 complexity rules, their regex patterns, and their Czech labels — both `ChangePasswordDialog` and `PasswordSetupForm` now import this helper, eliminating three duplicate copies. (3) Replaced `requirements` as React state in both components with `useMemo(() => buildPasswordRequirements(...), [password])`, removing manual sync in `updateField` and manual reset in `handleClose`. All 64 affected tests pass.
+
+---
+
 ### Slot K1 — Finalization (code-review suggestion + task 3.3 closure)
 
 **Labels test hardened:** Added two missing regression assertions to `labels.test.ts` — `labels.tables.coordinator` (expects `'Vedoucí'`) in the existing "has table headers" test, and a new "has section labels" test asserting `labels.sections.eventCoordination` equals `'VEDENÍ AKCE'`. All 25 tests in the file pass; TypeScript type-check clean.

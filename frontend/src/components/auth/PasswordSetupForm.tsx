@@ -1,8 +1,9 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useMemo, type FormEvent } from 'react';
 import { Button, Card, Alert } from '../UI';
 import { PasswordField } from './PasswordField';
-import { PasswordStrengthIndicator, type PasswordRequirement } from './PasswordStrengthIndicator';
+import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import {labels} from '../../localization';
+import {buildPasswordRequirements} from './passwordRequirements';
 
 export interface PasswordSetupFormProps {
     onSubmit: (data: { password: string; passwordConfirmation: string }) => void;
@@ -35,24 +36,7 @@ export const PasswordSetupForm = ({
     });
     const [errors, setErrors] = useState<ValidationErrors>({});
 
-    const [requirements, setRequirements] = useState<PasswordRequirement[]>([
-        { id: 'length', label: 'Minimálně 12 znaků', met: false },
-        { id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: false },
-        { id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: false },
-        { id: 'digit', label: 'Alespoň 1 číslo', met: false },
-        { id: 'special', label: 'Alespoň 1 speciální znak', met: false },
-    ]);
-
-    useEffect(() => {
-        const password = formData.password;
-        setRequirements([
-            { id: 'length', label: 'Minimálně 12 znaků', met: password.length >= 12 },
-            { id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: /[A-Z]/.test(password) },
-            { id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: /[a-z]/.test(password) },
-            { id: 'digit', label: 'Alespoň 1 číslo', met: /\d/.test(password) },
-            { id: 'special', label: 'Alespoň 1 speciální znak', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
-        ]);
-    }, [formData.password]);
+    const requirements = useMemo(() => buildPasswordRequirements(formData.password), [formData.password]);
 
     const validateForm = (): boolean => {
         const newErrors: ValidationErrors = {};
@@ -84,16 +68,6 @@ export const PasswordSetupForm = ({
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
-        }
-
-        if (field === 'password') {
-            setRequirements([
-                { id: 'length', label: 'Minimálně 12 znaků', met: value.length >= 12 },
-                { id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: /[A-Z]/.test(value) },
-                { id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: /[a-z]/.test(value) },
-                { id: 'digit', label: 'Alespoň 1 číslo', met: /\d/.test(value) },
-                { id: 'special', label: 'Alespoň 1 speciální znak', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) },
-            ]);
         }
     };
 

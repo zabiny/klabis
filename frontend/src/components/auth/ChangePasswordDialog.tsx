@@ -1,10 +1,11 @@
-import {type FormEvent, useState} from 'react';
+import {type FormEvent, useMemo, useState} from 'react';
 import {Alert, Button, Modal} from '../UI';
 import {PasswordField} from './PasswordField';
-import {PasswordStrengthIndicator, type PasswordRequirement} from './PasswordStrengthIndicator';
+import {PasswordStrengthIndicator} from './PasswordStrengthIndicator';
 import {labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import type {FetchError} from '../../api/authorizedFetch';
+import {buildPasswordRequirements} from './passwordRequirements';
 
 interface ChangePasswordDialogProps {
     isOpen: boolean;
@@ -21,24 +22,6 @@ interface ValidationErrors {
     currentPassword?: string;
     newPassword?: string;
     confirmPassword?: string;
-}
-
-const PASSWORD_COMPLEXITY_RULES: PasswordRequirement[] = [
-    {id: 'length', label: 'Minimálně 12 znaků', met: false},
-    {id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: false},
-    {id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: false},
-    {id: 'digit', label: 'Alespoň 1 číslo', met: false},
-    {id: 'special', label: 'Alespoň 1 speciální znak', met: false},
-];
-
-function checkRequirements(password: string): PasswordRequirement[] {
-    return [
-        {id: 'length', label: 'Minimálně 12 znaků', met: password.length >= 12},
-        {id: 'uppercase', label: 'Alespoň 1 velké písmeno', met: /[A-Z]/.test(password)},
-        {id: 'lowercase', label: 'Alespoň 1 malé písmeno', met: /[a-z]/.test(password)},
-        {id: 'digit', label: 'Alespoň 1 číslo', met: /\d/.test(password)},
-        {id: 'special', label: 'Alespoň 1 speciální znak', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)},
-    ];
 }
 
 const INCORRECT_CURRENT_PASSWORD_MARKER = 'Current password is incorrect';
@@ -68,7 +51,8 @@ export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProp
     });
     const [errors, setErrors] = useState<ValidationErrors>({});
     const [serverError, setServerError] = useState<string | null>(null);
-    const [requirements, setRequirements] = useState<PasswordRequirement[]>(PASSWORD_COMPLEXITY_RULES);
+
+    const requirements = useMemo(() => buildPasswordRequirements(formData.newPassword), [formData.newPassword]);
 
     const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
 
@@ -76,7 +60,6 @@ export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProp
         setFormData({currentPassword: '', newPassword: '', confirmPassword: ''});
         setErrors({});
         setServerError(null);
-        setRequirements(PASSWORD_COMPLEXITY_RULES);
         onClose();
     };
 
@@ -87,9 +70,6 @@ export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProp
         }
         if (field === 'currentPassword') {
             setServerError(null);
-        }
-        if (field === 'newPassword') {
-            setRequirements(checkRequirements(value));
         }
     };
 

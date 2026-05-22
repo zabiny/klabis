@@ -33,12 +33,4 @@ public record PasswordChangedEvent(
         );
     }
 
-    @Override
-    public String toString() {
-        return "PasswordChangedEvent{" +
-               "eventId=" + eventId +
-               ", userId=" + userId +
-               ", occurredAt=" + occurredAt +
-               '}';
-    }
 }
