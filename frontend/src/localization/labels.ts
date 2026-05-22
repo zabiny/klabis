@@ -386,6 +386,16 @@ export const labels = {
         groupTypeFreeGroup: 'Volná skupina',
     },
 
+    changePassword: {
+        sectionButtonLabel: 'Změnit heslo',
+        dialogTitle: 'Změna hesla',
+        currentPasswordLabel: 'Aktuální heslo',
+        newPasswordLabel: 'Nové heslo',
+        confirmPasswordLabel: 'Potvrzení nového hesla',
+        submitButton: 'Změnit heslo',
+        errorIncorrectCurrentPassword: 'Zadané aktuální heslo je nesprávné.',
+    },
+
     calendarFeed: {
         sectionTitle: 'KALENDÁŘOVÝ FEED',
         intro: 'Přihlaste se k odběru svých akcí v externím kalendáři.',

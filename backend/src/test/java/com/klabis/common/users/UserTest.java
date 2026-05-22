@@ -1,6 +1,7 @@
 package com.klabis.common.users;
 
 import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.PasswordChangedEvent;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserCreatedEvent;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
@@ -320,6 +321,59 @@ class UserTest {
 
             // Different users should not be equal
             UserAssert.assertThat(user1).isNotEqualTo(user2);
+        }
+    }
+
+    @Nested
+    @DisplayName("changePassword() method")
+    class ChangePasswordMethod {
+
+        @Test
+        @DisplayName("should change password and retain same identity")
+        void shouldChangePasswordAndRetainSameIdentity() {
+            User user = UserTestDataBuilder.anAdminUser().build();
+            String newHash = "$2a$10$newHash...";
+
+            User updated = user.changePassword(newHash);
+
+            UserAssert.assertThat(updated)
+                    .hasSameIdentityAs(user)
+                    .hasPasswordHash(newHash)
+                    .isActiveUser();
+        }
+
+        @Test
+        @DisplayName("should return new instance — original user unchanged")
+        void shouldReturnNewInstance() {
+            User user = UserTestDataBuilder.anAdminUser().build();
+            String originalHash = user.getPasswordHash();
+
+            User updated = user.changePassword("$2a$10$updatedHash...");
+
+            assertThat(updated).isNotSameAs(user);
+            UserAssert.assertThat(user).hasPasswordHash(originalHash);
+        }
+
+        @Test
+        @DisplayName("should register PasswordChangedEvent")
+        void shouldRegisterPasswordChangedEvent() {
+            User user = UserTestDataBuilder.anAdminUser().build();
+
+            User updated = user.changePassword("$2a$10$newHash...");
+
+            assertThat(updated.getDomainEvents()).hasSize(1)
+                    .first()
+                    .isInstanceOf(PasswordChangedEvent.class);
+        }
+
+        @Test
+        @DisplayName("should require non-null new password hash")
+        void shouldRequireNonNullPasswordHash() {
+            User user = UserTestDataBuilder.anAdminUser().build();
+
+            assertThatThrownBy(() -> user.changePassword(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("New password hash is required");
         }
     }
 

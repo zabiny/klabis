@@ -1,11 +1,11 @@
 ## 1. Change password while authenticated (N1)
 
-- [ ] 1.1 Add `User.changePassword(newPasswordHash, ...)` domain method (or extend existing setPassword if already present); emit `PasswordChangedEvent`
-- [ ] 1.2 Application service `PasswordChangeService.changePassword(userId, currentPassword, newPassword)`: verify current password via `passwordEncoder.matches`, validate new password via existing `PasswordValidator`, update aggregate, persist
-- [ ] 1.3 REST endpoint `POST /api/me/password-change` with body `{ currentPassword, newPassword }`; gated to authenticated users; returns 204 No Content on success, 400 with error code on validation failures
-- [ ] 1.4 Integration tests: success path, wrong current password, weak new password, complexity rule failures
-- [ ] 1.5 Frontend: add "Změnit heslo" button + dialog in `MyProfile`; reuse password complexity validation logic from password setup form
-- [ ] 1.6 Frontend tests for the dialog flow
+- [x] 1.1 Add `User.changePassword(newPasswordHash, ...)` domain method (or extend existing setPassword if already present); emit `PasswordChangedEvent`
+- [x] 1.2 Application service `PasswordChangeService.changePassword(userId, currentPassword, newPassword)`: verify current password via `passwordEncoder.matches`, validate new password via existing `PasswordValidator`, update aggregate, persist
+- [x] 1.3 REST endpoint `POST /api/me/password-change` with body `{ currentPassword, newPassword }`; gated to authenticated users; returns 204 No Content on success, 400 with error code on validation failures
+- [x] 1.4 Integration tests: success path, wrong current password, weak new password, complexity rule failures
+- [x] 1.5 Frontend: add "Změnit heslo" button + dialog in `MyProfile`; reuse password complexity validation logic from password setup form
+- [x] 1.6 Frontend tests for the dialog flow
 - [ ] 1.7 Browser smoke test post-deploy
 
 ## 2. Filter events by year (N4)

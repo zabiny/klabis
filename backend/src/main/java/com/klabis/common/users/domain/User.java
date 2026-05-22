@@ -181,6 +181,25 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     }
 
     /**
+     * Changes the password of this active user account.
+     *
+     * <p>Returns a new User instance with the new password hash.
+     * Registers a {@link PasswordChangedEvent} for audit purposes.
+     *
+     * @param newPasswordHash the BCrypt-hashed new password
+     * @return new User instance with updated password hash
+     */
+    public User changePassword(String newPasswordHash) {
+        Objects.requireNonNull(newPasswordHash, "New password hash is required");
+
+        User updated = new User(this.id, this.username, newPasswordHash, this.accountStatus);
+        updated.updateAuditMetadata(this.getAuditMetadata());
+        updated.registerEvent(PasswordChangedEvent.fromUser(updated));
+
+        return updated;
+    }
+
+    /**
      * Suspends this user account.
      *
      * <p>Returns a new User instance with SUSPENDED status.

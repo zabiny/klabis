@@ -11,7 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Check, Dumbbell, Heart, Pencil, Shield, UserX} from "lucide-react";
+import {Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
@@ -19,6 +19,7 @@ import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDi
 import {parseSuspensionWarning409} from "./suspensionUtils.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
+import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
@@ -78,6 +79,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
 
     const icalTokenLink = resourceData._links?.['ical-token'];
@@ -263,6 +265,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.templates.updateMember}
                                 </Button>
                             )}
+                            {icalTokenHref && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setIsChangePasswordOpen(true)}
+                                    startIcon={<KeyRound className="w-4 h-4"/>}
+                                >
+                                    {labels.changePassword.sectionButtonLabel}
+                                </Button>
+                            )}
                             {hasLink('trainingGroup') && (
                                 <Button
                                     variant="secondary"
@@ -376,6 +387,10 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
     return (
         <>
+            <ChangePasswordDialog
+                isOpen={isChangePasswordOpen}
+                onClose={() => setIsChangePasswordOpen(false)}
+            />
             <SuspensionWarningDialog
                 isOpen={suspensionWarning !== null}
                 onClose={() => setSuspensionWarning(null)}
