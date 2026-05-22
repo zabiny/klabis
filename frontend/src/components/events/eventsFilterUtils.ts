@@ -59,3 +59,34 @@ export function getTimeWindowFromParams(
 }
 
 export {getTodayIso} from '../../utils/dateUtils';
+
+export interface YearDateParams {
+    dateFrom: string;
+    dateTo: string;
+}
+
+export function yearToDateParams(year: number): YearDateParams {
+    return {dateFrom: `${year}-01-01`, dateTo: `${year}-12-31`};
+}
+
+export function getYearFromParams(
+    dateFrom: string | null | undefined,
+    dateTo: string | null | undefined,
+): number | null {
+    if (!dateFrom || !dateTo) return null;
+    if (!dateFrom.endsWith('-01-01') || !dateTo.endsWith('-12-31')) return null;
+    const fromYear = parseInt(dateFrom.slice(0, 4), 10);
+    const toYear = parseInt(dateTo.slice(0, 4), 10);
+    if (Number.isNaN(fromYear) || Number.isNaN(toYear)) return null;
+    if (fromYear !== toYear) return null;
+    return fromYear;
+}
+
+export function getYearRange(): number[] {
+    const current = new Date().getFullYear();
+    const years: number[] = [];
+    for (let y = current - 10; y <= current + 2; y++) {
+        years.push(y);
+    }
+    return years;
+}

@@ -363,6 +363,8 @@ export const labels = {
         eventTypeSelectPlaceholder: '— bez filtru —',
         eventTypeFilter: 'Typ akce',
         eventTypeAll: 'Vše',
+        eventsFilterYear: 'Rok',
+        noYear: '—',
     },
 
     membersFilter: {

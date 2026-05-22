@@ -76,6 +76,60 @@ Team coordination file. Each subagent: read this file first, append a concise su
 
 ---
 
+---
+
+### Slot N4 — Filter Events by Year (tasks 2.1–2.6) ✅
+
+**Files changed:**
+- `src/components/events/eventsFilterUtils.ts` — added `yearToDateParams(year)`, `getYearFromParams(dateFrom, dateTo)`, `getYearRange()` utility functions
+- `src/components/events/EventsFilterBar.tsx` — added `selectedYear: number | null` to `EventsFilterValue`; added `<select>` year dropdown (label "Rok", options "—" + currentYear±range); time window change clears `selectedYear`; year change forces `timeWindow: 'vse'`
+- `src/pages/events/useEventsFilterState.ts` — derives `selectedYear` via `getYearFromParams` on URL load; `handleFilterChange` routes to `yearToDateParams` (when year set) or `timeWindowToDateParams` (when year cleared); `filterValue` exposes `selectedYear`
+- `src/localization/labels.ts` — added `eventsFilterYear: 'Rok'` and `noYear: '—'` to `eventsFilter` group
+- `src/components/events/eventsFilterUtils.test.ts` — 7 new tests for `yearToDateParams`, `getYearFromParams`, `getYearRange`
+- `src/components/events/EventsFilterBar.test.tsx` — 9 new tests for year selector rendering, default state, year selection (forces `timeWindow=vse`), clear, mutual-exclusion with time window
+- `src/pages/events/useEventsFilterState.test.ts` — new test file, 9 tests covering URL-load derivation, year selection URL params, clear behavior
+
+**Key decisions:**
+- `selectedYear` lives in `EventsFilterValue` alongside `timeWindow`; the component enforces mutual exclusion: selecting a year forces `timeWindow='vse'`, clicking a time window pill clears `selectedYear=null`
+- URL always stores `dateFrom`/`dateTo` directly (no `?year=` alias) per design decision; frontend derives the displayed year from the range on load
+- Year range generated dynamically from `new Date().getFullYear()` — no hardcoded values
+
+**Tests:** 1535/1535 frontend tests pass; TypeScript type-check and production build clean
+
+---
+
 ### Slot N1 — Code Review Fix (frontend, CRITICAL + MEDIUM)
 
 Two frontend findings addressed: (1) `INCORRECT_CURRENT_PASSWORD_MARKER` in `ChangePasswordDialog.tsx` corrected from `'Incorrect current password'` to `'Current password is incorrect'` to match the actual backend exception message — the `includes()` check now matches and the localized Czech error message shows correctly for a wrong current password; the two test cases that mocked the old (wrong) backend string were updated accordingly. (2) Dead label `successMessage: 'Heslo bylo úspěšně změněno.'` removed from `labels.changePassword` in `labels.ts` — confirmed unused by grep across all source files. All 19 `ChangePasswordDialog` tests pass; TypeScript type-check and production build are clean.
+
+---
+
+### Slot N4 — Code Review Findings
+
+**BLOCKING:**
+
+None.
+
+**WARNING:**
+
+- `frontend/src/pages/events/EventsPage.tsx:242` — `key={filterValue.timeWindow}` was not updated to incorporate `selectedYear`. When the user changes year (timeWindow stays `'vse'`), the table key does not change, so the table is NOT remounted. If the original behavior relied on key-change to reset pagination/sort state, changing between different year values won't trigger that reset. Consider `key={filterValue.selectedYear ?? filterValue.timeWindow}` or a combined key.
+
+- `frontend/src/components/events/eventsFilterUtils.ts:77` — `getYearFromParams` validates suffix patterns (`endsWith('-01-01')`, `endsWith('-12-31')`) but does not validate that the parsed year is a valid integer (e.g., `NaN` if `dateFrom` is `'xxxx-01-01'`). `parseInt('xxxx', 10)` returns `NaN`; the `fromYear !== toYear` check passes for two `NaN` values because `NaN !== NaN` is `true` in JS, so `null` is returned — this accidentally produces the correct result, but it is a fragile coincidence rather than an explicit guard. Consider adding `Number.isNaN(fromYear)` check for correctness and readability.
+
+- `frontend/src/pages/events/useEventsFilterState.ts:38` — when `selectedYear` is not null (i.e., URL has a full year range), `timeWindow` is hard-coded to `'vse'`. However, the `defaultSort` at line 100 is derived from this `timeWindow`. With a year selected, `timeWindow='vse'` → sort defaults to `desc` (most recent first), which is correct for a year view. This is fine but worth noting: the sort default is not independently configurable for the year-filter mode; it borrows `'vse'` semantics. Not a bug, but worth a design note.
+
+**SUGGESTION:**
+
+- `frontend/src/components/events/EventsFilterBar.tsx:29` — `YEAR_OPTIONS` is computed at module-load time via `getYearRange()`, which calls `new Date().getFullYear()`. This is evaluated once when the module is first imported. For a long-lived browser session spanning midnight on Dec 31, the year options would be stale until page reload. In practice this is not a real issue (users don't leave the app open across year boundaries), but making it a lazy `useMemo` with no deps would be strictly correct. Low priority.
+
+- `frontend/src/components/events/eventsFilterUtils.test.ts:73-75` — the test is labelled `'returns Budoucí as default when neither param is set (default state)'` but its assertion is `expect(...).toBe('vse')`. The description is misleading — it says "Budoucí" but asserts "Vše". Fix the description to accurately reflect that `getTimeWindowFromParams(null, null)` returns `'vse'` (not `'budouci'`).
+
+- `frontend/src/pages/events/useEventsFilterState.test.ts:283-295` (EventsFilterBar.test.tsx) — the test `'does NOT reset timeWindow when "no year" is selected'` only asserts `selectedYear: null` but does not verify that the existing `timeWindow` value is preserved in the `onChange` call. The spec says clearing year SHALL restore the previous time-window. The test description promises this but the assertion body doesn't check `timeWindow` on the emitted value. A missing assertion weakens spec coverage.
+
+- `frontend/src/components/events/EventsFilterBar.tsx:74-90` — the `<label>` has `htmlFor="events-year-filter"` and the `<select>` has both `id="events-year-filter"` and `aria-label`. The `aria-label` on the select is redundant when the `<label>` is already properly associated via `for`/`id`. Not a bug (both accessible), but the `aria-label` duplication adds noise.
+
+---
+
+### Slot N4 — Code Review Fix (frontend, WARNING + SUGGESTION)
+
+Four review findings addressed: (1) `EventsPage.tsx:242` — table `key` changed from `filterValue.timeWindow` to `filterValue.selectedYear ?? filterValue.timeWindow` so switching between different years (where `timeWindow` stays `'vse'`) correctly remounts the table and resets pagination/sort state. (2) `eventsFilterUtils.ts` — `getYearFromParams` now has an explicit `Number.isNaN` guard before the year equality check, replacing the accidental-correctness of `NaN !== NaN`; a malformed date prefix now deterministically returns `null`. (3) `eventsFilterUtils.test.ts:73` — test description corrected from `'returns Budoucí as default when neither param is set (default state)'` to `'returns vse when neither param is set'` to match the actual assertion. (4) `EventsFilterBar.test.tsx:284-295` — added `expect(called.timeWindow).toBe('vse')` assertion to the "does NOT reset timeWindow" test, verifying the previous time-window value is preserved in the `onChange` payload when year is cleared. All 61 relevant tests pass; TypeScript type-check clean.

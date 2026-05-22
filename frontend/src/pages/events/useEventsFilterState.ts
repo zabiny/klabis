@@ -6,9 +6,11 @@ import {
     getDefaultSortForTimeWindow,
     getTimeWindowFromParams,
     getTodayIso,
+    getYearFromParams,
     REGISTERED_BY_ME,
     type TimeWindow,
     timeWindowToDateParams,
+    yearToDateParams,
 } from "../../components/events/eventsFilterUtils.ts";
 
 interface DefaultSort {
@@ -32,7 +34,8 @@ export function useEventsFilterState(): EventsFilterState {
     const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
     const urlEventTypeIds = searchParams.getAll('eventTypeId');
 
-    const timeWindow: TimeWindow = getTimeWindowFromParams(urlDateFrom, urlDateTo);
+    const selectedYear = getYearFromParams(urlDateFrom, urlDateTo);
+    const timeWindow: TimeWindow = selectedYear !== null ? 'vse' : getTimeWindowFromParams(urlDateFrom, urlDateTo);
 
     const defaultAppliedRef = useRef(false);
     useEffect(() => {
@@ -58,17 +61,23 @@ export function useEventsFilterState(): EventsFilterState {
         timeWindow,
         registeredByMe: urlRegisteredByMe,
         eventTypeIds: urlEventTypeIds,
+        selectedYear,
     // urlEventTypeIds is a new array on every render — compare its join to avoid infinite loops
-
-    }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(','), selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFilterChange = useCallback((next: EventsFilterValue) => {
         const today = getTodayIso();
-        const {dateFrom, dateTo} = timeWindowToDateParams(next.timeWindow, today);
         setSearchParams((prev) => {
             const params = new URLSearchParams(prev);
-            if (dateFrom) { params.set('dateFrom', dateFrom); } else { params.delete('dateFrom'); }
-            if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
+            if (next.selectedYear !== null && next.selectedYear !== undefined) {
+                const {dateFrom, dateTo} = yearToDateParams(next.selectedYear);
+                params.set('dateFrom', dateFrom);
+                params.set('dateTo', dateTo);
+            } else {
+                const {dateFrom, dateTo} = timeWindowToDateParams(next.timeWindow, today);
+                if (dateFrom) { params.set('dateFrom', dateFrom); } else { params.delete('dateFrom'); }
+                if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
+            }
             if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
             if (next.registeredByMe) { params.set('registeredBy', REGISTERED_BY_ME); } else { params.delete('registeredBy'); }
             params.delete('eventTypeId');

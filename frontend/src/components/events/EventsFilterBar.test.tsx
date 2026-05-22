@@ -17,6 +17,7 @@ const defaultValue: EventsFilterValue = {
     timeWindow: 'budouci',
     registeredByMe: false,
     eventTypeIds: [],
+    selectedYear: null,
 };
 
 const defaultProps: EventsFilterBarProps = {
@@ -215,6 +216,97 @@ describe('EventsFilterBar', () => {
             await userEvent.click(within(group).getByRole('button', { name: labels.eventsFilter.eventTypeAll }));
             expect(onChange).toHaveBeenCalledWith(
                 expect.objectContaining({ eventTypeIds: [] }),
+            );
+        });
+    });
+
+    describe('year selector', () => {
+        it('renders year selector with label', () => {
+            renderFilterBar();
+            expect(screen.getByLabelText(labels.eventsFilter.eventsFilterYear)).toBeInTheDocument();
+        });
+
+        it('shows "no year" option as default when selectedYear is null', () => {
+            renderFilterBar({ value: { ...defaultValue, selectedYear: null } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            expect((select as HTMLSelectElement).value).toBe('');
+        });
+
+        it('shows selected year when selectedYear is set', () => {
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({ value: { ...defaultValue, selectedYear: currentYear } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            expect((select as HTMLSelectElement).value).toBe(String(currentYear));
+        });
+
+        it('renders current year and nearby years as options', () => {
+            renderFilterBar();
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            const currentYear = new Date().getFullYear();
+            expect(within(select as HTMLElement).getByRole('option', { name: String(currentYear) })).toBeInTheDocument();
+            expect(within(select as HTMLElement).getByRole('option', { name: String(currentYear + 2) })).toBeInTheDocument();
+            expect(within(select as HTMLElement).getByRole('option', { name: String(currentYear - 10) })).toBeInTheDocument();
+        });
+
+        it('renders "no year" option as first option', () => {
+            renderFilterBar();
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            const options = within(select as HTMLElement).getAllByRole('option');
+            expect(options[0]).toHaveValue('');
+            expect(options[0]).toHaveTextContent(labels.eventsFilter.noYear);
+        });
+
+        it('calls onChange with selectedYear and timeWindow=vse when a year is selected', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'budouci' } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(currentYear));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: currentYear, timeWindow: 'vse' }),
+            );
+        });
+
+        it('calls onChange with selectedYear=null when "no year" is selected', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({
+                onChange,
+                value: { ...defaultValue, selectedYear: currentYear, timeWindow: 'vse' },
+            });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, '');
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: null }),
+            );
+        });
+
+        it('does NOT reset timeWindow when "no year" is selected (restores previous value)', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({
+                onChange,
+                value: { ...defaultValue, selectedYear: currentYear, timeWindow: 'vse' },
+            });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, '');
+            const called = onChange.mock.calls[0][0] as EventsFilterValue;
+            expect(called.selectedYear).toBeNull();
+            expect(called.timeWindow).toBe('vse');
+        });
+    });
+
+    describe('mutual exclusion: time window and year', () => {
+        it('clears selectedYear when time window changes', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({
+                onChange,
+                value: { ...defaultValue, selectedYear: currentYear, timeWindow: 'vse' },
+            });
+            await userEvent.click(screen.getByRole('button', { name: labels.eventsFilter.budouci }));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: null, timeWindow: 'budouci' }),
             );
         });
     });

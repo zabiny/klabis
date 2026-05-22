@@ -1,7 +1,7 @@
 import {type ReactElement} from 'react';
 import {labels} from '../../localization';
 import {FulltextSearchInput, PillGroup} from '../UI';
-import type {TimeWindow} from './eventsFilterUtils';
+import {getYearRange, type TimeWindow} from './eventsFilterUtils';
 import type {EventTypeCatalogItem} from '../../hooks/useEventTypes';
 
 export type EventsFilterValue = {
@@ -9,6 +9,7 @@ export type EventsFilterValue = {
     timeWindow: TimeWindow;
     registeredByMe: boolean;
     eventTypeIds: string[];
+    selectedYear: number | null;
 };
 
 export interface EventsFilterBarProps {
@@ -25,6 +26,7 @@ const TIME_WINDOW_OPTIONS: { value: TimeWindow; label: string }[] = [
 ];
 
 const ALL_EVENT_TYPES = '';
+const YEAR_OPTIONS = getYearRange();
 
 export function EventsFilterBar({
     value,
@@ -41,6 +43,18 @@ export function EventsFilterBar({
 
     const selectedEventType = value.eventTypeIds[0] ?? ALL_EVENT_TYPES;
 
+    const handleYearChange = (yearStr: string) => {
+        if (yearStr === '') {
+            onChange({ ...value, selectedYear: null });
+        } else {
+            onChange({ ...value, selectedYear: parseInt(yearStr, 10), timeWindow: 'vse' });
+        }
+    };
+
+    const handleTimeWindowChange = (timeWindow: TimeWindow) => {
+        onChange({ ...value, timeWindow, selectedYear: null });
+    };
+
     return (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-surface-raised rounded-md border border-border">
             <FulltextSearchInput
@@ -53,9 +67,27 @@ export function EventsFilterBar({
             <PillGroup<TimeWindow>
                 options={TIME_WINDOW_OPTIONS}
                 selectedValue={value.timeWindow}
-                onChange={(timeWindow) => onChange({ ...value, timeWindow })}
+                onChange={handleTimeWindowChange}
                 ariaLabel={labels.eventsFilter.timeWindowLabel}
             />
+
+            <div className="flex items-center gap-1.5">
+                <label htmlFor="events-year-filter" className="text-sm text-text-primary whitespace-nowrap">
+                    {labels.eventsFilter.eventsFilterYear}
+                </label>
+                <select
+                    id="events-year-filter"
+                    aria-label={labels.eventsFilter.eventsFilterYear}
+                    value={value.selectedYear ?? ''}
+                    onChange={(e) => handleYearChange(e.target.value)}
+                    className="text-sm border border-border rounded px-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                    <option value="">{labels.eventsFilter.noYear}</option>
+                    {YEAR_OPTIONS.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                    ))}
+                </select>
+            </div>
 
             {eventTypes && eventTypes.length > 0 && (
                 <PillGroup<string>
