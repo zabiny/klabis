@@ -576,6 +576,27 @@ COMMENT ON COLUMN calendar_feed_token.token_lookup IS 'Non-secret 8-char prefix 
 COMMENT ON COLUMN calendar_feed_token.last_set_at IS 'When the token was last generated or regenerated';
 
 -- ============================================================================
+-- 26. MEMBER_ACCOUNT TABLE
+-- Financial account for each club member (1:1 with members).
+-- Account is created automatically when a member is registered.
+-- Owned by the finance module — members table is not modified.
+-- ============================================================================
+
+CREATE TABLE member_account
+(
+    member_id         UUID           NOT NULL PRIMARY KEY,
+    balance_amount    DECIMAL(19, 4) NOT NULL DEFAULT 0,
+    balance_currency  CHAR(3)        NOT NULL DEFAULT 'CZK',
+    created_at        TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version           BIGINT         NOT NULL DEFAULT 0
+);
+
+COMMENT ON TABLE member_account IS 'Financial prepaid account per club member (1:1). Owned by the finance module.';
+COMMENT ON COLUMN member_account.member_id IS 'Primary key — equals members.id (shared identity, no FK constraint across module boundary)';
+COMMENT ON COLUMN member_account.balance_amount IS 'Current cached balance (sum of all transaction amounts); positive = credit, negative = debt';
+COMMENT ON COLUMN member_account.balance_currency IS 'ISO 4217 currency code (v1: CZK only)';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

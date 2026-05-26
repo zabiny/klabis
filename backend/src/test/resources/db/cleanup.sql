@@ -43,6 +43,9 @@ DELETE FROM user_group_members;
 DELETE FROM user_group_owners;
 DELETE FROM user_groups;
 
+-- Member financial accounts (owned by finance module, no FK to members table by design)
+DELETE FROM member_account;
+
 -- Members table
 DELETE FROM members;
 

@@ -1,15 +1,15 @@
 ## 1. Finance Module Skeleton (Vertical Slice: Account Exists)
 
-- [ ] 1.1 Create Spring Modulith module `com.klabis.finance` with `domain`, `application`, `infrastructure` packages
-- [ ] 1.2 Add architectural test verifying `finance` module exposes only `application` to other modules
-- [ ] 1.3 Write failing test: `MemberAccount` factory creates a new account with zero balance for a given `MemberId`
-- [ ] 1.4 Implement `MemberAccount` aggregate root with `id = MemberId` and initial zero `Money` balance
-- [ ] 1.5 Implement `Money` value object (BigDecimal + Currency, CZK fixed in v1) with arithmetic invariants
-- [ ] 1.6 Write failing repository test using JdbcAggregateTemplate that persists and reloads `MemberAccount`
-- [ ] 1.7 Implement `MemberAccountMemento` + `MemberAccountJdbcRepository` and Flyway migration creating `member_account` table
-- [ ] 1.8 Write failing test: listener on `MemberRegisteredEvent` creates an account
-- [ ] 1.9 Implement `CreateAccountOnMemberRegistered` listener in `finance.application`
-- [ ] 1.10 Integration test (end-to-end): registering a member via members API results in an existing finance account
+- [x] 1.1 Create Spring Modulith module `com.klabis.finance` with `domain`, `application`, `infrastructure` packages
+- [x] 1.2 Add architectural test verifying `finance` module exposes only `application` to other modules
+- [x] 1.3 Write failing test: `MemberAccount` factory creates a new account with zero balance for a given `MemberId`
+- [x] 1.4 Implement `MemberAccount` aggregate root with `id = MemberId` and initial zero `Money` balance
+- [x] 1.5 Implement `Money` value object (BigDecimal + Currency, CZK fixed in v1) with arithmetic invariants
+- [x] 1.6 Write failing repository test using JdbcAggregateTemplate that persists and reloads `MemberAccount`
+- [x] 1.7 Implement `MemberAccountMemento` + `MemberAccountJdbcRepository` and Flyway migration creating `member_account` table
+- [x] 1.8 Write failing test: listener on `MemberRegisteredEvent` creates an account
+- [x] 1.9 Implement `CreateAccountOnMemberRegistered` listener in `finance.application`
+- [x] 1.10 Integration test (end-to-end): registering a member via members API results in an existing finance account
 
 ## 2. Vertical Slice: Deposit
 
