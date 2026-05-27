@@ -240,6 +240,64 @@ describe('useEventsFilterState — AND semantics (year + time window independent
         });
     });
 
+    describe('URL normalisation: non-current year + budouci/probehle coerced to vse', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-06-15'));
+        });
+
+        it('?year=2024&when=budouci: coerces timeWindow to vse, extraParams has only year-bounded dates', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024&when=budouci'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.extraParams.dateFrom).toBe('2024-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2024-12-31');
+        });
+
+        it('?year=2027&when=probehle (future year): coerces timeWindow to vse, URL normalised', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2027&when=probehle'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.extraParams.dateFrom).toBe('2027-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2027-12-31');
+        });
+
+        it('?year=2026&when=budouci (current year): keeps both filters active, dateFrom=today', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2026&when=budouci'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('budouci');
+            expect(result.current.filterValue.selectedYear).toBe(2026);
+            expect(result.current.extraParams.dateFrom).toBe('2026-06-15');
+            expect(result.current.extraParams.dateTo).toBe('2026-12-31');
+        });
+
+        it('?year=&when=budouci (no-year sentinel): keeps budouci, no coercion', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=&when=budouci'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('budouci');
+            expect(result.current.filterValue.selectedYear).toBeNull();
+        });
+
+        it('?year=2026&when=vse (current year + vse): reloads cleanly, both filters active', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2026&when=vse'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.filterValue.selectedYear).toBe(2026);
+            expect(result.current.extraParams.dateFrom).toBe('2026-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2026-12-31');
+        });
+    });
+
     describe('handleFilterChange: writes ?year= and ?when= params independently', () => {
         it('selecting a year does NOT reset the timeWindow', () => {
             const {result} = renderHook(() => useEventsFilterState(), {

@@ -7,6 +7,7 @@ import {
     getDefaultSortForTimeWindow,
     getTodayIso,
     getTimeWindowFromWhenParam,
+    isCurrentYear,
     REGISTERED_BY_ME,
     type TimeWindow,
 } from "../../components/events/eventsFilterUtils.ts";
@@ -46,12 +47,20 @@ export function useEventsFilterState(): EventsFilterState {
         const needsYearDefault = !yearParamPresent;
         const needsWhenDefault = !urlWhen;
 
-        if (needsYearDefault || needsWhenDefault) {
+        // A non-current year cannot meaningfully combine with budouci/probehle:
+        // those windows depend on "today" which falls outside the chosen year.
+        // Coerce the time window to "vse" so the URL reflects what the query actually does.
+        const yearIsNonCurrentAndSet = yearParamPresent && urlYear !== '' && parsedUrlYear !== null && !isCurrentYear(parsedUrlYear);
+        const whenNeedsCoercion = urlWhen === 'budouci' || urlWhen === 'probehle';
+        const needsWhenCoercion = yearIsNonCurrentAndSet && whenNeedsCoercion;
+
+        if (needsYearDefault || needsWhenDefault || needsWhenCoercion) {
             setSearchParams(
                 (prev) => {
                     const next = new URLSearchParams(prev);
                     if (needsYearDefault) next.set('year', String(currentYear));
                     if (needsWhenDefault) next.set('when', DEFAULT_TIME_WINDOW);
+                    if (needsWhenCoercion) next.set('when', 'vse');
                     return next;
                 },
                 {replace: true},

@@ -31,10 +31,10 @@
 
 ## 5. Frontend — URL state
 
-- [ ] 5.1 Write failing test: loading the page with `?year=<past>&when=upcoming` normalises the URL/state so that the time window resolves to "Vše" on first render and the resulting list contains all events from that year.
-- [ ] 5.2 Write failing test: reloading a URL with `?year=<current>&when=upcoming` keeps both filters active and shows the AND-combined list.
-- [ ] 5.3 Update URL serialisation / deserialisation to treat year and time window as independent values.
-- [ ] 5.4 Make the failing tests pass.
+- [x] 5.1 Write failing test: loading the page with `?year=<past>&when=upcoming` normalises the URL/state so that the time window resolves to "Vše" on first render and the resulting list contains all events from that year.
+- [x] 5.2 Write failing test: reloading a URL with `?year=<current>&when=upcoming` keeps both filters active and shows the AND-combined list.
+- [x] 5.3 Update URL serialisation / deserialisation to treat year and time window as independent values.
+- [x] 5.4 Make the failing tests pass.
 
 ## 6. Verification
 
