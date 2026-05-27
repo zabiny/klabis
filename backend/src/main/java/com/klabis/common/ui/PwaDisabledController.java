@@ -1,4 +1,4 @@
-package com.klabis.common.mvc;
+package com.klabis.common.ui;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;

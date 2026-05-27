@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useRegisterSW} from 'virtual:pwa-register/react';
 
-const SW_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const SW_UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 
 export interface PwaUpdater {
     needRefresh: boolean;
@@ -29,8 +29,23 @@ export function usePwaUpdater(): PwaUpdater {
 
     useEffect(() => {
         if (!registration) return;
-        const id = setInterval(() => registration.update(), SW_UPDATE_CHECK_INTERVAL_MS);
-        return () => clearInterval(id);
+        const checkForUpdate = () => registration.update();
+
+        const intervalId = setInterval(checkForUpdate, SW_UPDATE_CHECK_INTERVAL_MS);
+        // Check immediately when the tab regains focus or the device comes online,
+        // so a release shipped while the tab was idle is picked up without waiting
+        // for the next interval tick.
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') checkForUpdate();
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('online', checkForUpdate);
+
+        return () => {
+            clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('online', checkForUpdate);
+        };
     }, [registration]);
 
     return {
