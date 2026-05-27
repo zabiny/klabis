@@ -2,6 +2,7 @@ package com.klabis.finance.infrastructure.jdbc;
 
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.Money;
+import com.klabis.finance.domain.Transaction;
 import com.klabis.members.MemberId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -11,12 +12,15 @@ import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Currency;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Table("member_account")
@@ -40,6 +44,9 @@ class MemberAccountMemento implements Persistable<UUID> {
     @Column("version")
     private Long version;
 
+    @MappedCollection(idColumn = "member_account_id")
+    private Set<TransactionMemento> transactions = new HashSet<>();
+
     @Transient
     private MemberAccount account;
 
@@ -54,6 +61,8 @@ class MemberAccountMemento implements Persistable<UUID> {
         memento.memberId = account.getId().uuid();
         memento.balanceAmount = account.getBalance().amount();
         memento.balanceCurrency = account.getBalance().currency().getCurrencyCode();
+        memento.transactions = new HashSet<>();
+        account.getTransactions().forEach(tx -> memento.transactions.add(TransactionMemento.from(tx)));
         memento.account = account;
         memento.isNew = (account.getAuditMetadata() == null);
         return memento;
@@ -62,7 +71,9 @@ class MemberAccountMemento implements Persistable<UUID> {
     MemberAccount toMemberAccount() {
         MemberId id = new MemberId(memberId);
         Money balance = Money.of(balanceAmount, Currency.getInstance(balanceCurrency));
-        return MemberAccount.reconstruct(id, balance);
+        List<Transaction> txList = transactions == null ? List.of() :
+                transactions.stream().map(TransactionMemento::toTransaction).toList();
+        return MemberAccount.reconstruct(id, balance, txList);
     }
 
     @DomainEvents

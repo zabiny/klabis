@@ -597,6 +597,41 @@ COMMENT ON COLUMN member_account.balance_amount IS 'Current cached balance (sum 
 COMMENT ON COLUMN member_account.balance_currency IS 'ISO 4217 currency code (v1: CZK only)';
 
 -- ============================================================================
+-- 27. FINANCE_TRANSACTION TABLE
+-- Append-only ledger of transactions for each member's financial account.
+-- Owned by the finance module.
+-- ============================================================================
+
+CREATE TABLE finance_transaction
+(
+    id                      UUID           NOT NULL PRIMARY KEY,
+    member_account_id       UUID           NOT NULL REFERENCES member_account (member_id),
+    type                    VARCHAR(20)    NOT NULL,
+    amount                  DECIMAL(19, 4) NOT NULL,
+    currency                CHAR(3)        NOT NULL DEFAULT 'CZK',
+    note                    TEXT,
+    recorded_at             TIMESTAMP      NOT NULL,
+    occurred_at             DATE           NOT NULL,
+    recorded_by_user_id     UUID           NOT NULL,
+    reverses_transaction_id UUID           NULL REFERENCES finance_transaction (id)
+);
+
+-- Lookup index: history ordered by occurred_at DESC
+CREATE INDEX idx_finance_transaction_account_occurred ON finance_transaction (member_account_id, occurred_at DESC);
+
+-- NOTE: A partial unique index WHERE reverses_transaction_id IS NOT NULL would enforce
+-- "each transaction can be reversed at most once" at the DB level.
+-- H2 (used in dev/test) does not support partial indexes; the invariant is enforced in the domain layer.
+-- On PostgreSQL (production) add: CREATE UNIQUE INDEX ON finance_transaction (reverses_transaction_id) WHERE reverses_transaction_id IS NOT NULL
+
+COMMENT ON TABLE finance_transaction IS 'Append-only ledger of financial transactions per member account. Owned by the finance module.';
+COMMENT ON COLUMN finance_transaction.type IS 'Transaction type: DEPOSIT (positive, credit) or OTHER (negative, debit)';
+COMMENT ON COLUMN finance_transaction.amount IS 'Signed amount: DEPOSIT > 0, OTHER < 0';
+COMMENT ON COLUMN finance_transaction.recorded_at IS 'Server timestamp when the entry was recorded (audit, immutable)';
+COMMENT ON COLUMN finance_transaction.occurred_at IS 'Date when the underlying financial event occurred (entered by finance manager)';
+COMMENT ON COLUMN finance_transaction.reverses_transaction_id IS 'If set, this transaction is a reversal of the referenced transaction';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

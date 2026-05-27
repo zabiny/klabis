@@ -1,0 +1,26 @@
+package com.klabis.finance.application;
+
+import com.klabis.common.users.UserId;
+import com.klabis.finance.domain.Transaction;
+import com.klabis.members.MemberId;
+import org.jmolecules.architecture.hexagonal.PrimaryPort;
+import org.springframework.util.Assert;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@PrimaryPort
+public interface DepositPort {
+
+    record DepositCommand(MemberId memberId, BigDecimal amount, LocalDate occurredAt,
+                          String note, UserId recordedBy) {
+        public DepositCommand {
+            Assert.notNull(memberId, "MemberId is required");
+            Assert.notNull(amount, "Amount is required");
+            Assert.notNull(occurredAt, "OccurredAt is required");
+            Assert.notNull(recordedBy, "RecordedBy is required");
+        }
+    }
+
+    Transaction deposit(DepositCommand command);
+}

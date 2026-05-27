@@ -13,17 +13,17 @@
 
 ## 2. Vertical Slice: Deposit
 
-- [ ] 2.1 Write failing domain test: `MemberAccount.deposit(positive amount, note, occurredAt, recordedBy)` appends a DEPOSIT transaction and increases balance
-- [ ] 2.2 Write failing domain test: `deposit` with zero or negative amount throws domain exception
-- [ ] 2.3 Implement `Transaction` entity (type, signed amount, note, recordedAt, occurredAt, recordedBy, reversesTransactionId nullable)
-- [ ] 2.4 Implement `MemberAccount.deposit(...)` enforcing DEPOSIT.amount > 0 and balance update
-- [ ] 2.5 Add Flyway migration creating `finance_transaction` table with partial unique index on `reverses_transaction_id`
-- [ ] 2.6 Persistence test: persisting a `MemberAccount` with one deposit reloads identically
-- [ ] 2.7 Add `FINANCE:MANAGE` authority to authority catalog and seed in test data
-- [ ] 2.8 Write failing REST test: `POST /api/members/{id}/account/transactions` with deposit body requires FINANCE:MANAGE
-- [ ] 2.9 Implement `MemberAccountController` with deposit endpoint (HAL+FORMS afford from account resource)
-- [ ] 2.10 Write failing test: deposit endpoint returns `201 Created` with `Location` to the new transaction
-- [ ] 2.11 HAL+FORMS test: `GET /api/members/{id}/account` for FINANCE:MANAGE includes `deposit` affordance; for plain member viewing own account does not
+- [x] 2.1 Write failing domain test: `MemberAccount.deposit(positive amount, note, occurredAt, recordedBy)` appends a DEPOSIT transaction and increases balance
+- [x] 2.2 Write failing domain test: `deposit` with zero or negative amount throws domain exception
+- [x] 2.3 Implement `Transaction` entity (type, signed amount, note, recordedAt, occurredAt, recordedBy, reversesTransactionId nullable)
+- [x] 2.4 Implement `MemberAccount.deposit(...)` enforcing DEPOSIT.amount > 0 and balance update
+- [x] 2.5 Add Flyway migration creating `finance_transaction` table with partial unique index on `reverses_transaction_id`
+- [x] 2.6 Persistence test: persisting a `MemberAccount` with one deposit reloads identically
+- [x] 2.7 Add `FINANCE:MANAGE` authority to authority catalog and seed in test data
+- [x] 2.8 Write failing REST test: `POST /api/members/{id}/account/transactions` with deposit body requires FINANCE:MANAGE
+- [x] 2.9 Implement `MemberAccountController` with deposit endpoint (HAL+FORMS afford from account resource)
+- [x] 2.10 Write failing test: deposit endpoint returns `201 Created` with `Location` to the new transaction
+- [x] 2.11 HAL+FORMS test: `GET /api/members/{id}/account` for FINANCE:MANAGE includes `deposit` affordance; for plain member viewing own account does not
 
 ## 3. Vertical Slice: Charge with Overdraft Limit
 

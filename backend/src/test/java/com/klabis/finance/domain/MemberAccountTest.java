@@ -1,21 +1,30 @@
 package com.klabis.finance.domain;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("MemberAccount domain tests")
 class MemberAccountTest {
 
+    private final MemberId memberId = new MemberId(UUID.randomUUID());
+    private final UserId financeManager = new UserId(UUID.randomUUID());
+    private final Money depositAmount = Money.ofCzk(BigDecimal.valueOf(200));
+    private final LocalDate today = LocalDate.now();
+    private final Instant now = Instant.now();
+
     @Test
     @DisplayName("factory creates a new account with zero balance for a given MemberId")
     void createsNewAccountWithZeroBalance() {
-        MemberId memberId = new MemberId(UUID.randomUUID());
-
         MemberAccount account = MemberAccount.openFor(memberId);
 
         assertThat(account.getId()).isEqualTo(memberId);
@@ -29,5 +38,54 @@ class MemberAccountTest {
         MemberAccount account2 = MemberAccount.openFor(new MemberId(UUID.randomUUID()));
 
         assertThat(account1).isNotEqualTo(account2);
+    }
+
+    @Test
+    @DisplayName("deposit with positive amount appends a DEPOSIT transaction and increases balance")
+    void depositAppendsTransactionAndIncreasesBalance() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+
+        Transaction tx = account.deposit(depositAmount, "test deposit", today, now, financeManager);
+
+        assertThat(account.getBalance()).isEqualTo(depositAmount);
+        assertThat(account.getTransactions()).hasSize(1);
+        assertThat(tx.getType()).isEqualTo(TransactionType.DEPOSIT);
+        assertThat(tx.getAmount()).isEqualTo(depositAmount);
+        assertThat(tx.getNote()).isEqualTo("test deposit");
+        assertThat(tx.getOccurredAt()).isEqualTo(today);
+        assertThat(tx.getRecordedBy()).isEqualTo(financeManager);
+    }
+
+    @Test
+    @DisplayName("multiple deposits accumulate in the balance")
+    void multipleDepositsAccumulateInBalance() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Money amount1 = Money.ofCzk(BigDecimal.valueOf(100));
+        Money amount2 = Money.ofCzk(BigDecimal.valueOf(300));
+
+        account.deposit(amount1, "first", today, now, financeManager);
+        account.deposit(amount2, "second", today, now, financeManager);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(400)));
+        assertThat(account.getTransactions()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("deposit with zero amount throws domain exception")
+    void depositWithZeroAmountThrows() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+
+        assertThatThrownBy(() -> account.deposit(Money.zero(), "zero", today, now, financeManager))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("deposit with negative amount throws domain exception")
+    void depositWithNegativeAmountThrows() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Money negative = Money.ofCzk(BigDecimal.valueOf(-50));
+
+        assertThatThrownBy(() -> account.deposit(negative, "negative", today, now, financeManager))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

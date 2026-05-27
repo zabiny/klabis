@@ -1,9 +1,17 @@
 package com.klabis.finance.domain;
 
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.springframework.util.Assert;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @AggregateRoot
 public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> {
@@ -13,17 +21,29 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
 
     private Money balance;
 
-    private MemberAccount(MemberId id, Money balance) {
+    private final List<Transaction> transactions;
+
+    private MemberAccount(MemberId id, Money balance, List<Transaction> transactions) {
         this.id = id;
         this.balance = balance;
+        this.transactions = new ArrayList<>(transactions);
     }
 
     public static MemberAccount openFor(MemberId memberId) {
-        return new MemberAccount(memberId, Money.zero());
+        return new MemberAccount(memberId, Money.zero(), List.of());
     }
 
-    public static MemberAccount reconstruct(MemberId id, Money balance) {
-        return new MemberAccount(id, balance);
+    public static MemberAccount reconstruct(MemberId id, Money balance, List<Transaction> transactions) {
+        return new MemberAccount(id, balance, transactions);
+    }
+
+    public Transaction deposit(Money amount, String note, LocalDate occurredAt,
+                               Instant recordedAt, UserId recordedBy) {
+        Assert.isTrue(amount.isPositive(), "Deposit amount must be positive");
+        Transaction tx = Transaction.deposit(amount, note, occurredAt, recordedAt, recordedBy);
+        transactions.add(tx);
+        balance = balance.add(amount);
+        return tx;
     }
 
     @Override
@@ -33,5 +53,9 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
 
     public Money getBalance() {
         return balance;
+    }
+
+    public List<Transaction> getTransactions() {
+        return Collections.unmodifiableList(transactions);
     }
 }
