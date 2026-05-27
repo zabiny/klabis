@@ -16,13 +16,13 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 3. Frontend — `FinanceTransactionDialog` standalone component (TDD)
 
-- [ ] 3.1 Write component test for `FinanceTransactionDialog` covering: opens with skeleton until both fetches resolve, renders header (name + registration number + balance) after both resolve, shows both tabs when both templates are present, hides tabs when only one template is present, does not render action at all when no template is present
-- [ ] 3.2 Add test: switching tabs preserves amount and note values
-- [ ] 3.3 Add test: last selected tab is persisted in `localStorage` and restored on next open
-- [ ] 3.4 Add test: submit posts to the correct template endpoint for the active tab; on success invokes `onClose` and invalidates relevant queries
-- [ ] 3.5 Implement `FinanceTransactionDialog` accepting `{ accountLink: Link; isOpen: boolean; onClose: () => void }` props; internally fetch account → follow `accountOwner` link → wait for both → render
-- [ ] 3.6 Implement tab UI matching Pencil mockup (underline-style, primary color for active); CTA button styling per active tab (green for deposit, destructive/red for charge)
-- [ ] 3.7 Verify all tests pass; verify visually in dev environment
+- [x] 3.1 Write component test for `FinanceTransactionDialog` covering: opens with skeleton until both fetches resolve, renders header (name + registration number + balance) after both resolve, shows both tabs when both templates are present, hides tabs when only one template is present, does not render action at all when no template is present
+- [x] 3.2 Add test: switching tabs preserves amount and note values
+- [x] 3.3 Add test: last selected tab is persisted in `localStorage` and restored on next open
+- [x] 3.4 Add test: submit posts to the correct template endpoint for the active tab; on success invokes `onClose` and invalidates relevant queries
+- [x] 3.5 Implement `FinanceTransactionDialog` accepting `{ accountLink: Link; isOpen: boolean; onClose: () => void }` props; internally fetch account → follow `accountOwner` link → wait for both → render
+- [x] 3.6 Implement tab UI matching Pencil mockup (underline-style, primary color for active); CTA button styling per active tab (green for deposit, destructive/red for charge)
+- [x] 3.7 Verify all tests pass; verify visually in dev environment
 
 ## 4. Frontend — integrate dialog into `MemberAccountManagePage`
 
