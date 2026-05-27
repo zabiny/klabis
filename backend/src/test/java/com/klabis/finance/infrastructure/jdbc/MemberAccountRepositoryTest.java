@@ -6,6 +6,7 @@ import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionAlreadyReversedException;
+import com.klabis.finance.domain.TransactionId;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -97,6 +100,59 @@ class MemberAccountRepositoryTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(reversal.getReversesTransactionId()).isEqualTo(originalTx.getId());
+    }
+
+    @Test
+    @DisplayName("findReversalsOf returns batch map of original-to-reversal IDs")
+    void shouldReturnBatchReversalMapForMultipleTransactions() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Money amount = Money.ofCzk(BigDecimal.valueOf(100));
+        account.deposit(amount, "first", LocalDate.now(), Instant.now(), financeManager);
+        account.deposit(amount, "second", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(account);
+
+        MemberAccount reloaded = memberAccountRepository.findById(memberId).orElseThrow();
+        var transactions = reloaded.getTransactions();
+        var firstTx = transactions.get(0);
+        reloaded.reverse(firstTx.getId(), "storno", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(reloaded);
+
+        MemberAccount afterReversal = memberAccountRepository.findById(memberId).orElseThrow();
+        var allIds = afterReversal.getTransactions().stream().map(Transaction::getId).toList();
+        var reversalTx = afterReversal.getTransactions().stream().filter(Transaction::isReversal).findFirst().orElseThrow();
+
+        Map<TransactionId, TransactionId> result =
+                memberAccountRepository.findReversalsOf(allIds);
+
+        assertThat(result).hasSize(1);
+        assertThat(result).containsKey(firstTx.getId());
+        assertThat(result.get(firstTx.getId())).isEqualTo(reversalTx.getId());
+    }
+
+    @Test
+    @DisplayName("findReversalsOf returns empty map when no reversals exist")
+    void shouldReturnEmptyMapWhenNoReversalsExist() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "deposit", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(account);
+
+        MemberAccount reloaded = memberAccountRepository.findById(memberId).orElseThrow();
+        List<TransactionId> ids = reloaded.getTransactions().stream()
+                .map(Transaction::getId).toList();
+
+        Map<TransactionId, TransactionId> result =
+                memberAccountRepository.findReversalsOf(ids);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findReversalsOf returns empty map for empty input")
+    void shouldReturnEmptyMapForEmptyInput() {
+        Map<TransactionId, TransactionId> result =
+                memberAccountRepository.findReversalsOf(List.of());
+
+        assertThat(result).isEmpty();
     }
 
     @Test

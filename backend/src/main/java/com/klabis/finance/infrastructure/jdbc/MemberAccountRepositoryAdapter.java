@@ -25,7 +25,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Currency;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +84,23 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
         MapSqlParameterSource params = new MapSqlParameterSource("txId", transactionId.value());
         List<Transaction> results = namedJdbc.query(sql, params, new TransactionRowMapper());
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    @Override
+    public Map<TransactionId, TransactionId> findReversalsOf(Collection<TransactionId> transactionIds) {
+        if (transactionIds.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = transactionIds.stream().map(TransactionId::value).toList();
+        String sql = "SELECT id, reverses_transaction_id FROM finance_transaction WHERE reverses_transaction_id IN (:ids)";
+        MapSqlParameterSource params = new MapSqlParameterSource("ids", ids);
+        Map<TransactionId, TransactionId> result = new HashMap<>();
+        namedJdbc.query(sql, params, rs -> {
+            TransactionId reversalId = new TransactionId(rs.getObject("id", UUID.class));
+            TransactionId originalId = new TransactionId(rs.getObject("reverses_transaction_id", UUID.class));
+            result.put(originalId, reversalId);
+        });
+        return result;
     }
 
     @Override

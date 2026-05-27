@@ -32,6 +32,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
@@ -59,13 +63,13 @@ class MemberAccountController {
     private final ReversePort reversePort;
     private final MemberAccountRepository memberAccountRepository;
     private final TransactionQueryPort transactionQueryPort;
-    private final PagedResourcesAssembler<TransactionResource> pagedResourcesAssembler;
+    private final PagedResourcesAssembler<Transaction> pagedResourcesAssembler;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
                             ReversePort reversePort,
                             MemberAccountRepository memberAccountRepository,
                             TransactionQueryPort transactionQueryPort,
-                            PagedResourcesAssembler<TransactionResource> pagedResourcesAssembler) {
+                            PagedResourcesAssembler<Transaction> pagedResourcesAssembler) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
         this.reversePort = reversePort;
@@ -103,8 +107,20 @@ class MemberAccountController {
         Page<Transaction> page = transactionQueryPort.findTransactions(
                 new TransactionQueryPort.TransactionQuery(id, occurredAtFrom, occurredAtTo, type, pageable));
 
-        Page<TransactionResource> resourcePage = page.map(TransactionResource::from);
-        PagedModel<EntityModel<TransactionResource>> model = pagedResourcesAssembler.toModel(resourcePage);
+        List<TransactionId> pageIds = page.getContent().stream().map(Transaction::getId).toList();
+        Map<TransactionId, TransactionId> reversalsByOriginal = memberAccountRepository.findReversalsOf(pageIds);
+        boolean canReverse = currentUser.hasAuthority(Authority.FINANCE_MANAGE);
+        Optional<Link> accountLink = FinanceLinks.accountLink(memberId);
+
+        PagedModel<EntityModel<TransactionResource>> model = pagedResourcesAssembler.toModel(
+                page,
+                tx -> {
+                    EntityModel<TransactionResource> item = EntityModel.of(TransactionResource.from(tx));
+                    TransactionId reversalId = reversalsByOriginal.get(tx.getId());
+                    UUID reversedByTxId = reversalId != null ? reversalId.value() : null;
+                    addTransactionLinks(item, memberId, tx, reversedByTxId, canReverse, accountLink);
+                    return item;
+                });
         return ResponseEntity.ok(model);
     }
 
@@ -127,7 +143,9 @@ class MemberAccountController {
         UUID reversedByTxId = reversal != null ? reversal.getId().value() : null;
 
         EntityModel<TransactionResource> model = EntityModel.of(TransactionResource.from(tx));
-        addTransactionLinks(model, memberId, txId, tx, reversedByTxId, currentUser);
+        addTransactionLinks(model, memberId, tx, reversedByTxId,
+                currentUser.hasAuthority(Authority.FINANCE_MANAGE),
+                FinanceLinks.accountLink(memberId));
         return ResponseEntity.ok(model);
     }
 
@@ -177,8 +195,10 @@ class MemberAccountController {
         }
     }
 
-    private void addTransactionLinks(EntityModel<TransactionResource> model, UUID memberId, UUID txId,
-                                     Transaction tx, UUID reversedByTxId, CurrentUserData currentUser) {
+    private void addTransactionLinks(EntityModel<TransactionResource> model, UUID memberId,
+                                     Transaction tx, UUID reversedByTxId,
+                                     boolean canReverse, Optional<Link> accountLink) {
+        UUID txId = tx.getId().value();
         klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
                 .ifPresent(link -> model.add(link.withSelfRel()));
 
@@ -193,9 +213,9 @@ class MemberAccountController {
                     .ifPresent(link -> model.add(link.withRel("reverses")));
         }
 
-        FinanceLinks.accountLink(memberId).ifPresent(model::add);
+        accountLink.ifPresent(model::add);
 
-        if (reversedByTxId == null && currentUser.hasAuthority(Authority.FINANCE_MANAGE)) {
+        if (reversedByTxId == null && !tx.isReversal() && canReverse) {
             klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
                     .map(link -> link.withSelfRel()
                             .andAffordances(klabisAfford(

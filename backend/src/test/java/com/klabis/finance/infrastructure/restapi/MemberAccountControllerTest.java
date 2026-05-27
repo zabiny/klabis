@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -280,6 +281,7 @@ class MemberAccountControllerTest {
             Transaction tx = buildDepositTransaction();
             var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
             when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -303,6 +305,7 @@ class MemberAccountControllerTest {
         void shouldSupportSortingByOccurredAt() throws Exception {
             Page<Transaction> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "occurredAt")), 0);
             when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .param("sort", "occurredAt,asc")
@@ -316,6 +319,7 @@ class MemberAccountControllerTest {
         void shouldSupportSortingByAmountDesc() throws Exception {
             Page<Transaction> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "amount")), 0);
             when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .param("sort", "amount,desc")
@@ -329,6 +333,7 @@ class MemberAccountControllerTest {
         void shouldSupportFilteringByDateRange() throws Exception {
             Page<Transaction> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
             when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .param("occurredAtFrom", "2026-01-01")
@@ -344,12 +349,111 @@ class MemberAccountControllerTest {
             Transaction tx = buildDepositTransaction();
             var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
             when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .param("type", "DEPOSIT")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.transactions", hasSize(1)));
+        }
+
+        @Test
+        @DisplayName("each transaction item in listing has a self link")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void shouldIncludeSelfLinkOnEachTransactionItem() throws Exception {
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._links.self.href")
+                            .value(containsString("/api/members/" + MEMBER_UUID + "/account/transactions/" + TX_UUID)));
+        }
+
+        @Test
+        @DisplayName("FINANCE:MANAGE sees reverse affordance on unreversed non-reversal transaction")
+        @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999", authorities = {Authority.FINANCE_MANAGE})
+        void shouldIncludeReverseAffordanceForFinanceManagerOnUnreversedTransaction() throws Exception {
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._templates.reverse").exists());
+        }
+
+        @Test
+        @DisplayName("FINANCE:MANAGE does not see reverse affordance on already-reversed transaction")
+        @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999", authorities = {Authority.FINANCE_MANAGE})
+        void shouldNotIncludeReverseAffordanceOnAlreadyReversedTransaction() throws Exception {
+            UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any()))
+                    .thenReturn(Map.of(new TransactionId(TX_UUID), new TransactionId(reversalTxUuid)));
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._templates.reverse").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("plain member (no FINANCE:MANAGE) does not see reverse affordance")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void shouldNotIncludeReverseAffordanceForRegularMember() throws Exception {
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._templates.reverse").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("reversed transaction in listing has reversedBy link")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void shouldIncludeReversedByLinkOnReversedTransactionInListing() throws Exception {
+            UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any()))
+                    .thenReturn(Map.of(new TransactionId(TX_UUID), new TransactionId(reversalTxUuid)));
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._links.reversedBy.href")
+                            .value(containsString("/account/transactions/" + reversalTxUuid)));
+        }
+
+        @Test
+        @DisplayName("reversal transaction in listing has reverses link")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void shouldIncludeReversesLinkOnReversalTransactionInListing() throws Exception {
+            UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
+            Transaction reversal = buildReversalTransaction(reversalTxUuid);
+            var page = new PageImpl<>(List.of(reversal), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._links.reverses.href")
+                            .value(containsString("/account/transactions/" + TX_UUID)));
         }
     }
 
