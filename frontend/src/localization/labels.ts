@@ -186,7 +186,6 @@ export const labels = {
         note: 'Poznámka',
         notePlaceholder: 'Volitelná poznámka...',
         noOperationAllowed: 'Žádná operace není povolena',
-        accountOwnerHeading: 'Majitel účtu',
     },
 
     enums: {
