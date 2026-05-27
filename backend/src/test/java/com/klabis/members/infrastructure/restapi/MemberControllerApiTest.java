@@ -1830,6 +1830,31 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.affectedGroups[0].groupName").value("Trail Runners"))
                     .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FREE"));
         }
+
+        @Test
+        @DisplayName("should return 409 with balance and accountLink when member has outstanding debt")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WhenMemberHasOutstandingDebt() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                    new MemberId(memberId),
+                    new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
+                    true);
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
+                    .thenThrow(new MemberHasOutstandingDebtException(snapshot));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().is(409))
+                    .andExpect(jsonPath("$.balance.amount").value(-250))
+                    .andExpect(jsonPath("$.balance.currency").value("CZK"))
+                    .andExpect(jsonPath("$.accountLink").value(
+                            "http://localhost/api/members/%s/account".formatted(memberId)));
+        }
     }
 
     @Nested

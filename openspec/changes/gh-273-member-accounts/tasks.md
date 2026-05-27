@@ -63,13 +63,13 @@
 
 ## 6. Vertical Slice: Cross-Module Pre-Check on Suspend
 
-- [ ] 6.1 Define `MemberFinancialStatePort` in `members.application` describing what members need to know about finances (e.g., `hasOutstandingDebt(MemberId)` plus minimal balance info for the 409 body)
-- [ ] 6.2 Implement the port in `finance.application` as a secondary adapter reading from `MemberAccount` repository (dependency direction: `finance → members`)
-- [ ] 6.3 Write failing application-service test in `members`: suspend with negative balance throws `MemberHasOutstandingDebtException`
-- [ ] 6.4 Write failing application-service test: suspend with zero or positive balance proceeds (group ownership checks pass)
-- [ ] 6.5 Implement balance pre-check in `MemberApplicationService.suspend(...)` analogous to `LastOwnershipCheckerImpl` flow
-- [ ] 6.6 Write failing REST test: suspending a member with negative balance returns HTTP 409 with `{ balance, accountLink }` body
-- [ ] 6.7 Add `MemberHasOutstandingDebtException` handler in `MembersExceptionHandler` returning 409 with structured body
+- [x] 6.1 Define `MemberFinancialStatePort` in `members.application` describing what members need to know about finances (e.g., `hasOutstandingDebt(MemberId)` plus minimal balance info for the 409 body)
+- [x] 6.2 Implement the port in `finance.application` as a secondary adapter reading from `MemberAccount` repository (dependency direction: `finance → members`)
+- [x] 6.3 Write failing application-service test in `members`: suspend with negative balance throws `MemberHasOutstandingDebtException`
+- [x] 6.4 Write failing application-service test: suspend with zero or positive balance proceeds (group ownership checks pass)
+- [x] 6.5 Implement balance pre-check in `MemberApplicationService.suspend(...)` analogous to `LastOwnershipCheckerImpl` flow
+- [x] 6.6 Write failing REST test: suspending a member with negative balance returns HTTP 409 with `{ balance, accountLink }` body
+- [x] 6.7 Add `MemberHasOutstandingDebtException` handler in `MembersExceptionHandler` returning 409 with structured body
 
 ## 7. Frontend: Own Account Page and Menu Entry
 

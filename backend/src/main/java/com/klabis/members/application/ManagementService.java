@@ -4,6 +4,8 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
+import com.klabis.members.MemberFinancialStatePort;
+import com.klabis.members.MemberHasOutstandingDebtException;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspensionRequestedEvent;
 import com.klabis.members.domain.Member;
@@ -11,7 +13,9 @@ import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -23,11 +27,19 @@ public class ManagementService implements ManagementPort {
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Nullable
+    private MemberFinancialStatePort memberFinancialStatePort;
+
     public ManagementService(MemberRepository memberRepository, UserService userService,
                              ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.eventPublisher = eventPublisher;
+    }
+
+    @Autowired(required = false)
+    void setMemberFinancialStatePort(MemberFinancialStatePort memberFinancialStatePort) {
+        this.memberFinancialStatePort = memberFinancialStatePort;
     }
 
     @Transactional
@@ -49,6 +61,13 @@ public class ManagementService implements ManagementPort {
         eventPublisher.publishEvent(event);
         if (!event.blockingGroups().isEmpty()) {
             throw new MemberIsLastGroupOwnerException(event.blockingGroups());
+        }
+
+        if (memberFinancialStatePort != null) {
+            MemberFinancialStatePort.MemberFinancialSnapshot snapshot = memberFinancialStatePort.getFinancialSnapshot(memberId);
+            if (snapshot.hasOutstandingDebt()) {
+                throw new MemberHasOutstandingDebtException(snapshot);
+            }
         }
 
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());

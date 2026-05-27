@@ -17,6 +17,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,13 +41,18 @@ class ManagementServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private MemberFinancialStatePort memberFinancialStatePort;
+
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, eventPublisher);
+        ManagementService service = new ManagementService(memberRepository, userService, eventPublisher);
+        service.setMemberFinancialStatePort(memberFinancialStatePort);
+        testedSubject = service;
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -142,6 +148,13 @@ class ManagementServiceTest {
                     .withAddress(Address.of("Vinohradská 456", "Praha", "12000", "CZ"))
                     .withNoGuardian()
                     .build();
+
+            // Default: no outstanding debt — only override in debt-specific tests
+            when(memberFinancialStatePort.getFinancialSnapshot(any(MemberId.class)))
+                    .thenReturn(new MemberFinancialStatePort.MemberFinancialSnapshot(
+                            new MemberId(testMemberId),
+                            new MonetaryAmount(BigDecimal.ZERO, "CZK"),
+                            false));
         }
 
         @Nested
@@ -299,6 +312,85 @@ class ManagementServiceTest {
                 assertThat(result.isActive()).isFalse();
                 verify(memberRepository).save(any(Member.class));
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
+            }
+        }
+
+        @Nested
+        @DisplayName("Outstanding Debt Pre-Check Tests")
+        class OutstandingDebtPreCheckTests {
+
+            @Test
+            @DisplayName("should throw MemberHasOutstandingDebtException when member has negative balance")
+            void shouldThrowWhenMemberHasNegativeBalance() {
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                        new MemberId(testMemberId),
+                        new MonetaryAmount(new BigDecimal("-250"), "CZK"),
+                        true);
+                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                        .isInstanceOf(MemberHasOutstandingDebtException.class)
+                        .satisfies(ex -> {
+                            var e = (MemberHasOutstandingDebtException) ex;
+                            assertThat(e.getSnapshot().hasOutstandingDebt()).isTrue();
+                            assertThat(e.getSnapshot().balance().amount()).isEqualByComparingTo(new BigDecimal("-250"));
+                        });
+
+                verify(memberRepository, never()).save(any(Member.class));
+                verify(userService, never()).suspendUser(any(UserId.class));
+            }
+
+            @Test
+            @DisplayName("should proceed with suspension when member has zero balance")
+            void shouldProceedWhenMemberHasZeroBalance() {
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                        new MemberId(testMemberId),
+                        new MonetaryAmount(BigDecimal.ZERO, "CZK"),
+                        false);
+                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+
+                assertThat(result.isActive()).isFalse();
+                verify(memberRepository).save(any(Member.class));
+            }
+
+            @Test
+            @DisplayName("should proceed with suspension when member has positive balance")
+            void shouldProceedWhenMemberHasPositiveBalance() {
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                        new MemberId(testMemberId),
+                        new MonetaryAmount(new BigDecimal("500"), "CZK"),
+                        false);
+                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+
+                assertThat(result.isActive()).isFalse();
+                verify(memberRepository).save(any(Member.class));
             }
         }
 
