@@ -57,6 +57,7 @@ class MemberAccountControllerTest {
 
     private static final UUID MEMBER_UUID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID TX_UUID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID RECORDER_UUID = UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final MemberId MEMBER_ID = new MemberId(MEMBER_UUID);
 
     @Autowired
@@ -440,6 +441,22 @@ class MemberAccountControllerTest {
         }
 
         @Test
+        @DisplayName("each transaction in listing has recordedBy link pointing to the recorder's member resource")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void shouldIncludeRecordedByLinkOnTransactionInListing() throws Exception {
+            Transaction tx = buildDepositTransaction();
+            var page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+            when(transactionQueryPort.findTransactions(any())).thenReturn(page);
+            when(memberAccountRepository.findReversalsOf(any())).thenReturn(Map.of());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.transactions[0]._links.recordedBy.href")
+                            .value(containsString("/api/members/" + RECORDER_UUID)));
+        }
+
+        @Test
         @DisplayName("reversal transaction in listing has reverses link")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldIncludeReversesLinkOnReversalTransactionInListing() throws Exception {
@@ -460,6 +477,22 @@ class MemberAccountControllerTest {
     @Nested
     @DisplayName("GET /api/members/{id}/account/transactions/{txId}")
     class GetTransactionEndpoint {
+
+        @Test
+        @DisplayName("transaction detail has recordedBy link pointing to the recorder's member resource")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void shouldExposeRecordedByLinkOnTransaction() throws Exception {
+            Transaction tx = buildDepositTransaction();
+            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(tx));
+            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.recordedBy.href")
+                            .value(containsString("/api/members/" + RECORDER_UUID)));
+        }
 
         @Test
         @DisplayName("5.9 reversed transaction has reversedBy link")
@@ -648,7 +681,7 @@ class MemberAccountControllerTest {
                 "Test deposit",
                 Instant.now(),
                 LocalDate.of(2026, 5, 1),
-                new com.klabis.common.users.UserId(UUID.randomUUID()),
+                new com.klabis.common.users.UserId(RECORDER_UUID),
                 null
         );
     }

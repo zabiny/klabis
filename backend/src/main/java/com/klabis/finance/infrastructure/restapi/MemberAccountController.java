@@ -213,6 +213,9 @@ class MemberAccountController {
                     .ifPresent(link -> model.add(link.withRel("reverses")));
         }
 
+        klabisLinkTo(methodOn(MemberController.class).getMember(tx.getRecordedBy().uuid(), null))
+                .ifPresent(link -> model.add(link.withRel("recordedBy")));
+
         accountLink.ifPresent(model::add);
 
         if (reversedByTxId == null && !tx.isReversal() && canReverse) {
