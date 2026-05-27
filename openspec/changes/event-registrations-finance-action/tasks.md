@@ -22,6 +22,6 @@
 
 ## 4. End-to-end verification
 
-- [ ] 4.1 Manual / Playwright happy path: log in as finance manager, open an event with registrations, charge entry fee for a member, verify transaction appears in that member's account history with the prefilled event note.
-- [ ] 4.2 Manual / Playwright authorization path: log in as a regular club member, open the same registrations list, verify no transaction action is shown.
-- [ ] 4.3 Verify member-accounts existing flows (member list inline dialog, account page) still work — regression check.
+- [x] 4.1 Manual / Playwright happy path: log in as finance manager, open an event with registrations, charge entry fee for a member, verify transaction appears in that member's account history with the prefilled event note.
+- [x] 4.2 Manual / Playwright authorization path: log in as a regular club member, open the same registrations list, verify no transaction action is shown.
+- [x] 4.3 Verify member-accounts existing flows (member list inline dialog, account page) still work — regression check.
