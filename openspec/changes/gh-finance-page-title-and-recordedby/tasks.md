@@ -6,8 +6,8 @@
 
 ## 2. Frontend: Page heading "Finance"
 
-- [ ] 2.1 Change H1 of the member financial account page from "Účet člena" to "Finance" (prefer reusing/updating the existing label in `src/localization/labels.ts`; if the heading is a JSX literal, refactor it to use `labels.ts`)
-- [ ] 2.2 Update or add frontend test asserting the H1 reads "Finance" on the financial account page
+- [x] 2.1 Change H1 of the member financial account page from "Účet člena" to "Finance" (prefer reusing/updating the existing label in `src/localization/labels.ts`; if the heading is a JSX literal, refactor it to use `labels.ts`)
+- [x] 2.2 Update or add frontend test asserting the H1 reads "Finance" on the financial account page
 
 ## 3. Frontend: Show recorder name in the transactions table
 

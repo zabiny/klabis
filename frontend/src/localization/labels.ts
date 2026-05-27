@@ -150,7 +150,7 @@ export const labels = {
     },
 
     finance: {
-        memberAccountPageTitle: 'Účet člena',
+        memberAccountPageTitle: 'Finance',
         balance: 'Zůstatek',
         transactionHistory: 'Historie transakcí',
         noTransactions: 'Žádné transakce',

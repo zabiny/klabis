@@ -157,10 +157,10 @@ describe('MemberAccountManagePage', () => {
             });
         });
 
-        it('should render page heading "Účet člena"', async () => {
+        it('should render page heading "Finance"', async () => {
             renderPage(<MemberAccountManagePage/>);
             await waitFor(() => {
-                expect(screen.getByRole('heading', {name: /Účet člena/i})).toBeInTheDocument();
+                expect(screen.getByRole('heading', {name: /^Finance$/i, level: 1})).toBeInTheDocument();
             });
         });
 
