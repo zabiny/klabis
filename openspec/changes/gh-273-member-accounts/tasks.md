@@ -50,16 +50,16 @@
 
 ## 5. Vertical Slice: Read Account and History
 
-- [ ] 5.1 Write failing REST test: `GET /api/members/{id}/account` for the owner returns balance + history link
-- [ ] 5.2 Write failing REST test: `GET .../account` for another member without FINANCE:MANAGE returns 403
-- [ ] 5.3 Write failing REST test: `GET .../account` for any member with FINANCE:MANAGE returns the account
-- [ ] 5.4 Implement read endpoint returning `MemberAccountResource` with HAL+FORMS links
-- [ ] 5.5 Write failing REST test: `GET .../account/transactions` is paginated with default page size
-- [ ] 5.6 Write failing REST test: sorting by occurredAt asc/desc, type asc/desc, amount asc/desc
-- [ ] 5.7 Write failing REST test: filtering by date range and by type
-- [ ] 5.8 Implement transactions read endpoint with paging, sorting, and filtering (Spring Data Pageable + criteria)
-- [ ] 5.9 HAL+FORMS test: reversed transactions expose a `reversedBy` link to their reversing transaction
-- [ ] 5.10 HAL+FORMS test: reversal transactions expose a `reverses` link to the original
+- [x] 5.1 Write failing REST test: `GET /api/members/{id}/account` for the owner returns balance + history link
+- [x] 5.2 Write failing REST test: `GET .../account` for another member without FINANCE:MANAGE returns 403
+- [x] 5.3 Write failing REST test: `GET .../account` for any member with FINANCE:MANAGE returns the account
+- [x] 5.4 Implement read endpoint returning `MemberAccountResource` with HAL+FORMS links
+- [x] 5.5 Write failing REST test: `GET .../account/transactions` is paginated with default page size
+- [x] 5.6 Write failing REST test: sorting by occurredAt asc/desc, type asc/desc, amount asc/desc
+- [x] 5.7 Write failing REST test: filtering by date range and by type
+- [x] 5.8 Implement transactions read endpoint with paging, sorting, and filtering (Spring Data Pageable + criteria)
+- [x] 5.9 HAL+FORMS test: reversed transactions expose a `reversedBy` link to their reversing transaction
+- [x] 5.10 HAL+FORMS test: reversal transactions expose a `reverses` link to the original
 
 ## 6. Vertical Slice: Cross-Module Pre-Check on Suspend
 

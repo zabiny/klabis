@@ -6,20 +6,31 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
+import com.klabis.finance.application.MemberAccountNotFoundException;
 import com.klabis.finance.application.ReversePort;
-import com.klabis.finance.domain.TransactionId;
+import com.klabis.finance.application.TransactionNotFoundException;
+import com.klabis.finance.application.TransactionQueryPort;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Transaction;
+import com.klabis.finance.domain.TransactionId;
 import com.klabis.members.ActingUser;
+import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -44,26 +55,88 @@ class MemberAccountController {
     private final ChargePort chargePort;
     private final ReversePort reversePort;
     private final MemberAccountRepository memberAccountRepository;
+    private final TransactionQueryPort transactionQueryPort;
+    private final PagedResourcesAssembler<TransactionResource> pagedResourcesAssembler;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
                             ReversePort reversePort,
-                            MemberAccountRepository memberAccountRepository) {
+                            MemberAccountRepository memberAccountRepository,
+                            TransactionQueryPort transactionQueryPort,
+                            PagedResourcesAssembler<TransactionResource> pagedResourcesAssembler) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
         this.reversePort = reversePort;
         this.memberAccountRepository = memberAccountRepository;
+        this.transactionQueryPort = transactionQueryPort;
+        this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<EntityModel<MemberAccountResource>> getAccount(
             @PathVariable UUID memberId,
-            @ActingUser com.klabis.common.users.UserId currentUserId) {
+            @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
+        checkAccountAccess(id, currentUser);
         MemberAccount account = memberAccountRepository.findById(id)
-                .orElseThrow(() -> new com.klabis.finance.application.MemberAccountNotFoundException(id));
+                .orElseThrow(() -> new MemberAccountNotFoundException(id));
         MemberAccountResource resource = MemberAccountResource.from(account);
         return ResponseEntity.ok(entityModelWithDomain(resource, account));
+    }
+
+    @GetMapping("/transactions")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PagedModel<EntityModel<TransactionResource>>> listTransactions(
+            @PathVariable UUID memberId,
+            @ActingUser CurrentUserData currentUser,
+            @RequestParam(required = false) LocalDate occurredAtFrom,
+            @RequestParam(required = false) LocalDate occurredAtTo,
+            @RequestParam(required = false) String type,
+            @PageableDefault(size = 20, sort = "occurredAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        MemberId id = new MemberId(memberId);
+        checkAccountAccess(id, currentUser);
+
+        Page<Transaction> page = transactionQueryPort.findTransactions(
+                new TransactionQueryPort.TransactionQuery(id, occurredAtFrom, occurredAtTo, type, pageable));
+
+        Page<TransactionResource> resourcePage = page.map(TransactionResource::from);
+        PagedModel<EntityModel<TransactionResource>> model = pagedResourcesAssembler.toModel(resourcePage);
+        return ResponseEntity.ok(model);
+    }
+
+    @GetMapping("/transactions/{txId}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<EntityModel<TransactionResource>> getTransaction(
+            @PathVariable UUID memberId,
+            @PathVariable UUID txId,
+            @ActingUser CurrentUserData currentUser) {
+        MemberId id = new MemberId(memberId);
+        checkAccountAccess(id, currentUser);
+        MemberAccount account = memberAccountRepository.findById(id)
+                .orElseThrow(() -> new MemberAccountNotFoundException(id));
+        Transaction tx = account.getTransactions().stream()
+                .filter(t -> t.getId().value().equals(txId))
+                .findFirst()
+                .orElseThrow(() -> new TransactionNotFoundException(txId));
+
+        boolean alreadyReversed = account.getTransactions().stream()
+                .anyMatch(t -> t.getReversesTransactionId() != null
+                               && t.getReversesTransactionId().value().equals(txId));
+
+        TransactionResource resource = TransactionResource.from(tx);
+        UUID reversedByTxId = alreadyReversed
+                ? account.getTransactions().stream()
+                        .filter(t -> t.getReversesTransactionId() != null
+                                     && t.getReversesTransactionId().value().equals(txId))
+                        .findFirst()
+                        .map(t -> t.getId().value())
+                        .orElse(null)
+                : null;
+
+        EntityModel<TransactionResource> model = EntityModel.of(resource);
+        addTransactionLinks(model, memberId, txId, tx, reversedByTxId, currentUser);
+        return ResponseEntity.ok(model);
     }
 
     @PostMapping("/transactions")
@@ -103,15 +176,45 @@ class MemberAccountController {
         return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
     }
 
-    @GetMapping("/transactions/{txId}")
-    public ResponseEntity<Void> getTransaction(
-            @PathVariable UUID memberId,
-            @PathVariable UUID txId) {
-        return ResponseEntity.ok().build();
+    private void checkAccountAccess(MemberId memberId, CurrentUserData currentUser) {
+        boolean isOwner = currentUser.memberId() != null && currentUser.memberId().equals(memberId);
+        boolean hasFinanceManage = currentUser.hasAuthority(Authority.FINANCE_MANAGE);
+        if (!isOwner && !hasFinanceManage) {
+            throw new AccessDeniedException(
+                    "Access denied: not account owner and missing FINANCE:MANAGE authority");
+        }
+    }
+
+    private void addTransactionLinks(EntityModel<TransactionResource> model, UUID memberId, UUID txId,
+                                     Transaction tx, UUID reversedByTxId, CurrentUserData currentUser) {
+        klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
+                .ifPresent(link -> model.add(link.withSelfRel()));
+
+        if (reversedByTxId != null) {
+            klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, reversedByTxId, null))
+                    .ifPresent(link -> model.add(link.withRel("reversedBy")));
+        }
+
+        if (tx.isReversal()) {
+            UUID originalTxId = tx.getReversesTransactionId().value();
+            klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, originalTxId, null))
+                    .ifPresent(link -> model.add(link.withRel("reverses")));
+        }
+
+        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId, null))
+                .ifPresent(link -> model.add(link.withRel("account")));
+
+        if (reversedByTxId == null && currentUser.hasAuthority(Authority.FINANCE_MANAGE)) {
+            klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
+                    .map(link -> link.withSelfRel()
+                            .andAffordances(klabisAfford(
+                                    methodOn(MemberAccountController.class).reverse(memberId, txId, null, null))))
+                    .ifPresent(model::add);
+        }
     }
 
     private URI buildTransactionUri(UUID memberId, UUID txId) {
-        return klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId))
+        return klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
                 .map(link -> link.toUri())
                 .orElseGet(() -> URI.create("/api/members/" + memberId + "/account/transactions/" + txId));
     }
@@ -149,5 +252,9 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
                         .andAffordances(klabisAfford(
                                 methodOn(MemberAccountController.class).charge(account.getId().uuid(), null, null))))
                 .ifPresent(model::add);
+
+        klabisLinkTo(methodOn(MemberAccountController.class).listTransactions(
+                account.getId().uuid(), null, null, null, null, Pageable.unpaged()))
+                .ifPresent(link -> model.add(link.withRel("transactions")));
     }
 }
