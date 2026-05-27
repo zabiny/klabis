@@ -15,7 +15,6 @@ import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
 import {EventDetailPage} from "./pages/events/EventDetailPage.tsx";
 import {AccommodationListPage} from "./pages/events/AccommodationListPage.tsx";
-import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import {MemberAccountManagePage} from "./pages/finances/MemberAccountManagePage.tsx";
 import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
@@ -93,7 +92,6 @@ function App() {
                                 {/* Trasy zakázané v admin módu */}
                                 <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
-                                    <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
                                     <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>

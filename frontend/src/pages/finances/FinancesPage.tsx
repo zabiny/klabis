@@ -1,9 +1,7 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import {useTransactionFilters} from "./useTransactionFilters.ts";
 import type {EntityModel} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
-import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
-import {Card, Skeleton, Spinner} from "../../components/UI";
+import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {usePersistedState} from "../../hooks/usePersistedState.ts";
@@ -11,10 +9,8 @@ import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
-import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
-import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
 
 type TransactionItem = EntityModel<{
     id: string;
@@ -282,39 +278,4 @@ export const TransactionsTable = ({
     }
 
     return <TransactionsTableContent selfHref={selfLink.href} extraParams={extraParams} onReverseRequest={onReverseRequest} />;
-};
-
-export const MemberFinancePage = (): ReactElement => {
-    const {isLoading, resourceData} = useHalPageData();
-    const {filters, extraParams, handleFilterChange} = useTransactionFilters();
-
-    if (isLoading) {
-        return <Skeleton />;
-    }
-
-    const balance = resourceData?.balance as number | undefined;
-    const currency = resourceData?.currency as string | undefined;
-
-    return (
-        <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-bold text-text-primary">{labels.finance.pageTitle}</h1>
-
-            <AccountOwnerHeader />
-
-            <BalanceCard balance={balance} currency={currency} />
-
-            <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-text-primary">{labels.finance.transactionHistory}</h2>
-
-                <TransactionFilterBar
-                    value={filters}
-                    onChange={handleFilterChange}
-                />
-
-                <HalSubresourceProvider subresourceLinkName="transactions">
-                    <TransactionsTable extraParams={extraParams} />
-                </HalSubresourceProvider>
-            </div>
-        </div>
-    );
 };
