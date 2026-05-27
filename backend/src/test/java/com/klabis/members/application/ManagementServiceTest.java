@@ -50,9 +50,7 @@ class ManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        ManagementService service = new ManagementService(memberRepository, userService, eventPublisher);
-        service.setMemberFinancialStatePort(memberFinancialStatePort);
-        testedSubject = service;
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort));
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()

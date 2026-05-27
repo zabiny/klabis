@@ -177,8 +177,7 @@ class MemberAccountControllerTest {
         @DisplayName("5.1 owner gets 200 with history link")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturn200ForOwner() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -200,8 +199,7 @@ class MemberAccountControllerTest {
         @DisplayName("5.3 FINANCE:MANAGE can read any account")
         @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturn200ForFinanceManager() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -213,8 +211,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 with deposit affordance for FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturnAccountWithDepositAffordanceForFinanceManager() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -226,8 +223,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 without deposit affordance for plain member viewing own account")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturnAccountWithoutDepositAffordanceForRegularMember() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -239,8 +235,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 with charge affordance for FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturnAccountWithChargeAffordanceForFinanceManager() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -252,8 +247,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 without charge affordance for plain member viewing own account")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturnAccountWithoutChargeAffordanceForRegularMember() throws Exception {
-            MemberAccount account = buildAccount();
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -357,8 +351,9 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original, reversal));
+            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
             when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -371,10 +366,10 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldExposeReversesLinkOnReversalTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
-            Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original, reversal));
+            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(reversal));
             when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findReversalOf(new TransactionId(reversalTxUuid))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, reversalTxUuid)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -389,6 +384,7 @@ class MemberAccountControllerTest {
             Transaction original = buildDepositTransaction();
             MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
             when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -403,8 +399,9 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original, reversal));
+            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
             when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))

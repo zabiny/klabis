@@ -1,5 +1,5 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import {useSearchParams} from "react-router-dom";
+import {useTransactionFilters} from "./useTransactionFilters.ts";
 import type {EntityModel} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
@@ -285,29 +285,7 @@ export const TransactionsTable = ({
 
 export const MemberFinancePage = (): ReactElement => {
     const {isLoading, resourceData} = useHalPageData();
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    const urlType = searchParams.get('type') ?? '';
-    const urlFrom = searchParams.get('occurredAtFrom') ?? '';
-    const urlTo = searchParams.get('occurredAtTo') ?? '';
-
-    const handleFilterChange = useCallback((next: {type: string; dateFrom: string; dateTo: string}) => {
-        setSearchParams((prev) => {
-            const params = new URLSearchParams(prev);
-            if (next.type) { params.set('type', next.type); } else { params.delete('type'); }
-            if (next.dateFrom) { params.set('occurredAtFrom', next.dateFrom); } else { params.delete('occurredAtFrom'); }
-            if (next.dateTo) { params.set('occurredAtTo', next.dateTo); } else { params.delete('occurredAtTo'); }
-            return params;
-        });
-    }, [setSearchParams]);
-
-    const extraParams = useMemo((): Record<string, string> => {
-        const params: Record<string, string> = {};
-        if (urlType) params.type = urlType;
-        if (urlFrom) params.occurredAtFrom = urlFrom;
-        if (urlTo) params.occurredAtTo = urlTo;
-        return params;
-    }, [urlType, urlFrom, urlTo]);
+    const {filters, extraParams, handleFilterChange} = useTransactionFilters();
 
     if (isLoading) {
         return <Skeleton />;
@@ -326,7 +304,7 @@ export const MemberFinancePage = (): ReactElement => {
                 <h2 className="text-xl font-bold text-text-primary">{labels.finance.transactionHistory}</h2>
 
                 <TransactionFilterBar
-                    value={{type: urlType, dateFrom: urlFrom, dateTo: urlTo}}
+                    value={filters}
                     onChange={handleFilterChange}
                 />
 

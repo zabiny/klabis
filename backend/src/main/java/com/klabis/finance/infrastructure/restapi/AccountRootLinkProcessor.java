@@ -9,9 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 @MvcComponent
 class AccountRootLinkProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
@@ -25,8 +22,7 @@ class AccountRootLinkProcessor implements RepresentationModelProcessor<EntityMod
         if (memberId == null) {
             return model;
         }
-        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId, null))
-                .ifPresent(link -> model.add(link.withRel("account")));
+        FinanceLinks.accountLink(memberId).ifPresent(model::add);
         return model;
     }
 }

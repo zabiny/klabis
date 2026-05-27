@@ -11,6 +11,7 @@ import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -63,13 +64,34 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
     }
 
     @Override
+    public Optional<Money> findBalanceById(MemberId memberId) {
+        String sql = "SELECT balance_amount, balance_currency FROM member_account WHERE member_id = :memberId";
+        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
+        try {
+            return Optional.ofNullable(namedJdbc.queryForObject(sql, params, (rs, rowNum) ->
+                    Money.of(rs.getBigDecimal("balance_amount"),
+                            Currency.getInstance(rs.getString("balance_currency")))));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<Transaction> findReversalOf(TransactionId transactionId) {
+        String sql = "SELECT * FROM finance_transaction WHERE reverses_transaction_id = :txId";
+        MapSqlParameterSource params = new MapSqlParameterSource("txId", transactionId.value());
+        List<Transaction> results = namedJdbc.query(sql, params, new TransactionRowMapper());
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    @Override
     public boolean existsById(MemberId memberId) {
         return jdbcRepository.existsById(memberId.uuid());
     }
 
     @Override
     public Page<Transaction> findTransactions(MemberId memberId, LocalDate occurredAtFrom,
-                                              LocalDate occurredAtTo, String type, Pageable pageable) {
+                                              LocalDate occurredAtTo, TransactionType type, Pageable pageable) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("memberId", memberId.uuid());
 
@@ -84,9 +106,9 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
             conditions.add("occurred_at <= :occurredAtTo");
             params.addValue("occurredAtTo", occurredAtTo);
         }
-        if (type != null && !type.isBlank()) {
+        if (type != null) {
             conditions.add("type = :type");
-            params.addValue("type", type.toUpperCase());
+            params.addValue("type", type.name());
         }
 
         String whereClause = conditions.stream().collect(Collectors.joining(" AND "));

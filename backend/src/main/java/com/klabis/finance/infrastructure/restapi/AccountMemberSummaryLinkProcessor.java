@@ -7,9 +7,7 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static com.klabis.finance.infrastructure.restapi.FinanceSecurityHelper.callerHasFinanceManage;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Adds an {@code account} HAL link to member summary responses (list rows) for users with FINANCE:MANAGE authority.
@@ -31,8 +29,7 @@ class AccountMemberSummaryLinkProcessor implements RepresentationModelProcessor<
         if (memberUuid == null) {
             return model;
         }
-        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberUuid, null))
-                .ifPresent(link -> model.add(link.withRel("account")));
+        FinanceLinks.accountLink(memberUuid).ifPresent(model::add);
         return model;
     }
 

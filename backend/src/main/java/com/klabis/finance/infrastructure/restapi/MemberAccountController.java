@@ -12,8 +12,10 @@ import com.klabis.finance.application.TransactionNotFoundException;
 import com.klabis.finance.application.TransactionQueryPort;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
+import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionId;
+import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -78,10 +80,10 @@ class MemberAccountController {
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
         checkAccountAccess(id, currentUser);
-        MemberAccount account = memberAccountRepository.findById(id)
+        Money balance = memberAccountRepository.findBalanceById(id)
                 .orElseThrow(() -> new MemberAccountNotFoundException(id));
-        MemberAccountResource resource = MemberAccountResource.from(account);
-        return ResponseEntity.ok(entityModelWithDomain(resource, account));
+        MemberAccountResource resource = MemberAccountResource.fromBalance(id, balance);
+        return ResponseEntity.ok(entityModelWithDomain(resource, id));
     }
 
     @GetMapping("/transactions")
@@ -91,7 +93,7 @@ class MemberAccountController {
             @ActingUser CurrentUserData currentUser,
             @RequestParam(required = false) LocalDate occurredAtFrom,
             @RequestParam(required = false) LocalDate occurredAtTo,
-            @RequestParam(required = false) String type,
+            @RequestParam(required = false) TransactionType type,
             @PageableDefault(size = 20, sort = "occurredAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
         MemberId id = new MemberId(memberId);
@@ -120,21 +122,10 @@ class MemberAccountController {
                 .findFirst()
                 .orElseThrow(() -> new TransactionNotFoundException(txId));
 
-        boolean alreadyReversed = account.getTransactions().stream()
-                .anyMatch(t -> t.getReversesTransactionId() != null
-                               && t.getReversesTransactionId().value().equals(txId));
+        Transaction reversal = memberAccountRepository.findReversalOf(tx.getId()).orElse(null);
+        UUID reversedByTxId = reversal != null ? reversal.getId().value() : null;
 
-        TransactionResource resource = TransactionResource.from(tx);
-        UUID reversedByTxId = alreadyReversed
-                ? account.getTransactions().stream()
-                        .filter(t -> t.getReversesTransactionId() != null
-                                     && t.getReversesTransactionId().value().equals(txId))
-                        .findFirst()
-                        .map(t -> t.getId().value())
-                        .orElse(null)
-                : null;
-
-        EntityModel<TransactionResource> model = EntityModel.of(resource);
+        EntityModel<TransactionResource> model = EntityModel.of(TransactionResource.from(tx));
         addTransactionLinks(model, memberId, txId, tx, reversedByTxId, currentUser);
         return ResponseEntity.ok(model);
     }
@@ -201,8 +192,7 @@ class MemberAccountController {
                     .ifPresent(link -> model.add(link.withRel("reverses")));
         }
 
-        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId, null))
-                .ifPresent(link -> model.add(link.withRel("account")));
+        FinanceLinks.accountLink(memberId).ifPresent(model::add);
 
         if (reversedByTxId == null && currentUser.hasAuthority(Authority.FINANCE_MANAGE)) {
             klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
@@ -241,20 +231,20 @@ class MemberAccountController {
 }
 
 @MvcComponent
-class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAccountResource, MemberAccount> {
+class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAccountResource, MemberId> {
 
     @Override
-    public void process(EntityModel<MemberAccountResource> model, MemberAccount account) {
-        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(account.getId().uuid(), null))
+    public void process(EntityModel<MemberAccountResource> model, MemberId memberId) {
+        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId.uuid(), null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(
-                                methodOn(MemberAccountController.class).deposit(account.getId().uuid(), null, null)))
+                                methodOn(MemberAccountController.class).deposit(memberId.uuid(), null, null)))
                         .andAffordances(klabisAfford(
-                                methodOn(MemberAccountController.class).charge(account.getId().uuid(), null, null))))
+                                methodOn(MemberAccountController.class).charge(memberId.uuid(), null, null))))
                 .ifPresent(model::add);
 
         klabisLinkTo(methodOn(MemberAccountController.class).listTransactions(
-                account.getId().uuid(), null, null, null, null, Pageable.unpaged()))
+                memberId.uuid(), null, null, null, null, Pageable.unpaged()))
                 .ifPresent(link -> model.add(link.withRel("transactions")));
     }
 }

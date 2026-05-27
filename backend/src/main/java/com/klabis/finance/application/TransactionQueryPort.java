@@ -1,6 +1,7 @@
 package com.klabis.finance.application;
 
 import com.klabis.finance.domain.Transaction;
+import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
@@ -14,7 +15,7 @@ public interface TransactionQueryPort {
             MemberId memberId,
             LocalDate occurredAtFrom,
             LocalDate occurredAtTo,
-            String type,
+            TransactionType type,
             org.springframework.data.domain.Pageable pageable
     ) {}
 

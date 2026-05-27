@@ -3,6 +3,7 @@ package com.klabis.finance.infrastructure.restapi;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.UserId;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.hateoas.EntityModel;
@@ -21,6 +22,11 @@ import static org.mockito.Mockito.when;
 class AccountRootLinkProcessorTest {
 
     private final AccountRootLinkProcessor processor = new AccountRootLinkProcessor();
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     @DisplayName("should add account link to root model when authenticated member has member profile")

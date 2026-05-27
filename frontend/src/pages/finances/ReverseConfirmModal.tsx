@@ -7,6 +7,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useToast} from '../../contexts/ToastContext.tsx';
 import type {TransactionReverseRequest} from './FinancesPage.tsx';
 import {toFormValidationError} from '../../api/hateoas.ts';
+import {formatCurrency, formatDate} from './financeFormatters.ts';
 
 interface ReverseConfirmModalProps {
     isOpen: boolean;
@@ -14,16 +15,9 @@ interface ReverseConfirmModalProps {
     onClose: () => void;
 }
 
-function formatAmount(amount: number, currency: string): string {
-    const formatted = new Intl.NumberFormat('cs-CZ', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(Math.abs(amount));
-    return `${formatted} ${currency}`;
-}
-
-function formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('cs-CZ').format(date);
-}
-
+// The transactions list endpoint does not expose a per-item `reverse` HAL affordance
+// (only single-transaction GET does). Until the list endpoint is updated to include it,
+// we derive the reverse URL from the self href as a documented workaround.
 function deriveReverseUrl(selfHref: string): string {
     try {
         const url = new URL(selfHref);
@@ -104,7 +98,7 @@ export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfi
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-text-secondary">{labels.finance.amount}:</span>
-                        <span className="font-medium">{formatAmount(transaction.amount, transaction.currency)}</span>
+                        <span className="font-medium">{formatCurrency(transaction.amount, transaction.currency, {absolute: true})}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-text-secondary">{labels.finance.date}:</span>

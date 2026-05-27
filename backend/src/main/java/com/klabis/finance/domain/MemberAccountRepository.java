@@ -13,8 +13,12 @@ public interface MemberAccountRepository {
 
     Optional<MemberAccount> findById(MemberId memberId);
 
+    Optional<Money> findBalanceById(MemberId memberId);
+
+    Optional<Transaction> findReversalOf(TransactionId transactionId);
+
     boolean existsById(MemberId memberId);
 
     Page<Transaction> findTransactions(MemberId memberId, LocalDate occurredAtFrom,
-                                       LocalDate occurredAtTo, String type, Pageable pageable);
+                                       LocalDate occurredAtTo, TransactionType type, Pageable pageable);
 }
