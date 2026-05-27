@@ -144,6 +144,61 @@ public class UserCreatedEventHandler {
     listenery a měří jejich latence.
 </p>
 
+<h2>Cross-module porty (synchronní integrace)</h2>
+
+<p>
+    Eventy řeší <strong>reaktivní</strong> integraci (něco se stalo → reaguj). Někdy ale modul potřebuje
+    <strong>synchronně dotázat</strong> jiný modul při zpracování commandu — typicky pre-check, který
+    rozhoduje o povolení/zamítnutí akce. Pro to slouží pattern <strong>cross-module port</strong>.
+</p>
+
+<p>
+    <strong>Problém:</strong> bounded context A potřebuje data z kontextu B, ale dependency direction
+    musí zůstat jednosměrná (např. <code>finance → members</code>, ne naopak — <code>members</code> je
+    nezávislý kořen domény).
+</p>
+
+<p>
+    <strong>Pattern:</strong> konzument (modul A) definuje <em>port interface</em> ve svém module API
+    (kořenový package). Provider (modul B) ho implementuje jako <code>@SecondaryAdapter</code>
+    <code>@Component</code>. Spring injektuje implementaci do konzumenta přes interface — A nezná typ
+    adaptéru a nezávisí na B.
+</p>
+
+<pre class="signature"><code>// V members module API (root package)
+@SecondaryPort
+public interface MemberFinancialStatePort {
+    MemberFinancialSnapshot getFinancialSnapshot(MemberId memberId);
+
+    record MemberFinancialSnapshot(MemberId memberId, MonetaryAmount balance, boolean hasOutstandingDebt) {}
+}
+
+// V finance.application (provider)
+@SecondaryAdapter
+@Component
+class MemberFinancialStateAdapter implements MemberFinancialStatePort {
+    public MemberFinancialSnapshot getFinancialSnapshot(MemberId id) {
+        return memberAccountRepository.findById(id)
+                .map(this::toSnapshot)
+                .orElseGet(() -&gt; noDebtSnapshot(id));
+    }
+}</code></pre>
+
+<p>
+    Konkrétně <code>MemberApplicationService.suspend(...)</code> používá tento port před přechodem
+    stavu: zavolá <code>port.getFinancialSnapshot(id)</code>, a pokud má člen dluh, vyhodí
+    <code>MemberHasOutstandingDebtException</code> → controller vrátí <strong>HTTP 409</strong>
+    s tělem <code>{ balance, accountLink }</code>. Stejný vzor používá také
+    <code>LastOwnershipCheckerImpl</code> (groups → members) pro kontrolu, že po suspendu zůstane
+    každé skupině alespoň jeden vlastník.
+</p>
+
+<aside class="note">
+    Pokud port není v testech nutný (např. unit test members bez wired finance modulu), adapter může
+    vracet "neutrální" snapshot (<code>balance=0, hasOutstandingDebt=false</code>) — viz default
+    větev v <code>MemberFinancialStateAdapter</code>. Tím zůstává členský modul testovatelný izolovaně.
+</aside>
+
 <h2>Verifikace pravidel závislostí</h2>
 
 <p>

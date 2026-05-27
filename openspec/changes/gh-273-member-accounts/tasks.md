@@ -106,7 +106,7 @@
 
 ## 11. Documentation and Wrap-Up
 
-- [ ] 11.1 Update developer manual section on cross-module ports with the `MemberAccountQueryPort` example
-- [ ] 11.2 Update OpenAPI spec snapshot tests
-- [ ] 11.3 Run `openspec validate gh-273-member-accounts --strict`
-- [ ] 11.4 Add label `BackendCompleted` to GitHub issue #273 once backend implementation is finished
+- [x] 11.1 Update developer manual section on cross-module ports with the `MemberAccountQueryPort` example
+- [x] 11.2 Update OpenAPI spec snapshot tests
+- [x] 11.3 Run `openspec validate gh-273-member-accounts --strict`
+- [x] 11.4 Add label `BackendCompleted` to GitHub issue #273 once backend implementation is finished

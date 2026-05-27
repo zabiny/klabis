@@ -45,6 +45,14 @@
       "description": "Training group management API"
     },
     {
+      "name": "Calendar Feed Token",
+      "description": "iCalendar feed token management for the current user"
+    },
+    {
+      "name": "Calendar Feed",
+      "description": "iCalendar subscribe feed for personal schedule"
+    },
+    {
       "name": "Groups",
       "description": "Members group management API"
     },
@@ -55,6 +63,10 @@
     {
       "name": "CategoryPresets",
       "description": "Category preset management API"
+    },
+    {
+      "name": "EventTypes",
+      "description": "Event type catalog management API"
     },
     {
       "name": "Members ",
@@ -85,12 +97,20 @@
       "description": "Password setup and account activation API"
     },
     {
+      "name": "Finance",
+      "description": "Member financial account API"
+    },
+    {
       "name": "Root",
       "description": "API root navigation"
     },
     {
       "name": "Dashboard",
       "description": "Dashboard widget link index"
+    },
+    {
+      "name": "My Profile",
+      "description": "Current authenticated user operations"
     }
   ],
   "paths": {
@@ -297,7 +317,7 @@
           "Event Registrations"
         ],
         "summary": "Get registration by member ID",
-        "description": "Get a member\u0027s event registration including SI card number. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority.",
+        "description": "Get a member\u0027s event registration including SI card number. Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. When new\u003dtrue, returns prefilled defaults (siCardNumber from profile) for a not-yet-existing registration.",
         "operationId": "getRegistration",
         "parameters": [
           {
@@ -318,6 +338,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "newRegistration",
+            "in": "query",
+            "description": "When true, returns default prefilled registration data instead of looking up an existing registration",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -363,7 +393,7 @@
             }
           },
           "404": {
-            "description": "Member not registered for this event",
+            "description": "Member not registered for this event (new\u003dfalse only)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -373,7 +403,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - must be the member or have EVENTS:REGISTRATIONS",
+            "description": "Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new\u003dtrue with mismatched memberId",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -383,7 +413,7 @@
             }
           },
           "200": {
-            "description": "Registration retrieved successfully",
+            "description": "Registration retrieved successfully or defaults returned (new\u003dtrue)",
             "content": {
               "application/prs.hal-forms+json": {
                 "schema": {
@@ -503,6 +533,301 @@
           },
           "204": {
             "description": "Registration updated successfully"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/event-types/{id}": {
+      "get": {
+        "tags": [
+          "EventTypes"
+        ],
+        "summary": "Get event type by ID",
+        "description": "Returns a single event type. Requires EVENTS:READ authority.",
+        "operationId": "getEventType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Event type UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Event type found",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEventTypeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "EventTypes"
+        ],
+        "summary": "Update an event type",
+        "description": "Updates an existing event type. Requires EVENTS:MANAGE authority.",
+        "operationId": "updateEventType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Event type UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Event type updated"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "EventTypes"
+        ],
+        "summary": "Delete an event type",
+        "description": "Deletes an event type not in use. Requires EVENTS:MANAGE authority.",
+        "operationId": "deleteEventType",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Event type UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Event type deleted"
           }
         },
         "security": [
@@ -1429,6 +1754,420 @@
         ]
       }
     },
+    "/api/members/{memberId}/account/transactions": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "listTransactions",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "occurredAtFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "occurredAtTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedModelEntityModelTransactionResource"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "deposit",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/members/{memberId}/account/transactions/{txId}/reverse": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "reverse",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "txId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/members/{memberId}/account/transactions/charge": {
+      "post": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "charge",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/members/{id}/suspend": {
       "post": {
         "tags": [
@@ -1622,6 +2361,274 @@
           {
             "KlabisAuth": [
               "MEMBERS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/me/password-change": {
+      "post": {
+        "tags": [
+          "My Profile"
+        ],
+        "summary": "Change password",
+        "description": "Changes the current user\u0027s password. Requires the correct current password.",
+        "operationId": "changePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Incorrect current password or new password fails complexity rules",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Password changed successfully"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "openid"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/me/ical-token": {
+      "get": {
+        "tags": [
+          "Calendar Feed Token"
+        ],
+        "summary": "Get iCal feed token state",
+        "description": "Returns the current iCal feed token state for the authenticated user.\nIf a token exists, returns the masked subscribe URL and the timestamp when the token was last set.\nThe URL is masked — the full raw token is never stored and can only be revealed at generation time.\nUse the \u0027regenerate\u0027 affordance (POST) to create or rotate the token and receive the full URL once.\nIf no token exists, returns url\u003dnull.\n",
+        "operationId": "getTokenState",
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Token state returned",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelIcalTokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "openid"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Calendar Feed Token"
+        ],
+        "summary": "Generate or regenerate iCal feed token",
+        "description": "Generates a new iCal feed token for the authenticated user, or regenerates (rotates) it if one\nalready exists. The previous subscribe URL immediately stops working.\nReturns the full subscribe URL exactly once — it cannot be recovered afterwards.\nStore it securely and add it to your calendar application.\n",
+        "operationId": "generateToken",
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "New token generated; full subscribe URL returned once",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelIcalTokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "openid"
             ]
           }
         ]
@@ -2681,6 +3688,37 @@
             }
           },
           {
+            "name": "deadlineWithin",
+            "in": "query",
+            "description": "Return events whose nearest future registration deadline falls within [today, today+period] (ISO-8601 duration, e.g. P7D, optional)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "notRegisteredBy",
+            "in": "query",
+            "description": "Exclude events where the given member is registered: only \u0027me\u0027 is currently accepted (optional)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventTypeId",
+            "in": "query",
+            "description": "Filter by event type UUID (multi-value: ?eventTypeId\u003dx\u0026eventTypeId\u003dy, optional)",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "description": "Zero-based page index (0..N)",
@@ -2809,7 +3847,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateEvent"
+                "$ref": "#/components/schemas/CreateEventRequest"
               }
             }
           },
@@ -3083,7 +4121,7 @@
           "Events"
         ],
         "summary": "Cancel an event",
-        "description": "Transitions event to CANCELLED status.",
+        "description": "Transitions event to CANCELLED status. An optional cancellation reason may be provided.",
         "operationId": "cancelEvent",
         "parameters": [
           {
@@ -3097,6 +4135,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelEventRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "401": {
             "description": "Unauthorized - authentication required",
@@ -3177,7 +4224,7 @@
           "Event Registrations"
         ],
         "summary": "List event registrations",
-        "description": "List all registrations for an event.\nSI card numbers are not included for privacy protection.\n",
+        "description": "List all registrations for an event.\nSI card numbers are not included for privacy protection.\nSupported sort fields: firstName, lastName, category, registrationTime.\nDefault sort: registrationTime ASC.\nsort\u003dregistrationTime is silently ignored for members without EVENTS:REGISTRATIONS authority\nwho are not the event coordinator. Unknown sort fields also fall back to default.\n",
         "operationId": "listRegistrations",
         "parameters": [
           {
@@ -3188,6 +4235,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field and optional direction, e.g. \u0027lastName\u0027 or \u0027lastName,desc\u0027",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -3466,6 +4522,95 @@
         ]
       }
     },
+    "/api/events/sync-from-oris/all-upcoming": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Bulk sync all upcoming ORIS events",
+        "description": "Synchronises all DRAFT/ACTIVE events with eventDate \u003e\u003d today that have an ORIS ID. Processes each event sequentially; partial failures are collected and returned in the summary. Always returns 200 — check failureCount in the response body.",
+        "operationId": "syncAllUpcomingFromOris",
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Bulk sync completed; inspect failureCount for partial failures",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelBulkSyncResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
     "/api/events/import": {
       "post": {
         "tags": [
@@ -3547,6 +4692,185 @@
           },
           "201": {
             "description": "Event imported successfully"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/event-types": {
+      "get": {
+        "tags": [
+          "EventTypes"
+        ],
+        "summary": "List all event types",
+        "description": "Returns all event types sorted by sort_order. Requires EVENTS:READ authority.",
+        "operationId": "listEventTypes",
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "List of event types",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelEntityModelEventTypeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "EventTypes"
+        ],
+        "summary": "Create an event type",
+        "description": "Creates a new event type. Requires EVENTS:MANAGE authority.",
+        "operationId": "createEventType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Event type created"
           }
         },
         "security": [
@@ -3743,7 +5067,7 @@
           "Calendar"
         ],
         "summary": "List calendar items with date range filtering",
-        "description": "Retrieves a list of calendar items filtered by date range.\nIf dates not provided, defaults to current month.\nMaximum date range is 1 year (366 days).\nDefault sort: startDate,asc. Allowed fields: id, name, startDate, endDate.\n",
+        "description": "Retrieves a list of calendar items filtered by date range.\nIf dates not provided, defaults to current month.\nMaximum date range is 1 year (366 days).\nDefault sort: startDate,asc. Allowed fields: id, name, startDate, endDate.\nWhen mySchedule\u003dtrue, returns only EVENT_DATE items linked to events where the current\nuser is an active participant or event coordinator.\n",
         "operationId": "listCalendarItems",
         "parameters": [
           {
@@ -3774,6 +5098,15 @@
             "schema": {
               "type": "string",
               "default": "startDate,asc"
+            }
+          },
+          {
+            "name": "mySchedule",
+            "in": "query",
+            "description": "When true, restricts results to EVENT_DATE items for events where the current user is a participant or coordinator",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -5044,7 +6377,7 @@
           "Events"
         ],
         "summary": "Update an event",
-        "description": "Updates event information. Only allowed for DRAFT and ACTIVE events.",
+        "description": "Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields may be provided; absent fields are left unchanged.",
         "operationId": "updateEvent",
         "parameters": [
           {
@@ -5062,7 +6395,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateEvent"
+                "$ref": "#/components/schemas/UpdateEventRequest"
               }
             }
           },
@@ -5437,6 +6770,99 @@
         ]
       }
     },
+    "/ical/my-schedule.ics": {
+      "get": {
+        "tags": [
+          "Calendar Feed"
+        ],
+        "summary": "Personal schedule iCalendar feed",
+        "description": "Returns an iCalendar (RFC 5545) feed for the authenticated user\u0027s personal schedule.\nIncludes events where the user is an active participant OR acts as coordinator.\nAuthenticate via the ?token\u003d query parameter (Personal Access Token).\n",
+        "operationId": "getMySchedule",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Personal Access Token for calendar authentication",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "iCalendar feed returned",
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api": {
       "get": {
         "tags": [
@@ -5648,6 +7074,197 @@
             ]
           }
         ]
+      }
+    },
+    "/api/members/{memberId}/account": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "getAccount",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMemberAccountResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{memberId}/account/transactions/{txId}": {
+      "get": {
+        "tags": [
+          "Finance"
+        ],
+        "operationId": "getTransaction",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "txId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelTransactionResource"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/members/options": {
@@ -6022,6 +7639,107 @@
           {
             "KlabisAuth": [
               "GROUPS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/events/{eventId}/accommodation-list": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Get accommodation list for an event",
+        "description": "Returns the accommodation list for an event with personal details for each registered member.\nAccessible only to the event coordinator or users with EVENTS:REGISTRATIONS authority.\nFields that are not recorded for a member are returned as null.\n",
+        "operationId": "getAccommodationList",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "Event UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Accommodation list retrieved successfully",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelAccommodationListItemDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
             ]
           }
         ]
@@ -7573,7 +9291,8 @@
                 "EVENTS:READ",
                 "EVENTS:MANAGE",
                 "EVENTS:REGISTRATIONS",
-                "GROUPS:TRAINING"
+                "GROUPS:TRAINING",
+                "FINANCE:MANAGE"
               ]
             },
             "minItems": 1,
@@ -7598,6 +9317,28 @@
         },
         "required": [
           "siCardNumber"
+        ]
+      },
+      "UpdateEventType": {
+        "type": "object",
+        "description": "Event type update data",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "name"
         ]
       },
       "UpdateCalendarItem": {
@@ -7849,6 +9590,54 @@
           "phone"
         ]
       },
+      "DepositRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ]
+      },
+      "ReverseRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ChargeRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ]
+      },
       "SuspendMembershipRequest": {
         "type": "object",
         "description": "Suspension request",
@@ -7868,6 +9657,67 @@
         "required": [
           "reason"
         ]
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "EntityModelIcalTokenResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "lastSetAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "hreflang": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "deprecation": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "templated": {
+            "type": "boolean"
+          }
+        }
       },
       "CreateGroupRequest": {
         "type": "object",
@@ -7923,7 +9773,7 @@
           "parent"
         ]
       },
-      "CreateEvent": {
+      "CreateEventRequest": {
         "type": "object",
         "description": "Event creation data",
         "properties": {
@@ -7952,9 +9802,17 @@
           "eventCoordinatorId": {
             "$ref": "#/components/schemas/MemberId"
           },
-          "registrationDeadline": {
-            "type": "string",
-            "format": "date"
+          "eventTypeId": {
+            "$ref": "#/components/schemas/EventTypeId"
+          },
+          "deadlines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "maxItems": 3,
+            "minItems": 0
           },
           "categories": {
             "type": "array",
@@ -7969,12 +9827,32 @@
           "organizer"
         ]
       },
+      "EventTypeId": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "MemberId": {
         "type": "object",
         "properties": {
           "value": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "CancelEventRequest": {
+        "type": "object",
+        "description": "Optional cancellation details",
+        "properties": {
+          "cancellationReason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
           }
         }
       },
@@ -7995,6 +9873,62 @@
           "siCardNumber"
         ]
       },
+      "EntityModelBulkSyncResult": {
+        "type": "object",
+        "properties": {
+          "totalProcessed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "successCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSyncEntry"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "EventId": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "EventSyncEntry": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "$ref": "#/components/schemas/EventId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SYNCED",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
       "ImportCommand": {
         "type": "object",
         "description": "ORIS import command with orisId",
@@ -8004,6 +9938,28 @@
             "format": "int32"
           }
         }
+      },
+      "CreateEventType": {
+        "type": "object",
+        "description": "Event type creation data",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
       "CreateCategoryPreset": {
         "type": "object",
@@ -8320,48 +10276,63 @@
           "name"
         ]
       },
-      "UpdateEvent": {
+      "PatchFieldEventTypeId": {
+        "type": "object",
+        "properties": {
+          "provided": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PatchFieldListLocalDate": {
+        "type": "object",
+        "properties": {
+          "provided": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PatchFieldMemberId": {
+        "type": "object",
+        "properties": {
+          "provided": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateEventRequest": {
         "type": "object",
         "description": "Event update data",
         "properties": {
           "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 0
+            "$ref": "#/components/schemas/PatchFieldString"
           },
           "eventDate": {
-            "type": "string",
-            "format": "date"
+            "$ref": "#/components/schemas/PatchFieldLocalDate"
           },
           "location": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 0
+            "$ref": "#/components/schemas/PatchFieldString"
           },
           "organizer": {
-            "type": "string",
-            "maxLength": 10,
-            "minLength": 0
+            "$ref": "#/components/schemas/PatchFieldString"
           },
           "websiteUrl": {
-            "type": "string"
+            "$ref": "#/components/schemas/PatchFieldString"
           },
           "eventCoordinatorId": {
-            "$ref": "#/components/schemas/MemberId"
+            "$ref": "#/components/schemas/PatchFieldMemberId"
           },
-          "registrationDeadline": {
-            "type": "string",
-            "format": "date"
+          "eventTypeId": {
+            "$ref": "#/components/schemas/PatchFieldEventTypeId"
+          },
+          "deadlines": {
+            "$ref": "#/components/schemas/PatchFieldListLocalDate"
           },
           "categories": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "$ref": "#/components/schemas/PatchFieldListString"
           }
         },
         "required": [
-          "eventDate",
           "name",
           "organizer"
         ]
@@ -8391,35 +10362,6 @@
         "properties": {
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "Link": {
-        "type": "object",
-        "properties": {
-          "href": {
-            "type": "string"
-          },
-          "hreflang": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "deprecation": {
-            "type": "string"
-          },
-          "profile": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "templated": {
-            "type": "boolean"
           }
         }
       },
@@ -8646,6 +10588,107 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/EntityModelMemberSummaryResponse"
+                }
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageMetadata"
+          }
+        }
+      },
+      "EntityModelMemberAccountResource": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "balance": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EntityModelTransactionResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "recordedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reversesTransactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "PagedModelEntityModelTransactionResource": {
+        "type": "object",
+        "properties": {
+          "_embedded": {
+            "type": "object",
+            "properties": {
+              "transactions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EntityModelTransactionResource"
                 }
               }
             }
@@ -9132,9 +11175,8 @@
           "websiteUrl": {
             "type": "string"
           },
-          "registrationDeadline": {
-            "type": "string",
-            "format": "date"
+          "eventTypeId": {
+            "$ref": "#/components/schemas/EventTypeId"
           },
           "status": {
             "type": "string",
@@ -9151,17 +11193,18 @@
               "type": "string"
             }
           },
+          "cancellationReason": {
+            "type": "string"
+          },
+          "deadlines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "EventId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -9226,7 +11269,7 @@
           "category": {
             "type": "string"
           },
-          "registeredAt": {
+          "registrationTime": {
             "type": "string",
             "format": "date-time"
           },
@@ -9253,6 +11296,99 @@
           "registeredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "AccommodationListItemDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "identityCardNumber": {
+            "type": "string"
+          },
+          "identityCardValidityDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "addressStreet": {
+            "type": "string"
+          },
+          "addressCity": {
+            "type": "string"
+          },
+          "addressPostalCode": {
+            "type": "string"
+          },
+          "addressCountry": {
+            "type": "string"
+          }
+        }
+      },
+      "CollectionModelAccommodationListItemDto": {
+        "type": "object",
+        "properties": {
+          "_embedded": {
+            "type": "object",
+            "properties": {
+              "accommodationList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AccommodationListItemDto"
+                }
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "CollectionModelEntityModelEventTypeDto": {
+        "type": "object",
+        "properties": {
+          "_embedded": {
+            "type": "object",
+            "properties": {
+              "eventTypeDtoList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EntityModelEventTypeDto"
+                }
+              }
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "EntityModelEventTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/EventTypeId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
