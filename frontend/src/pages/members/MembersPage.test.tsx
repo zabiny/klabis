@@ -61,6 +61,15 @@ vi.mock('../../hooks/usePermissionsEditor', () => ({
     }),
 }));
 
+vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
+    FinanceTransactionDialog: ({isOpen, accountLink, onClose}: {isOpen: boolean; accountLink: {href: string}; onClose: () => void}) =>
+        isOpen ? (
+            <div data-testid="finance-transaction-dialog" data-account-href={accountLink.href}>
+                <button onClick={onClose}>close-dialog</button>
+            </div>
+        ) : null,
+}));
+
 const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
     resourceData,
     isLoading: false,
@@ -387,5 +396,77 @@ describe('MembersPage — filter bar integration', () => {
 
         await user.click(screen.getByRole('button', {name: labels.membersFilter.statusAll}));
         expect(screen.getByTestId('search-string')).toHaveTextContent('status=ALL');
+    });
+});
+
+describe('MembersPage — Banknote (finance transaction) action', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('shows Banknote button when _links.account exists on member row', () => {
+        const member = buildMemberRow({
+            _links: {
+                self: {href: '/api/members/member-1'},
+                account: {href: '/api/members/member-1/account'},
+            },
+        });
+        renderPageWithMembers([member]);
+        expect(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel})).toBeInTheDocument();
+    });
+
+    it('does not show Banknote button when _links.account is absent', () => {
+        renderPageWithMembers([buildMemberRow()]);
+        expect(screen.queryByRole('button', {name: labels.finance.openTransactionDialogAriaLabel})).not.toBeInTheDocument();
+    });
+
+    it('clicking Banknote button opens FinanceTransactionDialog with the account link', () => {
+        const member = buildMemberRow({
+            _links: {
+                self: {href: '/api/members/member-1'},
+                account: {href: '/api/members/member-1/account'},
+            },
+        });
+        renderPageWithMembers([member]);
+
+        fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
+
+        const dialog = screen.getByTestId('finance-transaction-dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(dialog).toHaveAttribute('data-account-href', '/api/members/member-1/account');
+    });
+
+    it('clicking Banknote button does not navigate to member detail', () => {
+        const navigateToResource = vi.fn();
+        const member = buildMemberRow({
+            _links: {
+                self: {href: '/api/members/member-1'},
+                account: {href: '/api/members/member-1/account'},
+            },
+        });
+        renderPageWithMembers([member], {
+            route: {
+                pathname: '/members',
+                navigateToResource,
+                refetch: async () => {},
+                queryState: 'success' as const,
+                getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
+            },
+        });
+
+        fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
+
+        expect(navigateToResource).not.toHaveBeenCalled();
+    });
+
+    it('does not show PiggyBank button (navigation to account page removed)', () => {
+        const member = buildMemberRow({
+            _links: {
+                self: {href: '/api/members/member-1'},
+                account: {href: '/api/members/member-1/account'},
+            },
+        });
+        renderPageWithMembers([member]);
+        expect(screen.queryByRole('button', {name: labels.finance.openMemberAccount})).not.toBeInTheDocument();
     });
 });

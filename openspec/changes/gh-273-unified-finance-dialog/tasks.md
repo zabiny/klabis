@@ -33,17 +33,17 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 5. Frontend — integrate dialog into `MembersPage`
 
-- [ ] 5.1 Update `MembersPage.test.tsx` (or equivalent): assert Banknote action appears in member row when `_links.account` exists, opens `FinanceTransactionDialog` on click, does not navigate
-- [ ] 5.2 In `MembersPage.tsx`, remove the `PiggyBank` button branch from `renderActionsCell` (lines around 115–128)
-- [ ] 5.3 Add a `Banknote` button to `renderActionsCell` that opens `FinanceTransactionDialog` for the row's member account link (replaces the removed PiggyBank action)
-- [ ] 5.4 Remove `openAccountPage` helper function — no longer used
+- [x] 5.1 Update `MembersPage.test.tsx` (or equivalent): assert Banknote action appears in member row when `_links.account` exists, opens `FinanceTransactionDialog` on click, does not navigate
+- [x] 5.2 In `MembersPage.tsx`, remove the `PiggyBank` button branch from `renderActionsCell` (lines around 115–128)
+- [x] 5.3 Add a `Banknote` button to `renderActionsCell` that opens `FinanceTransactionDialog` for the row's member account link (replaces the removed PiggyBank action)
+- [x] 5.4 Remove `openAccountPage` helper function — no longer used
 - [ ] 5.5 Manual verification: clicking Banknote opens dialog with correct member context; row click still navigates to member detail (unchanged)
 
 ## 6. Frontend — icon swap on `MemberDetailPage`
 
-- [ ] 6.1 In `MemberDetailPage.tsx` (around line 286), change `<PiggyBank ... />` to `<Banknote ... />` on the "open member account" button; keep label and navigation behavior unchanged
-- [ ] 6.2 Update import on line 14 — replace `PiggyBank` with `Banknote` if `PiggyBank` is no longer used elsewhere in the file
-- [ ] 6.3 Existing `MemberDetailPage.test.tsx` should still pass (label-based assertions, not icon-based)
+- [x] 6.1 In `MemberDetailPage.tsx` (around line 286), change `<PiggyBank ... />` to `<Banknote ... />` on the "open member account" button; keep label and navigation behavior unchanged
+- [x] 6.2 Update import on line 14 — replace `PiggyBank` with `Banknote` if `PiggyBank` is no longer used elsewhere in the file
+- [x] 6.3 Existing `MemberDetailPage.test.tsx` should still pass (label-based assertions, not icon-based)
 
 ## 7. Frontend — cleanup
 

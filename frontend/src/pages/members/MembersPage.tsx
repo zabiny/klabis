@@ -1,6 +1,7 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import type {EntityModel, HalFormsTemplate, HalResourceLinks} from "../../api";
+import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
+import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -11,7 +12,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
-import {Pencil, PiggyBank, Shield, UserCheck, UserX} from "lucide-react";
+import {Banknote, Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
@@ -50,6 +51,7 @@ export const MembersPage = (): ReactElement => {
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
+    const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
 
     const hasManageAuthority = resourceData?._templates?.registerMember !== undefined;
 
@@ -94,14 +96,6 @@ export const MembersPage = (): ReactElement => {
         setPermissionsDialog({member, permissionsUrl: link.href});
     };
 
-    const openAccountPage = (member: MemberSummaryData) => {
-        const accountLink = member._links?.account;
-        if (!accountLink) return;
-        const link = Array.isArray(accountLink) ? accountLink[0] : accountLink;
-        if (!link?.href) return;
-        route.navigateToResource(link);
-    };
-
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const member = item as unknown as MemberSummaryData;
         const hasEditTemplate = !!member._templates?.updateMember;
@@ -116,14 +110,16 @@ export const MembersPage = (): ReactElement => {
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label={labels.finance.openMemberAccount}
+                        aria-label={labels.finance.openTransactionDialogAriaLabel}
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            openAccountPage(member);
+                            const accountLink = member._links?.account;
+                            const link = Array.isArray(accountLink) ? accountLink[0] : accountLink;
+                            if (link) setTransactionDialogAccount(link as Link);
                         }}
                     >
-                        <PiggyBank className="w-4 h-4"/>
+                        <Banknote className="w-4 h-4"/>
                     </Button>
                 )}
                 {hasEditTemplate && (
@@ -344,6 +340,13 @@ export const MembersPage = (): ReactElement => {
                 onClose={() => setSuspensionWarning(null)}
                 affectedGroups={suspensionWarning ?? []}
             />
+            {transactionDialogAccount && (
+                <FinanceTransactionDialog
+                    accountLink={transactionDialogAccount}
+                    isOpen={transactionDialogAccount !== null}
+                    onClose={() => setTransactionDialogAccount(null)}
+                />
+            )}
         </div>
     );
 };
