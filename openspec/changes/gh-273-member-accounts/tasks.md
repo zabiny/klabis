@@ -93,10 +93,10 @@
 
 ## 9. Frontend: Suspend Dialog Negative-Balance Handling
 
-- [ ] 9.1 Extend suspend dialog to render a balance-warning state when API returns 409 with negative-balance shape
-- [ ] 9.2 Display current balance and a link to the member's financial account
-- [ ] 9.3 Do not render any override toggle in the dialog
-- [ ] 9.4 After the admin resolves the balance (closes dialog, opens account, deposits), re-attempting suspend succeeds
+- [x] 9.1 Extend suspend dialog to render a balance-warning state when API returns 409 with negative-balance shape
+- [x] 9.2 Display current balance and a link to the member's financial account
+- [x] 9.3 Do not render any override toggle in the dialog
+- [x] 9.4 After the admin resolves the balance (closes dialog, opens account, deposits), re-attempting suspend succeeds
 
 ## 10. Permissions Management
 

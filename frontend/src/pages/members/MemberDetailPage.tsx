@@ -16,7 +16,8 @@ import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {parseSuspensionWarning409} from "./suspensionUtils.ts";
+import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
+import {parseSuspensionWarning409, parseNegativeBalanceWarning409, type NegativeBalanceWarning} from "./suspensionUtils.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
@@ -78,6 +79,7 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
+    const [negativeBalanceWarning, setNegativeBalanceWarning] = useState<NegativeBalanceWarning | null>(null);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
@@ -408,6 +410,11 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 onClose={() => setSuspensionWarning(null)}
                 affectedGroups={suspensionWarning ?? []}
             />
+            <NegativeBalanceSuspensionDialog
+                isOpen={negativeBalanceWarning !== null}
+                onClose={() => setNegativeBalanceWarning(null)}
+                warning={negativeBalanceWarning}
+            />
             {suspendTemplate && suspendMemberModal && (
                 <Modal
                     isOpen={true}
@@ -422,6 +429,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         pathname={route.pathname}
                         onClose={() => setSuspendMemberModal(false)}
                         onSubmitError={(error) => {
+                            const negBalance = parseNegativeBalanceWarning409(error);
+                            if (negBalance) {
+                                setSuspendMemberModal(false);
+                                setNegativeBalanceWarning(negBalance);
+                                return true;
+                            }
                             const groups = parseSuspensionWarning409(error);
                             if (groups) {
                                 setSuspensionWarning(groups);

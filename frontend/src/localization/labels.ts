@@ -424,6 +424,14 @@ export const labels = {
         groupTypeFreeGroup: 'Volná skupina',
     },
 
+    negativeBalanceWarning: {
+        title: 'Záporný zůstatek',
+        description: 'Pro ukončení členství musí být zůstatek nezáporný. Nejprve doplňte prostředky na účtu člena.',
+        currentBalance: 'Aktuální zůstatek',
+        openAccount: 'Otevřít účet',
+        close: 'Zavřít',
+    },
+
     changePassword: {
         sectionButtonLabel: 'Změnit heslo',
         dialogTitle: 'Změna hesla',
