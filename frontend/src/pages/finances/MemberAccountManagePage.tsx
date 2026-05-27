@@ -10,6 +10,7 @@ import {ReverseConfirmModal} from "./ReverseConfirmModal.tsx";
 import {Banknote} from "lucide-react";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import type {Link} from "../../api/types.ts";
+import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
 
 /**
  * Account page for finance managers viewing any member's account.
@@ -66,6 +67,8 @@ export const MemberAccountManagePage = (): ReactElement => {
                         </div>
                     )}
                 </div>
+
+                <AccountOwnerHeader />
 
                 <BalanceCard balance={balance} currency={currency} />
 

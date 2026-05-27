@@ -39,6 +39,13 @@ vi.mock('../../components/finance/FinanceTransactionDialog.tsx', () => ({
     },
 }));
 
+const mockOwnerData = {
+    firstName: 'Jan',
+    lastName: 'Novák',
+    registrationNumber: 'ZBM1234',
+    _links: {self: {href: 'https://test.com/api/members/456'}},
+};
+
 const mockAccountDataWithAffordances = {
     memberId: 'member-456',
     balance: 750,
@@ -47,6 +54,7 @@ const mockAccountDataWithAffordances = {
         self: {href: 'https://test.com/api/members/456/account'},
         transactions: {href: 'https://test.com/api/members/456/account/transactions'},
         member: {href: 'https://test.com/api/members/456'},
+        accountOwner: {href: 'https://test.com/api/members/456'},
     },
     _templates: {
         deposit: {
@@ -142,6 +150,9 @@ describe('MemberAccountManagePage', () => {
                 if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
                     return Promise.resolve(createMockResponse(mockTransactionData));
                 }
+                if (baseUrl.endsWith('/api/members/456') || baseUrl === 'https://test.com/api/members/456') {
+                    return Promise.resolve(createMockResponse(mockOwnerData));
+                }
                 return Promise.resolve(createMockResponse(mockAccountDataWithAffordances));
             });
         });
@@ -203,6 +214,14 @@ describe('MemberAccountManagePage', () => {
                 );
             });
         });
+
+        it('should display account owner name and registration number above balance card', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Jan Novák (ZBM1234)')).toBeInTheDocument();
+            });
+        });
     });
 
     describe('Without FINANCE:MANAGE affordances (own account view)', () => {
@@ -213,6 +232,13 @@ describe('MemberAccountManagePage', () => {
                     return Promise.resolve(createMockResponse(mockTransactionData));
                 }
                 return Promise.resolve(createMockResponse(mockAccountDataWithoutAffordances));
+            });
+        });
+
+        it('should NOT render account owner section when accountOwner link is missing', async () => {
+            renderPage(<MemberAccountManagePage/>);
+            await waitFor(() => {
+                expect(screen.queryByTestId('account-owner-header')).not.toBeInTheDocument();
             });
         });
 
