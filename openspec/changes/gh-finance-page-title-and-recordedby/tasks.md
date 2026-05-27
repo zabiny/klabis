@@ -11,11 +11,11 @@
 
 ## 3. Frontend: Show recorder name in the transactions table
 
-- [ ] 3.1 Add a "Zaznamenal" (recorded by) column to the `TransactionsTable` rendered in `FinancesPage`
-- [ ] 3.2 For each transaction, follow `_links.recordedBy.href` via React Query and render the recorder's full name using the existing `MemberName` component (deduplicate by href so the same recorder is fetched only once per page)
-- [ ] 3.3 When `_links.recordedBy` is missing or the lookup fails (e.g. 404), render a dash ("—") in the cell
-- [ ] 3.4 Render the recorder name as plain text (not a clickable link)
-- [ ] 3.5 Add/extend frontend test covering: column is present, name renders for a resolvable link, dash renders when the link is missing
+- [x] 3.1 Add a "Zaznamenal" (recorded by) column to the `TransactionsTable` rendered in `FinancesPage`
+- [x] 3.2 For each transaction, follow `_links.recordedBy.href` via React Query and render the recorder's full name using the existing `MemberName` component (deduplicate by href so the same recorder is fetched only once per page)
+- [x] 3.3 When `_links.recordedBy` is missing or the lookup fails (e.g. 404), render a dash ("—") in the cell
+- [x] 3.4 Render the recorder name as plain text (not a clickable link)
+- [x] 3.5 Add/extend frontend test covering: column is present, name renders for a resolvable link, dash renders when the link is missing
 
 ## 4. Verify end-to-end and archive
 

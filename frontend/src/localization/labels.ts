@@ -185,6 +185,7 @@ export const labels = {
         note: 'Poznámka',
         notePlaceholder: 'Volitelná poznámka...',
         noOperationAllowed: 'Žádná operace není povolena',
+        recordedBy: 'Zaznamenal',
     },
 
     enums: {

@@ -25,6 +25,7 @@ type TransactionItem = EntityModel<{
         self?: { href: string };
         reverses?: { href: string };
         reversedBy?: { href: string };
+        recordedBy?: { href: string };
     };
 }>;
 
@@ -60,6 +61,26 @@ const TypeCell = ({type}: {type: string}): ReactElement => {
             {labels.finance.typeOther}
         </span>
     );
+};
+
+type MemberResource = {
+    firstName: string;
+    lastName: string;
+};
+
+const RecordedByCell = ({href}: {href: string | undefined}): ReactElement => {
+    const {data, isError} = useAuthorizedQuery<MemberResource>(href ?? '', {
+        enabled: !!href,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
+        retry: false,
+    });
+
+    if (!href || isError || !data) {
+        return <span>—</span>;
+    }
+
+    return <span>{data.firstName} {data.lastName}</span>;
 };
 
 export type TransactionReverseRequest = {
@@ -211,6 +232,12 @@ const TransactionsTableContent = ({
         );
     }, [onReverseRequest, reversedIds]);
 
+    const renderRecordedByCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
+        const tx = item as unknown as TransactionItem;
+        const href = tx._links?.recordedBy?.href;
+        return <RecordedByCell href={href} />;
+    }, []);
+
     return (
         <KlabisTable<TransactionItem>
             data={tableData}
@@ -244,6 +271,9 @@ const TransactionsTableContent = ({
             </TableCell>
             <TableCell column="note" dataRender={renderNoteCell}>
                 {labels.finance.description}
+            </TableCell>
+            <TableCell column="_recordedBy" dataRender={renderRecordedByCell}>
+                {labels.finance.recordedBy}
             </TableCell>
             {onReverseRequest && (
                 <TableCell column="_actions" dataRender={renderActionsCell}>
