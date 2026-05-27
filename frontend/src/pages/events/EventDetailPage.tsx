@@ -115,7 +115,7 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
         if (!hasAnyAction) return null;
 
         return (
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1">
                 {accountLink && (
                     <Button
                         variant="ghost"
@@ -362,10 +362,10 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const handleRegistrationEditClose = () => setRegistrationEditModal(null);
 
-    const financeTransactionDialogJsx = (
+    const financeTransactionDialogJsx = transactionDialogAccount && (
         <FinanceTransactionDialog
-            accountLink={transactionDialogAccount ?? {href: ''}}
-            isOpen={transactionDialogAccount !== null}
+            accountLink={transactionDialogAccount}
+            isOpen={true}
             onClose={() => setTransactionDialogAccount(null)}
             defaultNote={event.name}
         />
