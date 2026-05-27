@@ -7,6 +7,7 @@ import {
     getTimeWindowFromWhenParam,
     getYearFromParams,
     getYearRange,
+    isCurrentYear,
     timeWindowToDateParams,
     type TimeWindow,
     yearToDateParams,
@@ -156,6 +157,27 @@ describe('eventsFilterUtils', () => {
 
         it('returns default when param is unknown value', () => {
             expect(getTimeWindowFromWhenParam('unknown')).toBe(DEFAULT_TIME_WINDOW);
+        });
+    });
+
+    describe('isCurrentYear', () => {
+        it('returns true for the current calendar year', () => {
+            const currentYear = new Date().getFullYear();
+            expect(isCurrentYear(currentYear)).toBe(true);
+        });
+
+        it('returns false for a past year', () => {
+            const currentYear = new Date().getFullYear();
+            expect(isCurrentYear(currentYear - 1)).toBe(false);
+        });
+
+        it('returns false for a future year', () => {
+            const currentYear = new Date().getFullYear();
+            expect(isCurrentYear(currentYear + 1)).toBe(false);
+        });
+
+        it('returns false for null (no year selected)', () => {
+            expect(isCurrentYear(null)).toBe(false);
         });
     });
 

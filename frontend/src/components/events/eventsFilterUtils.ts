@@ -130,6 +130,11 @@ export function getYearFromParams(
     return fromYear;
 }
 
+export function isCurrentYear(year: number | null): boolean {
+    if (year === null) return false;
+    return year === new Date().getFullYear();
+}
+
 export function getYearRange(): number[] {
     const current = new Date().getFullYear();
     const years: number[] = [];

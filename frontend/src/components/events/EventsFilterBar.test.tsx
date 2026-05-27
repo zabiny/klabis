@@ -296,6 +296,89 @@ describe('EventsFilterBar', () => {
         });
     });
 
+    describe('time window disabled state for non-current years', () => {
+        it('disables Budoucí and Proběhlé when a past year is selected', () => {
+            const pastYear = new Date().getFullYear() - 1;
+            renderFilterBar({ value: { ...defaultValue, selectedYear: pastYear, timeWindow: 'vse' } });
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.vse })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('disables Budoucí and Proběhlé when a future year is selected', () => {
+            const futureYear = new Date().getFullYear() + 1;
+            renderFilterBar({ value: { ...defaultValue, selectedYear: futureYear, timeWindow: 'vse' } });
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('keeps all time window options enabled for the current year', () => {
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({ value: { ...defaultValue, selectedYear: currentYear, timeWindow: 'budouci' } });
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).not.toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('keeps all time window options enabled when no year is selected', () => {
+            renderFilterBar({ value: { ...defaultValue, selectedYear: null, timeWindow: 'budouci' } });
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).not.toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('shows disabled tooltip on Budoucí and Proběhlé for non-current year', () => {
+            const pastYear = new Date().getFullYear() - 1;
+            renderFilterBar({ value: { ...defaultValue, selectedYear: pastYear, timeWindow: 'vse' } });
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).toHaveAttribute('title', labels.eventsFilter.timeWindowDisabledTooltip);
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).toHaveAttribute('title', labels.eventsFilter.timeWindowDisabledTooltip);
+        });
+    });
+
+    describe('time window coercion when selecting non-current year', () => {
+        it('coerces timeWindow to "vse" when selecting a past year while Budoucí is active', async () => {
+            const onChange = vi.fn();
+            const pastYear = new Date().getFullYear() - 1;
+            renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'budouci', selectedYear: null } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(pastYear));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: pastYear, timeWindow: 'vse' }),
+            );
+        });
+
+        it('coerces timeWindow to "vse" when selecting a future year while Proběhlé is active', async () => {
+            const onChange = vi.fn();
+            const futureYear = new Date().getFullYear() + 1;
+            renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'probehle', selectedYear: null } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(futureYear));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: futureYear, timeWindow: 'vse' }),
+            );
+        });
+
+        it('does NOT coerce timeWindow when selecting the current year', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'budouci', selectedYear: null } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(currentYear));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: currentYear, timeWindow: 'budouci' }),
+            );
+        });
+
+        it('does NOT coerce timeWindow when "vse" is already active and a past year is selected', async () => {
+            const onChange = vi.fn();
+            const pastYear = new Date().getFullYear() - 1;
+            renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'vse', selectedYear: null } });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(pastYear));
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: pastYear, timeWindow: 'vse' }),
+            );
+        });
+    });
+
     describe('AND semantics: no mutual exclusion between year and time window', () => {
         it('does NOT clear selectedYear when time window changes', async () => {
             const onChange = vi.fn();

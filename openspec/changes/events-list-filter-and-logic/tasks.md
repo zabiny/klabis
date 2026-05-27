@@ -8,12 +8,12 @@
 
 ## 2. Frontend — Disable Budoucí / Proběhlé for non-current years
 
-- [ ] 2.1 Write failing UI test: selecting a past year disables "Budoucí" and "Proběhlé" and coerces the active time window to "Vše".
-- [ ] 2.2 Write failing UI test: selecting a future year (non-current) disables "Budoucí" and "Proběhlé" and coerces the time window to "Vše".
-- [ ] 2.3 Implement enabled/disabled state for time-window options based on whether the selected year equals the current year or is "no year".
-- [ ] 2.4 Implement coercion of the active time-window value to "Vše" at the moment a non-current year is selected.
-- [ ] 2.5 Add a tooltip / aria-disabled affordance on disabled options explaining why they are unavailable.
-- [ ] 2.6 Make the failing tests pass.
+- [x] 2.1 Write failing UI test: selecting a past year disables "Budoucí" and "Proběhlé" and coerces the active time window to "Vše".
+- [x] 2.2 Write failing UI test: selecting a future year (non-current) disables "Budoucí" and "Proběhlé" and coerces the time window to "Vše".
+- [x] 2.3 Implement enabled/disabled state for time-window options based on whether the selected year equals the current year or is "no year".
+- [x] 2.4 Implement coercion of the active time-window value to "Vše" at the moment a non-current year is selected.
+- [x] 2.5 Add a tooltip / aria-disabled affordance on disabled options explaining why they are unavailable.
+- [x] 2.6 Make the failing tests pass.
 
 ## 3. Frontend — Switch-back and "no year" behaviour
 

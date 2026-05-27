@@ -1,7 +1,7 @@
 import {type ReactElement} from 'react';
 import {labels} from '../../localization';
 import {FulltextSearchInput, PillGroup} from '../UI';
-import {getYearRange, type TimeWindow} from './eventsFilterUtils';
+import {getYearRange, isCurrentYear, type TimeWindow} from './eventsFilterUtils';
 import type {EventTypeCatalogItem} from '../../hooks/useEventTypes';
 
 export type EventsFilterValue = {
@@ -43,11 +43,22 @@ export function EventsFilterBar({
 
     const selectedEventType = value.eventTypeIds[0] ?? ALL_EVENT_TYPES;
 
+    const timeWindowDisabled: TimeWindow[] =
+        value.selectedYear !== null && !isCurrentYear(value.selectedYear)
+            ? ['budouci', 'probehle']
+            : [];
+
     const handleYearChange = (yearStr: string) => {
         if (yearStr === '') {
             onChange({ ...value, selectedYear: null });
         } else {
-            onChange({ ...value, selectedYear: parseInt(yearStr, 10) });
+            const newYear = parseInt(yearStr, 10);
+            const needsCoercion = !isCurrentYear(newYear) && value.timeWindow !== 'vse';
+            onChange({
+                ...value,
+                selectedYear: newYear,
+                timeWindow: needsCoercion ? 'vse' : value.timeWindow,
+            });
         }
     };
 
@@ -69,6 +80,8 @@ export function EventsFilterBar({
                 selectedValue={value.timeWindow}
                 onChange={handleTimeWindowChange}
                 ariaLabel={labels.eventsFilter.timeWindowLabel}
+                disabledValues={timeWindowDisabled}
+                disabledTooltip={labels.eventsFilter.timeWindowDisabledTooltip}
             />
 
             <div className="flex items-center gap-1.5">

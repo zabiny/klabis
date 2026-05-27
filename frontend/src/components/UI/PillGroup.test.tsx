@@ -55,4 +55,64 @@ describe('PillGroup', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Aktivní' }));
         expect(onChange).toHaveBeenCalledWith('ACTIVE');
     });
+
+    describe('disabled options', () => {
+        it('renders a disabled button with aria-disabled=true when value is in disabledValues', () => {
+            render(
+                <PillGroup<Status>
+                    options={OPTIONS}
+                    selectedValue="ALL"
+                    onChange={vi.fn()}
+                    ariaLabel="Status filter"
+                    disabledValues={['ACTIVE', 'INACTIVE']}
+                />,
+            );
+            expect(screen.getByRole('button', { name: 'Aktivní' })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: 'Neaktivní' })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: 'Vše' })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('does not call onChange when a disabled option is clicked', async () => {
+            const onChange = vi.fn();
+            render(
+                <PillGroup<Status>
+                    options={OPTIONS}
+                    selectedValue="ALL"
+                    onChange={onChange}
+                    ariaLabel="Status filter"
+                    disabledValues={['ACTIVE']}
+                />,
+            );
+            await userEvent.click(screen.getByRole('button', { name: 'Aktivní' }));
+            expect(onChange).not.toHaveBeenCalled();
+        });
+
+        it('renders a tooltip title on disabled buttons when disabledTooltip is provided', () => {
+            render(
+                <PillGroup<Status>
+                    options={OPTIONS}
+                    selectedValue="ALL"
+                    onChange={vi.fn()}
+                    ariaLabel="Status filter"
+                    disabledValues={['ACTIVE']}
+                    disabledTooltip="Not available"
+                />,
+            );
+            expect(screen.getByRole('button', { name: 'Aktivní' })).toHaveAttribute('title', 'Not available');
+        });
+
+        it('does not render title on enabled buttons even when disabledTooltip is provided', () => {
+            render(
+                <PillGroup<Status>
+                    options={OPTIONS}
+                    selectedValue="ALL"
+                    onChange={vi.fn()}
+                    ariaLabel="Status filter"
+                    disabledValues={['ACTIVE']}
+                    disabledTooltip="Not available"
+                />,
+            );
+            expect(screen.getByRole('button', { name: 'Vše' })).not.toHaveAttribute('title');
+        });
+    });
 });

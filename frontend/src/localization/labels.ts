@@ -408,6 +408,7 @@ export const labels = {
         eventTypeAll: 'Vše',
         eventsFilterYear: 'Rok',
         noYear: '—',
+        timeWindowDisabledTooltip: 'Není k dispozici pro jiný než aktuální rok',
     },
 
     membersFilter: {
