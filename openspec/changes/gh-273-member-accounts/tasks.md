@@ -100,9 +100,9 @@
 
 ## 10. Permissions Management
 
-- [ ] 10.1 Add `FINANCE:MANAGE` to the authority registry and permission management dialog
-- [ ] 10.2 E2E test: a user granted `FINANCE:MANAGE` sees deposit/charge/reverse controls on any member's account
-- [ ] 10.3 E2E test: a user without `FINANCE:MANAGE` sees only their own account and no action controls
+- [x] 10.1 Add `FINANCE:MANAGE` to the authority registry and permission management dialog
+- [x] 10.2 E2E test: a user granted `FINANCE:MANAGE` sees deposit/charge/reverse controls on any member's account
+- [x] 10.3 E2E test: a user without `FINANCE:MANAGE` sees only their own account and no action controls
 
 ## 11. Documentation and Wrap-Up
 

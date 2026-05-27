@@ -114,6 +114,33 @@ describe('PermissionsDialog', () => {
             expect(toggle).toHaveAttribute('aria-checked', 'false');
         });
 
+        it('renders a toggle for FINANCE:MANAGE permission with label "Správa financí"', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa financí/i});
+            expect(toggle).toBeInTheDocument();
+        });
+
+        it('shows description for FINANCE:MANAGE', () => {
+            renderDialog();
+
+            expect(screen.getByText('Vklady, strhávání a storno transakcí na účtech členů')).toBeInTheDocument();
+        });
+
+        it('reflects current state for FINANCE:MANAGE when assigned', () => {
+            renderDialog({permissions: ['FINANCE:MANAGE']});
+
+            const toggle = screen.getByRole('switch', {name: /Správa financí/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'true');
+        });
+
+        it('reflects current state for FINANCE:MANAGE when not assigned', () => {
+            renderDialog();
+
+            const toggle = screen.getByRole('switch', {name: /Správa financí/i});
+            expect(toggle).toHaveAttribute('aria-checked', 'false');
+        });
+
         it('toggles permission on click', async () => {
             const user = userEvent.setup();
             renderDialog();

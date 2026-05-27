@@ -22,6 +22,7 @@ const PERMISSION_COLORS: Record<string, string> = {
     'CALENDAR:MANAGE':       'bg-cyan-100 text-cyan-600',
     'GROUPS:TRAINING':       'bg-orange-100 text-orange-600',
     'EVENTS:REGISTRATIONS':  'bg-purple-100 text-purple-600',
+    'FINANCE:MANAGE':        'bg-yellow-100 text-yellow-600',
 };
 
 const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = Object.fromEntries(
