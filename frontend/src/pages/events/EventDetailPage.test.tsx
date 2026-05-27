@@ -99,6 +99,15 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     })),
 }));
 
+vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
+    FinanceTransactionDialog: ({isOpen, accountLink, onClose}: {isOpen: boolean; accountLink: {href: string}; onClose: () => void}) =>
+        isOpen ? (
+            <div data-testid="finance-transaction-dialog" data-account-href={accountLink.href}>
+                <button onClick={onClose}>close-dialog</button>
+            </div>
+        ) : null,
+}));
+
 
 const mockEventDetailData = (overrides?: Partial<any>): HalResponse => ({
     name: 'Jarní závod 2025',
@@ -609,6 +618,75 @@ describe('EventDetailPage', () => {
 
                 const editButtons = screen.getAllByRole('button', {name: /upravit přihlášku/i});
                 expect(editButtons).toHaveLength(3);
+            });
+        });
+
+        describe('transaction action in registrations list row (tasks 2.1-2.5)', () => {
+            it('2.1 shows transaction action button on row that has _links.recordTransaction', () => {
+                const row = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        recordTransaction: {href: 'http://localhost:8443/api/members/member-1/account'},
+                    },
+                });
+                renderPageWithRegistrationRows([row]);
+
+                expect(screen.getByRole('button', {name: /provést finanční transakci/i})).toBeInTheDocument();
+            });
+
+            it('2.2 does not show transaction action button on row without _links.recordTransaction', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+
+                expect(screen.queryByRole('button', {name: /provést finanční transakci/i})).not.toBeInTheDocument();
+            });
+
+            it('2.3 clicking transaction button opens FinanceTransactionDialog with correct accountLink', () => {
+                const accountHref = 'http://localhost:8443/api/members/member-1/account';
+                const row = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        recordTransaction: {href: accountHref},
+                    },
+                });
+                renderPageWithRegistrationRows([row]);
+
+                fireEvent.click(screen.getByRole('button', {name: /provést finanční transakci/i}));
+
+                const dialog = screen.getByTestId('finance-transaction-dialog');
+                expect(dialog).toBeInTheDocument();
+                expect(dialog).toHaveAttribute('data-account-href', accountHref);
+            });
+
+            it('2.4 after successful submit dialog closes and user remains on registrations list (no navigation)', () => {
+                const row = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        recordTransaction: {href: 'http://localhost:8443/api/members/member-1/account'},
+                    },
+                });
+                renderPageWithRegistrationRows([row]);
+
+                fireEvent.click(screen.getByRole('button', {name: /provést finanční transakci/i}));
+                expect(screen.getByTestId('finance-transaction-dialog')).toBeInTheDocument();
+
+                fireEvent.click(screen.getByRole('button', {name: 'close-dialog'}));
+
+                expect(screen.queryByTestId('finance-transaction-dialog')).not.toBeInTheDocument();
+                expect(mockNavigate).not.toHaveBeenCalled();
+                expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toBeInTheDocument();
+            });
+
+            it('2.5 transaction button only appears on rows that have the affordance (mixed rows)', () => {
+                const rowWithAffordance = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        recordTransaction: {href: 'http://localhost:8443/api/members/member-1/account'},
+                    },
+                });
+                const rowWithoutAffordance = buildRegistrationRow('member-2');
+                renderPageWithRegistrationRows([rowWithAffordance, rowWithoutAffordance]);
+
+                expect(screen.getAllByRole('button', {name: /provést finanční transakci/i})).toHaveLength(1);
             });
         });
     });

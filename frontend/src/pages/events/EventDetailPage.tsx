@@ -10,17 +10,18 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalSubresourceProvider, useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
-import type {EntityModel} from '../../api';
+import type {EntityModel, Link as HalLink} from '../../api';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {AlertTriangle, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
+import {FinanceTransactionDialog} from '../../components/finance/FinanceTransactionDialog.tsx';
 
 interface EventDetail {
     name: string;
@@ -98,26 +99,51 @@ export const EventDetailPage = (): ReactElement => {
 interface RegistrationsTableProps {
     event: EventDetail;
     onOpenEditModal: (state: RegistrationEditModalState) => void;
+    onOpenTransactionDialog: (accountLink: HalLink) => void;
 }
 
-const RegistrationsTable = ({event, onOpenEditModal}: RegistrationsTableProps): ReactElement => {
+const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const registration = item as unknown as RegistrationData;
         const editTemplate = registration._templates?.editRegistration;
-        if (!editTemplate) return null;
+        const recordTransactionLink = registration._links?.recordTransaction;
+        const accountLink = recordTransactionLink && !Array.isArray(recordTransactionLink)
+            ? recordTransactionLink as HalLink
+            : Array.isArray(recordTransactionLink) ? recordTransactionLink[0] as HalLink : null;
+
+        const hasAnyAction = editTemplate || accountLink;
+        if (!hasAnyAction) return null;
 
         return (
-            <Button
-                variant="ghost"
-                size="sm"
-                aria-label={labels.templates.editRegistration}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenEditModal({item: registration, template: editTemplate});
-                }}
-            >
-                <Pencil className="w-4 h-4"/>
-            </Button>
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {accountLink && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={labels.finance.openTransactionDialogAriaLabel}
+                        className="text-primary"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenTransactionDialog(accountLink);
+                        }}
+                    >
+                        <Banknote className="w-4 h-4"/>
+                    </Button>
+                )}
+                {editTemplate && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={labels.templates.editRegistration}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenEditModal({item: registration, template: editTemplate});
+                        }}
+                    >
+                        <Pencil className="w-4 h-4"/>
+                    </Button>
+                )}
+            </div>
         );
     };
 
@@ -144,6 +170,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
     const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
+    const [transactionDialogAccount, setTransactionDialogAccount] = useState<HalLink | null>(null);
 
     const event = resourceData;
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
@@ -324,6 +351,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <RegistrationsTable
                                 event={event}
                                 onOpenEditModal={setRegistrationEditModal}
+                                onOpenTransactionDialog={setTransactionDialogAccount}
                             />
                         </HalSubresourceProvider>
                     </div>
@@ -333,6 +361,14 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     };
 
     const handleRegistrationEditClose = () => setRegistrationEditModal(null);
+
+    const financeTransactionDialogJsx = (
+        <FinanceTransactionDialog
+            accountLink={transactionDialogAccount ?? {href: ''}}
+            isOpen={transactionDialogAccount !== null}
+            onClose={() => setTransactionDialogAccount(null)}
+        />
+    );
 
     const registrationEditModalJsx = registrationEditModal && (
         <Modal
@@ -370,6 +406,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     fieldsFactory={eventFormFieldsFactory}
                 />
                 {registrationEditModalJsx}
+                {financeTransactionDialogJsx}
             </>
         );
     }
@@ -378,6 +415,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <>
             {renderContent() as ReactElement}
             {registrationEditModalJsx}
+            {financeTransactionDialogJsx}
         </>
     );
 };

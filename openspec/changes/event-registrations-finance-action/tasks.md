@@ -8,11 +8,11 @@
 
 ## 2. Frontend — open unified transaction dialog from a registration row
 
-- [ ] 2.1 Write failing component test: registrations list row shows the transaction action when the row resource exposes the `recordTransaction` affordance.
-- [ ] 2.2 Write failing component test: registrations list row hides the action when the affordance is absent (member without FINANCE:MANAGE).
-- [ ] 2.3 Wire the existing unified transaction dialog (reused from `member-accounts`) to open from a registration row, passing the affordance's target so identity/balance load correctly.
-- [ ] 2.4 Write failing test: after successful submit, dialog closes and user remains on the same registrations list (no navigation).
-- [ ] 2.5 Implement the post-submit behavior so the dialog closes without navigation; ensure the registrations list refresh (if any) is appropriate.
+- [x] 2.1 Write failing component test: registrations list row shows the transaction action when the row resource exposes the `recordTransaction` affordance.
+- [x] 2.2 Write failing component test: registrations list row hides the action when the affordance is absent (member without FINANCE:MANAGE).
+- [x] 2.3 Wire the existing unified transaction dialog (reused from `member-accounts`) to open from a registration row, passing the affordance's target so identity/balance load correctly.
+- [x] 2.4 Write failing test: after successful submit, dialog closes and user remains on the same registrations list (no navigation).
+- [x] 2.5 Implement the post-submit behavior so the dialog closes without navigation; ensure the registrations list refresh (if any) is appropriate.
 
 ## 3. Frontend — prefill note with event name
 
