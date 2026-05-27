@@ -15,9 +15,9 @@ import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from 
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
-import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
+import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
-import {parseSuspensionWarning409, parseNegativeBalanceWarning409, type NegativeBalanceWarning} from "./suspensionUtils.ts";
+import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
@@ -78,9 +78,15 @@ interface MemberDetailContentProps {
 
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
-    const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
-    const [negativeBalanceWarning, setNegativeBalanceWarning] = useState<NegativeBalanceWarning | null>(null);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
+
+    const {
+        suspensionWarning,
+        negativeBalanceWarning,
+        clearSuspensionWarning,
+        clearNegativeBalanceWarning,
+        onSubmitError: onSuspendSubmitError,
+    } = useSuspendMemberAction({closeActionModal: () => setSuspendMemberModal(false)});
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -407,12 +413,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             />
             <SuspensionWarningDialog
                 isOpen={suspensionWarning !== null}
-                onClose={() => setSuspensionWarning(null)}
+                onClose={clearSuspensionWarning}
                 affectedGroups={suspensionWarning ?? []}
             />
             <NegativeBalanceSuspensionDialog
                 isOpen={negativeBalanceWarning !== null}
-                onClose={() => setNegativeBalanceWarning(null)}
+                onClose={clearNegativeBalanceWarning}
                 warning={negativeBalanceWarning}
             />
             {suspendTemplate && suspendMemberModal && (
@@ -428,19 +434,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setSuspendMemberModal(false)}
-                        onSubmitError={(error) => {
-                            const negBalance = parseNegativeBalanceWarning409(error);
-                            if (negBalance) {
-                                setSuspendMemberModal(false);
-                                setNegativeBalanceWarning(negBalance);
-                                return true;
-                            }
-                            const groups = parseSuspensionWarning409(error);
-                            if (groups) {
-                                setSuspensionWarning(groups);
-                                return true;
-                            }
-                        }}
+                        onSubmitError={onSuspendSubmitError}
                     />
                 </Modal>
             )}

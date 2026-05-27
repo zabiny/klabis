@@ -15,8 +15,9 @@ import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/Hal
 import {Banknote, Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
-import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {parseSuspensionWarning409} from "./suspensionUtils.ts";
+import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
+import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "../../components/members/MembersFilterBar.tsx";
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
@@ -50,8 +51,15 @@ export const MembersPage = (): ReactElement => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
-    const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
+
+    const {
+        suspensionWarning,
+        negativeBalanceWarning,
+        clearSuspensionWarning,
+        clearNegativeBalanceWarning,
+        onSubmitError: onSuspendSubmitError,
+    } = useSuspendMemberAction({closeActionModal: () => setActionModal(null)});
 
     const hasManageAuthority = resourceData?._templates?.registerMember !== undefined;
 
@@ -325,20 +333,19 @@ export const MembersPage = (): ReactElement => {
                         resourceData={actionModal.member as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setActionModal(null)}
-                        onSubmitError={actionModal.templateName === 'suspendMember' ? (error) => {
-                            const groups = parseSuspensionWarning409(error);
-                            if (groups) {
-                                setSuspensionWarning(groups);
-                                return true;
-                            }
-                        } : undefined}
+                        onSubmitError={actionModal.templateName === 'suspendMember' ? onSuspendSubmitError : undefined}
                     />
                 </Modal>
             )}
             <SuspensionWarningDialog
                 isOpen={suspensionWarning !== null}
-                onClose={() => setSuspensionWarning(null)}
+                onClose={clearSuspensionWarning}
                 affectedGroups={suspensionWarning ?? []}
+            />
+            <NegativeBalanceSuspensionDialog
+                isOpen={negativeBalanceWarning !== null}
+                onClose={clearNegativeBalanceWarning}
+                warning={negativeBalanceWarning}
             />
             <FinanceTransactionDialog
                 accountLink={transactionDialogAccount ?? {href: ''}}
