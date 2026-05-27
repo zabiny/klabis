@@ -178,6 +178,10 @@ export const labels = {
         filterTypeAll: 'Vše',
         currency: 'Kč',
         openMemberAccount: 'Účet',
+        transactionDialogTitle: 'Vložit / Vybrat',
+        tabDeposit: 'Připsání vkladu',
+        tabCharge: 'Stržení částky',
+        openTransactionDialogAriaLabel: 'Provést finanční transakci',
     },
 
     enums: {

@@ -11,8 +11,8 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 2. Frontend — regenerate API types & shared building blocks
 
-- [ ] 2.1 Run `npm run openapi` in `frontend/` to refresh `klabisApi.d.ts` from the updated backend spec
-- [ ] 2.2 Add localization strings to `src/localization/labels.ts`: dialog title ("Vložit / Vybrat"), tab labels ("Připsání vkladu", "Stržení částky"), Banknote action aria-labels for member list and member account page
+- [x] 2.1 Run `npm run openapi` in `frontend/` to refresh `klabisApi.d.ts` from the updated backend spec
+- [x] 2.2 Add localization strings to `src/localization/labels.ts`: dialog title ("Vložit / Vybrat"), tab labels ("Připsání vkladu", "Stržení částky"), Banknote action aria-labels for member list and member account page
 
 ## 3. Frontend — `FinanceTransactionDialog` standalone component (TDD)
 
