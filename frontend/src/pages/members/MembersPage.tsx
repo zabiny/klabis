@@ -340,13 +340,11 @@ export const MembersPage = (): ReactElement => {
                 onClose={() => setSuspensionWarning(null)}
                 affectedGroups={suspensionWarning ?? []}
             />
-            {transactionDialogAccount && (
-                <FinanceTransactionDialog
-                    accountLink={transactionDialogAccount}
-                    isOpen={transactionDialogAccount !== null}
-                    onClose={() => setTransactionDialogAccount(null)}
-                />
-            )}
+            <FinanceTransactionDialog
+                accountLink={transactionDialogAccount ?? {href: ''}}
+                isOpen={transactionDialogAccount !== null}
+                onClose={() => setTransactionDialogAccount(null)}
+            />
         </div>
     );
 };

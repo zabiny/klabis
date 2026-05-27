@@ -1,8 +1,8 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {Banknote, Check, CircleArrowDown, CircleArrowUp, X} from 'lucide-react';
+import {Banknote, Check, CircleArrowDown, CircleArrowUp} from 'lucide-react';
 import {labels} from '../../localization';
-import {Button} from '../UI';
+import {Alert, Button, Modal, Skeleton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import type {HalResponse, HalFormsTemplate, Link} from '../../api/types';
@@ -130,8 +130,6 @@ export const FinanceTransactionDialog = ({
 
     const {mutate: submitTransaction, isPending} = useAuthorizedMutation({method: 'POST'});
 
-    if (!isOpen) return null;
-
     const isLoading = isAccountLoading || (!!accountOwnerHref && isMemberLoading);
 
     const handleTabChange = (tab: TabId) => {
@@ -177,99 +175,90 @@ export const FinanceTransactionDialog = ({
         ? `${memberData.firstName ?? ''} ${memberData.lastName ?? ''}`.trim()
         : '';
 
-    return (
+    const footer = (
         <>
-            <div
-                className="fixed inset-0 z-40 bg-black bg-opacity-60 transition-opacity duration-base"
-                onClick={handleClose}
-                aria-hidden="true"
-                data-testid="modal-backdrop"
-            />
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="finance-dialog-title"
-            >
-                <div
-                    className="bg-surface-raised rounded-md shadow-lg w-full max-w-md animate-scale-in"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {isLoading ? (
-                        <DialogSkeleton />
-                    ) : (
-                        <>
-                            <DialogHeader
-                                memberName={memberFullName}
-                                registrationNumber={memberData?.registrationNumber}
-                                onClose={handleClose}
-                            />
-                            <BalanceStrip
-                                balance={accountData?.balance}
-                                currency={accountData?.currency}
-                            />
-                            {hasBothTemplates && (
-                                <div role="tablist" className="flex border-b border-border px-6">
-                                    <TabButton
-                                        tabId="deposit"
-                                        activeTab={activeTab}
-                                        label={labels.finance.tabDeposit}
-                                        icon={<CircleArrowDown className="w-4 h-4" />}
-                                        onClick={handleTabChange}
-                                    />
-                                    <TabButton
-                                        tabId="charge"
-                                        activeTab={activeTab}
-                                        label={labels.finance.tabCharge}
-                                        icon={<CircleArrowUp className="w-4 h-4" />}
-                                        onClick={handleTabChange}
-                                    />
-                                </div>
-                            )}
-                            <div className="px-6 py-4">
-                                {hasAnyTemplate ? (
-                                    <TransactionForm
-                                        amount={amount}
-                                        note={note}
-                                        occurredAt={occurredAt}
-                                        onAmountChange={setAmount}
-                                        onNoteChange={setNote}
-                                        onOccurredAtChange={setOccurredAt}
-                                        submitError={submitError}
-                                    />
-                                ) : (
-                                    <p className="text-sm text-text-secondary">
-                                        Žádná operace není povolena
-                                    </p>
-                                )}
-                            </div>
-                            <div className="border-t border-border px-6 py-4 flex justify-between gap-3">
-                                <Button variant="secondary" onClick={handleClose} disabled={isPending}>
-                                    {labels.buttons.cancel}
-                                </Button>
-                                {hasAnyTemplate && (
-                                    <CtaButton
-                                        activeTab={activeTab}
-                                        disabled={isSubmitDisabled}
-                                        onClick={handleSubmit}
-                                    />
-                                )}
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
+            <Button variant="secondary" onClick={handleClose} disabled={isPending}>
+                {labels.buttons.cancel}
+            </Button>
+            {hasAnyTemplate && (
+                <CtaButton
+                    activeTab={activeTab}
+                    disabled={isSubmitDisabled}
+                    onClick={handleSubmit}
+                />
+            )}
         </>
+    );
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={handleClose}
+            size="md"
+            closeButton={false}
+            footer={isLoading ? undefined : footer}
+        >
+            {isLoading ? (
+                <DialogSkeleton />
+            ) : (
+                <>
+                    <DialogHeader
+                        memberName={memberFullName}
+                        registrationNumber={memberData?.registrationNumber}
+                        onClose={handleClose}
+                    />
+                    <BalanceStrip
+                        balance={accountData?.balance}
+                        currency={accountData?.currency}
+                    />
+                    {hasBothTemplates && (
+                        <div role="tablist" className="flex border-b border-border">
+                            <TabButton
+                                tabId="deposit"
+                                activeTab={activeTab}
+                                label={labels.finance.tabDeposit}
+                                icon={<CircleArrowDown className="w-4 h-4" />}
+                                onClick={handleTabChange}
+                            />
+                            <TabButton
+                                tabId="charge"
+                                activeTab={activeTab}
+                                label={labels.finance.tabCharge}
+                                icon={<CircleArrowUp className="w-4 h-4" />}
+                                onClick={handleTabChange}
+                            />
+                        </div>
+                    )}
+                    <div className="pt-4">
+                        {hasAnyTemplate ? (
+                            <TransactionForm
+                                amount={amount}
+                                note={note}
+                                occurredAt={occurredAt}
+                                onAmountChange={setAmount}
+                                onNoteChange={setNote}
+                                onOccurredAtChange={setOccurredAt}
+                                submitError={submitError}
+                            />
+                        ) : (
+                            <p className="text-sm text-text-secondary">
+                                {labels.finance.noOperationAllowed}
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
+        </Modal>
     );
 };
 
 function DialogSkeleton() {
     return (
-        <div data-testid="finance-dialog-skeleton" className="px-6 py-8 flex flex-col gap-4">
-            <div className="h-6 bg-surface-raised rounded animate-pulse w-2/3" />
-            <div className="h-4 bg-surface-raised rounded animate-pulse w-1/2" />
-            <div className="h-10 bg-surface-raised rounded animate-pulse" />
-            <div className="h-10 bg-surface-raised rounded animate-pulse" />
+        <div data-testid="finance-dialog-skeleton" className="py-4 flex flex-col gap-4">
+            <Skeleton height="1.5rem" width="66%" />
+            <Skeleton height="1rem" width="50%" />
+            <Skeleton height="2.5rem" />
+            <Skeleton height="2.5rem" />
         </div>
     );
 }
@@ -285,7 +274,7 @@ function DialogHeader({
 }) {
     return (
         <div
-            className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface-base rounded-t-md"
+            className="flex items-center justify-between border-b border-border -mx-6 -mt-4 px-6 py-4 mb-4 bg-surface-base rounded-t-md"
             data-testid="modal-header"
         >
             <div className="flex items-center gap-3">
@@ -308,9 +297,9 @@ function DialogHeader({
             <button
                 onClick={onClose}
                 className="ml-auto text-text-secondary hover:text-text-primary transition-colors"
-                aria-label="Close modal"
+                aria-label={labels.buttons.close}
             >
-                <X className="w-6 h-6" />
+                <span className="text-2xl leading-none">×</span>
             </button>
         </div>
     );
@@ -318,7 +307,7 @@ function DialogHeader({
 
 function BalanceStrip({balance, currency}: {balance?: number; currency?: string}) {
     return (
-        <div className="px-6 py-3 bg-surface-raised border-b border-border">
+        <div className="-mx-6 px-6 py-3 bg-surface-raised border-b border-border mb-4">
             <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">{labels.finance.balance}</span>
                 <span className="text-lg font-semibold text-text-primary">
@@ -350,7 +339,7 @@ function TransactionForm({
         <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <label htmlFor="finance-amount" className="text-sm font-medium text-text-primary">
-                    Částka *
+                    {labels.finance.amountRequired}
                 </label>
                 <input
                     id="finance-amount"
@@ -377,21 +366,19 @@ function TransactionForm({
             </div>
             <div className="flex flex-col gap-1">
                 <label htmlFor="finance-note" className="text-sm font-medium text-text-primary">
-                    Poznámka
+                    {labels.finance.note}
                 </label>
                 <input
                     id="finance-note"
                     type="text"
                     value={note}
                     onChange={(e) => onNoteChange(e.target.value)}
-                    placeholder="Volitelná poznámka..."
+                    placeholder={labels.finance.notePlaceholder}
                     className="px-3 py-2 rounded border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
             {submitError && (
-                <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                    <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
-                </div>
+                <Alert severity="error">{submitError}</Alert>
             )}
         </div>
     );
@@ -408,18 +395,17 @@ function CtaButton({
 }) {
     const isDeposit = activeTab === 'deposit';
     const label = isDeposit ? labels.finance.tabDeposit : labels.finance.tabCharge;
-    const colorClasses = isDeposit
-        ? 'bg-emerald-600 hover:bg-emerald-700'
-        : 'bg-red-600 hover:bg-red-700';
+    const colorClass = isDeposit ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700';
 
     return (
-        <button
-            className={`inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-0 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-base ${colorClasses}`}
+        <Button
+            variant="primary"
+            className={colorClass}
+            startIcon={<Check className="w-4 h-4" />}
             disabled={disabled}
             onClick={onClick}
         >
-            <Check className="w-4 h-4" />
             {label}
-        </button>
+        </Button>
     );
 }

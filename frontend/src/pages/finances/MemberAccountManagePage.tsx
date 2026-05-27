@@ -57,10 +57,10 @@ export const MemberAccountManagePage = (): ReactElement => {
                         <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                             <Button
                                 variant="secondary"
+                                startIcon={<Banknote className="w-4 h-4" />}
                                 aria-label={labels.finance.openTransactionDialogAriaLabel}
                                 onClick={() => setIsTransactionDialogOpen(true)}
                             >
-                                <Banknote className="w-4 h-4" />
                                 {labels.finance.transactionDialogTitle}
                             </Button>
                         </div>

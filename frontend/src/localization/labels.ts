@@ -182,6 +182,10 @@ export const labels = {
         tabDeposit: 'Připsání vkladu',
         tabCharge: 'Stržení částky',
         openTransactionDialogAriaLabel: 'Provést finanční transakci',
+        amountRequired: 'Částka *',
+        note: 'Poznámka',
+        notePlaceholder: 'Volitelná poznámka...',
+        noOperationAllowed: 'Žádná operace není povolena',
     },
 
     enums: {
