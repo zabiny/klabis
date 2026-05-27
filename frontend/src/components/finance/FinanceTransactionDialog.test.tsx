@@ -347,6 +347,81 @@ describe('FinanceTransactionDialog', () => {
         expect(chargeCta).toHaveClass('bg-red-600');
     });
 
+    describe('defaultNote prop (tasks 3.1/3.2)', () => {
+        it('3.1: note field is prefilled with defaultNote when dialog is opened from event registrations list', async () => {
+            setupFetch();
+            renderDialog({defaultNote: 'Jarní závod 2025'});
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('finance-dialog-skeleton')).not.toBeInTheDocument();
+            });
+
+            const noteInput = screen.getByLabelText(/Poznámka/i);
+            expect(noteInput).toHaveValue('Jarní závod 2025');
+        });
+
+        it('3.2: note field is empty when defaultNote prop is not provided (member-accounts contexts)', async () => {
+            setupFetch();
+            renderDialog(); // no defaultNote
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('finance-dialog-skeleton')).not.toBeInTheDocument();
+            });
+
+            const noteInput = screen.getByLabelText(/Poznámka/i);
+            expect(noteInput).toHaveValue('');
+        });
+
+        it('3.1b: user can edit the prefilled note before submitting', async () => {
+            setupFetch();
+            renderDialog({defaultNote: 'Jarní závod 2025'});
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('finance-dialog-skeleton')).not.toBeInTheDocument();
+            });
+
+            const noteInput = screen.getByLabelText(/Poznámka/i);
+            await userEvent.clear(noteInput);
+            await userEvent.type(noteInput, 'Upravená poznámka');
+
+            expect(noteInput).toHaveValue('Upravená poznámka');
+        });
+
+        it('3.1c: note field is reset to defaultNote when dialog is reopened', async () => {
+            setupFetch();
+            const onClose = vi.fn();
+            const {rerender} = renderDialog({defaultNote: 'Jarní závod 2025', onClose, isOpen: true});
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('finance-dialog-skeleton')).not.toBeInTheDocument();
+            });
+
+            // User edits the note
+            const noteInput = screen.getByLabelText(/Poznámka/i);
+            await userEvent.clear(noteInput);
+            await userEvent.type(noteInput, 'Jiná poznámka');
+            expect(noteInput).toHaveValue('Jiná poznámka');
+
+            // Close and reopen the dialog — state resets to defaultNote because component is remounted
+            rerender(
+                <QueryClientProvider client={queryClient}>
+                    <FinanceTransactionDialog accountLink={ACCOUNT_LINK} isOpen={false} onClose={onClose} defaultNote="Jarní závod 2025"/>
+                </QueryClientProvider>
+            );
+            rerender(
+                <QueryClientProvider client={queryClient}>
+                    <FinanceTransactionDialog accountLink={ACCOUNT_LINK} isOpen={true} onClose={onClose} defaultNote="Jarní závod 2025"/>
+                </QueryClientProvider>
+            );
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('finance-dialog-skeleton')).not.toBeInTheDocument();
+            });
+
+            expect(screen.getByLabelText(/Poznámka/i)).toHaveValue('Jarní závod 2025');
+        });
+    });
+
     // Cancel button invokes onClose
     it('invokes onClose when Cancel button is clicked', async () => {
         setupFetch();

@@ -367,6 +367,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
             accountLink={transactionDialogAccount ?? {href: ''}}
             isOpen={transactionDialogAccount !== null}
             onClose={() => setTransactionDialogAccount(null)}
+            defaultNote={event.name}
         />
     );
 

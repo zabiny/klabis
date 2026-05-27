@@ -16,9 +16,9 @@
 
 ## 3. Frontend — prefill note with event name
 
-- [ ] 3.1 Write failing test: when dialog is opened from a registrations list, the note field is prefilled with the event name (or a short event-identifying label).
-- [ ] 3.2 Write failing test: when dialog is opened from member-accounts contexts (member list, account page), no event-derived prefill is applied (existing behavior preserved).
-- [ ] 3.3 Implement note prefill propagation through the dialog API without leaking event context to other call sites.
+- [x] 3.1 Write failing test: when dialog is opened from a registrations list, the note field is prefilled with the event name (or a short event-identifying label).
+- [x] 3.2 Write failing test: when dialog is opened from member-accounts contexts (member list, account page), no event-derived prefill is applied (existing behavior preserved).
+- [x] 3.3 Implement note prefill propagation through the dialog API without leaking event context to other call sites.
 
 ## 4. End-to-end verification
 

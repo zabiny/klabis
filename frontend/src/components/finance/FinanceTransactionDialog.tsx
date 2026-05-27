@@ -13,6 +13,7 @@ export interface FinanceTransactionDialogProps {
     accountLink: Link;
     isOpen: boolean;
     onClose: () => void;
+    defaultNote?: string;
 }
 
 type TabId = 'deposit' | 'charge';
@@ -75,12 +76,13 @@ export const FinanceTransactionDialog = ({
     accountLink,
     isOpen,
     onClose,
+    defaultNote,
 }: FinanceTransactionDialogProps): ReactElement | null => {
     const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const [activeTab, setActiveTab] = useState<TabId>('deposit');
     const [amount, setAmount] = useState('');
-    const [note, setNote] = useState('');
+    const [note, setNote] = useState(defaultNote ?? '');
     const [occurredAt, setOccurredAt] = useState('');
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -129,6 +131,12 @@ export const FinanceTransactionDialog = ({
         }
     }, [isOpen, hasDeposit, hasCharge, hasAnyTemplate]);
 
+    useEffect(() => {
+        if (isOpen) {
+            setNote(defaultNote ?? '');
+        }
+    }, [isOpen, defaultNote]);
+
     const {mutate: submitTransaction, isPending} = useAuthorizedMutation({method: 'POST'});
 
     const isLoading = isAccountLoading || (!!accountOwnerHref && isMemberLoading);
@@ -140,7 +148,7 @@ export const FinanceTransactionDialog = ({
 
     const handleClose = () => {
         setAmount('');
-        setNote('');
+        setNote(defaultNote ?? '');
         setOccurredAt('');
         setSubmitError(null);
         onClose();
