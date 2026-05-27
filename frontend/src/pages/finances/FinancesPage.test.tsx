@@ -18,6 +18,13 @@ vi.mock('../api/klabisUserManager', () => ({
     },
 }));
 
+const mockOwnerData = {
+    firstName: 'Jan',
+    lastName: 'Novák',
+    registrationNumber: 'ZBM1234',
+    _links: {self: {href: 'https://test.com/api/members/123'}},
+};
+
 const mockAccountData = {
     memberId: 'member-123',
     balance: 1500,
@@ -26,6 +33,14 @@ const mockAccountData = {
         self: {href: 'https://test.com/api/members/123/account'},
         transactions: {href: 'https://test.com/api/members/123/account/transactions'},
         member: {href: 'https://test.com/api/members/123'},
+    },
+};
+
+const mockAccountDataWithOwnerLink = {
+    ...mockAccountData,
+    _links: {
+        ...mockAccountData._links,
+        accountOwner: {href: 'https://test.com/api/members/123'},
     },
 };
 
@@ -230,6 +245,45 @@ describe('MemberFinancePage', () => {
                 expect(screen.getByText('Finance')).toBeInTheDocument();
                 expect(screen.getByText('Zůstatek')).toBeInTheDocument();
             });
+        });
+    });
+
+    describe('Account owner display', () => {
+        it('should display owner name and registration number when accountOwner link is present', async () => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+                if (baseUrl.endsWith('/members/123')) {
+                    return Promise.resolve(createMockResponse(mockOwnerData));
+                }
+                return Promise.resolve(createMockResponse(mockAccountDataWithOwnerLink));
+            });
+
+            renderPage(<MemberFinancePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Jan Novák (ZBM1234)')).toBeInTheDocument();
+            });
+        });
+
+        it('should NOT render account owner section when accountOwner link is absent', async () => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+                return Promise.resolve(createMockResponse(mockAccountData));
+            });
+
+            renderPage(<MemberFinancePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Finance')).toBeInTheDocument();
+            });
+
+            expect(screen.queryByTestId('account-owner-header')).not.toBeInTheDocument();
         });
     });
 });

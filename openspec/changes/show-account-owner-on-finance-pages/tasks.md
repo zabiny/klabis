@@ -8,9 +8,9 @@
 
 ## 2. Slice — FinancesPage shows account owner
 
-- [ ] 2.1 Write a failing test in `FinancesPage.test.tsx`: when the logged-in member opens "Finance", the page header shows their first name, last name, and registration number obtained via the `accountOwner` link
-- [ ] 2.2 Reuse the component/hook introduced in slice 1; wire it into `FinancesPage.tsx`
-- [ ] 2.3 Test passes; ESLint clean; `npm run build` succeeds
+- [x] 2.1 Write a failing test in `FinancesPage.test.tsx`: when the logged-in member opens "Finance", the page header shows their first name, last name, and registration number obtained via the `accountOwner` link
+- [x] 2.2 Reuse the component/hook introduced in slice 1; wire it into `FinancesPage.tsx`
+- [x] 2.3 Test passes; ESLint clean; `npm run build` succeeds
 
 ## 3. Manual verification
 

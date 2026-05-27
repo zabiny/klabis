@@ -14,6 +14,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
+import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
 
 type TransactionItem = EntityModel<{
     id: string;
@@ -297,6 +298,8 @@ export const MemberFinancePage = (): ReactElement => {
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold text-text-primary">{labels.finance.pageTitle}</h1>
+
+            <AccountOwnerHeader />
 
             <BalanceCard balance={balance} currency={currency} />
 
