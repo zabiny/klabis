@@ -10,14 +10,6 @@ import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import {TransactionsTable} from './FinancesPage.tsx';
 import {labels} from '../../localization';
 
-vi.mock('../api/klabisUserManager', () => ({
-    klabisAuthUserManager: {
-        getUser: vi.fn().mockReturnValue({
-            access_token: 'test-token',
-            token_type: 'Bearer',
-        }),
-    },
-}));
 
 const mockMemberData = {
     firstName: 'Pavel',
@@ -128,7 +120,7 @@ describe('TransactionsTable - Zaznamenal column', () => {
     it('should render member name when recordedBy link is present', async () => {
         fetchSpy.mockImplementation((url: string) => {
             const baseUrl = url.split('?')[0];
-            if (baseUrl === 'https://test.com/api/members/99') {
+            if (baseUrl.endsWith('/members/99')) {
                 return Promise.resolve(createMockResponse(mockMemberData));
             }
             if (baseUrl.includes('/transactions')) {
@@ -163,7 +155,7 @@ describe('TransactionsTable - Zaznamenal column', () => {
     it('should render dash "—" when recordedBy lookup fails with 404', async () => {
         fetchSpy.mockImplementation((url: string) => {
             const baseUrl = url.split('?')[0];
-            if (baseUrl === 'https://test.com/api/members/99') {
+            if (baseUrl.endsWith('/members/99')) {
                 return Promise.resolve(createMockResponse(null, 404));
             }
             if (baseUrl.includes('/transactions')) {

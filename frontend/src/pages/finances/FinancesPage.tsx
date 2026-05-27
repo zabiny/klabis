@@ -11,6 +11,8 @@ import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
+import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {MemberName} from "../../components/members/MemberName.tsx";
 
 type TransactionItem = EntityModel<{
     id: string;
@@ -63,24 +65,23 @@ const TypeCell = ({type}: {type: string}): ReactElement => {
     );
 };
 
-type MemberResource = {
-    firstName: string;
-    lastName: string;
+const MemberNameOrFallback = (): ReactElement => {
+    const {error} = useHalRoute();
+    if (error) {
+        return <span>—</span>;
+    }
+    return <MemberName />;
 };
 
 const RecordedByCell = ({href}: {href: string | undefined}): ReactElement => {
-    const {data, isError} = useAuthorizedQuery<MemberResource>(href ?? '', {
-        enabled: !!href,
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
-        retry: false,
-    });
-
-    if (!href || isError || !data) {
+    if (!href) {
         return <span>—</span>;
     }
-
-    return <span>{data.firstName} {data.lastName}</span>;
+    return (
+        <HalRouteProvider routeLink={{href}}>
+            <MemberNameOrFallback />
+        </HalRouteProvider>
+    );
 };
 
 export type TransactionReverseRequest = {
