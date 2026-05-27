@@ -157,4 +157,92 @@ class MemberAccountTest {
         assertThatThrownBy(() -> account.charge(negative, "negative", today, now, financeManager, policy))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("reverse of a deposit appends an OTHER transaction with negated amount referencing the original")
+    void reverseOfDepositAppendsOppositeSignTransaction() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Transaction deposit = account.deposit(depositAmount, "initial", today, now, financeManager);
+
+        Transaction reversal = account.reverse(deposit.getId(), "storno", today, now, financeManager);
+
+        assertThat(reversal.getType()).isEqualTo(TransactionType.OTHER);
+        assertThat(reversal.getAmount()).isEqualTo(depositAmount.negate());
+        assertThat(reversal.getReversesTransactionId()).isEqualTo(deposit.getId());
+        assertThat(reversal.isReversal()).isTrue();
+        assertThat(account.getBalance()).isEqualTo(Money.zero());
+        assertThat(account.getTransactions()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("reverse of a charge appends a DEPOSIT transaction with positive amount referencing the original")
+    void reverseOfChargeAppendsDepositTransaction() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+        account.deposit(depositAmount, "initial", today, now, financeManager);
+        Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(50));
+        Transaction charge = account.charge(chargeAmount, "charge", today, now, financeManager, policy);
+
+        Transaction reversal = account.reverse(charge.getId(), "storno", today, now, financeManager);
+
+        assertThat(reversal.getType()).isEqualTo(TransactionType.DEPOSIT);
+        assertThat(reversal.getAmount()).isEqualTo(chargeAmount);
+        assertThat(reversal.getReversesTransactionId()).isEqualTo(charge.getId());
+        assertThat(reversal.isReversal()).isTrue();
+        assertThat(account.getBalance()).isEqualTo(depositAmount);
+        assertThat(account.getTransactions()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("reverse of an already-reversed transaction throws TransactionAlreadyReversedException")
+    void reverseOfAlreadyReversedTransactionThrows() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Transaction deposit = account.deposit(depositAmount, "initial", today, now, financeManager);
+        account.reverse(deposit.getId(), "first storno", today, now, financeManager);
+
+        assertThatThrownBy(() -> account.reverse(deposit.getId(), "second storno", today, now, financeManager))
+                .isInstanceOf(TransactionAlreadyReversedException.class);
+    }
+
+    @Test
+    @DisplayName("reverse of a reversal (storno storna) is permitted as long as the reversal itself is not yet reversed")
+    void reverseOfReversalIsPermitted() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Transaction deposit = account.deposit(depositAmount, "initial", today, now, financeManager);
+        Transaction reversal = account.reverse(deposit.getId(), "storno", today, now, financeManager);
+
+        Transaction reversalOfReversal = account.reverse(reversal.getId(), "storno storna", today, now, financeManager);
+
+        assertThat(reversalOfReversal.getReversesTransactionId()).isEqualTo(reversal.getId());
+        assertThat(account.getTransactions()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("reverse bypasses overdraft limit and can push balance below the limit")
+    void reverseBypassesOverdraftLimit() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+        // Deposit 100, then charge 400 → balance = -300 (within limit -500)
+        account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
+        Transaction charge = account.charge(Money.ofCzk(BigDecimal.valueOf(400)), "charge", today, now, financeManager, policy);
+        // balance is -300. Reversing the charge would add back +400, but here we test
+        // reversing the deposit (-100) which would push balance from -300 to -400 (still within limit).
+        // To test bypass: deposit 200 more (balance=200), charge 600 (rejected if policy -500), so instead:
+        // fresh account, deposit 100 → balance 100. Reverse deposit → balance 0 (trivial, above limit).
+        // Real bypass test: balance exactly at limit, then reverse a deposit.
+        MemberAccount account2 = MemberAccount.openFor(new com.klabis.members.MemberId(java.util.UUID.randomUUID()));
+        // balance = -500 (exactly at limit). Now reverse a prior deposit of 200 → balance = -700 (below limit)
+        account2.deposit(Money.ofCzk(BigDecimal.valueOf(200)), "initial deposit", today, now, financeManager);
+        account2.charge(Money.ofCzk(BigDecimal.valueOf(700)), "big charge", today, now,
+                financeManager, new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-1000))));
+        // balance is -500. Use a -500 limit policy for reversal test.
+        // Find the deposit transaction (first one)
+        Transaction depositTx = account2.getTransactions().get(0);
+        // Reversing the deposit would push balance from -500 to -700, below the -500 limit.
+        // Reverse must succeed because storno bypasses overdraft check.
+        Transaction bypassReversal = account2.reverse(depositTx.getId(), "bypass storno", today, now, financeManager);
+
+        assertThat(bypassReversal).isNotNull();
+        assertThat(account2.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-700)));
+    }
 }

@@ -1,5 +1,6 @@
 package com.klabis.finance.infrastructure.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
@@ -64,7 +65,12 @@ class MemberAccountMemento implements Persistable<UUID> {
         memento.transactions = new HashSet<>();
         account.getTransactions().forEach(tx -> memento.transactions.add(TransactionMemento.from(tx)));
         memento.account = account;
-        memento.isNew = (account.getAuditMetadata() == null);
+        boolean isNew = account.getAuditMetadata() == null;
+        memento.isNew = isNew;
+        if (!isNew) {
+            memento.createdAt = account.getAuditMetadata().createdAt();
+            memento.version = account.getAuditMetadata().version();
+        }
         return memento;
     }
 
@@ -73,7 +79,11 @@ class MemberAccountMemento implements Persistable<UUID> {
         Money balance = Money.of(balanceAmount, Currency.getInstance(balanceCurrency));
         List<Transaction> txList = transactions == null ? List.of() :
                 transactions.stream().map(TransactionMemento::toTransaction).toList();
-        return MemberAccount.reconstruct(id, balance, txList);
+        MemberAccount account = MemberAccount.reconstruct(id, balance, txList);
+        if (createdAt != null) {
+            account.updateAuditMetadata(new AuditMetadata(createdAt, null, null, null, version));
+        }
+        return account;
     }
 
     @DomainEvents

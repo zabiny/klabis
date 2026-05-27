@@ -58,6 +58,26 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
         return tx;
     }
 
+    public Transaction reverse(TransactionId transactionId, String note, LocalDate occurredAt,
+                               Instant recordedAt, UserId recordedBy) {
+        Transaction original = transactions.stream()
+                .filter(tx -> tx.getId().equals(transactionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Transaction " + transactionId.value() + " not found on this account"));
+
+        boolean alreadyReversed = transactions.stream()
+                .anyMatch(tx -> transactionId.equals(tx.getReversesTransactionId()));
+        if (alreadyReversed) {
+            throw new TransactionAlreadyReversedException(transactionId);
+        }
+
+        Transaction reversal = Transaction.reversal(original, note, occurredAt, recordedAt, recordedBy);
+        transactions.add(reversal);
+        balance = balance.add(reversal.getAmount());
+        return reversal;
+    }
+
     @Override
     public MemberId getId() {
         return id;

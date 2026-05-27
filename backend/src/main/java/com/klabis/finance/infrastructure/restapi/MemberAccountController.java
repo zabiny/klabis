@@ -6,6 +6,8 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
+import com.klabis.finance.application.ReversePort;
+import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Transaction;
@@ -40,12 +42,15 @@ class MemberAccountController {
 
     private final DepositPort depositPort;
     private final ChargePort chargePort;
+    private final ReversePort reversePort;
     private final MemberAccountRepository memberAccountRepository;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
+                            ReversePort reversePort,
                             MemberAccountRepository memberAccountRepository) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
+        this.reversePort = reversePort;
         this.memberAccountRepository = memberAccountRepository;
     }
 
@@ -85,6 +90,19 @@ class MemberAccountController {
         return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
     }
 
+    @PostMapping("/transactions/{txId}/reverse")
+    @HasAuthority(Authority.FINANCE_MANAGE)
+    public ResponseEntity<Void> reverse(
+            @PathVariable UUID memberId,
+            @PathVariable UUID txId,
+            @Valid @RequestBody ReverseRequest request,
+            @ActingUser com.klabis.common.users.UserId currentUserId) {
+        LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();
+        Transaction tx = reversePort.reverse(new ReversePort.ReverseCommand(
+                new MemberId(memberId), new TransactionId(txId), request.note(), occurredAt, currentUserId));
+        return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
+    }
+
     @GetMapping("/transactions/{txId}")
     public ResponseEntity<Void> getTransaction(
             @PathVariable UUID memberId,
@@ -109,6 +127,12 @@ class MemberAccountController {
             @NotNull @Positive BigDecimal amount,
             LocalDate occurredAt,
             String note
+    ) {
+    }
+
+    record ReverseRequest(
+            String note,
+            LocalDate occurredAt
     ) {
     }
 }

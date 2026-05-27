@@ -5,6 +5,7 @@ import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
+import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("MemberAccount JDBC Repository Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -72,6 +74,48 @@ class MemberAccountRepositoryTest {
         assertThat(tx.getAmount()).isEqualTo(depositAmount);
         assertThat(tx.getNote()).isEqualTo("test deposit");
         assertThat(tx.getRecordedBy()).isEqualTo(financeManager);
+    }
+
+    @Test
+    @DisplayName("should persist a reversal transaction and reload it with reversesTransactionId intact")
+    void shouldPersistAndReloadReversalTransaction() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Money depositAmount = Money.ofCzk(BigDecimal.valueOf(300));
+        account.deposit(depositAmount, "original deposit", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(account);
+
+        MemberAccount reloaded = memberAccountRepository.findById(memberId).orElseThrow();
+        Transaction originalTx = reloaded.getTransactions().get(0);
+        reloaded.reverse(originalTx.getId(), "storno", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(reloaded);
+
+        MemberAccount afterReversal = memberAccountRepository.findById(memberId).orElseThrow();
+        assertThat(afterReversal.getTransactions()).hasSize(2);
+        assertThat(afterReversal.getBalance()).isEqualTo(Money.zero());
+        Transaction reversal = afterReversal.getTransactions().stream()
+                .filter(Transaction::isReversal)
+                .findFirst()
+                .orElseThrow();
+        assertThat(reversal.getReversesTransactionId()).isEqualTo(originalTx.getId());
+    }
+
+    @Test
+    @DisplayName("domain prevents reversing the same transaction twice even without DB constraint")
+    void shouldPreventDoubleReversalAtDomainLevel() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        Money depositAmount = Money.ofCzk(BigDecimal.valueOf(300));
+        account.deposit(depositAmount, "original deposit", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(account);
+
+        MemberAccount reloaded = memberAccountRepository.findById(memberId).orElseThrow();
+        Transaction originalTx = reloaded.getTransactions().get(0);
+        reloaded.reverse(originalTx.getId(), "first storno", LocalDate.now(), Instant.now(), financeManager);
+        memberAccountRepository.save(reloaded);
+
+        MemberAccount afterFirstReversal = memberAccountRepository.findById(memberId).orElseThrow();
+        assertThatThrownBy(() ->
+                afterFirstReversal.reverse(originalTx.getId(), "second storno", LocalDate.now(), Instant.now(), financeManager))
+                .isInstanceOf(TransactionAlreadyReversedException.class);
     }
 
     @Test

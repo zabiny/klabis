@@ -6,11 +6,13 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
+import com.klabis.finance.application.ReversePort;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.OverdraftLimitExceededException;
 import com.klabis.finance.domain.Transaction;
+import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
@@ -37,6 +39,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 @DisplayName("MemberAccountController REST API Tests")
 @WebMvcTest(MemberAccountController.class)
@@ -56,6 +59,9 @@ class MemberAccountControllerTest {
 
     @MockitoBean
     private ChargePort chargePort;
+
+    @MockitoBean
+    private ReversePort reversePort;
 
     @MockitoBean
     private MemberAccountRepository memberAccountRepository;
@@ -208,6 +214,86 @@ class MemberAccountControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.charge").doesNotExist());
         }
+    }
+
+    @Nested
+    @DisplayName("POST /api/members/{id}/account/transactions/{txId}/reverse")
+    class ReverseEndpoint {
+
+        @Test
+        @DisplayName("returns 401 when not authenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
+                            MEMBER_UUID, TX_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validReverseBody()))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("returns 403 when authenticated without FINANCE:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WithoutFinanceManage() throws Exception {
+            mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
+                            MEMBER_UUID, TX_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validReverseBody()))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 201 Created with Location header on valid reversal")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void shouldReturn201WithLocationOnValidReversal() throws Exception {
+            UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
+            Transaction reversal = buildReversalTransaction(reversalTxUuid);
+            when(reversePort.reverse(any())).thenReturn(reversal);
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
+                            MEMBER_UUID, TX_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validReverseBody()))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location",
+                            containsString("/api/members/" + MEMBER_UUID + "/account/transactions/" + reversalTxUuid)));
+        }
+
+        @Test
+        @DisplayName("returns 409 Conflict when transaction has already been reversed")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void shouldReturn409WhenTransactionAlreadyReversed() throws Exception {
+            when(reversePort.reverse(any())).thenThrow(
+                    new TransactionAlreadyReversedException(new TransactionId(TX_UUID)));
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
+                            MEMBER_UUID, TX_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validReverseBody()))
+                    .andExpect(status().is(409))
+                    .andExpect(jsonPath("$.type").value(containsString("TRANSACTION_ALREADY_REVERSED")));
+        }
+    }
+
+    private String validReverseBody() {
+        return """
+                {
+                    "note": "Storno",
+                    "occurredAt": "2026-05-01"
+                }
+                """;
+    }
+
+    private Transaction buildReversalTransaction(UUID reversalTxUuid) {
+        return Transaction.reconstruct(
+                new TransactionId(reversalTxUuid),
+                TransactionType.OTHER,
+                Money.ofCzk(BigDecimal.valueOf(-200)),
+                "Storno",
+                Instant.now(),
+                LocalDate.of(2026, 5, 1),
+                new com.klabis.common.users.UserId(UUID.randomUUID()),
+                new TransactionId(TX_UUID)
+        );
     }
 
     private String validDepositBody() {

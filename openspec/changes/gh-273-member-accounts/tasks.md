@@ -38,15 +38,15 @@
 
 ## 4. Vertical Slice: Reverse (Storno)
 
-- [ ] 4.1 Write failing domain test: `reverse(transactionId)` of a deposit appends opposite-sign transaction referencing the original
-- [ ] 4.2 Write failing domain test: `reverse` of a charge appends opposite-sign transaction referencing the original
-- [ ] 4.3 Write failing domain test: `reverse` of an already-reversed transaction throws `TransactionAlreadyReversed`
-- [ ] 4.4 Write failing domain test: reverse of a reversal is permitted (reversal chain)
-- [ ] 4.5 Write failing domain test: reverse bypasses overdraft limit
-- [ ] 4.6 Implement `MemberAccount.reverse(...)` with all invariants above
-- [ ] 4.7 Write failing REST test: `POST .../transactions/{txId}/reverse` requires FINANCE:MANAGE
-- [ ] 4.8 Implement reverse endpoint with HAL+FORMS afford on each not-yet-reversed transaction
-- [ ] 4.9 Persistence test: partial unique DB index prevents two simultaneous reversals of the same transaction
+- [x] 4.1 Write failing domain test: `reverse(transactionId)` of a deposit appends opposite-sign transaction referencing the original
+- [x] 4.2 Write failing domain test: `reverse` of a charge appends opposite-sign transaction referencing the original
+- [x] 4.3 Write failing domain test: `reverse` of an already-reversed transaction throws `TransactionAlreadyReversed`
+- [x] 4.4 Write failing domain test: reverse of a reversal is permitted (reversal chain)
+- [x] 4.5 Write failing domain test: reverse bypasses overdraft limit
+- [x] 4.6 Implement `MemberAccount.reverse(...)` with all invariants above
+- [x] 4.7 Write failing REST test: `POST .../transactions/{txId}/reverse` requires FINANCE:MANAGE
+- [x] 4.8 Implement reverse endpoint with HAL+FORMS afford on each not-yet-reversed transaction
+- [x] 4.9 Persistence test: partial unique DB index prevents two simultaneous reversals of the same transaction
 
 ## 5. Vertical Slice: Read Account and History
 

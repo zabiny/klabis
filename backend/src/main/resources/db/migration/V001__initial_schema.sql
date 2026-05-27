@@ -613,16 +613,17 @@ CREATE TABLE finance_transaction
     recorded_at             TIMESTAMP      NOT NULL,
     occurred_at             DATE           NOT NULL,
     recorded_by_user_id     UUID           NOT NULL,
-    reverses_transaction_id UUID           NULL REFERENCES finance_transaction (id)
+    reverses_transaction_id UUID           NULL
 );
 
 -- Lookup index: history ordered by occurred_at DESC
 CREATE INDEX idx_finance_transaction_account_occurred ON finance_transaction (member_account_id, occurred_at DESC);
 
--- NOTE: A partial unique index WHERE reverses_transaction_id IS NOT NULL would enforce
--- "each transaction can be reversed at most once" at the DB level.
--- H2 (used in dev/test) does not support partial indexes; the invariant is enforced in the domain layer.
--- On PostgreSQL (production) add: CREATE UNIQUE INDEX ON finance_transaction (reverses_transaction_id) WHERE reverses_transaction_id IS NOT NULL
+-- Prevents the same transaction from being reversed twice.
+-- H2 treats multiple NULLs as distinct in UNIQUE constraints (unlike some other databases),
+-- so a plain UNIQUE index works for both H2 (dev/test) and PostgreSQL (production).
+-- Domain layer enforces this invariant as well (TransactionAlreadyReversedException).
+CREATE UNIQUE INDEX idx_finance_transaction_reverses_unique ON finance_transaction (reverses_transaction_id);
 
 COMMENT ON TABLE finance_transaction IS 'Append-only ledger of financial transactions per member account. Owned by the finance module.';
 COMMENT ON COLUMN finance_transaction.type IS 'Transaction type: DEPOSIT (positive, credit) or OTHER (negative, debit)';

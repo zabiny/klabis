@@ -46,6 +46,15 @@ public class Transaction {
                 recordedAt, occurredAt, recordedBy, null);
     }
 
+    static Transaction reversal(Transaction original, String note, LocalDate occurredAt,
+                                Instant recordedAt, UserId recordedBy) {
+        Money reversalAmount = original.amount.negate();
+        TransactionType reversalType = original.type == TransactionType.DEPOSIT
+                ? TransactionType.OTHER : TransactionType.DEPOSIT;
+        return new Transaction(TransactionId.newId(), reversalType, reversalAmount, note,
+                recordedAt, occurredAt, recordedBy, original.id);
+    }
+
     public static Transaction reconstruct(TransactionId id, TransactionType type, Money amount,
                                          String note, Instant recordedAt, LocalDate occurredAt,
                                          UserId recordedBy, TransactionId reversesTransactionId) {

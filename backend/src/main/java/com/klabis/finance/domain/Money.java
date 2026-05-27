@@ -52,6 +52,10 @@ public final class Money {
         return amount.compareTo(other.amount);
     }
 
+    public Money negate() {
+        return new Money(amount.negate(), currency);
+    }
+
     public boolean isPositive() {
         return amount.compareTo(BigDecimal.ZERO) > 0;
     }
