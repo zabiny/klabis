@@ -1,10 +1,11 @@
 import {type ReactElement, useEffect, useState} from 'react';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import {Banknote, Check, CircleArrowDown, CircleArrowUp} from 'lucide-react';
 import {labels} from '../../localization';
 import {Alert, Button, Modal, Skeleton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import type {HalResponse, HalFormsTemplate, Link} from '../../api/types';
 import {formatCurrency} from '../../pages/finances/financeFormatters';
 
@@ -75,7 +76,7 @@ export const FinanceTransactionDialog = ({
     isOpen,
     onClose,
 }: FinanceTransactionDialogProps): ReactElement | null => {
-    const queryClient = useQueryClient();
+    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const [activeTab, setActiveTab] = useState<TabId>('deposit');
     const [amount, setAmount] = useState('');
@@ -157,9 +158,8 @@ export const FinanceTransactionDialog = ({
         submitTransaction(
             {url: template.target, data},
             {
-                onSuccess: () => {
-                    queryClient.invalidateQueries({queryKey: ['member-account', accountLink.href]});
-                    queryClient.invalidateQueries({queryKey: ['transactions']});
+                onSuccess: async () => {
+                    await invalidateAllCaches();
                     handleClose();
                 },
                 onError: (error: unknown) => {
