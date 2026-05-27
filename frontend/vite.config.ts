@@ -1,6 +1,6 @@
 import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
-import {resolve} from 'path';
+import {resolve} from 'node:path';
 import devtoolsJson from 'vite-plugin-devtools-json';
 import {VitePWA} from 'vite-plugin-pwa';
 
@@ -84,7 +84,7 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': resolve(__dirname, 'src'),
+            '@': resolve(import.meta.dirname, 'src'),
         },
     },
     base: '/',
