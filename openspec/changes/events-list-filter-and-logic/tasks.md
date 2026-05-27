@@ -38,6 +38,6 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Run the full frontend test suite via developer:test-runner-skill.
+- [x] 6.1 Run the full frontend test suite via developer:test-runner-skill.
 - [ ] 6.2 Manual QA in the browser at http://localhost:3000 — walk through each scenario in the modified spec (default landing view, current-year + each time window, past year, future year, switch-back, clear year, deep link).
-- [ ] 6.3 Confirm `openspec validate events-list-filter-and-logic --strict` passes.
+- [x] 6.3 Confirm `openspec validate events-list-filter-and-logic --strict` passes.

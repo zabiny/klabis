@@ -298,6 +298,68 @@ describe('useEventsFilterState — AND semantics (year + time window independent
         });
     });
 
+    describe('Fix 1: bootstrap coercion when ?year=<non-current> has no ?when= param', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-06-15'));
+        });
+
+        it('?year=2024 (no when): coerces to when=vse on first render', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.filterValue.selectedYear).toBe(2024);
+            expect(result.current.extraParams.dateFrom).toBe('2024-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2024-12-31');
+        });
+    });
+
+    describe('Fix 2: ?year=<non-numeric> results in selectedYear===null', () => {
+        it('?year=abc: selectedYear is null (not NaN)', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=abc&when=vse'),
+            });
+            expect(result.current.filterValue.selectedYear).toBeNull();
+        });
+
+        it('?year=abc: extraParams has no dateFrom/dateTo (no NaN in API params)', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=abc&when=vse'),
+            });
+            expect(result.current.extraParams.dateFrom).toBeUndefined();
+            expect(result.current.extraParams.dateTo).toBeUndefined();
+        });
+    });
+
+    describe('Fix 3: first render with non-current year + budouci/probehle uses effectiveTimeWindow', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-06-15'));
+        });
+
+        it('?year=2024&when=budouci: FIRST render extraParams.dateFrom is 2024-01-01, filterValue.timeWindow is vse', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024&when=budouci'),
+            });
+            // No act() — checking FIRST render before effect fires
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.extraParams.dateFrom).toBe('2024-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2024-12-31');
+        });
+
+        it('?year=2024&when=probehle: FIRST render extraParams.dateTo is 2024-12-31, filterValue.timeWindow is vse', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024&when=probehle'),
+            });
+            // No act() — checking FIRST render before effect fires
+            expect(result.current.filterValue.timeWindow).toBe('vse');
+            expect(result.current.extraParams.dateFrom).toBe('2024-01-01');
+            expect(result.current.extraParams.dateTo).toBe('2024-12-31');
+        });
+    });
+
     describe('handleFilterChange: writes ?year= and ?when= params independently', () => {
         it('selecting a year does NOT reset the timeWindow', () => {
             const {result} = renderHook(() => useEventsFilterState(), {

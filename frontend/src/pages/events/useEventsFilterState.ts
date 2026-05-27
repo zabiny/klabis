@@ -36,8 +36,23 @@ export function useEventsFilterState(): EventsFilterState {
 
     const currentYear = new Date().getFullYear();
     const parsedUrlYear = urlYear !== null && urlYear !== '' ? parseInt(urlYear, 10) : null;
-    const selectedYear: number | null = yearParamPresent ? parsedUrlYear : currentYear;
-    const timeWindow: TimeWindow = getTimeWindowFromWhenParam(urlWhen);
+    const selectedYear: number | null = yearParamPresent
+        ? (parsedUrlYear !== null && !Number.isNaN(parsedUrlYear) ? parsedUrlYear : null)
+        : currentYear;
+
+    const yearIsNonCurrentAndSet = yearParamPresent && urlYear !== '' && selectedYear !== null && !isCurrentYear(selectedYear);
+    const urlWhenNeedsCoercion = urlWhen === 'budouci' || urlWhen === 'probehle';
+
+    // Derive the effective time window synchronously: non-current year with budouci/probehle is
+    // meaningless (today falls outside the year), so treat it as vse from the very first render.
+    const effectiveTimeWindow: TimeWindow = yearIsNonCurrentAndSet && urlWhenNeedsCoercion
+        ? 'vse'
+        : getTimeWindowFromWhenParam(urlWhen);
+
+    // If the missing ?when= would default to budouci/probehle for a non-current year, use vse.
+    const desiredWhen: TimeWindow = yearIsNonCurrentAndSet
+        ? 'vse'
+        : (urlWhen ? getTimeWindowFromWhenParam(urlWhen) : DEFAULT_TIME_WINDOW);
 
     const defaultAppliedRef = useRef(false);
     useEffect(() => {
@@ -45,22 +60,14 @@ export function useEventsFilterState(): EventsFilterState {
         defaultAppliedRef.current = true;
 
         const needsYearDefault = !yearParamPresent;
-        const needsWhenDefault = !urlWhen;
+        const needsWhenWrite = !urlWhen || urlWhen !== desiredWhen;
 
-        // A non-current year cannot meaningfully combine with budouci/probehle:
-        // those windows depend on "today" which falls outside the chosen year.
-        // Coerce the time window to "vse" so the URL reflects what the query actually does.
-        const yearIsNonCurrentAndSet = yearParamPresent && urlYear !== '' && parsedUrlYear !== null && !isCurrentYear(parsedUrlYear);
-        const whenNeedsCoercion = urlWhen === 'budouci' || urlWhen === 'probehle';
-        const needsWhenCoercion = yearIsNonCurrentAndSet && whenNeedsCoercion;
-
-        if (needsYearDefault || needsWhenDefault || needsWhenCoercion) {
+        if (needsYearDefault || needsWhenWrite) {
             setSearchParams(
                 (prev) => {
                     const next = new URLSearchParams(prev);
                     if (needsYearDefault) next.set('year', String(currentYear));
-                    if (needsWhenDefault) next.set('when', DEFAULT_TIME_WINDOW);
-                    if (needsWhenCoercion) next.set('when', 'vse');
+                    if (needsWhenWrite) next.set('when', desiredWhen);
                     return next;
                 },
                 {replace: true},
@@ -70,12 +77,12 @@ export function useEventsFilterState(): EventsFilterState {
 
     const filterValue: EventsFilterValue = useMemo(() => ({
         q: urlQ,
-        timeWindow,
+        timeWindow: effectiveTimeWindow,
         registeredByMe: urlRegisteredByMe,
         eventTypeIds: urlEventTypeIds,
         selectedYear,
     // urlEventTypeIds is a new array on every render — compare its join to avoid infinite loops
-    }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(','), selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
+    }), [urlQ, effectiveTimeWindow, urlRegisteredByMe, urlEventTypeIds.join(','), selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFilterChange = useCallback((next: EventsFilterValue) => {
         setSearchParams((prev) => {
@@ -84,7 +91,7 @@ export function useEventsFilterState(): EventsFilterState {
             if (next.selectedYear !== null && next.selectedYear !== undefined) {
                 params.set('year', String(next.selectedYear));
             } else {
-                // Empty string signals "user explicitly chose no year" — distinguishes from absent param (which defaults to current year)
+                // empty string = sentinel for "no year" (absent param defaults to current year)
                 params.set('year', '');
             }
 
@@ -103,7 +110,7 @@ export function useEventsFilterState(): EventsFilterState {
     }, [setSearchParams]);
 
     const today = getTodayIso();
-    const combinedDateParams = combineYearAndTimeWindowToDateParams(selectedYear, timeWindow, today);
+    const combinedDateParams = combineYearAndTimeWindowToDateParams(selectedYear, effectiveTimeWindow, today);
 
     const extraParams = useMemo((): Record<string, string | string[]> => {
         const params: Record<string, string | string[]> = {};
@@ -116,7 +123,7 @@ export function useEventsFilterState(): EventsFilterState {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [combinedDateParams.dateFrom, combinedDateParams.dateTo, urlQ, urlRegisteredByMe, urlEventTypeIds.join(',')]);
 
-    const defaultSort = getDefaultSortForTimeWindow(timeWindow);
+    const defaultSort = getDefaultSortForTimeWindow(effectiveTimeWindow);
 
     return {filterValue, extraParams, defaultSort, handleFilterChange};
 }
