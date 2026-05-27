@@ -9,9 +9,11 @@ import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {usePersistedState} from "../../hooks/usePersistedState.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
-import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle} from "lucide-react";
+import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
+import {Button} from "../../components/UI";
+import {formatCurrency, formatDate} from "./financeFormatters.ts";
 
 type TransactionItem = EntityModel<{
     id: string;
@@ -29,19 +31,7 @@ type TransactionItem = EntityModel<{
     };
 }>;
 
-function formatCurrency(amount: number | undefined, currency: string | undefined): string {
-    if (amount === undefined || amount === null) return `- ${labels.finance.currency}`;
-    const formatted = new Intl.NumberFormat('cs-CZ', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(amount);
-    return `${formatted} ${currency ?? labels.finance.currency}`;
-}
-
-function formatDate(dateStr: string | undefined): string {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('cs-CZ').format(date);
-}
-
-const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
+export const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
     const isNegative = typeof balance === 'number' && balance < 0;
 
     return (
@@ -75,9 +65,27 @@ const TypeCell = ({type}: {type: string}): ReactElement => {
     );
 };
 
+export type TransactionReverseRequest = {
+    txSelfHref: string;
+    txId: string;
+    amount: number;
+    currency: string;
+    occurredAt: string;
+    note: string | null;
+    type: string;
+};
+
 const TRANSACTIONS_TABLE_ID = 'finance-transactions';
 
-const TransactionsTableContent = ({selfHref, extraParams}: {selfHref: string; extraParams?: Record<string, string>}): ReactElement => {
+const TransactionsTableContent = ({
+    selfHref,
+    extraParams,
+    onReverseRequest,
+}: {
+    selfHref: string;
+    extraParams?: Record<string, string>;
+    onReverseRequest?: (tx: TransactionReverseRequest) => void;
+}): ReactElement => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = usePersistedState('klabis-table-rows-per-page', 10);
     const defaultSort = useMemo(() => ({by: 'occurredAt', direction: 'desc' as const}), []);
@@ -172,6 +180,40 @@ const TransactionsTableContent = ({selfHref, extraParams}: {selfHref: string; ex
         );
     }, [reversedIds]);
 
+    const renderActionsCell = useCallback(({item}: TableCellRenderProps): ReactElement | null => {
+        if (!onReverseRequest) return null;
+        const tx = item as unknown as TransactionItem;
+        const isAlreadyReversed = reversedIds.has(tx.id);
+        const isReversal = !!tx.reversesTransactionId;
+        const selfHrefTx = tx._links?.self?.href;
+        if (!selfHrefTx || isAlreadyReversed || isReversal) return null;
+
+        return (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={labels.finance.reverse}
+                    className="text-amber-600 dark:text-amber-400"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onReverseRequest({
+                            txSelfHref: selfHrefTx,
+                            txId: tx.id,
+                            amount: tx.amount as number,
+                            currency: tx.currency as string,
+                            occurredAt: tx.occurredAt as string,
+                            note: tx.note as string | null,
+                            type: tx.type as string,
+                        });
+                    }}
+                >
+                    <RotateCcw className="w-4 h-4" />
+                </Button>
+            </div>
+        );
+    }, [onReverseRequest, reversedIds]);
+
     return (
         <KlabisTable<TransactionItem>
             data={tableData}
@@ -206,11 +248,22 @@ const TransactionsTableContent = ({selfHref, extraParams}: {selfHref: string; ex
             <TableCell column="note" dataRender={renderNoteCell}>
                 {labels.finance.description}
             </TableCell>
+            {onReverseRequest && (
+                <TableCell column="_actions" dataRender={renderActionsCell}>
+                    {labels.tables.actions}
+                </TableCell>
+            )}
         </KlabisTable>
     );
 };
 
-export const TransactionsTable = ({extraParams}: {extraParams?: Record<string, string>}): ReactElement => {
+export const TransactionsTable = ({
+    extraParams,
+    onReverseRequest,
+}: {
+    extraParams?: Record<string, string>;
+    onReverseRequest?: (tx: TransactionReverseRequest) => void;
+}): ReactElement => {
     const {isLoading, route} = useHalPageData();
     const selfLink = route.getResourceLink();
 
@@ -227,7 +280,7 @@ export const TransactionsTable = ({extraParams}: {extraParams?: Record<string, s
         return <div className="text-sm text-text-secondary py-4">{labels.finance.noTransactions}</div>;
     }
 
-    return <TransactionsTableContent selfHref={selfLink.href} extraParams={extraParams} />;
+    return <TransactionsTableContent selfHref={selfLink.href} extraParams={extraParams} onReverseRequest={onReverseRequest} />;
 };
 
 export const MemberFinancePage = (): ReactElement => {

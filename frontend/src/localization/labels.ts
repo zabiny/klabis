@@ -82,6 +82,9 @@ export const labels = {
         createEventType: 'Přidat typ akce',
         updateEventType: 'Upravit typ akce',
         deleteEventType: 'Smazat typ akce',
+        deposit: 'Vložit',
+        charge: 'Strhnout',
+        reverse: 'Stornovat',
     },
 
     dialogTitles: {
@@ -148,12 +151,17 @@ export const labels = {
 
     finance: {
         pageTitle: 'Finance',
+        memberAccountPageTitle: 'Účet člena',
         balance: 'Zůstatek',
         transactionHistory: 'Historie transakcí',
         noTransactions: 'Žádné transakce',
-        deposit: 'Vklad',
-        charge: 'Strhnutí',
+        deposit: 'Vložit',
+        charge: 'Strhnout',
         reverse: 'Stornovat',
+        confirmReverse: 'Potvrdit storno',
+        cancelReverse: 'Zrušit',
+        reverseConfirmTitle: 'Stornovat transakci',
+        reverseConfirmDescription: 'Storno vytvoří novou transakci opačného znamínka. Tuto akci nelze vrátit zpět.',
         date: 'Datum',
         type: 'Typ',
         amount: 'Částka',
@@ -169,6 +177,7 @@ export const labels = {
         filterType: 'Typ',
         filterTypeAll: 'Vše',
         currency: 'Kč',
+        openMemberAccount: 'Účet',
     },
 
     enums: {

@@ -11,7 +11,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
-import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
+import {Pencil, PiggyBank, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog, type AffectedGroup} from "./SuspensionWarningDialog.tsx";
@@ -94,15 +94,38 @@ export const MembersPage = (): ReactElement => {
         setPermissionsDialog({member, permissionsUrl: link.href});
     };
 
+    const openAccountPage = (member: MemberSummaryData) => {
+        const accountLink = member._links?.account;
+        if (!accountLink) return;
+        const link = Array.isArray(accountLink) ? accountLink[0] : accountLink;
+        if (!link?.href) return;
+        route.navigateToResource(link);
+    };
+
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const member = item as unknown as MemberSummaryData;
         const hasEditTemplate = !!member._templates?.updateMember;
         const hasPermissionsLink = !!member._links?.permissions;
+        const hasAccountLink = !!member._links?.account;
         const hasSuspendTemplate = !!member._templates?.suspendMember;
         const hasResumeTemplate = !!member._templates?.resumeMember;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {hasAccountLink && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={labels.finance.openMemberAccount}
+                        className="text-primary"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openAccountPage(member);
+                        }}
+                    >
+                        <PiggyBank className="w-4 h-4"/>
+                    </Button>
+                )}
                 {hasEditTemplate && (
                     <Button
                         variant="ghost"

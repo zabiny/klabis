@@ -11,7 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from "lucide-react";
+import {Check, Dumbbell, Heart, KeyRound, Pencil, PiggyBank, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 import {labels, getEnumLabel} from "../../localization";
@@ -275,6 +275,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     startIcon={<KeyRound className="w-4 h-4"/>}
                                 >
                                     {labels.changePassword.sectionButtonLabel}
+                                </Button>
+                            )}
+                            {hasLink('account') && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => route.navigateToResource(route.getResourceLink('account')!)}
+                                    startIcon={<PiggyBank className="w-4 h-4"/>}
+                                >
+                                    {labels.finance.openMemberAccount}
                                 </Button>
                             )}
                             {hasLink('trainingGroup') && (
