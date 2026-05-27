@@ -1222,4 +1222,73 @@ class EventRegistrationControllerTest {
 
     }
 
+    @Nested
+    @DisplayName("GET /api/events/{id}/registrations — recordTransaction affordance (finance)")
+    class RecordTransactionAffordanceTests {
+
+        @Test
+        @DisplayName("1.1 user with FINANCE:MANAGE sees recordTransaction link on every registration row")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID, authorities = {Authority.FINANCE_MANAGE})
+        void shouldExposeRecordTransactionLinkForFinanceManager() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now())
+            );
+            Event publishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(registrations)
+                    .build();
+            publishedEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(publishedEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.recordTransaction.href")
+                            .value(containsString("/api/members/" + member1Id.value() + "/account")))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._links.recordTransaction.href")
+                            .value(containsString("/api/members/" + member2Id.value() + "/account")));
+        }
+
+        @Test
+        @DisplayName("1.2 user WITHOUT FINANCE:MANAGE does not see recordTransaction link on registration rows")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldNotExposeRecordTransactionLinkWithoutFinanceManage() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now())
+            );
+            Event publishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(registrations)
+                    .build();
+            publishedEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(publishedEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.recordTransaction").doesNotExist());
+        }
+    }
+
 }

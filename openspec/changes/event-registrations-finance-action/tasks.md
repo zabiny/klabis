@@ -1,10 +1,10 @@
 ## 1. Backend — expose transaction affordance on registration rows
 
-- [ ] 1.1 Write failing controller/representation test: GET registrations list as user with FINANCE:MANAGE returns each row with an affordance (`recordTransaction`) pointing to the registered member's account transaction endpoint.
-- [ ] 1.2 Write failing controller test: GET registrations list as user WITHOUT FINANCE:MANAGE returns rows without the affordance.
-- [ ] 1.3 Implement representation processor / HAL+FORMS affordance emitter on event registration row resource that conditionally exposes the transaction affordance based on `FINANCE:MANAGE`.
-- [ ] 1.4 Verify direct API call to the underlying transaction endpoint already enforces `FINANCE:MANAGE` (it does in `member-accounts`); add an explicit integration test exercising the affordance URL end-to-end.
-- [ ] 1.5 Refactor: ensure no duplication between the member-list affordance emitter and the new registrations-list affordance emitter; extract shared helper if natural.
+- [x] 1.1 Write failing controller/representation test: GET registrations list as user with FINANCE:MANAGE returns each row with an affordance (`recordTransaction`) pointing to the registered member's account transaction endpoint.
+- [x] 1.2 Write failing controller test: GET registrations list as user WITHOUT FINANCE:MANAGE returns rows without the affordance.
+- [x] 1.3 Implement representation processor / HAL+FORMS affordance emitter on event registration row resource that conditionally exposes the transaction affordance based on `FINANCE:MANAGE`.
+- [x] 1.4 Verify direct API call to the underlying transaction endpoint already enforces `FINANCE:MANAGE` (it does in `member-accounts`); add an explicit integration test exercising the affordance URL end-to-end.
+- [x] 1.5 Refactor: ensure no duplication between the member-list affordance emitter and the new registrations-list affordance emitter; extract shared helper if natural.
 
 ## 2. Frontend — open unified transaction dialog from a registration row
 

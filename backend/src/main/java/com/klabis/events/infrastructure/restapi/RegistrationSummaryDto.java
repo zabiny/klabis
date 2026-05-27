@@ -23,6 +23,7 @@ public record RegistrationSummaryDto(
         @OwnerVisible
         @HasAuthority(Authority.EVENTS_REGISTRATIONS)
         Instant registrationTime,
-        @JsonIgnore @OwnerId MemberId eventCoordinatorId
+        @JsonIgnore @OwnerId MemberId eventCoordinatorId,
+        @JsonIgnore MemberId registeredMemberId
 ) {
 }
