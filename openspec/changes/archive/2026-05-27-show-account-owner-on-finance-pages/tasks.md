@@ -20,5 +20,5 @@
 
 ## 4. Spec sync and publishing
 
-- [ ] 4.1 Run `npm run publish-frontend-resources` in `frontend/` so the change is reflected in the backend static bundle
+- [x] 4.1 Run `npm run publish-frontend-resources` in `frontend/` so the change is reflected in the backend static bundle
 - [ ] 4.2 After review and merge, archive the change via `/openspec-archive-change` so the delta lands in `openspec/specs/member-accounts/spec.md`
