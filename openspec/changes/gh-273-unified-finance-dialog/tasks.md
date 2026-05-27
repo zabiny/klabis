@@ -26,9 +26,9 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 4. Frontend — integrate dialog into `MemberAccountManagePage`
 
-- [ ] 4.1 Update existing `MemberAccountManagePage.test.tsx`: replace assertions for two `HalFormButton`s with assertions for a single Banknote action button that opens `FinanceTransactionDialog`
-- [ ] 4.2 In `MemberAccountManagePage.tsx`, replace the two `HalFormButton` instances (deposit, charge) with one button (Banknote icon, label "Vložit / Vybrat") that opens `FinanceTransactionDialog` passing the current account's self link
-- [ ] 4.3 Remove imports of `ArrowUpCircle`, `ArrowDownCircle` from this page if no longer used
+- [x] 4.1 Update existing `MemberAccountManagePage.test.tsx`: replace assertions for two `HalFormButton`s with assertions for a single Banknote action button that opens `FinanceTransactionDialog`
+- [x] 4.2 In `MemberAccountManagePage.tsx`, replace the two `HalFormButton` instances (deposit, charge) with one button (Banknote icon, label "Vložit / Vybrat") that opens `FinanceTransactionDialog` passing the current account's self link
+- [x] 4.3 Remove imports of `ArrowUpCircle`, `ArrowDownCircle` from this page if no longer used; swap PiggyBank header icon to Banknote
 - [ ] 4.4 Manual verification: full deposit and charge flows still work end-to-end; transaction history refreshes after submit
 
 ## 5. Frontend — integrate dialog into `MembersPage`

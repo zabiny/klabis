@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
@@ -8,6 +8,7 @@ import {createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {type Mock, vi} from 'vitest';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
+import type {Link} from '../../api/types.ts';
 
 vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -15,6 +16,26 @@ vi.mock('../api/klabisUserManager', () => ({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
+    },
+}));
+
+vi.mock('../../components/finance/FinanceTransactionDialog.tsx', () => ({
+    FinanceTransactionDialog: ({
+        accountLink,
+        isOpen,
+        onClose,
+    }: {
+        accountLink: Link;
+        isOpen: boolean;
+        onClose: () => void;
+    }) => {
+        if (!isOpen) return null;
+        return (
+            <div data-testid="finance-transaction-dialog">
+                <span data-testid="dialog-account-href">{accountLink.href}</span>
+                <button onClick={onClose}>Close dialog</button>
+            </div>
+        );
     },
 }));
 
@@ -139,17 +160,47 @@ describe('MemberAccountManagePage', () => {
             });
         });
 
-        it('should render Deposit button when deposit affordance is present', async () => {
+        it('should render a single "Vložit / Vybrat" action button when manager affordances are present', async () => {
             renderPage(<MemberAccountManagePage/>);
             await waitFor(() => {
-                expect(screen.getByRole('button', {name: /Vložit/i})).toBeInTheDocument();
+                expect(screen.getByRole('button', {name: /Provést finanční transakci/i})).toBeInTheDocument();
             });
         });
 
-        it('should render Charge button when charge affordance is present', async () => {
+        it('should render action button with visible label text "Vložit / Vybrat"', async () => {
             renderPage(<MemberAccountManagePage/>);
             await waitFor(() => {
-                expect(screen.getByRole('button', {name: /Strhnout/i})).toBeInTheDocument();
+                expect(screen.getByText('Vložit / Vybrat')).toBeInTheDocument();
+            });
+        });
+
+        it('should render action button with correct aria-label', async () => {
+            renderPage(<MemberAccountManagePage/>);
+            await waitFor(() => {
+                const button = screen.getByRole('button', {name: /Provést finanční transakci/i});
+                expect(button).toHaveAttribute('aria-label', 'Provést finanční transakci');
+            });
+        });
+
+        it('should NOT render separate Deposit or Charge buttons', async () => {
+            renderPage(<MemberAccountManagePage/>);
+            await waitFor(() => {
+                expect(screen.queryByRole('button', {name: /^Vložit$/i})).not.toBeInTheDocument();
+                expect(screen.queryByRole('button', {name: /^Strhnout$/i})).not.toBeInTheDocument();
+            });
+        });
+
+        it('should open FinanceTransactionDialog with account self link when action button is clicked', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            const button = await screen.findByRole('button', {name: /Provést finanční transakci/i});
+            fireEvent.click(button);
+
+            await waitFor(() => {
+                expect(screen.getByTestId('finance-transaction-dialog')).toBeInTheDocument();
+                expect(screen.getByTestId('dialog-account-href')).toHaveTextContent(
+                    'https://test.com/api/members/456/account'
+                );
             });
         });
     });
@@ -165,17 +216,10 @@ describe('MemberAccountManagePage', () => {
             });
         });
 
-        it('should NOT render Deposit button when deposit affordance is absent', async () => {
+        it('should NOT render "Vložit / Vybrat" button when no manager affordances are present', async () => {
             renderPage(<MemberAccountManagePage/>);
             await waitFor(() => {
-                expect(screen.queryByRole('button', {name: /Vložit/i})).not.toBeInTheDocument();
-            });
-        });
-
-        it('should NOT render Charge button when charge affordance is absent', async () => {
-            renderPage(<MemberAccountManagePage/>);
-            await waitFor(() => {
-                expect(screen.queryByRole('button', {name: /Strhnout/i})).not.toBeInTheDocument();
+                expect(screen.queryByRole('button', {name: /Provést finanční transakci/i})).not.toBeInTheDocument();
             });
         });
 

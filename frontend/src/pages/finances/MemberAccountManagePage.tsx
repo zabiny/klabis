@@ -1,14 +1,15 @@
 import {type ReactElement, useCallback, useState} from "react";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useTransactionFilters} from "./useTransactionFilters.ts";
-import {Skeleton} from "../../components/UI";
+import {Button, Skeleton} from "../../components/UI";
 import {labels} from "../../localization";
-import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
 import {TransactionsTable, type TransactionReverseRequest, BalanceCard} from "./FinancesPage.tsx";
 import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
 import {ReverseConfirmModal} from "./ReverseConfirmModal.tsx";
-import {ArrowDownCircle, ArrowUpCircle, PiggyBank} from "lucide-react";
+import {Banknote} from "lucide-react";
+import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
+import type {Link} from "../../api/types.ts";
 
 /**
  * Account page for finance managers viewing any member's account.
@@ -23,6 +24,7 @@ export const MemberAccountManagePage = (): ReactElement => {
     const {isLoading, resourceData} = useHalPageData();
     const {filters, extraParams, handleFilterChange} = useTransactionFilters();
     const [reverseTarget, setReverseTarget] = useState<TransactionReverseRequest | null>(null);
+    const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
 
     const handleReverseRequest = useCallback((tx: TransactionReverseRequest) => {
         setReverseTarget(tx);
@@ -39,31 +41,28 @@ export const MemberAccountManagePage = (): ReactElement => {
     const hasChargeTemplate = !!resourceData?._templates?.charge;
     const hasAnyManagerAffordance = hasDepositTemplate || hasChargeTemplate;
 
+    const selfLink = resourceData?._links?.self;
+    const accountLink = selfLink && !Array.isArray(selfLink) ? (selfLink as Link) : undefined;
+
     return (
         <>
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <PiggyBank className="w-8 h-8 text-primary" />
+                        <Banknote className="w-8 h-8 text-primary" />
                         <h1 className="text-3xl font-bold text-text-primary">{labels.finance.memberAccountPageTitle}</h1>
                     </div>
 
-                    {hasAnyManagerAffordance && (
+                    {hasAnyManagerAffordance && accountLink && (
                         <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
-                            <HalFormButton
-                                name="deposit"
-                                modal={true}
-                                navigateOnSuccess={false}
-                                icon={<ArrowUpCircle className="w-4 h-4" />}
+                            <Button
                                 variant="secondary"
-                            />
-                            <HalFormButton
-                                name="charge"
-                                modal={true}
-                                navigateOnSuccess={false}
-                                icon={<ArrowDownCircle className="w-4 h-4" />}
-                                variant="secondary"
-                            />
+                                aria-label={labels.finance.openTransactionDialogAriaLabel}
+                                onClick={() => setIsTransactionDialogOpen(true)}
+                            >
+                                <Banknote className="w-4 h-4" />
+                                {labels.finance.transactionDialogTitle}
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -92,6 +91,14 @@ export const MemberAccountManagePage = (): ReactElement => {
                 transaction={reverseTarget}
                 onClose={() => setReverseTarget(null)}
             />
+
+            {accountLink && (
+                <FinanceTransactionDialog
+                    accountLink={accountLink}
+                    isOpen={isTransactionDialogOpen}
+                    onClose={() => setIsTransactionDialogOpen(false)}
+                />
+            )}
         </>
     );
 };
