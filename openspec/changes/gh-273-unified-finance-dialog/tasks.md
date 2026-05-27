@@ -29,7 +29,7 @@ Vertical slices — every group is independently committable, testable, and adds
 - [x] 4.1 Update existing `MemberAccountManagePage.test.tsx`: replace assertions for two `HalFormButton`s with assertions for a single Banknote action button that opens `FinanceTransactionDialog`
 - [x] 4.2 In `MemberAccountManagePage.tsx`, replace the two `HalFormButton` instances (deposit, charge) with one button (Banknote icon, label "Vložit / Vybrat") that opens `FinanceTransactionDialog` passing the current account's self link
 - [x] 4.3 Remove imports of `ArrowUpCircle`, `ArrowDownCircle` from this page if no longer used; swap PiggyBank header icon to Banknote
-- [ ] 4.4 Manual verification: full deposit and charge flows still work end-to-end; transaction history refreshes after submit
+- [x] 4.4 Manual verification: full deposit and charge flows still work end-to-end; transaction history refreshes after submit
 
 ## 5. Frontend — integrate dialog into `MembersPage`
 
@@ -37,7 +37,7 @@ Vertical slices — every group is independently committable, testable, and adds
 - [x] 5.2 In `MembersPage.tsx`, remove the `PiggyBank` button branch from `renderActionsCell` (lines around 115–128)
 - [x] 5.3 Add a `Banknote` button to `renderActionsCell` that opens `FinanceTransactionDialog` for the row's member account link (replaces the removed PiggyBank action)
 - [x] 5.4 Remove `openAccountPage` helper function — no longer used
-- [ ] 5.5 Manual verification: clicking Banknote opens dialog with correct member context; row click still navigates to member detail (unchanged)
+- [x] 5.5 Manual verification: clicking Banknote opens dialog with correct member context; row click still navigates to member detail (unchanged)
 
 ## 6. Frontend — icon swap on `MemberDetailPage`
 
@@ -53,7 +53,7 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 8. Verification & wrap-up
 
-- [ ] 8.1 Manual smoke test: start `runLocalEnvironment.sh`, log in as admin (ZBM9000), exercise: open dialog from member list, switch tabs, verify values preserved, submit deposit, reopen dialog (verify last tab restored), open dialog from account page, navigate to account from member detail (verify Banknote icon)
-- [ ] 8.2 Manual smoke test as regular member (ZBM9500): verify no Banknote action appears in any page (no FINANCE:MANAGE)
-- [ ] 8.3 Update GitHub issue #273 with a brief summary and add label `BackendCompleted` (per project convention)
-- [ ] 8.4 Run `openspec validate gh-273-unified-finance-dialog --strict` — confirm clean
+- [x] 8.1 Manual smoke test: start `runLocalEnvironment.sh`, log in as admin (ZBM9000), exercise: open dialog from member list, switch tabs, verify values preserved, submit deposit, reopen dialog (verify last tab restored), open dialog from account page, navigate to account from member detail (verify Banknote icon)
+- [x] 8.2 Manual smoke test as regular member (ZBM9500): verify no Banknote action appears in any page (no FINANCE:MANAGE)
+- [x] 8.3 Update GitHub issue #273 with a brief summary (issue already had BackendCompleted label from previous cycle)
+- [x] 8.4 Run `openspec validate gh-273-unified-finance-dialog --strict` — confirm clean
