@@ -114,11 +114,11 @@ describe('MemberAccountManagePage', () => {
         });
         vi.clearAllMocks();
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as typeof globalThis & Record<string, unknown>).fetch = fetchSpy;
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        Reflect.deleteProperty(globalThis, 'fetch');
     });
 
     const renderPage = (ui: React.ReactElement, initialRoute = '/members/456/account') => {

@@ -47,9 +47,9 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 7. Frontend — cleanup
 
-- [ ] 7.1 Search the codebase for any remaining usages of `PiggyBank` related to finance; remove or replace if found
-- [ ] 7.2 Run `npm run lint` and `npm run test` — all clean
-- [ ] 7.3 Run `npm run refresh-backend-server-resources` to publish frontend to backend static resources
+- [x] 7.1 Search the codebase for any remaining usages of `PiggyBank` related to finance; remove or replace if found
+- [x] 7.2 Run `npm run lint` and `npm run test` — all clean (pre-existing lint warnings in unrelated files left untouched)
+- [x] 7.3 Run `npm run refresh-backend-server-resources` to publish frontend to backend static resources
 
 ## 8. Verification & wrap-up
 

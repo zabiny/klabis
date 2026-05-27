@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
@@ -50,13 +50,6 @@ const mockAccountDepositOnly = {
     },
 };
 
-const mockAccountChargeOnly = {
-    ...mockAccountBothTemplates,
-    _templates: {
-        charge: mockAccountBothTemplates._templates.charge,
-    },
-};
-
 const mockAccountNoTemplates = {
     balance: 750,
     currency: 'CZK',
@@ -84,12 +77,12 @@ describe('FinanceTransactionDialog', () => {
             defaultOptions: {queries: {retry: false, gcTime: 0}},
         });
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as typeof globalThis & Record<string, unknown>).fetch = fetchSpy;
         localStorage.clear();
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        Reflect.deleteProperty(globalThis, 'fetch');
     });
 
     const renderDialog = (props: Partial<React.ComponentProps<typeof FinanceTransactionDialog>> = {}) => {
@@ -105,7 +98,7 @@ describe('FinanceTransactionDialog', () => {
         );
     };
 
-    const setupFetch = (accountData = mockAccountBothTemplates, memberData = mockMember) => {
+    const setupFetch = (accountData: Record<string, unknown> = mockAccountBothTemplates, memberData: Record<string, unknown> = mockMember) => {
         fetchSpy.mockImplementation((url: string) => {
             if (url.includes('/members/456/account') && !url.includes('/transactions')) {
                 return Promise.resolve(createMockResponse(accountData));
@@ -277,8 +270,8 @@ describe('FinanceTransactionDialog', () => {
         });
 
         // Verify POST was made to the deposit target
-        const postCalls = fetchSpy.mock.calls.filter(
-            ([, options]: [string, RequestInit?]) => options?.method === 'POST'
+        const postCalls = (fetchSpy.mock.calls as [string, RequestInit?][]).filter(
+            ([, options]) => options?.method === 'POST'
         );
         expect(postCalls.length).toBeGreaterThan(0);
         expect(postCalls[0][0]).toContain('/transactions');
@@ -319,8 +312,8 @@ describe('FinanceTransactionDialog', () => {
             expect(onClose).toHaveBeenCalled();
         });
 
-        const postCalls = fetchSpy.mock.calls.filter(
-            ([, options]: [string, RequestInit?]) => options?.method === 'POST'
+        const postCalls = (fetchSpy.mock.calls as [string, RequestInit?][]).filter(
+            ([, options]) => options?.method === 'POST'
         );
         expect(postCalls.length).toBeGreaterThan(0);
         expect(postCalls[0][0]).toContain('/transactions/charge');

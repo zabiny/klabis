@@ -86,7 +86,8 @@ export const FinanceTransactionDialog = ({
     const {data: accountData, isLoading: isAccountLoading} = useQuery<AccountData>({
         queryKey: ['member-account', accountLink.href],
         queryFn: async () => {
-            const response = await authorizedFetch(accountLink.href);
+            // accountLink.href is guaranteed by the parent passing a valid account self-link
+            const response = await authorizedFetch(accountLink.href!);
             return response.json();
         },
         enabled: isOpen,
