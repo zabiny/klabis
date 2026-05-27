@@ -17,10 +17,10 @@
 
 ## 3. Frontend — Switch-back and "no year" behaviour
 
-- [ ] 3.1 Write failing UI test: switching from a non-current year back to the current year re-enables "Budoucí" and "Proběhlé" and leaves the active time window at "Vše".
-- [ ] 3.2 Write failing UI test: switching from a non-current year to "no year" re-enables all options and leaves the time window at "Vše".
-- [ ] 3.3 Implement re-enabling logic; verify no "previous value restore" logic is added.
-- [ ] 3.4 Make the failing tests pass.
+- [x] 3.1 Write failing UI test: switching from a non-current year back to the current year re-enables "Budoucí" and "Proběhlé" and leaves the active time window at "Vše".
+- [x] 3.2 Write failing UI test: switching from a non-current year to "no year" re-enables all options and leaves the time window at "Vše".
+- [x] 3.3 Implement re-enabling logic; verify no "previous value restore" logic is added.
+- [x] 3.4 Make the failing tests pass.
 
 ## 4. Frontend — Default year value
 

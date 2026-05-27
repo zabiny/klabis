@@ -379,6 +379,89 @@ describe('EventsFilterBar', () => {
         });
     });
 
+    describe('switch-back and "no year" behaviour', () => {
+        it('re-enables Budoucí and Proběhlé when switching from a past year back to the current year', async () => {
+            const currentYear = new Date().getFullYear();
+            const pastYear = currentYear - 1;
+            const onChange = vi.fn();
+            const { rerender } = render(
+                <MemoryRouter initialEntries={['/']}>
+                    <EventsFilterBar
+                        {...defaultProps}
+                        onChange={onChange}
+                        value={{ ...defaultValue, selectedYear: pastYear, timeWindow: 'vse' }}
+                    />
+                </MemoryRouter>,
+            );
+
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(currentYear));
+
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: currentYear, timeWindow: 'vse' }),
+            );
+
+            const [called] = onChange.mock.calls[0] as [EventsFilterValue];
+            rerender(
+                <MemoryRouter initialEntries={['/']}>
+                    <EventsFilterBar {...defaultProps} onChange={onChange} value={called} />
+                </MemoryRouter>,
+            );
+
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).not.toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('re-enables Budoucí and Proběhlé when switching from a past year to "no year", and timeWindow stays "Vše"', async () => {
+            const pastYear = new Date().getFullYear() - 1;
+            const onChange = vi.fn();
+            const { rerender } = render(
+                <MemoryRouter initialEntries={['/']}>
+                    <EventsFilterBar
+                        {...defaultProps}
+                        onChange={onChange}
+                        value={{ ...defaultValue, selectedYear: pastYear, timeWindow: 'vse' }}
+                    />
+                </MemoryRouter>,
+            );
+
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, '');
+
+            expect(onChange).toHaveBeenCalledWith(
+                expect.objectContaining({ selectedYear: null, timeWindow: 'vse' }),
+            );
+
+            const [called] = onChange.mock.calls[0] as [EventsFilterValue];
+            rerender(
+                <MemoryRouter initialEntries={['/']}>
+                    <EventsFilterBar {...defaultProps} onChange={onChange} value={called} />
+                </MemoryRouter>,
+            );
+
+            expect(screen.getByRole('button', { name: labels.eventsFilter.budouci })).not.toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: labels.eventsFilter.probehle })).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('does not restore any previous timeWindow value when switching back to current year — timeWindow stays "Vše"', async () => {
+            const currentYear = new Date().getFullYear();
+            const pastYear = currentYear - 1;
+            const onChange = vi.fn();
+
+            renderFilterBar({
+                onChange,
+                value: { ...defaultValue, selectedYear: pastYear, timeWindow: 'vse' },
+            });
+
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(currentYear));
+
+            const [called] = onChange.mock.calls[0] as [EventsFilterValue];
+            expect(called.timeWindow).toBe('vse');
+            expect(called.selectedYear).toBe(currentYear);
+        });
+    });
+
     describe('AND semantics: no mutual exclusion between year and time window', () => {
         it('does NOT clear selectedYear when time window changes', async () => {
             const onChange = vi.fn();
