@@ -1,7 +1,6 @@
 package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;

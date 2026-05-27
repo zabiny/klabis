@@ -83,13 +83,13 @@
 
 ## 8. Frontend: Manager Access to Any Account
 
-- [ ] 8.1 Add member-detail HAL link processor exposing `account` link for FINANCE:MANAGE
-- [ ] 8.2 Add member-list row action (icon) opening the member's financial account, gated by FINANCE:MANAGE
-- [ ] 8.3 Implement `MemberAccountManagePage` rendering balance + history with action affordances when present
-- [ ] 8.4 Implement Deposit modal form (driven by HAL+FORMS `deposit` affordance)
-- [ ] 8.5 Implement Charge modal form (driven by HAL+FORMS `charge` affordance), display overdraft error via problem detail
-- [ ] 8.6 Implement Reverse action per-row (driven by HAL+FORMS `reverse` affordance) with confirmation modal
-- [ ] 8.7 Hide all action affordances when not present in HAL response (member viewing own account)
+- [x] 8.1 Add member-detail HAL link processor exposing `account` link for FINANCE:MANAGE
+- [x] 8.2 Add member-list row action (icon) opening the member's financial account, gated by FINANCE:MANAGE
+- [x] 8.3 Implement `MemberAccountManagePage` rendering balance + history with action affordances when present
+- [x] 8.4 Implement Deposit modal form (driven by HAL+FORMS `deposit` affordance)
+- [x] 8.5 Implement Charge modal form (driven by HAL+FORMS `charge` affordance), display overdraft error via problem detail
+- [x] 8.6 Implement Reverse action per-row (driven by HAL+FORMS `reverse` affordance) with confirmation modal
+- [x] 8.7 Hide all action affordances when not present in HAL response (member viewing own account)
 
 ## 9. Frontend: Suspend Dialog Negative-Balance Handling
 
