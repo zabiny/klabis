@@ -27,14 +27,14 @@
 
 ## 3. Vertical Slice: Charge with Overdraft Limit
 
-- [ ] 3.1 Add `klabis.finance.overdraft-limit` to `application.yml` and bind via `FinanceProperties (@ConfigurationProperties)`
-- [ ] 3.2 Write failing domain test: `charge(amount)` decreases balance and stores OTHER (negative) transaction when within overdraft limit
-- [ ] 3.3 Write failing domain test: `charge` is rejected when resulting balance would fall below overdraft limit
-- [ ] 3.4 Implement `MemberAccount.charge(...)` consuming `OverdraftPolicy` value derived from properties
-- [ ] 3.5 Write failing REST test: `POST .../transactions` with charge body within limit succeeds
-- [ ] 3.6 Write failing REST test: charge that would exceed overdraft returns problem detail with `OVERDRAFT_LIMIT_EXCEEDED`
-- [ ] 3.7 Implement controller logic + exception handler for overdraft case
-- [ ] 3.8 HAL+FORMS test: `charge` affordance present only for FINANCE:MANAGE
+- [x] 3.1 Add `klabis.finance.overdraft-limit` to `application.yml` and bind via `FinanceProperties (@ConfigurationProperties)`
+- [x] 3.2 Write failing domain test: `charge(amount)` decreases balance and stores OTHER (negative) transaction when within overdraft limit
+- [x] 3.3 Write failing domain test: `charge` is rejected when resulting balance would fall below overdraft limit
+- [x] 3.4 Implement `MemberAccount.charge(...)` consuming `OverdraftPolicy` value derived from properties
+- [x] 3.5 Write failing REST test: `POST .../transactions` with charge body within limit succeeds
+- [x] 3.6 Write failing REST test: charge that would exceed overdraft returns problem detail with `OVERDRAFT_LIMIT_EXCEEDED`
+- [x] 3.7 Implement controller logic + exception handler for overdraft case
+- [x] 3.8 HAL+FORMS test: `charge` affordance present only for FINANCE:MANAGE
 
 ## 4. Vertical Slice: Reverse (Storno)
 

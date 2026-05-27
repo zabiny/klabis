@@ -2,6 +2,7 @@ package com.klabis.finance.domain;
 
 import com.klabis.common.users.UserId;
 import org.jmolecules.ddd.annotation.Entity;
+import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -9,6 +10,7 @@ import java.time.LocalDate;
 @Entity
 public class Transaction {
 
+    @Identity
     private final TransactionId id;
     private final TransactionType type;
     private final Money amount;
@@ -34,6 +36,13 @@ public class Transaction {
     static Transaction deposit(Money amount, String note, LocalDate occurredAt,
                                Instant recordedAt, UserId recordedBy) {
         return new Transaction(TransactionId.newId(), TransactionType.DEPOSIT, amount, note,
+                recordedAt, occurredAt, recordedBy, null);
+    }
+
+    static Transaction charge(Money positiveChargeAmount, String note, LocalDate occurredAt,
+                              Instant recordedAt, UserId recordedBy) {
+        Money negativeAmount = Money.ofCzk(positiveChargeAmount.amount().negate());
+        return new Transaction(TransactionId.newId(), TransactionType.OTHER, negativeAmount, note,
                 recordedAt, occurredAt, recordedBy, null);
     }
 

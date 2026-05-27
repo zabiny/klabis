@@ -46,6 +46,12 @@ public final class Money {
         return new Money(amount.subtract(other.amount), currency);
     }
 
+    public int compareTo(Money other) {
+        Assert.isTrue(currency.equals(other.currency),
+                () -> "Cannot compare amounts in different currencies: " + currency + " and " + other.currency);
+        return amount.compareTo(other.amount);
+    }
+
     public boolean isPositive() {
         return amount.compareTo(BigDecimal.ZERO) > 0;
     }

@@ -102,6 +102,9 @@ springdoc:
         - /actuator/**
 
 klabis:
+  finance:
+    overdraft-limit: ${KLABIS_FINANCE_OVERDRAFT_LIMIT:-500}
+
   ical:
     base-url: ${KLABIS_BASE_URL:https://localhost:8443}
     window:

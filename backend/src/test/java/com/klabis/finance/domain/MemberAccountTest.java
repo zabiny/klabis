@@ -88,4 +88,73 @@ class MemberAccountTest {
         assertThatThrownBy(() -> account.deposit(negative, "negative", today, now, financeManager))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("charge with positive amount decreases balance and stores OTHER (negative) transaction when within overdraft limit")
+    void chargeDecreasesBalanceAndStoresNegativeTransaction() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        account.deposit(Money.ofCzk(BigDecimal.valueOf(300)), "initial deposit", today, now, financeManager);
+        Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(100));
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+
+        Transaction tx = account.charge(chargeAmount, "test charge", today, now, financeManager, policy);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(200)));
+        assertThat(account.getTransactions()).hasSize(2);
+        assertThat(tx.getType()).isEqualTo(TransactionType.OTHER);
+        assertThat(tx.getAmount()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-100)));
+        assertThat(tx.getNote()).isEqualTo("test charge");
+        assertThat(tx.getOccurredAt()).isEqualTo(today);
+        assertThat(tx.getRecordedBy()).isEqualTo(financeManager);
+    }
+
+    @Test
+    @DisplayName("charge is allowed when resulting balance equals overdraft limit exactly")
+    void chargeIsAllowedWhenBalanceEqualsLimit() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+        // balance is 0, charge 500 → result is -500, which equals limit
+
+        Transaction tx = account.charge(Money.ofCzk(BigDecimal.valueOf(500)), "edge charge", today, now, financeManager, policy);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-500)));
+        assertThat(tx.getType()).isEqualTo(TransactionType.OTHER);
+    }
+
+    @Test
+    @DisplayName("charge is rejected when resulting balance would fall below overdraft limit")
+    void chargeRejectedWhenBalanceWouldFallBelowOverdraftLimit() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
+        // balance is 100, charge 700 → result -600, limit -500
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+        Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(700));
+
+        assertThatThrownBy(() -> account.charge(chargeAmount, "too large", today, now, financeManager, policy))
+                .isInstanceOf(OverdraftLimitExceededException.class);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(100)));
+        assertThat(account.getTransactions()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("charge with zero amount throws domain exception")
+    void chargeWithZeroAmountThrows() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+
+        assertThatThrownBy(() -> account.charge(Money.zero(), "zero", today, now, financeManager, policy))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("charge with negative amount throws domain exception")
+    void chargeWithNegativeAmountThrows() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
+        Money negative = Money.ofCzk(BigDecimal.valueOf(-50));
+
+        assertThatThrownBy(() -> account.charge(negative, "negative", today, now, financeManager, policy))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

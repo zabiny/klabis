@@ -1,10 +1,10 @@
 package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
@@ -39,10 +39,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberAccountController {
 
     private final DepositPort depositPort;
+    private final ChargePort chargePort;
     private final MemberAccountRepository memberAccountRepository;
 
-    MemberAccountController(DepositPort depositPort, MemberAccountRepository memberAccountRepository) {
+    MemberAccountController(DepositPort depositPort, ChargePort chargePort,
+                            MemberAccountRepository memberAccountRepository) {
         this.depositPort = depositPort;
+        this.chargePort = chargePort;
         this.memberAccountRepository = memberAccountRepository;
     }
 
@@ -62,18 +65,24 @@ class MemberAccountController {
     @HasAuthority(Authority.FINANCE_MANAGE)
     public ResponseEntity<Void> deposit(
             @PathVariable UUID memberId,
-            @Valid @RequestBody TransactionRequest request,
+            @Valid @RequestBody DepositRequest request,
             @ActingUser com.klabis.common.users.UserId currentUserId) {
-        DepositPort.DepositCommand command = new DepositPort.DepositCommand(
-                new MemberId(memberId),
-                request.amount(),
-                request.occurredAt() != null ? request.occurredAt() : LocalDate.now(),
-                request.note(),
-                currentUserId
-        );
-        Transaction tx = depositPort.deposit(command);
-        URI location = buildTransactionUri(memberId, tx.getId().value());
-        return ResponseEntity.created(location).build();
+        LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();
+        Transaction tx = depositPort.deposit(new DepositPort.DepositCommand(
+                new MemberId(memberId), request.amount(), occurredAt, request.note(), currentUserId));
+        return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
+    }
+
+    @PostMapping("/transactions/charge")
+    @HasAuthority(Authority.FINANCE_MANAGE)
+    public ResponseEntity<Void> charge(
+            @PathVariable UUID memberId,
+            @Valid @RequestBody ChargeRequest request,
+            @ActingUser com.klabis.common.users.UserId currentUserId) {
+        LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();
+        Transaction tx = chargePort.charge(new ChargePort.ChargeCommand(
+                new MemberId(memberId), request.amount(), occurredAt, request.note(), currentUserId));
+        return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
     }
 
     @GetMapping("/transactions/{txId}")
@@ -89,8 +98,14 @@ class MemberAccountController {
                 .orElseGet(() -> URI.create("/api/members/" + memberId + "/account/transactions/" + txId));
     }
 
-    record TransactionRequest(
-            @NotNull String type,
+    record DepositRequest(
+            @NotNull @Positive BigDecimal amount,
+            LocalDate occurredAt,
+            String note
+    ) {
+    }
+
+    record ChargeRequest(
             @NotNull @Positive BigDecimal amount,
             LocalDate occurredAt,
             String note
@@ -106,7 +121,9 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
         klabisLinkTo(methodOn(MemberAccountController.class).getAccount(account.getId().uuid(), null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(
-                                methodOn(MemberAccountController.class).deposit(account.getId().uuid(), null, null))))
+                                methodOn(MemberAccountController.class).deposit(account.getId().uuid(), null, null)))
+                        .andAffordances(klabisAfford(
+                                methodOn(MemberAccountController.class).charge(account.getId().uuid(), null, null))))
                 .ifPresent(model::add);
     }
 }
