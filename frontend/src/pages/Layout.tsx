@@ -12,7 +12,7 @@ import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
 import {labels} from '../localization'
-import {Home, Calendar, Trophy, Users, UsersRound, Layers, Dumbbell, Heart, Tags, ListChecks} from 'lucide-react'
+import {Home, Calendar, Trophy, Users, UsersRound, Layers, Dumbbell, Heart, Tags, ListChecks, Banknote} from 'lucide-react'
 import type {LucideIcon} from 'lucide-react'
 
 const navIcons: Record<string, LucideIcon> = {
@@ -25,6 +25,7 @@ const navIcons: Record<string, LucideIcon> = {
     'family-groups': Heart,
     'category-presets': Tags,
     'event-types': ListChecks,
+    account: Banknote,
 }
 
 const getNavIcon = (rel: string): LucideIcon => navIcons[rel] ?? Layers

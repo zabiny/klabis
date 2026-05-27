@@ -93,6 +93,7 @@ function App() {
                                 <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
                                     <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
+                                    <Route path="/members/:memberId/account" element={<MemberFinancePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>

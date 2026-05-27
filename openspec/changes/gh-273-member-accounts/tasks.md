@@ -73,13 +73,13 @@
 
 ## 7. Frontend: Own Account Page and Menu Entry
 
-- [ ] 7.1 Add `Finance` link customizer to RootController response so authenticated members get a `account` root link
-- [ ] 7.2 Add localization label "Finance" and related labels (Vklad, Strhnutí, Stornovat, Zůstatek, …) to `src/localization/labels.ts`
-- [ ] 7.3 Implement `FinanceOwnAccountPage` consuming the root `account` link
-- [ ] 7.4 Render balance prominently and the transactions table below
-- [ ] 7.5 Implement transactions table with pagination, column sorting (date/type/amount), and filters (date range, type)
-- [ ] 7.6 Visually distinguish reversed transactions and reversal transactions; render navigation links between them
-- [ ] 7.7 Register `Finance` in main menu (everyday section, desktop sidebar + mobile bottom nav)
+- [x] 7.1 Add `Finance` link customizer to RootController response so authenticated members get a `account` root link
+- [x] 7.2 Add localization label "Finance" and related labels (Vklad, Strhnutí, Stornovat, Zůstatek, …) to `src/localization/labels.ts`
+- [x] 7.3 Implement `FinanceOwnAccountPage` consuming the root `account` link
+- [x] 7.4 Render balance prominently and the transactions table below
+- [x] 7.5 Implement transactions table with pagination, column sorting (date/type/amount), and filters (date range, type)
+- [x] 7.6 Visually distinguish reversed transactions and reversal transactions; render navigation links between them
+- [x] 7.7 Register `Finance` in main menu (everyday section, desktop sidebar + mobile bottom nav)
 
 ## 8. Frontend: Manager Access to Any Account
 

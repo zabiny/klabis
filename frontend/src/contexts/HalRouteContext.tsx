@@ -50,7 +50,10 @@ interface HalRouteProviderProps {
 
 function useHalRoutePath(routeLink?: HalResourceLinks): Path {
     const location = useLocation();
-    const routeLinkHref = routeLink && toHref(routeLink);
+    const rawHref = routeLink && toHref(routeLink);
+    // Strip URI template variables (e.g. {?page,size} or {?occurredAtFrom,occurredAtTo,type})
+    // before parsing, because URL constructor and manual split do not handle them
+    const routeLinkHref = rawHref?.replace(/\{[^}]*\}/g, '');
     if (!routeLinkHref) {
         return location;
     } else {

@@ -9,6 +9,7 @@ export const labels = {
         'family-groups': 'Rodinné skupiny',
         'category-presets': 'Šablony kategorií',
         'event-types': 'Typy akcí',
+        account: 'Finance',
     },
 
     buttons: {
@@ -143,6 +144,31 @@ export const labels = {
         color: 'Barva',
         sortOrder: 'Pořadí',
         eventTypeId: 'Typ akce',
+    },
+
+    finance: {
+        pageTitle: 'Finance',
+        balance: 'Zůstatek',
+        transactionHistory: 'Historie transakcí',
+        noTransactions: 'Žádné transakce',
+        deposit: 'Vklad',
+        charge: 'Strhnutí',
+        reverse: 'Stornovat',
+        date: 'Datum',
+        type: 'Typ',
+        amount: 'Částka',
+        description: 'Popis',
+        reversed: 'Stornováno',
+        reversal: 'Storno',
+        navigateToReversal: 'Zobrazit storno',
+        navigateToOriginal: 'Zobrazit původní transakci',
+        typeDeposit: 'Vklad',
+        typeOther: 'Výdaj',
+        filterDateFrom: 'Datum od',
+        filterDateTo: 'Datum do',
+        filterType: 'Typ',
+        filterTypeAll: 'Vše',
+        currency: 'Kč',
     },
 
     enums: {
@@ -344,6 +370,7 @@ export const labels = {
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
         'GROUPS:TRAINING': {label: 'Správa tréninkových skupin', description: 'Umožňuje vytvářet a spravovat tréninkové skupiny a jejich členy.'},
         'EVENTS:REGISTRATIONS': {label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce'},
+        'FINANCE:MANAGE': {label: 'Správa financí', description: 'Vklady, strhávání a storno transakcí na účtech členů'},
     },
 
     links: {
