@@ -47,12 +47,12 @@ export function EventsFilterBar({
         if (yearStr === '') {
             onChange({ ...value, selectedYear: null });
         } else {
-            onChange({ ...value, selectedYear: parseInt(yearStr, 10), timeWindow: 'vse' });
+            onChange({ ...value, selectedYear: parseInt(yearStr, 10) });
         }
     };
 
     const handleTimeWindowChange = (timeWindow: TimeWindow) => {
-        onChange({ ...value, timeWindow, selectedYear: null });
+        onChange({ ...value, timeWindow });
     };
 
     return (

@@ -571,14 +571,14 @@ describe('EventsPage', () => {
             expect(budouciBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('shows Proběhlé as active when dateTo param is present in URL', () => {
-            renderPage(createMockPageData(null), '/events?dateTo=2024-06-14');
+        it('shows Proběhlé as active when ?when=probehle is in URL', () => {
+            renderPage(createMockPageData(null), '/events?when=probehle');
             const probehleBtn = screen.getByRole('button', {name: labels.eventsFilter.probehle});
             expect(probehleBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('shows Vše as active when both dateFrom and dateTo are present (edge case)', () => {
-            renderPage(createMockPageData(null), '/events?dateFrom=2024-01-01&dateTo=2024-12-31');
+        it('shows Vše as active when ?when=vse is in URL', () => {
+            renderPage(createMockPageData(null), '/events?year=2024&when=vse');
             const vseBtn = screen.getByRole('button', {name: labels.eventsFilter.vse});
             expect(vseBtn).toHaveAttribute('aria-pressed', 'true');
         });

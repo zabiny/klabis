@@ -7,6 +7,19 @@ export const REGISTERED_BY_ME = 'me' as const;
 
 export const DEFAULT_TIME_WINDOW: TimeWindow = 'budouci';
 
+const VALID_TIME_WINDOWS: TimeWindow[] = ['budouci', 'probehle', 'vse'];
+
+/**
+ * Maps the ?when= URL param value to a TimeWindow.
+ * Returns DEFAULT_TIME_WINDOW for unknown or missing values.
+ */
+export function getTimeWindowFromWhenParam(when: string | null | undefined): TimeWindow {
+    if (when && VALID_TIME_WINDOWS.includes(when as TimeWindow)) {
+        return when as TimeWindow;
+    }
+    return DEFAULT_TIME_WINDOW;
+}
+
 export interface DateParams {
     dateFrom: string | undefined;
     dateTo: string | undefined;
@@ -67,6 +80,41 @@ export interface YearDateParams {
 
 export function yearToDateParams(year: number): YearDateParams {
     return {dateFrom: `${year}-01-01`, dateTo: `${year}-12-31`};
+}
+
+/**
+ * Combines year and time-window filters with AND semantics to produce API dateFrom/dateTo params.
+ *
+ * When year=Y and when=budouci: dateFrom=max(today, Y-01-01), dateTo=Y-12-31
+ * When year=Y and when=probehle: dateFrom=Y-01-01, dateTo=min(yesterday, Y-12-31)
+ * When year=Y and when=vse: dateFrom=Y-01-01, dateTo=Y-12-31
+ * When year=null: delegates entirely to time-window (no year constraint)
+ */
+export function combineYearAndTimeWindowToDateParams(
+    year: number | null,
+    timeWindow: TimeWindow,
+    today: string,
+): DateParams {
+    if (year === null) {
+        return timeWindowToDateParams(timeWindow, today);
+    }
+
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+
+    if (timeWindow === 'vse') {
+        return {dateFrom: yearStart, dateTo: yearEnd};
+    }
+
+    if (timeWindow === 'budouci') {
+        const dateFrom = today > yearStart ? today : yearStart;
+        return {dateFrom, dateTo: yearEnd};
+    }
+
+    // probehle: dateFrom=Y-01-01, dateTo=min(yesterday, Y-12-31)
+    const yesterday = yesterdayOf(today);
+    const dateTo = yesterday < yearEnd ? yesterday : yearEnd;
+    return {dateFrom: yearStart, dateTo};
 }
 
 export function getYearFromParams(

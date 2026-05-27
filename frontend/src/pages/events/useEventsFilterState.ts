@@ -2,15 +2,13 @@ import {useCallback, useEffect, useMemo, useRef} from "react";
 import {useSearchParams} from "react-router-dom";
 import type {EventsFilterValue} from "../../components/events/EventsFilterBar.tsx";
 import {
+    combineYearAndTimeWindowToDateParams,
     DEFAULT_TIME_WINDOW,
     getDefaultSortForTimeWindow,
-    getTimeWindowFromParams,
     getTodayIso,
-    getYearFromParams,
+    getTimeWindowFromWhenParam,
     REGISTERED_BY_ME,
     type TimeWindow,
-    timeWindowToDateParams,
-    yearToDateParams,
 } from "../../components/events/eventsFilterUtils.ts";
 
 interface DefaultSort {
@@ -28,27 +26,25 @@ interface EventsFilterState {
 export function useEventsFilterState(): EventsFilterState {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const urlDateFrom = searchParams.get('dateFrom');
-    const urlDateTo = searchParams.get('dateTo');
+    const urlYear = searchParams.get('year');
+    const urlWhen = searchParams.get('when');
     const urlQ = searchParams.get('q') ?? '';
     const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
     const urlEventTypeIds = searchParams.getAll('eventTypeId');
 
-    const selectedYear = getYearFromParams(urlDateFrom, urlDateTo);
-    const timeWindow: TimeWindow = selectedYear !== null ? 'vse' : getTimeWindowFromParams(urlDateFrom, urlDateTo);
+    const selectedYear: number | null = urlYear !== null ? parseInt(urlYear, 10) : null;
+    const timeWindow: TimeWindow = getTimeWindowFromWhenParam(urlWhen);
 
     const defaultAppliedRef = useRef(false);
     useEffect(() => {
         if (defaultAppliedRef.current) return;
         defaultAppliedRef.current = true;
 
-        if (!urlDateFrom && !urlDateTo) {
-            const today = getTodayIso();
-            const {dateFrom} = timeWindowToDateParams(DEFAULT_TIME_WINDOW, today);
+        if (!urlWhen) {
             setSearchParams(
                 (prev) => {
                     const next = new URLSearchParams(prev);
-                    if (dateFrom) next.set('dateFrom', dateFrom);
+                    next.set('when', DEFAULT_TIME_WINDOW);
                     return next;
                 },
                 {replace: true},
@@ -66,18 +62,21 @@ export function useEventsFilterState(): EventsFilterState {
     }), [urlQ, timeWindow, urlRegisteredByMe, urlEventTypeIds.join(','), selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleFilterChange = useCallback((next: EventsFilterValue) => {
-        const today = getTodayIso();
         setSearchParams((prev) => {
             const params = new URLSearchParams(prev);
+
             if (next.selectedYear !== null && next.selectedYear !== undefined) {
-                const {dateFrom, dateTo} = yearToDateParams(next.selectedYear);
-                params.set('dateFrom', dateFrom);
-                params.set('dateTo', dateTo);
+                params.set('year', String(next.selectedYear));
             } else {
-                const {dateFrom, dateTo} = timeWindowToDateParams(next.timeWindow, today);
-                if (dateFrom) { params.set('dateFrom', dateFrom); } else { params.delete('dateFrom'); }
-                if (dateTo) { params.set('dateTo', dateTo); } else { params.delete('dateTo'); }
+                params.delete('year');
             }
+
+            params.set('when', next.timeWindow);
+
+            // Remove legacy date params to avoid confusion
+            params.delete('dateFrom');
+            params.delete('dateTo');
+
             if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
             if (next.registeredByMe) { params.set('registeredBy', REGISTERED_BY_ME); } else { params.delete('registeredBy'); }
             params.delete('eventTypeId');
@@ -86,16 +85,19 @@ export function useEventsFilterState(): EventsFilterState {
         });
     }, [setSearchParams]);
 
+    const today = getTodayIso();
+    const combinedDateParams = combineYearAndTimeWindowToDateParams(selectedYear, timeWindow, today);
+
     const extraParams = useMemo((): Record<string, string | string[]> => {
         const params: Record<string, string | string[]> = {};
-        if (urlDateFrom) params.dateFrom = urlDateFrom;
-        if (urlDateTo) params.dateTo = urlDateTo;
+        if (combinedDateParams.dateFrom) params.dateFrom = combinedDateParams.dateFrom;
+        if (combinedDateParams.dateTo) params.dateTo = combinedDateParams.dateTo;
         if (urlQ && urlQ.length >= 2) params.q = urlQ;
         if (urlRegisteredByMe) params.registeredBy = REGISTERED_BY_ME;
         if (urlEventTypeIds.length > 0) params.eventTypeId = urlEventTypeIds;
         return params;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [urlDateFrom, urlDateTo, urlQ, urlRegisteredByMe, urlEventTypeIds.join(',')]);
+    }, [combinedDateParams.dateFrom, combinedDateParams.dateTo, urlQ, urlRegisteredByMe, urlEventTypeIds.join(',')]);
 
     const defaultSort = getDefaultSortForTimeWindow(timeWindow);
 

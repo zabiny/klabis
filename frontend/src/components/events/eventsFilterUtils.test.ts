@@ -1,8 +1,10 @@
 import {describe, expect, it} from 'vitest';
 import {
+    combineYearAndTimeWindowToDateParams,
     DEFAULT_TIME_WINDOW,
     getDefaultSortForTimeWindow,
     getTimeWindowFromParams,
+    getTimeWindowFromWhenParam,
     getYearFromParams,
     getYearRange,
     timeWindowToDateParams,
@@ -132,6 +134,92 @@ describe('eventsFilterUtils', () => {
             for (let i = 1; i < range.length; i++) {
                 expect(range[i]).toBe(range[i - 1] + 1);
             }
+        });
+    });
+
+    describe('getTimeWindowFromWhenParam', () => {
+        it('maps "budouci" to budouci', () => {
+            expect(getTimeWindowFromWhenParam('budouci')).toBe('budouci');
+        });
+
+        it('maps "probehle" to probehle', () => {
+            expect(getTimeWindowFromWhenParam('probehle')).toBe('probehle');
+        });
+
+        it('maps "vse" to vse', () => {
+            expect(getTimeWindowFromWhenParam('vse')).toBe('vse');
+        });
+
+        it('returns default when param is null', () => {
+            expect(getTimeWindowFromWhenParam(null)).toBe(DEFAULT_TIME_WINDOW);
+        });
+
+        it('returns default when param is unknown value', () => {
+            expect(getTimeWindowFromWhenParam('unknown')).toBe(DEFAULT_TIME_WINDOW);
+        });
+    });
+
+    describe('combineYearAndTimeWindowToDateParams — AND semantics', () => {
+        const today = '2024-06-15';
+
+        it('when year and Budoucí: dateFrom=max(today, Y-01-01), dateTo=Y-12-31', () => {
+            // today (2024-06-15) > 2024-01-01, so dateFrom = today
+            expect(combineYearAndTimeWindowToDateParams(2024, 'budouci', today)).toEqual({
+                dateFrom: '2024-06-15',
+                dateTo: '2024-12-31',
+            });
+        });
+
+        it('when year and Budoucí and today is before year start: dateFrom=Y-01-01, dateTo=Y-12-31', () => {
+            // today (2024-06-15) < 2025-01-01, so dateFrom = 2025-01-01
+            expect(combineYearAndTimeWindowToDateParams(2025, 'budouci', today)).toEqual({
+                dateFrom: '2025-01-01',
+                dateTo: '2025-12-31',
+            });
+        });
+
+        it('when year and Proběhlé: dateFrom=Y-01-01, dateTo=min(yesterday, Y-12-31)', () => {
+            // yesterday (2024-06-14) < 2024-12-31, so dateTo = yesterday
+            expect(combineYearAndTimeWindowToDateParams(2024, 'probehle', today)).toEqual({
+                dateFrom: '2024-01-01',
+                dateTo: '2024-06-14',
+            });
+        });
+
+        it('when year and Proběhlé and yesterday is after year end: dateFrom=Y-01-01, dateTo=Y-12-31', () => {
+            // today is 2025-06-15, yesterday is 2025-06-14, year is 2024, yesterday > 2024-12-31
+            expect(combineYearAndTimeWindowToDateParams(2024, 'probehle', '2025-06-15')).toEqual({
+                dateFrom: '2024-01-01',
+                dateTo: '2024-12-31',
+            });
+        });
+
+        it('when year and Vše: dateFrom=Y-01-01, dateTo=Y-12-31 (whole year)', () => {
+            expect(combineYearAndTimeWindowToDateParams(2024, 'vse', today)).toEqual({
+                dateFrom: '2024-01-01',
+                dateTo: '2024-12-31',
+            });
+        });
+
+        it('when no year and Budoucí: only dateFrom=today (no dateTo)', () => {
+            expect(combineYearAndTimeWindowToDateParams(null, 'budouci', today)).toEqual({
+                dateFrom: '2024-06-15',
+                dateTo: undefined,
+            });
+        });
+
+        it('when no year and Proběhlé: only dateTo=yesterday (no dateFrom)', () => {
+            expect(combineYearAndTimeWindowToDateParams(null, 'probehle', today)).toEqual({
+                dateFrom: undefined,
+                dateTo: '2024-06-14',
+            });
+        });
+
+        it('when no year and Vše: no date constraints', () => {
+            expect(combineYearAndTimeWindowToDateParams(null, 'vse', today)).toEqual({
+                dateFrom: undefined,
+                dateTo: undefined,
+            });
         });
     });
 });

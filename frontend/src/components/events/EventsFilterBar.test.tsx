@@ -256,14 +256,14 @@ describe('EventsFilterBar', () => {
             expect(options[0]).toHaveTextContent(labels.eventsFilter.noYear);
         });
 
-        it('calls onChange with selectedYear and timeWindow=vse when a year is selected', async () => {
+        it('calls onChange with selectedYear while keeping current timeWindow when a year is selected', async () => {
             const onChange = vi.fn();
             const currentYear = new Date().getFullYear();
             renderFilterBar({ onChange, value: { ...defaultValue, timeWindow: 'budouci' } });
             const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
             await userEvent.selectOptions(select, String(currentYear));
             expect(onChange).toHaveBeenCalledWith(
-                expect.objectContaining({ selectedYear: currentYear, timeWindow: 'vse' }),
+                expect.objectContaining({ selectedYear: currentYear, timeWindow: 'budouci' }),
             );
         });
 
@@ -296,8 +296,8 @@ describe('EventsFilterBar', () => {
         });
     });
 
-    describe('mutual exclusion: time window and year', () => {
-        it('clears selectedYear when time window changes', async () => {
+    describe('AND semantics: no mutual exclusion between year and time window', () => {
+        it('does NOT clear selectedYear when time window changes', async () => {
             const onChange = vi.fn();
             const currentYear = new Date().getFullYear();
             renderFilterBar({
@@ -305,9 +305,23 @@ describe('EventsFilterBar', () => {
                 value: { ...defaultValue, selectedYear: currentYear, timeWindow: 'vse' },
             });
             await userEvent.click(screen.getByRole('button', { name: labels.eventsFilter.budouci }));
-            expect(onChange).toHaveBeenCalledWith(
-                expect.objectContaining({ selectedYear: null, timeWindow: 'budouci' }),
-            );
+            const called = onChange.mock.calls[0][0] as EventsFilterValue;
+            expect(called.timeWindow).toBe('budouci');
+            expect(called.selectedYear).toBe(currentYear);
+        });
+
+        it('does NOT reset timeWindow to vse when a year is selected', async () => {
+            const onChange = vi.fn();
+            const currentYear = new Date().getFullYear();
+            renderFilterBar({
+                onChange,
+                value: { ...defaultValue, timeWindow: 'budouci', selectedYear: null },
+            });
+            const select = screen.getByLabelText(labels.eventsFilter.eventsFilterYear);
+            await userEvent.selectOptions(select, String(currentYear));
+            const called = onChange.mock.calls[0][0] as EventsFilterValue;
+            expect(called.selectedYear).toBe(currentYear);
+            expect(called.timeWindow).toBe('budouci');
         });
     });
 });
