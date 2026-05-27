@@ -14,11 +14,11 @@
 
 ## 3. Manual verification
 
-- [ ] 3.1 Run `./runLocalEnvironment.sh`, log in as admin (`ZBM9000`), navigate to a member detail and open the account — header shows that member's name and registration number
-- [ ] 3.2 Log in as club member (`ZBM9500`), open "Finance" — header shows the logged-in member's name and registration number
-- [ ] 3.3 Navigate between two different members' accounts as admin — header updates correctly for each
+- [x] 3.1 Run `./runLocalEnvironment.sh`, log in as admin (`ZBM9000`), navigate to a member detail and open the account — header shows that member's name and registration number
+- [x] 3.2 Log in as club member (`ZBM9500`), open "Finance" — header shows the logged-in member's name and registration number
+- [x] 3.3 Navigate between two different members' accounts as admin — header updates correctly for each
 
 ## 4. Spec sync and publishing
 
 - [x] 4.1 Run `npm run publish-frontend-resources` in `frontend/` so the change is reflected in the backend static bundle
-- [ ] 4.2 After review and merge, archive the change via `/openspec-archive-change` so the delta lands in `openspec/specs/member-accounts/spec.md`
+- [x] 4.2 After review and merge, archive the change via `/openspec-archive-change` so the delta lands in `openspec/specs/member-accounts/spec.md`
