@@ -14,6 +14,7 @@ Obě hodnoty pochází z ORIS a dnes nejsou v lokálním modelu závodu evidová
 ## What Changes
 
 - Závod získává nový atribut **ranking** (žebříček/série) — samostatný atribut nezávislý na typu závodu, hodnoty odpovídají kategoriím v ORIS (např. *Oblastní žebříček*, *Žebříček B*, *Český pohár*, *bez žebříčku*).
+- Zdrojem hodnoty rankingu je ORIS pole **`Level`** (`EventDetails.level`, dto `Level(int id, String shortName, String nameCZ, String nameEN)`). Konkrétní reprezentace na straně Klabis — zda využít `Level.id`, mapovaný enum, nebo samostatnou entitu — se rozhodne v `design.md` (Level.id sám o sobě pravděpodobně nestačí, např. pro zobrazení/lokalizaci).
 - Závod získává atribut **základní cena startovného** (`baseEntryFee`) v Kč.
 - Volitelně i informace o **navýšené ceně** za pozdější přihlášku (pokud ORIS poskytuje) — k pozdějšímu rozhodnutí v designu.
 - **Synchronizace z ORIS** je rozšířena o stažení rankingu a ceny startovného (při importu i při následné synchronizaci).
@@ -33,6 +34,6 @@ Obě hodnoty pochází z ORIS a dnes nejsou v lokálním modelu závodu evidová
 - **API:** rozšíření DTO závodu + form template pro editaci.
 - **Frontend:** zobrazení rankingu (chip/badge), zobrazení ceny startovného na detailu akce.
 - **Otevřené otázky pro design fázi:**
-  - Konkrétní enum hodnoty rankingu (zafixovat výčet, nebo open string?)
+  - Konkrétní reprezentace rankingu na straně Klabis (zdrojem je ORIS `Level`, ale Level.id pravděpodobně nestačí — uvážit ukládání celého snapshotu, mapovaný enum, nebo lookup tabulku)
   - Měna / formát ceny (CZK only, nebo víceměnové?)
   - Zda do tohoto changu zahrnout i navýšenou cenu za pozdní přihlášku
