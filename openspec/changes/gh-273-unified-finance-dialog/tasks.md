@@ -4,10 +4,10 @@ Vertical slices — every group is independently committable, testable, and adds
 
 ## 1. Backend — `accountOwner` HAL link on member-account
 
-- [ ] 1.1 Add failing test in `MemberAccountControllerTest` (or equivalent slice test) asserting the GET member-account response contains a HAL link with rel `accountOwner` whose href resolves to the corresponding `/members/{id}` resource
-- [ ] 1.2 Extend `MemberAccountPostprocessor` to add the `accountOwner` link via `klabisLinkTo(methodOn(MembersController.class).getMember(...))` (or the existing equivalent endpoint)
-- [ ] 1.3 Verify test passes; run the full finance module test suite
-- [ ] 1.4 Regenerate OpenAPI spec (`./gradlew generateOpenApi` or equivalent) — confirm `accountOwner` link rel appears in `MemberAccountResponse`
+- [x] 1.1 Add failing test in `MemberAccountControllerTest` (or equivalent slice test) asserting the GET member-account response contains a HAL link with rel `accountOwner` whose href resolves to the corresponding `/members/{id}` resource
+- [x] 1.2 Extend `MemberAccountPostprocessor` to add the `accountOwner` link via `klabisLinkTo(methodOn(MembersController.class).getMember(...))` (or the existing equivalent endpoint)
+- [x] 1.3 Verify test passes; run the full finance module test suite
+- [x] 1.4 Regenerate OpenAPI spec (`./gradlew generateOpenApi` or equivalent) — confirm `accountOwner` link rel appears in `MemberAccountResponse`
 
 ## 2. Frontend — regenerate API types & shared building blocks
 

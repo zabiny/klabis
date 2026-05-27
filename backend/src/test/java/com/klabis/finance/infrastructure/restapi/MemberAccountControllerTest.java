@@ -208,6 +208,19 @@ class MemberAccountControllerTest {
         }
 
         @Test
+        @DisplayName("response includes accountOwner link pointing to the member resource")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void shouldIncludeAccountOwnerLink() throws Exception {
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.accountOwner.href")
+                            .value(containsString("/api/members/" + MEMBER_UUID)));
+        }
+
+        @Test
         @DisplayName("returns 200 with deposit affordance for FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturnAccountWithDepositAffordanceForFinanceManager() throws Exception {

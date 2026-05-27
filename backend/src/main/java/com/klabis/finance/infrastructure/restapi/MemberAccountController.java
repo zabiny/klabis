@@ -19,6 +19,7 @@ import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.MemberController;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -246,5 +247,8 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
         klabisLinkTo(methodOn(MemberAccountController.class).listTransactions(
                 memberId.uuid(), null, null, null, null, Pageable.unpaged()))
                 .ifPresent(link -> model.add(link.withRel("transactions")));
+
+        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+                .ifPresent(link -> model.add(link.withRel("accountOwner")));
     }
 }
