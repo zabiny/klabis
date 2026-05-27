@@ -11,7 +11,7 @@ import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
-import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
 type TransactionItem = EntityModel<{
@@ -65,21 +65,13 @@ const TypeCell = ({type}: {type: string}): ReactElement => {
     );
 };
 
-const MemberNameOrFallback = (): ReactElement => {
-    const {error} = useHalRoute();
-    if (error) {
-        return <span>—</span>;
-    }
-    return <MemberName />;
-};
-
 const RecordedByCell = ({href}: {href: string | undefined}): ReactElement => {
     if (!href) {
         return <span>—</span>;
     }
     return (
         <HalRouteProvider routeLink={{href}}>
-            <MemberNameOrFallback />
+            <MemberName />
         </HalRouteProvider>
     );
 };
