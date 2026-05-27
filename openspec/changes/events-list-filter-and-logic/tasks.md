@@ -24,10 +24,10 @@
 
 ## 4. Frontend — Default year value
 
-- [ ] 4.0a Write failing UI test: opening the events list with no URL filters renders with the year selector set to the current year and the list scoped to that year.
-- [ ] 4.0b Change the default year-selector value from "no year" to the current year.
-- [ ] 4.0c Verify that loading an explicit `?year=` value (including a deliberate "no year" sentinel) still overrides the default.
-- [ ] 4.0d Make the failing test pass.
+- [x] 4.0a Write failing UI test: opening the events list with no URL filters renders with the year selector set to the current year and the list scoped to that year.
+- [x] 4.0b Change the default year-selector value from "no year" to the current year.
+- [x] 4.0c Verify that loading an explicit `?year=` value (including a deliberate "no year" sentinel) still overrides the default.
+- [x] 4.0d Make the failing test pass.
 
 ## 5. Frontend — URL state
 

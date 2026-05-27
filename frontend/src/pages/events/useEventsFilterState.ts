@@ -27,12 +27,15 @@ export function useEventsFilterState(): EventsFilterState {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlYear = searchParams.get('year');
+    const yearParamPresent = searchParams.has('year');
     const urlWhen = searchParams.get('when');
     const urlQ = searchParams.get('q') ?? '';
     const urlRegisteredByMe = searchParams.get('registeredBy') === REGISTERED_BY_ME;
     const urlEventTypeIds = searchParams.getAll('eventTypeId');
 
-    const selectedYear: number | null = urlYear !== null ? parseInt(urlYear, 10) : null;
+    const currentYear = new Date().getFullYear();
+    const parsedUrlYear = urlYear !== null && urlYear !== '' ? parseInt(urlYear, 10) : null;
+    const selectedYear: number | null = yearParamPresent ? parsedUrlYear : currentYear;
     const timeWindow: TimeWindow = getTimeWindowFromWhenParam(urlWhen);
 
     const defaultAppliedRef = useRef(false);
@@ -40,11 +43,15 @@ export function useEventsFilterState(): EventsFilterState {
         if (defaultAppliedRef.current) return;
         defaultAppliedRef.current = true;
 
-        if (!urlWhen) {
+        const needsYearDefault = !yearParamPresent;
+        const needsWhenDefault = !urlWhen;
+
+        if (needsYearDefault || needsWhenDefault) {
             setSearchParams(
                 (prev) => {
                     const next = new URLSearchParams(prev);
-                    next.set('when', DEFAULT_TIME_WINDOW);
+                    if (needsYearDefault) next.set('year', String(currentYear));
+                    if (needsWhenDefault) next.set('when', DEFAULT_TIME_WINDOW);
                     return next;
                 },
                 {replace: true},
@@ -68,7 +75,8 @@ export function useEventsFilterState(): EventsFilterState {
             if (next.selectedYear !== null && next.selectedYear !== undefined) {
                 params.set('year', String(next.selectedYear));
             } else {
-                params.delete('year');
+                // Empty string signals "user explicitly chose no year" — distinguishes from absent param (which defaults to current year)
+                params.set('year', '');
             }
 
             params.set('when', next.timeWindow);

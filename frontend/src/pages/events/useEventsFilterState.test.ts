@@ -19,12 +19,46 @@ describe('useEventsFilterState — basic URL load (legacy)', () => {
     });
 
     describe('URL load: no year or when params means null/default', () => {
-        it('shows null selectedYear when no ?year= in URL', () => {
+        it('defaults selectedYear to current year when no ?year= in URL', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
                 wrapper: wrapper('/'),
             });
             act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.selectedYear).toBe(2024);
+        });
+
+        it('defaults timeWindow to DEFAULT_TIME_WINDOW (budouci) when no ?when= in URL', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.timeWindow).toBe('budouci');
+        });
+    });
+
+    describe('default year — URL param semantics', () => {
+        it('keeps selectedYear=2024 when ?year=2024 is present (explicit param overrides default)', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024&when=budouci'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.selectedYear).toBe(2024);
+        });
+
+        it('keeps selectedYear=null when ?year= is present but empty (sentinel for no-year)', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=&when=vse'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
             expect(result.current.filterValue.selectedYear).toBeNull();
+        });
+
+        it('does NOT replace ?year=2024 with current year on first load', () => {
+            const {result} = renderHook(() => useEventsFilterState(), {
+                wrapper: wrapper('/?year=2024'),
+            });
+            act(() => { vi.advanceTimersByTime(0); });
+            expect(result.current.filterValue.selectedYear).toBe(2024);
         });
     });
 
@@ -148,11 +182,11 @@ describe('useEventsFilterState — AND semantics (year + time window independent
             expect(result.current.filterValue.timeWindow).toBe('vse');
         });
 
-        it('year=null when no ?year= param', () => {
+        it('year defaults to current year when no ?year= param', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
                 wrapper: wrapper('/?when=budouci'),
             });
-            expect(result.current.filterValue.selectedYear).toBeNull();
+            expect(result.current.filterValue.selectedYear).toBe(2024);
         });
     });
 
@@ -181,25 +215,25 @@ describe('useEventsFilterState — AND semantics (year + time window independent
             expect(result.current.extraParams.dateTo).toBe('2024-12-31');
         });
 
-        it('no year + budouci: only dateFrom=today', () => {
+        it('explicit no-year (?year=) + budouci: only dateFrom=today (no upper bound)', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
-                wrapper: wrapper('/?when=budouci'),
+                wrapper: wrapper('/?year=&when=budouci'),
             });
             expect(result.current.extraParams.dateFrom).toBe('2024-06-15');
             expect(result.current.extraParams.dateTo).toBeUndefined();
         });
 
-        it('no year + probehle: only dateTo=yesterday', () => {
+        it('explicit no-year (?year=) + probehle: only dateTo=yesterday (no lower bound)', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
-                wrapper: wrapper('/?when=probehle'),
+                wrapper: wrapper('/?year=&when=probehle'),
             });
             expect(result.current.extraParams.dateFrom).toBeUndefined();
             expect(result.current.extraParams.dateTo).toBe('2024-06-14');
         });
 
-        it('no year + vse: no date constraints', () => {
+        it('explicit no-year (?year=) + vse: no date constraints', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
-                wrapper: wrapper('/?when=vse'),
+                wrapper: wrapper('/?year=&when=vse'),
             });
             expect(result.current.extraParams.dateFrom).toBeUndefined();
             expect(result.current.extraParams.dateTo).toBeUndefined();
