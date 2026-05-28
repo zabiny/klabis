@@ -7,12 +7,14 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
+import com.klabis.events.application.BulkImportResult;
 import com.klabis.events.application.BulkSyncResult;
 import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.application.OrisBulkSyncPort;
+import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
@@ -30,6 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,6 +70,9 @@ class OrisEventControllerTest {
 
     @MockitoBean
     private OrisEventImportPort orisEventImportPort;
+
+    @MockitoBean
+    private OrisEventBulkImportPort orisEventBulkImportPort;
 
     @MockitoBean
     private OrisBulkSyncPort orisBulkSyncPort;
@@ -191,9 +197,9 @@ class OrisEventControllerTest {
     class ImportAffordanceTests {
 
         @Test
-        @DisplayName("should include importFromOris affordance when oris profile is active")
+        @DisplayName("should include importFromOris affordance when oris profile is active and user has EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldIncludeImportAffordanceWhenOrisActive() throws Exception {
+        void shouldIncludeImportAffordanceWhenOrisActiveAndManager() throws Exception {
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
@@ -203,6 +209,21 @@ class OrisEventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.importEvent.target").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include importEvent affordance when user lacks EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeImportAffordanceWithoutManageAuthority() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEvent").doesNotExist());
         }
     }
 
@@ -401,6 +422,143 @@ class OrisEventControllerTest {
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.syncAllUpcomingFromOris").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/events/import-batch")
+    class ImportBatchTests {
+
+        @Test
+        @DisplayName("should return 200 with BulkImportResult containing per-event status")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturnBulkImportResult() throws Exception {
+            BulkImportResult result = new BulkImportResult(2, 2, 0, List.of(
+                    new BulkImportResult.EventImportEntry(101, "Spring Sprint", LocalDate.of(2026, 6, 1), BulkImportResult.ImportStatus.IMPORTED, null),
+                    new BulkImportResult.EventImportEntry(102, "Summer Cup", LocalDate.of(2026, 7, 15), BulkImportResult.ImportStatus.IMPORTED, null)
+            ));
+            when(orisEventBulkImportPort.importEventsFromOris(List.of(101, 102))).thenReturn(result);
+
+            mockMvc.perform(
+                            post("/api/events/import-batch")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisIds\": [101, 102]}")
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalProcessed").value(2))
+                    .andExpect(jsonPath("$.successCount").value(2))
+                    .andExpect(jsonPath("$.failureCount").value(0))
+                    .andExpect(jsonPath("$.results[0].orisId").value(101))
+                    .andExpect(jsonPath("$.results[0].status").value("IMPORTED"))
+                    .andExpect(jsonPath("$.results[1].orisId").value(102));
+        }
+
+        @Test
+        @DisplayName("should return 200 with partial failure when one event fails")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn200WithPartialFailure() throws Exception {
+            BulkImportResult result = new BulkImportResult(2, 1, 1, List.of(
+                    new BulkImportResult.EventImportEntry(201, "Good Event", LocalDate.of(2026, 6, 1), BulkImportResult.ImportStatus.IMPORTED, null),
+                    new BulkImportResult.EventImportEntry(202, null, null, BulkImportResult.ImportStatus.FAILED, "ORIS event 202 already imported")
+            ));
+            when(orisEventBulkImportPort.importEventsFromOris(List.of(201, 202))).thenReturn(result);
+
+            mockMvc.perform(
+                            post("/api/events/import-batch")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisIds\": [201, 202]}")
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.failureCount").value(1))
+                    .andExpect(jsonPath("$.results[1].status").value("FAILED"))
+                    .andExpect(jsonPath("$.results[1].error").value("ORIS event 202 already imported"));
+        }
+
+        @Test
+        @DisplayName("should return 400 when orisIds list is empty")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400ForEmptyList() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/import-batch")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisIds\": []}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 400 when orisIds list exceeds 50 entries")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400WhenListExceedsMaxSize() throws Exception {
+            String ids = java.util.stream.IntStream.rangeClosed(1, 51)
+                    .mapToObj(Integer::toString)
+                    .collect(java.util.stream.Collectors.joining(", ", "[", "]"));
+
+            mockMvc.perform(
+                            post("/api/events/import-batch")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisIds\": " + ids + "}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/import-batch")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisIds\": [101]}")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events — importEventsBatch affordance visibility")
+    class ImportBatchAffordanceTests {
+
+        @Test
+        @DisplayName("should include importEventsBatch affordance when oris profile active and user has EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeImportBatchAffordanceWhenOrisActiveAndManager() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEventsBatch.target").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include importEventsBatch affordance when user lacks EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeImportBatchAffordanceWithoutManageAuthority() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEventsBatch").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should also keep importEvent affordance alongside importEventsBatch")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldKeepImportEventAffordanceAlongsideImportBatch() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEvent.target").exists())
+                    .andExpect(jsonPath("$._templates.importEventsBatch.target").exists());
         }
     }
 }

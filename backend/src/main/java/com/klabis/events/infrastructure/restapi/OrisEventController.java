@@ -3,8 +3,10 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
+import com.klabis.events.application.BulkImportResult;
 import com.klabis.events.application.BulkSyncResult;
 import com.klabis.events.application.OrisBulkSyncPort;
+import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.oris.OrisIntegrationComponent;
@@ -14,12 +16,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -34,10 +39,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class OrisEventController {
 
     private final OrisEventImportPort orisEventImportPort;
+    private final OrisEventBulkImportPort orisEventBulkImportPort;
     private final OrisBulkSyncPort orisBulkSyncPort;
 
-    OrisEventController(OrisEventImportPort orisEventImportPort, OrisBulkSyncPort orisBulkSyncPort) {
+    OrisEventController(OrisEventImportPort orisEventImportPort,
+                        OrisEventBulkImportPort orisEventBulkImportPort,
+                        OrisBulkSyncPort orisBulkSyncPort) {
         this.orisEventImportPort = orisEventImportPort;
+        this.orisEventBulkImportPort = orisEventBulkImportPort;
         this.orisBulkSyncPort = orisBulkSyncPort;
     }
 
@@ -87,4 +96,27 @@ class OrisEventController {
         EntityModel<BulkSyncResult> model = EntityModel.of(result);
         return ResponseEntity.ok(model);
     }
+
+    @PostMapping(value = "/import-batch", consumes = "application/json")
+    @HasAuthority(Authority.EVENTS_MANAGE)
+    @Operation(
+            summary = "Batch import events from ORIS",
+            description = "Imports multiple ORIS events in a single request. Each event is processed independently; "
+                        + "a failure to import one event does not prevent the others from being imported. "
+                        + "Always returns 200 — check failureCount in the response body for partial failures."
+    )
+    @ApiResponse(responseCode = "200", description = "Batch import completed; inspect failureCount for partial failures")
+    public ResponseEntity<EntityModel<BulkImportResult>> importEventsBatch(
+            @Parameter(description = "Batch import command with list of ORIS event IDs")
+            @Valid @RequestBody ImportBatchRequest request) {
+
+        BulkImportResult result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
+        return ResponseEntity.ok(EntityModel.of(result));
+    }
 }
+
+record ImportBatchRequest(
+        @NotEmpty(message = "orisIds must not be empty")
+        @Size(max = 50, message = "orisIds must not contain more than 50 entries")
+        List<Integer> orisIds
+) {}
