@@ -243,6 +243,24 @@
     }
 
     /* ==========================================
+       FORM SELECT STYLES
+       Custom chevron placed inside the field, right
+       after the value (consistent across browsers).
+       ========================================== */
+    .form-select {
+        @apply appearance-none bg-no-repeat pr-8;
+        /* Light-mode chevron (grey #6b7280). Dark mode overrides the colour below. */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+        background-position: right 0.5rem center;
+        background-size: 1.1em 1.1em;
+    }
+
+    .dark .form-select {
+        /* Lighter chevron (grey #9ca3af) for contrast on dark backgrounds. */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    }
+
+    /* ==========================================
        BUTTON SYSTEM
        ========================================== */
     .btn-base {

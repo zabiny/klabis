@@ -88,7 +88,7 @@ export const ImportOrisEventModal = ({
 
             {fetchState === 'success' && events.length > 0 && (
                 <select
-                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                    className="form-select w-full rounded-md border border-border bg-surface pl-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     value={selectedId}
                     onChange={(e) => setSelectedId(e.target.value)}
                     aria-label="Vyberte závod k importu"

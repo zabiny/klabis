@@ -93,7 +93,7 @@ export function EventsFilterBar({
                     aria-label={labels.eventsFilter.eventsFilterYear}
                     value={value.selectedYear ?? ''}
                     onChange={(e) => handleYearChange(e.target.value)}
-                    className="text-sm border border-border rounded px-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="form-select text-sm border border-border rounded pl-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                     <option value="">{labels.eventsFilter.noYear}</option>
                     {YEAR_OPTIONS.map((y) => (

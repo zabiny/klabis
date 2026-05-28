@@ -42,21 +42,9 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
             selectBaseClasses,
             error && errorSelectClasses,
             className,
-            // Add right padding for dropdown arrow
-            'pr-10',
-            // Add background image for custom arrow
-            'bg-no-repeat',
-            'bg-right-4',
-            'bg-[length:20px_20px]'
+            // Add right padding so the value never overlaps the arrow
+            'pr-10'
         )
-
-        // Simple inline SVG for dropdown arrow
-        const arrowSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23666'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E`
-
-        const selectStyleWithArrow = {
-            ...selectProps.style,
-            backgroundImage: `url('${arrowSvg}')`,
-        } as React.CSSProperties
 
         return (
             <FieldWrapper
@@ -73,7 +61,6 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                         disabled={disabled}
                         multiple={multiple}
                         className={selectClasses}
-                        style={selectStyleWithArrow}
                         {...selectProps}
                     >
                         {placeholder && (
@@ -92,12 +79,12 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                         ))}
                     </select>
 
-                    {/* Custom arrow for non-disabled state */}
+                    {/* Custom chevron, placed inside the field right after the value */}
                     {!disabled && (
                         <div
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-text-tertiary">
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-text-tertiary">
                             <svg
-                                className="w-5 h-5"
+                                className="w-4 h-4"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -106,7 +93,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={2}
-                                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                                    d="M6 9l6 6 6-6"
                                 />
                             </svg>
                         </div>

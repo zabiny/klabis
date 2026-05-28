@@ -58,7 +58,7 @@ export const Pagination = ({
                     id="rows-per-page"
                     value={rowsPerPage}
                     onChange={handleRowsPerPageChange}
-                    className="form-input py-1 px-2 text-sm h-9 bg-surface-base border border-border rounded-md text-text-primary"
+                    className="form-select py-1 pl-2 text-sm h-9 bg-surface-base border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                     {rowsPerPageOptions.map((option) => (
                         <option key={option} value={option}>
