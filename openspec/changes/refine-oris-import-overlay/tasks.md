@@ -18,10 +18,10 @@
 
 ## 3. Frontend — duplicitní počet, oprava výsledku a dark theme
 
-- [ ] 3.1 Odstranit duplicitní indikaci počtu vybraných ve footeru `ImportOrisEventModal` (ponechat počet jen v tlačítku "Importovat vybrané (N)", odebrat levý "Vybráno: N")
-- [ ] 3.2 Opravit porovnání statusu ve výsledkovém panelu na case-insensitive vůči `imported`/`failed` (úspěch → zelené zaškrtnutí), upravit FE typ `BulkImportResultItem.status` / normalizaci tak, aby přijal hodnotu z API (`IMPORTED`/`FAILED`)
-- [ ] 3.3 Opravit dark-theme styl vybrané položky seznamu: použít theme-aware třídy tak, aby vybraný stav byl jasně odlišný od hover highlightu v light i dark theme
-- [ ] 3.4 Frontend testy: vybraná položka má rozlišitelný styl; footer ukazuje počet jen jednou; výsledkový panel renderuje success ikonu i pro uppercase status z API; seznam nezobrazuje již importované (na úrovni dat z API)
+- [x] 3.1 Odstranit duplicitní indikaci počtu vybraných ve footeru `ImportOrisEventModal` (ponechat počet jen v tlačítku "Importovat vybrané (N)", odebrat levý "Vybráno: N")
+- [x] 3.2 Opravit porovnání statusu ve výsledkovém panelu na case-insensitive vůči `imported`/`failed` (úspěch → zelené zaškrtnutí), upravit FE typ `BulkImportResultItem.status` / normalizaci tak, aby přijal hodnotu z API (`IMPORTED`/`FAILED`)
+- [x] 3.3 Opravit dark-theme styl vybrané položky seznamu: použít theme-aware třídy tak, aby vybraný stav byl jasně odlišný od hover highlightu v light i dark theme
+- [x] 3.4 Frontend testy: vybraná položka má rozlišitelný styl; footer ukazuje počet jen jednou; výsledkový panel renderuje success ikonu i pro uppercase status z API; seznam nezobrazuje již importované (na úrovni dat z API)
 
 ## 4. Spec sync a uzavření
 
