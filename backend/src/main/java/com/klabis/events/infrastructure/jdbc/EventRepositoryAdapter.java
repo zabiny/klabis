@@ -21,6 +21,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -174,6 +176,20 @@ class EventRepositoryAdapter implements EventRepository {
         long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
 
         return new PageImpl<>(results, pageable, total);
+    }
+
+    @Override
+    public Set<Integer> findImportedOrisIds(Collection<Integer> candidateOrisIds) {
+        if (candidateOrisIds.isEmpty()) {
+            return Set.of();
+        }
+        MapSqlParameterSource params = new MapSqlParameterSource("ids", candidateOrisIds);
+        List<Integer> found = namedJdbc.query(
+                "SELECT oris_id FROM events WHERE oris_id IN (:ids)",
+                params,
+                (rs, rowNum) -> rs.getInt(1)
+        );
+        return new HashSet<>(found);
     }
 
     @Override
