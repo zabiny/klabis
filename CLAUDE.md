@@ -47,6 +47,10 @@ For frontend testing prefer http://localhost:3000 because of that HMR auto reloa
 
 **CRITICAL:** Always check if services are already running before starting new processes (`lsof -i :8443`, `lsof -i :3000`, or check IntelliJ Run tool window).
 
+### Design decisions
+
+Non-obvious architectural choices are recorded as ADRs in [`docs/design-decisions.md`](docs/design-decisions.md). **Read that file before proposing significant architectural changes** — the reasoning behind the auto-config layout, optional `myClubId`, cache-manager fallback, enum choices, and package structure is documented there. Add a new `ADR-NNN` section for any similarly-sized decision introduced in the future.
+
 ### Common best practises
 
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
@@ -127,3 +131,6 @@ refactor(users): extract password validation to service
 
 ## OpenSpec Workflow
 - Always use the openspec skill for creating proposals. Do not write proposals manually. Follow the skill's directory naming conventions.
+- use correct openspec schema for the proposal:
+  - spec-driven : when proposal is about a new feature or a change to an existing feature (= requires update of specification)
+  - spec-free : when proposal is about refactoring, code-cleanup and changes without end-user functional change (= no specification update required)

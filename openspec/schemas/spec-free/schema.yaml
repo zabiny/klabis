@@ -1,0 +1,121 @@
+name: spec-free
+version: 1
+description: Spec-free workflow for changes that do NOT alter functional behavior (refactoring, cleanup, internal improvements) - proposal → [design] → tasks. No specs delta required.
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Initial proposal document outlining the change
+    template: proposal.md
+    instruction: |
+      Create the proposal document that establishes WHY this change is needed.
+
+      **PRECONDITION (HARD GATE):** The spec-free schema MUST NOT be used when the change
+      modifies, adds, or removes user-observable functionality, business rules, or any
+      behavior described in `openspec/specs/`. Before writing this proposal:
+
+      1. Read related specifications under `openspec/specs/`.
+      2. Verify the change is purely internal: refactoring, cleanup, dependency bumps,
+         test improvements, documentation, performance tuning that does not change
+         observable behavior, or developer-experience changes.
+      3. If the change would require an ADDED/MODIFIED/REMOVED requirement in any spec,
+         STOP and recommend the standard `spec-driven` schema instead. Do not produce
+         a spec-free proposal.
+
+      Sections:
+
+      - **Why**: 1-2 sentences on the problem or motivation. What internal issue or
+        opportunity does this address? Why now?
+      - **What Changes**: Bullet list of internal changes (code, structure, tooling).
+        Be specific about what is being refactored, restructured, or cleaned up.
+        Mark anything that could affect API consumers or behavior — if such an item
+        appears, abort and switch to `spec-driven`.
+      - **No Behavior Change Justification**: Explicitly state why this change does
+        NOT alter user-facing behavior. List the specs that were reviewed and confirmed
+        unaffected (e.g., `members/spec.md`, `events/spec.md`).
+      - **Impact**: Affected code, modules, build, or developer workflow.
+
+      Keep it concise (1 page). Focus on the "why" not the "how" -
+      implementation details belong in design.md if needed.
+    requires: []
+
+  - id: design
+    generates: design.md
+    description: Optional technical design document - only for complex internal changes
+    template: design.md
+    instruction: |
+      Create the design document ONLY if the internal change is complex enough to
+      warrant explicit architectural reasoning before coding. Skip this artifact for
+      straightforward refactorings.
+
+      When to include design.md:
+      - Cross-cutting refactoring (multiple modules)
+      - Introduces or removes an architectural pattern
+      - Significant restructuring of internal data flow or boundaries
+      - Migration with non-trivial rollback considerations
+      - Multiple alternative approaches worth documenting
+
+      When to SKIP design.md:
+      - Single-module rename or extract
+      - Small code-quality fix
+      - Test-only changes
+      - Mechanical replacements
+
+      Sections (when used):
+      - **Context**: Current internal state and constraints
+      - **Goals / Non-Goals**: What the refactoring achieves and explicitly excludes
+      - **Decisions**: Key technical choices with rationale and alternatives considered
+      - **Risks / Trade-offs**: [Risk] → Mitigation
+      - **Migration Plan**: Steps to deploy safely, rollback strategy
+      - **Open Questions**: Outstanding unknowns to resolve
+
+      Reference the proposal for motivation. Do NOT reference specs - this schema
+      is explicitly for changes that do not touch specs.
+    requires:
+      - proposal
+    optional: true
+
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: |
+      Create the task list that breaks down the implementation work.
+
+      **IMPORTANT: Follow the template below exactly.** The apply phase parses
+      checkbox format to track progress. Tasks not using `- [ ]` won't be tracked.
+
+      Guidelines:
+      - Group related tasks under ## numbered headings
+      - Each task MUST be a checkbox: `- [ ] X.Y Task description`
+      - Tasks should be small enough to complete in one session
+      - Order tasks by dependency (what must be done first?)
+      - Include verification tasks: existing tests must still pass without modification
+        (or with only mechanical updates that preserve assertions)
+
+      Example:
+      ```
+      ## 1. Preparation
+
+      - [ ] 1.1 Identify all call sites of X
+      - [ ] 1.2 Confirm test coverage of affected paths
+
+      ## 2. Refactoring
+
+      - [ ] 2.1 Extract Y into new class
+      - [ ] 2.2 Update call sites
+      - [ ] 2.3 Run full test suite, confirm no behavior change
+      ```
+
+      Reference the proposal for motivation, design (if present) for approach.
+      Each task should be verifiable.
+    requires:
+      - proposal
+
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks, mark complete as you go.
+    Pause if you hit blockers or discover the change actually requires a spec
+    update - in that case stop and recommend converting to the spec-driven schema.
