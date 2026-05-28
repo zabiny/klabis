@@ -488,7 +488,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("No Location Event"))
-                .andExpect(jsonPath("$.location").isEmpty());
+                .andExpect(jsonPath("$.location").doesNotExist());
     }
 
     @Test
