@@ -109,6 +109,24 @@ export const labels = {
         failuresHeading: 'Chyby:',
     },
 
+    orisImport: {
+        dialogTitle: 'Importovat z ORIS',
+        selectAll: 'Vybrat vše',
+        selectedCount: (n: number) => `Vybráno: ${n}`,
+        selectedOf: (selected: number, total: number) => `Vybráno ${selected} z ${total} závodů`,
+        showOnlySelected: 'Zobrazit jen vybrané',
+        clearSelection: 'Zrušit výběr',
+        shownOf: (shown: number, total: number) => `zobrazeno ${shown} z ${total}`,
+        importSelected: (n: number) => `Importovat vybrané (${n})`,
+        loadingMessage: 'Komunikuji s ORIS…',
+        emptyHeading: 'Žádné závody k importu',
+        emptyHint: 'Zkuste změnit oblast.',
+        resultTitle: 'Výsledek importu',
+        resultSummary: (success: number, total: number) => `Naimportováno ${success} z ${total}`,
+        importFailed: 'Import se nezdařil. Zkuste to prosím znovu.',
+        done: 'Hotovo',
+    },
+
     fields: {
         eventCoordinatorId: 'Vedoucí',
         eventDate: 'Datum konání',

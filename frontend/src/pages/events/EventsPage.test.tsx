@@ -63,7 +63,11 @@ vi.mock('../../hooks/useOrisEventImport', () => ({
         isSubmitting: false,
         submitError: null,
         onRegionChange: vi.fn(),
-        onImport: vi.fn(),
+        selectedIds: new Set<number>(),
+        onToggleId: vi.fn(),
+        onToggleAll: vi.fn(),
+        onImportBatch: vi.fn(),
+        importResult: null,
     }),
 }));
 
@@ -270,6 +274,42 @@ describe('EventsPage', () => {
     });
 
     describe('"Importovat z ORIS" button', () => {
+        it('shows button when importEventsBatch template exists in HAL response', () => {
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {
+                    importEventsBatch: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/import-batch',
+                        title: 'Importovat z ORIS',
+                    }),
+                },
+            };
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getByRole('button', {name: /importovat z oris/i})).toBeInTheDocument();
+        });
+
+        it('prefers importEventsBatch over importEvent when both are present', () => {
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {
+                    importEventsBatch: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/import-batch',
+                        title: 'Importovat z ORIS',
+                    }),
+                    importEvent: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/import',
+                        title: 'Importovat z ORIS',
+                    }),
+                },
+            };
+            renderPage(createMockPageData(resourceData));
+            // Only one button rendered (not duplicated)
+            expect(screen.getAllByRole('button', {name: /importovat z oris/i})).toHaveLength(1);
+        });
+
         it('shows button when importEvent template exists in HAL response', () => {
             const resourceData: HalResponse = {
                 _links: {self: {href: '/api/events'}},

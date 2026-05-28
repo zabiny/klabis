@@ -111,14 +111,16 @@ export const EventsPage = (): ReactElement => {
         {enabled: newRegistrationState !== null, staleTime: 0, gcTime: 0, retry: false},
     );
 
+    const importBatchTemplate = resourceData?._templates?.importEventsBatch;
     const importTemplate = resourceData?._templates?.importEvent;
+    const activeImportTemplate = importBatchTemplate ?? importTemplate;
     const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
-        importTemplate?.target ?? '',
+        activeImportTemplate?.target ?? '',
         isImportModalOpen,
-        {onImported: () => setIsImportModalOpen(false)},
+        {onImported: () => route.refetch()},
     );
 
     const openActionModal = (event: EventListData, templateName: string) => {
@@ -171,7 +173,7 @@ export const EventsPage = (): ReactElement => {
                             {labels.templates.syncAllUpcomingFromOris}
                         </Button>
                     )}
-                    {importTemplate && (
+                    {activeImportTemplate && (
                         <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
                             {labels.templates.importEvent}
                         </Button>
@@ -329,7 +331,7 @@ export const EventsPage = (): ReactElement => {
             </HalEmbeddedTable>
         </div>
 
-        {importTemplate && (
+        {activeImportTemplate && (
             <ImportOrisEventModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}

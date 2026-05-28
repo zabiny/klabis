@@ -8,3 +8,18 @@ export interface OrisEvent {
 
 export const ORIS_REGION_KEYS = ['JIHOMORAVSKA', 'MORAVA', 'CR'] as const;
 export type OrisRegionKey = typeof ORIS_REGION_KEYS[number];
+
+export interface BulkImportResultItem {
+    orisId: number;
+    name: string | null;
+    date: string | null;
+    status: 'imported' | 'failed';
+    error?: string;
+}
+
+export interface BulkImportResult {
+    totalProcessed: number;
+    successCount: number;
+    failureCount: number;
+    results: BulkImportResultItem[];
+}
