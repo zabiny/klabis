@@ -21,6 +21,9 @@ export interface ImportOrisEventModalProps {
     onToggleAll: () => void;
     onImportBatch: () => void;
     importResult: BulkImportResult | null;
+    isAllSelected: boolean;
+    isSomeSelected: boolean;
+    canSubmit: boolean;
 }
 
 export const ImportOrisEventModal = ({
@@ -37,16 +40,11 @@ export const ImportOrisEventModal = ({
     onToggleAll,
     onImportBatch,
     importResult,
+    isAllSelected,
+    isSomeSelected,
+    canSubmit,
 }: ImportOrisEventModalProps) => {
     const selectedCount = selectedIds.size;
-    const allSelected = events.length > 0 && selectedCount === events.length;
-    const someSelected = selectedCount > 0 && !allSelected;
-
-    const isSubmitDisabled =
-        fetchState !== 'success' ||
-        events.length === 0 ||
-        selectedCount === 0 ||
-        isSubmitting;
 
     if (importResult) {
         return (
@@ -103,7 +101,7 @@ export const ImportOrisEventModal = ({
                 <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
                     {labels.buttons.cancel}
                 </Button>
-                <Button onClick={onImportBatch} disabled={isSubmitDisabled} loading={isSubmitting}>
+                <Button onClick={onImportBatch} disabled={!canSubmit} loading={isSubmitting}>
                     {isSubmitting
                         ? labels.buttons.importing
                         : labels.orisImport.importSelected(selectedCount)}
@@ -157,9 +155,9 @@ export const ImportOrisEventModal = ({
                             type="checkbox"
                             id="select-all-events"
                             aria-label={labels.orisImport.selectAll}
-                            checked={allSelected}
+                            checked={isAllSelected}
                             ref={(el) => {
-                                if (el) el.indeterminate = someSelected;
+                                if (el) el.indeterminate = isSomeSelected;
                             }}
                             onChange={onToggleAll}
                             className="w-4 h-4 text-primary border-border rounded focus:ring-primary"

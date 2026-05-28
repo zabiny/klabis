@@ -22,6 +22,9 @@ export interface UseOrisEventImportResult {
     onToggleAll: () => void;
     onImportBatch: () => void;
     importResult: BulkImportResult | null;
+    isAllSelected: boolean;
+    isSomeSelected: boolean;
+    canSubmit: boolean;
 }
 
 export function useOrisEventImport(
@@ -37,6 +40,8 @@ export function useOrisEventImport(
     const onImportedRef = useRef(options.onImported);
     onImportedRef.current = options.onImported;
     const {invalidateAllCaches} = useFormCacheInvalidation();
+    const invalidateAllCachesRef = useRef(invalidateAllCaches);
+    invalidateAllCachesRef.current = invalidateAllCaches;
 
     useEffect(() => {
         if (isOpen) {
@@ -58,6 +63,10 @@ export function useOrisEventImport(
     const fetchState: OrisImportFetchState = isError ? 'error' : isSuccess ? 'success' : 'loading';
 
     const events = data ?? [];
+
+    const isAllSelected = events.length > 0 && selectedIds.size === events.length;
+    const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
+    const canSubmit = fetchState === 'success' && events.length > 0 && selectedIds.size > 0 && !isSubmitting;
 
     const {mutate} = useAuthorizedMutation({method: 'POST'});
 
@@ -101,7 +110,7 @@ export function useOrisEventImport(
                     setIsSubmitting(false);
                     const result = responseData as BulkImportResult;
                     setImportResult(result);
-                    await invalidateAllCaches();
+                    await invalidateAllCachesRef.current();
                     onImportedRef.current?.();
                 },
                 onError: () => {
@@ -110,7 +119,7 @@ export function useOrisEventImport(
                 },
             },
         );
-    }, [selectedIds, batchImportHref, mutate, invalidateAllCaches]);
+    }, [selectedIds, batchImportHref, mutate]);
 
     return {
         events,
@@ -124,5 +133,8 @@ export function useOrisEventImport(
         onToggleAll,
         onImportBatch,
         importResult,
+        isAllSelected,
+        isSomeSelected,
+        canSubmit,
     };
 }
