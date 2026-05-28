@@ -240,11 +240,10 @@ public class EventController {
         klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, eventTypeId, pageable, null)).ifPresent(link -> {
             Link selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
-            if (orisIntegrationActive) {
+            if (orisIntegrationActive && hasManageAuthority) {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
-                if (hasManageAuthority) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
-                }
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEventsBatch(null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
             }
             pagedModel.add(selfLink);
         });
