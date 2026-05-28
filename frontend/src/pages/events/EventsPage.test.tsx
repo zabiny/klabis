@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -185,9 +185,28 @@ describe('EventsPage', () => {
             expect(screen.getByText('15. 3. 2025')).toBeInTheDocument();
         });
 
-        it('shows relevant deadline and badge when multiple deadlines present', () => {
-            renderWithEvents([buildEventRow({deadlines: ['2025-03-01', '2025-04-01', '2025-04-15']})]);
-            expect(screen.getByTitle(/1\. 4\. 2025|1\. 3\. 2025|15\. 4\. 2025/)).toBeInTheDocument();
+        it('shows the active deadline ordinal badge when multiple deadlines present', () => {
+            // all three in the past on 2025-05-09 → active is the last (3rd), no tooltip
+            renderWithEvents([buildEventRow({deadlines: ['2025-03-01', '2025-04-01', '2025-04-10']})]);
+            expect(screen.getByText('10. 4. 2025')).toBeInTheDocument();
+            expect(screen.getByText('3. termín')).toBeInTheDocument();
+        });
+
+        it('lists future deadlines in the tooltip when later deadlines remain', () => {
+            // active is the 1st deadline; 2nd and 3rd are still in the future
+            renderWithEvents([buildEventRow({deadlines: ['2025-05-20', '2025-06-01', '2025-06-15']})]);
+            expect(screen.getByText('20. 5. 2025')).toBeInTheDocument();
+            expect(screen.getByText('1. termín')).toBeInTheDocument();
+            fireEvent.mouseEnter(screen.getByText('1. termín'));
+            const tooltip = screen.getByRole('tooltip');
+            expect(tooltip).toHaveTextContent('2. termín: 1. 6. 2025');
+            expect(tooltip).toHaveTextContent('3. termín: 15. 6. 2025');
+        });
+
+        it('shows no badge for a single-deadline event', () => {
+            renderWithEvents([buildEventRow({deadlines: ['2025-05-20']})]);
+            expect(screen.getByText('20. 5. 2025')).toBeInTheDocument();
+            expect(screen.queryByText(/termín/)).not.toBeInTheDocument();
         });
 
         it('shows first future deadline as relevant when first deadline has already passed', () => {

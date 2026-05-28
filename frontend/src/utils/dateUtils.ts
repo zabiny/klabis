@@ -8,6 +8,20 @@ export function getRelevantDeadlineIndex(deadlines: string[], todayIso: string):
 }
 
 /**
+ * Returns the deadlines that are still in the future (>= today), each paired
+ * with its 1-based position within the original chronological list, so the
+ * ordinal stays stable even after past deadlines are hidden.
+ */
+export function getFutureDeadlines(
+    deadlines: string[],
+    todayIso: string,
+): Array<{date: string; ordinal: number}> {
+    return deadlines
+        .map((date, index) => ({date, ordinal: index + 1}))
+        .filter(({date}) => date >= todayIso);
+}
+
+/**
  * Returns today's date as an ISO string (YYYY-MM-DD) in local time.
  */
 export function getTodayIso(): string {

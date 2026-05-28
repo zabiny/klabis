@@ -7,7 +7,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
-import {formatDate, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
+import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
 import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
 import {getActionVariant} from "../../utils/actionVariants.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -16,7 +16,7 @@ import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
-import {Button, DetailRow, Modal} from "../../components/UI";
+import {Button, DetailRow, Modal, Tooltip} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
@@ -273,21 +273,32 @@ export const EventsPage = (): ReactElement => {
                                const event = item as unknown as EventListData;
                                const deadlines = event.deadlines;
                                if (!deadlines || deadlines.length === 0) return null;
-                               const relevantIndex = getRelevantDeadlineIndex(deadlines, getTodayIso());
+                               const today = getTodayIso();
+                               const relevantIndex = getRelevantDeadlineIndex(deadlines, today);
                                const primary = deadlines[relevantIndex];
-                               const otherCount = deadlines.length - 1;
-                               const otherDates = deadlines.filter((_, i) => i !== relevantIndex).map(d => formatDate(d));
+                               const activeOrdinal = relevantIndex + 1;
+
+                               const badge = deadlines.length > 1 && (
+                                   <span className="inline-flex items-center justify-center px-1.5 h-5 rounded-full bg-primary text-white text-xs font-medium whitespace-nowrap">
+                                       {labels.ui.deadlineOrdinalShort(activeOrdinal)}
+                                   </span>
+                               );
+
+                               const futureDeadlines = getFutureDeadlines(deadlines, today)
+                                   .filter(({ordinal}) => ordinal > activeOrdinal);
+
                                return (
                                    <span className="inline-flex items-center gap-1.5">
                                        <span>{formatDate(primary)}</span>
-                                       {otherCount > 0 && (
-                                           <span
-                                               title={otherDates.join(', ')}
-                                               className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-xs font-medium cursor-help"
+                                       {badge && (futureDeadlines.length > 0 ? (
+                                           <Tooltip
+                                               content={futureDeadlines
+                                                   .map(({date, ordinal}) => `${labels.ui.deadlineOrdinal(ordinal)} ${formatDate(date)}`)
+                                                   .join('\n')}
                                            >
-                                               +{otherCount}
-                                           </span>
-                                       )}
+                                               <span className="cursor-help">{badge}</span>
+                                           </Tooltip>
+                                       ) : badge)}
                                    </span>
                                );
                            }}>{labels.tables.registrationDeadline}</TableCell>

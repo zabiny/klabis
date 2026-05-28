@@ -1,4 +1,4 @@
-import {formatDate, getRelevantDeadlineIndex} from './dateUtils';
+import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from './dateUtils';
 
 describe('formatDate', () => {
     describe('Valid Dates', () => {
@@ -272,5 +272,32 @@ describe('getRelevantDeadlineIndex', () => {
 
     it('treats today as not yet passed (deadline on today is still relevant)', () => {
         expect(getRelevantDeadlineIndex(['2025-05-09', '2099-12-31'], '2025-05-09')).toBe(0);
+    });
+});
+
+describe('getFutureDeadlines', () => {
+    it('keeps the original 1-based ordinal after filtering past deadlines', () => {
+        const result = getFutureDeadlines(['2020-01-01', '2099-06-01', '2099-12-31'], '2025-05-09');
+        expect(result).toEqual([
+            {date: '2099-06-01', ordinal: 2},
+            {date: '2099-12-31', ordinal: 3},
+        ]);
+    });
+
+    it('returns an empty array when all deadlines have passed', () => {
+        expect(getFutureDeadlines(['2020-01-01', '2021-06-01'], '2025-05-09')).toEqual([]);
+    });
+
+    it('includes a deadline that is exactly today', () => {
+        expect(getFutureDeadlines(['2025-05-09'], '2025-05-09')).toEqual([
+            {date: '2025-05-09', ordinal: 1},
+        ]);
+    });
+
+    it('returns all deadlines with ordinals when none have passed', () => {
+        expect(getFutureDeadlines(['2099-01-01', '2099-06-01'], '2025-05-09')).toEqual([
+            {date: '2099-01-01', ordinal: 1},
+            {date: '2099-06-01', ordinal: 2},
+        ]);
     });
 });
