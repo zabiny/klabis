@@ -22,4 +22,4 @@
 ## 3. Spec sync a uzavření
 
 - [x] 3.1 Synchronizovat delta spec do `openspec/specs/events/spec.md` (přidat requirement Multi-Event ORIS Import)
-- [ ] 3.2 Ověřit success criteria úkolu `review-2-02` a uzavřít GitHub issue #281 (`gh issue close 281 --repo zabiny/klabis --reason completed`)
+- [x] 3.2 Ověřit success criteria úkolu `review-2-02` a uzavřít GitHub issue #281 (issue je již CLOSED)
