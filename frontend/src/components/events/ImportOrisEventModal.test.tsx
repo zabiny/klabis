@@ -122,9 +122,10 @@ describe('ImportOrisEventModal', () => {
             expect(screen.getByRole('button', {name: /importovat vybrané \(2\)/i})).toBeInTheDocument();
         });
 
-        it('shows selected count summary in footer', () => {
+        it('does not show duplicate selected count in footer — count appears only in button', () => {
             renderModal({selectedIds: new Set([101]), canSubmit: true});
-            expect(screen.getByText(/vybráno: 1/i)).toBeInTheDocument();
+            expect(screen.queryByText(/vybráno: 1/i)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /importovat vybrané \(1\)/i})).toBeInTheDocument();
         });
 
         it('calls onToggleId with event id when event checkbox is clicked', async () => {
@@ -263,9 +264,9 @@ describe('ImportOrisEventModal', () => {
             successCount: 2,
             failureCount: 1,
             results: [
-                {orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'imported'},
-                {orisId: 202, name: 'Letní závod', date: '2025-07-20', status: 'imported'},
-                {orisId: 303, name: 'Podzimní tour', date: '2025-09-15', status: 'failed', error: 'Duplikátní import'},
+                {orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'},
+                {orisId: 202, name: 'Letní závod', date: '2025-07-20', status: 'IMPORTED'},
+                {orisId: 303, name: 'Podzimní tour', date: '2025-09-15', status: 'FAILED', error: 'Duplikátní import'},
             ],
         };
 
@@ -279,9 +280,22 @@ describe('ImportOrisEventModal', () => {
             expect(screen.getByText(/naimportováno 2 z 3/i)).toBeInTheDocument();
         });
 
-        it('shows check icon for successfully imported events', () => {
+        it('shows success icon (green) for UPPERCASE IMPORTED status from API', () => {
             renderModal({importResult});
-            expect(screen.getByText('Jarní sprint')).toBeInTheDocument();
+            const importedItem = screen.getByText('Jarní sprint').closest('li');
+            expect(importedItem).toBeInTheDocument();
+            const successIcon = importedItem?.querySelector('svg');
+            expect(successIcon).toBeInTheDocument();
+            expect(successIcon?.closest('svg') ?? successIcon).toHaveClass('text-green-600');
+        });
+
+        it('shows error icon (red) and red text for UPPERCASE FAILED status from API', () => {
+            renderModal({importResult});
+            const failedItem = screen.getByText('Podzimní tour').closest('li');
+            expect(failedItem).toBeInTheDocument();
+            const errorIcon = failedItem?.querySelector('svg');
+            expect(errorIcon).toHaveClass('text-red-600');
+            expect(screen.getByText('Podzimní tour')).toHaveClass('text-red-700');
         });
 
         it('shows error message for failed imports', () => {

@@ -5,7 +5,7 @@ import {RadioGroup} from '../UI/forms';
 import {labels} from '../../localization';
 import {type OrisEvent, ORIS_REGION_KEYS, type BulkImportResult} from '../../api/orisEvents';
 import type {OrisImportFetchState} from '../../hooks/useOrisEventImport';
-import {CalendarDays, CheckCircle, Download, XCircle} from 'lucide-react';
+import {CalendarDays, CheckCircle, XCircle} from 'lucide-react';
 
 export interface ImportOrisEventModalProps {
     isOpen: boolean;
@@ -71,13 +71,13 @@ export const ImportOrisEventModal = ({
                     <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto">
                         {importResult.results.map((item) => (
                             <li key={item.orisId} className="flex items-start gap-3 py-1.5 border-b border-border last:border-0">
-                                {item.status === 'imported' ? (
+                                {item.status?.toLowerCase() === 'imported' ? (
                                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                                 ) : (
                                     <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                 )}
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                    <span className={`font-medium text-sm ${item.status === 'failed' ? 'text-red-700' : 'text-text-primary'}`}>
+                                    <span className={`font-medium text-sm ${item.status?.toLowerCase() === 'failed' ? 'text-red-700' : 'text-text-primary'}`}>
                                         {item.name ?? `ORIS #${item.orisId}`}
                                     </span>
                                     {item.date && (
@@ -97,10 +97,6 @@ export const ImportOrisEventModal = ({
 
     const footer = (
         <div className="flex items-center justify-between w-full">
-            <span className="text-sm text-text-secondary flex items-center gap-1.5">
-                <Download className="w-4 h-4" />
-                {labels.orisImport.selectedCount(selectedCount)}
-            </span>
             <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
                     {labels.buttons.cancel}
@@ -192,7 +188,7 @@ export const ImportOrisEventModal = ({
                                     key={event.id}
                                     data-event-id={event.id}
                                     className={`flex items-start gap-3 py-2 px-1 rounded cursor-pointer transition-colors
-                                        ${isSelected ? 'bg-blue-50 border border-blue-600' : 'hover:bg-surface-raised'}`}
+                                        ${isSelected ? 'bg-primary/10 border border-primary' : 'hover:bg-surface-raised'}`}
                                     onClick={() => !isCheckboxDisabled && onToggleId(event.id)}
                                 >
                                     <input
