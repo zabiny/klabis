@@ -26,6 +26,9 @@ const defaultProps: ImportOrisEventModalProps = {
     onToggleAll: vi.fn(),
     onImportBatch: vi.fn(),
     importResult: null,
+    isAllSelected: false,
+    isSomeSelected: false,
+    canSubmit: false,
 };
 
 const renderModal = (props: Partial<ImportOrisEventModalProps> = {}) =>
@@ -108,17 +111,17 @@ describe('ImportOrisEventModal', () => {
         });
 
         it('submit button is enabled when at least one event is selected', () => {
-            renderModal({selectedIds: new Set([101])});
+            renderModal({selectedIds: new Set([101]), canSubmit: true});
             expect(screen.getByRole('button', {name: /importovat/i})).toBeEnabled();
         });
 
         it('shows selected count in submit button label', () => {
-            renderModal({selectedIds: new Set([101, 202])});
+            renderModal({selectedIds: new Set([101, 202]), canSubmit: true});
             expect(screen.getByRole('button', {name: /importovat vybrané \(2\)/i})).toBeInTheDocument();
         });
 
         it('shows selected count summary in footer', () => {
-            renderModal({selectedIds: new Set([101])});
+            renderModal({selectedIds: new Set([101]), canSubmit: true});
             expect(screen.getByText(/vybráno: 1/i)).toBeInTheDocument();
         });
 
@@ -153,7 +156,7 @@ describe('ImportOrisEventModal', () => {
         });
 
         it('select-all checkbox is checked when all events are selected', () => {
-            renderModal({selectedIds: new Set([101, 202, 303])});
+            renderModal({selectedIds: new Set([101, 202, 303]), isAllSelected: true, canSubmit: true});
             const selectAll = screen.getByLabelText(/vybrat vše/i);
             expect(selectAll).toBeChecked();
         });
@@ -193,7 +196,7 @@ describe('ImportOrisEventModal', () => {
         it('calls onImportBatch on submit with selected ids', async () => {
             const user = userEvent.setup();
             const onImportBatch = vi.fn();
-            renderModal({onImportBatch, selectedIds: new Set([101, 202])});
+            renderModal({onImportBatch, selectedIds: new Set([101, 202]), canSubmit: true});
 
             await user.click(screen.getByRole('button', {name: /importovat/i}));
 

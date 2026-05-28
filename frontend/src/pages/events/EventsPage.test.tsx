@@ -68,6 +68,9 @@ vi.mock('../../hooks/useOrisEventImport', () => ({
         onToggleAll: vi.fn(),
         onImportBatch: vi.fn(),
         importResult: null,
+        isAllSelected: false,
+        isSomeSelected: false,
+        canSubmit: false,
     }),
 }));
 
