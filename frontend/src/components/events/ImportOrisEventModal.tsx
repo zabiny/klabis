@@ -24,6 +24,8 @@ export interface ImportOrisEventModalProps {
     isAllSelected: boolean;
     isSomeSelected: boolean;
     canSubmit: boolean;
+    selectionLimit: number;
+    isSelectionLimitReached: boolean;
 }
 
 export const ImportOrisEventModal = ({
@@ -43,6 +45,8 @@ export const ImportOrisEventModal = ({
     isAllSelected,
     isSomeSelected,
     canSubmit,
+    selectionLimit,
+    isSelectionLimitReached,
 }: ImportOrisEventModalProps) => {
     const selectedCount = selectedIds.size;
 
@@ -173,16 +177,23 @@ export const ImportOrisEventModal = ({
                         )}
                     </div>
 
+                    {isSelectionLimitReached && (
+                        <p className="text-xs text-text-secondary px-1">
+                            {labels.orisImport.limitReachedHint(selectionLimit)}
+                        </p>
+                    )}
+
                     <ul className="flex flex-col max-h-96 overflow-y-auto divide-y divide-border">
                         {events.map((event) => {
                             const isSelected = selectedIds.has(event.id);
+                            const isCheckboxDisabled = isSubmitting || (!isSelected && isSelectionLimitReached);
                             return (
                                 <li
                                     key={event.id}
                                     data-event-id={event.id}
                                     className={`flex items-start gap-3 py-2 px-1 rounded cursor-pointer transition-colors
                                         ${isSelected ? 'bg-blue-50 border border-blue-600' : 'hover:bg-surface-raised'}`}
-                                    onClick={() => !isSubmitting && onToggleId(event.id)}
+                                    onClick={() => !isCheckboxDisabled && onToggleId(event.id)}
                                 >
                                     <input
                                         type="checkbox"
@@ -192,7 +203,7 @@ export const ImportOrisEventModal = ({
                                         onChange={() => onToggleId(event.id)}
                                         onClick={(e) => e.stopPropagation()}
                                         className="w-4 h-4 text-primary border-border rounded focus:ring-primary mt-0.5 flex-shrink-0"
-                                        disabled={isSubmitting}
+                                        disabled={isCheckboxDisabled}
                                     />
                                     <div className="flex flex-col gap-0.5 min-w-0">
                                         <span className="font-medium text-sm text-text-primary truncate">{event.name}</span>

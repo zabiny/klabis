@@ -125,6 +125,7 @@ export const labels = {
         resultSummary: (success: number, total: number) => `Naimportováno ${success} z ${total}`,
         importFailed: 'Import se nezdařil. Zkuste to prosím znovu.',
         done: 'Hotovo',
+        limitReachedHint: (limit: number) => `Můžete vybrat nejvýše ${limit} závodů.`,
     },
 
     fields: {

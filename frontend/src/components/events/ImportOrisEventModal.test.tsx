@@ -29,6 +29,8 @@ const defaultProps: ImportOrisEventModalProps = {
     isAllSelected: false,
     isSomeSelected: false,
     canSubmit: false,
+    selectionLimit: 50,
+    isSelectionLimitReached: false,
 };
 
 const renderModal = (props: Partial<ImportOrisEventModalProps> = {}) =>
@@ -318,6 +320,42 @@ describe('ImportOrisEventModal', () => {
             await user.click(screen.getByRole('button', {name: /zrušit/i}));
 
             expect(onClose).toHaveBeenCalled();
+        });
+    });
+
+    describe('selection limit', () => {
+        it('shows limit hint when isSelectionLimitReached is true', () => {
+            renderModal({
+                isSelectionLimitReached: true,
+                selectionLimit: 2,
+                selectedIds: new Set([101, 202]),
+            });
+            expect(screen.getByText(/můžete vybrat nejvýše 2 závodů/i)).toBeInTheDocument();
+        });
+
+        it('does not show limit hint when isSelectionLimitReached is false', () => {
+            renderModal({isSelectionLimitReached: false, selectionLimit: 50});
+            expect(screen.queryByText(/můžete vybrat nejvýše/i)).not.toBeInTheDocument();
+        });
+
+        it('disables unselected checkboxes when limit is reached', () => {
+            renderModal({
+                isSelectionLimitReached: true,
+                selectionLimit: 2,
+                selectedIds: new Set([101, 202]),
+            });
+            const unselectedCheckbox = screen.getByRole('checkbox', {name: /podzimní tour/i});
+            expect(unselectedCheckbox).toBeDisabled();
+        });
+
+        it('keeps selected checkboxes enabled when limit is reached (so they can be deselected)', () => {
+            renderModal({
+                isSelectionLimitReached: true,
+                selectionLimit: 2,
+                selectedIds: new Set([101, 202]),
+            });
+            const selectedCheckbox = screen.getByRole('checkbox', {name: /jarní sprint/i});
+            expect(selectedCheckbox).toBeEnabled();
         });
     });
 });
