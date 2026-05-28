@@ -260,6 +260,7 @@ export const labels = {
         hide: 'Skrýt',
         reveal: 'Zobrazit',
         currentDeadline: 'aktuální',
+        deadlineOrdinal: (n: number) => `${n}. termín:`,
         notProvided: 'neuvedeno',
         form: 'Formulář',
         showRawJson: 'Zobrazit zdrojový JSON',

@@ -862,10 +862,14 @@ describe('EventDetailPage', () => {
 
         it('highlights relevant deadline with bold text', () => {
             renderPage(createMockPageData(mockEventDetailData({deadlines: ['2099-12-31']})));
-            const relevantLabel = screen.getByText('aktuální');
-            const relevantItem = relevantLabel.closest('li');
-            const dateSpan = relevantItem?.querySelector('span');
+            const dateSpan = screen.getByText('31. 12. 2099');
             expect(dateSpan).toHaveClass('font-bold');
+        });
+
+        it('prefixes each deadline with its ordinal position', () => {
+            renderPage(createMockPageData(mockEventDetailData({deadlines: ['2025-03-01', '2099-12-31']})));
+            expect(screen.getByText('1. termín:')).toBeInTheDocument();
+            expect(screen.getByText('2. termín:')).toBeInTheDocument();
         });
     });
 

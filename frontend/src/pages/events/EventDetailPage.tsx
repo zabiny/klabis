@@ -332,6 +332,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     const isRelevant = index === relevantIndex;
                                     return (
                                         <li key={deadline} className="flex items-center gap-2 text-text-primary">
+                                            <span className="text-text-secondary">{labels.ui.deadlineOrdinal(index + 1)}</span>
                                             <span className={isRelevant ? 'font-bold text-primary' : undefined}>{formatDate(deadline)}</span>
                                             {isRelevant && (
                                                 <span className="text-xs font-medium text-primary">{labels.ui.currentDeadline}</span>
