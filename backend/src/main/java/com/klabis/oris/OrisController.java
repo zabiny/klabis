@@ -5,6 +5,7 @@ import com.dpolach.api.orisclient.OrisEventListFilter;
 import com.dpolach.api.orisclient.OrisRegion;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.events.application.ImportedOrisEventsPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,9 +35,11 @@ import java.util.stream.Stream;
 public class OrisController {
 
     private final OrisApiClient orisApiClient;
+    private final ImportedOrisEventsPort importedOrisEventsPort;
 
-    OrisController(OrisApiClient orisApiClient) {
+    OrisController(OrisApiClient orisApiClient, ImportedOrisEventsPort importedOrisEventsPort) {
         this.orisApiClient = orisApiClient;
+        this.importedOrisEventsPort = importedOrisEventsPort;
     }
 
     @GetMapping("/events")
@@ -51,7 +55,7 @@ public class OrisController {
                 ? List.of(OrisRegion.JIHOMORAVSKA)
                 : region;
 
-        List<OrisEventSummary> events = regions.stream()
+        List<OrisEventSummary> orisEvents = regions.stream()
                 .flatMap(rg -> {
                     OrisEventListFilter filter = OrisEventListFilter.EMPTY
                             .withRegion(rg)
@@ -65,6 +69,13 @@ public class OrisController {
                         e.organizer1() != null ? e.organizer1().abbreviation() : null))
                 .collect(Collectors.toMap(OrisEventSummary::id, Function.identity(), (a, b) -> a, LinkedHashMap::new))
                 .values().stream()
+                .toList();
+
+        List<Integer> candidateIds = orisEvents.stream().map(OrisEventSummary::id).toList();
+        Set<Integer> alreadyImported = importedOrisEventsPort.findImportedOrisIds(candidateIds);
+
+        List<OrisEventSummary> events = orisEvents.stream()
+                .filter(e -> !alreadyImported.contains(e.id()))
                 .sorted(Comparator.comparing(OrisEventSummary::date))
                 .toList();
 

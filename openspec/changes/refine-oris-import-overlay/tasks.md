@@ -1,12 +1,12 @@
 ## 1. Backend — filtrovat již importované ORIS závody (TDD)
 
-- [ ] 1.1 Přidat do `EventRepository` dávkový dotaz na již importovaná ORIS ID (např. `Set<Integer> findImportedOrisIds(Collection<Integer> candidateOrisIds)`); implementovat v `EventJdbcRepository` + `EventRepositoryAdapter` (`SELECT oris_id ... WHERE oris_id IN (:ids)`)
-- [ ] 1.2 Napsat test repository dotazu: vrátí jen ta z kandidátních ID, která už v DB existují
-- [ ] 1.3 Vystavit z events modulu primary port pro oris modul (např. `ImportedOrisEventsPort` s metodou vracející importovaná ID z kandidátů); implementovat tenkou service delegující na `EventRepository`
-- [ ] 1.4 Napsat test portu/service: predikát/množina importovaných ID
-- [ ] 1.5 V `OrisController.listOrisEvents` odfiltrovat ze seznamu závody, jejichž ORIS ID je už importováno (injektovat events port, odečíst před vrácením)
-- [ ] 1.6 `@WebMvcTest`/integrace pro `GET /api/oris/events`: již importované závody nejsou v odpovědi; ostatní zůstávají; prázdný seznam když vše importováno
-- [ ] 1.7 Ověřit Spring Modulith závislost oris → events port (`ModularityTests` / module verification) prochází
+- [x] 1.1 Přidat do `EventRepository` dávkový dotaz na již importovaná ORIS ID (např. `Set<Integer> findImportedOrisIds(Collection<Integer> candidateOrisIds)`); implementovat v `EventJdbcRepository` + `EventRepositoryAdapter` (`SELECT oris_id ... WHERE oris_id IN (:ids)`)
+- [x] 1.2 Napsat test repository dotazu: vrátí jen ta z kandidátních ID, která už v DB existují
+- [x] 1.3 Vystavit z events modulu primary port pro oris modul (např. `ImportedOrisEventsPort` s metodou vracející importovaná ID z kandidátů); implementovat tenkou service delegující na `EventRepository`
+- [x] 1.4 Napsat test portu/service: predikát/množina importovaných ID
+- [x] 1.5 V `OrisController.listOrisEvents` odfiltrovat ze seznamu závody, jejichž ORIS ID je už importováno (injektovat events port, odečíst před vrácením)
+- [x] 1.6 `@WebMvcTest`/integrace pro `GET /api/oris/events`: již importované závody nejsou v odpovědi; ostatní zůstávají; prázdný seznam když vše importováno
+- [x] 1.7 Ověřit Spring Modulith závislost oris → events port (`ModularityTests` / module verification) prochází
 
 ## 2. Frontend — overlay řízený affordancí na pozadí (vzhled beze změny)
 

@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1470,6 +1471,49 @@ class EventJdbcRepositoryTest {
                 event.publish();
             }
             return eventRepository.save(event);
+        }
+    }
+
+    @Nested
+    @DisplayName("findImportedOrisIds() — batch lookup of already-imported ORIS IDs")
+    class FindImportedOrisIds {
+
+        @Test
+        @DisplayName("should return only the candidate IDs that already exist in DB")
+        void shouldReturnOnlyExistingCandidateIds() {
+            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(1001).name("Imported Race A").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1001")).build()));
+            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(1002).name("Imported Race B").eventDate(LocalDate.of(2026, 8, 2))
+                    .location("Location").organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1002")).build()));
+
+            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(1001, 1002, 9999));
+
+            assertThat(result).containsExactlyInAnyOrder(1001, 1002);
+        }
+
+        @Test
+        @DisplayName("should return empty set when no candidates match")
+        void shouldReturnEmptySetWhenNoCandidatesMatch() {
+            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(2001).name("Race Z").eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Location").organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=2001")).build()));
+
+            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(9998, 9997));
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return empty set for empty candidate collection without querying DB")
+        void shouldReturnEmptySetForEmptyCandidateCollection() {
+            Set<Integer> result = eventRepository.findImportedOrisIds(List.of());
+
+            assertThat(result).isEmpty();
         }
     }
 
