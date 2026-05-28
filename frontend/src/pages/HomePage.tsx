@@ -216,8 +216,8 @@ const UserDashboard = ({memberId, menuItems}: {
                                     <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400"/>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-text-primary">Akce</p>
-                                    <p className="text-sm text-text-secondary">Prohlížet nadcházející akce</p>
+                                    <p className="font-semibold text-text-primary">{labels.dashboard.eventsPanelTitle}</p>
+                                    <p className="text-sm text-text-secondary">{labels.dashboard.eventsPanelSubtitle}</p>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:translate-x-1 transition-transform"/>
                             </div>

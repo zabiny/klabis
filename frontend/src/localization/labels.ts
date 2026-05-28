@@ -374,6 +374,8 @@ export const labels = {
         noUpcomingEvents: 'Žádné nadcházející akce',
         showAll: 'Zobrazit všechny',
         browseClubEvents: 'Prohlédnout nadcházející akce klubu',
+        eventsPanelTitle: 'Akce',
+        eventsPanelSubtitle: 'Všechny nadcházející akce',
         upcomingDeadlinesTitle: 'Končící přihlášky tento týden',
         deadlinePrefix: 'Uzávěrka:',
         registerForEvent: 'Přihlásit se',
