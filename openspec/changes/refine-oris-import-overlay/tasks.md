@@ -10,11 +10,11 @@
 
 ## 2. Frontend — overlay řízený affordancí na pozadí (vzhled beze změny)
 
-- [ ] 2.1 Změnit signaturu `useOrisEventImport`: místo `batchImportHref: string` přijmout celou affordanci `importEventsBatch` (`HalFormsTemplate | undefined` z `api/types.ts`); `EventsPage` předá `activeImportTemplate` (ne jen `.target`)
-- [ ] 2.2 V hooku odvodit submit z affordance: `target` → URL, `method` → HTTP metoda (`useAuthorizedMutation` s metodou z template; fallback POST), request body poskládat podle `properties` (vlastnost `orisIds`, `multi:true` → pole) místo natvrdo `{orisIds: [...]}`
-- [ ] 2.3 Odvodit limit výběru z affordance `properties.orisIds.max` (ověřeno = 50; fallback 50) a vynutit ho při výběru: při dosažení limitu znemožnit přidání dalších (disabled nevybrané checkboxy) + zobrazit hint o limitu; "Vybrat vše" vybere nanejvýš limit
-- [ ] 2.4 Zachovat dvoufázový tok a celý vzhled overlaye (region radio → `GET /api/oris/events?region=…` → checkbox seznam → výsledkový panel) — žádná vizuální změna; ověřit, že guard `isOpen && affordance` funguje stejně jako dnešní `isOpen && batchImportHref`
-- [ ] 2.5 Frontend testy: hook skládá submit z affordance (správný target/method/body), limit čtený z affordance blokuje další výběr a "vybrat vše" ho respektuje, fallback bez affordance nepadá
+- [x] 2.1 Změnit signaturu `useOrisEventImport`: místo `batchImportHref: string` přijmout celou affordanci `importEventsBatch` (`HalFormsTemplate | undefined` z `api/types.ts`); `EventsPage` předá `activeImportTemplate` (ne jen `.target`)
+- [x] 2.2 V hooku odvodit submit z affordance: `target` → URL, `method` → HTTP metoda (`useAuthorizedMutation` s metodou z template; fallback POST), request body poskládat podle `properties` (vlastnost `orisIds`, `multi:true` → pole) místo natvrdo `{orisIds: [...]}`
+- [x] 2.3 Odvodit limit výběru z affordance `properties.orisIds.max` (ověřeno = 50; fallback 50) a vynutit ho při výběru: při dosažení limitu znemožnit přidání dalších (disabled nevybrané checkboxy) + zobrazit hint o limitu; "Vybrat vše" vybere nanejvýš limit
+- [x] 2.4 Zachovat dvoufázový tok a celý vzhled overlaye (region radio → `GET /api/oris/events?region=…` → checkbox seznam → výsledkový panel) — žádná vizuální změna; ověřit, že guard `isOpen && affordance` funguje stejně jako dnešní `isOpen && batchImportHref`
+- [x] 2.5 Frontend testy: hook skládá submit z affordance (správný target/method/body), limit čtený z affordance blokuje další výběr a "vybrat vše" ho respektuje, fallback bez affordance nepadá
 
 ## 3. Frontend — duplicitní počet, oprava výsledku a dark theme
 

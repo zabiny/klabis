@@ -118,7 +118,7 @@ export const EventsPage = (): ReactElement => {
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
-        activeImportTemplate?.target ?? '',
+        activeImportTemplate,
         isImportModalOpen,
         {onImported: () => route.refetch()},
     );

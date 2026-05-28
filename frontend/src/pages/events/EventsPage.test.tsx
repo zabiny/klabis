@@ -11,6 +11,7 @@ import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {useAuth} from '../../contexts/AuthContext2';
 import {labels} from '../../localization';
+import {useOrisEventImport} from '../../hooks/useOrisEventImport';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -71,6 +72,8 @@ vi.mock('../../hooks/useOrisEventImport', () => ({
         isAllSelected: false,
         isSomeSelected: false,
         canSubmit: false,
+        selectionLimit: 50,
+        isSelectionLimitReached: false,
     }),
 }));
 
@@ -364,6 +367,26 @@ describe('EventsPage', () => {
             await user.click(screen.getByRole('button', {name: /importovat z oris/i}));
 
             expect(screen.getByText('Import akce z ORIS')).toBeInTheDocument();
+        });
+
+        it('passes the full template object (not just href) to useOrisEventImport', () => {
+            const template = mockHalFormsTemplate({
+                method: 'POST',
+                target: '/api/events/import-batch',
+                title: 'Importovat z ORIS',
+                properties: [{name: 'orisIds', type: 'number', multi: true, max: 10}],
+            });
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {importEventsBatch: template},
+            };
+            renderPage(createMockPageData(resourceData));
+
+            expect(vi.mocked(useOrisEventImport)).toHaveBeenCalledWith(
+                expect.objectContaining({target: '/api/events/import-batch', method: 'POST'}),
+                expect.any(Boolean),
+                expect.any(Object),
+            );
         });
     });
 

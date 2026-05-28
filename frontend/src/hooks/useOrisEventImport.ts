@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {type BulkImportResult, type OrisEvent, ORIS_REGION_KEYS} from '../api/orisEvents';
+import type {HalFormsTemplate} from '../api/types';
 import {labels} from '../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {useFormCacheInvalidation} from './useFormCacheInvalidation';
@@ -25,10 +26,27 @@ export interface UseOrisEventImportResult {
     isAllSelected: boolean;
     isSomeSelected: boolean;
     canSubmit: boolean;
+    selectionLimit: number;
+    isSelectionLimitReached: boolean;
+}
+
+const DEFAULT_SELECTION_LIMIT = 50;
+
+function deriveLimit(template: HalFormsTemplate | undefined): number {
+    if (!template?.properties) return DEFAULT_SELECTION_LIMIT;
+    const multiProp = template.properties.find((p) => p.multi === true || p.multiple === true);
+    if (!multiProp || multiProp.max === undefined) return DEFAULT_SELECTION_LIMIT;
+    return multiProp.max;
+}
+
+function deriveBodyKey(template: HalFormsTemplate | undefined): string {
+    if (!template?.properties) return 'orisIds';
+    const multiProp = template.properties.find((p) => p.multi === true || p.multiple === true);
+    return multiProp?.name ?? 'orisIds';
 }
 
 export function useOrisEventImport(
-    batchImportHref: string,
+    template: HalFormsTemplate | undefined,
     isOpen: boolean,
     options: UseOrisEventImportOptions = {},
 ): UseOrisEventImportResult {
@@ -42,6 +60,10 @@ export function useOrisEventImport(
     const {invalidateAllCaches} = useFormCacheInvalidation();
     const invalidateAllCachesRef = useRef(invalidateAllCaches);
     invalidateAllCachesRef.current = invalidateAllCaches;
+
+    const batchImportHref = template?.target;
+    const submitMethod = template?.method ?? 'POST';
+    const selectionLimit = deriveLimit(template);
 
     useEffect(() => {
         if (isOpen) {
@@ -64,11 +86,12 @@ export function useOrisEventImport(
 
     const events = data ?? [];
 
+    const isSelectionLimitReached = selectedIds.size >= selectionLimit;
     const isAllSelected = events.length > 0 && selectedIds.size === events.length;
     const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
     const canSubmit = fetchState === 'success' && events.length > 0 && selectedIds.size > 0 && !isSubmitting;
 
-    const {mutate} = useAuthorizedMutation({method: 'POST'});
+    const {mutate} = useAuthorizedMutation({method: submitMethod});
 
     const onRegionChange = useCallback((region: string) => {
         setSelectedRegion(region);
@@ -81,21 +104,25 @@ export function useOrisEventImport(
             if (next.has(id)) {
                 next.delete(id);
             } else {
+                if (next.size >= selectionLimit) {
+                    return prev;
+                }
                 next.add(id);
             }
             return next;
         });
-    }, []);
+    }, [selectionLimit]);
 
     const onToggleAll = useCallback(() => {
         setSelectedIds((prev) => {
             const allSelected = prev.size === events.length && events.length > 0;
-            if (allSelected) {
+            const limitReached = prev.size >= selectionLimit;
+            if (allSelected || limitReached) {
                 return new Set();
             }
-            return new Set(events.map((e) => e.id));
+            return new Set(events.slice(0, selectionLimit).map((e) => e.id));
         });
-    }, [events]);
+    }, [events, selectionLimit]);
 
     const onImportBatch = useCallback(() => {
         if (selectedIds.size === 0 || !batchImportHref) return;
@@ -103,8 +130,10 @@ export function useOrisEventImport(
         setIsSubmitting(true);
         setSubmitError(null);
 
+        const bodyKey = deriveBodyKey(template);
+
         mutate(
-            {url: batchImportHref, data: {orisIds: Array.from(selectedIds)}},
+            {url: batchImportHref, data: {[bodyKey]: Array.from(selectedIds)}},
             {
                 onSuccess: async ({data: responseData}) => {
                     setIsSubmitting(false);
@@ -119,7 +148,7 @@ export function useOrisEventImport(
                 },
             },
         );
-    }, [selectedIds, batchImportHref, mutate]);
+    }, [selectedIds, batchImportHref, template, mutate]);
 
     return {
         events,
@@ -136,5 +165,7 @@ export function useOrisEventImport(
         isAllSelected,
         isSomeSelected,
         canSubmit,
+        selectionLimit,
+        isSelectionLimitReached,
     };
 }
