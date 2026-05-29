@@ -18,8 +18,8 @@ import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
  * buttons are hidden automatically when templates are absent in the HAL response
  * (e.g. when a member views their own account without FINANCE:MANAGE authority).
  *
- * Reverse action per transaction row is driven by the transaction's self link,
- * constructing the reverse endpoint as {selfHref}/reverse.
+ * Reverse action per transaction row is driven by the transaction's reverse
+ * HAL affordance, which the backend exposes only on reversible transactions.
  */
 export const MemberAccountManagePage = (): ReactElement => {
     const {isLoading, resourceData} = useHalPageData();

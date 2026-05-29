@@ -9,6 +9,7 @@ import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {type Mock, vi} from 'vitest';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import type {Link} from '../../api/types.ts';
+import {labels} from '../../localization';
 
 vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -92,6 +93,37 @@ const mockAccountDataWithoutAffordances = {
 };
 
 const mockTransactionData = {
+    _embedded: {
+        transactions: [
+            {
+                id: 'tx-1',
+                occurredAt: '2025-03-10',
+                amount: 500,
+                currency: 'CZK',
+                note: 'Initial deposit',
+                type: 'DEPOSIT',
+                reversesTransactionId: null,
+                _links: {
+                    self: {href: 'https://test.com/api/members/456/account/transactions/tx-1'},
+                },
+                _templates: {
+                    reverse: {
+                        method: 'POST',
+                        target: 'https://test.com/api/members/456/account/transactions/tx-1/reverse',
+                        properties: [
+                            {name: 'note', type: 'text'},
+                            {name: 'occurredAt', type: 'date'},
+                        ],
+                    },
+                },
+            },
+        ],
+    },
+    page: {totalElements: 1, totalPages: 1, size: 20, number: 0},
+    _links: {self: {href: 'https://test.com/api/members/456/account/transactions'}},
+};
+
+const mockTransactionDataWithoutReverseAffordance = {
     _embedded: {
         transactions: [
             {
@@ -222,6 +254,46 @@ describe('MemberAccountManagePage', () => {
                 expect(screen.getByText('Jan Novák (ZBM1234)')).toBeInTheDocument();
             });
         });
+
+        it('should render reverse action button when transaction exposes a reverse affordance', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Initial deposit')).toBeInTheDocument();
+            });
+            expect(screen.getByRole('button', {name: labels.finance.reverse})).toBeInTheDocument();
+        });
+
+        it('should open reverse confirm modal when reverse action button is clicked', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            const reverseButton = await screen.findByRole('button', {name: labels.finance.reverse});
+            fireEvent.click(reverseButton);
+
+            await waitFor(() => {
+                expect(screen.getByText(labels.finance.reverseConfirmTitle)).toBeInTheDocument();
+            });
+        });
+
+        it('should NOT render reverse action button when transaction lacks a reverse affordance', async () => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionDataWithoutReverseAffordance));
+                }
+                if (baseUrl.endsWith('/api/members/456') || baseUrl === 'https://test.com/api/members/456') {
+                    return Promise.resolve(createMockResponse(mockOwnerData));
+                }
+                return Promise.resolve(createMockResponse(mockAccountDataWithAffordances));
+            });
+
+            renderPage(<MemberAccountManagePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Initial deposit')).toBeInTheDocument();
+            });
+            expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
+        });
     });
 
     describe('Without FINANCE:MANAGE affordances (own account view)', () => {
@@ -254,6 +326,15 @@ describe('MemberAccountManagePage', () => {
             await waitFor(() => {
                 expect(screen.getByText(/200/)).toBeInTheDocument();
             });
+        });
+
+        it('should NOT render reverse action button even when transaction exposes a reverse affordance', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            await waitFor(() => {
+                expect(screen.getByText('Initial deposit')).toBeInTheDocument();
+            });
+            expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
         });
     });
 });

@@ -15,21 +15,17 @@ interface ReverseConfirmModalProps {
     onClose: () => void;
 }
 
-// The transactions list endpoint does not expose a per-item `reverse` HAL affordance
-// (only single-transaction GET does). Until the list endpoint is updated to include it,
-// we derive the reverse URL from the self href as a documented workaround.
-function deriveReverseUrl(selfHref: string): string {
+function toPathname(href: string): string {
     try {
-        const url = new URL(selfHref);
-        return url.pathname + '/reverse';
+        return new URL(href).pathname;
     } catch {
-        return selfHref + '/reverse';
+        return href;
     }
 }
 
 /**
  * Confirmation modal for reversing a finance transaction.
- * POSTs to {transaction.self}/reverse with optional note and occurredAt.
+ * POSTs to the transaction's `reverse` HAL affordance target with optional note and occurredAt.
  * Bypasses the overdraft limit by design (backend rule).
  */
 export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfirmModalProps): ReactElement | null => {
@@ -54,7 +50,7 @@ export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfi
         if (!transaction) return;
         setSubmitError(null);
 
-        const url = deriveReverseUrl(transaction.txSelfHref);
+        const url = toPathname(transaction.reverseTarget);
         const data: Record<string, unknown> = {};
         if (note.trim()) data.note = note.trim();
         if (occurredAt) data.occurredAt = occurredAt;

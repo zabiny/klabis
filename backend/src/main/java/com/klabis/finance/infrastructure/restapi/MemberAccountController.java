@@ -200,7 +200,15 @@ class MemberAccountController {
                                      boolean canReverse, Optional<Link> accountLink) {
         UUID txId = tx.getId().value();
         klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
-                .ifPresent(link -> model.add(link.withSelfRel()));
+                .map(link -> {
+                    if (reversedByTxId == null && !tx.isReversal() && canReverse) {
+                        return link.withSelfRel()
+                                .andAffordances(klabisAfford(
+                                        methodOn(MemberAccountController.class).reverse(memberId, txId, null, null)));
+                    }
+                    return link.withSelfRel();
+                })
+                .ifPresent(model::add);
 
         if (reversedByTxId != null) {
             klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, reversedByTxId, null))
@@ -217,14 +225,6 @@ class MemberAccountController {
                 .ifPresent(link -> model.add(link.withRel("recordedBy")));
 
         accountLink.ifPresent(model::add);
-
-        if (reversedByTxId == null && !tx.isReversal() && canReverse) {
-            klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
-                    .map(link -> link.withSelfRel()
-                            .andAffordances(klabisAfford(
-                                    methodOn(MemberAccountController.class).reverse(memberId, txId, null, null))))
-                    .ifPresent(model::add);
-        }
     }
 
     private URI buildTransactionUri(UUID memberId, UUID txId) {

@@ -1,5 +1,5 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import type {EntityModel} from "../../api";
+import type {EntityModel, HalFormsTemplate} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -28,6 +28,9 @@ type TransactionItem = EntityModel<{
         reverses?: { href: string };
         reversedBy?: { href: string };
         recordedBy?: { href: string };
+    };
+    _templates?: {
+        reverse?: HalFormsTemplate;
     };
 }>;
 
@@ -77,7 +80,7 @@ const RecordedByCell = ({href}: {href: string | undefined}): ReactElement => {
 };
 
 export type TransactionReverseRequest = {
-    txSelfHref: string;
+    reverseTarget: string;
     txId: string;
     amount: number;
     currency: string;
@@ -194,10 +197,8 @@ const TransactionsTableContent = ({
     const renderActionsCell = useCallback(({item}: TableCellRenderProps): ReactElement | null => {
         if (!onReverseRequest) return null;
         const tx = item as unknown as TransactionItem;
-        const isAlreadyReversed = reversedIds.has(tx.id);
-        const isReversal = !!tx.reversesTransactionId;
-        const selfHrefTx = tx._links?.self?.href;
-        if (!selfHrefTx || isAlreadyReversed || isReversal) return null;
+        const reverseTarget = tx._templates?.reverse?.target;
+        if (!reverseTarget) return null;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -209,7 +210,7 @@ const TransactionsTableContent = ({
                     onClick={(e) => {
                         e.stopPropagation();
                         onReverseRequest({
-                            txSelfHref: selfHrefTx,
+                            reverseTarget,
                             txId: tx.id,
                             amount: tx.amount as number,
                             currency: tx.currency as string,
@@ -223,7 +224,7 @@ const TransactionsTableContent = ({
                 </Button>
             </div>
         );
-    }, [onReverseRequest, reversedIds]);
+    }, [onReverseRequest]);
 
     const renderRecordedByCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
         const tx = item as unknown as TransactionItem;
