@@ -4,6 +4,7 @@ import type {HalFormsTemplate} from '../api/types';
 import {labels} from '../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {useFormCacheInvalidation} from './useFormCacheInvalidation';
+import {isMultipleProperty} from '../components/HalNavigator2/halforms/utils';
 
 export type OrisImportFetchState = 'loading' | 'success' | 'error';
 
@@ -32,19 +33,6 @@ export interface UseOrisEventImportResult {
 
 const DEFAULT_SELECTION_LIMIT = 50;
 
-function deriveLimit(template: HalFormsTemplate | undefined): number {
-    if (!template?.properties) return DEFAULT_SELECTION_LIMIT;
-    const multiProp = template.properties.find((p) => p.multi === true || p.multiple === true);
-    if (!multiProp || multiProp.max === undefined) return DEFAULT_SELECTION_LIMIT;
-    return multiProp.max;
-}
-
-function deriveBodyKey(template: HalFormsTemplate | undefined): string {
-    if (!template?.properties) return 'orisIds';
-    const multiProp = template.properties.find((p) => p.multi === true || p.multiple === true);
-    return multiProp?.name ?? 'orisIds';
-}
-
 export function useOrisEventImport(
     template: HalFormsTemplate | undefined,
     isOpen: boolean,
@@ -63,7 +51,9 @@ export function useOrisEventImport(
 
     const batchImportHref = template?.target;
     const submitMethod = template?.method ?? 'POST';
-    const selectionLimit = deriveLimit(template);
+    const multiProp = template?.properties?.find(isMultipleProperty);
+    const selectionLimit = multiProp?.max ?? DEFAULT_SELECTION_LIMIT;
+    const bodyKey = multiProp?.name ?? 'orisIds';
 
     useEffect(() => {
         if (isOpen) {
@@ -130,14 +120,19 @@ export function useOrisEventImport(
         setIsSubmitting(true);
         setSubmitError(null);
 
-        const bodyKey = deriveBodyKey(template);
-
         mutate(
             {url: batchImportHref, data: {[bodyKey]: Array.from(selectedIds)}},
             {
                 onSuccess: async ({data: responseData}) => {
                     setIsSubmitting(false);
-                    const result = responseData as BulkImportResult;
+                    const rawResult = responseData as BulkImportResult;
+                    const result: BulkImportResult = {
+                        ...rawResult,
+                        results: rawResult.results.map((item) => ({
+                            ...item,
+                            status: String(item.status).toUpperCase() as 'IMPORTED' | 'FAILED',
+                        })),
+                    };
                     setImportResult(result);
                     await invalidateAllCachesRef.current();
                     onImportedRef.current?.();
@@ -148,7 +143,7 @@ export function useOrisEventImport(
                 },
             },
         );
-    }, [selectedIds, batchImportHref, template, mutate]);
+    }, [selectedIds, batchImportHref, bodyKey, mutate]);
 
     return {
         events,

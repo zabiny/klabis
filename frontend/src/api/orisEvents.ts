@@ -13,7 +13,7 @@ export interface BulkImportResultItem {
     orisId: number;
     name: string | null;
     date: string | null;
-    status: 'imported' | 'failed' | 'IMPORTED' | 'FAILED';
+    status: 'IMPORTED' | 'FAILED';
     error?: string;
 }
 
