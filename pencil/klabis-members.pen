@@ -27773,6 +27773,4710 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "KBUUQ",
+      "x": 14068,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportMultiOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 860,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "r8BqJA",
+          "x": 360,
+          "y": 90,
+          "name": "orisPanel",
+          "clip": true,
+          "width": 560,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "yej8p",
+              "name": "panelHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "o0G2R",
+                  "name": "titleWrap",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gpAMV",
+                      "name": "title",
+                      "fill": "#18181B",
+                      "content": "Importovat z ORIS",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lHFU6",
+                      "name": "subtitle",
+                      "fill": "#71717A",
+                      "content": "Vyberte závody, které chcete naimportovat",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gERVF",
+                  "name": "closeBtn",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "TKTnN",
+                      "name": "closeIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#71717A"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QcCi3",
+              "name": "regionBar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#F1F5F9"
+              },
+              "gap": 8,
+              "padding": [
+                14,
+                24
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "TVDfN",
+                  "name": "regionLbl",
+                  "fill": "#71717A",
+                  "content": "Oblast:",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "VhbaF",
+                  "name": "regionJM",
+                  "height": 30,
+                  "fill": "#EFF6FF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1.5,
+                    "fill": "#2563EB"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VLwLQ",
+                      "name": "regionJMTxt",
+                      "fill": "#2563EB",
+                      "content": "Jihomoravská",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "euHjZ",
+                  "name": "regionCR",
+                  "height": 30,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "l8G6b",
+                      "name": "regionCRTxt",
+                      "fill": "#3F3F46",
+                      "content": "Celá ČR",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hEicO",
+              "name": "panelBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "padding": [
+                16,
+                24,
+                8,
+                24
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "y9xMI",
+                  "name": "selectAllRow",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    2,
+                    8,
+                    2
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "KmsxU",
+                      "name": "saLeft",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "mMTgg",
+                          "name": "saCheck",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#2563EB",
+                          "cornerRadius": 5,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n0Xgf1",
+                              "name": "saCheckIco",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "#FFFFFF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "ydY9n",
+                          "name": "saLbl",
+                          "fill": "#3F3F46",
+                          "content": "Vybrat vše",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "nsnbP",
+                      "name": "saCount",
+                      "fill": "#A1A1AA",
+                      "content": "6 závodů k dispozici",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XU4UF",
+                  "name": "eventList",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZEMkB",
+                      "name": "evtRow1",
+                      "width": "fill_container",
+                      "fill": "#EFF6FF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1.5,
+                        "fill": "#2563EB"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "NSdjW",
+                          "name": "cb1",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#2563EB",
+                          "cornerRadius": 5,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "o73sE",
+                              "name": "cbIco1",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "#FFFFFF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "T6teiD",
+                          "name": "info1",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "VyYGJ",
+                              "name": "name1",
+                              "fill": "#18181B",
+                              "content": "Jarní pohár — krátká trať",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "jCXzS",
+                              "name": "meta1",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "YX6JR",
+                                  "name": "dateChip1",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "YgFvF",
+                                      "name": "calIco1",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#2563EB"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "I6zmUr",
+                                      "name": "date1",
+                                      "fill": "#2563EB",
+                                      "content": "14.06.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "AXeCe",
+                                  "name": "dot1",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "BhJkP",
+                                  "name": "org1",
+                                  "fill": "#71717A",
+                                  "content": "TJ Spartak — Adamov",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UGh1K",
+                      "name": "evtRow2",
+                      "width": "fill_container",
+                      "fill": "#EFF6FF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1.5,
+                        "fill": "#2563EB"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "yQyBT",
+                          "name": "cb2",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#2563EB",
+                          "cornerRadius": 5,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "hfkBP",
+                              "name": "cbIco2",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "#FFFFFF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "obJaY",
+                          "name": "info2",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ep4Ry",
+                              "name": "name2",
+                              "fill": "#18181B",
+                              "content": "Mistrovství kraje — klasika",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ru6UX",
+                              "name": "meta2",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "g6ZLG",
+                                  "name": "dateChip2",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "YKuh0",
+                                      "name": "calIco2",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#2563EB"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "k1Ykk",
+                                      "name": "date2",
+                                      "fill": "#2563EB",
+                                      "content": "21.06.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "tzArs",
+                                  "name": "dot2",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "uzLr5",
+                                  "name": "org2",
+                                  "fill": "#71717A",
+                                  "content": "SK Žabovřesky — Bílovice",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XQl1N",
+                      "name": "evtRow3",
+                      "width": "fill_container",
+                      "fill": "#EFF6FF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1.5,
+                        "fill": "#2563EB"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "M0mDZB",
+                          "name": "cb3",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#2563EB",
+                          "cornerRadius": 5,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "H5mTr",
+                              "name": "cbIco3",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "#FFFFFF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "YsJ6T",
+                          "name": "info3",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "rm7vv",
+                              "name": "name3",
+                              "fill": "#18181B",
+                              "content": "Letní sprint Vysočiny",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "uVT6t",
+                              "name": "meta3",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "TpnZF",
+                                  "name": "dateChip3",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "O5uOWy",
+                                      "name": "calIco3",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#2563EB"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "mGv3A",
+                                      "name": "date3",
+                                      "fill": "#2563EB",
+                                      "content": "28.06.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "d9M38N",
+                                  "name": "dot3",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "Cpe4q",
+                                  "name": "org3",
+                                  "fill": "#71717A",
+                                  "content": "OK Jihlava — Jihlava",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FgBMH",
+                      "name": "evtRow4",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E4E4E7"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "wilvM",
+                          "name": "cb4",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 5,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#D4D4D8"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tCsYE",
+                          "name": "info4",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "G1R8y7",
+                              "name": "name4",
+                              "fill": "#18181B",
+                              "content": "Pohár východu — štafety",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "v4jSP",
+                              "name": "meta4",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "RRoAt",
+                                  "name": "dateChip4",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "jkv0h",
+                                      "name": "calIco4",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#A1A1AA"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "yLqLa",
+                                      "name": "date4",
+                                      "fill": "#71717A",
+                                      "content": "05.07.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "BNJUv",
+                                  "name": "dot4",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "M3I4k",
+                                  "name": "org4",
+                                  "fill": "#71717A",
+                                  "content": "TJ Slovan — Blansko",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "w5YJEv",
+                      "name": "evtRow5",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E4E4E7"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "l8uza",
+                          "name": "cb5",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 5,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#D4D4D8"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "g0aSky",
+                          "name": "info5",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "sBBII",
+                              "name": "name5",
+                              "fill": "#18181B",
+                              "content": "Noční orienťák",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "WgNsz",
+                              "name": "meta5",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "k9aerW",
+                                  "name": "dateChip5",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "i2QMtf",
+                                      "name": "calIco5",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#A1A1AA"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "X35FM",
+                                      "name": "date5",
+                                      "fill": "#71717A",
+                                      "content": "12.07.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "ha5jg",
+                                  "name": "dot5",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "t6eL4n",
+                                  "name": "org5",
+                                  "fill": "#71717A",
+                                  "content": "SK Brno — Brno-Kohoutovice",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lqT7D",
+                      "name": "evtRow6",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E4E4E7"
+                      },
+                      "gap": 14,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "U4c0I",
+                          "name": "cb6",
+                          "width": 18,
+                          "height": 18,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 5,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#D4D4D8"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "D8dR1",
+                          "name": "info6",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "mgCnQ",
+                              "name": "name6",
+                              "fill": "#18181B",
+                              "content": "Ultralong Open",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "xsg3Y",
+                              "name": "meta6",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "T3Ab9a",
+                                  "name": "dateChip6",
+                                  "gap": 5,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "AuhTJ",
+                                      "name": "calIco6",
+                                      "width": 12,
+                                      "height": 12,
+                                      "iconFontName": "calendar",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "#A1A1AA"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "sgcPU",
+                                      "name": "date6",
+                                      "fill": "#71717A",
+                                      "content": "19.07.2026",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "CxgRi",
+                                  "name": "dot6",
+                                  "fill": "#D4D4D8",
+                                  "content": "·",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "f2Y0gK",
+                                  "name": "org6",
+                                  "fill": "#71717A",
+                                  "content": "KOB Choceň — Choceň",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xyZYT",
+              "name": "panelFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vZHE1",
+                  "name": "selInfo",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ozODY",
+                      "name": "selIco",
+                      "width": 15,
+                      "height": 15,
+                      "iconFontName": "circle-check",
+                      "iconFontFamily": "lucide",
+                      "fill": "#2563EB"
+                    },
+                    {
+                      "type": "text",
+                      "id": "y44Fjz",
+                      "name": "selTxt",
+                      "fill": "#3F3F46",
+                      "content": "Vybráno: 3 závody",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n4YGjs",
+                  "name": "footerBtns",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "CRi6C",
+                      "name": "cancelBtn",
+                      "height": 38,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E4E4E7"
+                      },
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "iVjjR",
+                          "name": "cancelTxt",
+                          "fill": "#3F3F46",
+                          "content": "Zrušit",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JZ6f3",
+                      "name": "confirmBtn",
+                      "height": 38,
+                      "fill": "#2563EB",
+                      "cornerRadius": 8,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        18
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "a0RdTB",
+                          "name": "importIco",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "download",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "type": "text",
+                          "id": "GhNRO",
+                          "name": "confirmTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Importovat vybrané (3)",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "j7bsE9",
+      "x": 15428,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportResultOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 860,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "iUmm7",
+          "x": 360,
+          "y": 120,
+          "name": "orisResultPanel",
+          "clip": true,
+          "width": 560,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "kq9W2",
+              "name": "resHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rRW4d",
+                  "name": "resTitleWrap",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VX1Ic",
+                      "name": "resTitle",
+                      "fill": "#18181B",
+                      "content": "Výsledek importu",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "A2jMx0",
+                      "name": "resSubtitle",
+                      "fill": "#71717A",
+                      "content": "Naimportovány 2 ze 3 závodů",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QV9tl",
+                  "name": "resCloseBtn",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "w5E4yT",
+                      "name": "resCloseIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#71717A"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pq5Hc",
+              "name": "resBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [
+                16,
+                24,
+                20,
+                24
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Rjrau",
+                  "name": "resRow1",
+                  "width": "fill_container",
+                  "fill": "#F0FDF4",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BBF7D0"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "MR364",
+                      "name": "resIco1",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "circle-check",
+                      "iconFontFamily": "lucide",
+                      "fill": "#16A34A"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "wsGrc",
+                      "name": "resInfo1",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "b3YqDj",
+                          "name": "resName1",
+                          "fill": "#18181B",
+                          "content": "14.06.2026 Jarní pohár — krátká trať",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "pQvw7",
+                          "name": "resMsg1",
+                          "fill": "#15803D",
+                          "content": "Úspěšně naimportováno",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Zj87m",
+                  "name": "resRow2",
+                  "width": "fill_container",
+                  "fill": "#F0FDF4",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BBF7D0"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "SMIL1",
+                      "name": "resIco2",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "circle-check",
+                      "iconFontFamily": "lucide",
+                      "fill": "#16A34A"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "P8rkRE",
+                      "name": "resInfo2",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m74o5M",
+                          "name": "resName2",
+                          "fill": "#18181B",
+                          "content": "21.06.2026 Mistrovství kraje — klasika",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "iRb3I",
+                          "name": "resMsg2",
+                          "fill": "#15803D",
+                          "content": "Úspěšně naimportováno",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qXZt7",
+                  "name": "resRow3",
+                  "width": "fill_container",
+                  "fill": "#FEF2F2",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#FECACA"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "j9BwOc",
+                      "name": "resIco3",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "circle-x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#DC2626"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FdfPY",
+                      "name": "resInfo3",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "sEZrC",
+                          "name": "resName3",
+                          "fill": "#18181B",
+                          "content": "28.06.2026 Letní sprint Vysočiny",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Xmtp1",
+                          "name": "resMsg3",
+                          "fill": "#B91C1C",
+                          "content": "Závod s tímto ORIS ID už existuje",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fToo8",
+              "name": "resFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QB1Eu",
+                  "name": "resDoneBtn",
+                  "height": 38,
+                  "fill": "#2563EB",
+                  "cornerRadius": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lqVJS",
+                      "name": "resDoneTxt",
+                      "fill": "#FFFFFF",
+                      "content": "Hotovo",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zSeFg",
+      "x": 16788,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportLoadingOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 860,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "NKZLP",
+          "x": 360,
+          "y": 120,
+          "name": "loadPanel",
+          "clip": true,
+          "width": 560,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JdqEl",
+              "name": "loadHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Gom5s",
+                  "name": "loadTitleWrap",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LghTY",
+                      "name": "loadTitle",
+                      "fill": "#18181B",
+                      "content": "Importovat z ORIS",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FXjv0",
+                      "name": "loadSubtitle",
+                      "fill": "#71717A",
+                      "content": "Načítám dostupné závody…",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VMDso",
+                  "name": "loadCloseBtn",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "vOQGM",
+                      "name": "loadCloseIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#71717A"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "McKSB",
+              "name": "loadBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BNXpO",
+                  "name": "skel1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#F1F5F9"
+                  },
+                  "gap": 14,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "j4Bdtj",
+                      "name": "skelCb1",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#F1F5F9",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JOTnJ",
+                      "name": "skelInfo1",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 7,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "gJwe5",
+                          "name": "skelName1",
+                          "width": 240,
+                          "height": 11,
+                          "fill": "#E4E4E7",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "frame",
+                          "id": "x3yZr",
+                          "name": "skelMeta1",
+                          "width": 160,
+                          "height": 9,
+                          "fill": "#F1F5F9",
+                          "cornerRadius": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hiyqi",
+                  "name": "skel2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#F1F5F9"
+                  },
+                  "gap": 14,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "aNz2y",
+                      "name": "skelCb2",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#F1F5F9",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PFgs4",
+                      "name": "skelInfo2",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 7,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "YTSEP",
+                          "name": "skelName2",
+                          "width": 240,
+                          "height": 11,
+                          "fill": "#E4E4E7",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gcXZi",
+                          "name": "skelMeta2",
+                          "width": 160,
+                          "height": 9,
+                          "fill": "#F1F5F9",
+                          "cornerRadius": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SY7JI",
+                  "name": "skel3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#F1F5F9"
+                  },
+                  "gap": 14,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lrDc4",
+                      "name": "skelCb3",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#F1F5F9",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XpcGb",
+                      "name": "skelInfo3",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 7,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pSolM",
+                          "name": "skelName3",
+                          "width": 240,
+                          "height": 11,
+                          "fill": "#E4E4E7",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "frame",
+                          "id": "LdKUY",
+                          "name": "skelMeta3",
+                          "width": 160,
+                          "height": 9,
+                          "fill": "#F1F5F9",
+                          "cornerRadius": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YVjET",
+                  "name": "skel4",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#F1F5F9"
+                  },
+                  "gap": 14,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Duswi",
+                      "name": "skelCb4",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#F1F5F9",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zzVH2",
+                      "name": "skelInfo4",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 7,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "oSZ49",
+                          "name": "skelName4",
+                          "width": 240,
+                          "height": 11,
+                          "fill": "#E4E4E7",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "frame",
+                          "id": "I3jQp",
+                          "name": "skelMeta4",
+                          "width": 160,
+                          "height": 9,
+                          "fill": "#F1F5F9",
+                          "cornerRadius": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MWIpB",
+                  "name": "skel5",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#F1F5F9"
+                  },
+                  "gap": 14,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vPntj",
+                      "name": "skelCb5",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#F1F5F9",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vn6iC",
+                      "name": "skelInfo5",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 7,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "xQIod",
+                          "name": "skelName5",
+                          "width": 240,
+                          "height": 11,
+                          "fill": "#E4E4E7",
+                          "cornerRadius": 4
+                        },
+                        {
+                          "type": "frame",
+                          "id": "MBGfg",
+                          "name": "skelMeta5",
+                          "width": 160,
+                          "height": 9,
+                          "fill": "#F1F5F9",
+                          "cornerRadius": 4
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tkYik",
+              "name": "loadFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "gap": 8,
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "MInzu",
+                  "name": "spinnerIco",
+                  "width": 15,
+                  "height": 15,
+                  "iconFontName": "loader-circle",
+                  "iconFontFamily": "lucide",
+                  "fill": "#2563EB"
+                },
+                {
+                  "type": "text",
+                  "id": "bGE74",
+                  "name": "loadFooterTxt",
+                  "fill": "#71717A",
+                  "content": "Komunikuji s ORIS…",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "uooTJ",
+      "x": 18148,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportEmptyOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 860,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ZMgNd",
+          "x": 360,
+          "y": 160,
+          "name": "emptyPanel",
+          "clip": true,
+          "width": 560,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "pShF0",
+              "name": "emptyHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "y1DYC",
+                  "name": "emptyTitleWrap",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZFlqo",
+                      "name": "emptyTitle",
+                      "fill": "#18181B",
+                      "content": "Importovat z ORIS",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "sblzU",
+                      "name": "emptySubtitle",
+                      "fill": "#71717A",
+                      "content": "Vyberte závody, které chcete naimportovat",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hn7k9",
+                  "name": "emptyCloseBtn",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "L5ckJ",
+                      "name": "emptyCloseIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#71717A"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "NjtnH",
+              "name": "emptyRegionBar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#F1F5F9"
+              },
+              "gap": 8,
+              "padding": [
+                14,
+                24
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "xiemT",
+                  "name": "emptyRegionLbl",
+                  "fill": "#71717A",
+                  "content": "Oblast:",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "WnyA6",
+                  "name": "emptyRegJM",
+                  "height": 30,
+                  "fill": "#EFF6FF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1.5,
+                    "fill": "#2563EB"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "mJKbk",
+                      "name": "emptyRegJMTxt",
+                      "fill": "#2563EB",
+                      "content": "Jihomoravská",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p5gjW1",
+                  "name": "emptyRegCR",
+                  "height": 30,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "q8qdO",
+                      "name": "emptyRegCRTxt",
+                      "fill": "#3F3F46",
+                      "content": "Celá ČR",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WYjy3",
+              "name": "emptyBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "padding": [
+                48,
+                24,
+                56,
+                24
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QRKur",
+                  "name": "emptyIconCirc",
+                  "width": 64,
+                  "height": 64,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 32,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "wbtVo",
+                      "name": "emptyIco",
+                      "width": 28,
+                      "height": 28,
+                      "iconFontName": "calendar-x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#A1A1AA"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "G1O4OH",
+                  "name": "emptyTxtWrap",
+                  "width": 360,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "dNo38",
+                      "name": "emptyHead",
+                      "fill": "#18181B",
+                      "content": "Žádné závody k importu",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "arIFA",
+                      "name": "emptyDesc",
+                      "fill": "#71717A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "V této oblasti nejsou v ORIS žádné nové závody. Zkuste vybrat jinou oblast.",
+                      "lineHeight": 1.5,
+                      "textAlign": "center",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CzVYM",
+              "name": "emptyFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FqG1h",
+                  "name": "emptyDoneBtn",
+                  "height": 38,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NDyvb",
+                      "name": "emptyDoneTxt",
+                      "fill": "#3F3F46",
+                      "content": "Zavřít",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "baD74",
+      "x": 19508,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportLargeListOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 980,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "KmB1t",
+          "x": 360,
+          "y": 70,
+          "name": "bigPanel",
+          "clip": true,
+          "width": 560,
+          "height": 840,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "hkw3T",
+              "name": "bigHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                20,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "p24rYq",
+                  "name": "bigTitleWrap",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "x0WWE",
+                      "name": "bigTitle",
+                      "fill": "#18181B",
+                      "content": "Importovat z ORIS",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "djBPI",
+                      "name": "bigSubtitle",
+                      "fill": "#71717A",
+                      "content": "Vyberte závody, které chcete naimportovat",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dXgAC",
+                  "name": "bigCloseBtn",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "dTlBF",
+                      "name": "bigCloseIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "x",
+                      "iconFontFamily": "lucide",
+                      "fill": "#71717A"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "lUYvh",
+              "name": "bigRegionBar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#F1F5F9"
+              },
+              "gap": 8,
+              "padding": [
+                14,
+                24
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "C0ry22",
+                  "name": "bigRegionLbl",
+                  "fill": "#71717A",
+                  "content": "Oblast:",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "ONCTd",
+                  "name": "bigRegJM",
+                  "height": 30,
+                  "fill": "#EFF6FF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1.5,
+                    "fill": "#2563EB"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KWVCv",
+                      "name": "bigRegJMTxt",
+                      "fill": "#2563EB",
+                      "content": "Jihomoravská",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "a2gM8",
+                  "name": "bigRegCR",
+                  "height": 30,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JZPrR",
+                      "name": "bigRegCRTxt",
+                      "fill": "#3F3F46",
+                      "content": "Celá ČR",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c3cSuH",
+              "name": "bigSelBar",
+              "width": "fill_container",
+              "fill": "#EFF6FF",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#DBEAFE"
+              },
+              "padding": [
+                12,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vqppF",
+                  "name": "bigSelLeft",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "yGAte",
+                      "name": "bigSelIco",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "circle-check",
+                      "iconFontFamily": "lucide",
+                      "fill": "#2563EB"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ofJca",
+                      "name": "bigSelTxt",
+                      "fill": "#1D4ED8",
+                      "content": "Vybráno 12 z 34 závodů",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aAoWZ",
+                  "name": "bigSelRight",
+                  "gap": 14,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "S8js73",
+                      "name": "bigShowSel",
+                      "gap": 5,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "TEfSP",
+                          "name": "bigFilterIco",
+                          "width": 13,
+                          "height": 13,
+                          "iconFontName": "list-filter",
+                          "iconFontFamily": "lucide",
+                          "fill": "#2563EB"
+                        },
+                        {
+                          "type": "text",
+                          "id": "OntcN",
+                          "name": "bigShowSelTxt",
+                          "fill": "#2563EB",
+                          "content": "Zobrazit jen vybrané",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "XJRPp",
+                      "name": "bigClearTxt",
+                      "fill": "#71717A",
+                      "content": "Zrušit výběr",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "q3eSF",
+              "name": "bigToolbar",
+              "width": "fill_container",
+              "padding": [
+                12,
+                24,
+                8,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "h65wpV",
+                  "name": "bigSaLeft",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "c7ZXOD",
+                      "name": "bigSaCheck",
+                      "width": 18,
+                      "height": 18,
+                      "fill": "#2563EB",
+                      "cornerRadius": 5,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "KKzaQ",
+                          "name": "bigSaDash",
+                          "width": 9,
+                          "height": 2,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 1
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "P7rjJ",
+                      "name": "bigSaLbl",
+                      "fill": "#3F3F46",
+                      "content": "Vybrat vše",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "CWNUr",
+                  "name": "bigShownCount",
+                  "fill": "#A1A1AA",
+                  "content": "zobrazeno 34 z 34",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "P3N8l",
+              "name": "bigScrollOuter",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Qq55J",
+                  "x": 0,
+                  "y": 0,
+                  "name": "bigListClip",
+                  "clip": true,
+                  "width": 560,
+                  "height": 430,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "CNdWD",
+                      "x": 0,
+                      "y": 0,
+                      "name": "bigList",
+                      "width": 560,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": [
+                        8,
+                        24,
+                        24,
+                        24
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Y0Go0",
+                          "name": "r_Jarní pohár — krátká trať",
+                          "width": "fill_container",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#2563EB"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "qLQYr",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#2563EB",
+                              "cornerRadius": 5,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "Qashb",
+                                  "name": "cbi",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "check",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#FFFFFF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "z7u0rK",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "H1E2pY",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Jarní pohár — krátká trať",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "qsXph",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "SHijF",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "S0qHb",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#2563EB"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "gUlgu",
+                                          "name": "dt",
+                                          "fill": "#2563EB",
+                                          "content": "14.06.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "bgEZZ",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "SSRey",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "TJ Spartak — Adamov",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HQRLB",
+                          "name": "r_Mistrovství kraje — klasika",
+                          "width": "fill_container",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#2563EB"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "B1XEpH",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#2563EB",
+                              "cornerRadius": 5,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "U3K2E",
+                                  "name": "cbi",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "check",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#FFFFFF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "rNUZe",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "iLBEE",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Mistrovství kraje — klasika",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Yn7ic",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "vS269",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "o6ACV",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#2563EB"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "JxmYX",
+                                          "name": "dt",
+                                          "fill": "#2563EB",
+                                          "content": "21.06.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "fZCrl",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Lv5tQ",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "SK Žabovřesky — Bílovice",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "EcsIq",
+                          "name": "r_Letní sprint Vysočiny",
+                          "width": "fill_container",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#2563EB"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "duMCz",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#2563EB",
+                              "cornerRadius": 5,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "t7Chiq",
+                                  "name": "cbi",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "check",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#FFFFFF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "SdN3Z",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "S3WiGv",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Letní sprint Vysočiny",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "cwJEL",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "aNciO",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "SGBYz",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#2563EB"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "JAFbl",
+                                          "name": "dt",
+                                          "fill": "#2563EB",
+                                          "content": "28.06.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "aupmz",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "QVpdS",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "OK Jihlava — Jihlava",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "BNRn1",
+                          "name": "r_Pohár východu — štafety",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#E4E4E7"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "bhu58",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 5,
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1.5,
+                                "fill": "#D4D4D8"
+                              },
+                              "justifyContent": "center",
+                              "alignItems": "center"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "pLz8D",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "AKuRC",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Pohár východu — štafety",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "o4OLUG",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "FFq7Q",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "BvPyw",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#A1A1AA"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "tlOoD",
+                                          "name": "dt",
+                                          "fill": "#71717A",
+                                          "content": "05.07.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "o7poZf",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "EbTDa",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "TJ Slovan — Blansko",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jOBAT",
+                          "name": "r_Noční orienťák",
+                          "width": "fill_container",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#2563EB"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "aYXqR",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#2563EB",
+                              "cornerRadius": 5,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "ra7kI",
+                                  "name": "cbi",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "check",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#FFFFFF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ZF4JS",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "msQDb",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Noční orienťák",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "A1uqU",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "rIhnE",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "O5y6VW",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#2563EB"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "lxkLU",
+                                          "name": "dt",
+                                          "fill": "#2563EB",
+                                          "content": "12.07.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "fmnfL",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "fQjBQ",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "SK Brno — Kohoutovice",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "S7o0w5",
+                          "name": "r_Ultralong Open",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#E4E4E7"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "TBpao",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 5,
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1.5,
+                                "fill": "#D4D4D8"
+                              },
+                              "justifyContent": "center",
+                              "alignItems": "center"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "o7tnx",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "z1K4ZJ",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Ultralong Open",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "P6AsJa",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "iMCJC",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "OOLBa",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#A1A1AA"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "N1FIgm",
+                                          "name": "dt",
+                                          "fill": "#71717A",
+                                          "content": "19.07.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "ycy7c",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "IKJvI",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "KOB Choceň — Choceň",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "UHUjw",
+                          "name": "r_Krajský žebříček #5",
+                          "width": "fill_container",
+                          "fill": "#EFF6FF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1.5,
+                            "fill": "#2563EB"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "PDE5v",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#2563EB",
+                              "cornerRadius": 5,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "wYhaT",
+                                  "name": "cbi",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "check",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#FFFFFF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "B25lz",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "c5IA9",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Krajský žebříček #5",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "L1bIU",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "In1YA",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "M5a1t",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#2563EB"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "MVHkZ",
+                                          "name": "dt",
+                                          "fill": "#2563EB",
+                                          "content": "26.07.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "DY6LQ",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "zrUh4",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "OK Lokomotiva — Vyškov",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "r47KZo",
+                          "name": "r_Letní víceboj — sprint",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#E4E4E7"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "w9DXiV",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 5,
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1.5,
+                                "fill": "#D4D4D8"
+                              },
+                              "justifyContent": "center",
+                              "alignItems": "center"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ZBD3j",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "qBOzV",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Letní víceboj — sprint",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "nfxdE",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "QqrY9",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "RjIrt",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#A1A1AA"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "gD3QH",
+                                          "name": "dt",
+                                          "fill": "#71717A",
+                                          "content": "02.08.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "JvzWO",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "u5kkqU",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "TJ Sokol — Kuřim",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DOSsl",
+                          "name": "r_Pohár Drahanské vrchoviny",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#E4E4E7"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "H7xVA",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 5,
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1.5,
+                                "fill": "#D4D4D8"
+                              },
+                              "justifyContent": "center",
+                              "alignItems": "center"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "P0Uq7",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ZEVbP",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Pohár Drahanské vrchoviny",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "gSiEV",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "LaIyl",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "CRFSW",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#A1A1AA"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "tcJnK",
+                                          "name": "dt",
+                                          "fill": "#71717A",
+                                          "content": "09.08.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "Wosrk",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "LMBsp",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "SK Tesla — Boskovice",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Z34wr",
+                          "name": "r_Klubový závod — klasika",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "#E4E4E7"
+                          },
+                          "gap": 14,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "NJgdg",
+                              "name": "cb",
+                              "width": 18,
+                              "height": 18,
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 5,
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1.5,
+                                "fill": "#D4D4D8"
+                              },
+                              "justifyContent": "center",
+                              "alignItems": "center"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "HS2qf",
+                              "name": "info",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 3,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "b3j9BH",
+                                  "name": "nm",
+                                  "fill": "#18181B",
+                                  "content": "Klubový závod — klasika",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "reGUV",
+                                  "name": "meta",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "OSvpb",
+                                      "name": "dc",
+                                      "gap": 5,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "LrkO9",
+                                          "name": "ci",
+                                          "width": 12,
+                                          "height": 12,
+                                          "iconFontName": "calendar",
+                                          "iconFontFamily": "lucide",
+                                          "fill": "#A1A1AA"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "e7x6Gk",
+                                          "name": "dt",
+                                          "fill": "#71717A",
+                                          "content": "16.08.2026",
+                                          "fontFamily": "Inter",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "ZUZ5s",
+                                      "name": "dot",
+                                      "fill": "#D4D4D8",
+                                      "content": "·",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "mJdZA",
+                                      "name": "og",
+                                      "fill": "#71717A",
+                                      "content": "OOB TJ — Tišnov",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "C78CCv",
+                  "x": 0,
+                  "y": 374,
+                  "name": "bigFade",
+                  "width": 560,
+                  "height": 56,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 270,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#FFFFFF00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#FFFFFF",
+                        "position": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "O1Hv0",
+                  "x": 548,
+                  "y": 8,
+                  "name": "bigScrollTrack",
+                  "width": 4,
+                  "height": 414,
+                  "fill": "#F1F5F9",
+                  "cornerRadius": 2,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "H7Okwa",
+                      "layoutPosition": "absolute",
+                      "x": 0,
+                      "y": 0,
+                      "name": "bigScrollThumb",
+                      "width": 4,
+                      "height": 150,
+                      "fill": "#D4D4D8",
+                      "cornerRadius": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k1z16",
+              "name": "bigFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "JftT9",
+                  "name": "bigFooterInfo",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "GnHxN",
+                      "name": "bigFInfoIco",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "info",
+                      "iconFontFamily": "lucide",
+                      "fill": "#A1A1AA"
+                    },
+                    {
+                      "type": "text",
+                      "id": "e7Shqp",
+                      "name": "bigFInfoTxt",
+                      "fill": "#A1A1AA",
+                      "content": "Import proběhne po jednotlivých závodech",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "iPiML",
+                  "name": "bigFooterBtns",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qhk4z",
+                      "name": "bigCancelBtn",
+                      "height": 38,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E4E4E7"
+                      },
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D99KIp",
+                          "name": "bigCancelTxt",
+                          "fill": "#3F3F46",
+                          "content": "Zrušit",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "m9I4WM",
+                      "name": "bigConfirmBtn",
+                      "height": 38,
+                      "fill": "#2563EB",
+                      "cornerRadius": 8,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        18
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "fWDem",
+                          "name": "bigImportIco",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "download",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "type": "text",
+                          "id": "BepRi",
+                          "name": "bigConfirmTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Importovat vybrané (12)",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "HmdAX",
+      "x": 20868,
+      "y": -1297.2118319145657,
+      "name": "Events - OrisImportProgressOverlay (Admin)",
+      "reusable": true,
+      "clip": true,
+      "width": 1280,
+      "height": 980,
+      "fill": "#00000066",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Nq9fh",
+          "x": 360,
+          "y": 90,
+          "name": "progPanel",
+          "clip": true,
+          "width": 560,
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000033",
+            "offset": {
+              "x": 0,
+              "y": 20
+            },
+            "blur": 60,
+            "spread": -10
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dCrWe",
+              "name": "progHeader",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                20,
+                24
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Sh6bR",
+                  "name": "progHTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "l6GEn",
+                      "name": "progTitleWrap",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "RcoLB",
+                          "name": "progTitle",
+                          "fill": "#18181B",
+                          "content": "Importuji závody…",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "r4HTL",
+                          "name": "progSubtitle",
+                          "fill": "#71717A",
+                          "content": "Hotovo 5 z 12 — nezavírejte okno",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "KJ9Oh",
+                      "name": "progPct",
+                      "fill": "#2563EB",
+                      "content": "42 %",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n7JUOc",
+                  "name": "progBarTrack",
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": 6,
+                  "fill": "#EFF6FF",
+                  "cornerRadius": 3,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "I3odQa",
+                      "x": 0,
+                      "y": 0,
+                      "name": "progBarFill",
+                      "width": 215,
+                      "height": 6,
+                      "fill": "#2563EB",
+                      "cornerRadius": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LKva1",
+              "name": "progBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [
+                16,
+                24,
+                20,
+                24
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OyhrT",
+                  "name": "pr_Jarní pohár — krátká trať",
+                  "width": "fill_container",
+                  "fill": "#F0FDF4",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BBF7D0"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "FqbxI",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "k8Z7Q",
+                          "name": "pnm",
+                          "fill": "#18181B",
+                          "content": "14.06.2026 Jarní pohár — krátká trať",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jhUhn",
+                          "name": "pmsg",
+                          "fill": "#15803D",
+                          "content": "Naimportováno",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gRl7o",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "EgIvS",
+                          "name": "psi",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "circle-check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#16A34A"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "m8N9sF",
+                  "name": "pr_Mistrovství kraje — klasika",
+                  "width": "fill_container",
+                  "fill": "#F0FDF4",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BBF7D0"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cgyAH",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lJIm7",
+                          "name": "pnm",
+                          "fill": "#18181B",
+                          "content": "21.06.2026 Mistrovství kraje — klasika",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ywPA3",
+                          "name": "pmsg",
+                          "fill": "#15803D",
+                          "content": "Naimportováno",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "K8H4w5",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "s3U7n",
+                          "name": "psi",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "circle-check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#16A34A"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "moKLO",
+                  "name": "pr_Letní sprint Vysočiny",
+                  "width": "fill_container",
+                  "fill": "#FEF2F2",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#FECACA"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GKUQh",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Z8kok",
+                          "name": "pnm",
+                          "fill": "#18181B",
+                          "content": "28.06.2026 Letní sprint Vysočiny",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "XWdBX",
+                          "name": "pmsg",
+                          "fill": "#B91C1C",
+                          "content": "Už existuje",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "e7fny",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "bJiH2",
+                          "name": "psi",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "circle-x",
+                          "iconFontFamily": "lucide",
+                          "fill": "#DC2626"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Rwzl4",
+                  "name": "pr_Noční orienťák",
+                  "width": "fill_container",
+                  "fill": "#F0FDF4",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BBF7D0"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Q0wri4",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yuwbY",
+                          "name": "pnm",
+                          "fill": "#18181B",
+                          "content": "12.07.2026 Noční orienťák",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "impSw",
+                          "name": "pmsg",
+                          "fill": "#15803D",
+                          "content": "Naimportováno",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jLafz",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "abIZW",
+                          "name": "psi",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "circle-check",
+                          "iconFontFamily": "lucide",
+                          "fill": "#16A34A"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SGCK3",
+                  "name": "pr_Krajský žebříček #5",
+                  "width": "fill_container",
+                  "fill": "#EFF6FF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#BFDBFE"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ODU6v",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "INtmo",
+                          "name": "pnm",
+                          "fill": "#18181B",
+                          "content": "26.07.2026 Krajský žebříček #5",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "XKcKn",
+                          "name": "pmsg",
+                          "fill": "#1D4ED8",
+                          "content": "Importuji…",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sXmFv",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "UmZ9d",
+                          "name": "psi",
+                          "width": 17,
+                          "height": 17,
+                          "iconFontName": "loader-circle",
+                          "iconFontFamily": "lucide",
+                          "fill": "#2563EB"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CUj47",
+                  "name": "pr_Letní víceboj — sprint",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "eVtjz",
+                      "name": "pinfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bycJX",
+                          "name": "pnm",
+                          "fill": "#A1A1AA",
+                          "content": "02.08.2026 Letní víceboj — sprint",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JkZgJ",
+                          "name": "pmsg",
+                          "fill": "#A1A1AA",
+                          "content": "Čeká ve frontě",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LepYW",
+                      "name": "pstat",
+                      "width": 20,
+                      "height": 20,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "ROSFW",
+                          "name": "psi",
+                          "fill": "#D4D4D8",
+                          "width": 8,
+                          "height": 8
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ex8uk",
+              "name": "progFooter",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "#E4E4E7"
+              },
+              "padding": [
+                16,
+                24
+              ],
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ScITf",
+                  "name": "progCancelBtn",
+                  "height": 38,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "#E4E4E7"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cfeD7",
+                      "name": "progCancelTxt",
+                      "fill": "#3F3F46",
+                      "content": "Zrušit zbývající",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "themes": {
