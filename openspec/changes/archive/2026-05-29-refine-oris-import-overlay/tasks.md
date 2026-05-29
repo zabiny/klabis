@@ -25,5 +25,5 @@
 
 ## 4. Spec sync a uzavření
 
-- [ ] 4.1 Spustit testy (backend events + oris, frontend dotčené) a ověřit zelený stav
-- [ ] 4.2 Synchronizovat delta spec do `openspec/specs/events/spec.md` (MODIFIED requirement Multi-Event ORIS Import) a archivovat změnu
+- [x] 4.1 Spustit testy (backend events + oris, frontend dotčené) a ověřit zelený stav
+- [x] 4.2 Synchronizovat delta spec do `openspec/specs/events/spec.md` (MODIFIED requirement Multi-Event ORIS Import) a archivovat změnu
