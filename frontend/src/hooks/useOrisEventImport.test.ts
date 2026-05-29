@@ -241,6 +241,42 @@ describe('useOrisEventImport', () => {
         });
     });
 
+    describe('import result status normalization', () => {
+        it('normalizes lowercase status from API response to uppercase', async () => {
+            const mutateMock = vi.fn();
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as any);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: [{id: 1, name: 'Z', date: '2025-01-01', organizer: 'A', location: null}],
+                isError: false,
+                isSuccess: true,
+            } as any);
+
+            const template = makeTemplate();
+            const {result} = renderHook(() => useOrisEventImport(template, true));
+
+            act(() => result.current.onToggleId(1));
+            act(() => result.current.onImportBatch());
+
+            const [, callbacks] = mutateMock.mock.calls[0];
+            await act(async () => {
+                await callbacks.onSuccess({
+                    data: {
+                        totalProcessed: 2,
+                        successCount: 1,
+                        failureCount: 1,
+                        results: [
+                            {orisId: 1, name: 'Závod A', date: '2025-01-01', status: 'imported'},
+                            {orisId: 2, name: 'Závod B', date: '2025-01-02', status: 'failed'},
+                        ],
+                    },
+                });
+            });
+
+            expect(result.current.importResult?.results[0].status).toBe('IMPORTED');
+            expect(result.current.importResult?.results[1].status).toBe('FAILED');
+        });
+    });
+
     describe('onToggleAll with limit', () => {
         const template = makeTemplate({
             properties: [{name: 'orisIds', type: 'number', multi: true, max: 2}],

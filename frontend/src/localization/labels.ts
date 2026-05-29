@@ -112,7 +112,6 @@ export const labels = {
     orisImport: {
         dialogTitle: 'Importovat z ORIS',
         selectAll: 'Vybrat vše',
-        selectedCount: (n: number) => `Vybráno: ${n}`,
         selectedOf: (selected: number, total: number) => `Vybráno ${selected} z ${total} závodů`,
         showOnlySelected: 'Zobrazit jen vybrané',
         clearSelection: 'Zrušit výběr',

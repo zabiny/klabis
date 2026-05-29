@@ -71,13 +71,13 @@ export const ImportOrisEventModal = ({
                     <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto">
                         {importResult.results.map((item) => (
                             <li key={item.orisId} className="flex items-start gap-3 py-1.5 border-b border-border last:border-0">
-                                {item.status?.toLowerCase() === 'imported' ? (
+                                {item.status === 'IMPORTED' ? (
                                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                                 ) : (
                                     <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                 )}
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                    <span className={`font-medium text-sm ${item.status?.toLowerCase() === 'failed' ? 'text-red-700' : 'text-text-primary'}`}>
+                                    <span className={`font-medium text-sm ${item.status === 'FAILED' ? 'text-red-700' : 'text-text-primary'}`}>
                                         {item.name ?? `ORIS #${item.orisId}`}
                                     </span>
                                     {item.date && (
