@@ -96,6 +96,14 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
             .reuseRefreshTokens(false)
             .build();
 
+    // Temporary longer TTLs: silent refresh does not yet work on PROD. Once it is fixed,
+    // return these to the default TTLs (access 5 min / refresh 24 h).
+    private static final TokenSettings WEB_CLIENT_TOKEN_SETTINGS = TokenSettings.builder()
+            .accessTokenTimeToLive(Duration.ofMinutes(60))
+            .refreshTokenTimeToLive(Duration.ofDays(7))
+            .reuseRefreshTokens(false)
+            .build();
+
     private List<String> resolveScopes() {
         String defaultScopes = String.join(",",
                 "openid",
@@ -125,7 +133,7 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(true)
                         .build())
-                .tokenSettings(DEFAULT_TOKEN_SETTINGS)
+                .tokenSettings(WEB_CLIENT_TOKEN_SETTINGS)
                 .build();
 
         registeredClientRepository.save(c);
