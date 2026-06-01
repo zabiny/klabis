@@ -70,17 +70,28 @@ class HalFormsMultiPropertyModule extends SimpleModule {
         @Override
         public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
             String propertyName = getHalFormsPropertyName(bean);
-            List<String> inlineOptions = propertyName != null
-                    ? HalFormsSupport.getInlineOptionsForProperty(propertyName)
-                    : null;
 
-            if (inlineOptions != null && !inlineOptions.isEmpty()) {
-                HalFormsOptions options = HalFormsOptions.inline(inlineOptions.toArray());
-                gen.writeName("options");
-                prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
-            } else {
-                super.serializeAsProperty(bean, gen, prov);
+            if (propertyName != null) {
+                List<HalFormsInlineOption> promptedOptions = HalFormsSupport.getPromptedInlineOptionsForProperty(propertyName);
+                if (promptedOptions != null && !promptedOptions.isEmpty()) {
+                    HalFormsOptions options = HalFormsOptions.inline(promptedOptions)
+                            .withValueField("value")
+                            .withPromptField("prompt");
+                    gen.writeName("options");
+                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
+                    return;
+                }
+
+                List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
+                if (inlineOptions != null && !inlineOptions.isEmpty()) {
+                    HalFormsOptions options = HalFormsOptions.inline(inlineOptions.toArray());
+                    gen.writeName("options");
+                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
+                    return;
+                }
             }
+
+            super.serializeAsProperty(bean, gen, prov);
         }
     }
 

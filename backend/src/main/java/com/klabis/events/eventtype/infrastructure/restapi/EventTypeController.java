@@ -1,6 +1,7 @@
 package com.klabis.events.eventtype.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
@@ -59,11 +60,11 @@ public class EventTypeController {
                 .map(eventType -> entityModelWithDomain(EventTypeDtoMapper.toDto(eventType), eventType))
                 .toList();
 
-        List<String> disciplineOptions = eventTypeManagementService.listDisciplineOptions();
+        List<HalFormsInlineOption> disciplineOptions = eventTypeManagementService.listDisciplineOptions();
         CollectionModel<EntityModel<EventTypeDto>> collection = CollectionModel.of(items);
         klabisLinkTo(methodOn(EventTypeController.class).listEventTypes()).ifPresent(link ->
                 collection.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithOptions(
+                        .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(EventTypeController.class).createEventType(null),
                                 Map.of("orisDisciplineIds", disciplineOptions)))));
 
@@ -132,10 +133,10 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
     public void process(EntityModel<EventTypeDto> dtoModel, EventType eventType) {
         UUID id = eventType.getId().value();
         EventTypeManagementPort port = portProvider.getIfAvailable();
-        List<String> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
+        List<HalFormsInlineOption> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
         klabisLinkTo(methodOn(EventTypeController.class).getEventType(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithOptions(
+                        .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(EventTypeController.class).updateEventType(id, null),
                                 Map.of("orisDisciplineIds", disciplineOptions)))
                         .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(id)))));

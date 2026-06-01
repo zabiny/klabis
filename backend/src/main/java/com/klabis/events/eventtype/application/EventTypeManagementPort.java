@@ -1,5 +1,6 @@
 package com.klabis.events.eventtype.application;
 
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.eventtype.domain.EventType;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -20,8 +21,9 @@ public interface EventTypeManagementPort {
     List<EventType> listAllSorted();
 
     /**
-     * Returns ORIS discipline IDs available for assignment to event types.
+     * Returns ORIS discipline options available for assignment to event types.
+     * Each option carries a machine value (discipline ID string) and a human-readable Czech prompt.
      * Returns an empty list when ORIS integration is not active.
      */
-    List<String> listDisciplineOptions();
+    List<HalFormsInlineOption> listDisciplineOptions();
 }

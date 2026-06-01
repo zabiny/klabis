@@ -3,6 +3,7 @@ package com.klabis.events.eventtype.infrastructure.restapi;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventTypeId;
@@ -48,7 +49,7 @@ class EventTypeControllerTest {
 
     @BeforeEach
     void stubDisciplineOptions() {
-        when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of());
+        when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.<HalFormsInlineOption>of());
     }
 
     @Nested
@@ -95,19 +96,28 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("createEventType template should include orisDisciplineIds property with inline options from ORIS")
+        @DisplayName("createEventType template should include orisDisciplineIds property with inline value+prompt options from ORIS")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldIncludeOrisDisciplineIdsWithInlineOptionsInCreateTemplate() throws Exception {
             when(eventTypeManagementService.listAllSorted()).thenReturn(List.of());
-            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of("1", "3", "7"));
+            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption("1", "Orientační běh"),
+                    new HalFormsInlineOption("3", "Lyžařský OB"),
+                    new HalFormsInlineOption("7", "Sprint")
+            ));
 
             mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')]").exists())
                     .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0]").value("1"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1]").value("3"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[2]").value("7"));
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0].value").value("1"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0].prompt").value("Orientační běh"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1].value").value("3"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1].prompt").value("Lyžařský OB"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[2].value").value("7"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[2].prompt").value("Sprint"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.valueField").value("value"));
         }
 
         @Test
@@ -185,20 +195,27 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("updateEventType template should include orisDisciplineIds property with inline options from ORIS")
+        @DisplayName("updateEventType template should include orisDisciplineIds property with inline value+prompt options from ORIS")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldIncludeOrisDisciplineIdsWithInlineOptionsInUpdateTemplate() throws Exception {
             UUID id = UUID.randomUUID();
             EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1, null), 1);
             when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
-            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of("1", "3"));
+            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption("1", "Orientační běh"),
+                    new HalFormsInlineOption("3", "Lyžařský OB")
+            ));
 
             mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')]").exists())
                     .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0]").value("1"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1]").value("3"));
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0].value").value("1"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0].prompt").value("Orientační běh"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1].value").value("3"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1].prompt").value("Lyžařský OB"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.valueField").value("value"));
         }
 
         @Test

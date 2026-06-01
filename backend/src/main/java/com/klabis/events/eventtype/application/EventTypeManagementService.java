@@ -1,6 +1,8 @@
 package com.klabis.events.eventtype.application;
 
 import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.eventtype.domain.*;
 import org.jmolecules.ddd.annotation.Service;
@@ -97,21 +99,27 @@ class EventTypeManagementService implements EventTypeManagementPort {
 
     @Transactional(readOnly = true)
     @Override
-    public List<String> listDisciplineOptions() {
+    public List<HalFormsInlineOption> listDisciplineOptions() {
         if (orisApiClient.isEmpty()) {
             return Collections.emptyList();
         }
         try {
             return orisApiClient.get().listDisciplines().payload()
                     .map(disciplines -> disciplines.values().stream()
-                            .map(entry -> Integer.parseInt(entry.id()))
-                            .sorted()
-                            .map(String::valueOf)
+                            .sorted(java.util.Comparator.comparingInt(e -> Integer.parseInt(e.id())))
+                            .map(EventTypeManagementService::toInlineOption)
                             .toList())
                     .orElse(Collections.emptyList());
         } catch (RuntimeException e) {
             log.warn("ORIS discipline list unavailable, returning empty options", e);
             return Collections.emptyList();
         }
+    }
+
+    private static HalFormsInlineOption toInlineOption(DisciplineListEntry entry) {
+        String prompt = (entry.descriptionCZ() != null && !entry.descriptionCZ().isBlank())
+                ? entry.descriptionCZ()
+                : entry.name();
+        return new HalFormsInlineOption(entry.id(), prompt);
     }
 }

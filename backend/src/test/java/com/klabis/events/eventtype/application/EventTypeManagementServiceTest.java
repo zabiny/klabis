@@ -2,6 +2,7 @@ package com.klabis.events.eventtype.application;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.eventtype.domain.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,35 +129,52 @@ class EventTypeManagementServiceTest {
     class ListDisciplineOptionsTests {
 
         @Test
-        @DisplayName("should return sorted discipline IDs from ORIS as strings")
-        void shouldReturnSortedDisciplineIdsWhenOrisAvailable() {
+        @DisplayName("should return value+prompt pairs sorted numerically by ID")
+        void shouldReturnSortedDisciplineOptionsWithPromptWhenOrisAvailable() {
             var disciplineMap = Map.of(
-                    "3", new DisciplineListEntry("3", "Orientační běh", null, null, null, null),
-                    "1", new DisciplineListEntry("1", "LOB", null, null, null, null),
-                    "7", new DisciplineListEntry("7", "Sprint", null, null, null, null)
+                    "3", new DisciplineListEntry("3", "OB", "Orientační běh", null, null, null),
+                    "1", new DisciplineListEntry("1", "LOB", "Lyžařský orientační běh", null, null, null),
+                    "7", new DisciplineListEntry("7", "Sprint", "Sprintová orientace", null, null, null)
             );
             when(orisApiClient.listDisciplines())
                     .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
 
-            List<String> options = service.listDisciplineOptions();
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
 
-            assertThat(options).containsExactly("1", "3", "7");
+            assertThat(options).extracting(HalFormsInlineOption::value).containsExactly("1", "3", "7");
+            assertThat(options).extracting(HalFormsInlineOption::prompt)
+                    .containsExactly("Lyžařský orientační běh", "Orientační běh", "Sprintová orientace");
+        }
+
+        @Test
+        @DisplayName("should use name as prompt fallback when descriptionCZ is null or blank")
+        void shouldFallbackToNameWhenDescriptionCzMissing() {
+            var disciplineMap = Map.of(
+                    "5", new DisciplineListEntry("5", "MTB-OB", null, null, null, null),
+                    "6", new DisciplineListEntry("6", "TRAIL", "   ", null, null, null)
+            );
+            when(orisApiClient.listDisciplines())
+                    .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
+
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
+
+            assertThat(options).extracting(HalFormsInlineOption::prompt).containsExactlyInAnyOrder("MTB-OB", "TRAIL");
         }
 
         @Test
         @DisplayName("should sort discipline IDs numerically, not lexicographically")
         void shouldReturnNumericallyOrderedDisciplineIds() {
             var disciplineMap = Map.of(
-                    "10", new DisciplineListEntry("10", "Noc", null, null, null, null),
-                    "2", new DisciplineListEntry("2", "LOB", null, null, null, null),
-                    "9", new DisciplineListEntry("9", "Sprint", null, null, null, null)
+                    "10", new DisciplineListEntry("10", "Noc", "Noční OB", null, null, null),
+                    "2", new DisciplineListEntry("2", "LOB", "Lyžařský OB", null, null, null),
+                    "9", new DisciplineListEntry("9", "Sprint", "Sprint OB", null, null, null)
             );
             when(orisApiClient.listDisciplines())
                     .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
 
-            List<String> options = service.listDisciplineOptions();
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
 
-            assertThat(options).containsExactly("2", "9", "10");
+            assertThat(options).extracting(HalFormsInlineOption::value).containsExactly("2", "9", "10");
         }
 
         @Test
@@ -165,7 +183,7 @@ class EventTypeManagementServiceTest {
             when(orisApiClient.listDisciplines())
                     .thenReturn(new OrisApiClient.OrisResponse<>(null, "JSON", "ERR", null, "getList"));
 
-            List<String> options = service.listDisciplineOptions();
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
 
             assertThat(options).isEmpty();
         }
@@ -176,7 +194,7 @@ class EventTypeManagementServiceTest {
             when(orisApiClient.listDisciplines())
                     .thenThrow(new RuntimeException("ORIS connection refused"));
 
-            List<String> options = service.listDisciplineOptions();
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
 
             assertThat(options).isEmpty();
         }
@@ -187,7 +205,7 @@ class EventTypeManagementServiceTest {
             EventTypeManagementService serviceWithoutOris =
                     new EventTypeManagementService(eventTypeRepository, Optional.empty());
 
-            List<String> options = serviceWithoutOris.listDisciplineOptions();
+            List<HalFormsInlineOption> options = serviceWithoutOris.listDisciplineOptions();
 
             assertThat(options).isEmpty();
         }
