@@ -322,6 +322,7 @@ class OrisEventImportServiceTest {
         Mockito.lenient().when(details.entryDate2()).thenReturn(null);
         Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.lenient().when(details.classes()).thenReturn(null);
+        Mockito.lenient().when(details.discipline()).thenReturn(null);
         return details;
     }
 
@@ -338,6 +339,7 @@ class OrisEventImportServiceTest {
         Mockito.lenient().when(details.entryDate2()).thenReturn(null);
         Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.when(details.classes()).thenReturn(classes);
+        Mockito.lenient().when(details.discipline()).thenReturn(null);
         return details;
     }
 

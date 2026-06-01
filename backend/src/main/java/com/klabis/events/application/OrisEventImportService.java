@@ -2,13 +2,14 @@ package com.klabis.events.application;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
+import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
-import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
+import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.events.eventtype.domain.EventTypeRepository;
 import com.klabis.oris.OrisIntegrationComponent;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
@@ -69,8 +70,7 @@ class OrisEventImportService implements OrisEventImportPort {
                 .categories(categories)
                 .build());
 
-        // Auto-map event type from ORIS Level.nameCZ (case-insensitive catalog lookup)
-        event.applyAutoMappedEventType(resolveEventTypeFromOrisLevel(details.level()));
+        event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
 
         try {
             return eventRepository.save(event);
@@ -106,8 +106,7 @@ class OrisEventImportService implements OrisEventImportPort {
                 .categories(categories)
                 .build());
 
-        // Auto-map event type from ORIS Level.nameCZ; preserves existing type when ORIS provides no match
-        event.applyAutoMappedEventType(resolveEventTypeFromOrisLevel(details.level()));
+        event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
 
         eventRepository.save(event);
     }
@@ -146,18 +145,13 @@ class OrisEventImportService implements OrisEventImportPort {
                 .toList();
     }
 
-    /**
-     * Resolves an EventTypeId by looking up the ORIS Level.nameCZ in the event type catalog (case-insensitive).
-     * Returns null when Level is absent or has no catalog match — callers must treat null as "no change".
-     * Chosen field: Level.nameCZ — represents competition level (e.g. "Klub", "Oblastní přebor", "Mistrovství ČR"),
-     * which maps naturally to Klabis event type categories. Discipline encodes sport variant (OB/MTBO/LOB), not type.
-     */
-    private EventTypeId resolveEventTypeFromOrisLevel(Level level) {
-        if (level == null || level.nameCZ() == null || level.nameCZ().isBlank()) {
+    private EventTypeId resolveEventTypeFromOrisDiscipline(Discipline discipline) {
+        if (discipline == null || discipline.id() <= 0) {
+            // ORIS uses id 0 as sentinel for a missing discipline
             return null;
         }
-        return eventTypeRepository.findByNameIgnoreCase(level.nameCZ())
-                .map(eventType -> eventType.getId())
+        return eventTypeRepository.findByOrisDisciplineId(discipline.id())
+                .map(EventType::getId)
                 .orElse(null);
     }
 

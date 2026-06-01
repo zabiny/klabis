@@ -640,11 +640,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     /**
-     * Applies a resolved event type from ORIS auto-mapping.
-     * Only sets the type when a catalog match was found; passing null is a no-op (preserves existing type).
+     * Fills in the event type from ORIS auto-mapping only when no type has been set yet.
+     * Preserves any type already present — whether set automatically on a previous sync or manually by a user.
      */
     public void applyAutoMappedEventType(EventTypeId resolvedTypeId) {
-        if (resolvedTypeId != null) {
+        if (this.eventTypeId == null && resolvedTypeId != null) {
             this.eventTypeId = resolvedTypeId;
         }
     }
