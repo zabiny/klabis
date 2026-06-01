@@ -10,6 +10,7 @@ import com.klabis.events.eventtype.application.EventTypeManagementPort;
 import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.events.eventtype.domain.EventTypeInUseException;
 import com.klabis.events.eventtype.domain.EventTypeNotFoundException;
+import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ class EventTypeControllerTest {
         @DisplayName("should return 200 with list of event types for user with EVENTS:READ")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturnListOfEventTypes() throws Exception {
-            EventType eventType = EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1);
+            EventType eventType = EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1);
             when(eventTypeManagementService.listAllSorted()).thenReturn(List.of(eventType));
 
             mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -97,7 +98,7 @@ class EventTypeControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturnEventTypeDetails() throws Exception {
             UUID id = UUID.randomUUID();
-            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2);
+            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2, null), 2);
             when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
 
             mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -123,7 +124,7 @@ class EventTypeControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeUpdateAndDeleteTemplates() throws Exception {
             UUID id = UUID.randomUUID();
-            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1), 1);
+            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1, null), 1);
             when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
 
             mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -149,7 +150,7 @@ class EventTypeControllerTest {
         @DisplayName("should return 201 with Location header")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventType() throws Exception {
-            EventType created = EventType.create(new EventType.CreateEventType("Trénink", null, null), 1);
+            EventType created = EventType.create(new EventType.CreateEventType("Trénink", null, null, null), 1);
             when(eventTypeManagementService.createEventType(any())).thenReturn(created);
 
             mockMvc.perform(post("/api/event-types")
@@ -171,6 +172,21 @@ class EventTypeControllerTest {
                                     {"color": "#ff0000"}
                                     """))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 409 when ORIS discipline already mapped to another event type")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn409WhenOrisDisciplineAlreadyMapped() throws Exception {
+            when(eventTypeManagementService.createEventType(any()))
+                    .thenThrow(new OrisDisciplineAlreadyMappedException(42));
+
+            mockMvc.perform(post("/api/event-types")
+                            .contentType("application/json")
+                            .content("""
+                                    {"name": "Trénink", "orisDisciplineIds": [42]}
+                                    """))
+                    .andExpect(status().isConflict());
         }
 
         @Test

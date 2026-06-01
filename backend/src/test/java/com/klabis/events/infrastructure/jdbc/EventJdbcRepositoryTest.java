@@ -159,7 +159,7 @@ class EventJdbcRepositoryTest {
             // Given — create an EventType to use as FK target
             com.klabis.events.eventtype.domain.EventType eventType = eventTypeRepository.save(
                     com.klabis.events.eventtype.domain.EventType.create(
-                            new com.klabis.events.eventtype.domain.EventType.CreateEventType("Trénink", "#00ff00", 1), 1));
+                            new com.klabis.events.eventtype.domain.EventType.CreateEventType("Trénink", "#00ff00", 1, null), 1));
             EventTypeId expectedTypeId = eventType.getId();
 
             Event event = Event.create(EventCreateEventBuilder.builder()
@@ -1525,9 +1525,9 @@ class EventJdbcRepositoryTest {
         @DisplayName("should return only events whose eventTypeId is in the requested list")
         void shouldReturnOnlyEventsMatchingEventTypeIds() {
             EventType typeA = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1));
             EventType typeB = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2));
+                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2, null), 2));
 
             Event eventWithTypeA = Event.create(EventCreateEventBuilder.builder()
                     .name("Event Type A")
@@ -1565,9 +1565,9 @@ class EventJdbcRepositoryTest {
         @DisplayName("should return events matching any of multiple requested type IDs (OR semantics)")
         void shouldReturnEventsMatchingAnyOfMultipleTypeIds() {
             EventType typeA = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1));
             EventType typeB = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2), 2));
+                    EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2, null), 2));
 
             Event eventWithTypeA = Event.create(EventCreateEventBuilder.builder()
                     .name("Event Type A")
@@ -1607,7 +1607,7 @@ class EventJdbcRepositoryTest {
         @DisplayName("should return all events when eventTypeIds list is empty")
         void shouldReturnAllEventsWhenTypeIdListIsEmpty() {
             EventType typeA = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1));
 
             eventRepository.save(Event.create(EventCreateEventBuilder.builder()
                     .name("Event With Type").eventDate(LocalDate.of(2026, 8, 1)).organizer("OOB")
@@ -1627,7 +1627,7 @@ class EventJdbcRepositoryTest {
         @DisplayName("should return empty when no events match the requested type ID")
         void shouldReturnEmptyWhenNoEventMatchesTypeId() {
             EventType typeA = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1), 1));
+                    EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1));
 
             eventRepository.save(Event.create(EventCreateEventBuilder.builder()
                     .name("Event No Type").eventDate(LocalDate.of(2026, 8, 1)).organizer("OOB").build()));

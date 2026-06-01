@@ -24,4 +24,6 @@ public interface EventTypeRepository {
     boolean existsEventReferencingType(EventTypeId id);
 
     List<String> findEventNamesReferencingType(EventTypeId id, int limit);
+
+    Optional<EventType> findByOrisDisciplineId(int disciplineId);
 }

@@ -3,6 +3,7 @@ package com.klabis.events.eventtype.infrastructure.restapi;
 import com.klabis.events.eventtype.domain.EventTypeInUseException;
 import com.klabis.events.eventtype.domain.EventTypeNameAlreadyExistsException;
 import com.klabis.events.eventtype.domain.EventTypeNotFoundException;
+import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,13 @@ class EventTypeExceptionHandler {
     ErrorResponse handleNameConflict(EventTypeNameAlreadyExistsException ex) {
         return ErrorResponse.builder(ex, HttpStatus.CONFLICT, ex.getMessage())
                 .title("Event Type Name Already Exists")
+                .build();
+    }
+
+    @ExceptionHandler(OrisDisciplineAlreadyMappedException.class)
+    ErrorResponse handleOrisDisciplineConflict(OrisDisciplineAlreadyMappedException ex) {
+        return ErrorResponse.builder(ex, HttpStatus.CONFLICT, ex.getMessage())
+                .title("ORIS Discipline Already Mapped")
                 .build();
     }
 }

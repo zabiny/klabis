@@ -3,7 +3,9 @@ package com.klabis.events.eventtype.infrastructure.jdbc;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.events.eventtype.domain.EventTypeRepository;
+import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +22,31 @@ class EventTypeRepositoryAdapter implements EventTypeRepository {
 
     @Override
     public EventType save(EventType eventType) {
-        return jdbcRepository.save(EventTypeMemento.from(eventType)).toEventType();
+        try {
+            return jdbcRepository.save(EventTypeMemento.from(eventType)).toEventType();
+        } catch (DataIntegrityViolationException e) {
+            if (isDisciplineConstraintViolation(e)) {
+                // Translate DB unique constraint on discipline_id to a domain exception so the
+                // race-condition path (TOCTOU between app-layer check and save) surfaces correctly.
+                throw new OrisDisciplineAlreadyMappedException(-1);
+            }
+            throw e;
+        }
+    }
+
+    private static boolean isDisciplineConstraintViolation(DataIntegrityViolationException e) {
+        Throwable cause = e;
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase();
+                if (lower.contains("event_type_oris_disciplines") || lower.contains("idx_event_type_oris_disciplines_discipline")) {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     @Override
@@ -63,5 +89,14 @@ class EventTypeRepositoryAdapter implements EventTypeRepository {
     @Override
     public List<String> findEventNamesReferencingType(EventTypeId id, int limit) {
         return jdbcRepository.findEventNamesReferencingType(id.value(), limit);
+    }
+
+    @Override
+    public Optional<EventType> findByOrisDisciplineId(int disciplineId) {
+        // Custom @Query does not trigger @MappedCollection loading in Spring Data JDBC.
+        // Reload the full aggregate via findById to ensure orisDisciplineIds is populated.
+        return jdbcRepository.findByOrisDisciplineId(disciplineId)
+                .map(m -> jdbcRepository.findById(m.getId()).orElseThrow())
+                .map(EventTypeMemento::toEventType);
     }
 }

@@ -30,8 +30,8 @@ public class EventTypeDataBootstrap implements BootstrapDataInitializer {
 
     @Override
     public void bootstrapData() {
-        eventTypeManagement.createEventType(new EventType.CreateEventType(RACE_TYPE_NAME, "#1d4ed8", 0));
-        eventTypeManagement.createEventType(new EventType.CreateEventType(TRAINING_TYPE_NAME, "#16a34a", 1));
+        eventTypeManagement.createEventType(new EventType.CreateEventType(RACE_TYPE_NAME, "#1d4ed8", 0, null));
+        eventTypeManagement.createEventType(new EventType.CreateEventType(TRAINING_TYPE_NAME, "#16a34a", 1, null));
 
         LOG.info("Created 2 bootstrap event types ({}, {})", RACE_TYPE_NAME, TRAINING_TYPE_NAME);
     }

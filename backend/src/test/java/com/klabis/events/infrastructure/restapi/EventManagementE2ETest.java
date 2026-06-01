@@ -496,7 +496,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     void shouldCreateEventWithEventTypeAndExposeItInResponse() throws Exception {
         // Given — create an event type to reference
         EventType eventType = eventTypeManagementPort.createEventType(
-                new EventType.CreateEventType("Trénink", "#0000ff", 1));
+                new EventType.CreateEventType("Trénink", "#0000ff", 1, null));
         EventTypeId eventTypeId = eventType.getId();
 
         Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
@@ -560,9 +560,9 @@ class EventManagementE2ETest extends SecurityTestBase {
     void shouldUpdateEventTypeId() throws Exception {
         // Given — create two event types
         EventType typeA = eventTypeManagementPort.createEventType(
-                new EventType.CreateEventType("Závod", "#ff0000", 1));
+                new EventType.CreateEventType("Závod", "#ff0000", 1, null));
         EventType typeB = eventTypeManagementPort.createEventType(
-                new EventType.CreateEventType("Sprint", "#00ff00", 2));
+                new EventType.CreateEventType("Sprint", "#00ff00", 2, null));
 
         Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Changeable Event")
@@ -610,7 +610,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     void shouldClearEventTypeIdOnUpdate() throws Exception {
         // Given — create event with a type
         EventType eventType = eventTypeManagementPort.createEventType(
-                new EventType.CreateEventType("Orientační závod", "#ff8800", 3));
+                new EventType.CreateEventType("Orientační závod", "#ff8800", 3, null));
 
         Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Event To Clear Type")

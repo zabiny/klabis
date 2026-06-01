@@ -66,7 +66,7 @@ class OrisEventTypeAutoMappingTest {
             int orisId = 100;
             EventTypeId expectedTypeId = EventTypeId.generate();
             EventType matchedType = EventType.create(
-                    new EventType.CreateEventType("Trénink", null, 1), 1);
+                    new EventType.CreateEventType("Trénink", null, 1, null), 1);
             Level level = new Level(5, "T", "Trénink", "Training");
 
             EventDetails details = buildDetailsWithLevel(orisId, "Noční trénink", level);
@@ -121,7 +121,7 @@ class OrisEventTypeAutoMappingTest {
         void shouldMatchCaseInsensitively() {
             int orisId = 103;
             EventType matchedType = EventType.create(
-                    new EventType.CreateEventType("Trénink", null, 1), 1);
+                    new EventType.CreateEventType("Trénink", null, 1, null), 1);
             Level level = new Level(5, "T", "TRÉNINK", "Training");
 
             EventDetails details = buildDetailsWithLevel(orisId, "Trénink v lese", level);
@@ -153,7 +153,7 @@ class OrisEventTypeAutoMappingTest {
                     .build();
 
             EventType matchedType = EventType.create(
-                    new EventType.CreateEventType("Závod", null, 2), 2);
+                    new EventType.CreateEventType("Závod", null, 2, null), 2);
             Level level = new Level(3, "Z", "Závod", "Race");
 
             EventDetails details = buildDetailsWithLevel(orisId, "Závod v lese", level);

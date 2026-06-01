@@ -258,6 +258,19 @@ COMMENT ON COLUMN event_types.color IS 'Optional hex color code for display (e.g
 COMMENT ON COLUMN event_types.sort_order IS 'Position in sorted lists and filters; newly created types get MAX+1';
 
 -- ============================================================================
+-- 4b. EVENT_TYPE_ORIS_DISCIPLINES TABLE
+-- Maps ORIS discipline IDs to event types (each discipline ID belongs to at most one event type)
+-- ============================================================================
+
+CREATE TABLE event_type_oris_disciplines
+(
+    event_type_id UUID NOT NULL REFERENCES event_types (id) ON DELETE CASCADE,
+    discipline_id INT  NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_event_type_oris_disciplines_discipline ON event_type_oris_disciplines (discipline_id);
+
+-- ============================================================================
 -- 5. EVENTS TABLE
 -- Stores orienteering event information
 -- ============================================================================

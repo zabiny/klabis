@@ -6,6 +6,7 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 class EventTypeManagementService implements EventTypeManagementPort {
@@ -24,6 +25,7 @@ class EventTypeManagementService implements EventTypeManagementPort {
         if (eventTypeRepository.existsByNameIgnoreCase(command.name())) {
             throw new EventTypeNameAlreadyExistsException(command.name());
         }
+        validateNoDisciplineIdConflict(command.orisDisciplineIds(), null);
         int nextSortOrder = eventTypeRepository.findMaxSortOrder() + 1;
         EventType eventType = EventType.create(command, nextSortOrder);
         return eventTypeRepository.save(eventType);
@@ -40,8 +42,22 @@ class EventTypeManagementService implements EventTypeManagementPort {
             throw new EventTypeNameAlreadyExistsException(command.name());
         }
 
+        validateNoDisciplineIdConflict(command.orisDisciplineIds(), eventType);
         eventType.update(command);
         eventTypeRepository.save(eventType);
+    }
+
+    private void validateNoDisciplineIdConflict(Set<Integer> disciplineIds, EventType ownerOrNull) {
+        if (disciplineIds == null || disciplineIds.isEmpty()) {
+            return;
+        }
+        for (int disciplineId : disciplineIds) {
+            eventTypeRepository.findByOrisDisciplineId(disciplineId).ifPresent(existing -> {
+                if (ownerOrNull == null || !existing.getId().equals(ownerOrNull.getId())) {
+                    throw new OrisDisciplineAlreadyMappedException(disciplineId);
+                }
+            });
+        }
     }
 
     @Transactional
