@@ -18,11 +18,11 @@
 
 ## 3. Move members financial-state port to `members.application` (slice 3)
 
-- [ ] 3.1 Move `MemberFinancialStatePort` from `com.klabis.members` to `com.klabis.members.application`
-- [ ] 3.2 Add `@NamedInterface("application")` to `members/application/package-info.java`
-- [ ] 3.3 Update consumer `members.application.ManagementService` import
-- [ ] 3.4 Update implementor `finance.application.MemberFinancialStateAdapter` import
-- [ ] 3.5 Run members + finance + `ModuleStructureVerificationTest` (test-runner agent); commit slice
+- [x] 3.1 Move `MemberFinancialStatePort` from `com.klabis.members` to `com.klabis.members.application`
+- [x] 3.2 Add `@NamedInterface("application")` to `members/application/package-info.java`
+- [x] 3.3 Update consumer `members.application.ManagementService` import
+- [x] 3.4 Update implementor `finance.application.MemberFinancialStateAdapter` import
+- [x] 3.5 Run members + finance + `ModuleStructureVerificationTest` (test-runner agent); commit slice
 
 ## 4. Verification & docs
 

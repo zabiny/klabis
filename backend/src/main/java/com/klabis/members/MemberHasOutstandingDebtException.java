@@ -1,5 +1,7 @@
 package com.klabis.members;
 
+import com.klabis.members.application.MemberFinancialStatePort;
+
 /**
  * Thrown when suspending a member who has a negative account balance (outstanding debt).
  * The caller must ensure the debt is resolved before re-attempting suspension.

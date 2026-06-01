@@ -1,5 +1,7 @@
-package com.klabis.members;
+package com.klabis.members.application;
 
+import com.klabis.members.MemberId;
+import com.klabis.members.MonetaryAmount;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 /**

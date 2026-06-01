@@ -3,7 +3,7 @@ package com.klabis.finance.application;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberFinancialStatePort;
+import com.klabis.members.application.MemberFinancialStatePort;
 import com.klabis.members.MonetaryAmount;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
