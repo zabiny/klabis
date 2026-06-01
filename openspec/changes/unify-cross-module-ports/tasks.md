@@ -26,7 +26,7 @@
 
 ## 4. Verification & docs
 
-- [ ] 4.1 Full Modulith verification passes (`ModuleStructureVerificationTest`, `FinanceModuleStructureTest`, `ModuleDocumentationTests`)
-- [ ] 4.2 Confirm no remaining cross-module import of any `*Repository` and no cross-module port in a module root package
-- [ ] 4.3 Update `backend-patterns` skill: document "cross-module ports live in `<module>.application`, exposed via `@NamedInterface`"
-- [ ] 4.4 Add an ADR in `docs/design-decisions.md` recording the convention and the authorizationserver→primary-port rule
+- [x] 4.1 Full Modulith verification passes (`ModuleStructureVerificationTest`, `FinanceModuleStructureTest`, `ModuleDocumentationTests`)
+- [x] 4.2 Confirm no remaining cross-module import of any `*Repository` and no cross-module port in a module root package
+- [x] 4.3 Update `backend-patterns` skill: document "cross-module ports live in `<module>.application`, exposed via `@NamedInterface`"
+- [x] 4.4 Add an ADR in `docs/design-decisions.md` recording the convention and the authorizationserver→primary-port rule

@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.5.0
+version: 0.5.1
 ---
 
 # Klabis Backend Patterns
@@ -50,6 +50,20 @@ com.klabis.<module>/
 ```bash
 grep -rh "import com.klabis.<module>" src/main/java/com/klabis/<other-modules>/ --include="*.java" | sort -u
 ```
+
+### Cross-Module Ports Live in `<module>.application`
+
+Ports consumed across module boundaries (jMolecules `@PrimaryPort` / `@SecondaryPort` used by another Modulith module) live in the `<module>.application` package, exposed via `@NamedInterface("application")` declared in that package's `package-info.java` — **not** in the module root package.
+
+```java
+// com/klabis/<module>/application/package-info.java
+@org.springframework.modulith.NamedInterface("application")
+package com.klabis.<module>.application;
+```
+
+Canonical examples: `events.application` (`EventDataProvider`, `EventScheduleQuery`), `members.application` (`MemberFinancialStatePort`, implemented by finance's `MemberFinancialStateAdapter`), `finance.application`. A consuming module imports the port from the foreign `<module>.application` named interface.
+
+**A module depends only on another module's PRIMARY port — never on a foreign repository or any other secondary port.** Reach for the other module's `@PrimaryPort` application service; do not inject its `<Aggregate>Repository`. Example: `KlabisUserDetailsService` consumes `com.klabis.common.users.application.PermissionService` (a primary port), not `UserPermissionsRepository` (a secondary port). The Modulith `ModuleStructureVerificationTest` enforces these named-interface boundaries.
 
 ## Domain Layer
 
