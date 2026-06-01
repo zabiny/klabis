@@ -1,7 +1,7 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventId;
-import com.klabis.events.EventScheduleQuery;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;

@@ -6,6 +6,8 @@ import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
+import com.klabis.events.application.EventDataProvider;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Events;
@@ -20,7 +22,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
-import com.klabis.events.EventScheduleQuery;
 
 import java.time.LocalDate;
 import java.util.List;

@@ -5,7 +5,7 @@ import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.*;
 import com.klabis.events.EventId;
-import com.klabis.events.EventScheduleQuery;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

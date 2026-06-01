@@ -1,7 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.events.EventId;
-import com.klabis.events.EventScheduleQuery;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Events;

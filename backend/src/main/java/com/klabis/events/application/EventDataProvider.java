@@ -1,5 +1,7 @@
-package com.klabis.events;
+package com.klabis.events.application;
 
+import com.klabis.events.EventData;
+import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 /**

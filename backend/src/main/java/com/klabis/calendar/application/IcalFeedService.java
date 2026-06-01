@@ -1,7 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.events.EventId;
-import com.klabis.events.EventScheduleQuery;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.events.domain.Events;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;

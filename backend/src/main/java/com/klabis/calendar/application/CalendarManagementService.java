@@ -7,7 +7,7 @@ import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.calendar.domain.ManualCalendarItem;
 import com.klabis.events.EventId;
-import com.klabis.events.EventScheduleQuery;
+import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.jspecify.annotations.Nullable;

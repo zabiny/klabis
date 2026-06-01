@@ -1,8 +1,8 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventData;
-import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
+import com.klabis.events.application.EventDataProvider;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.Events;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;

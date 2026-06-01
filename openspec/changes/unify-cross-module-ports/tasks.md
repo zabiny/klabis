@@ -8,13 +8,13 @@
 
 ## 2. Move events cross-module ports to `events.application` (slice 2)
 
-- [ ] 2.1 Move `EventDataProvider` from `com.klabis.events` to `com.klabis.events.application` (interface + `@SecondaryPort`)
-- [ ] 2.2 Move `EventScheduleQuery` from `com.klabis.events` to `com.klabis.events.application`
-- [ ] 2.3 Create `events/application/package-info.java` with `@NamedInterface("application")` (mirror `finance/application/package-info.java`)
-- [ ] 2.4 Update implementations: `EventDataProviderImpl`, `EventScheduleQueryImpl` (package import only)
-- [ ] 2.5 Update consumers: `CalendarEventSyncService`, `CalendarManagementService`, `IcalFeedService` imports to `com.klabis.events.application.*`
-- [ ] 2.6 Update `calendar/package-info.java` javadoc / any `@NamedInterface` reference if it names the old port location
-- [ ] 2.7 Run events + calendar + `ModuleStructureVerificationTest` (test-runner agent); commit slice
+- [x] 2.1 Move `EventDataProvider` from `com.klabis.events` to `com.klabis.events.application` (interface + `@SecondaryPort`)
+- [x] 2.2 Move `EventScheduleQuery` from `com.klabis.events` to `com.klabis.events.application`
+- [x] 2.3 Create `events/application/package-info.java` with `@NamedInterface("application")` (mirror `finance/application/package-info.java`)
+- [x] 2.4 Update implementations: `EventDataProviderImpl`, `EventScheduleQueryImpl` (package import only)
+- [x] 2.5 Update consumers: `CalendarEventSyncService`, `CalendarManagementService`, `IcalFeedService` imports to `com.klabis.events.application.*`
+- [x] 2.6 Update `calendar/package-info.java` javadoc / any `@NamedInterface` reference if it names the old port location (no change needed — javadoc names type, not package path)
+- [x] 2.7 Run events + calendar + `ModuleStructureVerificationTest` (test-runner agent); commit slice
 
 ## 3. Move members financial-state port to `members.application` (slice 3)
 
