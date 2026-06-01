@@ -6,27 +6,55 @@ import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
 
 /**
- * Extracts a scalar value from a form array element.
+ * Extracts a scalar value from a form array element as a string.
  *
  * When a HAL resource contains a List field (e.g. trainers), the API returns
  * full embedded objects like {memberId: "uuid", _links: {...}}. The checkbox
- * group options use UUID strings as values, so raw objects must be normalized
- * to their scalar ID before comparison or submission.
+ * group options use string values for UI comparison, so raw objects must be
+ * normalized to their scalar string ID before comparison or display.
  */
-export function normalizeArrayValue(item: unknown): string | number {
-    if (typeof item === 'string' || typeof item === 'number') {
+export function normalizeArrayValue(item: unknown): string {
+    if (typeof item === 'number') {
+        return String(item);
+    }
+    if (typeof item === 'string') {
         return item;
     }
     if (item !== null && typeof item === 'object') {
         const obj = item as Record<string, unknown>;
         if (typeof obj.memberId === 'string') return obj.memberId;
-        if (typeof obj.value === 'string' || typeof obj.value === 'number') return obj.value as string | number;
+        if (typeof obj.value === 'string') return obj.value;
+        if (typeof obj.value === 'number') return String(obj.value);
     }
     return String(item);
 }
 
-function needsNormalization(arr: unknown[]): boolean {
-    return arr.some((item) => item !== null && typeof item === 'object');
+/**
+ * Converts a string checkbox value to the correct submission type based on the HAL property type.
+ *
+ * For number-typed properties (e.g. orisDisciplineIds: Set<Integer> on backend),
+ * values must be submitted as numbers — Jackson cannot deserialize string "1" into Integer.
+ * For all other types (text, UUID-based trainers), string submission is correct.
+ */
+function toSubmitValue(value: string, propType: string): string | number {
+    if (propType === 'number') {
+        return Number(value);
+    }
+    return value;
+}
+
+/**
+ * Checks whether the array contains elements that need object/number → string normalization for UI display.
+ * Pure number[] where the prop type is 'number' does NOT need normalization — they are already the correct
+ * submit type and normalizeArrayValue handles string conversion for UI matching on the fly.
+ */
+function needsNormalization(arr: unknown[], propType: string): boolean {
+    return arr.some((item) => {
+        if (item !== null && typeof item === 'object') return true;
+        // number items in a non-number-typed field need string normalization
+        if (typeof item === 'number' && propType !== 'number') return true;
+        return false;
+    });
 }
 
 interface CheckboxGroupFieldProps {
@@ -43,11 +71,14 @@ const CheckboxGroupField = ({prop, errorText, renderMode, options, isLoading}: C
     const valueArray = Array.isArray(rawValue) ? rawValue : [];
 
     useEffect(() => {
-        if (needsNormalization(valueArray)) {
+        // Only normalize HAL objects (e.g. trainer {memberId, _links}) or number values in non-number fields.
+        // number[] for number-typed fields is already the correct submit type — no normalization needed.
+        if (needsNormalization(valueArray, prop.type)) {
             setFieldValue(prop.name, valueArray.map(normalizeArrayValue));
         }
     }, [prop.name]);  // intentionally only on mount — normalizes stale HAL objects from initial data
 
+    // UI display uses string comparison so number 1 matches string option "1"
     const normalizedValue = valueArray.map(normalizeArrayValue);
 
     return (
@@ -59,7 +90,9 @@ const CheckboxGroupField = ({prop, errorText, renderMode, options, isLoading}: C
             error={errorText}
             options={options}
             value={normalizedValue}
-            onChange={(value: (string | number)[]) => setFieldValue(prop.name, value)}
+            onChange={(value: (string | number)[]) =>
+                setFieldValue(prop.name, value.map(String).map((v) => toSubmitValue(v, prop.type)))
+            }
             direction="vertical"
         />
     );

@@ -89,4 +89,45 @@ describe('halFormsFieldsFactory', () => {
             expect(screen.getByRole('combobox')).toBeInTheDocument();
         });
     });
+
+    describe('multi-select with inline options', () => {
+        it('renders checkbox group when multi=true and options.inline has items', () => {
+            const prop: HalFormsProperty = {
+                name: 'orisDisciplineIds',
+                type: 'number',
+                multi: true,
+                options: {inline: [{value: '1', prompt: 'Orientační běh'}, {value: '3', prompt: 'Lyžařský OB'}]},
+            };
+            const element = halFormsFieldsFactory('number', makeProps(prop));
+            renderInFormik(element, '');
+            // useHalFormOptions mock returns [{value: 'A', label: 'A'}, {value: 'B', label: 'B'}]
+            expect(screen.getByLabelText('A')).toBeInTheDocument();
+            expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+        });
+
+        it('renders checkbox group when multiple=true and options.inline has items', () => {
+            const prop: HalFormsProperty = {
+                name: 'disciplineIds',
+                type: 'text',
+                multiple: true,
+                options: {inline: ['A', 'B']},
+            };
+            const element = halFormsFieldsFactory('text', makeProps(prop));
+            renderInFormik(element, '');
+            expect(screen.getByLabelText('A')).toBeInTheDocument();
+            expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+        });
+
+        it('renders select (not checkbox group) when multi=false and options.inline has items', () => {
+            const prop: HalFormsProperty = {
+                name: 'disciplineId',
+                type: 'text',
+                multi: false,
+                options: {inline: ['A', 'B']},
+            };
+            const element = halFormsFieldsFactory('text', makeProps(prop));
+            renderInFormik(element, '');
+            expect(screen.getByRole('combobox')).toBeInTheDocument();
+        });
+    });
 });

@@ -4707,6 +4707,105 @@
         ]
       }
     },
+    "/api/events/import-batch": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Batch import events from ORIS",
+        "description": "Imports multiple ORIS events in a single request. Each event is processed independently; a failure to import one event does not prevent the others from being imported. Always returns 200 — check failureCount in the response body for partial failures.",
+        "operationId": "importEventsBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - cannot promote a non-member to owner",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Batch import completed; inspect failureCount for partial failures",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelBulkImportResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
     "/api/event-types": {
       "get": {
         "tags": [
@@ -9339,6 +9438,14 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "orisDisciplineIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "uniqueItems": true
           }
         },
         "required": [
@@ -9943,6 +10050,76 @@
           }
         }
       },
+      "ImportBatchRequest": {
+        "type": "object",
+        "description": "Batch import command with list of ORIS event IDs",
+        "properties": {
+          "orisIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "maxItems": 50,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "orisIds"
+        ]
+      },
+      "EntityModelBulkImportResult": {
+        "type": "object",
+        "properties": {
+          "totalProcessed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "successCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failureCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventImportEntry"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "EventImportEntry": {
+        "type": "object",
+        "properties": {
+          "orisId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IMPORTED",
+              "FAILED"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
       "CreateEventType": {
         "type": "object",
         "description": "Event type creation data",
@@ -9959,6 +10136,14 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "orisDisciplineIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "uniqueItems": true
           }
         },
         "required": [
@@ -11393,6 +11578,14 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "orisDisciplineIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "uniqueItems": true
           },
           "_links": {
             "$ref": "#/components/schemas/Links"

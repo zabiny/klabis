@@ -165,6 +165,7 @@ export const labels = {
         color: 'Barva',
         sortOrder: 'Pořadí',
         eventTypeId: 'Typ akce',
+        orisDisciplineIds: 'ORIS disciplíny',
     },
 
     finance: {

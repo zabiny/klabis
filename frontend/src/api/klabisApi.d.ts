@@ -621,6 +621,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/import-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch import events from ORIS
+         * @description Imports multiple ORIS events in a single request. Each event is processed independently; a failure to import one event does not prevent the others from being imported. Always returns 200 — check failureCount in the response body for partial failures.
+         */
+        post: operations["importEventsBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event-types": {
         parameters: {
             query?: never;
@@ -1305,6 +1325,7 @@ export interface components {
             color?: string;
             /** Format: int32 */
             sortOrder?: number;
+            orisDisciplineIds?: number[];
         };
         /** @description Calendar item update data */
         UpdateCalendarItem: {
@@ -1537,12 +1558,37 @@ export interface components {
             /** Format: int32 */
             orisId?: number;
         };
+        /** @description Batch import command with list of ORIS event IDs */
+        ImportBatchRequest: {
+            orisIds: number[];
+        };
+        EntityModelBulkImportResult: {
+            /** Format: int32 */
+            totalProcessed?: number;
+            /** Format: int32 */
+            successCount?: number;
+            /** Format: int32 */
+            failureCount?: number;
+            results?: components["schemas"]["EventImportEntry"][];
+            _links?: components["schemas"]["Links"];
+        };
+        EventImportEntry: {
+            /** Format: int32 */
+            orisId?: number;
+            name?: string;
+            /** Format: date */
+            date?: string;
+            /** @enum {string} */
+            status?: "IMPORTED" | "FAILED";
+            error?: string;
+        };
         /** @description Event type creation data */
         CreateEventType: {
             name: string;
             color?: string;
             /** Format: int32 */
             sortOrder?: number;
+            orisDisciplineIds?: number[];
         };
         /** @description Preset creation data */
         CreateCategoryPreset: {
@@ -2089,6 +2135,7 @@ export interface components {
             color?: string;
             /** Format: int32 */
             sortOrder?: number;
+            orisDisciplineIds?: number[];
             _links?: components["schemas"]["Links"];
         };
         EntityModelDashboardModel: {
@@ -5605,6 +5652,84 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - cannot promote a non-member to owner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    importEventsBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Batch import completed; inspect failureCount for partial failures */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelBulkImportResult"];
+                };
             };
             /** @description Bad request - invalid argument */
             400: {

@@ -32,6 +32,9 @@ export const halFormsFieldsFactory = (
     }
 
     if (conf.prop.options) {
+        if (isMultipleProperty(conf.prop)) {
+            return <HalFormsCheckboxGroup {...conf} />
+        }
         return <HalFormsSelect {...conf} />
     }
 
