@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.ui.HalForms;
 import com.klabis.events.EventTypeId;

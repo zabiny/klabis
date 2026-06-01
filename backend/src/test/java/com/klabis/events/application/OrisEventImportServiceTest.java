@@ -6,7 +6,6 @@ import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
-import com.klabis.events.eventtype.domain.EventTypeRepository;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

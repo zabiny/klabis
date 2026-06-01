@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
@@ -7,11 +7,11 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.application.EventTypeManagementPort;
-import com.klabis.events.eventtype.domain.EventType;
-import com.klabis.events.eventtype.domain.EventTypeInUseException;
-import com.klabis.events.eventtype.domain.EventTypeNotFoundException;
-import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
+import com.klabis.events.application.EventTypeManagementPort;
+import com.klabis.events.domain.EventType;
+import com.klabis.events.domain.EventTypeInUseException;
+import com.klabis.events.domain.EventTypeNotFoundException;
+import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

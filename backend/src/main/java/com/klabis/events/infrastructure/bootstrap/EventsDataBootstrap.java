@@ -2,14 +2,8 @@ package com.klabis.events.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventFilter;
-import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.RegistrationDeadlines;
-import com.klabis.events.domain.SiCardNumber;
-import com.klabis.events.eventtype.application.EventTypeManagementPort;
-import com.klabis.events.eventtype.domain.EventType;
-import com.klabis.events.eventtype.infrastructure.bootstrap.EventTypeDataBootstrap;
+import com.klabis.events.application.EventTypeManagementPort;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.slf4j.Logger;

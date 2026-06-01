@@ -1,8 +1,8 @@
-package com.klabis.events.eventtype.infrastructure.jdbc;
+package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.domain.EventType;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;

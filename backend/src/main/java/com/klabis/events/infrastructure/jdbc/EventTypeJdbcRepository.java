@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.infrastructure.jdbc;
+package com.klabis.events.infrastructure.jdbc;
 
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;

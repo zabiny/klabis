@@ -1,9 +1,9 @@
-package com.klabis.events.eventtype.infrastructure.jdbc;
+package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.EventType;
-import com.klabis.events.eventtype.domain.EventTypeRepository;
+import com.klabis.events.domain.EventType;
+import com.klabis.events.domain.EventTypeRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.domain;
+package com.klabis.events.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventTypeId;

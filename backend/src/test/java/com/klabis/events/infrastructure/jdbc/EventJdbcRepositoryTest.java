@@ -1,14 +1,12 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.events.*;
+import com.klabis.events.EventAssert;
+import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
+import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
-import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventCreateEventBuilder;
-import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
-import com.klabis.events.eventtype.domain.EventType;
-import com.klabis.events.eventtype.domain.EventTypeRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -157,9 +155,9 @@ class EventJdbcRepositoryTest {
         @DisplayName("should persist and load eventTypeId (round-trip)")
         void shouldPersistAndLoadEventTypeId() {
             // Given — create an EventType to use as FK target
-            com.klabis.events.eventtype.domain.EventType eventType = eventTypeRepository.save(
-                    com.klabis.events.eventtype.domain.EventType.create(
-                            new com.klabis.events.eventtype.domain.EventType.CreateEventType("Trénink", "#00ff00", 1, null), 1));
+            EventType eventType = eventTypeRepository.save(
+                    EventType.create(
+                            new EventType.CreateEventType("Trénink", "#00ff00", 1, null), 1));
             EventTypeId expectedTypeId = eventType.getId();
 
             Event event = Event.create(EventCreateEventBuilder.builder()

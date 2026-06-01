@@ -1,9 +1,9 @@
-package com.klabis.events.eventtype.infrastructure.jdbc;
+package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.EventType;
-import com.klabis.events.eventtype.domain.EventTypeRepository;
-import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
+import com.klabis.events.domain.EventType;
+import com.klabis.events.domain.EventTypeRepository;
+import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.dao.DataIntegrityViolationException;
 

@@ -1,8 +1,8 @@
-package com.klabis.events.eventtype.application;
+package com.klabis.events.application;
 
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.domain.EventType;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.List;

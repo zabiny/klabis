@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.infrastructure.jdbc;
+package com.klabis.events.infrastructure.jdbc;
 
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;

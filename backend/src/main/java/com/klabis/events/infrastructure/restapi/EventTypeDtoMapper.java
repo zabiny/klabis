@@ -1,6 +1,6 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.domain.EventType;
 
 class EventTypeDtoMapper {
 

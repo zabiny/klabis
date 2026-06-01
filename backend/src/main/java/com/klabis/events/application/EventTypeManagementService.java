@@ -1,10 +1,10 @@
-package com.klabis.events.eventtype.application;
+package com.klabis.events.application;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.*;
+import com.klabis.events.domain.*;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

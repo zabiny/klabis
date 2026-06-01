@@ -1,4 +1,4 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
@@ -7,8 +7,8 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.application.EventTypeManagementPort;
-import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.application.EventTypeManagementPort;
+import com.klabis.events.domain.EventType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

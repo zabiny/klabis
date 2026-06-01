@@ -1,12 +1,8 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;

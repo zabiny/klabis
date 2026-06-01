@@ -1,8 +1,8 @@
-package com.klabis.events.eventtype.infrastructure.bootstrap;
+package com.klabis.events.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
-import com.klabis.events.eventtype.application.EventTypeManagementPort;
-import com.klabis.events.eventtype.domain.EventType;
+import com.klabis.events.application.EventTypeManagementPort;
+import com.klabis.events.domain.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;

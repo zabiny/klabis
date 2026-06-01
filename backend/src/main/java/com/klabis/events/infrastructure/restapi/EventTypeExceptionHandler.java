@@ -1,9 +1,9 @@
-package com.klabis.events.eventtype.infrastructure.restapi;
+package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.events.eventtype.domain.EventTypeInUseException;
-import com.klabis.events.eventtype.domain.EventTypeNameAlreadyExistsException;
-import com.klabis.events.eventtype.domain.EventTypeNotFoundException;
-import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
+import com.klabis.events.domain.EventTypeInUseException;
+import com.klabis.events.domain.EventTypeNameAlreadyExistsException;
+import com.klabis.events.domain.EventTypeNotFoundException;
+import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;

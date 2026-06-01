@@ -1,10 +1,12 @@
-package com.klabis.events.eventtype.application;
+package com.klabis.events.application;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.eventtype.domain.*;
+import com.klabis.events.domain.EventType;
+import com.klabis.events.domain.EventTypeRepository;
+import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
