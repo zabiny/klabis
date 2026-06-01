@@ -2,10 +2,10 @@ package com.klabis.common.users.authorization;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AccountStatus;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserPermissions;
-import com.klabis.common.users.domain.UserPermissionsRepository;
 import com.klabis.authorizationserver.KlabisUserDetailsService;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
 import com.klabis.common.users.testdata.UserTestDataConstants;
@@ -35,14 +35,14 @@ class KlabisUserDetailsServiceTest {
     private UserService userService;
 
     @Mock
-    private UserPermissionsRepository permissionsRepository;
+    private PermissionService permissionService;
 
     @InjectMocks
     private KlabisUserDetailsService userDetailsService;
 
     @BeforeEach
     void setUp() {
-        userDetailsService = new KlabisUserDetailsService(userService, permissionsRepository);
+        userDetailsService = new KlabisUserDetailsService(userService, permissionService);
     }
 
     @Test
@@ -54,7 +54,7 @@ class KlabisUserDetailsServiceTest {
 
         // Mock permissions repository
         UserPermissions permissions = UserPermissions.create(user.getId(), UserTestDataConstants.ADMIN_AUTHORITIES);
-        when(permissionsRepository.findById(user.getId())).thenReturn(Optional.of(permissions));
+        when(permissionService.getUserPermissions(user.getId())).thenReturn(permissions);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME);
 
@@ -86,7 +86,7 @@ class KlabisUserDetailsServiceTest {
 
         // Mock permissions repository
         UserPermissions permissions = UserPermissions.create(user.getId(), UserTestDataConstants.ADMIN_AUTHORITIES);
-        when(permissionsRepository.findById(user.getId())).thenReturn(Optional.of(permissions));
+        when(permissionService.getUserPermissions(user.getId())).thenReturn(permissions);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME);
 
@@ -104,7 +104,7 @@ class KlabisUserDetailsServiceTest {
 
         // Mock permissions repository
         UserPermissions permissions = UserPermissions.create(user.getId(), UserTestDataConstants.READ_ONLY_AUTHORITIES);
-        when(permissionsRepository.findById(user.getId())).thenReturn(Optional.of(permissions));
+        when(permissionService.getUserPermissions(user.getId())).thenReturn(permissions);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
 
@@ -124,7 +124,7 @@ class KlabisUserDetailsServiceTest {
 
         // Mock permissions repository
         UserPermissions permissions = UserPermissions.create(user.getId(), UserTestDataConstants.ADMIN_AUTHORITIES);
-        when(permissionsRepository.findById(user.getId())).thenReturn(Optional.of(permissions));
+        when(permissionService.getUserPermissions(user.getId())).thenReturn(permissions);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME);
 
@@ -142,7 +142,7 @@ class KlabisUserDetailsServiceTest {
 
         // Mock permissions repository
         UserPermissions permissions = UserPermissions.create(user.getId(), UserTestDataConstants.READ_ONLY_AUTHORITIES);
-        when(permissionsRepository.findById(user.getId())).thenReturn(Optional.of(permissions));
+        when(permissionService.getUserPermissions(user.getId())).thenReturn(permissions);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME);
 

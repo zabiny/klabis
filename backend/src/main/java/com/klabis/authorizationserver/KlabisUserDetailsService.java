@@ -2,9 +2,9 @@ package com.klabis.authorizationserver;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserPermissions;
-import com.klabis.common.users.domain.UserPermissionsRepository;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,13 +29,12 @@ import java.util.stream.Collectors;
 public class KlabisUserDetailsService implements UserDetailsService {
 
     private final UserService userService;
-    // TODO: hide permissions repository call behind UserService interface
-    private final UserPermissionsRepository permissionsRepository;
+    private final PermissionService permissionService;
 
     public KlabisUserDetailsService(UserService userService,
-                                    UserPermissionsRepository permissionsRepository) {
+                                    PermissionService permissionService) {
         this.userService = userService;
-        this.permissionsRepository = permissionsRepository;
+        this.permissionService = permissionService;
     }
 
     @Override
@@ -50,9 +49,7 @@ public class KlabisUserDetailsService implements UserDetailsService {
     public Optional<KlabisUserDetails> loadKlabisUserDetails(String username) {
         return userService.findUserByUsername(username)
                 .map(user -> {
-                    // Load UserPermissions - treat missing as empty authorities
-                    UserPermissions permissions = permissionsRepository.findById(user.getId())
-                            .orElse(UserPermissions.empty(user.getId()));
+                    UserPermissions permissions = permissionService.getUserPermissions(user.getId());
 
                     return new KlabisUserDetails(user, permissions);
 

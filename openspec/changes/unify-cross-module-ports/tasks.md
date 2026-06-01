@@ -1,10 +1,10 @@
 ## 1. Authorization server depends on primary port (slice 1)
 
-- [ ] 1.1 In `KlabisUserDetailsService`, replace the `UserPermissionsRepository` constructor dependency with `PermissionService` (from `com.klabis.common.users.application`)
-- [ ] 1.2 Replace inlined `permissionsRepository.findById(user.getId()).orElse(UserPermissions.empty(user.getId()))` with `permissionService.getUserPermissions(user.getId())`
-- [ ] 1.3 Remove the `// TODO: hide permissions repository call behind UserService interface` comment and the now-unused `UserPermissionsRepository` import
-- [ ] 1.4 Update/verify `KlabisUserDetailsService` unit tests to mock `PermissionService` instead of `UserPermissionsRepository`; assert missing-permissions → empty authorities still holds
-- [ ] 1.5 Run authorizationserver + users tests (test-runner agent); commit slice
+- [x] 1.1 In `KlabisUserDetailsService`, replace the `UserPermissionsRepository` constructor dependency with `PermissionService` (from `com.klabis.common.users.application`)
+- [x] 1.2 Replace inlined `permissionsRepository.findById(user.getId()).orElse(UserPermissions.empty(user.getId()))` with `permissionService.getUserPermissions(user.getId())`
+- [x] 1.3 Remove the `// TODO: hide permissions repository call behind UserService interface` comment and the now-unused `UserPermissionsRepository` import
+- [x] 1.4 Update/verify `KlabisUserDetailsService` unit tests to mock `PermissionService` instead of `UserPermissionsRepository`; assert missing-permissions → empty authorities still holds
+- [x] 1.5 Run authorizationserver + users tests (test-runner agent); commit slice
 
 ## 2. Move events cross-module ports to `events.application` (slice 2)
 
