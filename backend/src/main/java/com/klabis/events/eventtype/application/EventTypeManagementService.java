@@ -1,22 +1,30 @@
 package com.klabis.events.eventtype.application;
 
+import com.dpolach.api.orisclient.OrisApiClient;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.eventtype.domain.*;
 import org.jmolecules.ddd.annotation.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 class EventTypeManagementService implements EventTypeManagementPort {
 
+    private static final Logger log = LoggerFactory.getLogger(EventTypeManagementService.class);
     private static final int MAX_AFFECTED_EVENTS_IN_ERROR = 5;
 
     private final EventTypeRepository eventTypeRepository;
+    private final Optional<OrisApiClient> orisApiClient;
 
-    EventTypeManagementService(EventTypeRepository eventTypeRepository) {
+    EventTypeManagementService(EventTypeRepository eventTypeRepository, Optional<OrisApiClient> orisApiClient) {
         this.eventTypeRepository = eventTypeRepository;
+        this.orisApiClient = orisApiClient;
     }
 
     @Transactional
@@ -85,5 +93,25 @@ class EventTypeManagementService implements EventTypeManagementPort {
     @Override
     public List<EventType> listAllSorted() {
         return eventTypeRepository.findAllSorted();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<String> listDisciplineOptions() {
+        if (orisApiClient.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return orisApiClient.get().listDisciplines().payload()
+                    .map(disciplines -> disciplines.values().stream()
+                            .map(entry -> Integer.parseInt(entry.id()))
+                            .sorted()
+                            .map(String::valueOf)
+                            .toList())
+                    .orElse(Collections.emptyList());
+        } catch (RuntimeException e) {
+            log.warn("ORIS discipline list unavailable, returning empty options", e);
+            return Collections.emptyList();
+        }
     }
 }

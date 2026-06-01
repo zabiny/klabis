@@ -12,7 +12,8 @@ class EventTypeDtoMapper {
                 eventType.getId(),
                 eventType.getName(),
                 eventType.getColor().orElse(null),
-                eventType.getSortOrder()
+                eventType.getSortOrder(),
+                eventType.getOrisDisciplineIds()
         );
     }
 }

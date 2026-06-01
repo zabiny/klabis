@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -26,6 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -57,10 +59,13 @@ public class EventTypeController {
                 .map(eventType -> entityModelWithDomain(EventTypeDtoMapper.toDto(eventType), eventType))
                 .toList();
 
+        List<String> disciplineOptions = eventTypeManagementService.listDisciplineOptions();
         CollectionModel<EntityModel<EventTypeDto>> collection = CollectionModel.of(items);
         klabisLinkTo(methodOn(EventTypeController.class).listEventTypes()).ifPresent(link ->
                 collection.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).createEventType(null)))));
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(EventTypeController.class).createEventType(null),
+                                Map.of("orisDisciplineIds", disciplineOptions)))));
 
         return ResponseEntity.ok(collection);
     }
@@ -117,12 +122,22 @@ public class EventTypeController {
 @MvcComponent
 class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTypeDto, EventType> {
 
+    private final ObjectProvider<EventTypeManagementPort> portProvider;
+
+    EventTypeDetailsPostprocessor(ObjectProvider<EventTypeManagementPort> portProvider) {
+        this.portProvider = portProvider;
+    }
+
     @Override
     public void process(EntityModel<EventTypeDto> dtoModel, EventType eventType) {
         UUID id = eventType.getId().value();
+        EventTypeManagementPort port = portProvider.getIfAvailable();
+        List<String> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
         klabisLinkTo(methodOn(EventTypeController.class).getEventType(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).updateEventType(id, null)))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(EventTypeController.class).updateEventType(id, null),
+                                Map.of("orisDisciplineIds", disciplineOptions)))
                         .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(id)))));
         klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));

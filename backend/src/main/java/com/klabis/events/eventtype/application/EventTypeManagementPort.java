@@ -18,4 +18,10 @@ public interface EventTypeManagementPort {
     EventType getEventType(EventTypeId id);
 
     List<EventType> listAllSorted();
+
+    /**
+     * Returns ORIS discipline IDs available for assignment to event types.
+     * Returns an empty list when ORIS integration is not active.
+     */
+    List<String> listDisciplineOptions();
 }

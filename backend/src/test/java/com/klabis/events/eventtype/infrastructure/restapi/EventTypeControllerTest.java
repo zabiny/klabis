@@ -11,6 +11,7 @@ import com.klabis.events.eventtype.domain.EventType;
 import com.klabis.events.eventtype.domain.EventTypeInUseException;
 import com.klabis.events.eventtype.domain.EventTypeNotFoundException;
 import com.klabis.events.eventtype.domain.OrisDisciplineAlreadyMappedException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,9 +23,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -42,6 +45,11 @@ class EventTypeControllerTest {
 
     @MockitoBean
     private EventTypeManagementPort eventTypeManagementService;
+
+    @BeforeEach
+    void stubDisciplineOptions() {
+        when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of());
+    }
 
     @Nested
     @DisplayName("GET /api/event-types")
@@ -62,6 +70,19 @@ class EventTypeControllerTest {
         }
 
         @Test
+        @DisplayName("should return orisDisciplineIds in event type DTO")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturnOrisDisciplineIdsInDto() throws Exception {
+            EventType eventType = EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, Set.of(10, 20)), 1);
+            when(eventTypeManagementService.listAllSorted()).thenReturn(List.of(eventType));
+
+            mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventTypeDtoList[0].orisDisciplineIds").isArray())
+                    .andExpect(jsonPath("$._embedded.eventTypeDtoList[0].orisDisciplineIds", hasItems(10, 20)));
+        }
+
+        @Test
         @DisplayName("should expose createEventType template on collection self link for admin user with EVENTS:READ and EVENTS:MANAGE")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCreateTemplate() throws Exception {
@@ -71,6 +92,22 @@ class EventTypeControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createEventType").exists())
                     .andExpect(jsonPath("$._templates.createEventType.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("createEventType template should include orisDisciplineIds property with inline options from ORIS")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeOrisDisciplineIdsWithInlineOptionsInCreateTemplate() throws Exception {
+            when(eventTypeManagementService.listAllSorted()).thenReturn(List.of());
+            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of("1", "3", "7"));
+
+            mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')]").exists())
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0]").value("1"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1]").value("3"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[2]").value("7"));
         }
 
         @Test
@@ -108,6 +145,20 @@ class EventTypeControllerTest {
         }
 
         @Test
+        @DisplayName("should return orisDisciplineIds in event type detail DTO")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturnOrisDisciplineIdsInDetailDto() throws Exception {
+            UUID id = UUID.randomUUID();
+            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2, Set.of(5)), 2);
+            when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
+
+            mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.orisDisciplineIds").isArray())
+                    .andExpect(jsonPath("$.orisDisciplineIds[0]").value(5));
+        }
+
+        @Test
         @DisplayName("should return 404 when event type not found")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturn404WhenNotFound() throws Exception {
@@ -131,6 +182,23 @@ class EventTypeControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEventType.method").value("PUT"))
                     .andExpect(jsonPath("$._templates.deleteEventType.method").value("DELETE"));
+        }
+
+        @Test
+        @DisplayName("updateEventType template should include orisDisciplineIds property with inline options from ORIS")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeOrisDisciplineIdsWithInlineOptionsInUpdateTemplate() throws Exception {
+            UUID id = UUID.randomUUID();
+            EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1, null), 1);
+            when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
+            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of("1", "3"));
+
+            mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')]").exists())
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[0]").value("1"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='orisDisciplineIds')].options.inline[1]").value("3"));
         }
 
         @Test
@@ -160,6 +228,24 @@ class EventTypeControllerTest {
                                     """))
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location", containsString("/api/event-types/")));
+        }
+
+        @Test
+        @DisplayName("should pass orisDisciplineIds to service command when provided in request body")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassOrisDisciplineIdsToServiceOnCreate() throws Exception {
+            EventType created = EventType.create(new EventType.CreateEventType("Trénink", null, null, Set.of(3, 7)), 1);
+            when(eventTypeManagementService.createEventType(any())).thenReturn(created);
+
+            mockMvc.perform(post("/api/event-types")
+                            .contentType("application/json")
+                            .content("""
+                                    {"name": "Trénink", "orisDisciplineIds": [3, 7]}
+                                    """))
+                    .andExpect(status().isCreated());
+
+            verify(eventTypeManagementService).createEventType(
+                    argThat(cmd -> cmd.orisDisciplineIds() != null && cmd.orisDisciplineIds().containsAll(Set.of(3, 7))));
         }
 
         @Test
@@ -220,6 +306,40 @@ class EventTypeControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(eventTypeManagementService).updateEventType(eq(new EventTypeId(id)), any());
+        }
+
+        @Test
+        @DisplayName("should pass orisDisciplineIds to service command when provided in request body")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassOrisDisciplineIdsToServiceOnUpdate() throws Exception {
+            UUID id = UUID.randomUUID();
+
+            mockMvc.perform(put("/api/event-types/{id}", id)
+                            .contentType("application/json")
+                            .content("""
+                                    {"name": "Updated Name", "orisDisciplineIds": [5, 10]}
+                                    """))
+                    .andExpect(status().isNoContent());
+
+            verify(eventTypeManagementService).updateEventType(
+                    eq(new EventTypeId(id)),
+                    argThat(cmd -> cmd.orisDisciplineIds() != null && cmd.orisDisciplineIds().containsAll(Set.of(5, 10))));
+        }
+
+        @Test
+        @DisplayName("should return 409 when ORIS discipline already mapped to another event type on update")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn409WhenOrisDisciplineAlreadyMappedOnUpdate() throws Exception {
+            UUID id = UUID.randomUUID();
+            doThrow(new OrisDisciplineAlreadyMappedException(42))
+                    .when(eventTypeManagementService).updateEventType(any(), any());
+
+            mockMvc.perform(put("/api/event-types/{id}", id)
+                            .contentType("application/json")
+                            .content("""
+                                    {"name": "Updated Name", "orisDisciplineIds": [42]}
+                                    """))
+                    .andExpect(status().isConflict());
         }
 
         @Test
