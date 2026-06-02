@@ -7,7 +7,7 @@ import type {HalFormsInputProps} from './types.ts';
 import {vi} from 'vitest';
 
 vi.mock('../../../hooks/useHalFormOptions', () => ({
-    useHalFormOptions: vi.fn((_optionDef: unknown) => ({
+    useHalFormOptions: vi.fn(() => ({
         options: [
             {value: 'A', label: 'A'},
             {value: 'B', label: 'B'},

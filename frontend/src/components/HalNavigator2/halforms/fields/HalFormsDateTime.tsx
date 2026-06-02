@@ -28,7 +28,7 @@ const convertToDatetimeLocalFormat = (value: string | undefined): string => {
     // Match ISO datetime formats with optional timezone
     // Matches: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ss.sss
     // With optional timezone: Z, +HH:mm, -HH:mm, +HHMM, -HHMM, +HH, -HH
-    const isoDateTimeRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?(?:\.\d+)?(?:Z|[+\-]\d{2}:?\d{2})?$/;
+    const isoDateTimeRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/;
 
     if (isoDateTimeRegex.test(value)) {
         // Extract just the date and time part (YYYY-MM-DDTHH:mm)
@@ -53,7 +53,7 @@ const convertToISODatetimeWithTimezone = (value: string | undefined): string => 
     }
 
     // Check if already in ISO format with timezone
-    const hasTimezone = /(?:Z|[+\-]\d{2}:?\d{2})$/.test(value);
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
     if (hasTimezone) {
         return value;
     }

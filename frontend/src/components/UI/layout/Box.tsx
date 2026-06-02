@@ -80,21 +80,15 @@ export const Box = ({
                         id,
                         ...rest
                     }: BoxProps) => {
-    const displayClass = {
-        'flex': 'flex',
-        'grid': 'grid',
-        'block': 'block',
-        'inline': 'inline',
-        'inline-block': 'inline-block',
-    }[display as keyof typeof displayMap] || 'block'
-
     const displayMap = {
         'flex': 'flex',
         'grid': 'grid',
         'block': 'block',
         'inline': 'inline',
-        'inline-block': 'inline-block'
+        'inline-block': 'inline-block',
     }
+
+    const displayClass = displayMap[display as keyof typeof displayMap] || 'block'
 
     const flexDirClass = flex === 'col' ? 'flex-col' : flex === 'row' ? 'flex-row' : ''
 

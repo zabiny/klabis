@@ -5,7 +5,7 @@ const RULE_DEFINITIONS: Array<{id: string; label: string; test: (p: string) => b
     {id: 'uppercase', label: 'Alespoň 1 velké písmeno', test: (p) => /[A-Z]/.test(p)},
     {id: 'lowercase', label: 'Alespoň 1 malé písmeno', test: (p) => /[a-z]/.test(p)},
     {id: 'digit', label: 'Alespoň 1 číslo', test: (p) => /\d/.test(p)},
-    {id: 'special', label: 'Alespoň 1 speciální znak', test: (p) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p)},
+    {id: 'special', label: 'Alespoň 1 speciální znak', test: (p) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p)},
 ];
 
 export function buildPasswordRequirements(password: string): PasswordRequirement[] {

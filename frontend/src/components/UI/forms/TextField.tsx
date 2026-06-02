@@ -19,7 +19,6 @@ const errorInputClasses = 'border-error focus:ring-error focus:ring-opacity-20 f
 /**
  * TextField component for text input fields
  * Supports various input types: text, email, password, number, date, url, tel
- * Can also be used for textarea by setting multiline=true
  */
 export const TextField = forwardRef<
     HTMLInputElement,
@@ -34,7 +33,6 @@ export const TextField = forwardRef<
             disabled,
             className,
             type = 'text',
-            multiline = false,
             ...inputProps
         },
         ref

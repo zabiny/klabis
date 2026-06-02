@@ -738,8 +738,9 @@ describe('HalFormDisplay Component', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane'}));
 
             const postprocessPayload = vi.fn((payload: Record<string, unknown>) => {
-                const {readOnlyField: _, ...rest} = payload;
-                return rest;
+                return Object.fromEntries(
+                    Object.entries(payload).filter(([key]) => key !== 'readOnlyField')
+                );
             });
 
             render(

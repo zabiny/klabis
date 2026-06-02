@@ -5,48 +5,48 @@ describe('formatDate', () => {
         it('should format ISO date string to Czech format', () => {
             const result = formatDate('2025-06-15');
             // Czech format: day. month. year (with spaces)
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
 
         it('should format date with time to Czech date only', () => {
             const result = formatDate('2025-06-15T14:30:00');
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
 
         it('should format date with UTC timezone indicator', () => {
             const result = formatDate('2025-06-15T00:00:00Z');
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
 
         it('should handle leap year dates', () => {
             const result = formatDate('2024-02-29');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/29[\s\.]*2[\s\.]*2024/);
+            expect(result).toMatch(/29[\s.]*2[\s.]*2024/);
         });
 
         it('should handle year boundaries - last day of year', () => {
             const result = formatDate('2024-12-31');
-            expect(result).toMatch(/31[\s\.]*12[\s\.]*2024/);
+            expect(result).toMatch(/31[\s.]*12[\s.]*2024/);
         });
 
         it('should handle year boundaries - first day of year', () => {
             const result = formatDate('2025-01-01');
-            expect(result).toMatch(/1[\s\.]*1[\s\.]*2025/);
+            expect(result).toMatch(/1[\s.]*1[\s.]*2025/);
         });
 
         it('should format January dates correctly', () => {
             const result = formatDate('2025-01-15');
-            expect(result).toMatch(/15[\s\.]*1[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*1[\s.]*2025/);
         });
 
         it('should format December dates correctly', () => {
             const result = formatDate('2025-12-25');
-            expect(result).toMatch(/25[\s\.]*12[\s\.]*2025/);
+            expect(result).toMatch(/25[\s.]*12[\s.]*2025/);
         });
 
         it('should handle dates with milliseconds', () => {
             const result = formatDate('2025-06-15T14:30:45.123Z');
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
     });
 
@@ -94,7 +94,7 @@ describe('formatDate', () => {
             // Feb 30, 2025 becomes March 2, 2025
             const result = formatDate('2025-02-30');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/2[\s\.]*3[\s\.]*2025/); // March 2, 2025
+            expect(result).toMatch(/2[\s.]*3[\s.]*2025/); // March 2, 2025
         });
 
         it('should handle day overflow (June 32 behavior)', () => {
@@ -120,7 +120,7 @@ describe('formatDate', () => {
             // JavaScript's Date constructor treats '2025-06' as June 1, 2025
             const result = formatDate('2025-06');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/1[\s\.]*6[\s\.]*2025/); // June 1, 2025
+            expect(result).toMatch(/1[\s.]*6[\s.]*2025/); // June 1, 2025
         });
 
         it('should return "-" for random text', () => {
@@ -140,27 +140,27 @@ describe('formatDate', () => {
             // Test that the timezone is applied (Czech timezone is UTC+1 or UTC+2 depending on DST)
             const result = formatDate('2025-06-15T23:59:59Z');
             // 23:59:59 UTC on June 15 becomes 01:59:59 on June 16 in Prague (UTC+2 in summer)
-            expect(result).toMatch(/16[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/16[\s.]*6[\s.]*2025/);
         });
 
         it('should format UTC dates consistently regardless of timezone', () => {
             const result1 = formatDate('2025-01-15T12:00:00Z');
             const result2 = formatDate('2025-01-15');
             // Both should format to the same date
-            expect(result1).toMatch(/15[\s\.]*1[\s\.]*2025/);
-            expect(result2).toMatch(/15[\s\.]*1[\s\.]*2025/);
+            expect(result1).toMatch(/15[\s.]*1[\s.]*2025/);
+            expect(result2).toMatch(/15[\s.]*1[\s.]*2025/);
         });
 
         it('should handle dates near midnight edge case', () => {
             const result = formatDate('2025-06-15T23:00:00Z');
             // 23:00 UTC on June 15 becomes 01:00 on June 16 in Prague (UTC+2)
-            expect(result).toMatch(/16[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/16[\s.]*6[\s.]*2025/);
         });
 
         it('should handle dates that cross day boundary at midnight', () => {
             const result = formatDate('2025-06-15T22:00:00Z');
             // 22:00 UTC on June 15 becomes 00:00 on June 16 in Prague (UTC+2)
-            expect(result).toMatch(/16[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/16[\s.]*6[\s.]*2025/);
         });
     });
 
@@ -168,46 +168,46 @@ describe('formatDate', () => {
         it('should handle very old dates', () => {
             const result = formatDate('1900-01-01');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/1[\s\.]*1[\s\.]*1900/);
+            expect(result).toMatch(/1[\s.]*1[\s.]*1900/);
         });
 
         it('should handle far future dates', () => {
             const result = formatDate('2099-12-31');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/31[\s\.]*12[\s\.]*2099/);
+            expect(result).toMatch(/31[\s.]*12[\s.]*2099/);
         });
 
         it('should handle year 2000 dates', () => {
             const result = formatDate('2000-01-01');
             expect(result).not.toBe('-');
-            expect(result).toMatch(/1[\s\.]*1[\s\.]*2000/);
+            expect(result).toMatch(/1[\s.]*1[\s.]*2000/);
         });
 
         it('should handle dates with leading/trailing spaces', () => {
             // '   ' is considered empty, but actual date with spaces might work
             const result = formatDate(' 2025-06-15 ');
             // JavaScript Date constructor should handle this
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
 
         it('should handle single digit month and day with leading zeros', () => {
             const result = formatDate('2025-01-05');
-            expect(result).toMatch(/5[\s\.]*1[\s\.]*2025/);
+            expect(result).toMatch(/5[\s.]*1[\s.]*2025/);
         });
 
         it('should handle last day of each month - April (30 days)', () => {
             const result = formatDate('2025-04-30');
-            expect(result).toMatch(/30[\s\.]*4[\s\.]*2025/);
+            expect(result).toMatch(/30[\s.]*4[\s.]*2025/);
         });
 
         it('should handle last day of each month - May (31 days)', () => {
             const result = formatDate('2025-05-31');
-            expect(result).toMatch(/31[\s\.]*5[\s\.]*2025/);
+            expect(result).toMatch(/31[\s.]*5[\s.]*2025/);
         });
 
         it('should handle dates with different time formats', () => {
             const result = formatDate('2025-06-15T14:30:45.123456Z');
-            expect(result).toMatch(/15[\s\.]*6[\s\.]*2025/);
+            expect(result).toMatch(/15[\s.]*6[\s.]*2025/);
         });
     });
 
@@ -229,7 +229,7 @@ describe('formatDate', () => {
         it('should use Czech locale format with dots as separators', () => {
             const result = formatDate('2025-06-15');
             // Czech format typically uses dots: 15. 6. 2025
-            expect(result).toMatch(/\d+[\s\.]+\d+[\s\.]+\d+/);
+            expect(result).toMatch(/\d+[\s.]+\d+[\s.]+\d+/);
         });
 
         it('should maintain consistent formatting across multiple calls', () => {

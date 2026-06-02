@@ -55,8 +55,11 @@ export const GenericHalPage = (): ReactElement => {
  * Strip HAL/HAL+JSON meta attributes from an object
  */
 function stripHalMetadata(obj: HalResponse): Record<string, any> {
-    const {_links, _templates, _embedded, ...cleaned} = obj;
-    return cleaned;
+    const cleaned = {...obj};
+    delete (cleaned as Record<string, unknown>)['_links'];
+    delete (cleaned as Record<string, unknown>)['_templates'];
+    delete (cleaned as Record<string, unknown>)['_embedded'];
+    return cleaned as Record<string, unknown>;
 }
 
 /**
