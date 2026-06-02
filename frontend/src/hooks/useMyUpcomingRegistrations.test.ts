@@ -23,17 +23,17 @@ const createWrapper = () => {
 };
 
 const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => data,
         headers: new Headers(),
         clone: function () { return this; },
-    } as any);
+    } as unknown as Response);
 };
 
 afterEach(() => {
-    delete (globalThis as any).fetch;
+    delete (globalThis as Record<string, unknown>).fetch;
     vi.clearAllMocks();
 });
 
@@ -72,12 +72,12 @@ describe('useMyUpcomingRegistrations', () => {
     });
 
     it('does not fetch when href is undefined (query is disabled)', () => {
-        (globalThis as any).fetch = vi.fn();
+        (globalThis as Record<string, unknown>).fetch = vi.fn();
 
         const {result} = renderHook(() => useMyUpcomingRegistrations(undefined), {wrapper: createWrapper()});
 
         expect(result.current.fetchStatus).toBe('idle');
-        expect((globalThis as any).fetch).not.toHaveBeenCalled();
+        expect((globalThis as Record<string, unknown>).fetch).not.toHaveBeenCalled();
     });
 
     it('returns empty items array when response has no embedded events', async () => {
@@ -97,7 +97,7 @@ describe('useMyUpcomingRegistrations', () => {
 
     it('returns loading state while fetching', () => {
         const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
-        (globalThis as any).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+        (globalThis as Record<string, unknown>).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
 
         const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
 

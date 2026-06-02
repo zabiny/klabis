@@ -30,11 +30,11 @@ describe('useHalFormOptions', () => {
         vi.clearAllMocks();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as Record<string, unknown>).fetch = fetchSpy;
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        delete (globalThis as Record<string, unknown>).fetch;
     });
 
     const createWrapper = () => {
@@ -312,7 +312,7 @@ describe('useHalFormOptions', () => {
                 clone: () => ({
                     text: vi.fn().mockResolvedValue('invalid'),
                 }),
-            } as any;
+            } as unknown as Response;
             fetchSpy.mockResolvedValue(mockResponse);
 
             const linkOptions: HalFormsOption = {

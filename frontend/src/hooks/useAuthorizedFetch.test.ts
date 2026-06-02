@@ -31,11 +31,11 @@ const createTestHookSetup = () => {
         vi.clearAllMocks();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as Record<string, unknown>).fetch = fetchSpy;
     };
 
     const teardown = () => {
-        delete (globalThis as any).fetch;
+        delete (globalThis as Record<string, unknown>).fetch;
     };
 
     const createWrapper = () => {
@@ -103,7 +103,7 @@ describe('useAuthorizedQuery', () => {
                 clone: () => ({
                     text: vi.fn().mockResolvedValue('Bad request'),
                 }),
-            } as any;
+            } as unknown as Response;
             fetchSpy.mockResolvedValueOnce(mockResponse);
 
             const {result} = renderHook(() => useAuthorizedQuery('/api/items/1'), {
@@ -192,7 +192,7 @@ describe('useAuthorizedQuery', () => {
 
             const {result} = renderHook(
                 () => useAuthorizedQuery('/api/items/1', {
-                    select: (data) => ({id: (data as any).id, name: (data as any).name}),
+                    select: (data) => { const d = data as {id: number; name: string}; return {id: d.id, name: d.name}; },
                 }),
                 {wrapper: createWrapper()}
             );
@@ -209,7 +209,7 @@ describe('useAuthorizedQuery', () => {
 
             const {result} = renderHook(
                 () => useAuthorizedQuery('/api/items/1', {
-                    select: (data) => data ? {id: (data as any).id} : null,
+                    select: (data) => data ? {id: (data as {id: number}).id} : null,
                 }),
                 {wrapper: createWrapper()}
             );

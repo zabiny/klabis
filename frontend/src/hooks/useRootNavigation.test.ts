@@ -29,17 +29,17 @@ const buildHalResponse = (rels: string[]) => ({
 });
 
 const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => data,
         headers: new Headers(),
         clone: function () { return this; },
-    } as any);
+    } as unknown as Response);
 };
 
 afterEach(() => {
-    delete (globalThis as any).fetch;
+    delete (globalThis as Record<string, unknown>).fetch;
     vi.clearAllMocks();
 });
 

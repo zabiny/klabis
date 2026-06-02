@@ -23,17 +23,17 @@ const createWrapper = () => {
 };
 
 const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => data,
         headers: new Headers(),
         clone: function () { return this; },
-    } as any);
+    } as unknown as Response);
 };
 
 afterEach(() => {
-    delete (globalThis as any).fetch;
+    delete (globalThis as Record<string, unknown>).fetch;
     vi.clearAllMocks();
 });
 
@@ -101,7 +101,7 @@ describe('useDashboard', () => {
     });
 
     it('returns loading state initially', () => {
-        (globalThis as any).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+        (globalThis as Record<string, unknown>).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
 
         const {result} = renderHook(() => useDashboard(), {wrapper: createWrapper()});
 
@@ -109,7 +109,7 @@ describe('useDashboard', () => {
     });
 
     it('returns error state when fetch fails', async () => {
-        (globalThis as any).fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+        (globalThis as Record<string, unknown>).fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
         // retryDelay: 0 ensures the single retry from useDashboard completes without delay
         const queryClient = new QueryClient({
