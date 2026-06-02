@@ -1,5 +1,6 @@
 import {renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import type {UseQueryResult} from '@tanstack/react-query';
 import {type ReactNode} from 'react';
 import {useIsAdmin} from './useIsAdmin';
 import type {NavigationItem} from './useRootNavigation';
@@ -62,7 +63,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as any);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -97,7 +98,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as any);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -127,7 +128,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: 0,
-        } as any);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -156,7 +157,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as any);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),

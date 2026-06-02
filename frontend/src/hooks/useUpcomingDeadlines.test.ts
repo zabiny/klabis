@@ -23,17 +23,17 @@ const createWrapper = () => {
 };
 
 const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => data,
         headers: new Headers(),
         clone: function () { return this; },
-    } as any);
+    } as unknown as Response);
 };
 
 afterEach(() => {
-    delete (globalThis as any).fetch;
+    delete (globalThis as Record<string, unknown>).fetch;
     vi.clearAllMocks();
 });
 
@@ -99,12 +99,12 @@ describe('useUpcomingDeadlines', () => {
     });
 
     it('does not fetch when href is undefined (query is disabled)', () => {
-        (globalThis as any).fetch = vi.fn();
+        (globalThis as Record<string, unknown>).fetch = vi.fn();
 
         const {result} = renderHook(() => useUpcomingDeadlines(undefined), {wrapper: createWrapper()});
 
         expect(result.current.fetchStatus).toBe('idle');
-        expect((globalThis as any).fetch).not.toHaveBeenCalled();
+        expect((globalThis as Record<string, unknown>).fetch).not.toHaveBeenCalled();
     });
 
     it('returns empty items array when response has no embedded events', async () => {
@@ -169,7 +169,7 @@ describe('useUpcomingDeadlines', () => {
         const response = buildEventsResponse([
             {id: 'evt-1', name: 'Akce', eventDate: '2026-05-20', deadlines: ['2026-05-14']},
         ]);
-        (response as any).page = {size: 5, totalElements: 12, totalPages: 3, number: 0};
+        response.page = {size: 5, totalElements: 12, totalPages: 3, number: 0};
         mockFetchWithResponse(response);
 
         const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
@@ -181,7 +181,7 @@ describe('useUpcomingDeadlines', () => {
 
     it('returns loading state while fetching', () => {
         const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        (globalThis as any).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+        (globalThis as Record<string, unknown>).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
 
         const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
 
