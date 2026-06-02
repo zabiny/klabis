@@ -61,7 +61,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: PRESETS}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -73,7 +73,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: []}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -85,7 +85,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: undefined,
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -97,7 +97,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -112,7 +112,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: PRESETS}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -129,7 +129,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: PRESETS}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             renderButton();
 
@@ -147,7 +147,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: PRESETS}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             let capturedValues: FormValues = {categories: []};
             renderButton((values) => {
@@ -166,7 +166,7 @@ describe('CategoryPresetPickerButton', () => {
                 data: {_embedded: {categoryPresetDtoList: PRESETS}},
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             let capturedValues: FormValues = {categories: []};
             renderButton((values) => {

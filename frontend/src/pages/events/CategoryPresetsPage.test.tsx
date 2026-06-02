@@ -3,6 +3,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {CategoryPresetsPage} from './CategoryPresetsPage';
@@ -56,7 +57,7 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -81,7 +82,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any) => {
+const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -107,7 +108,7 @@ const renderPageWithPresets = (presets: unknown[]) => {
         _embedded: {categoryPresetDtoList: presets},
         page: {size: 10, totalElements: presets.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData);
     return renderPage(pageData);
 };
@@ -155,7 +156,7 @@ describe('CategoryPresetsPage', () => {
                 _embedded: {categoryPresetDtoList: [buildPresetRow()]},
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage(createMockPageData(resourceData, {route: {pathname: '/category-presets', navigateToResource, refetch: async () => {}, queryState: 'success' as const, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}}));
 
             fireEvent.click(screen.getByText('Základní šablona'));

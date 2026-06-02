@@ -3,6 +3,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventTypesPage} from './EventTypesPage';
@@ -56,7 +57,7 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -81,7 +82,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any) => {
+const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -108,7 +109,7 @@ const renderPageWithEventTypes = (eventTypes: unknown[]) => {
         _embedded: {eventTypeDtoList: eventTypes},
         page: {size: 10, totalElements: eventTypes.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData);
     return renderPage(pageData);
 };
@@ -249,7 +250,7 @@ describe('EventTypesPage', () => {
                 _embedded: {eventTypeDtoList: [buildEventTypeRow()]},
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage(createMockPageData(resourceData, {route: {pathname: '/event-types', navigateToResource, refetch: async () => {}, queryState: 'success' as const, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/event-types'})}}));
 
             fireEvent.click(screen.getByText('Trénink'));

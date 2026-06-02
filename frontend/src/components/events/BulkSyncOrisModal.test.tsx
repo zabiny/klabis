@@ -42,7 +42,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: false,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal();
 
@@ -73,7 +73,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: true,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal();
 
@@ -100,7 +100,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: true,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal();
 
@@ -120,7 +120,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: true,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal();
 
@@ -142,7 +142,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: true,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal({onClose});
 
@@ -163,7 +163,7 @@ describe('BulkSyncOrisModal', () => {
                 error: null,
                 isSuccess: false,
                 isError: false,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderModal({syncUrl: '/api/events/sync-from-oris/all-upcoming'});
 

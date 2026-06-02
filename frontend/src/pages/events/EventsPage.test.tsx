@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventsPage} from './EventsPage';
@@ -97,7 +98,7 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -122,7 +123,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any, initialPath = '/events') => {
+const renderPage = (pageData: UseHalPageDataReturn, initialPath = '/events') => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -179,7 +180,7 @@ describe('EventsPage', () => {
                 },
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
@@ -262,7 +263,7 @@ describe('EventsPage', () => {
                 },
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
@@ -438,10 +439,10 @@ describe('EventsPage', () => {
         const renderWithEventHavingNewRegistrationLink = (siCardNumber?: string) => {
             vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
                 if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as any;
+                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse(siCardNumber), isLoading: false, error: null} as any;
+                    return {data: buildNewRegistrationResponse(siCardNumber), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -451,7 +452,7 @@ describe('EventsPage', () => {
                     },
                     isLoading: false,
                     error: null,
-                } as any;
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
@@ -492,10 +493,10 @@ describe('EventsPage', () => {
             const mutateMock = vi.fn();
             vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
                 if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as any;
+                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as any;
+                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -505,13 +506,13 @@ describe('EventsPage', () => {
                     },
                     isLoading: false,
                     error: null,
-                } as any;
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: mutateMock,
                 isPending: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
 
@@ -539,10 +540,10 @@ describe('EventsPage', () => {
             const mutateMock = vi.fn();
             vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
                 if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as any;
+                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as any;
+                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -552,13 +553,13 @@ describe('EventsPage', () => {
                     },
                     isLoading: false,
                     error: null,
-                } as any;
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: mutateMock,
                 isPending: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
 
             renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
 
@@ -601,7 +602,7 @@ describe('EventsPage', () => {
                 },
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
@@ -701,9 +702,9 @@ describe('EventsPage', () => {
                         ]}},
                         isLoading: false,
                         error: null,
-                    } as any;
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
-                return {data: null, error: null} as any;
+                return {data: null, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             renderPage(createMockPageData(null), '/events?eventTypeId=et-A');
             const group = screen.getByRole('group', {name: labels.eventsFilter.eventTypeFilter});
@@ -779,7 +780,7 @@ describe('EventsPage', () => {
                         data: {_embedded: {eventTypeDtoList: eventTypes}},
                         isLoading: false,
                         error: null,
-                    } as any;
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -789,7 +790,7 @@ describe('EventsPage', () => {
                     },
                     isLoading: false,
                     error: null,
-                } as any;
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             return renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
         };
