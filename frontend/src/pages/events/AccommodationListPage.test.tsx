@@ -19,7 +19,7 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 }));
 
 vi.mock('../ErrorPage', () => ({
-    ErrorPage: ({error}: any) => (
+    ErrorPage: ({error}: {error?: {responseStatus?: number; message?: string} | null}) => (
         <div data-testid="error-page" data-status={error?.responseStatus}>
             {error?.responseStatus === 403
                 ? <div data-testid="forbidden-page">Přístup odepřen</div>
@@ -74,9 +74,9 @@ const buildListData = (items: unknown[]) => ({
 const setupQueryMocks = (eventData: unknown, listData: unknown) => {
     vi.mocked(useAuthorizedQuery).mockImplementation((_url: string) => {
         if (_url.includes('/api/events/42/accommodation-list')) {
-            return {data: listData, isLoading: false, error: null} as any;
+            return {data: listData, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
         }
-        return {data: eventData, isLoading: false, error: null} as any;
+        return {data: eventData, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
     });
 };
 
@@ -102,7 +102,7 @@ describe('AccommodationListPage', () => {
                 data: undefined,
                 isLoading: true,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage();
             expect(screen.queryByRole('table')).not.toBeInTheDocument();
         });
@@ -112,7 +112,7 @@ describe('AccommodationListPage', () => {
                 data: undefined,
                 isLoading: false,
                 error: new Error('Fetch failed'),
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage();
             expect(screen.getByText(/fetch failed/i)).toBeInTheDocument();
         });
@@ -123,7 +123,7 @@ describe('AccommodationListPage', () => {
                 data: undefined,
                 isLoading: false,
                 error,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage();
             expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
         });

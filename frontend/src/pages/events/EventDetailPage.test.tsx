@@ -5,6 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
 import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventDetailPage} from './EventDetailPage';
@@ -69,14 +70,14 @@ vi.mock('../../api/hateoas', () => ({
         return error && typeof error === 'object' && 'validationErrors' in error;
     }),
     toFormValidationError: vi.fn((error) => error),
-    toHref: vi.fn((source: any) => {
-        if (Array.isArray(source)) return source[0]?.href ?? '';
-        return source?.href ?? '';
+    toHref: vi.fn((source: unknown) => {
+        if (Array.isArray(source)) return (source[0] as {href?: string})?.href ?? '';
+        return (source as {href?: string})?.href ?? '';
     }),
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: any) => (
+    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4>{title}</h4>}
@@ -88,7 +89,7 @@ vi.mock('../../components/UI/Modal.tsx', () => ({
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
-    HalSubresourceProvider: ({subresourceLinkName, children}: any) => (
+    HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
         <div data-testid={`subresource-${subresourceLinkName}`}>{children}</div>
     ),
     useHalRoute: vi.fn(() => ({
@@ -109,7 +110,7 @@ vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
 }));
 
 
-const mockEventDetailData = (overrides?: Partial<any>): HalResponse => ({
+const mockEventDetailData = (overrides?: Partial<HalResponse>): HalResponse => ({
     name: 'Jarní závod 2025',
     eventDate: '2025-04-15',
     location: 'Brno - Bystrc',
@@ -123,7 +124,7 @@ const mockEventDetailData = (overrides?: Partial<any>): HalResponse => ({
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -148,10 +149,10 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any) => {
+const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0, staleTime: Infinity}}});
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+    (globalThis as typeof globalThis & {fetch: typeof fetch}).fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({_embedded: {registrationDtoList: []}, page: {totalElements: 0, totalPages: 0, size: 10, number: 0}}),
     });
@@ -394,7 +395,7 @@ describe('EventDetailPage', () => {
     });
 
     describe('registrations section', () => {
-        const mockEventWithRegistrationsLink = (overrides?: Partial<any>) => mockEventDetailData({
+        const mockEventWithRegistrationsLink = (overrides?: Partial<HalResponse>) => mockEventDetailData({
             _links: {
                 self: {href: 'http://localhost:8443/api/events/1'},
                 registrations: {href: 'http://localhost:8443/api/events/1/registrations'},
@@ -458,7 +459,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 expect(screen.getByRole('button', {name: /sort by datum přihlášení/i})).toBeInTheDocument();
@@ -471,7 +472,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 expect(screen.queryByRole('button', {name: /sort by datum přihlášení/i})).not.toBeInTheDocument();
@@ -485,7 +486,7 @@ describe('EventDetailPage', () => {
                         page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
                     },
                     error: null,
-                } as any);
+                } as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 fireEvent.click(screen.getByRole('button', {name: /sort by jméno/i}));
@@ -507,7 +508,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.queryByRole('columnheader', {name: /datum přihlášení/i})).not.toBeInTheDocument();
@@ -524,7 +525,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
@@ -541,7 +542,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
@@ -562,7 +563,7 @@ describe('EventDetailPage', () => {
             _links: {self: {href: `http://localhost:8443/api/events/1/registrations/${memberId}`}},
         });
 
-        const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<any>) => {
+        const renderPageWithRegistrationRows = (rows: unknown[], eventOverrides?: Partial<HalResponse>) => {
             const resourceData = mockEventWithRegistrationsLink(eventOverrides);
             const registrationsListData = {
                 _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
@@ -570,7 +571,7 @@ describe('EventDetailPage', () => {
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
             vi.mocked(useAuthorizedQuery)
-                .mockReturnValue({data: registrationsListData, error: null} as any);
+                .mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
             return renderPage(createMockPageData(resourceData));
         };
 
@@ -713,7 +714,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: [row]},
                     page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as any);
+                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
                 renderPage(createMockPageData(resourceData));
 
                 fireEvent.click(screen.getByRole('button', {name: /provést finanční transakci/i}));
@@ -931,7 +932,7 @@ describe('EventDetailPage', () => {
                         data: {_embedded: {eventTypeDtoList: eventTypes}},
                         isLoading: false,
                         error: null,
-                    } as any;
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -941,7 +942,7 @@ describe('EventDetailPage', () => {
                     },
                     isLoading: false,
                     error: null,
-                } as any;
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
         };
 
