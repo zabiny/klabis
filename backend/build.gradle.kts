@@ -118,6 +118,9 @@ dependencies {
     // Apache Commons Validator for IBAN validation
     implementation("commons-validator:commons-validator:1.7")
 
+    // Apache Commons CSV for accommodation list CSV export
+    implementation("org.apache.commons:commons-csv:1.13.0")
+
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
     implementation("org.jmolecules:jmolecules-hexagonal-architecture")

@@ -9,7 +9,8 @@
 - Na stránce "Seznam pro ubytování" přidat akci **"Stáhnout CSV"** (vedle existující akce "Tisknout")
 - Export obsahuje **stejné sloupce a řádky jako existující tabulka** (jméno, příjmení, číslo OP, platnost OP, datum narození, adresa) — žádné nové údaje
 - Formát: **CSV s UTF-8 BOM** a středníkem jako oddělovačem (otevíratelné přímo v české lokalizaci MS Excel)
-- Pro chybějící údaje (např. číslo OP) export obsahuje stejný text "neuvedeno" jako tisková verze
+- **CSV obsahuje úvodní řádek s českými názvy sloupců** (hlavičku)
+- Pro chybějící údaje (např. číslo OP) zůstává v CSV **prázdná buňka** (na rozdíl od tiskové verze, která zobrazuje "neuvedeno") — strukturovaný formát se lépe strojově zpracuje na straně ubytovatele
 - **Autorizace identická s existujícím seznamem** — koordinátor akce + `EVENTS:REGISTRATIONS`; ostatní uživatelé export nevidí v UI a API zamítne neoprávněný požadavek
 
 ## Capabilities

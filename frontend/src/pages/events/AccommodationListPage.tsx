@@ -1,11 +1,12 @@
-import {type ReactElement} from 'react';
+import {type ReactElement, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {authorizedFetch} from '../../api/authorizedFetch.ts';
 import {Button, Skeleton} from '../../components/UI';
 import {ErrorPage} from '../ErrorPage.tsx';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
-import {Printer} from 'lucide-react';
+import {Download, Printer} from 'lucide-react';
 import type {HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 
@@ -43,15 +44,22 @@ function formatAddress(item: AccommodationListItem): string | null {
 
 const NOT_PROVIDED = labels.ui.notProvided;
 
+function parseFilenameFromContentDisposition(header: string | null): string {
+    if (!header) return 'ubytovani.csv';
+    const match = header.match(/filename="([^"]+)"/);
+    return match ? match[1] : 'ubytovani.csv';
+}
+
 export const AccommodationListPage = (): ReactElement => {
     const {id: eventId} = useParams<{id: string}>();
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const eventUrl = `/api/events/${eventId}`;
 
     const {data: eventData, isLoading: eventLoading, error: eventError} =
         useAuthorizedQuery<EventData>(eventUrl);
 
-    const accommodationListLink = (eventData as EventData)?._links?.['accommodation-list'];
+    const accommodationListLink = eventData?._links?.['accommodation-list'];
     const accommodationListUrl = accommodationListLink ? toHref(accommodationListLink) : null;
 
     const {data: listData, isLoading: listLoading, error: listError} =
@@ -76,6 +84,30 @@ export const AccommodationListPage = (): ReactElement => {
     const items = listData?._embedded?.accommodationList ?? [];
     const eventName = eventData?.name ?? '';
 
+    const handleDownloadCsv = async () => {
+        if (!accommodationListUrl) return;
+        setIsDownloading(true);
+        try {
+            const response = await authorizedFetch(
+                accommodationListUrl,
+                {headers: {'Accept': 'text/csv'}},
+                true
+            );
+            const blob = await response.blob();
+            const filename = parseFilenameFromContentDisposition(
+                response.headers.get('Content-Disposition')
+            );
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = filename;
+            anchor.click();
+            URL.revokeObjectURL(objectUrl);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 print:gap-4">
             <div className="print:hidden">
@@ -93,7 +125,15 @@ export const AccommodationListPage = (): ReactElement => {
                         <p className="text-text-secondary print:text-black">{eventName}</p>
                     )}
                 </div>
-                <div className="print:hidden">
+                <div className="print:hidden flex gap-2">
+                    <Button
+                        variant="secondary"
+                        onClick={handleDownloadCsv}
+                        disabled={isDownloading}
+                        startIcon={<Download className="w-4 h-4"/>}
+                    >
+                        {labels.buttons.downloadCsv}
+                    </Button>
                     <Button
                         variant="primary"
                         onClick={() => window.print()}
