@@ -31,7 +31,7 @@
 
 - [x] 4.1 Frontend: `npm run lint` exits 0 and `npm run build` passes (test-runner) — lint 0 errors, 0 no-explicit-any, build passes, 1721/1721 tests green
 - [x] 4.2 Backend: the authorization-server tests and the broader suite pass; only the pre-existing unrelated `testdomain` failures (ModularEventsTest / EventLoggingTests) remain, if still present on main (test-runner) — full suite 2806/2806 green
-- [x] 4.3 Push branch, open PR, confirm Frontend Lint and Gradle Tests CI checks are green — PR #286 opened (https://github.com/zabiny/klabis/pull/286)
+- [x] 4.3 Push branch, open PR, confirm Frontend Lint and Gradle Tests CI checks are green — PR #286 opened (https://github.com/zabiny/klabis/pull/286); all CI checks green (Frontend Lint + Gradle Tests pass)
 
 ## 5. Guard the clean lint state (added during implementation)
 
