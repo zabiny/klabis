@@ -2,7 +2,6 @@ package com.klabis.finance.application;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.finance.domain.MemberAccountRepository;
-import com.klabis.members.MemberId;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +14,7 @@ import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,14 +45,15 @@ class MemberAccountCreationIntegrationTest {
                 null
         );
 
-        scenario.stimulate(() -> registrationPort.registerMember(command))
-                .andWaitForEventOfType(com.klabis.members.MemberCreatedEvent.class)
-                .toArriveAndVerify(event -> {
-                    MemberId memberId = event.memberId();
-                    assertThat(memberAccountRepository.findById(memberId))
-                            .as("MemberAccount should be created for member %s", memberId)
+        var memberRef = new AtomicReference<Member>();
+
+        scenario.stimulate(() -> memberRef.set(registrationPort.registerMember(command)))
+                .andWaitForStateChange(() -> memberAccountRepository.findById(memberRef.get().getId()))
+                .andVerify(account -> {
+                    assertThat(account)
+                            .as("MemberAccount should be created for member %s", memberRef.get().getId())
                             .isPresent();
-                    assertThat(memberAccountRepository.findById(memberId).get().getBalance().isZero())
+                    assertThat(account.get().getBalance().isZero())
                             .as("Initial balance should be zero")
                             .isTrue();
                 });

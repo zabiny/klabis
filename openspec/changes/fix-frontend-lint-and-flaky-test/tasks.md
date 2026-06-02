@@ -38,3 +38,9 @@
 > Discovered during implementation: the `refresh-backend-server-resources` / `publish-frontend-resources` npm tasks ran only `test && build` — lint was never enforced when publishing the frontend into the backend, so lint debt could silently return. User opted to add a lint gate as part of this PR.
 
 - [x] 5.1 Prepend `npm run lint &&` to both `refresh-backend-server-resources` and `publish-frontend-resources` scripts so publishing fails on any ESLint error (warnings still pass, since eslint exits 0 on warnings)
+
+## 6. Stabilize MemberAccountCreationIntegrationTest (surfaced by CI)
+
+> The PR #286 Gradle Tests run failed on a second flaky test, `MemberAccountCreationIntegrationTest`: a Spring Modulith Scenario race where the verification ran on `MemberCreatedEvent` arrival, before the finance-module listener had created the `MemberAccount`. Under CI load the verify callback won the race and `findById` was empty. Unrelated to this PR's other changes; fixed in scope at the user's request.
+
+- [x] 6.1 Replace `andWaitForEventOfType(MemberCreatedEvent).toArriveAndVerify(...)` with `andWaitForStateChange(() -> memberAccountRepository.findById(memberId)).andVerify(...)` so the test waits for the account to actually exist; both assertions (account present, balance zero) preserved, no production code change, no retry/sleep; 8 consecutive runs green
