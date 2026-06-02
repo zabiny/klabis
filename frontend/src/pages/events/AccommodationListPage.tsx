@@ -59,7 +59,7 @@ export const AccommodationListPage = (): ReactElement => {
     const {data: eventData, isLoading: eventLoading, error: eventError} =
         useAuthorizedQuery<EventData>(eventUrl);
 
-    const accommodationListLink = (eventData as EventData)?._links?.['accommodation-list'];
+    const accommodationListLink = eventData?._links?.['accommodation-list'];
     const accommodationListUrl = accommodationListLink ? toHref(accommodationListLink) : null;
 
     const {data: listData, isLoading: listLoading, error: listError} =
@@ -101,9 +101,7 @@ export const AccommodationListPage = (): ReactElement => {
             const anchor = document.createElement('a');
             anchor.href = objectUrl;
             anchor.download = filename;
-            document.body.appendChild(anchor);
             anchor.click();
-            document.body.removeChild(anchor);
             URL.revokeObjectURL(objectUrl);
         } finally {
             setIsDownloading(false);

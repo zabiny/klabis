@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @org.springframework.stereotype.Component
 class AccommodationListCsvRenderer {
@@ -31,8 +32,8 @@ class AccommodationListCsvRenderer {
                         item.firstName(),
                         item.lastName(),
                         item.identityCardNumber(),
-                        item.identityCardValidityDate() != null ? item.identityCardValidityDate().toString() : null,
-                        item.dateOfBirth() != null ? item.dateOfBirth().toString() : null,
+                        Objects.toString(item.identityCardValidityDate(), null),
+                        Objects.toString(item.dateOfBirth(), null),
                         formatAddress(item)
                 );
             }

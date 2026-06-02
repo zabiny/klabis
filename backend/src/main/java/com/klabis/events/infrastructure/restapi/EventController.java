@@ -390,13 +390,7 @@ public class EventController {
     public ResponseEntity<CollectionModel<AccommodationListItemDto>> getAccommodationList(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Event event = eventManagementService.getEvent(new EventId(eventId), false);
-
-        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
-        }
-
+        Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
         CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(
@@ -420,13 +414,7 @@ public class EventController {
     public ResponseEntity<byte[]> getAccommodationListAsCsv(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Event event = eventManagementService.getEvent(new EventId(eventId), false);
-
-        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
-        }
-
+        Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
         byte[] csv = csvRenderer.renderToBytes(items);
 
@@ -436,6 +424,15 @@ public class EventController {
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .header("Content-Type", "text/csv; charset=UTF-8")
                 .body(csv);
+    }
+
+    private Event loadAuthorizedEventForAccommodation(UUID eventId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Event event = eventManagementService.getEvent(new EventId(eventId), false);
+        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
+        }
+        return event;
     }
 
     private List<AccommodationListItemDto> assembleAccommodationItems(Event event) {

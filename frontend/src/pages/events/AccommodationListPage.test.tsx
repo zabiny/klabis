@@ -299,18 +299,18 @@ describe('AccommodationListPage', () => {
             }));
         });
 
-        const captureAppendedAnchor = () => {
-            const appendedAnchors: HTMLAnchorElement[] = [];
-            const originalAppendChild = document.body.appendChild.bind(document.body);
-            vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
-                if (node instanceof HTMLAnchorElement) {
-                    vi.spyOn(node, 'click');
-                    appendedAnchors.push(node);
+        const captureCreatedAnchor = () => {
+            const createdAnchors: HTMLAnchorElement[] = [];
+            const originalCreateElement = document.createElement.bind(document);
+            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+                const el = originalCreateElement(tag);
+                if (tag === 'a') {
+                    vi.spyOn(el as HTMLAnchorElement, 'click');
+                    createdAnchors.push(el as HTMLAnchorElement);
                 }
-                return originalAppendChild(node);
+                return el;
             });
-            vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node as Node);
-            return appendedAnchors;
+            return createdAnchors;
         };
 
         it('calls authorizedFetch with Accept: text/csv header on click', async () => {
@@ -340,7 +340,7 @@ describe('AccommodationListPage', () => {
             }));
 
             renderPage();
-            const anchors = captureAppendedAnchor();
+            const anchors = captureCreatedAnchor();
             fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
 
             await waitFor(() => {
@@ -353,7 +353,7 @@ describe('AccommodationListPage', () => {
             mockAuthorizedFetch.mockResolvedValue(new Response('csv', {status: 200}));
 
             renderPage();
-            const anchors = captureAppendedAnchor();
+            const anchors = captureCreatedAnchor();
             fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
 
             await waitFor(() => {
@@ -369,7 +369,7 @@ describe('AccommodationListPage', () => {
             }));
 
             renderPage();
-            captureAppendedAnchor();
+            captureCreatedAnchor();
             fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
 
             await waitFor(() => {
@@ -384,7 +384,7 @@ describe('AccommodationListPage', () => {
             }));
 
             renderPage();
-            captureAppendedAnchor();
+            captureCreatedAnchor();
             const button = screen.getByRole('button', {name: /stáhnout csv/i});
             fireEvent.click(button);
 

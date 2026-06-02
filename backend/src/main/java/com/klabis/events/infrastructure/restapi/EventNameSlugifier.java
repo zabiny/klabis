@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import java.text.Normalizer;
+import com.klabis.common.jdbc.UnaccentFunction;
 
 class EventNameSlugifier {
 
@@ -10,9 +10,7 @@ class EventNameSlugifier {
         if (name == null || name.isBlank()) {
             return "event";
         }
-        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-        return normalized
+        return UnaccentFunction.unaccent(name)
                 .toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("^-+|-+$", "");
