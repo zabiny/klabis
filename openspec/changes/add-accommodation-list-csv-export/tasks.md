@@ -1,11 +1,11 @@
 ## 1. Backend — CSV generation
 
-- [ ] 1.1 Add `org.apache.commons:commons-csv` dependency to the backend build (D2)
-- [ ] 1.2 Write a failing test for the accommodation-list CSV renderer: given a list of accommodation items, it produces CSV with `;` delimiter, a Czech header row (`Jméno;Příjmení;Číslo OP;Platnost OP;Datum narození;Adresa`), one row per member, and the address rendered as a single combined column matching the print layout (D3, D4)
-- [ ] 1.3 Implement the CSV renderer to pass 1.2 (Apache Commons CSV, delimiter `;`, header, combined address)
-- [ ] 1.4 Add a failing test asserting missing identity card number / validity date / date of birth produce empty cells (not "neuvedeno") in the CSV (D5)
-- [ ] 1.5 Make 1.4 pass (null values map to empty cells)
-- [ ] 1.6 Add a failing test asserting the rendered bytes start with a UTF-8 BOM so Czech Excel shows diacritics correctly; implement BOM prefix to pass
+- [x] 1.1 Add `org.apache.commons:commons-csv` dependency to the backend build (D2)
+- [x] 1.2 Write a failing test for the accommodation-list CSV renderer: given a list of accommodation items, it produces CSV with `;` delimiter, a Czech header row (`Jméno;Příjmení;Číslo OP;Platnost OP;Datum narození;Adresa`), one row per member, and the address rendered as a single combined column matching the print layout (D3, D4)
+- [x] 1.3 Implement the CSV renderer to pass 1.2 (Apache Commons CSV, delimiter `;`, header, combined address)
+- [x] 1.4 Add a failing test asserting missing identity card number / validity date / date of birth produce empty cells (not "neuvedeno") in the CSV (D5)
+- [x] 1.5 Make 1.4 pass (null values map to empty cells)
+- [x] 1.6 Add a failing test asserting the rendered bytes start with a UTF-8 BOM so Czech Excel shows diacritics correctly; implement BOM prefix to pass
 
 ## 2. Backend — content negotiation endpoint
 
