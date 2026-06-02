@@ -5,11 +5,11 @@ import {isString} from "formik";
 
 interface FormValidationError extends Error {
     validationErrors: Record<string, string>,
-    formData: Record<string, any>
+    formData: Record<string, unknown>
 }
 
-const isFormValidationError = (item: any): item is FormValidationError => {
-    return item && item.validationErrors && item.message;
+const isFormValidationError = (item: unknown): item is FormValidationError => {
+    return typeof item === 'object' && item !== null && 'validationErrors' in item && 'message' in item;
 }
 
 /**
@@ -59,8 +59,8 @@ export {
     isFormValidationError
 };
 
-export const isLink = (item: any): item is Link => {
-    return item !== undefined && item !== null && (item as Link).href !== undefined;
+export const isLink = (item: unknown): item is Link => {
+    return item !== undefined && item !== null && typeof item === 'object' && 'href' in item;
 }
 
 export function toHref(source: HalResourceLinks): string {

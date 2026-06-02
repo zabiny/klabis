@@ -80,21 +80,21 @@ export function convertToSelectOptions(halOptions: HalFormsOptionType[]): Select
 /**
  * Type guard to check if an item is an option object with value property.
  */
-function isOptionItem(item: any): item is { value: any; prompt?: string } {
-    return item !== undefined && item !== null && item.value !== undefined;
+function isOptionItem(item: unknown): item is { value: HalFormsOptionType; prompt?: string } {
+    return item !== undefined && item !== null && typeof item === 'object' && 'value' in item;
 }
 
 /**
  * Type guard to check if a value is a number.
  */
-function isNumber(item: any): item is number {
+function isNumber(item: unknown): item is number {
     return typeof item === 'number';
 }
 
 /**
  * Convert any value to a string representation for form options.
  */
-function optionValueToString(value: any): string {
+function optionValueToString(value: HalFormsOptionType): string {
     if (isNumber(value)) {
         return `${value}`;
     } else {

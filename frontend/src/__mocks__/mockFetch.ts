@@ -10,7 +10,7 @@
  * @param headers - Optional response headers (default: empty)
  * @returns Mock Response object
  */
-export const createMockResponse = (data: any, status = 200, headers: Record<string, string> = {}): Response => {
+export const createMockResponse = (data: unknown, status = 200, headers: Record<string, string> = {}): Response => {
     const responseHeaders = new Headers(headers);
     const createResponse = (): Response => ({
         ok: status >= 200 && status < 300,
@@ -59,7 +59,7 @@ function getStatusText(status: number): string {
  * @param delayMs - Delay in milliseconds
  * @returns Promise that resolves with a mock Response
  */
-export const createDelayedMockResponse = (data: any, delayMs = 100): Promise<Response> => {
+export const createDelayedMockResponse = (data: unknown, delayMs = 100): Promise<Response> => {
     return new Promise((resolve) =>
         setTimeout(() => resolve(createMockResponse(data)), delayMs)
     );

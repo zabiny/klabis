@@ -1,5 +1,5 @@
 import {type ReactElement, useState} from 'react';
-import type {HalCollectionResponse, HalResponse} from '../api';
+import type {HalCollectionResponse, HalResponse, Link} from '../api';
 import {Alert, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection.tsx';
@@ -54,7 +54,7 @@ export const GenericHalPage = (): ReactElement => {
 /**
  * Strip HAL/HAL+JSON meta attributes from an object
  */
-function stripHalMetadata(obj: HalResponse): Record<string, any> {
+function stripHalMetadata(obj: HalResponse): Record<string, unknown> {
     const cleaned = {...obj};
     delete (cleaned as Record<string, unknown>)['_links'];
     delete (cleaned as Record<string, unknown>)['_templates'];
@@ -65,7 +65,7 @@ function stripHalMetadata(obj: HalResponse): Record<string, any> {
 /**
  * Extract attribute names from collection items (excluding HAL metadata)
  */
-function getCollectionAttributes(items: any[], maxAttributes: number = 6): string[] {
+function getCollectionAttributes(items: Record<string, unknown>[], maxAttributes: number = 6): string[] {
     const attributes = new Set<string>();
 
     items.forEach(item => {
@@ -101,8 +101,8 @@ interface GenericCollectionDisplayProps {
 const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactElement => {
     const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<Record<string, unknown> | null>(null);
     const {actions, isAdmin} = useHalPageData();
-    const items = Object.values(data._embedded || {}).flat();
-    const attributes = items.length > 0 ? getCollectionAttributes(items) : [];
+    const items = Object.values(data._embedded || {}).flat() as HalResponse[];
+    const attributes = items.length > 0 ? getCollectionAttributes(items as Record<string, unknown>[]) : [];
 
     return (
         <div className="space-y-4">
@@ -131,7 +131,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                         </tr>
                         </thead>
                         <tbody className="divide-y">
-                        {items.map((item: any, index: number) => (
+                        {items.map((item: HalResponse, index: number) => (
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 {attributes.map(attr => (
                                     <td key={attr} className="px-4 py-2">
@@ -142,7 +142,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                                 ))}
                                 <td className="px-4 py-2 w-fit">
                                     <button
-                                        onClick={() => setSelectedItemForJsonView(item)}
+                                        onClick={() => setSelectedItemForJsonView(item as Record<string, unknown>)}
                                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mr-3"
                                         title="View full JSON"
                                         aria-label="View full JSON"
@@ -167,9 +167,9 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                                             />
                                         </svg>
                                     </button>
-                                    {item._links?.self?.href && (
+                                    {!Array.isArray(item._links?.['self']) && item._links?.['self']?.href && (
                                         <button
-                                            onClick={() => actions.handleNavigateToItem(item._links.self.href)}
+                                            onClick={() => actions.handleNavigateToItem((item._links!['self'] as Link).href!)}
                                             className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
                                         >
                                             Zobrazit

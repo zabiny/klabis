@@ -13,7 +13,7 @@ import {type SortDirection} from '../../api'
 /**
  * Props for HalEmbeddedTable component
  */
-export interface HalEmbeddedTableProps<T = any> {
+export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
     /** Name of the collection in _embedded object */
     collectionName: string
 
@@ -61,7 +61,7 @@ export interface HalEmbeddedTableProps<T = any> {
  *   <TableCell column="registrationNumber">Reg. číslo</TableCell>
  * </HalEmbeddedTable>
  */
-export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
+export function HalEmbeddedTable<T extends Record<string, unknown> = Record<string, unknown>>({
                                                                               collectionName,
                                                                               onRowClick,
                                                                               defaultOrderBy,

@@ -1,5 +1,5 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import type {EntityModel, HalFormsTemplate} from "../../api";
+import type {EntityModel, HalCollectionResponse, HalFormsTemplate} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -121,7 +121,7 @@ const TransactionsTableContent = ({
         return url.toString();
     }, [selfHref, page, rowsPerPage, sort, extraParams]);
 
-    const {data: response, error} = useAuthorizedQuery<any>(queryUrl, {
+    const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {
         staleTime: 30000,
         gcTime: 1000 * 60 * 5,
         retry: 1,

@@ -32,7 +32,7 @@ interface BoxProps {
     ariaLabel?: string
     id?: string
 
-    [key: string]: any
+    [key: string]: unknown
 }
 
 const getSpacingClass = (value?: number | string): string => {
