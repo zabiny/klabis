@@ -4,7 +4,7 @@ import {labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {useToast} from '../../contexts/ToastContext.tsx';
+import {useToast} from '../../contexts/toastContext';
 import type {TransactionReverseRequest} from './FinancesPage.tsx';
 import {toFormValidationError} from '../../api/hateoas.ts';
 import {formatCurrency, formatDate} from './financeFormatters.ts';

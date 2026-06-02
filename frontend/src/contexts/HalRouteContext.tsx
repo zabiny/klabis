@@ -1,47 +1,12 @@
-import React, {type PropsWithChildren, useContext} from 'react';
+import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
 import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
-
 import {toHref} from "../api/hateoas.ts";
-
-/**
- * Context value provided by HalRouteProvider
- * Contains HAL resource data fetched from API (with environment-aware prefix) + current location pathname
- */
-export interface HalRouteContextValue {
-    /** Fetched HAL resource data from /api + pathname */
-    resourceData: HalResponse | null;
-
-    /** Can be used to perform navigation to given resource. It will be delegated to react router with 'self' link target extracted from resource **/
-    navigateToResource: (resource: HalResponse | Link, options?: { state?: unknown }) => void;
-
-    /** Loading state while fetching from API */
-    isLoading: boolean;
-
-    /** Error state if fetch failed */
-    error: Error | null;
-
-    /** Manual refetch function for updating data after form submissions */
-    refetch: () => Promise<void>;
-
-    /** Current pathname being displayed */
-    pathname: string;
-
-    /** React Query query state */
-    queryState: 'idle' | 'pending' | 'success' | 'error';
-
-    /**
-     * Returns link with given name from current resource. Only links from main resource are considered (links from subresources are not included)
-     * @param linkName
-     */
-    getResourceLink: (linkName?: string) => Link | null;
-}
-
-export const HalRouteContext = React.createContext<HalRouteContextValue | null>(null);
+import {HalRouteContext, useHalRoute} from './halRouteContext';
 
 interface HalRouteProviderProps {
     children: React.ReactNode;
@@ -157,7 +122,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         return {href} as Link
     }
 
-    const contextValue: HalRouteContextValue = {
+    const contextValue = {
         resourceData: data ?? null,
         navigateToResource,
         isLoading,
@@ -194,21 +159,3 @@ export const HalSubresourceProvider: React.FC<PropsWithChildren<HalSubresourcePr
         return <div>Subresource {subresourceLinkName} wasn't found</div>;
     }
 }
-
-/**
- * Hook to access HAL resource data from context
- * Must be used within a component wrapped by HalRouteProvider
- *
- * @example
- * const { resourceData, isLoading, error } = useHalRoute();
- */
-export const useHalRoute = (): HalRouteContextValue => {
-    const context = useContext(HalRouteContext);
-    if (!context) {
-        throw new Error(
-            'useHalRoute must be used within a component wrapped by HalRouteProvider. ' +
-            'Ensure HalRouteProvider is placed in your app hierarchy (typically in main.tsx).'
-        );
-    }
-    return context;
-};

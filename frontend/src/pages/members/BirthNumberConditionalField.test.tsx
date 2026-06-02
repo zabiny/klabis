@@ -4,7 +4,8 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Formik, Form, Field} from 'formik';
 import {vi} from 'vitest';
-import {BirthNumberConditionalField, isCzNationality} from './BirthNumberConditionalField';
+import {BirthNumberConditionalField} from './BirthNumberConditionalField';
+import {isCzNationality} from './isCzNationality';
 
 const renderInput = (name: string): ReactNode => (
     <Field key={name} as="input" data-testid={`input-${name}`} name={name}/>

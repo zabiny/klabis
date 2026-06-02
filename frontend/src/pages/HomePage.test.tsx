@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import * as RootNavigationModule from '../hooks/useRootNavigation';
 import type {NavigationItem} from '../hooks/useRootNavigation';
-import * as AuthContext2Module from '../contexts/AuthContext2';
+import * as AuthContextModule from '../contexts/authContext';
 import * as UseDashboardModule from '../hooks/useDashboard';
 import * as UseMyUpcomingRegistrationsModule from '../hooks/useMyUpcomingRegistrations';
 import * as UpcomingDeadlinesWidgetModule from '../components/dashboard/UpcomingDeadlinesWidget';
@@ -17,6 +17,13 @@ vi.mock('../hooks/useRootNavigation', () => ({
 
 vi.mock('../contexts/AuthContext2', async () => {
     const actual = await vi.importActual('../contexts/AuthContext2')
+    return {
+        ...actual,
+    }
+})
+
+vi.mock('../contexts/authContext', async () => {
+    const actual = await vi.importActual('../contexts/authContext')
     return {
         ...actual,
         useAuth: vi.fn(),
@@ -36,7 +43,7 @@ vi.mock('../components/dashboard/UpcomingDeadlinesWidget', () => ({
 }))
 
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
-const useAuth = vi.mocked(AuthContext2Module.useAuth)
+const useAuth = vi.mocked(AuthContextModule.useAuth)
 const useDashboard = vi.mocked(UseDashboardModule.useDashboard)
 const useMyUpcomingRegistrations = vi.mocked(UseMyUpcomingRegistrationsModule.useMyUpcomingRegistrations)
 const UpcomingDeadlinesWidget = vi.mocked(UpcomingDeadlinesWidgetModule.UpcomingDeadlinesWidget)

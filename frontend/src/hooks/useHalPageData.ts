@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {useHalRoute} from '../contexts/HalRouteContext';
+import {useHalRoute} from '../contexts/halRouteContext';
 import {useHalActions} from './useHalActions';
 import {useIsAdmin} from './useIsAdmin';
 import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link, PageMetadata} from '../api';

@@ -1,13 +1,7 @@
 import type {ReactNode} from 'react'
-import {createContext, useContext, useEffect, useMemo, useState} from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import {useIsAdmin} from '../hooks/useIsAdmin'
-
-interface AdminModeContextType {
-    isAdminMode: boolean
-    toggleAdminMode: () => void
-}
-
-const AdminModeContext = createContext<AdminModeContextType | undefined>(undefined)
+import {AdminModeContext} from './adminModeContext'
 
 /**
  * AdminModeProvider component for managing admin-only route limiting mode
@@ -68,15 +62,4 @@ export const AdminModeProvider = ({children}: { children: ReactNode }) => {
             {children}
         </AdminModeContext.Provider>
     )
-}
-
-/**
- * Hook to use admin mode context
- */
-export const useAdminMode = () => {
-    const context = useContext(AdminModeContext)
-    if (context === undefined) {
-        throw new Error('useAdminMode must be used within AdminModeProvider')
-    }
-    return context
 }

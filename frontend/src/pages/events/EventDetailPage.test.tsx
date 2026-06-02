@@ -50,6 +50,10 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
 }));
 
 vi.mock('../../contexts/ToastContext', () => ({
+    ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../contexts/toastContext', () => ({
     useToast: vi.fn(() => ({
         addToast: vi.fn(),
     })),
@@ -92,6 +96,9 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
         <div data-testid={`subresource-${subresourceLinkName}`}>{children}</div>
     ),
+}));
+
+vi.mock('../../contexts/halRouteContext.ts', () => ({
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jan', lastName: 'Novák', _links: {self: {href: '/api/members/42'}}},
         navigateToResource: vi.fn(),

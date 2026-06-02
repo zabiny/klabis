@@ -15,7 +15,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {useHalForm} from '../../contexts/HalFormContext.tsx';
+import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
 import {Modal} from '../UI';

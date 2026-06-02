@@ -5,7 +5,7 @@ import Layout from './Layout'
 import {HalRouteProvider} from '../contexts/HalRouteContext'
 import {vi} from 'vitest';
 import * as RootNavigationModule from '../hooks/useRootNavigation'
-import * as AuthContext2Module from '../contexts/AuthContext2'
+import * as AuthContextModule from '../contexts/authContext'
 import {AdminModeProvider} from "../contexts/AdminModeContext.tsx";
 
 // Mock useRootNavigation hook to avoid API calls
@@ -16,6 +16,13 @@ vi.mock('../hooks/useRootNavigation', () => ({
 // Mock useAuth hook
 vi.mock('../contexts/AuthContext2', async () => {
     const actual = await vi.importActual('../contexts/AuthContext2')
+    return {
+        ...actual,
+    }
+})
+
+vi.mock('../contexts/authContext', async () => {
+    const actual = await vi.importActual('../contexts/authContext')
     return {
         ...actual,
         useAuth: vi.fn(),
@@ -51,7 +58,7 @@ const mockMatchMedia = (isLargeScreen: boolean) => {
 }
 
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
-const useAuth = vi.mocked(AuthContext2Module.useAuth)
+const useAuth = vi.mocked(AuthContextModule.useAuth)
 
 // Helper to create a complete UseQueryResult mock
 function createMockQueryResult<T>(data: T | null = null, overrides: Record<string, unknown> = {}) {

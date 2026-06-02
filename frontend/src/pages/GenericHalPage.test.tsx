@@ -13,12 +13,12 @@ import {
 } from '../__mocks__/halData';
 import type {HalCollectionResponse, HalResponse} from '../api';
 import {vi} from 'vitest';
-import * as HalRouteContextModule from '../contexts/HalRouteContext';
+import * as HalRouteContextModule from '../contexts/halRouteContext';
 import * as HalActionsModule from '../hooks/useHalActions';
 
 // Mock child components
-vi.mock('../contexts/HalRouteContext', async () => ({
-    ...(await vi.importActual('../contexts/HalRouteContext')),
+vi.mock('../contexts/halRouteContext', async () => ({
+    ...(await vi.importActual('../contexts/halRouteContext')),
     useHalRoute: vi.fn(),
 }));
 

@@ -11,7 +11,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useHalForm} from '../../contexts/HalFormContext.tsx';
+import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {HalFormFieldFactory} from './halforms';
 import type {HalFormPanelChildren} from './HalFormPanel';

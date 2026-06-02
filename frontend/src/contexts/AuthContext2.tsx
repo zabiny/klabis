@@ -1,26 +1,10 @@
-import React, {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useState,} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
+import {AuthContext, type AuthUserDetails} from './authContext';
 
-interface AuthContextType {
-    isAuthenticated: boolean;
-    login: () => void;
-    logout: () => void;
-    isLoading: boolean;
-    getUser: () => AuthUserDetails | null;
-}
-
-export interface AuthUserDetails {
-    firstName: string,
-    lastName: string,
-    id: number,
-    userName: string,
-    memberId: string | null
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -120,12 +104,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
             {children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
 };

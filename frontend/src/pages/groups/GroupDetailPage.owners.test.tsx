@@ -13,12 +13,15 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
+    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
+}));
+
+vi.mock('../../contexts/halFormContext.ts', () => ({
     useHalForm: vi.fn().mockReturnValue({
         displayHalForm: vi.fn(),
         currentFormRequest: null,
         closeForm: vi.fn(),
     }),
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
@@ -45,6 +48,9 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../contexts/halRouteContext.ts', () => ({
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM9500', _links: {self: {href: '/api/members/member-1'}}},
         navigateToResource: vi.fn(),

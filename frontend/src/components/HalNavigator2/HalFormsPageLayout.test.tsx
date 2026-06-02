@@ -5,13 +5,14 @@ import {act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
-import type {HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
-import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
+import type {HalRouteContextValue} from '../../contexts/halRouteContext.ts';
+import {HalRouteContext} from '../../contexts/halRouteContext.ts';
 import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
 import {vi} from 'vitest';
 import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
 import type {HalFormPanelProps} from './HalFormPanel.tsx';
-import {HalFormProvider, useHalForm} from '../../contexts/HalFormContext.tsx';
+import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
+import {useHalForm} from '../../contexts/halFormContext.ts';
 
 vi.mock('./HalFormDisplay.tsx', () => ({
     HalFormDisplay: ({template, templateName, onClose}: HalFormDisplayProps) => (

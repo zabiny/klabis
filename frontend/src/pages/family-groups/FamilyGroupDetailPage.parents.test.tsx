@@ -36,6 +36,9 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../contexts/halRouteContext.ts', () => ({
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jana', lastName: 'Rodičová', registrationNumber: 'ZBM2000', _links: {self: {href: '/api/members/parent-1'}}},
         navigateToResource: vi.fn(),
