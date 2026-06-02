@@ -19,19 +19,19 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock localStorage
-const mockLocalStorage: any = {}
-Storage.prototype.getItem = vi.fn((key) => (mockLocalStorage as any)[key] || null)
+const mockLocalStorage: Record<string, string> = {}
+Storage.prototype.getItem = vi.fn((key) => mockLocalStorage[key] || null)
 Storage.prototype.setItem = vi.fn((key, value) => {
-    (mockLocalStorage as any)[key] = value
+    mockLocalStorage[key] = value
 })
 Storage.prototype.removeItem = vi.fn((key) => {
-    delete (mockLocalStorage as any)[key]
+    delete mockLocalStorage[key]
 })
 
 describe('ThemeToggle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.keys(mockLocalStorage).forEach((key) => delete (mockLocalStorage as any)[key])
+        Object.keys(mockLocalStorage).forEach((key) => delete mockLocalStorage[key])
     })
 
     const renderThemeToggle = (ui: React.ReactElement) => {
@@ -56,7 +56,7 @@ describe('ThemeToggle', () => {
 
     describe('Icon Display Logic', () => {
         it('should show SunIcon when theme is light', () => {
-            (mockLocalStorage as any).theme = 'light'
+            mockLocalStorage.theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
             // SVG from SunIcon should be present
@@ -64,7 +64,7 @@ describe('ThemeToggle', () => {
         })
 
         it('should show MoonIcon when theme is dark', () => {
-            (mockLocalStorage as any).theme = 'dark'
+            mockLocalStorage.theme = 'dark'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
             expect(button.querySelector('svg')).toBeInTheDocument()
@@ -73,7 +73,7 @@ describe('ThemeToggle', () => {
 
     describe('Click Handler', () => {
         it('should toggle theme on click', () => {
-            (mockLocalStorage as any).theme = 'light'
+            mockLocalStorage.theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
 
@@ -86,7 +86,7 @@ describe('ThemeToggle', () => {
         })
 
         it('should cycle through both themes', () => {
-            (mockLocalStorage as any).theme = 'light'
+            mockLocalStorage.theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
 
@@ -105,21 +105,21 @@ describe('ThemeToggle', () => {
 
     describe('ARIA Attributes', () => {
         it('should have proper aria-label for light mode', () => {
-            (mockLocalStorage as any).theme = 'light'
+            mockLocalStorage.theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
             expect(button.getAttribute('aria-label')).toBe('Přepnout do tmavého režimu')
         })
 
         it('should have proper aria-label for dark mode', () => {
-            (mockLocalStorage as any).theme = 'dark'
+            mockLocalStorage.theme = 'dark'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
             expect(button.getAttribute('aria-label')).toBe('Přepnout do světlého režimu')
         })
 
         it('should have title attribute', () => {
-            (mockLocalStorage as any).theme = 'light'
+            mockLocalStorage.theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
             expect(button.getAttribute('title')).toBeTruthy()

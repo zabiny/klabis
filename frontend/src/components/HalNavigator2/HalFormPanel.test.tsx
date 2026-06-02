@@ -8,6 +8,7 @@ import {HalFormPanel, type HalFormPanelRenderHelpers} from './HalFormPanel.tsx';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalResponse} from '../../api';
+import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
@@ -49,7 +50,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, customLayout}: any) => {
+    HalFormDisplay: ({template, templateName, customLayout}: HalFormDisplayProps) => {
         if (typeof customLayout === 'function') {
             return (
                 <div data-testid="hal-form-display">
@@ -95,7 +96,7 @@ describe('HalFormPanel', () => {
                 data: undefined,
                 isLoading: true,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -116,7 +117,7 @@ describe('HalFormPanel', () => {
                 data: undefined,
                 isLoading: false,
                 error: new Error('Network error'),
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -142,7 +143,7 @@ describe('HalFormPanel', () => {
                 data: collectionData,
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -164,7 +165,7 @@ describe('HalFormPanel', () => {
                 data: collectionData,
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -188,7 +189,7 @@ describe('HalFormPanel', () => {
                 data: collectionData,
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -222,7 +223,7 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -242,7 +243,7 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             let capturedHasField: ((name: string) => boolean) | null = null;
 
@@ -274,7 +275,7 @@ describe('HalFormPanel', () => {
                 }),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             let capturedHasType: ((type: string) => boolean) | null = null;
 
@@ -301,7 +302,7 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             let capturedRenderInput: ((name: string) => React.ReactElement) | null = null;
             let capturedRenderField: ((name: string) => React.ReactElement) | null = null;
@@ -328,7 +329,7 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(
@@ -353,10 +354,10 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             vi.doMock('./HalFormDisplay.tsx', () => ({
-                HalFormDisplay: ({customLayout}: any) => {
+                HalFormDisplay: ({customLayout}: Pick<HalFormDisplayProps, 'customLayout'>) => {
                     return (
                         <div data-testid="hal-form-display">
                             {typeof customLayout === 'function' ? customLayout({
@@ -386,7 +387,7 @@ describe('HalFormPanel', () => {
                 data: buildCollectionData(),
                 isLoading: false,
                 error: null,
-            } as any);
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
             render(

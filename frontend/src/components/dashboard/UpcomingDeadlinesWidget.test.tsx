@@ -1,12 +1,12 @@
 import '@testing-library/jest-dom';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient, QueryClientProvider, type UseQueryResult} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import React from 'react';
 import {UpcomingDeadlinesWidget} from './UpcomingDeadlinesWidget';
 import * as UseUpcomingDeadlinesModule from '../../hooks/useUpcomingDeadlines';
-import type {UpcomingDeadlineItem} from '../../hooks/useUpcomingDeadlines';
+import type {UpcomingDeadlineItem, UpcomingDeadlinesData} from '../../hooks/useUpcomingDeadlines';
 import * as UseAuthorizedFetchModule from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useUpcomingDeadlines', () => ({
@@ -43,27 +43,30 @@ vi.mock('../../components/UI', async () => {
 const useUpcomingDeadlines = vi.mocked(UseUpcomingDeadlinesModule.useUpcomingDeadlines);
 const useAuthorizedQuery = vi.mocked(UseAuthorizedFetchModule.useAuthorizedQuery);
 
-const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
-    data,
-    isLoading: false,
-    isError: false,
-    isPending: false,
-    error: null,
-    status: 'success' as const,
-    fetchStatus: 'idle' as const,
-    isFetched: true,
-    isStale: false,
-    isFetching: false,
-    isPlaceholderData: false,
-    isRefetching: false,
-    refetch: vi.fn(),
-    failureCount: 0,
-    failureReason: null,
-    errorUpdateCount: 0,
-    errorUpdatedAt: null,
-    dataUpdatedAt: Date.now(),
-    ...overrides,
-} as any);
+function createMockQueryResult(data?: UpcomingDeadlinesData | null): UseQueryResult<UpcomingDeadlinesData | undefined>;
+function createMockQueryResult<T>(data?: T | null): UseQueryResult<T | undefined>;
+function createMockQueryResult<T>(data: T | null = null): UseQueryResult<T | undefined> {
+    return {
+        data: data ?? undefined,
+        isLoading: false,
+        isError: false,
+        isPending: false,
+        error: null,
+        status: 'success' as const,
+        fetchStatus: 'idle' as const,
+        isFetched: true,
+        isStale: false,
+        isFetching: false,
+        isPlaceholderData: false,
+        isRefetching: false,
+        refetch: vi.fn(),
+        failureCount: 0,
+        failureReason: null,
+        errorUpdateCount: 0,
+        errorUpdatedAt: null,
+        dataUpdatedAt: Date.now(),
+    } as unknown as UseQueryResult<T | undefined>;
+}
 
 const renderWidget = (href: string | undefined = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc') => {
     const queryClient = new QueryClient({
@@ -230,7 +233,9 @@ describe('UpcomingDeadlinesWidget', () => {
                     eventDate: '2026-06-01',
                     deadline: '2026-05-14',
                     newRegistrationHref: '/api/events/evt-1/registrations/new',
+                    registerForEventTemplate: undefined,
                 }],
+                totalElements: 1,
             }));
             renderWidget();
             expect(screen.getByText(/Uzávěrka:/)).toBeInTheDocument();
@@ -249,10 +254,11 @@ describe('UpcomingDeadlinesWidget', () => {
                     newRegistrationHref: '/api/events/evt-1/registrations/new',
                     registerForEventTemplate: {
                         target: '/api/events/evt-1/registrations',
-                        method: 'POST',
+                        method: 'POST' as const,
                         properties: [],
                     },
                 }],
+                totalElements: 1,
             }));
 
             useAuthorizedQuery.mockReturnValue(createMockQueryResult({

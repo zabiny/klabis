@@ -22,7 +22,7 @@ vi.mock('react-router-dom', async () => {
     };
 });
 
-const createMockResponseWithLocation = (data: any, status = 201, location: string | null = null): Response =>
+const createMockResponseWithLocation = (data: unknown, status = 201, location: string | null = null): Response =>
     createMockResponse(data, status, location ? {'Location': location} : {});
 
 const createOptionsResponse = (allowMethods: string[]): Response =>
@@ -68,11 +68,11 @@ describe('HalFormDisplay Component', () => {
         vi.clearAllMocks();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as unknown as {fetch: typeof fetchSpy}).fetch = fetchSpy;
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        delete (globalThis as unknown as {fetch?: typeof fetchSpy}).fetch;
     });
 
     const createMockPageData = (resourceData: HalResponse | null = null) => ({
@@ -101,9 +101,9 @@ describe('HalFormDisplay Component', () => {
         getPageMetadata: vi.fn(() => undefined),
     });
 
-    const createWrapper = (pageData: any) => {
+    const createWrapper = (pageData: ReturnType<typeof createMockPageData>) => {
         const mockUseHalPageData = vi.mocked(useHalPageData);
-        mockUseHalPageData.mockReturnValue(pageData);
+        mockUseHalPageData.mockReturnValue(pageData as unknown as ReturnType<typeof useHalPageData>);
 
         return ({children}: { children: React.ReactNode }) => (
             <QueryClientProvider client={queryClient}>
@@ -523,7 +523,7 @@ describe('HalFormDisplay Component', () => {
         describe('auto-navigation on POST+Location', () => {
             // target '/api/family-groups' normalizes to '/family-groups' which equals pathname
             // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.
-            const renderPostForm = (method: HalFormsTemplateMethod, pageData?: any) => {
+            const renderPostForm = (method: HalFormsTemplateMethod, pageData?: ReturnType<typeof createMockPageData>) => {
                 const template = mockHalFormsTemplate({
                     title: 'Create Group',
                     target: '/api/family-groups',

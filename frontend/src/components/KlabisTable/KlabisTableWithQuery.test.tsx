@@ -32,11 +32,11 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         localStorage.clear()
         // Mock global fetch
         fetchSpy = vi.fn() as Mock
-        ;(globalThis as any).fetch = fetchSpy
+        ;(globalThis as unknown as {fetch: typeof fetchSpy}).fetch = fetchSpy
     })
 
     afterEach(() => {
-        delete (globalThis as any).fetch
+        delete (globalThis as unknown as {fetch?: typeof fetchSpy}).fetch
     })
 
     const mockHalLink = {

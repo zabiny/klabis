@@ -3,7 +3,8 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {vi} from 'vitest';
 import {ChangePasswordDialog} from './ChangePasswordDialog';
-import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedMutation, type MutationResult} from '../../hooks/useAuthorizedFetch';
+import {FetchError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(),
@@ -173,7 +174,7 @@ describe('ChangePasswordDialog', () => {
         it('calls onClose after successful password change', async () => {
             const user = userEvent.setup();
             const onCloseMock = vi.fn();
-            let onSuccessCallback: ((result: any) => void) | undefined;
+            let onSuccessCallback: ((result: MutationResult) => void) | undefined;
 
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn().mockImplementation((_vars, opts) => {
@@ -242,8 +243,7 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new Error('HTTP 400 (Bad Request)');
-            (serverError as any).responseBody = JSON.stringify({detail: 'Current password is incorrect'});
+            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Current password is incorrect'}));
             onErrorCallback?.(serverError);
 
             await waitFor(() => {
@@ -282,8 +282,7 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new Error('HTTP 400 (Bad Request)');
-            (serverError as any).responseBody = JSON.stringify({detail: 'Password does not meet complexity requirements'});
+            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Password does not meet complexity requirements'}));
             onErrorCallback?.(serverError);
 
             await waitFor(() => {
@@ -322,8 +321,7 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new Error('HTTP 400 (Bad Request)');
-            (serverError as any).responseBody = JSON.stringify({detail: 'Current password is incorrect'});
+            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Current password is incorrect'}));
             onErrorCallback?.(serverError);
 
             await waitFor(() => {

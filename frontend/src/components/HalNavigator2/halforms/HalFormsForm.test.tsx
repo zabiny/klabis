@@ -151,7 +151,7 @@ describe('createValidationSchema — required field validation', () => {
 describe('HalFormsForm — multi: true (backend shorthand for multiple)', () => {
     it('initializes field with multi:true as empty array when no data provided', async () => {
         const onSubmit = vi.fn().mockResolvedValue(undefined);
-        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true} as any);
+        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true});
         const template = createTemplate([prop]);
 
         render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
@@ -165,7 +165,7 @@ describe('HalFormsForm — multi: true (backend shorthand for multiple)', () => 
 
     it('initializes field with multi:true as existing array when data provided', async () => {
         const onSubmit = vi.fn().mockResolvedValue(undefined);
-        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true} as any);
+        const prop = createProperty({name: 'memberIds', type: 'UUID', multi: true});
         const template = createTemplate([prop]);
         const existingIds = ['id-1', 'id-2'];
 
