@@ -9,11 +9,11 @@
 
 ## 2. Backend — content negotiation endpoint
 
-- [ ] 2.1 Write a failing controller test: `GET /api/events/{eventId}/accommodation-list` with `Accept: text/csv` returns `200 text/csv`, a `Content-Disposition: attachment` header with filename `ubytovani-{slug}.csv`, and the CSV body (D1, D7)
-- [ ] 2.2 Write a failing test: the same endpoint with `Accept: application/prs.hal-forms+json` still returns the existing HAL collection unchanged (regression guard for D1)
-- [ ] 2.3 Extend the accommodation-list controller method to negotiate on `Accept`: serve CSV for `text/csv`, HAL for the existing media type, reusing the existing item-assembly logic (no duplication)
-- [ ] 2.4 Implement the event-name slugification for the download filename (diacritics and spaces to hyphens) and set `Content-Disposition` (D7)
-- [ ] 2.5 Write a failing test: a user who is neither the event coordinator nor holds EVENTS:REGISTRATIONS receives an authorization error for the `text/csv` request; confirm the existing authorization check covers the CSV path
+- [x] 2.1 Write a failing controller test: `GET /api/events/{eventId}/accommodation-list` with `Accept: text/csv` returns `200 text/csv`, a `Content-Disposition: attachment` header with filename `ubytovani-{slug}.csv`, and the CSV body (D1, D7)
+- [x] 2.2 Write a failing test: the same endpoint with `Accept: application/prs.hal-forms+json` still returns the existing HAL collection unchanged (regression guard for D1)
+- [x] 2.3 Extend the accommodation-list controller method to negotiate on `Accept`: serve CSV for `text/csv`, HAL for the existing media type, reusing the existing item-assembly logic (no duplication)
+- [x] 2.4 Implement the event-name slugification for the download filename (diacritics and spaces to hyphens) and set `Content-Disposition` (D7)
+- [x] 2.5 Write a failing test: a user who is neither the event coordinator nor holds EVENTS:REGISTRATIONS receives an authorization error for the `text/csv` request; confirm the existing authorization check covers the CSV path
 
 ## 3. Frontend — download action
 

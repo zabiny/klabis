@@ -72,6 +72,7 @@ public class EventController {
     private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
     private final boolean orisIntegrationActive;
     private final EventDetailsPostprocessor eventDetailsPostprocessor;
+    private final AccommodationListCsvRenderer csvRenderer;
 
     public EventController(
             EventManagementPort eventManagementService,
@@ -79,13 +80,15 @@ public class EventController {
             Members members,
             PagedResourcesAssembler<Event> pagedResourcesAssembler,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
-            EventDetailsPostprocessor eventDetailsPostprocessor) {
+            EventDetailsPostprocessor eventDetailsPostprocessor,
+            AccommodationListCsvRenderer csvRenderer) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.orisIntegrationActive = orisEventImportPort.isPresent();
         this.eventDetailsPostprocessor = eventDetailsPostprocessor;
+        this.csvRenderer = csvRenderer;
     }
 
     @PostMapping(consumes = "application/json")
@@ -394,13 +397,7 @@ public class EventController {
             throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
         }
 
-        List<EventRegistration> registrations = event.getRegistrations();
-        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
-        Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
-
-        List<AccommodationListItemDto> items = registrations.stream()
-                .map(registration -> toAccommodationListItem(registration, accommodationIndex))
-                .toList();
+        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
         CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(
                 items,
@@ -408,6 +405,46 @@ public class EventController {
         );
 
         return ResponseEntity.ok(collectionModel);
+    }
+
+    @GetMapping(value = "/{eventId}/accommodation-list", produces = "text/csv")
+    @Operation(
+            summary = "Download accommodation list for an event as CSV",
+            description = """
+                    Returns the accommodation list as a CSV file (UTF-8 BOM, semicolon delimiter, Czech headers).
+                    Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS authority.
+                    """
+    )
+    @ApiResponse(responseCode = "200", description = "CSV file downloaded successfully")
+    @ApiResponse(responseCode = "403", description = "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS")
+    public ResponseEntity<byte[]> getAccommodationListAsCsv(
+            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Event event = eventManagementService.getEvent(new EventId(eventId), false);
+
+        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
+        }
+
+        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
+        byte[] csv = csvRenderer.renderToBytes(items);
+
+        String filename = "ubytovani-" + EventNameSlugifier.slugify(event.getName()) + ".csv";
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .body(csv);
+    }
+
+    private List<AccommodationListItemDto> assembleAccommodationItems(Event event) {
+        List<EventRegistration> registrations = event.getRegistrations();
+        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
+        Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
+        return registrations.stream()
+                .map(registration -> toAccommodationListItem(registration, accommodationIndex))
+                .toList();
     }
 
     private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {

@@ -64,6 +64,9 @@ class EventControllerTest {
     @MockitoBean
     private Members members;
 
+    @MockitoBean
+    private AccommodationListCsvRenderer csvRenderer;
+
     @Nested
     @DisplayName("POST /api/events")
     class CreateEventTests {
@@ -1791,6 +1794,104 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.accommodationList[0].addressStreet").doesNotExist())
                     .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Bob"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{eventId}/accommodation-list — CSV content negotiation (iteration 2)")
+    class AccommodationListCsvTests {
+
+        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        @Test
+        @DisplayName("2.1: Accept: text/csv returns 200, content type text/csv, Content-Disposition attachment with event slug filename, and CSV body")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void csvAcceptHeaderReturnsCsvWithContentDispositionAndBody() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withName("Zimní soustředění 2026")
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "Jan", "Novák", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1990, 5, 10), "Hlavní 1", "Praha", "11000", "CZ");
+
+            byte[] csvBytes = "Jan;Novák\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+            when(csvRenderer.renderToBytes(any())).thenReturn(csvBytes);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept("text/csv")
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv")))
+                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ubytovani-zimni-soustredeni-2026.csv")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("Jan")));
+        }
+
+        @Test
+        @DisplayName("2.2: Accept: application/prs.hal-forms+json still returns existing HAL collection unchanged (regression guard)")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void halAcceptHeaderReturnsHalCollectionUnchanged() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now())
+            );
+            Event event = EventTestDataBuilder.anEvent()
+                    .withName("Test Event")
+                    .addRegistrations(registrations)
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "Jane", "Smith", null, null,
+                    java.time.LocalDate.of(1985, 3, 20), "Oak Ave", "Brno", "60200", "CZ");
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("application/prs.hal-forms+json")))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Jane"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].lastName").value("Smith"));
+        }
+
+        @Test
+        @DisplayName("2.5: unauthorized user gets 403 for text/csv request — existing authorization check covers CSV path")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void unauthorizedUserGets403ForCsvRequest() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+            event.publish();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept("text/csv")
+                    )
+                    .andExpect(status().isForbidden());
         }
     }
 
