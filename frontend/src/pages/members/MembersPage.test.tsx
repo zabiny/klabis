@@ -70,7 +70,7 @@ vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
         ) : null,
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<ReturnType<typeof useHalPageData>>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -95,7 +95,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any) => {
+const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -118,13 +118,13 @@ const buildMemberRow = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const renderPageWithMembers = (members: unknown[], routeOverrides?: any) => {
+const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof useHalPageData>>) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/members'}},
         _embedded: {memberSummaryResponseList: members},
         page: {size: 10, totalElements: members.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData, routeOverrides);
     return renderPage(pageData);
 };
@@ -332,7 +332,7 @@ const SearchReader = () => {
     return <span data-testid="search-string">{location.search || '(none)'}</span>;
 };
 
-const renderPageWithSearchReader = (initialUrl: string, pageData: any) => {
+const renderPageWithSearchReader = (initialUrl: string, pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -348,7 +348,7 @@ const renderPageWithSearchReader = (initialUrl: string, pageData: any) => {
 describe('MembersPage — filter bar integration', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as any);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     });
 
     it('auto-injects ?status=ACTIVE when no status param is present on mount', async () => {
@@ -373,7 +373,7 @@ describe('MembersPage — filter bar integration', () => {
                 registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 
@@ -390,7 +390,7 @@ describe('MembersPage — filter bar integration', () => {
                 registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 

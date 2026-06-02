@@ -52,11 +52,11 @@ describe('formatDate', () => {
 
     describe('Null/Undefined/Empty String Handling', () => {
         it('should return "-" for null input', () => {
-            expect(formatDate(null as any)).toBe('-');
+            expect(formatDate(null as unknown as string)).toBe('-');
         });
 
         it('should return "-" for undefined input', () => {
-            expect(formatDate(undefined as any)).toBe('-');
+            expect(formatDate(undefined as unknown as string)).toBe('-');
         });
 
         it('should return "-" for empty string', () => {

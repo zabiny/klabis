@@ -215,7 +215,7 @@ describe('CalendarFeedSection', () => {
 
         it('shows full URL after successful POST', async () => {
             const user = userEvent.setup();
-            let onSuccessCallback: ((result: any) => void) | undefined;
+            let onSuccessCallback: ((result: unknown) => void) | undefined;
 
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn().mockImplementation((_vars, opts) => {
@@ -250,7 +250,7 @@ describe('CalendarFeedSection', () => {
 
         it('shows "Kopírovat" button after POST success', async () => {
             const user = userEvent.setup();
-            let onSuccessCallback: ((result: any) => void) | undefined;
+            let onSuccessCallback: ((result: unknown) => void) | undefined;
 
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: vi.fn().mockImplementation((_vars, opts) => {

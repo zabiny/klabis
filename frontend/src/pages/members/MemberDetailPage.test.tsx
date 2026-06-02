@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
@@ -67,7 +68,7 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: any) => (
+    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4>{title}</h4>}
@@ -111,7 +112,7 @@ const selfEditTemplate: HalFormsTemplate = {
     ],
 };
 
-const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
+const mockMemberDetailData = (overrides?: Partial<HalResponse & Record<string, unknown>>): HalResponse => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
     registrationNumber: 'SKI2601',
     firstName: 'Jan',
@@ -137,7 +138,7 @@ const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
+const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<ReturnType<typeof useHalPageData>>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -162,7 +163,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: any) =
     ...overrides,
 });
 
-const renderPage = (pageData: any) => {
+const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
