@@ -30,11 +30,11 @@ describe('useHalRoute Hook', () => {
         vi.clearAllMocks();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as unknown as Record<string, unknown>).fetch = fetchSpy;
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        delete (globalThis as unknown as Record<string, unknown>).fetch;
     });
 
     const createWrapper = () => {
@@ -47,7 +47,7 @@ describe('useHalRoute Hook', () => {
         );
     };
 
-    const mockFetchResponse = (data: any, status = 200) => {
+    const mockFetchResponse = (data: unknown, status = 200) => {
         fetchSpy.mockResolvedValueOnce(createMockResponse(data, status));
     };
 
@@ -488,14 +488,14 @@ describe('HalSubresourceProvider', () => {
         vi.clearAllMocks();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
-        (globalThis as any).fetch = fetchSpy;
+        (globalThis as unknown as Record<string, unknown>).fetch = fetchSpy;
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        delete (globalThis as unknown as Record<string, unknown>).fetch;
     });
 
-    const mockFetchResponse = (data: any, status = 200) => {
+    const mockFetchResponse = (data: unknown, status = 200) => {
         fetchSpy.mockResolvedValueOnce(createMockResponse(data, status));
     };
 
@@ -520,7 +520,7 @@ describe('HalSubresourceProvider', () => {
             mockFetchResponse({firstName: 'Jan', lastName: 'Novák'});
 
             const {result} = renderHook(() => useHalRoute(), {
-                wrapper: ({children}: any) => (
+                wrapper: ({children}: {children: React.ReactNode}) => (
                     <QueryClientProvider client={queryClient}>
                         <BrowserRouter>
                             <HalRouteProvider>
@@ -581,7 +581,7 @@ describe('HalSubresourceProvider', () => {
             mockFetchResponse({items: []});
 
             const {result} = renderHook(() => useHalRoute(), {
-                wrapper: ({children}: any) => (
+                wrapper: ({children}: {children: React.ReactNode}) => (
                     <QueryClientProvider client={queryClient}>
                         <BrowserRouter>
                             <HalRouteProvider>
@@ -723,7 +723,7 @@ describe('HalSubresourceProvider', () => {
             mockFetchResponse(subresourceData);
 
             const {result} = renderHook(() => useHalRoute(), {
-                wrapper: ({children}: any) => (
+                wrapper: ({children}: {children: React.ReactNode}) => (
                     <QueryClientProvider client={queryClient}>
                         <BrowserRouter>
                             <HalRouteProvider>

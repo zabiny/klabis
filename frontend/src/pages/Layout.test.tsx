@@ -47,34 +47,36 @@ const mockMatchMedia = (isLargeScreen: boolean) => {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
-    })) as any
+    })) as unknown as typeof window.matchMedia
 }
 
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContext2Module.useAuth)
 
 // Helper to create a complete UseQueryResult mock
-const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
-    data,
-    isLoading: false,
-    isError: false,
-    isPending: false,
-    error: null,
-    status: 'success' as const,
-    fetchStatus: 'idle' as const,
-    isFetched: true,
-    isStale: false,
-    isFetching: false,
-    isPlaceholderData: false,
-    isRefetching: false,
-    refetch: vi.fn(),
-    failureCount: 0,
-    failureReason: null,
-    errorUpdateCount: 0,
-    errorUpdatedAt: null,
-    dataUpdatedAt: Date.now(),
-    ...overrides,
-} as any);
+function createMockQueryResult<T>(data: T | null = null, overrides: Record<string, unknown> = {}) {
+    return {
+        data,
+        isLoading: false,
+        isError: false,
+        isPending: false,
+        error: null,
+        status: 'success' as const,
+        fetchStatus: 'idle' as const,
+        isFetched: true,
+        isStale: false,
+        isFetching: false,
+        isPlaceholderData: false,
+        isRefetching: false,
+        refetch: vi.fn(),
+        failureCount: 0,
+        failureReason: null,
+        errorUpdateCount: 0,
+        errorUpdatedAt: null,
+        dataUpdatedAt: Date.now(),
+        ...overrides,
+    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
+}
 
 describe('Layout - Responsive Sidebar', () => {
     let queryClient: QueryClient

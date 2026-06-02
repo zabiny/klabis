@@ -4,6 +4,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import * as RootNavigationModule from '../hooks/useRootNavigation';
+import type {NavigationItem} from '../hooks/useRootNavigation';
 import * as AuthContext2Module from '../contexts/AuthContext2';
 import * as UseDashboardModule from '../hooks/useDashboard';
 import * as UseMyUpcomingRegistrationsModule from '../hooks/useMyUpcomingRegistrations';
@@ -40,37 +41,39 @@ const useDashboard = vi.mocked(UseDashboardModule.useDashboard)
 const useMyUpcomingRegistrations = vi.mocked(UseMyUpcomingRegistrationsModule.useMyUpcomingRegistrations)
 const UpcomingDeadlinesWidget = vi.mocked(UpcomingDeadlinesWidgetModule.UpcomingDeadlinesWidget)
 
-const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
-    data,
-    isLoading: false,
-    isError: false,
-    isPending: false,
-    error: null,
-    status: 'success' as const,
-    fetchStatus: 'idle' as const,
-    isFetched: true,
-    isStale: false,
-    isFetching: false,
-    isPlaceholderData: false,
-    isRefetching: false,
-    refetch: vi.fn(),
-    failureCount: 0,
-    failureReason: null,
-    errorUpdateCount: 0,
-    errorUpdatedAt: null,
-    dataUpdatedAt: Date.now(),
-    ...overrides,
-} as any);
+function createMockQueryResult<T>(data: T | null = null, overrides: Record<string, unknown> = {}) {
+    return {
+        data,
+        isLoading: false,
+        isError: false,
+        isPending: false,
+        error: null,
+        status: 'success' as const,
+        fetchStatus: 'idle' as const,
+        isFetched: true,
+        isStale: false,
+        isFetching: false,
+        isPlaceholderData: false,
+        isRefetching: false,
+        refetch: vi.fn(),
+        failureCount: 0,
+        failureReason: null,
+        errorUpdateCount: 0,
+        errorUpdatedAt: null,
+        dataUpdatedAt: Date.now(),
+        ...overrides,
+    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
+}
 
-const adminNavItems = [
-    {rel: 'members', href: '/members', label: 'Členové'},
-    {rel: 'events', href: '/events', label: 'Akce'},
-    {rel: 'groups', href: '/groups', label: 'Skupiny'},
-    {rel: 'admin', href: '/admin', label: 'Admin'},
+const adminNavItems: NavigationItem[] = [
+    {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
+    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+    {rel: 'groups', href: '/groups', label: 'Skupiny', section: 'main'},
+    {rel: 'admin', href: '/admin', label: 'Admin', section: 'main'},
 ];
 
-const regularNavItems = [
-    {rel: 'events', href: '/events', label: 'Akce'},
+const regularNavItems: NavigationItem[] = [
+    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
 ];
 
 const renderHomePage = () => {

@@ -23,12 +23,12 @@ vi.mock('../contexts/HalRouteContext', async () => ({
 }));
 
 vi.mock('../components/UI', () => ({
-    Alert: ({severity, children}: any) => (
+    Alert: ({severity, children}: {severity: string; children: React.ReactNode}) => (
         <div data-testid={`alert-${severity}`} role="alert">
             {children}
         </div>
     ),
-    Modal: ({isOpen, onClose, title, children}: any) =>
+    Modal: ({isOpen, onClose, title, children}: {isOpen: boolean; onClose: () => void; title?: string; children: React.ReactNode}) =>
         isOpen ? (
             <div data-testid="modal" role="dialog">
                 {title && <h2>{title}</h2>}
@@ -40,7 +40,7 @@ vi.mock('../components/UI', () => ({
 }));
 
 vi.mock('../components/JsonPreview', () => ({
-    JsonPreview: ({data, label}: any) => (
+    JsonPreview: ({data, label}: {data: unknown; label?: string}) => (
         <div data-testid="json-preview">
             {label && <h2>{label}</h2>}
             <pre>{JSON.stringify(data, null, 2)}</pre>
@@ -49,7 +49,7 @@ vi.mock('../components/JsonPreview', () => ({
 }));
 
 vi.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
-    HalLinksSection: ({links, onNavigate}: any) =>
+    HalLinksSection: ({links, onNavigate}: {links: unknown; onNavigate: (href: string) => void}) =>
         links ? (
             <div data-testid="hal-links">
                 <button onClick={() => onNavigate('/test')}>Navigate</button>
@@ -58,11 +58,11 @@ vi.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
 }));
 
 vi.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
-    HalFormsSection: ({templates}: any) =>
+    HalFormsSection: ({templates}: {templates: Record<string, {title?: string}> | undefined}) =>
         templates ? (
             <div data-testid="hal-forms">
                 {templates &&
-                    Object.entries(templates).map(([key, template]: any) => (
+                    Object.entries(templates).map(([key, template]) => (
                         <button key={key} data-testid={`form-button-${key}`}>
                             {template.title || key}
                         </button>
@@ -72,7 +72,7 @@ vi.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
 }));
 
 vi.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
-    HalFormsPageLayout: ({children}: any) => (
+    HalFormsPageLayout: ({children}: {children: React.ReactNode}) => (
         <div data-testid="hal-forms-page-layout">
             {children}
         </div>
@@ -88,7 +88,7 @@ vi.mock('../hooks/useIsAdmin', () => ({
 }));
 
 vi.mock('./ErrorPage', () => ({
-    ErrorPage: ({error}: any) => (
+    ErrorPage: ({error}: {error?: Error}) => (
         <div data-testid="error-page" data-message={error?.message}>
             {error?.message?.includes('404') ? (
                 <div data-testid="not-found-page">404 Not Found</div>
@@ -103,7 +103,7 @@ const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
 const useHalActions = vi.mocked(HalActionsModule.useHalActions);
 
 describe('GenericHalPage Component', () => {
-    let mockHalActions: any;
+    let mockHalActions: ReturnType<typeof HalActionsModule.useHalActions>;
     let queryClient: QueryClient;
 
     beforeEach(() => {
@@ -120,7 +120,7 @@ describe('GenericHalPage Component', () => {
             isSubmitting: false,
             handleNavigateToItem: vi.fn(),
             handleFormSubmit: vi.fn().mockResolvedValue(undefined),
-        };
+        } as unknown as ReturnType<typeof HalActionsModule.useHalActions>;
 
         useHalActions.mockReturnValue(mockHalActions);
         vi.clearAllMocks();

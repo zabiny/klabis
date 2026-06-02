@@ -7,6 +7,7 @@ import CalendarPage from './CalendarPage.tsx';
 import {vi} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import type {HalResponse} from '../../api';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -19,12 +20,12 @@ vi.mock('react-router-dom', async () => {
 
 // Mock child components
 vi.mock('../../components/UI', () => ({
-    Alert: ({severity, children}: any) => (
+    Alert: ({severity, children}: {severity: string; children: React.ReactNode}) => (
         <div data-testid={`alert-${severity}`} role="alert">
             {children}
         </div>
     ),
-    Button: ({children, onClick, disabled, ...props}: any) => (
+    Button: ({children, onClick, disabled, ...props}: {children: React.ReactNode; onClick?: () => void; disabled?: boolean; [key: string]: unknown}) => (
         <button onClick={onClick} disabled={disabled} {...props}>
             {children}
         </button>
@@ -33,7 +34,7 @@ vi.mock('../../components/UI', () => ({
 }));
 
 vi.mock('../../components/JsonPreview', () => ({
-    JsonPreview: ({data, label}: any) => (
+    JsonPreview: ({data, label}: {data: unknown; label?: string}) => (
         <div data-testid="json-preview">
             {label && <h2>{label}</h2>}
             <pre>{JSON.stringify(data, null, 2)}</pre>
@@ -42,7 +43,7 @@ vi.mock('../../components/JsonPreview', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalLinksSection.tsx', () => ({
-    HalLinksSection: ({links, onNavigate}: any) =>
+    HalLinksSection: ({links, onNavigate}: {links: unknown; onNavigate: (href: string) => void}) =>
         links ? (
             <div data-testid="hal-links">
                 <button onClick={() => onNavigate('/test')}>Navigate</button>
@@ -51,11 +52,11 @@ vi.mock('../../components/HalNavigator2/HalLinksSection.tsx', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormsSection.tsx', () => ({
-    HalFormsSection: ({templates}: any) =>
+    HalFormsSection: ({templates}: {templates: Record<string, {title?: string}> | undefined}) =>
         templates ? (
             <div data-testid="hal-forms">
                 {templates &&
-                    Object.entries(templates).map(([key, template]: any) => (
+                    Object.entries(templates).map(([key, template]) => (
                         <button key={key} data-testid={`form-button-${key}`}>
                             {template.title || key}
                         </button>
@@ -65,7 +66,7 @@ vi.mock('../../components/HalNavigator2/HalFormsSection.tsx', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
-    HalFormButton: ({name, label}: any) => (
+    HalFormButton: ({name, label}: {name: string; label?: string}) => (
         <button data-testid={`hal-form-button-${name}`}>{label || name}</button>
     ),
 }));
@@ -91,7 +92,7 @@ describe('CalendarPage Component', () => {
     });
 
     // Helper function to create a complete mock context for useHalPageData
-    const createMockContext = (resourceData: any = null) => ({
+    const createMockContext = (resourceData: HalResponse | null = null) => ({
         resourceData,
         isLoading: false,
         error: null,
@@ -115,7 +116,7 @@ describe('CalendarPage Component', () => {
         hasTemplate: (name: string) => !!resourceData?._templates?.[name],
         hasForms: () => !!resourceData?._templates && Object.keys(resourceData._templates).length > 0,
         getPageMetadata: () => resourceData?.page,
-    });
+    } as unknown as ReturnType<typeof useHalPageData>);
 
     // Helper function to render with router and query params
     const locationRef: {current: ReturnType<typeof useLocation> | null} = {current: null};
@@ -136,7 +137,7 @@ describe('CalendarPage Component', () => {
     };
 
     // Mock calendar data
-    const mockCalendarData = (items: any[] = []) => ({
+    const mockCalendarData = (items: HalResponse[] = []) => ({
         _links: {
             self: {href: '/api/calendar'},
         },
