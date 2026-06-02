@@ -77,6 +77,9 @@ class OrisEventControllerTest {
     @MockitoBean
     private OrisBulkSyncPort orisBulkSyncPort;
 
+    @MockitoBean
+    private AccommodationListCsvRenderer csvRenderer;
+
     @Nested
     @DisplayName("POST /api/events/import")
     class ImportEventTests {

@@ -24,6 +24,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run backend tests (CSV renderer + controller negotiation + authorization) and confirm all green
+- [x] 4.1 Run backend tests (CSV renderer + controller negotiation + authorization) and confirm all green
 - [ ] 4.2 Manually verify in the browser: coordinator downloads CSV, opens it in MS Excel (Czech locale) with correct diacritics, header row present, missing values empty, address in one column
 - [ ] 4.3 Manually verify a non-authorized user sees neither the "Stáhnout CSV" action nor can download via direct request
