@@ -25,10 +25,10 @@
 - [x] 3.1 Diagnose the `SQLTransientConnectionException` root cause (Hikari pool exhaustion under full-context `@SpringBootTest` + per-test `bootstrapDataLoader.run`) (D4) — root cause: `application-test.yml` overrode the datasource URL and dropped `DB_CLOSE_DELAY=-1`, so H2 dropped the in-memory DB whenever the pool briefly had no active connection between per-test bootstrap runs, invalidating pooled connections and exhausting the pool
 - [x] 3.2 Fix the connection lifecycle / test datasource-pool configuration so the test reliably acquires a connection — without weakening the four assertions and without retry-until-pass (D4) — added `DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE` to the test-profile H2 URL (test-only config, matches the h2 dev profile)
 - [x] 3.3 If the root cause is production connection handling rather than test-only, STOP and reassess (would be functional → spec-driven) (D4 risk) — N/A: fix is test-profile H2 config only; production runs PostgreSQL, unaffected
-- [ ] 3.4 Run `AuthorizationServerPromptNoneTest` repeatedly (e.g. several consecutive runs) to confirm it no longer flakes; commit
+- [x] 3.4 Run `AuthorizationServerPromptNoneTest` repeatedly (e.g. several consecutive runs) to confirm it no longer flakes; commit
 
 ## 4. Verification
 
-- [ ] 4.1 Frontend: `npm run lint` exits 0 and `npm run build` passes (test-runner)
-- [ ] 4.2 Backend: the authorization-server tests and the broader suite pass; only the pre-existing unrelated `testdomain` failures (ModularEventsTest / EventLoggingTests) remain, if still present on main (test-runner)
+- [x] 4.1 Frontend: `npm run lint` exits 0 and `npm run build` passes (test-runner) — lint 0 errors, 0 no-explicit-any, build passes, 1721/1721 tests green
+- [x] 4.2 Backend: the authorization-server tests and the broader suite pass; only the pre-existing unrelated `testdomain` failures (ModularEventsTest / EventLoggingTests) remain, if still present on main (test-runner) — full suite 2806/2806 green
 - [ ] 4.3 Push branch, open PR, confirm Frontend Lint and Gradle Tests CI checks are green
