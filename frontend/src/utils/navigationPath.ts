@@ -9,7 +9,7 @@
  */
 export function extractNavigationPath(url: string): string {
     // Remove URI template variables first (e.g., {?status}) - common in HAL templated links
-    let cleanUrl = url.replace(/\{[^}]*\}/g, '');
+    const cleanUrl = url.replace(/\{[^}]*\}/g, '');
 
     // it's already path when starts with '/', remove /api prefix if present
     if (cleanUrl.startsWith('/api')) {

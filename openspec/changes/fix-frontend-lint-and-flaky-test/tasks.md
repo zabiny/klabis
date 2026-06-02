@@ -1,9 +1,9 @@
 ## 1. Easy & mechanical lint rules
 
-- [ ] 1.1 Run `eslint --fix` for auto-fixable rules; review the diff so only `no-useless-escape` (56) and `prefer-const` (1) changed (D2)
-- [ ] 1.2 Convert the two `require()` calls in `tailwind.config.ts` to ESM imports (`no-require-imports`) (D2)
-- [ ] 1.3 Remove or prefix the 7 `no-unused-vars` bindings (D2)
-- [ ] 1.4 Confirm `npm run lint` error count dropped by ~66 (only `no-explicit-any` remaining) and `npm run build` still type-checks; commit
+- [x] 1.1 Run `eslint --fix` for auto-fixable rules; review the diff so only `no-useless-escape` (56) and `prefer-const` (1) changed (D2)
+- [x] 1.2 Convert the two `require()` calls in `tailwind.config.ts` to ESM imports (`no-require-imports`) (D2)
+- [x] 1.3 Remove or prefix the 7 `no-unused-vars` bindings (D2)
+- [x] 1.4 Confirm `npm run lint` error count dropped by ~66 (only `no-explicit-any` remaining) and `npm run build` still type-checks; commit
 
 ## 2. Eliminate no-explicit-any (batched)
 

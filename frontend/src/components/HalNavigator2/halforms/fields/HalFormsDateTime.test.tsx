@@ -227,7 +227,7 @@ describe('HalFormsDateTime Component', () => {
             // Verify that the submitted value is in ISO format with timezone
             expect(onSubmit).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    eventDateTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00[+\-]\d{2}:\d{2}$/)
+                    eventDateTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00[+-]\d{2}:\d{2}$/)
                 }),
                 expect.anything()
             );
@@ -304,7 +304,7 @@ describe('HalFormsDateTime Component', () => {
             // Verify submitted value is in ISO format with timezone
             expect(onSubmit).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    eventDateTime: expect.stringMatching(/^2025-12-12T14:30:00[+\-]\d{2}:\d{2}$/)
+                    eventDateTime: expect.stringMatching(/^2025-12-12T14:30:00[+-]\d{2}:\d{2}$/)
                 }),
                 expect.anything()
             );

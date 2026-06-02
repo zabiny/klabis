@@ -61,7 +61,6 @@ const LoginPage = () => {
                             label="Registrační číslo"
                             placeholder="např. 12345"
                             autoComplete="username"
-                            // eslint-disable-next-line jsx-a11y/no-autofocus
                             autoFocus
                             className="pl-9"
                         />
