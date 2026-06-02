@@ -31,4 +31,10 @@
 
 - [x] 4.1 Frontend: `npm run lint` exits 0 and `npm run build` passes (test-runner) — lint 0 errors, 0 no-explicit-any, build passes, 1721/1721 tests green
 - [x] 4.2 Backend: the authorization-server tests and the broader suite pass; only the pre-existing unrelated `testdomain` failures (ModularEventsTest / EventLoggingTests) remain, if still present on main (test-runner) — full suite 2806/2806 green
-- [ ] 4.3 Push branch, open PR, confirm Frontend Lint and Gradle Tests CI checks are green
+- [x] 4.3 Push branch, open PR, confirm Frontend Lint and Gradle Tests CI checks are green — PR #286 opened (https://github.com/zabiny/klabis/pull/286)
+
+## 5. Guard the clean lint state (added during implementation)
+
+> Discovered during implementation: the `refresh-backend-server-resources` / `publish-frontend-resources` npm tasks ran only `test && build` — lint was never enforced when publishing the frontend into the backend, so lint debt could silently return. User opted to add a lint gate as part of this PR.
+
+- [x] 5.1 Prepend `npm run lint &&` to both `refresh-backend-server-resources` and `publish-frontend-resources` scripts so publishing fails on any ESLint error (warnings still pass, since eslint exits 0 on warnings)
