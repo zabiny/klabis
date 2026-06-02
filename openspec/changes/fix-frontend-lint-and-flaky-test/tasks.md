@@ -22,9 +22,9 @@
 
 ## 3. Stabilize AuthorizationServerPromptNoneTest
 
-- [ ] 3.1 Diagnose the `SQLTransientConnectionException` root cause (Hikari pool exhaustion under full-context `@SpringBootTest` + per-test `bootstrapDataLoader.run`) (D4)
-- [ ] 3.2 Fix the connection lifecycle / test datasource-pool configuration so the test reliably acquires a connection — without weakening the four assertions and without retry-until-pass (D4)
-- [ ] 3.3 If the root cause is production connection handling rather than test-only, STOP and reassess (would be functional → spec-driven) (D4 risk)
+- [x] 3.1 Diagnose the `SQLTransientConnectionException` root cause (Hikari pool exhaustion under full-context `@SpringBootTest` + per-test `bootstrapDataLoader.run`) (D4) — root cause: `application-test.yml` overrode the datasource URL and dropped `DB_CLOSE_DELAY=-1`, so H2 dropped the in-memory DB whenever the pool briefly had no active connection between per-test bootstrap runs, invalidating pooled connections and exhausting the pool
+- [x] 3.2 Fix the connection lifecycle / test datasource-pool configuration so the test reliably acquires a connection — without weakening the four assertions and without retry-until-pass (D4) — added `DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE` to the test-profile H2 URL (test-only config, matches the h2 dev profile)
+- [x] 3.3 If the root cause is production connection handling rather than test-only, STOP and reassess (would be functional → spec-driven) (D4 risk) — N/A: fix is test-profile H2 config only; production runs PostgreSQL, unaffected
 - [ ] 3.4 Run `AuthorizationServerPromptNoneTest` repeatedly (e.g. several consecutive runs) to confirm it no longer flakes; commit
 
 ## 4. Verification
