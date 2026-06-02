@@ -24,6 +24,7 @@ export const labels = {
         save: 'Uložit změny',
         saveChanges: 'Uložit změny',
         print: 'Tisknout',
+        downloadCsv: 'Stáhnout CSV',
         accommodationList: 'Seznam pro ubytování',
         savePermissions: 'Uložit oprávnění',
         sendRequest: 'Odeslat žádost',

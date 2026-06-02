@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AccommodationListPage} from './AccommodationListPage';
 import {vi} from 'vitest';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {authorizedFetch} from '../../api/authorizedFetch';
 
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
@@ -37,6 +38,14 @@ vi.mock('../../api/klabisUserManager', () => ({
         }),
     },
 }));
+
+vi.mock('../../api/authorizedFetch', async () => {
+    const actual = await vi.importActual('../../api/authorizedFetch');
+    return {
+        ...actual,
+        authorizedFetch: vi.fn(),
+    };
+});
 
 const EVENT_URL = '/api/events/42';
 const ACCOMMODATION_LIST_URL = '/api/events/42/accommodation-list';
@@ -248,6 +257,140 @@ describe('AccommodationListPage', () => {
             renderPage();
             expect(screen.getByRole('table')).toBeInTheDocument();
             expect(screen.queryByRole('cell', {name: /jana/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Stáhnout CSV button', () => {
+        const mockAuthorizedFetch = authorizedFetch as ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            setupQueryMocks(buildEventData(), buildListData([]));
+            vi.stubGlobal('URL', {
+                createObjectURL: vi.fn().mockReturnValue('blob:mock-url'),
+                revokeObjectURL: vi.fn(),
+            });
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('renders "Stáhnout CSV" button', () => {
+            renderPage();
+            expect(screen.getByRole('button', {name: /stáhnout csv/i})).toBeInTheDocument();
+        });
+
+        it('disables "Stáhnout CSV" button while download is in flight', async () => {
+            let resolveDownload!: (value: Response) => void;
+            const pendingDownload = new Promise<Response>(resolve => { resolveDownload = resolve; });
+            mockAuthorizedFetch.mockReturnValue(pendingDownload);
+
+            renderPage();
+            const button = screen.getByRole('button', {name: /stáhnout csv/i});
+            fireEvent.click(button);
+
+            await waitFor(() => {
+                expect(button).toBeDisabled();
+            });
+
+            resolveDownload(new Response('csv-data', {
+                status: 200,
+                headers: {'Content-Disposition': 'attachment; filename="ubytovani-test.csv"', 'Content-Type': 'text/csv'},
+            }));
+        });
+
+        const captureAppendedAnchor = () => {
+            const appendedAnchors: HTMLAnchorElement[] = [];
+            const originalAppendChild = document.body.appendChild.bind(document.body);
+            vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
+                if (node instanceof HTMLAnchorElement) {
+                    vi.spyOn(node, 'click');
+                    appendedAnchors.push(node);
+                }
+                return originalAppendChild(node);
+            });
+            vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node as Node);
+            return appendedAnchors;
+        };
+
+        it('calls authorizedFetch with Accept: text/csv header on click', async () => {
+            mockAuthorizedFetch.mockResolvedValue(new Response('csv', {
+                status: 200,
+                headers: {'Content-Disposition': 'attachment; filename="ubytovani-test.csv"'},
+            }));
+
+            renderPage();
+            fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
+
+            await waitFor(() => {
+                expect(mockAuthorizedFetch).toHaveBeenCalledWith(
+                    ACCOMMODATION_LIST_URL,
+                    expect.objectContaining({
+                        headers: expect.objectContaining({'Accept': 'text/csv'}),
+                    }),
+                    true
+                );
+            });
+        });
+
+        it('derives filename from Content-Disposition header', async () => {
+            mockAuthorizedFetch.mockResolvedValue(new Response('csv', {
+                status: 200,
+                headers: {'Content-Disposition': 'attachment; filename="ubytovani-zimni-soustredeni-2026.csv"'},
+            }));
+
+            renderPage();
+            const anchors = captureAppendedAnchor();
+            fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
+
+            await waitFor(() => {
+                expect(anchors).toHaveLength(1);
+                expect(anchors[0].download).toBe('ubytovani-zimni-soustredeni-2026.csv');
+            });
+        });
+
+        it('falls back to ubytovani.csv when Content-Disposition header is absent', async () => {
+            mockAuthorizedFetch.mockResolvedValue(new Response('csv', {status: 200}));
+
+            renderPage();
+            const anchors = captureAppendedAnchor();
+            fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
+
+            await waitFor(() => {
+                expect(anchors).toHaveLength(1);
+                expect(anchors[0].download).toBe('ubytovani.csv');
+            });
+        });
+
+        it('revokes object URL after download is triggered', async () => {
+            mockAuthorizedFetch.mockResolvedValue(new Response('csv', {
+                status: 200,
+                headers: {'Content-Disposition': 'attachment; filename="ubytovani-test.csv"'},
+            }));
+
+            renderPage();
+            captureAppendedAnchor();
+            fireEvent.click(screen.getByRole('button', {name: /stáhnout csv/i}));
+
+            await waitFor(() => {
+                expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+            });
+        });
+
+        it('re-enables button after successful download', async () => {
+            mockAuthorizedFetch.mockResolvedValue(new Response('csv', {
+                status: 200,
+                headers: {'Content-Disposition': 'attachment; filename="ubytovani-test.csv"'},
+            }));
+
+            renderPage();
+            captureAppendedAnchor();
+            const button = screen.getByRole('button', {name: /stáhnout csv/i});
+            fireEvent.click(button);
+
+            await waitFor(() => {
+                expect(button).not.toBeDisabled();
+            });
         });
     });
 });

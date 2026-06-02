@@ -17,10 +17,10 @@
 
 ## 3. Frontend — download action
 
-- [ ] 3.1 Add a "Stáhnout CSV" button to `AccommodationListPage` next to the existing "Tisknout" action (hidden in print view)
-- [ ] 3.2 Implement the download handler: authorized `fetch` of the accommodation-list link with `Accept: text/csv`, build a `Blob`, create an object URL, trigger a `<a download>` click, and revoke the URL afterwards (D6)
-- [ ] 3.3 Derive the download filename from the `Content-Disposition` response header
-- [ ] 3.4 Add the "Stáhnout CSV" button label to the localization labels
+- [x] 3.1 Add a "Stáhnout CSV" button to `AccommodationListPage` next to the existing "Tisknout" action (hidden in print view)
+- [x] 3.2 Implement the download handler: authorized `fetch` of the accommodation-list link with `Accept: text/csv`, build a `Blob`, create an object URL, trigger a `<a download>` click, and revoke the URL afterwards (D6)
+- [x] 3.3 Derive the download filename from the `Content-Disposition` response header
+- [x] 3.4 Add the "Stáhnout CSV" button label to the localization labels
 
 ## 4. Verification
 
