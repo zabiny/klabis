@@ -3,7 +3,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import LoginPage from './LoginPage';
 
-vi.mock('../contexts/AuthContext2', () => ({
+vi.mock('../contexts/authContext', () => ({
     useAuth: () => ({isAuthenticated: false, isLoading: false}),
 }));
 

@@ -1,5 +1,6 @@
 import {renderHook, act} from '@testing-library/react';
-import {ToastProvider, useToast} from './ToastContext';
+import {ToastProvider} from './ToastContext';
+import {useToast} from './toastContext';
 
 describe('ToastContext', () => {
     const wrapper = ({children}: {children: React.ReactNode}) => (

@@ -1,4 +1,4 @@
-import {useAdminMode} from '../../contexts/AdminModeContext'
+import {useAdminMode} from '../../contexts/adminModeContext'
 import {useIsAdmin} from '../../hooks/useIsAdmin'
 
 interface AdminToggleProps {

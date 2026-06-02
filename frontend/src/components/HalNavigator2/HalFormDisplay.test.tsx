@@ -51,7 +51,7 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
 }));
 
 const mockAddToast = vi.fn();
-vi.mock('../../contexts/ToastContext', () => ({
+vi.mock('../../contexts/toastContext', () => ({
     useToast: () => ({addToast: mockAddToast}),
 }));
 

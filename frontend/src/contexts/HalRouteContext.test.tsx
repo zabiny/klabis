@@ -1,5 +1,6 @@
 import {render, renderHook, screen, waitFor} from '@testing-library/react';
-import {HalRouteProvider, HalSubresourceProvider, useHalRoute} from './HalRouteContext';
+import {HalRouteProvider, HalSubresourceProvider} from './HalRouteContext';
+import {useHalRoute} from './halRouteContext';
 import {mockHalResponse} from '../__mocks__/halData';
 import {createDelayedMockResponse, createMockResponse} from '../__mocks__/mockFetch';
 import {BrowserRouter} from 'react-router-dom';

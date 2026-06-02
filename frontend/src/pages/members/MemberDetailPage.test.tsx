@@ -45,6 +45,10 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
 }));
 
 vi.mock('../../contexts/ToastContext', () => ({
+    ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../contexts/toastContext', () => ({
     useToast: vi.fn(() => ({
         addToast: vi.fn(),
     })),

@@ -16,12 +16,15 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
+    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
+}));
+
+vi.mock('../../contexts/halFormContext.ts', () => ({
     useHalForm: vi.fn().mockReturnValue({
         displayHalForm: vi.fn(),
         currentFormRequest: null,
         closeForm: vi.fn(),
     }),
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 
 vi.mock('../../components/members/PermissionsDialog', () => ({

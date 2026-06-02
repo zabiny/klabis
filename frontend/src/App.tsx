@@ -1,12 +1,14 @@
 import {useEffect} from 'react';
 import {Outlet, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {AuthProvider, useAuth} from './contexts/AuthContext2';
+import {AuthProvider} from './contexts/AuthContext2';
+import {useAuth} from './contexts/authContext';
 import Layout from './pages/Layout';
 import LoginPage from './pages/LoginPage';
 import {authConfig} from "./api/klabisUserManager.ts";
 import {ThemeProvider} from "./theme/ThemeContext.tsx";
-import {AdminModeProvider, useAdminMode} from "./contexts/AdminModeContext.tsx";
+import {AdminModeProvider} from "./contexts/AdminModeContext.tsx";
+import {useAdminMode} from "./contexts/adminModeContext.ts";
 import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
 import HomePage from "./pages/HomePage.tsx";

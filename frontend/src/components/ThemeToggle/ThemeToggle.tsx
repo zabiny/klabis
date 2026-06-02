@@ -1,5 +1,5 @@
 import {Sun, Moon} from 'lucide-react'
-import {useTheme} from '../../theme/ThemeContext'
+import {useTheme} from '../../theme/themeContext'
 import {labels} from '../../localization'
 
 interface ThemeToggleProps {

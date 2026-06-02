@@ -12,7 +12,13 @@
 - [x] 2.3 Batch 2: next file group, same rules and gate (D1, D3); commit
 - [x] 2.4 Batch 3: next file group, same rules and gate (D1, D3); commit
 - [x] 2.5 Continue batching until `no-explicit-any` count is 0 (add commits as needed, one per area); each batch must keep the whole-frontend build green (D3)
-- [ ] 2.6 Confirm `npm run lint` exits 0 with zero errors
+- [x] 2.6 Confirm `npm run lint` exits 0 with zero errors
+
+## 2b. Fix react-refresh/only-export-components errors
+
+> Discovered during implementation: the baseline also has **10 `react-refresh/only-export-components` errors** (8 files) that the proposal mis-classified as warnings. They block `npm run lint` exit 0, so they are in scope. Fix by moving non-component exports (contexts, constants, helper hooks/functions) into sibling files; pure structural move, no behavior change.
+
+- [x] 2b.1 Move non-component exports out of the 8 affected files (HalFormsCheckboxGroup, KlabisFieldsFactory, AdminModeContext, HalFormContext, HalRouteContext, ToastContext, BirthNumberConditionalField, ThemeContext; AuthContext2 also fixed) into sibling files; update imports; gate with `tsc` build + full test suite + eslint; commit
 
 ## 3. Stabilize AuthorizationServerPromptNoneTest
 

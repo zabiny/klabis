@@ -1,5 +1,5 @@
 import {type ReactElement} from "react";
-import {useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {useHalRoute} from "../../contexts/halRouteContext.ts";
 
 interface MemberData {
     firstName: string;

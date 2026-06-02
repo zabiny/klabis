@@ -3,7 +3,7 @@ import {Activity, Calendar, ChevronRight, Layers, User, Users} from 'lucide-reac
 import {Card} from '../components/UI'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {useIsAdmin} from "../hooks/useIsAdmin";
-import {useAuth} from "../contexts/AuthContext2";
+import {useAuth} from "../contexts/authContext";
 import {labels} from "../localization/labels";
 import {mockStats, mockUpcomingEvents} from "./dashboard/mockDashboardData";
 import {formatDate} from "../utils/dateUtils";

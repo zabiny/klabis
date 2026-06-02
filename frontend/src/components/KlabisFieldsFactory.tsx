@@ -1,15 +1,9 @@
 import {expandHalFormsFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
-import React, {type ReactElement} from "react";
+import {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
-
-const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | ReactElement[] }> = ({label, children}) => (
-    <div className="rounded p-4 mb-4">
-        <label className="block text-sm font-semibold mb-2">{label}</label>
-        <div className="space-y-3">{children}</div>
-    </div>
-);
+import {FormGroupWrapper} from "./FormGroupWrapper";
 
 interface SubField {
     key: string;

@@ -1,7 +1,7 @@
 import {useEffect} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {ArrowRightEndOnRectangleIcon, HashtagIcon, LockClosedIcon} from '@heroicons/react/24/outline';
-import {useAuth} from '../contexts/AuthContext2';
+import {useAuth} from '../contexts/authContext';
 import {Alert} from '../components/UI/Alert';
 import {Button} from '../components/UI/Button';
 import {TextField} from '../components/UI/forms/TextField';

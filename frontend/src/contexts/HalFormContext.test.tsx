@@ -1,6 +1,7 @@
 import {act, render, renderHook} from '@testing-library/react';
 import {BrowserRouter, MemoryRouter, Route, Routes, useNavigate} from 'react-router-dom';
-import {HalFormProvider, type HalFormRequest, useHalForm} from './HalFormContext';
+import {HalFormProvider} from './HalFormContext';
+import {type HalFormRequest, useHalForm} from './halFormContext';
 import {describe, expect, it, vi} from 'vitest';
 import type {ReactNode} from 'react';
 

@@ -1,9 +1,7 @@
 import {type ReactElement, type ReactNode, useEffect} from 'react';
 import {useFormikContext} from 'formik';
 import {DetailRow} from '../../components/UI';
-
-export const isCzNationality = (nationality: unknown): boolean =>
-    nationality === 'CZ' || nationality === 'CZE';
+import {isCzNationality} from './isCzNationality';
 
 interface BirthNumberConditionalFieldProps {
     renderInput: (name: string) => ReactNode;

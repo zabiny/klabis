@@ -1,4 +1,4 @@
-import {useToast} from '../contexts/ToastContext';
+import {useToast} from '../contexts/toastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {FetchError} from '../api/authorizedFetch';
 import {labels} from '../localization';

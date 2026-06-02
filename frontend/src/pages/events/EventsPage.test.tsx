@@ -10,7 +10,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
-import {useAuth} from '../../contexts/AuthContext2';
+import {useAuth} from '../../contexts/authContext';
 import {labels} from '../../localization';
 import {useOrisEventImport} from '../../hooks/useOrisEventImport';
 
@@ -18,7 +18,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-vi.mock('../../contexts/AuthContext2', () => ({
+vi.mock('../../contexts/authContext', () => ({
     useAuth: vi.fn().mockReturnValue({
         getUser: () => ({memberId: 'M001', firstName: 'Jana', lastName: 'Novak', id: 1, userName: 'ZBM9500'}),
         isAuthenticated: true,
@@ -29,12 +29,15 @@ vi.mock('../../contexts/AuthContext2', () => ({
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
+    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
+}));
+
+vi.mock('../../contexts/halFormContext.ts', () => ({
     useHalForm: vi.fn().mockReturnValue({
         displayHalForm: vi.fn(),
         currentFormRequest: null,
         closeForm: vi.fn(),
     }),
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 
 vi.mock('../../components/events/ImportOrisEventModal', () => ({
