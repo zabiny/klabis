@@ -6,6 +6,7 @@
 
 import {type ReactElement, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
+import type {HalResourceLinks} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {HAL_LINK_RELS} from '../../constants/hal.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
@@ -15,7 +16,7 @@ import {Button} from '../UI';
 
 interface HalLinksSectionProps {
     /** Links object from HAL resource. If not provided, uses resourceData._links */
-    links?: Record<string, any>;
+    links?: Record<string, HalResourceLinks>;
     /** Callback when a link is clicked. If not provided, uses useNavigate from React Router */
     onNavigate?: (href: string) => void;
 }
@@ -73,14 +74,14 @@ export function HalLinksSection({
             <h3 className={linkSectionStyles.heading}>{UI_MESSAGES.AVAILABLE_ACTIONS}</h3>
             <div className={linkSectionStyles.buttonContainer}>
                 {displayLinks
-                    .map(([rel, link]: [string, any]) => {
+                    .map(([rel, link]: [string, HalResourceLinks]) => {
                         const linkArray = Array.isArray(link) ? link : [link];
-                        return linkArray.map((l: any, idx: number) => (
+                        return linkArray.map((l, idx: number) => (
                             <Button
                                 key={`${rel}-${idx}`}
                                 variant="primary"
                                 size="sm"
-                                onClick={() => onNavigate(l.href)}
+                                onClick={() => l.href && onNavigate(l.href)}
                                 title={rel}
                             >
                                 {l.title || rel}

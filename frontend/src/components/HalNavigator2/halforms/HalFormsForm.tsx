@@ -34,7 +34,7 @@ function getInitialValues(
 type YupSchemaMap = Record<string, Yup.AnySchema>;
 
 // TODO: do we want "frontend validation"? There may be validations which can't be done on frontend...
-function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Record<string, any>> {
+function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Record<string, unknown>> {
     const shape: YupSchemaMap = {};
     template.properties.forEach((prop) => {
         let validator: Yup.AnySchema;

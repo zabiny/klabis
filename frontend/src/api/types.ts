@@ -119,6 +119,7 @@ export interface CalendarItemEmbedded extends HalEmbeddedResources {
 // Type guard for calendar items structure (matches backend response)
 export function hasCalendarItems(data: unknown): data is HalResponse & { _embedded: CalendarItemEmbedded } {
     return typeof data === 'object' && data !== null &&
-        '_embedded' in data && typeof (data as any)._embedded === 'object' &&
-        'calendarItemDtoList' in (data as any)._embedded;
+        '_embedded' in data && typeof (data as Record<string, unknown>)['_embedded'] === 'object' &&
+        (data as Record<string, unknown>)['_embedded'] !== null &&
+        'calendarItemDtoList' in ((data as Record<string, unknown>)['_embedded'] as Record<string, unknown>);
 }

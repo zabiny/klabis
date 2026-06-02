@@ -111,7 +111,7 @@ export const MultiStepFormModal = ({
         }
 
         // Validate the entire form to populate errors
-        const errors = (await formik.validateForm()) as Record<string, any>;
+        const errors = (await formik.validateForm()) as Record<string, unknown>;
 
         // Check if any of the fields for this step have errors
         const hasErrors = step.fields.some(field => errors[field]);

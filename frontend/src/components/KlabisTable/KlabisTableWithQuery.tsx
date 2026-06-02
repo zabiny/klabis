@@ -6,7 +6,7 @@
  */
 
 import {type ReactElement, useMemo, useState} from 'react'
-import type {SortDirection} from '../../api'
+import type {HalCollectionResponse, SortDirection} from '../../api'
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch'
 import {usePersistedState} from '../../hooks/usePersistedState'
 import {useTableSort, type SortState} from '../../hooks/useTableSort'
@@ -23,7 +23,7 @@ export interface Link {
 /**
  * Props for KlabisTableWithQuery component
  */
-export interface KlabisTableWithQueryProps<T extends Record<string, unknown> = any> {
+export interface KlabisTableWithQueryProps<T extends Record<string, unknown> = Record<string, unknown>> {
     // Data source (HAL Link)
     link: Link
 
@@ -46,7 +46,7 @@ export interface KlabisTableWithQueryProps<T extends Record<string, unknown> = a
     children: React.ReactNode
 }
 
-interface KlabisTableCoreProps<T extends Record<string, unknown> = any> {
+interface KlabisTableCoreProps<T extends Record<string, unknown> = Record<string, unknown>> {
     link: Link
     collectionName?: string
     onRowClick?: (item: T) => void
@@ -66,7 +66,7 @@ interface KlabisTableCoreProps<T extends Record<string, unknown> = any> {
  * Shared rendering logic for KlabisTableWithQuery.
  * Receives sort state from the caller so it can be backed by either useState or useTableSort.
  */
-function KlabisTableCore<T extends Record<string, unknown> = any>({
+function KlabisTableCore<T extends Record<string, unknown> = Record<string, unknown>>({
     link,
     collectionName,
     onRowClick,
@@ -97,7 +97,7 @@ function KlabisTableCore<T extends Record<string, unknown> = any>({
         return url.toString()
     }, [link.href, page, rowsPerPage, sort])
 
-    const {data: response, error} = useAuthorizedQuery<any>(queryUrl, {
+    const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {
         staleTime: 30000,
         gcTime: 1000 * 60 * 5,
         retry: 1,
@@ -154,13 +154,13 @@ function KlabisTableCore<T extends Record<string, unknown> = any>({
  * Variant that persists sort to localStorage via useTableSort.
  * Only rendered when tableId AND defaultOrderBy are provided.
  */
-interface KlabisTableWithSortPersistenceProps<T extends Record<string, unknown> = any>
+interface KlabisTableWithSortPersistenceProps<T extends Record<string, unknown> = Record<string, unknown>>
     extends Omit<KlabisTableWithQueryProps<T>, 'defaultOrderBy'> {
     tableId: string
     defaultOrderBy: string
 }
 
-function KlabisTableWithSortPersistence<T extends Record<string, unknown> = any>({
+function KlabisTableWithSortPersistence<T extends Record<string, unknown> = Record<string, unknown>>({
     tableId,
     defaultOrderBy,
     defaultOrderDirection = 'asc',
@@ -185,7 +185,7 @@ function KlabisTableWithSortPersistence<T extends Record<string, unknown> = any>
  * Variant that uses plain useState for sort — no localStorage persistence.
  * Used for tables without a tableId, or when defaultOrderBy is absent.
  */
-function KlabisTableWithLocalSort<T extends Record<string, unknown> = any>({
+function KlabisTableWithLocalSort<T extends Record<string, unknown> = Record<string, unknown>>({
     defaultOrderBy,
     defaultOrderDirection = 'asc',
     ...rest
@@ -224,7 +224,7 @@ function KlabisTableWithLocalSort<T extends Record<string, unknown> = any>({
  *   <TableCell column="lastName" sortable>Příjmení</TableCell>
  * </KlabisTableWithQuery>
  */
-export function KlabisTableWithQuery<T extends Record<string, unknown> = any>(
+export function KlabisTableWithQuery<T extends Record<string, unknown> = Record<string, unknown>>(
     props: KlabisTableWithQueryProps<T>
 ): ReactElement {
     const {tableId, defaultOrderBy} = props

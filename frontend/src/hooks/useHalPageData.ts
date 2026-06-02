@@ -154,7 +154,7 @@ export function useHalPageData<T extends HalResponse = HalResponse>(): UseHalPag
 
             isCollection: (): boolean => {
                 if (!resourceData) return false;
-                const hasPage = (resourceData as any).page !== undefined;
+                const hasPage = (resourceData as Record<string, unknown>)['page'] !== undefined;
                 const hasEmbedded =
                     resourceData._embedded !== undefined &&
                     Object.keys(resourceData._embedded).length > 0;
@@ -177,7 +177,7 @@ export function useHalPageData<T extends HalResponse = HalResponse>(): UseHalPag
             },
 
             getPageMetadata: (): PageMetadata | undefined => {
-                return (resourceData as any)?.page;
+                return resourceData?.['page'] as PageMetadata | undefined;
             },
         };
     }, [halRoute.resourceData]);
