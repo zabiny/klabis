@@ -11,6 +11,8 @@ import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
+import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
+import type {HalFormPanelProps} from './HalFormPanel.tsx';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -45,7 +47,7 @@ const createMockPageData = (resourceData: HalResponse | null, pathname: string =
 
 beforeEach(() => {
     const mockUseHalPageData = vi.mocked(useHalPageData);
-    mockUseHalPageData.mockReturnValue(createMockPageData(null) as any);
+    mockUseHalPageData.mockReturnValue(createMockPageData(null) as unknown as ReturnType<typeof useHalPageData>);
 });
 
 // Mock dependencies
@@ -66,7 +68,7 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName}: any) => (
+    HalFormDisplay: ({template, templateName}: HalFormDisplayProps) => (
         <div data-testid="hal-forms-display">
             <h3>{template.title || templateName}</h3>
         </div>
@@ -74,7 +76,7 @@ vi.mock('./HalFormDisplay.tsx', () => ({
 }));
 
 vi.mock('./HalFormPanel.tsx', () => ({
-    HalFormPanel: ({templateName, children}: any) => {
+    HalFormPanel: ({templateName, children}: HalFormPanelProps) => {
         const helpers = {
             renderInput: (name: string) => <input key={name} data-testid={`input-${name}`}/>,
             renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
@@ -92,7 +94,7 @@ vi.mock('./HalFormPanel.tsx', () => ({
 }));
 
 vi.mock('../UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: any) => (
+    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
@@ -117,11 +119,11 @@ describe('HalFormButton Component', () => {
 
     const renderWithPageData = (
         ui: React.ReactElement,
-        pageData: any,
+        pageData: ReturnType<typeof createMockPageData>,
         initialEntries: string[] = ['/members/123']
     ) => {
         const mockUseHalPageData = vi.mocked(useHalPageData);
-        mockUseHalPageData.mockReturnValue(pageData);
+        mockUseHalPageData.mockReturnValue(pageData as unknown as ReturnType<typeof useHalPageData>);
 
         return render(
             <QueryClientProvider client={queryClient}>

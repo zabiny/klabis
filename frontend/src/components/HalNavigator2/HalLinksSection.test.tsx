@@ -4,6 +4,7 @@ import {BrowserRouter} from 'react-router-dom';
 import {HalLinksSection} from './HalLinksSection.tsx';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
+import type {Link} from '../../api/types';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -19,7 +20,7 @@ const renderWithRouter = (component: React.ReactElement) => {
     return render(component, {wrapper: TestWrapper});
 };
 
-const createMockPageData = (overrides: any = {}) => ({
+const createMockPageData = (overrides: Record<string, unknown> = {}) => ({
     resourceData: null,
     isLoading: false,
     error: null,
@@ -50,7 +51,7 @@ const createMockPageData = (overrides: any = {}) => ({
 describe('HalLinksSection Component', () => {
     beforeEach(() => {
         const mockUseHalPageData = vi.mocked(useHalPageData);
-        mockUseHalPageData.mockReturnValue(createMockPageData());
+        mockUseHalPageData.mockReturnValue(createMockPageData() as unknown as ReturnType<typeof useHalPageData>);
     });
 
     afterEach(() => {
@@ -72,8 +73,8 @@ describe('HalLinksSection Component', () => {
                     _links: {
                         next: {href: '/api/items?page=1'},
                     },
-                } as any,
-            }));
+                },
+            }) as unknown as ReturnType<typeof useHalPageData>);
 
             const {container} = renderWithRouter(
                 <HalLinksSection/>
@@ -318,7 +319,7 @@ describe('HalLinksSection Component', () => {
     describe('Edge Cases', () => {
         it('should handle links with no href', () => {
             const links = {
-                broken: {title: 'Broken Link'} as any,
+                broken: {title: 'Broken Link'} as unknown as Link,
             };
             const mockOnNavigate = vi.fn();
             renderWithRouter(

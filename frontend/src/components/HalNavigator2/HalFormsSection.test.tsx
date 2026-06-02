@@ -19,7 +19,7 @@ vi.mock('./HalFormButton.tsx', () => ({
     ),
 }));
 
-const createMockPageData = (overrides: any = {}) => ({
+const createMockPageData = (overrides: Record<string, unknown> = {}) => ({
     resourceData: null,
     isLoading: false,
     error: null,
@@ -52,7 +52,7 @@ describe('HalFormsSection Component', () => {
 
     beforeEach(() => {
         const mockUseHalPageData = vi.mocked(useHalPageData);
-        mockUseHalPageData.mockReturnValue(createMockPageData());
+        mockUseHalPageData.mockReturnValue(createMockPageData() as unknown as ReturnType<typeof useHalPageData>);
     });
 
     afterEach(() => {
@@ -72,8 +72,8 @@ describe('HalFormsSection Component', () => {
                     _templates: {
                         create: mockTemplate({title: 'Create'}),
                     },
-                } as any,
-            }));
+                },
+            }) as unknown as ReturnType<typeof useHalPageData>);
 
             render(<HalFormsSection/>);
 

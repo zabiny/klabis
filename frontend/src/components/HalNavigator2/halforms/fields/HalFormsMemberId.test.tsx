@@ -26,7 +26,7 @@ vi.mock('../../../../hooks/useHalFormOptions', () => ({
  */
 describe('HalFormsMemberId', () => {
 
-    const renderWithFormik = (initialValues: any, onSubmit: any) => {
+    const renderWithFormik = (initialValues: Record<string, string>, onSubmit: (values: Record<string, string>) => void) => {
         const validationSchema = Yup.object().shape({
             coordinator: Yup.string(),
         });

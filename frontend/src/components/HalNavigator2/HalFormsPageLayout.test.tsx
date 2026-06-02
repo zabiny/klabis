@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
@@ -9,6 +10,7 @@ import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
 import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
 import {vi} from 'vitest';
 import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
+import type {HalFormPanelProps} from './HalFormPanel.tsx';
 import {HalFormProvider, useHalForm} from '../../contexts/HalFormContext.tsx';
 
 vi.mock('./HalFormDisplay.tsx', () => ({
@@ -21,7 +23,7 @@ vi.mock('./HalFormDisplay.tsx', () => ({
 }));
 
 vi.mock('./HalFormPanel.tsx', () => ({
-    HalFormPanel: ({templateName, children, onCancel}: any) => {
+    HalFormPanel: ({templateName, children, onCancel}: HalFormPanelProps) => {
         const helpers = {
             renderInput: (name: string) => <input key={name} data-testid={`input-${name}`}/>,
             renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
@@ -40,7 +42,7 @@ vi.mock('./HalFormPanel.tsx', () => ({
 }));
 
 vi.mock('../UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: any) => (
+    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4 data-testid="modal-overlay-title">{title}</h4>}

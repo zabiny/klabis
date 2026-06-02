@@ -1,7 +1,9 @@
+import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
 import {klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalNavigator2/halforms';
+import type {HalFormsProperty, HalFormsOptionValue, OptionItem} from '../api/types';
 
 vi.mock('./HalNavigator2/halforms/fields', async () => {
     const actual = await vi.importActual('./HalNavigator2/halforms/fields');
@@ -69,7 +71,8 @@ describe('KlabisFieldsFactory', () => {
             expect(result).not.toBeNull();
             const componentType = result?.type;
             if (typeof componentType === 'object' && componentType !== null && ('displayName' in componentType || 'name' in componentType)) {
-                expect((componentType as any).displayName || (componentType as any).name).toMatch(/HalFormsMemberId/i);
+                const ct = componentType as {displayName?: string; name?: string};
+                expect(ct.displayName || ct.name).toMatch(/HalFormsMemberId/i);
             }
         });
 
@@ -274,7 +277,6 @@ describe('KlabisFieldsFactory', () => {
         });
 
         it('should pass inline options with all three DeactivationReason values', () => {
-            let capturedProp: any = null;
             const mockConf = createMockConf({
                 prop: {name: 'reason', prompt: 'Důvod', type: 'DeactivationReason'},
             });
@@ -282,14 +284,13 @@ describe('KlabisFieldsFactory', () => {
             const result = klabisFieldsFactory('DeactivationReason', mockConf);
             expect(result).not.toBeNull();
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const propWithOptions = (result as any).props.prop;
-            capturedProp = propWithOptions;
+            const capturedProp = (result as unknown as React.ReactElement<{prop: HalFormsProperty}>).props.prop;
 
             expect(capturedProp.options).toBeDefined();
-            expect(capturedProp.options.inline).toBeDefined();
+            expect(capturedProp.options!.inline).toBeDefined();
 
-            const values = capturedProp.options.inline.map((o: any) => o.value);
+            const values = (capturedProp.options!.inline as Array<OptionItem | HalFormsOptionValue>)
+                .map((o) => (typeof o === 'object' && 'value' in o) ? o.value : o);
             expect(values).toContain('ODHLASKA');
             expect(values).toContain('PRESTUP');
             expect(values).toContain('OTHER');
@@ -366,7 +367,7 @@ describe('KlabisFieldsFactory', () => {
 
         it('should render HalFormsCheckboxGroup for UUID field with backend multi:true shorthand', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true} as any,
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
@@ -377,7 +378,7 @@ describe('KlabisFieldsFactory', () => {
 
         it('should configure remote options for UUID field with backend multi:true shorthand', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true} as any,
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
