@@ -26,9 +26,9 @@
 
 ## 5. Frontend
 
-- [ ] 5.1 Show ranking (short label badge) and base entry fee (amount with currency) on the event detail page (events list stays unchanged)
-- [ ] 5.2 Add ranking and base entry fee fields to the event edit form (driven by HAL+FORMS template)
-- [ ] 5.3 Add/extend frontend tests for ranking and fee display on the event detail
+- [x] 5.1 Show ranking (short label badge) and base entry fee (amount with currency) on the event detail page (events list stays unchanged)
+- [x] 5.2 Add ranking and base entry fee fields to the event edit form (driven by HAL+FORMS template)
+- [x] 5.3 Add/extend frontend tests for ranking and fee display on the event detail
 
 ## 6. Verification
 

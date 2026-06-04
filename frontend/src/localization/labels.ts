@@ -167,6 +167,8 @@ export const labels = {
         sortOrder: 'Pořadí',
         eventTypeId: 'Typ akce',
         orisDisciplineIds: 'ORIS disciplíny',
+        ranking: 'Žebříček',
+        baseEntryFee: 'Startovné',
     },
 
     finance: {

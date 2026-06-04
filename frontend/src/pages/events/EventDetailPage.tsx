@@ -24,6 +24,16 @@ import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFac
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
 import {FinanceTransactionDialog} from '../../components/finance/FinanceTransactionDialog.tsx';
 
+interface RankingInfo {
+    shortName: string;
+    name: string;
+}
+
+interface MoneyAmount {
+    amount: number;
+    currency: string;
+}
+
 interface EventDetail {
     name: string;
     eventDate: string;
@@ -36,6 +46,8 @@ interface EventDetail {
     eventTypeId?: string | null;
     status?: string;
     categories?: string[];
+    ranking?: RankingInfo | null;
+    baseEntryFee?: MoneyAmount | null;
     [key: string]: unknown;
 }
 
@@ -264,6 +276,19 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                         {event.websiteUrl}
                                     </a>
                                 ) : null)}
+                            </DetailRow>
+                        )}
+                        {!isEditing && event.ranking && (
+                            <DetailRow label={labels.fields.ranking}>
+                                <span className="inline-flex items-center gap-2">
+                                    <Badge variant="default" size="sm">{event.ranking.shortName}</Badge>
+                                    <span>{event.ranking.name}</span>
+                                </span>
+                            </DetailRow>
+                        )}
+                        {!isEditing && event.baseEntryFee && (
+                            <DetailRow label={labels.fields.baseEntryFee}>
+                                {`${event.baseEntryFee.amount} ${event.baseEntryFee.currency}`}
                             </DetailRow>
                         )}
                         {isEditing && (

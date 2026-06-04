@@ -978,4 +978,57 @@ describe('EventDetailPage', () => {
             expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
         });
     });
+
+    describe('ranking display (task 5.1)', () => {
+        it('shows ranking shortName and name when ranking is present', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                ranking: {shortName: 'ČŽ', name: 'Český žebříček'},
+            })));
+            expect(screen.getByText('ČŽ')).toBeInTheDocument();
+            expect(screen.getByText('Český žebříček')).toBeInTheDocument();
+        });
+
+        it('shows ranking row label when ranking is present', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                ranking: {shortName: 'ČŽ', name: 'Český žebříček'},
+            })));
+            expect(screen.getByText('Žebříček')).toBeInTheDocument();
+        });
+
+        it('does not show ranking row when ranking is null', () => {
+            renderPage(createMockPageData(mockEventDetailData({ranking: null})));
+            expect(screen.queryByText('Žebříček')).not.toBeInTheDocument();
+        });
+
+        it('does not show ranking row when ranking is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByText('Žebříček')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('baseEntryFee display (task 5.1)', () => {
+        it('shows formatted entry fee with amount and currency when baseEntryFee is present', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                baseEntryFee: {amount: 650, currency: 'CZK'},
+            })));
+            expect(screen.getByText('650 CZK')).toBeInTheDocument();
+        });
+
+        it('shows entry fee row label when baseEntryFee is present', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                baseEntryFee: {amount: 100, currency: 'CZK'},
+            })));
+            expect(screen.getByText('Startovné')).toBeInTheDocument();
+        });
+
+        it('does not show entry fee row when baseEntryFee is null', () => {
+            renderPage(createMockPageData(mockEventDetailData({baseEntryFee: null})));
+            expect(screen.queryByText('Startovné')).not.toBeInTheDocument();
+        });
+
+        it('does not show entry fee row when baseEntryFee is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByText('Startovné')).not.toBeInTheDocument();
+        });
+    });
 });
