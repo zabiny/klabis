@@ -338,6 +338,31 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should return 204 and pass ranking and baseEntryFee to service when provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldUpdateEventWithRankingAndBaseEntryFee() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"ranking\":{\"levelId\":3,\"shortName\":\"A\",\"name\":\"Národní závod\"},\"baseEntryFee\":{\"amount\":350,\"currency\":\"CZK\"}}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.ranking() != null
+                    && cmd.ranking().levelId() == 3
+                    && "A".equals(cmd.ranking().shortName())
+                    && "Národní závod".equals(cmd.ranking().name())
+                    && cmd.baseEntryFee() != null
+                    && new java.math.BigDecimal("350").compareTo(cmd.baseEntryFee().amount()) == 0
+                    && "CZK".equals(cmd.baseEntryFee().currency().getCurrencyCode())
+            ));
+        }
+
+        @Test
         @DisplayName("regression: PATCH with empty body is a no-op and returns 204")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldAcceptEmptyBodyAsNoOp() throws Exception {
@@ -1050,6 +1075,67 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.finishEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("event detail includes ranking shortName and name when event has ranking")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeRankingInEventDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withRanking(new EventRanking(3, "A", "Národní závod"))
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.ranking.shortName").value("A"))
+                    .andExpect(jsonPath("$.ranking.name").value("Národní závod"));
+        }
+
+        @Test
+        @DisplayName("event detail includes baseEntryFee amount and currency when event has fee")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeBaseEntryFeeInEventDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withBaseEntryFee(Money.ofCzk(new java.math.BigDecimal("250")))
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.baseEntryFee.amount").value(250))
+                    .andExpect(jsonPath("$.baseEntryFee.currency").value("CZK"));
+        }
+
+        @Test
+        @DisplayName("event detail omits ranking and baseEntryFee when they are null")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldOmitRankingAndFeeWhenNull() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.ranking").doesNotExist())
+                    .andExpect(jsonPath("$.baseEntryFee").doesNotExist());
         }
 
         @Test

@@ -22,7 +22,9 @@ class EventDtoMapper {
                 event.getStatus(),
                 event.getCategories(),
                 event.getCancellationReason().orElse(null),
-                toDeadlineList(event.getRegistrationDeadlines())
+                toDeadlineList(event.getRegistrationDeadlines()),
+                toRankingDto(event),
+                toEntryFeeDto(event)
         );
     }
 
@@ -39,6 +41,23 @@ class EventDtoMapper {
                 event.getCategories(),
                 event.getCancellationReason().orElse(null),
                 toDeadlineList(event.getRegistrationDeadlines())
+        );
+    }
+
+    private static EventDto.RankingDto toRankingDto(Event event) {
+        if (event.getRanking() == null) {
+            return null;
+        }
+        return new EventDto.RankingDto(event.getRanking().shortName(), event.getRanking().name());
+    }
+
+    private static EventDto.EntryFeeDto toEntryFeeDto(Event event) {
+        if (event.getBaseEntryFee() == null) {
+            return null;
+        }
+        return new EventDto.EntryFeeDto(
+                event.getBaseEntryFee().amount(),
+                event.getBaseEntryFee().currency().getCurrencyCode()
         );
     }
 

@@ -7,6 +7,7 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberId;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,6 +26,8 @@ import java.util.List;
  * @param eventTypeId        event type ID (optional); HAL link to /api/event-types/{id} added by postprocessor
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
  * @param deadlines          registration deadlines in chronological order (max 3)
+ * @param ranking            event ranking (optional)
+ * @param baseEntryFee       base entry fee (optional)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record EventDto(
@@ -39,6 +42,14 @@ record EventDto(
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
         List<String> categories,
         @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason,
-        @HalForms(access = HalForms.Access.READ_ONLY) List<LocalDate> deadlines
+        @HalForms(access = HalForms.Access.READ_ONLY) List<LocalDate> deadlines,
+        RankingDto ranking,
+        EntryFeeDto baseEntryFee
 ) {
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record RankingDto(String shortName, String name) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record EntryFeeDto(BigDecimal amount, String currency) {}
 }

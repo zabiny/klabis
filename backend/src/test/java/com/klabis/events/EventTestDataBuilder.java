@@ -2,6 +2,8 @@ package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRanking;
+import com.klabis.events.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
@@ -28,6 +30,8 @@ public class EventTestDataBuilder {
     private List<EventRegistration> registrations = new ArrayList<>();
     private List<String> categories = List.of();
     private AuditMetadata auditMetadata = null;
+    private EventRanking ranking = null;
+    private Money baseEntryFee = null;
 
     private EventTestDataBuilder() {
     }
@@ -109,6 +113,16 @@ public class EventTestDataBuilder {
         return this;
     }
 
+    public EventTestDataBuilder withRanking(EventRanking ranking) {
+        this.ranking = ranking;
+        return this;
+    }
+
+    public EventTestDataBuilder withBaseEntryFee(Money baseEntryFee) {
+        this.baseEntryFee = baseEntryFee;
+        return this;
+    }
+
     public Event build() {
         return Event.reconstruct(eventId,
                 name,
@@ -123,6 +137,8 @@ public class EventTestDataBuilder {
                 null,
                 orisId,
                 categories,
+                ranking,
+                baseEntryFee,
                 registrations,
                 auditMetadata);
     }
