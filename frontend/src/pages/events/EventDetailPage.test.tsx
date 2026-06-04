@@ -401,6 +401,106 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('inline editing — ranking and baseEntryFee (task 5.2)', () => {
+        const updateEventTemplateWithRankingAndFee = mockHalFormsTemplate({
+            method: 'PUT',
+            target: '/api/events/1',
+            title: 'Upravit závod',
+            properties: [
+                {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                {name: 'rankingId', prompt: 'Žebříček', type: 'text', value: undefined},
+                {name: 'baseEntryFeeAmount', prompt: 'Startovné', type: 'number', value: undefined},
+            ],
+        });
+
+        it('5.2.1 shows Žebříček row with input in edit mode when rankingId field is in template', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByText('Žebříček')).toBeInTheDocument();
+        });
+
+        it('5.2.2 shows Startovné row with input in edit mode when baseEntryFeeAmount field is in template', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByText('Startovné')).toBeInTheDocument();
+        });
+
+        it('5.2.3 hides static ranking display in edit mode (replaced by input)', () => {
+            const data = mockEventDetailData({
+                ranking: {shortName: 'ČŽ', name: 'Český žebříček'},
+                _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByText('Český žebříček')).not.toBeInTheDocument();
+        });
+
+        it('5.2.4 hides static baseEntryFee display in edit mode (replaced by input)', () => {
+            const data = mockEventDetailData({
+                baseEntryFee: {amount: 650, currency: 'CZK'},
+                _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByText('650 CZK')).not.toBeInTheDocument();
+        });
+
+        it('5.2.5 does not show Žebříček row in edit mode when rankingId field is not in template', () => {
+            const templateWithoutRanking = mockHalFormsTemplate({
+                method: 'PUT',
+                target: '/api/events/1',
+                title: 'Upravit závod',
+                properties: [
+                    {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                    {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                ],
+            });
+            const data = mockEventDetailData({
+                _templates: {updateEvent: templateWithoutRanking},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByText('Žebříček')).not.toBeInTheDocument();
+        });
+
+        it('5.2.6 does not show Startovné row in edit mode when baseEntryFeeAmount field is not in template', () => {
+            const templateWithoutFee = mockHalFormsTemplate({
+                method: 'PUT',
+                target: '/api/events/1',
+                title: 'Upravit závod',
+                properties: [
+                    {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                    {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                ],
+            });
+            const data = mockEventDetailData({
+                _templates: {updateEvent: templateWithoutFee},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByText('Startovné')).not.toBeInTheDocument();
+        });
+    });
+
     describe('registrations section', () => {
         const mockEventWithRegistrationsLink = (overrides?: Partial<HalResponse>) => mockEventDetailData({
             _links: {

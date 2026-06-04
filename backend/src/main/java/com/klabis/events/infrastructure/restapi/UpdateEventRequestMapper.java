@@ -52,11 +52,19 @@ class UpdateEventRequestMapper {
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
     }
 
+    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
+
     private static Money toMoney(UpdateEventRequest.EntryFeeRequest feeRequest) {
         if (feeRequest == null) {
             return null;
         }
-        return Money.of(feeRequest.amount(), Currency.getInstance(feeRequest.currency()));
+        Currency currency;
+        try {
+            currency = Currency.getInstance(feeRequest.currency());
+        } catch (IllegalArgumentException e) {
+            currency = DEFAULT_CURRENCY;
+        }
+        return Money.of(feeRequest.amount(), currency);
     }
 
     private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {

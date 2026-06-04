@@ -32,7 +32,7 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Run backend tests (test-runner skill) and fix failures
-- [ ] 6.2 Run frontend tests (test-runner skill) and fix failures
+- [x] 6.1 Run backend tests (test-runner skill) and fix failures
+- [x] 6.2 Run frontend tests (test-runner skill) and fix failures
 - [ ] 6.3 QA: import/sync a real ORIS event, verify ranking + base entry fee appear on the event detail
-- [ ] 6.4 Code review before commit
+- [x] 6.4 Code review before commit

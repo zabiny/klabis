@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,7 @@ class OrisEventImportService implements OrisEventImportPort {
     private static final Logger log = LoggerFactory.getLogger(OrisEventImportService.class);
 
     private static final String UNKNOWN_ORGANIZER = "---";
+    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
 
     private final EventRepository eventRepository;
     private final OrisApiClient orisApiClient;
@@ -171,8 +173,6 @@ class OrisEventImportService implements OrisEventImportPort {
         return EventRanking.of(level.id(), level.shortName(), level.nameCZ());
     }
 
-    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
-
     private Money deriveBaseEntryFee(EventDetails details) {
         if (details.classes() == null || details.classes().isEmpty()) {
             return null;
@@ -188,7 +188,7 @@ class OrisEventImportService implements OrisEventImportPort {
                         return null;
                     }
                 })
-                .filter(amount -> amount != null)
+                .filter(Objects::nonNull)
                 .max(BigDecimal::compareTo)
                 .map(maxFee -> Money.of(maxFee, currency))
                 .orElse(null);
