@@ -173,6 +173,17 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             };
             return <HalFormsSelect {...conf} prop={propWithDeactivationOptions}/>;
         }
+        case "RankingRequest":
+            return renderCompositeField(conf, [
+                {key: "levelId", attr: "levelId", prompt: "ID žebříčku", type: "number"},
+                {key: "shortName", attr: "shortName", prompt: "Zkratka"},
+                {key: "name", attr: "name", prompt: "Název"},
+            ]);
+        case "EntryFeeRequest":
+            return renderCompositeField(conf, [
+                {key: "amount", attr: "amount", prompt: "Částka", type: "number"},
+                {key: "currency", attr: "currency", prompt: "Měna"},
+            ]);
         case "AddressRequest":
             return renderCompositeField(conf, ADDRESS_FIELDS);
         case "GuardianDTO":

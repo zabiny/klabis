@@ -409,12 +409,12 @@ describe('EventDetailPage', () => {
             properties: [
                 {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
                 {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
-                {name: 'rankingId', prompt: 'Žebříček', type: 'text', value: undefined},
-                {name: 'baseEntryFeeAmount', prompt: 'Startovné', type: 'number', value: undefined},
+                {name: 'ranking', prompt: 'Žebříček', type: 'RankingRequest', value: undefined},
+                {name: 'baseEntryFee', prompt: 'Startovné', type: 'EntryFeeRequest', value: undefined},
             ],
         });
 
-        it('5.2.1 shows Žebříček row with input in edit mode when rankingId field is in template', () => {
+        it('5.2.1 shows Žebříček row with input in edit mode when ranking field is in template', () => {
             const data = mockEventDetailData({
                 _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
             });
@@ -425,7 +425,7 @@ describe('EventDetailPage', () => {
             expect(screen.getByText('Žebříček')).toBeInTheDocument();
         });
 
-        it('5.2.2 shows Startovné row with input in edit mode when baseEntryFeeAmount field is in template', () => {
+        it('5.2.2 shows Startovné row with input in edit mode when baseEntryFee field is in template', () => {
             const data = mockEventDetailData({
                 _templates: {updateEvent: updateEventTemplateWithRankingAndFee},
             });
@@ -460,7 +460,7 @@ describe('EventDetailPage', () => {
             expect(screen.queryByText('650 CZK')).not.toBeInTheDocument();
         });
 
-        it('5.2.5 does not show Žebříček row in edit mode when rankingId field is not in template', () => {
+        it('5.2.5 does not show Žebříček row in edit mode when ranking field is not in template', () => {
             const templateWithoutRanking = mockHalFormsTemplate({
                 method: 'PUT',
                 target: '/api/events/1',
@@ -480,7 +480,7 @@ describe('EventDetailPage', () => {
             expect(screen.queryByText('Žebříček')).not.toBeInTheDocument();
         });
 
-        it('5.2.6 does not show Startovné row in edit mode when baseEntryFeeAmount field is not in template', () => {
+        it('5.2.6 does not show Startovné row in edit mode when baseEntryFee field is not in template', () => {
             const templateWithoutFee = mockHalFormsTemplate({
                 method: 'PUT',
                 target: '/api/events/1',

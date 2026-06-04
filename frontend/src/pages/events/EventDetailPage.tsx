@@ -286,9 +286,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 </span>
                             </DetailRow>
                         )}
-                        {isEditing && enrichedFieldNames.has('rankingId') && (
+                        {isEditing && enrichedFieldNames.has('ranking') && (
                             <DetailRow label={labels.fields.ranking}>
-                                {ri('rankingId')}
+                                {ri('ranking')}
                             </DetailRow>
                         )}
                         {!isEditing && event.baseEntryFee && (
@@ -296,9 +296,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {`${event.baseEntryFee.amount} ${event.baseEntryFee.currency}`}
                             </DetailRow>
                         )}
-                        {isEditing && enrichedFieldNames.has('baseEntryFeeAmount') && (
+                        {isEditing && enrichedFieldNames.has('baseEntryFee') && (
                             <DetailRow label={labels.fields.baseEntryFee}>
-                                {ri('baseEntryFeeAmount')}
+                                {ri('baseEntryFee')}
                             </DetailRow>
                         )}
                         {isEditing && (
