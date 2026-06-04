@@ -303,6 +303,15 @@ CREATE TABLE events
     -- Optional event type reference from the event-types catalog
     event_type_id        UUID         NULL REFERENCES event_types(id),
 
+    -- Event ranking/level from ORIS (null for events without a defined competition level)
+    level_id             INT          NULL,
+    level_short_name     VARCHAR(20)  NULL,
+    level_name           VARCHAR(100) NULL,
+
+    -- Base entry fee (null for events without a defined entry fee)
+    base_entry_fee_amount   DECIMAL(10, 2) NULL,
+    base_entry_fee_currency CHAR(3)        NULL,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,

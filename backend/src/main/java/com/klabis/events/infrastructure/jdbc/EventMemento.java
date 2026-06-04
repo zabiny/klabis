@@ -6,7 +6,9 @@ import com.klabis.events.EventTypeId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
@@ -15,8 +17,10 @@ import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.util.Assert;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -88,6 +92,21 @@ class EventMemento implements Persistable<UUID> {
 
     @Column("event_type_id")
     private UUID eventTypeId;
+
+    @Column("level_id")
+    private Integer levelId;
+
+    @Column("level_short_name")
+    private String levelShortName;
+
+    @Column("level_name")
+    private String levelName;
+
+    @Column("base_entry_fee_amount")
+    private BigDecimal baseEntryFeeAmount;
+
+    @Column("base_entry_fee_currency")
+    private String baseEntryFeeCurrency;
 
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
@@ -176,6 +195,19 @@ class EventMemento implements Persistable<UUID> {
         memento.categories = serialize(event.getCategories());
         memento.cancellationReason = event.getCancellationReason().orElse(null);
         memento.eventTypeId = event.getEventTypeId().map(EventTypeId::value).orElse(null);
+
+        EventRanking ranking = event.getRanking();
+        if (ranking != null) {
+            memento.levelId = ranking.levelId();
+            memento.levelShortName = ranking.shortName();
+            memento.levelName = ranking.name();
+        }
+
+        Money baseEntryFee = event.getBaseEntryFee();
+        if (baseEntryFee != null) {
+            memento.baseEntryFeeAmount = baseEntryFee.amount();
+            memento.baseEntryFeeCurrency = baseEntryFee.currency().getCurrencyCode();
+        }
     }
 
     /**
@@ -217,6 +249,14 @@ class EventMemento implements Persistable<UUID> {
 
         EventTypeId eventTypeIdObj = this.eventTypeId != null ? new EventTypeId(this.eventTypeId) : null;
 
+        EventRanking ranking = this.levelId != null
+                ? EventRanking.of(this.levelId, this.levelShortName, this.levelName)
+                : null;
+
+        Money baseEntryFee = this.baseEntryFeeAmount != null
+                ? Money.of(this.baseEntryFeeAmount, Currency.getInstance(this.baseEntryFeeCurrency))
+                : null;
+
         return Event.reconstruct(
                 eventId,
                 this.name,
@@ -231,6 +271,8 @@ class EventMemento implements Persistable<UUID> {
                 this.cancellationReason,
                 this.orisId,
                 categoriesList,
+                ranking,
+                baseEntryFee,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

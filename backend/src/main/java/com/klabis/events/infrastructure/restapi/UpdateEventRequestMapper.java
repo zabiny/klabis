@@ -32,7 +32,8 @@ class UpdateEventRequestMapper {
         List<String> categories = request.categories().patchValue(existingEvent.getCategories());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
-                eventCoordinatorId, eventTypeId, registrationDeadlines, categories);
+                eventCoordinatorId, eventTypeId, registrationDeadlines, categories,
+                existingEvent.getRanking(), existingEvent.getBaseEntryFee());
     }
 
     private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {

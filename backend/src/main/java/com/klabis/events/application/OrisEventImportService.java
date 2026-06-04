@@ -5,6 +5,7 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
+import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
@@ -17,7 +18,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +59,8 @@ class OrisEventImportService implements OrisEventImportPort {
         WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
         RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
         List<String> categories = extractCategories(details);
+        EventRanking ranking = resolveRanking(details.level());
+        Money baseEntryFee = deriveBaseEntryFee(details);
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                 .orisId(orisId)
@@ -66,6 +71,8 @@ class OrisEventImportService implements OrisEventImportPort {
                 .websiteUrl(websiteUrl)
                 .registrationDeadlines(registrationDeadlines)
                 .categories(categories)
+                .ranking(ranking)
+                .baseEntryFee(baseEntryFee)
                 .build());
 
         event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
@@ -91,6 +98,8 @@ class OrisEventImportService implements OrisEventImportPort {
         WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
         RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
         List<String> categories = extractCategories(details);
+        EventRanking ranking = resolveRanking(details.level());
+        Money baseEntryFee = deriveBaseEntryFee(details);
 
         warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
 
@@ -102,6 +111,8 @@ class OrisEventImportService implements OrisEventImportPort {
                 .websiteUrl(websiteUrl)
                 .registrationDeadlines(registrationDeadlines)
                 .categories(categories)
+                .ranking(ranking)
+                .baseEntryFee(baseEntryFee)
                 .build());
 
         event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
@@ -151,6 +162,47 @@ class OrisEventImportService implements OrisEventImportPort {
         return eventTypeRepository.findByOrisDisciplineId(discipline.id())
                 .map(EventType::getId)
                 .orElse(null);
+    }
+
+    private EventRanking resolveRanking(Level level) {
+        if (level == null) {
+            return null;
+        }
+        return EventRanking.of(level.id(), level.shortName(), level.nameCZ());
+    }
+
+    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
+
+    private Money deriveBaseEntryFee(EventDetails details) {
+        if (details.classes() == null || details.classes().isEmpty()) {
+            return null;
+        }
+        Currency currency = resolveCurrency(details.currency());
+        return details.classes().values().stream()
+                .map(EventClass::fee)
+                .filter(fee -> fee != null && !fee.isBlank())
+                .map(fee -> {
+                    try {
+                        return new BigDecimal(fee.trim());
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .filter(amount -> amount != null)
+                .max(BigDecimal::compareTo)
+                .map(maxFee -> Money.of(maxFee, currency))
+                .orElse(null);
+    }
+
+    private Currency resolveCurrency(String currencyCode) {
+        if (currencyCode == null || currencyCode.isBlank()) {
+            return DEFAULT_CURRENCY;
+        }
+        try {
+            return Currency.getInstance(currencyCode.trim());
+        } catch (IllegalArgumentException e) {
+            return DEFAULT_CURRENCY;
+        }
     }
 
     private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<String> incomingCategories) {

@@ -61,6 +61,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private EventStatus status;
     private String cancellationReason;
     private List<String> categories = new ArrayList<>();
+    private EventRanking ranking;
+    private Money baseEntryFee;
 
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
@@ -129,7 +131,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventTypeId eventTypeId,
 
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories
+            List<String> categories,
+            EventRanking ranking,
+            Money baseEntryFee
     ) {
         public static UpdateEvent from(Event event) {
             return new UpdateEvent(
@@ -141,7 +145,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.eventCoordinatorId,
                     event.eventTypeId,
                     event.registrationDeadlines,
-                    event.categories
+                    event.categories,
+                    event.ranking,
+                    event.baseEntryFee
             );
         }
     }
@@ -155,7 +161,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories
+            List<String> categories,
+            EventRanking ranking,
+            Money baseEntryFee
     ) {
         public static CreateEventFromOris from(Event event) {
             return new CreateEventFromOris(
@@ -166,7 +174,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl,
                     event.registrationDeadlines,
-                    event.categories
+                    event.categories,
+                    event.ranking,
+                    event.baseEntryFee
             );
         }
     }
@@ -210,7 +220,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories
+            List<String> categories,
+            EventRanking ranking,
+            Money baseEntryFee
     ) {
         public static SyncFromOris from(Event event) {
             return new SyncFromOris(
@@ -220,7 +232,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.organizer,
                     event.websiteUrl,
                     event.registrationDeadlines,
-                    event.categories
+                    event.categories,
+                    event.ranking,
+                    event.baseEntryFee
             );
         }
     }
@@ -271,6 +285,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String cancellationReason,
             Integer orisId,
             List<String> categories,
+            EventRanking ranking,
+            Money baseEntryFee,
             AuditMetadata auditMetadata) {
 
         this.id = id;
@@ -286,6 +302,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.cancellationReason = cancellationReason;
         this.orisId = orisId;
         this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
+        this.ranking = ranking;
+        this.baseEntryFee = baseEntryFee;
         updateAuditMetadata(auditMetadata);
     }
 
@@ -323,6 +341,30 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
 
+        return reconstruct(id, name, eventDate, location, organizer, websiteUrl, eventCoordinatorId,
+                eventTypeId, registrationDeadlines, status, cancellationReason, orisId, categories,
+                null, null, registrations, auditMetadata);
+    }
+
+    public static Event reconstruct(
+            EventId id,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            MemberId eventCoordinatorId,
+            EventTypeId eventTypeId,
+            RegistrationDeadlines registrationDeadlines,
+            EventStatus status,
+            String cancellationReason,
+            Integer orisId,
+            List<String> categories,
+            EventRanking ranking,
+            Money baseEntryFee,
+            List<EventRegistration> registrations,
+            AuditMetadata auditMetadata) {
+
         Event event = new Event(
                 id,
                 name,
@@ -337,6 +379,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 cancellationReason,
                 orisId,
                 categories,
+                ranking,
+                baseEntryFee,
                 auditMetadata
         );
         event.registrations.addAll(registrations);
@@ -375,6 +419,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 null,
                 null,
                 command.categories(),
+                null,
+                null,
                 null
         );
 
@@ -414,6 +460,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 null,
                 command.orisId(),
                 command.categories(),
+                command.ranking(),
+                command.baseEntryFee(),
                 null
         );
 
@@ -506,6 +554,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     public Optional<String> getCancellationReason() {
         return Optional.ofNullable(cancellationReason);
+    }
+
+    public EventRanking getRanking() {
+        return ranking;
+    }
+
+    public Money getBaseEntryFee() {
+        return baseEntryFee;
     }
 
     // ========== Domain Methods ==========
@@ -601,6 +657,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.eventTypeId = command.eventTypeId();
         this.registrationDeadlines = deadlines;
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.ranking = command.ranking();
+        this.baseEntryFee = command.baseEntryFee();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
@@ -635,6 +693,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.registrationDeadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.ranking = command.ranking();
+        this.baseEntryFee = command.baseEntryFee();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }

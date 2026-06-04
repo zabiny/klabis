@@ -15,7 +15,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import com.klabis.events.domain.EventRanking;
+import com.klabis.events.domain.Money;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -1568,6 +1573,165 @@ class EventTest {
             assertThat(emitted.newSiCardNumber()).isEqualTo(newSiCard);
             assertThat(emitted.oldCategory()).isNull();
             assertThat(emitted.newCategory()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Ranking and baseEntryFee – createFromOris()")
+    class CreateFromOrisRankingAndFee {
+
+        private static final EventRanking RANKING = EventRanking.of(5, "ŽB", "Žebříček B");
+        private static final Money FEE = Money.ofCzk(BigDecimal.valueOf(150));
+
+        @Test
+        @DisplayName("should store ranking and baseEntryFee when provided in CreateEventFromOris command")
+        void shouldStoreRankingAndFeeFromOrisCreate() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(RANKING)
+                    .baseEntryFee(FEE)
+                    .build());
+
+            assertThat(event.getRanking()).isEqualTo(RANKING);
+            assertThat(event.getBaseEntryFee()).isEqualTo(FEE);
+        }
+
+        @Test
+        @DisplayName("should store null ranking and null baseEntryFee when not provided in CreateEventFromOris command")
+        void shouldStoreNullRankingAndFeeWhenAbsentInOrisCreate() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(200)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .build());
+
+            assertThat(event.getRanking()).isNull();
+            assertThat(event.getBaseEntryFee()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Ranking and baseEntryFee – syncFromOris()")
+    class SyncFromOrisRankingAndFee {
+
+        private static final EventRanking RANKING = EventRanking.of(5, "ŽB", "Žebříček B");
+        private static final Money FEE = Money.ofCzk(BigDecimal.valueOf(150));
+
+        @Test
+        @DisplayName("should overwrite existing ranking and baseEntryFee during sync")
+        void shouldOverwriteRankingAndFeeOnSync() {
+            EventRanking oldRanking = EventRanking.of(3, "ČP", "Český pohár");
+            Money oldFee = Money.ofCzk(BigDecimal.valueOf(100));
+
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(oldRanking)
+                    .baseEntryFee(oldFee)
+                    .build());
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Synced Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(RANKING)
+                    .baseEntryFee(FEE)
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getRanking()).isEqualTo(RANKING);
+            assertThat(event.getBaseEntryFee()).isEqualTo(FEE);
+        }
+
+        @Test
+        @DisplayName("should set ranking and baseEntryFee to null when absent in sync command")
+        void shouldClearRankingAndFeeWhenAbsentInSync() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(RANKING)
+                    .baseEntryFee(FEE)
+                    .build());
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Synced Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(null)
+                    .baseEntryFee(null)
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getRanking()).isNull();
+            assertThat(event.getBaseEntryFee()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Ranking and baseEntryFee – update()")
+    class UpdateRankingAndFee {
+
+        private static final EventRanking RANKING = EventRanking.of(5, "ŽB", "Žebříček B");
+        private static final Money FEE = Money.ofCzk(BigDecimal.valueOf(150));
+
+        @Test
+        @DisplayName("should set ranking and baseEntryFee when provided in UpdateEvent command")
+        void shouldSetRankingAndFeeOnUpdate() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Forest")
+                    .organizer("OOB")
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(RANKING)
+                    .baseEntryFee(FEE)
+                    .build());
+
+            assertThat(event.getRanking()).isEqualTo(RANKING);
+            assertThat(event.getBaseEntryFee()).isEqualTo(FEE);
+        }
+
+        @Test
+        @DisplayName("should clear ranking and baseEntryFee when not provided in UpdateEvent command")
+        void shouldClearRankingAndFeeWhenAbsentInUpdate() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Forest")
+                    .organizer("OOB")
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(null)
+                    .baseEntryFee(null)
+                    .build());
+
+            assertThat(event.getRanking()).isNull();
+            assertThat(event.getBaseEntryFee()).isNull();
         }
     }
 

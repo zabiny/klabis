@@ -23,8 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -1469,6 +1471,132 @@ class EventJdbcRepositoryTest {
                 event.publish();
             }
             return eventRepository.save(event);
+        }
+    }
+
+    @Nested
+    @DisplayName("EventRanking persistence — round-trip")
+    class EventRankingPersistence {
+
+        @Test
+        @DisplayName("should persist and reload event ranking with all three fields")
+        void shouldPersistAndReloadEventRanking() {
+            EventRanking ranking = EventRanking.of(3, "MN", "Mistrovství národa");
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(5001)
+                    .name("Ranking Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(ranking)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getRanking()).isNotNull();
+            assertThat(reloaded.getRanking().levelId()).isEqualTo(3);
+            assertThat(reloaded.getRanking().shortName()).isEqualTo("MN");
+            assertThat(reloaded.getRanking().name()).isEqualTo("Mistrovství národa");
+        }
+
+        @Test
+        @DisplayName("should persist and reload event with null ranking")
+        void shouldPersistAndReloadNullRanking() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Ranking Event")
+                    .eventDate(LocalDate.of(2026, 9, 2))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getRanking()).isNull();
+        }
+
+        @Test
+        @DisplayName("should persist updated ranking after event update")
+        void shouldPersistUpdatedRanking() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(5002)
+                    .name("Ranking Update Event")
+                    .eventDate(LocalDate.of(2026, 9, 3))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .ranking(EventRanking.of(1, "OP", "Oblastní přebor"))
+                    .build());
+            Event saved = eventRepository.save(event);
+
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+            reloaded.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(reloaded))
+                    .ranking(EventRanking.of(2, "MP", "Mistrovství prahy"))
+                    .build());
+            eventRepository.save(reloaded);
+
+            Event updated = eventRepository.findById(saved.getId()).orElseThrow();
+            assertThat(updated.getRanking().levelId()).isEqualTo(2);
+            assertThat(updated.getRanking().shortName()).isEqualTo("MP");
+        }
+    }
+
+    @Nested
+    @DisplayName("BaseEntryFee persistence — round-trip")
+    class BaseEntryFeePersistence {
+
+        @Test
+        @DisplayName("should persist and reload base entry fee with amount and currency")
+        void shouldPersistAndReloadBaseEntryFee() {
+            Money fee = Money.of(new BigDecimal("350.00"), Currency.getInstance("CZK"));
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(6001)
+                    .name("Entry Fee Event")
+                    .eventDate(LocalDate.of(2026, 10, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .baseEntryFee(fee)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getBaseEntryFee()).isNotNull();
+            assertThat(reloaded.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("350"));
+            assertThat(reloaded.getBaseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+        }
+
+        @Test
+        @DisplayName("should persist and reload event with null base entry fee")
+        void shouldPersistAndReloadNullBaseEntryFee() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Fee Event")
+                    .eventDate(LocalDate.of(2026, 10, 2))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getBaseEntryFee()).isNull();
+        }
+
+        @Test
+        @DisplayName("should persist and reload base entry fee with decimal precision")
+        void shouldPersistAndReloadBaseEntryFeeWithDecimalPrecision() {
+            Money fee = Money.of(new BigDecimal("199.50"), Currency.getInstance("CZK"));
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(6002)
+                    .name("Decimal Fee Event")
+                    .eventDate(LocalDate.of(2026, 10, 3))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .baseEntryFee(fee)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("199.50"));
         }
     }
 

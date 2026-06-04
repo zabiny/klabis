@@ -14,11 +14,13 @@ Obě hodnoty pochází z ORIS a dnes nejsou v lokálním modelu závodu evidová
 ## What Changes
 
 - Závod získává nový atribut **ranking** (žebříček/série) — samostatný atribut nezávislý na typu závodu, hodnoty odpovídají kategoriím v ORIS (např. *Oblastní žebříček*, *Žebříček B*, *Český pohár*, *bez žebříčku*).
-- Zdrojem hodnoty rankingu je ORIS pole **`Level`** (`EventDetails.level`, dto `Level(int id, String shortName, String nameCZ, String nameEN)`). Konkrétní reprezentace na straně Klabis — zda využít `Level.id`, mapovaný enum, nebo samostatnou entitu — se rozhodne v `design.md` (Level.id sám o sobě pravděpodobně nestačí, např. pro zobrazení/lokalizaci).
-- Závod získává atribut **základní cena startovného** (`baseEntryFee`) v Kč.
-- Volitelně i informace o **navýšené ceně** za pozdější přihlášku (pokud ORIS poskytuje) — k pozdějšímu rozhodnutí v designu.
-- **Synchronizace z ORIS** je rozšířena o stažení rankingu a ceny startovného (při importu i při následné synchronizaci).
-- Ranking a cena jsou viditelné v UI — alespoň na detailu akce; ranking případně i v seznamu akcí jako filter/sort.
+- Zdrojem hodnoty rankingu je ORIS pole **`Level`** (`EventDetails.level()`, dto `Level(int id, String shortName, String nameCZ, String nameEN)` — ověřeno, oris-client `0.1.0` ho vystavuje; ORIS má 22 hodnot: MČR, ŽA, ŽB, OŽ, ČP, …). Klabis ukládá `Level.id` jako klíč pro matchování pravidel úrovní **plus denormalizovaný snapshot** `shortName`/`nameCZ` pro zobrazení a lokalizaci (bez lookup tabulky a bez mapovaného enumu — viz `design.md`).
+  - **Poznámka:** ORIS `Level` (žebříček/série) je něco jiného než ORIS pole `Ranking`/`RankingKoef` (0/1 flag + koeficient, zda se výsledek počítá do celostátního hodnocení). Klabis pracuje s **`Level`**, ORIS `Ranking`/`RankingKoef` se neimportuje.
+- Závod získává atribut **základní cena startovného** (`baseEntryFee`) jako částku s měnou (Money). Měna se synchronizuje z ORIS (`EventDetails.currency()`, typicky CZK).
+  - **ORIS nemá jednu cenu na závod** — cena je vždy per-kategorie (`EventClass.fee()`, ověřeno; např. MČR má D21=650 Kč, M16=320 Kč, varianty s 0 Kč). Jako reprezentativní základní cenu Klabis bere **maximum přes všechny kategorie** (`MAX(EventClass.fee)`), což odpovídá ceně hlavní dospělé kategorie a automaticky ignoruje zlevněné/nulové varianty.
+- **Navýšená cena** za pozdější přihlášku (`ManualFeeEntryDate2/3`) **není** součástí tohoto changu — pro výpočet doplatků úrovní stačí základní cena; lze přidat později samostatným changem.
+- **Synchronizace z ORIS** je rozšířena o stažení rankingu (`Level`), základní ceny startovného (`MAX(EventClass.fee)`) a měny (`currency()`) — při importu i při následné synchronizaci.
+- Ranking a cena jsou viditelné pouze na **detailu akce**. Seznam akcí se nemění (ani ranking, ani cena se v seznamu nezobrazují).
 - Pokud ORIS nevrací ranking nebo cenu (např. tréninkové akce vytvořené ručně), atribut zůstane prázdný; admin může doplnit ručně.
 
 ## Capabilities
@@ -32,8 +34,9 @@ Obě hodnoty pochází z ORIS a dnes nejsou v lokálním modelu závodu evidová
 - **Persistence:** schema migrace (přidání sloupců).
 - **ORIS adapter:** rozšířit mapování ORIS → lokální model o nové hodnoty.
 - **API:** rozšíření DTO závodu + form template pro editaci.
-- **Frontend:** zobrazení rankingu (chip/badge), zobrazení ceny startovného na detailu akce.
-- **Otevřené otázky pro design fázi:**
-  - Konkrétní reprezentace rankingu na straně Klabis (zdrojem je ORIS `Level`, ale Level.id pravděpodobně nestačí — uvážit ukládání celého snapshotu, mapovaný enum, nebo lookup tabulku)
-  - Měna / formát ceny (CZK only, nebo víceměnové?)
-  - Zda do tohoto changu zahrnout i navýšenou cenu za pozdní přihlášku
+- **Frontend:** zobrazení rankingu (chip/badge) a ceny startovného na detailu akce; seznam akcí beze změny.
+- **Vyřešené otázky (rozhodnuto před designem):**
+  - Reprezentace rankingu → `Level.id` + denormalizovaný snapshot (`shortName`, `nameCZ`), bez lookup tabulky/enumu.
+  - Cena → `MAX(EventClass.fee)` přes kategorie, ukládána jako Money (částka + měna z ORIS).
+  - Navýšená cena za pozdní přihlášku → mimo rozsah tohoto changu.
+  - Zobrazení v seznamu akcí → seznam se nemění; ranking i cena jsou pouze na detailu akce.

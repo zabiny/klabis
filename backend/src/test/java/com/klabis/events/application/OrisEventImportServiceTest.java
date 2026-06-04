@@ -3,6 +3,7 @@ package com.klabis.events.application;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
+import com.dpolach.api.orisclient.dto.Level;
 import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
@@ -17,7 +18,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -237,6 +240,8 @@ class OrisEventImportServiceTest {
             Mockito.when(details.entryDate2()).thenReturn(null);
             Mockito.when(details.entryDate3()).thenReturn(null);
             Mockito.lenient().when(details.classes()).thenReturn(null);
+            Mockito.lenient().when(details.level()).thenReturn(null);
+            Mockito.lenient().when(details.currency()).thenReturn(null);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
@@ -268,6 +273,8 @@ class OrisEventImportServiceTest {
             Mockito.when(details.entryDate2()).thenReturn(d2.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
             Mockito.when(details.entryDate3()).thenReturn(d3.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
             Mockito.lenient().when(details.classes()).thenReturn(null);
+            Mockito.lenient().when(details.level()).thenReturn(null);
+            Mockito.lenient().when(details.currency()).thenReturn(null);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
@@ -298,6 +305,8 @@ class OrisEventImportServiceTest {
             Mockito.when(details.entryDate2()).thenReturn(null);
             Mockito.when(details.entryDate3()).thenReturn(d3.atStartOfDay(java.time.ZoneId.of("Europe/Prague")));
             Mockito.lenient().when(details.classes()).thenReturn(null);
+            Mockito.lenient().when(details.level()).thenReturn(null);
+            Mockito.lenient().when(details.currency()).thenReturn(null);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(
                     new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
@@ -306,6 +315,264 @@ class OrisEventImportServiceTest {
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
                     .isInstanceOf(com.klabis.common.exceptions.BusinessRuleViolationException.class)
                     .hasMessageContaining("invalid registration deadlines");
+        }
+    }
+
+    @Nested
+    @DisplayName("Ranking mapping from ORIS Level")
+    class RankingMapping {
+
+        @Test
+        @DisplayName("should map level to EventRanking on import")
+        void shouldMapLevelToRankingOnImport() {
+            int orisId = 2001;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Level level = new Level(3, "MČR", "Mistrovství ČR", "Czech Championships");
+            EventDetails details = buildEventDetailsWithLevel(orisId, "MČR 2026", LocalDate.of(2026, 9, 1), "Forest", org1, level);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getRanking()).isNotNull();
+            assertThat(result.getRanking().levelId()).isEqualTo(3);
+            assertThat(result.getRanking().shortName()).isEqualTo("MČR");
+            assertThat(result.getRanking().name()).isEqualTo("Mistrovství ČR");
+        }
+
+        @Test
+        @DisplayName("should set ranking to null when level is null on import")
+        void shouldSetRankingNullWhenLevelNullOnImport() {
+            int orisId = 2002;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetailsWithLevel(orisId, "Local Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getRanking()).isNull();
+        }
+
+        @Test
+        @DisplayName("should map level to EventRanking on sync")
+        void shouldMapLevelToRankingOnSync() {
+            EventId eventId = EventId.generate();
+            int orisId = 2003;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Level level = new Level(5, "ŽB", "Žebříček B", "Ranking B");
+            EventDetails details = buildEventDetailsWithLevel(orisId, "Updated Race", LocalDate.of(2026, 9, 1), "Forest", org1, level);
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            service.syncEventFromOris(eventId);
+
+            assertThat(event.getRanking()).isNotNull();
+            assertThat(event.getRanking().levelId()).isEqualTo(5);
+            assertThat(event.getRanking().shortName()).isEqualTo("ŽB");
+        }
+
+        @Test
+        @DisplayName("should set ranking to null when level is null on sync")
+        void shouldSetRankingNullWhenLevelNullOnSync() {
+            EventId eventId = EventId.generate();
+            int orisId = 2004;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetailsWithLevel(orisId, "Updated Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            service.syncEventFromOris(eventId);
+
+            assertThat(event.getRanking()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("BaseEntryFee derivation from MAX(EventClass.fee)")
+    class BaseEntryFeeMapping {
+
+        @Test
+        @DisplayName("should derive baseEntryFee as MAX fee across classes")
+        void shouldDeriveMaxFeeAcrossClasses() {
+            int orisId = 3001;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", "250"),
+                    "W21", mockClassWithFee("W21", "200"),
+                    "M35", mockClassWithFee("M35", "180")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Fee Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "CZK");
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNotNull();
+            assertThat(result.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("250"));
+            assertThat(result.getBaseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+        }
+
+        @Test
+        @DisplayName("should ignore empty and unparseable fee values")
+        void shouldIgnoreEmptyAndUnparseableFees() {
+            int orisId = 3002;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", "300"),
+                    "W21", mockClassWithFee("W21", ""),
+                    "M35", mockClassWithFee("M35", "N/A")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Partial Fee Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "CZK");
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNotNull();
+            assertThat(result.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("300"));
+        }
+
+        @Test
+        @DisplayName("should return null baseEntryFee when all fees are empty or unparseable")
+        void shouldReturnNullBaseEntryFeeWhenNoParseableFees() {
+            int orisId = 3003;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", ""),
+                    "W21", mockClassWithFee("W21", "free")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "No Fee Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "CZK");
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNull();
+        }
+
+        @Test
+        @DisplayName("should return null baseEntryFee when classes are null")
+        void shouldReturnNullBaseEntryFeeWhenClassesNull() {
+            int orisId = 3004;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "No Classes Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNull();
+        }
+
+        @Test
+        @DisplayName("should use CZK as default currency when currency is blank")
+        void shouldUseCzkAsDefaultWhenCurrencyIsBlank() {
+            int orisId = 3005;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", "150")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "No Currency Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "");
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNotNull();
+            assertThat(result.getBaseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+        }
+
+        @Test
+        @DisplayName("should use CZK as default currency when currency is invalid")
+        void shouldUseCzkAsDefaultWhenCurrencyIsInvalid() {
+            int orisId = 3006;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", "150")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Invalid Currency Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "INVALID");
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getBaseEntryFee()).isNotNull();
+            assertThat(result.getBaseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+        }
+
+        @Test
+        @DisplayName("should derive baseEntryFee on sync")
+        void shouldDeriveBaseEntryFeeOnSync() {
+            EventId eventId = EventId.generate();
+            int orisId = 3007;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
+                    "M21", mockClassWithFee("M21", "400"),
+                    "W21", mockClassWithFee("W21", "350")
+            );
+            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Sync Fee Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "CZK");
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            service.syncEventFromOris(eventId);
+
+            assertThat(event.getBaseEntryFee()).isNotNull();
+            assertThat(event.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("400"));
         }
     }
 
@@ -322,6 +589,8 @@ class OrisEventImportServiceTest {
         Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.lenient().when(details.classes()).thenReturn(null);
         Mockito.lenient().when(details.discipline()).thenReturn(null);
+        Mockito.lenient().when(details.level()).thenReturn(null);
+        Mockito.lenient().when(details.currency()).thenReturn(null);
         return details;
     }
 
@@ -339,6 +608,8 @@ class OrisEventImportServiceTest {
         Mockito.lenient().when(details.entryDate3()).thenReturn(null);
         Mockito.when(details.classes()).thenReturn(classes);
         Mockito.lenient().when(details.discipline()).thenReturn(null);
+        Mockito.lenient().when(details.level()).thenReturn(null);
+        Mockito.lenient().when(details.currency()).thenReturn(null);
         return details;
     }
 
@@ -346,5 +617,50 @@ class OrisEventImportServiceTest {
         com.dpolach.api.orisclient.dto.EventClass cls = Mockito.mock(com.dpolach.api.orisclient.dto.EventClass.class);
         Mockito.when(cls.name()).thenReturn(name);
         return cls;
+    }
+
+    private com.dpolach.api.orisclient.dto.EventClass mockClassWithFee(String name, String fee) {
+        com.dpolach.api.orisclient.dto.EventClass cls = Mockito.mock(com.dpolach.api.orisclient.dto.EventClass.class);
+        Mockito.when(cls.name()).thenReturn(name);
+        Mockito.when(cls.fee()).thenReturn(fee);
+        return cls;
+    }
+
+    private EventDetails buildEventDetailsWithLevel(int id, String name, LocalDate date, String place,
+                                                     Organizer org1, Level level) {
+        EventDetails details = Mockito.mock(EventDetails.class);
+        Mockito.when(details.name()).thenReturn(name);
+        Mockito.when(details.date()).thenReturn(date);
+        Mockito.when(details.place()).thenReturn(place);
+        Mockito.when(details.org1()).thenReturn(org1);
+        Mockito.lenient().when(details.org2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate1()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate3()).thenReturn(null);
+        Mockito.lenient().when(details.classes()).thenReturn(null);
+        Mockito.lenient().when(details.discipline()).thenReturn(null);
+        Mockito.when(details.level()).thenReturn(level);
+        Mockito.lenient().when(details.currency()).thenReturn(null);
+        return details;
+    }
+
+    private EventDetails buildEventDetailsWithClassesAndCurrency(int id, String name, LocalDate date, String place,
+                                                                   Organizer org1,
+                                                                   Map<String, com.dpolach.api.orisclient.dto.EventClass> classes,
+                                                                   String currency) {
+        EventDetails details = Mockito.mock(EventDetails.class);
+        Mockito.when(details.name()).thenReturn(name);
+        Mockito.when(details.date()).thenReturn(date);
+        Mockito.when(details.place()).thenReturn(place);
+        Mockito.when(details.org1()).thenReturn(org1);
+        Mockito.lenient().when(details.org2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate1()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate2()).thenReturn(null);
+        Mockito.lenient().when(details.entryDate3()).thenReturn(null);
+        Mockito.when(details.classes()).thenReturn(classes);
+        Mockito.lenient().when(details.discipline()).thenReturn(null);
+        Mockito.lenient().when(details.level()).thenReturn(null);
+        Mockito.when(details.currency()).thenReturn(currency);
+        return details;
     }
 }
