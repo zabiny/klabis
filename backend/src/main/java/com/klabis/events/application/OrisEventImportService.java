@@ -34,7 +34,6 @@ class OrisEventImportService implements OrisEventImportPort {
     private static final Logger log = LoggerFactory.getLogger(OrisEventImportService.class);
 
     private static final String UNKNOWN_ORGANIZER = "---";
-    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
 
     private final EventRepository eventRepository;
     private final OrisApiClient orisApiClient;
@@ -177,7 +176,7 @@ class OrisEventImportService implements OrisEventImportPort {
         if (details.classes() == null || details.classes().isEmpty()) {
             return null;
         }
-        Currency currency = resolveCurrency(details.currency());
+        Currency currency = Money.parseCurrency(details.currency());
         return details.classes().values().stream()
                 .map(EventClass::fee)
                 .filter(fee -> fee != null && !fee.isBlank())
@@ -185,24 +184,13 @@ class OrisEventImportService implements OrisEventImportPort {
                     try {
                         return new BigDecimal(fee.trim());
                     } catch (NumberFormatException e) {
-                        return null;
+                        return (BigDecimal) null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .max(BigDecimal::compareTo)
                 .map(maxFee -> Money.of(maxFee, currency))
                 .orElse(null);
-    }
-
-    private Currency resolveCurrency(String currencyCode) {
-        if (currencyCode == null || currencyCode.isBlank()) {
-            return DEFAULT_CURRENCY;
-        }
-        try {
-            return Currency.getInstance(currencyCode.trim());
-        } catch (IllegalArgumentException e) {
-            return DEFAULT_CURRENCY;
-        }
     }
 
     private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<String> incomingCategories) {

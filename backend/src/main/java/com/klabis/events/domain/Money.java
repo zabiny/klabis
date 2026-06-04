@@ -30,6 +30,17 @@ public final class Money {
         return new Money(amount, CZK);
     }
 
+    public static Currency parseCurrency(String code) {
+        if (code == null || code.isBlank()) {
+            return CZK;
+        }
+        try {
+            return Currency.getInstance(code.trim());
+        } catch (IllegalArgumentException e) {
+            return CZK;
+        }
+    }
+
     public BigDecimal amount() {
         return amount;
     }
@@ -47,7 +58,7 @@ public final class Money {
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount.stripTrailingZeros(), currency);
+        return Objects.hash(amount, currency);
     }
 
     @Override

@@ -8,7 +8,6 @@ import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
-import java.util.Currency;
 import java.util.List;
 
 class UpdateEventRequestMapper {
@@ -34,12 +33,8 @@ class UpdateEventRequestMapper {
                 : existingEvent.getRegistrationDeadlines();
         List<String> categories = request.categories().patchValue(existingEvent.getCategories());
 
-        EventRanking ranking = request.ranking().isProvided()
-                ? toRanking(request.ranking().throwIfNotProvided())
-                : existingEvent.getRanking();
-        Money baseEntryFee = request.baseEntryFee().isProvided()
-                ? toMoney(request.baseEntryFee().throwIfNotProvided())
-                : existingEvent.getBaseEntryFee();
+        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).patchValue(existingEvent.getRanking());
+        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
                 eventCoordinatorId, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
@@ -52,19 +47,11 @@ class UpdateEventRequestMapper {
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
     }
 
-    private static final Currency DEFAULT_CURRENCY = Currency.getInstance("CZK");
-
     private static Money toMoney(UpdateEventRequest.EntryFeeRequest feeRequest) {
         if (feeRequest == null) {
             return null;
         }
-        Currency currency;
-        try {
-            currency = Currency.getInstance(feeRequest.currency());
-        } catch (IllegalArgumentException e) {
-            currency = DEFAULT_CURRENCY;
-        }
-        return Money.of(feeRequest.amount(), currency);
+        return Money.of(feeRequest.amount(), Money.parseCurrency(feeRequest.currency()));
     }
 
     private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {
