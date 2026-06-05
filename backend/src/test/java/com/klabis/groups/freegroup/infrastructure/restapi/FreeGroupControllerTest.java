@@ -4,8 +4,8 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.InvitationId;
 import com.klabis.common.usergroup.InvitationStatus;
@@ -658,8 +658,8 @@ class FreeGroupControllerTest {
         @DisplayName("should return 409 when promoting a non-member to owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn409WhenPromotingNonMemberToOwner() throws Exception {
-            UserId nonMemberUserId = new UserId(java.util.UUID.fromString(OTHER_MEMBER_ID));
-            doThrow(new CannotPromoteNonMemberToOwnerException(nonMemberUserId))
+            MemberId nonMemberId = new MemberId(java.util.UUID.fromString(OTHER_MEMBER_ID));
+            doThrow(new CannotPromoteNonMemberToOwnerException(nonMemberId))
                     .when(membersGroupManagementService).addOwner(any(FreeGroupId.class), any(MemberId.class), any(MemberId.class));
 
             mockMvc.perform(
@@ -722,8 +722,8 @@ class FreeGroupControllerTest {
         @DisplayName("should return 422 when attempting to remove last owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn422WhenRemovingLastOwner() throws Exception {
-            UserId lastOwnerUserId = new UserId(UUID.fromString(MEMBER_ID));
-            doThrow(new CannotRemoveLastOwnerException(lastOwnerUserId))
+            MemberId lastOwnerMemberId = new MemberId(UUID.fromString(MEMBER_ID));
+            doThrow(new CannotRemoveLastOwnerException(lastOwnerMemberId))
                     .when(membersGroupManagementService).removeOwner(any(FreeGroupId.class), any(MemberId.class), any(MemberId.class));
 
             mockMvc.perform(

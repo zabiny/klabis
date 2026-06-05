@@ -4,7 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.common.usergroup.MemberAlreadyInGroupException;
 import com.klabis.common.users.Authority;
@@ -364,10 +364,10 @@ class FamilyGroupControllerTest {
         @DisplayName("should return 422 when removing last parent")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn422WhenRemovingLastParent() throws Exception {
-            UserId lastParentUserId = new UserId(UUID.fromString(MEMBER_ID));
+            MemberId lastParentMemberId = new MemberId(UUID.fromString(MEMBER_ID));
             when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class)))
                     .thenReturn(buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID));
-            org.mockito.Mockito.doThrow(new CannotRemoveLastOwnerException(lastParentUserId))
+            org.mockito.Mockito.doThrow(new CannotRemoveLastOwnerException(lastParentMemberId))
                     .when(familyGroupManagementService).removeParent(any(FamilyGroupId.class), any(MemberId.class));
 
             mockMvc.perform(

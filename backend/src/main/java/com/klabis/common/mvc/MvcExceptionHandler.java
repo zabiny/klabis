@@ -4,9 +4,6 @@ import com.klabis.common.exceptions.AuthorizationException;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.exceptions.InvalidDataException;
 import com.klabis.common.exceptions.ResourceNotFoundException;
-import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -54,36 +51,6 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
         return ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
     }
 
-    @ExceptionHandler(CannotRemoveLastOwnerException.class)
-    @ApiResponse(
-            responseCode = "422",
-            description = "Unprocessable entity - cannot remove the last owner of a group",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    public ErrorResponse handleCannotRemoveLastOwner(CannotRemoveLastOwnerException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Cannot Remove Last Owner")
-                .build();
-    }
-
-    @ExceptionHandler(DirectMemberAdditionNotAllowedException.class)
-    @ApiResponse(
-            responseCode = "422",
-            description = "Unprocessable entity - direct member addition not allowed for invitation-based groups",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    public ErrorResponse handleDirectMemberAdditionNotAllowed(DirectMemberAdditionNotAllowedException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Direct Member Addition Not Allowed")
-                .build();
-    }
-
     @ExceptionHandler(BusinessRuleViolationException.class)
     @ApiResponse(
             responseCode = "400",
@@ -95,21 +62,6 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     )
     public ErrorResponse handleBusinessRuleViolationException(BusinessRuleViolationException ex) {
         return ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
-    }
-
-    @ExceptionHandler(CannotPromoteNonMemberToOwnerException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - cannot promote a non-member to owner",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    public ErrorResponse handleCannotPromoteNonMemberToOwner(CannotPromoteNonMemberToOwnerException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(409), ex.getMessage())
-                .title("Cannot Promote Non-Member to Owner")
-                .build();
     }
 
     @ExceptionHandler(InvalidDataException.class)

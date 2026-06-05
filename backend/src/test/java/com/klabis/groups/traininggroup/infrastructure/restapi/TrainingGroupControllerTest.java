@@ -4,8 +4,8 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.usergroup.GroupMembership;
 import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
@@ -385,7 +385,7 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 422 when removing last trainer")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn422WhenRemovingLastTrainer() throws Exception {
-            doThrow(new CannotRemoveLastOwnerException(new UserId(UUID.fromString(TRAINER_ID))))
+            doThrow(new CannotRemoveLastOwnerException(new MemberId(UUID.fromString(TRAINER_ID))))
                     .when(trainingGroupManagementService).removeTrainer(any(TrainingGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
