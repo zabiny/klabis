@@ -1,0 +1,110 @@
+package com.klabis.membershipfees.domain;
+
+import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.MembershipFeeLevelId;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
+import org.springframework.util.Assert;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+@AggregateRoot
+public class MembershipFeeLevel extends KlabisAggregateRoot<MembershipFeeLevel, MembershipFeeLevelId> {
+
+    @Identity
+    private final MembershipFeeLevelId id;
+    private String name;
+    private Money yearlyFee;
+    private final List<MembershipPaymentRule> rules;
+
+    private MembershipFeeLevel(MembershipFeeLevelId id, String name, Money yearlyFee,
+                                List<MembershipPaymentRule> rules) {
+        Assert.notNull(id, "MembershipFeeLevelId is required");
+        Assert.hasText(name, "Name is required");
+        Assert.notNull(yearlyFee, "YearlyFee is required");
+        this.id = id;
+        this.name = name;
+        this.yearlyFee = yearlyFee;
+        this.rules = new ArrayList<>(rules);
+    }
+
+    public static MembershipFeeLevel create(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
+        MembershipFeeLevelId id = new MembershipFeeLevelId(UUID.randomUUID());
+        MembershipFeeLevel level = new MembershipFeeLevel(id, name, yearlyFee, List.of());
+        if (rules != null && !rules.isEmpty()) {
+            level.replaceRules(rules);
+        }
+        return level;
+    }
+
+    public static MembershipFeeLevel reconstruct(MembershipFeeLevelId id, String name, Money yearlyFee,
+                                                  List<MembershipPaymentRule> rules,
+                                                  AuditMetadata auditMetadata) {
+        MembershipFeeLevel level = new MembershipFeeLevel(id, name, yearlyFee, rules);
+        level.updateAuditMetadata(auditMetadata);
+        return level;
+    }
+
+    @Override
+    public MembershipFeeLevelId getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Money getYearlyFee() {
+        return yearlyFee;
+    }
+
+    public List<MembershipPaymentRule> getRules() {
+        return Collections.unmodifiableList(rules);
+    }
+
+    public void editName(String newName) {
+        Assert.hasText(newName, "Name is required");
+        this.name = newName;
+    }
+
+    public void editYearlyFee(Money newFee) {
+        Assert.notNull(newFee, "YearlyFee is required");
+        this.yearlyFee = newFee;
+    }
+
+    public void addRule(MembershipPaymentRule rule) {
+        Assert.notNull(rule, "Rule is required");
+        boolean duplicate = rules.stream().anyMatch(existing -> existing.hasSameKey(rule));
+        if (duplicate) {
+            throw new DuplicatePaymentRuleException(rule.eventTypeId(), rule.rankingShortName());
+        }
+        rules.add(rule);
+    }
+
+    public void replaceRules(List<MembershipPaymentRule> newRules) {
+        validateNoDuplicateKeys(newRules);
+        rules.clear();
+        if (newRules != null) {
+            rules.addAll(newRules);
+        }
+    }
+
+    private void validateNoDuplicateKeys(List<MembershipPaymentRule> newRules) {
+        if (newRules == null || newRules.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < newRules.size(); i++) {
+            for (int j = i + 1; j < newRules.size(); j++) {
+                if (newRules.get(i).hasSameKey(newRules.get(j))) {
+                    MembershipPaymentRule dup = newRules.get(i);
+                    throw new DuplicatePaymentRuleException(dup.eventTypeId(), dup.rankingShortName());
+                }
+            }
+        }
+    }
+}

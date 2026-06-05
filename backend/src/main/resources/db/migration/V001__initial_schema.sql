@@ -665,7 +665,12 @@ CREATE TABLE membership_fee_level
     id                    UUID           NOT NULL PRIMARY KEY,
     name                  VARCHAR(200)   NOT NULL,
     yearly_fee_amount     DECIMAL(19, 4) NOT NULL,
-    yearly_fee_currency   VARCHAR(3)     NOT NULL DEFAULT 'CZK'
+    yearly_fee_currency   VARCHAR(3)     NOT NULL DEFAULT 'CZK',
+    created_at            TIMESTAMP      NULL,
+    created_by            VARCHAR(255)   NULL,
+    modified_at           TIMESTAMP      NULL,
+    modified_by           VARCHAR(255)   NULL,
+    version               BIGINT         NOT NULL DEFAULT 0
 );
 
 -- Comments for membership_fee_level
