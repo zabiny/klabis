@@ -37,7 +37,7 @@ Tento change definuje samotnou **doménu členských příspěvků**: úrovně, 
 ## Impact
 
 - **Nová doména:** modul `membership-fees` s vlastním agregátem **`MembershipFeeGroup`** (vypsaná úroveň pro rok).
-- **Přiřazení člen ↔ úroveň** je realizováno jako **vlastní typ skupiny v modulu `membership-fees`** — analogicky jako traininggroup/familygroup/freegroup definují svůj agregát. Agregát drží snapshot úrovně pro daný rok i členství (volbu člena). Sdílí pouze doménový building block `common.usergroup`; **vlastní persistenci** (modul `groups` ani `user-groups` spec se nemění). Navenek vystupuje jen pod `membership-fees`, ne v obecném výpisu skupin. Detail viz design.md (D2).
+- **Přiřazení člen ↔ úroveň** je realizováno jako **vlastní aggregate root `MembershipFeeGroup`** s vlastní membership logikou a vlastní persistencí — modul `groups` ani `user-groups` spec se nemění. Navenek vystupuje jen pod `membership-fees`, ne v obecném výpisu skupin. Detail viz design.md (D2).
 - **Závislost:** `event-types` (pravidlo referencuje typ závodu); `member-accounts` přijímá generované položky.
 - **Závislost na follow-up proposalu:** atribut `ranking` na závodu a synchronizace ceny startovného z ORIS — tyto změny jsou předpokladem pro výpočet doplatku, ale ten je out-of-scope tohoto changu.
 - **Audit trail:** historie přiřazení úrovní členům (členství v ročních úrovních napříč roky) pro účetní účely.

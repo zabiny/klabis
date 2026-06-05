@@ -7,25 +7,25 @@
 ## 1. Module scaffolding
 
 - [ ] 1.1 Create module `com.klabis.membership-fees` with `package-info.java` declaring `@ApplicationModule(displayName = "Členské příspěvky")`
-- [ ] 1.2 Add architecture test expectation so the new module passes `JMoleculesArchitectureTest` (allowed value-object refs: `MemberId`, `EventTypeId`)
-- [ ] 1.3 Add empty Flyway migration file for the module's own tables (no changes to `user_groups`)
+- [ ] 1.2 Add architecture test expectation so the new module passes `JMoleculesArchitectureTest` (allowed value-object refs: `MemberId`, `EventTypeId`; allowed ports: `AllMembersPort`, `ChargePort`)
+- [ ] 1.3 Add DDL for all `membership-fees` tables into V001 (catalog, rules, `fee_year_publication` with `deadline_processed_at`, `membership_fee_group` with snapshot + members, yearly fee idempotency marker); no changes to `user_groups`
 
 ## 2. Fee level catalog (slice: define a level template end-to-end)
 
 - [ ] 2.1 Write failing domain tests for `MembershipFeeLevel` aggregate: create with name + yearly fee + rules, edit name/fee/rules, identity `MembershipFeeLevelId`
-- [ ] 2.2 Write failing domain tests for `MembershipPaymentRule` value object: percentage vs fixed surcharge, unique `(EventTypeId, ranking)` per level, duplicate rejected
+- [ ] 2.2 Write failing domain tests for `MembershipPaymentRule` value object: percentage vs fixed surcharge, unique `(EventTypeId, rankingShortName)` per level, duplicate rejected
 - [ ] 2.3 Implement `MembershipFeeLevel` + `MembershipPaymentRule` to make domain tests pass; refactor
-- [ ] 2.4 Implement own persistence: `MembershipFeeLevelMemento` + repository + adapter + Flyway table; write repository round-trip test
+- [ ] 2.4 Implement own persistence: `MembershipFeeLevelMemento` + repository + adapter (DDL already in V001); write repository round-trip test
 - [ ] 2.5 Implement application port `MembershipFeeLevelManagementPort` + service (create / edit / get / list) with `MEMBERS:ADMIN` authorization
 - [ ] 2.6 Implement HAL+FORMS `MembershipFeeLevelController` (catalog CRUD) with `_links` and afford templates; write web slice test
 - [ ] 2.7 Verify spec scenarios: "Membership Fee Level Catalog", "Membership Payment Rules by Event Type and Ranking"
 
 ## 3. Publishing levels for a year (slice: publish a year end-to-end)
 
-- [ ] 3.1 Write failing domain tests for `FeeYearPublication`: holds year + single voting deadline + set of published levels; cannot publish a year twice
-- [ ] 3.2 Write failing domain tests for `MembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, uses `common.usergroup.UserGroup` for membership
+- [ ] 3.1 Write failing domain tests for `FeeYearPublication`: holds year + single voting deadline + set of `MembershipFeeGroupId` refs; cannot publish a year twice; `deadlineProcessedAt` null until scheduler runs; `markProcessed(at)` sets it
+- [ ] 3.2 Write failing domain tests for `MembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, own membership logic (`addMember` / `removeMember` / `hasMember` over `Set<MemberId>`)
 - [ ] 3.3 Implement publishing: copying catalog level into a frozen-on-demand snapshot; implement aggregates; refactor
-- [ ] 3.4 Implement own persistence for `FeeYearPublication` and `MembershipFeeGroup` (snapshot rules + memberships) + Flyway tables; repository round-trip test
+- [ ] 3.4 Implement own persistence for `FeeYearPublication` and `MembershipFeeGroup` as separate aggregate roots (DDL already in V001); repository round-trip test for each
 - [ ] 3.5 Implement application port + service for publishing a year (`MEMBERS:ADMIN`)
 - [ ] 3.6 Implement HAL+FORMS endpoints to publish a year and to list published levels per year; web slice test
 - [ ] 3.7 Verify spec scenarios: "Publishing Fee Levels for a Calendar Year"
@@ -33,7 +33,7 @@
 ## 4. Member chooses a level (slice: member self-selection end-to-end)
 
 - [ ] 4.1 Write failing domain tests: member joins a `MembershipFeeGroup` before deadline; changing choice moves membership; choice locked after deadline
-- [ ] 4.2 Write failing test for "previous year's level offered as default": pre-fill from year N-1 matched by `MembershipFeeLevelId`; default is non-binding (not a choice until confirmed)
+- [ ] 4.2 Write failing test for "previous year's level offered as default": application service resolves pre-fill from year N-1 matched by `MembershipFeeLevelId` (sourceLevelId); default is non-binding (not a choice until confirmed)
 - [ ] 4.3 Implement choice + change + lock-after-deadline domain logic; refactor
 - [ ] 4.4 Implement application port + service for member choice and change (member acting on self)
 - [ ] 4.5 Implement HAL+FORMS member-facing endpoints for choosing/changing the level for the upcoming year, with conditional afford metadata (hidden after deadline); web slice test
@@ -48,8 +48,8 @@
 
 ## 6. Sanction for a missing choice (slice: cross-module via events)
 
-- [ ] 6.1 Write failing tests for sanction trigger: day after deadline, members without a choice are identified
-- [ ] 6.2 Implement scheduler/trigger publishing `MemberMissedFeeSelectionEvent` for members who missed the choice (idempotent per member+year)
+- [ ] 6.1 Write failing tests for sanction trigger: day after deadline, members without a choice are identified via `AllMembersPort` (including suspended) minus members present in any `MembershipFeeGroup` for that year
+- [ ] 6.2 Implement scheduler publishing `MemberMissedFeeSelectionEvent` for members who missed the choice; call `FeeYearPublication.markProcessed(now)` and persist; idempotent (sanctioning already-sanctioned member is a no-op in `events`)
 - [ ] 6.3 In module `events`: write failing listener test — on `MemberMissedFeeSelectionEvent` block new registrations + deregister from events with open registrations; log affected registrations for manual restore
 - [ ] 6.4 Implement the `events` listener; refactor
 - [ ] 6.5 Verify spec scenarios: "Sanction for a Missing Choice" (member sanctioned vs not sanctioned)
@@ -65,8 +65,8 @@
 ## 8. Editing window of a published level (slice)
 
 - [ ] 8.1 Write failing tests: published level editable while `EDITABLE`; edit rejected once `FROZEN`
-- [ ] 8.2 Write failing listener test: `SurchargeCalculatedEvent` (from follow-up) transitions `EDITABLE` → `FROZEN`; until then stays `EDITABLE`
-- [ ] 8.3 Implement edit-until-first-surcharge logic + state transition listener; refactor
+- [ ] 8.2 Write failing test: snapshot transitions `EDITABLE` → `FROZEN` automatically when `votingDeadline` passes
+- [ ] 8.3 Implement freeze-on-deadline logic (snapshot transitions `EDITABLE` → `FROZEN` when `votingDeadline` passes); refactor
 - [ ] 8.4 Implement HAL+FORMS endpoint to edit a published level (afford present only while `EDITABLE`); web slice test
 - [ ] 8.5 Verify spec scenarios: "Editing a Published Level Until First Surcharge"
 
@@ -98,7 +98,7 @@
 
 ## 13. Integration and wrap-up
 
-- [ ] 13.1 Add `@ApplicationModuleTest` covering the cross-module event flows (sanction, lifting, surcharge freeze) between `membership-fees`, `events`, `finance`
+- [ ] 13.1 Add `@ApplicationModuleTest` covering the cross-module event flows (sanction, lifting) between `membership-fees`, `events`, and yearly fee posting to `finance`
 - [ ] 13.2 Run module-boundary verification (`JMoleculesArchitectureTest`) and full test suite; confirm coverage targets
 - [ ] 13.3 Code review (proper agent) before commit
 - [ ] 13.4 Add label `BackendCompleted` to GitHub issue #274
