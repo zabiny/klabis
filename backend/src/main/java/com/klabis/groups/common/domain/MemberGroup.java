@@ -7,6 +7,7 @@ import org.springframework.util.Assert;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Abstract base class for all member-based groups in the domain.
@@ -20,6 +21,7 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID>, ID> extends Klab
     private String name;
     private final Set<MemberId> owners;
     private final Set<GroupMembership> members;
+    private final Set<MemberId> memberIds;
 
     protected MemberGroup(String name, Set<MemberId> owners, Set<GroupMembership> members) {
         Assert.hasText(name, "Group name is required");
@@ -27,6 +29,9 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID>, ID> extends Klab
         this.name = name;
         this.owners = new HashSet<>(owners);
         this.members = new HashSet<>(members);
+        this.memberIds = members.stream()
+                .map(GroupMembership::memberId)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     public void rename(String newName) {
@@ -59,16 +64,16 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID>, ID> extends Klab
         return Collections.unmodifiableSet(owners);
     }
 
-    public void addMember(MemberId memberId) {
+    protected void addMember(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        boolean alreadyMember = members.stream().anyMatch(m -> m.memberId().equals(memberId));
-        if (alreadyMember) {
+        if (memberIds.contains(memberId)) {
             throw new MemberAlreadyInGroupException(memberId);
         }
         members.add(GroupMembership.of(memberId));
+        memberIds.add(memberId);
     }
 
-    public void removeMember(MemberId memberId) {
+    protected void removeMember(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
         if (owners.contains(memberId)) {
             throw new OwnerCannotBeRemovedFromGroupException(memberId);
@@ -77,10 +82,11 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID>, ID> extends Klab
         if (!removed) {
             throw new MemberNotInGroupException(memberId);
         }
+        memberIds.remove(memberId);
     }
 
     public boolean hasMember(MemberId memberId) {
-        return members.stream().anyMatch(m -> m.memberId().equals(memberId));
+        return memberIds.contains(memberId);
     }
 
     public Set<GroupMembership> getMembers() {

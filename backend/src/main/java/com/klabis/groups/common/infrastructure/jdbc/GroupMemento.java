@@ -86,8 +86,8 @@ public class GroupMemento implements Persistable<UUID> {
     }
 
     public static GroupMemento fromFreeGroup(FreeGroup group) {
-        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR);
-        memento.owners = mapOwners(group.getOwners());
+        GroupMemento memento = initWithMembers(group, group.getId().value(), group.getName(),
+                FreeGroup.TYPE_DISCRIMINATOR, group.getOwners(), group.getMembers());
         memento.invitations = group.getInvitations().stream()
                 .map(inv -> new GroupInvitationMemento(
                         inv.getId().value(),
@@ -99,24 +99,20 @@ public class GroupMemento implements Persistable<UUID> {
                         inv.getCancelledBy().map(MemberId::value).orElse(null),
                         inv.getCancellationReason().orElse(null)))
                 .collect(Collectors.toSet());
-        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
         return memento;
     }
 
     public static GroupMemento fromTrainingGroup(TrainingGroup group) {
-        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), TrainingGroup.TYPE_DISCRIMINATOR);
+        GroupMemento memento = initWithMembers(group, group.getId().value(), group.getName(),
+                TrainingGroup.TYPE_DISCRIMINATOR, group.getTrainers(), group.getMembers());
         memento.ageRangeMin = group.getAgeRange().minAge();
         memento.ageRangeMax = group.getAgeRange().maxAge();
-        memento.owners = mapOwners(group.getTrainers());
-        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
         return memento;
     }
 
     public static GroupMemento fromFamilyGroup(FamilyGroup group) {
-        GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FamilyGroup.TYPE_DISCRIMINATOR);
-        memento.owners = mapOwners(group.getParents());
-        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
-        return memento;
+        return initWithMembers(group, group.getId().value(), group.getName(),
+                FamilyGroup.TYPE_DISCRIMINATOR, group.getParents(), group.getMembers());
     }
 
     public FreeGroup toFreeGroup() {
@@ -167,6 +163,14 @@ public class GroupMemento implements Persistable<UUID> {
     @Override
     public boolean isNew() {
         return isNew;
+    }
+
+    private static GroupMemento initWithMembers(KlabisAggregateRoot<?, ?> group, UUID id, String name, String type,
+                                               Set<MemberId> owners, Set<com.klabis.groups.common.domain.GroupMembership> members) {
+        GroupMemento memento = initCommon(group, id, name, type);
+        memento.owners = mapOwners(owners);
+        memento.members = mapMemberGroupMembershipsToMementa(members);
+        return memento;
     }
 
     private static GroupMemento initCommon(KlabisAggregateRoot<?, ?> group, UUID id, String name, String type) {

@@ -1,7 +1,7 @@
 package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
+import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.MemberGroup;
@@ -70,7 +70,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements Wi
         Assert.notNull(memberId, "MemberId is required");
         requireOwner(actingMember);
         if (!hasMember(memberId)) {
-            throw new CannotPromoteNonMemberToOwnerException(memberId);
+            throw new CannotPromoteNonMemberToOwnerException(memberId.toUserId());
         }
         addOwner(memberId);
     }
@@ -189,6 +189,10 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements Wi
         return invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
                 .anyMatch(inv -> inv.isForMember(memberId));
+    }
+
+    public boolean isInvitedMember(InvitationId invitationId, MemberId memberId) {
+        return isInvitedMember(memberId, invitationId);
     }
 
     private Invitation findPendingInvitation(InvitationId invitationId) {

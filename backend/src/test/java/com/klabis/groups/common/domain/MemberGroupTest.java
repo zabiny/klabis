@@ -53,10 +53,6 @@ class MemberGroupTest {
         return TestGroup.create("Test Group", owner);
     }
 
-    private TestGroup groupWithOwners(String name, Set<MemberId> owners, Set<GroupMembership> members) {
-        return TestGroup.reconstruct(name, owners, members);
-    }
-
     @Nested
     @DisplayName("create()")
     class CreateMethod {
@@ -171,7 +167,7 @@ class MemberGroupTest {
         @Test
         @DisplayName("should remove owner when multiple owners exist")
         void shouldRemoveOwnerWhenMultipleExist() {
-            TestGroup group = groupWithOwners("Group",
+            TestGroup group = TestGroup.reconstruct("Group",
                     Set.of(OWNER, SECOND_OWNER),
                     Set.of(GroupMembership.of(OWNER), GroupMembership.of(SECOND_OWNER)));
 
@@ -231,7 +227,7 @@ class MemberGroupTest {
         @Test
         @DisplayName("isLastOwner() should return false when multiple owners exist")
         void shouldReturnFalseWhenMultipleOwners() {
-            TestGroup group = groupWithOwners("Group",
+            TestGroup group = TestGroup.reconstruct("Group",
                     Set.of(OWNER, SECOND_OWNER),
                     Set.of(GroupMembership.of(OWNER), GroupMembership.of(SECOND_OWNER)));
 

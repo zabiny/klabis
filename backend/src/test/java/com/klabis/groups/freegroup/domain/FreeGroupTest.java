@@ -496,7 +496,7 @@ class FreeGroupTest {
     }
 
     @Nested
-    @DisplayName("isInvitedMember(InvitationId, MemberId)")
+    @DisplayName("isInvitedMember(MemberId, InvitationId)")
     class IsInvitedMemberMethod {
 
         @Test
@@ -506,7 +506,7 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            assertThat(group.isInvitedMember(invitationId, OTHER_MEMBER)).isTrue();
+            assertThat(group.isInvitedMember(OTHER_MEMBER, invitationId)).isTrue();
         }
 
         @Test
@@ -516,7 +516,7 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            assertThat(group.isInvitedMember(invitationId, ANOTHER_MEMBER)).isFalse();
+            assertThat(group.isInvitedMember(ANOTHER_MEMBER, invitationId)).isFalse();
         }
 
         @Test
@@ -525,7 +525,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
             group.invite(CREATOR, OTHER_MEMBER);
 
-            assertThat(group.isInvitedMember(InvitationId.newId(), OTHER_MEMBER)).isFalse();
+            assertThat(group.isInvitedMember(OTHER_MEMBER, InvitationId.newId())).isFalse();
         }
     }
 

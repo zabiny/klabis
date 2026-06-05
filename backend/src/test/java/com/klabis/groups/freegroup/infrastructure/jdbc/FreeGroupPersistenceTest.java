@@ -112,7 +112,7 @@ class FreeGroupPersistenceTest {
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
 
             assertThat(retrieved.getPendingInvitations()).hasSize(1);
-            assertThat(retrieved.isInvitedMember(invitationId, INVITED_MEMBER)).isTrue();
+            assertThat(retrieved.isInvitedMember(INVITED_MEMBER, invitationId)).isTrue();
             Invitation invitation = retrieved.getPendingInvitations().get(0);
             assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.PENDING);
             assertThat(invitation.getInvitedMember()).isEqualTo(INVITED_MEMBER);

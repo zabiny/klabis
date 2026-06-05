@@ -107,6 +107,10 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId> {
         registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
     }
 
+    public void removeMember(MemberId memberId) {
+        super.removeMember(memberId);
+    }
+
     public void updateAgeRange(AgeRange newAgeRange) {
         Assert.notNull(newAgeRange, "AgeRange is required");
         this.ageRange = newAgeRange;
