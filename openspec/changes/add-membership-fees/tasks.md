@@ -23,16 +23,16 @@
 ## 3. Publishing levels for a year (slice: publish a year end-to-end)
 
 - [ ] 3.1 Write failing domain tests for `FeeYearPublication`: holds year + single voting deadline + set of published levels; cannot publish a year twice
-- [ ] 3.2 Write failing domain tests for `YearlyMembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, uses `common.usergroup.UserGroup` for membership
+- [ ] 3.2 Write failing domain tests for `MembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, uses `common.usergroup.UserGroup` for membership
 - [ ] 3.3 Implement publishing: copying catalog level into a frozen-on-demand snapshot; implement aggregates; refactor
-- [ ] 3.4 Implement own persistence for `FeeYearPublication` and `YearlyMembershipFeeGroup` (snapshot rules + memberships) + Flyway tables; repository round-trip test
+- [ ] 3.4 Implement own persistence for `FeeYearPublication` and `MembershipFeeGroup` (snapshot rules + memberships) + Flyway tables; repository round-trip test
 - [ ] 3.5 Implement application port + service for publishing a year (`MEMBERS:ADMIN`)
 - [ ] 3.6 Implement HAL+FORMS endpoints to publish a year and to list published levels per year; web slice test
 - [ ] 3.7 Verify spec scenarios: "Publishing Fee Levels for a Calendar Year"
 
 ## 4. Member chooses a level (slice: member self-selection end-to-end)
 
-- [ ] 4.1 Write failing domain tests: member joins a `YearlyMembershipFeeGroup` before deadline; changing choice moves membership; choice locked after deadline
+- [ ] 4.1 Write failing domain tests: member joins a `MembershipFeeGroup` before deadline; changing choice moves membership; choice locked after deadline
 - [ ] 4.2 Write failing test for "previous year's level offered as default": pre-fill from year N-1 matched by `MembershipFeeLevelId`; default is non-binding (not a choice until confirmed)
 - [ ] 4.3 Implement choice + change + lock-after-deadline domain logic; refactor
 - [ ] 4.4 Implement application port + service for member choice and change (member acting on self)

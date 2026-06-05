@@ -25,7 +25,7 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 |---|---|---|---|
 | `MembershipFeeLevel` | úroveň členského příspěvku | aggregate root — katalog/šablona | název, roční poplatek, sada pravidel; editovatelný |
 | `FeeYearPublication` | vypsání úrovní pro rok | aggregate root | rok platnosti, **jedna uzávěrka voleb**, sada vypsaných úrovní |
-| `YearlyMembershipFeeGroup` | roční úroveň / skupina volby | aggregate root — vlastní typ skupiny | snapshot úrovně pro rok + členství (volby členů); stav `EDITABLE`/`FROZEN` |
+| `MembershipFeeGroup` | roční úroveň / skupina volby | aggregate root — vlastní typ skupiny | snapshot úrovně pro rok + členství (volby členů); stav `EDITABLE`/`FROZEN` |
 | `MembershipPaymentRule` | pravidlo spoluúčasti | value object (uvnitř úrovně) | (typ závodu + žebříček) → procento NEBO fixní příplatek |
 
 ### Value objekty / identifikátory
@@ -33,12 +33,12 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 | EN | CZ / význam |
 |---|---|
 | `MembershipFeeLevelId` | identita šablony úrovně (párování loňské→letošní volby) |
-| `YearlyMembershipFeeGroupId` | identita roční úrovně |
+| `MembershipFeeGroupId` | identita roční úrovně |
 | `EventTypeId` | (existující) reference na typ závodu v pravidle |
 | `Ranking` | žebříček/série závodu — zde jen jako součást klíče pravidla |
 | `Money` | (existující) částka v CZK |
 
-### Stavy `YearlyMembershipFeeGroup`
+### Stavy `MembershipFeeGroup`
 
 | EN | význam |
 |---|---|
@@ -75,7 +75,7 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 - Definovat úroveň členského příspěvku (`MembershipFeeLevel`) jako šablonu: roční poplatek + sada pravidel spoluúčasti podle (typ závodu + žebříček).
 - Umožnit `MEMBERS:ADMIN` vypsat sadu úrovní pro daný kalendářní rok s uzávěrkou voleb; vypsání vytvoří **zmrazený snapshot** každé úrovně.
-- Realizovat přiřazení člen↔úroveň jako **vlastní typ skupiny v modulu `membership-fees`** (`YearlyMembershipFeeGroup`) sdílející building block `common.usergroup` — člen volbou vstoupí do skupiny.
+- Realizovat přiřazení člen↔úroveň jako **vlastní typ skupiny v modulu `membership-fees`** (`MembershipFeeGroup`) sdílející building block `common.usergroup` — člen volbou vstoupí do skupiny.
 - Umožnit členovi zvolit a měnit úroveň do uzávěrky; po uzávěrce zamknout.
 - Umožnit `MEMBERS:ADMIN` nouzové přiřazení/změnu i po uzávěrce.
 - Sankcionovat neprovedenou volbu (blokace přihlášek + auto-odhlášení) přes doménový event, který si zpracuje modul `events`.
@@ -103,7 +103,7 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 ### D2: `membership-fees` zavádí vlastní typ skupiny pro roční evidenci voleb (vlastní agregát + vlastní persistence, sdílí jen `common.usergroup`)
 
-**Rozhodnutí (OQ1 vyřešeno):** Stejně jako submoduly `traininggroup` / `familygroup` / `freegroup` definují každý svůj agregát skupiny, zavede modul `membership-fees` **vlastní typ skupiny** pro **roční evidenci voleb k jedné úrovni** — agregát `YearlyMembershipFeeGroup`. Ten nese snapshot úrovně pro daný rok (pravidla, roční částka, rok platnosti, uzávěrka, stav `EDITABLE/FROZEN`) **i členství** (kteří členové si tuto úroveň zvolili).
+**Rozhodnutí (OQ1 vyřešeno):** Stejně jako submoduly `traininggroup` / `familygroup` / `freegroup` definují každý svůj agregát skupiny, zavede modul `membership-fees` **vlastní typ skupiny** pro **roční evidenci voleb k jedné úrovni** — agregát `MembershipFeeGroup`. Ten nese snapshot úrovně pro daný rok (pravidla, roční částka, rok platnosti, uzávěrka, stav `EDITABLE/FROZEN`) **i členství** (kteří členové si tuto úroveň zvolili).
 
 **Hranice modulů a sdílení:**
 - Agregát používá sdílený doménový building block **`com.klabis.common.usergroup.UserGroup`** (jméno, vlastníci, členové, `addMember` / `removeMember` / `hasMember`) — stejně jako ho používají 3 existující typy skupin. Tím získá konzistentní sémantiku členství.
@@ -114,7 +114,7 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 **Proč:** Respektuje vzor „každý typ skupiny = vlastní agregát ve svém submodulu", drží celou doménu příspěvků (bohatý snapshot, sazby, lifecycle) na jednom místě a nezatěžuje modul `groups`. Sdílením `common.usergroup` se neduplikuje doménová logika členství, jen persistence.
 
-**Historie přiřazení napříč roky** (audit trail pro účetnictví): pro každý rok existuje samostatný `YearlyMembershipFeeGroup`, takže členství v ročních úrovních = kompletní historie volby člena.
+**Historie přiřazení napříč roky** (audit trail pro účetnictví): pro každý rok existuje samostatný `MembershipFeeGroup`, takže členství v ročních úrovních = kompletní historie volby člena.
 
 **Dopad na dřívější rozhodnutí:** Upřesňuje dřívější „přiřazení = nový typ user-group" — typ skupiny ano, ale **ve vlastním modulu s vlastní persistencí**, ne fyzicky sdílený s `groups`.
 
@@ -157,9 +157,9 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 ### D7: Jedna uzávěrka voleb per vypsaný rok (OQ2 vyřešeno)
 
-**Rozhodnutí:** Uzávěrka voleb je **jedna pro celé vypsání roku**, společná pro všechny úrovně daného roku. Patří tedy logicky na **vypsání roku jako celek**, ne na jednotlivý `YearlyMembershipFeeGroup`.
+**Rozhodnutí:** Uzávěrka voleb je **jedna pro celé vypsání roku**, společná pro všechny úrovně daného roku. Patří tedy logicky na **vypsání roku jako celek**, ne na jednotlivý `MembershipFeeGroup`.
 
-**Modelový důsledek:** zavádí se koncept **`FeeYearPublication`** (vypsání úrovní pro rok) jako vlastník: rok platnosti + uzávěrka voleb + sada vypsaných úrovní (`YearlyMembershipFeeGroup`) pro tento rok. Volba člena směřuje na konkrétní `YearlyMembershipFeeGroup`, ale termín a zamčení voleb řídí nadřazené `FeeYearPublication`.
+**Modelový důsledek:** zavádí se koncept **`FeeYearPublication`** (vypsání úrovní pro rok) jako vlastník: rok platnosti + uzávěrka voleb + sada vypsaných úrovní (`MembershipFeeGroup`) pro tento rok. Volba člena směřuje na konkrétní `MembershipFeeGroup`, ale termín a zamčení voleb řídí nadřazené `FeeYearPublication`.
 
 **Proč:** Jediný okamžik uzávěrky → jednoduchá sankční logika (D5) i generování ročního poplatku (D6) se spouští jednou pro celý rok. Per-úrovňové uzávěrky by zkomplikovaly „kdo nezvolil včas".
 
@@ -169,7 +169,7 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 **Rozhodnutí:** Při volbě úrovně na rok N se členovi nabídne jeho **volba z roku N-1 jako předvyplněný default** (pokud existuje odpovídající úroveň ve vypsání roku N). Jde o UX pomůcku — člen jen potvrdí, nebo změní. Default se **neuplatní automaticky**: dokud člen aktivně nepotvrdí, považuje se za „nezvoleno" a vztahuje se na něj sankce (D5). Předvyplnění není volba.
 
-**Modelový předpoklad:** dotaz „úroveň člena v roce N-1" — náš model ho splňuje přirozeně (členství v `YearlyMembershipFeeGroup` daného roku). Párování loňské úrovně na letošní vypsání se dělá podle identity šablony (`MembershipFeeLevel` v katalogu), ze které obě vypsané úrovně vznikly; pokud loňská úroveň letos není vypsána, default se nenabídne.
+**Modelový předpoklad:** dotaz „úroveň člena v roce N-1" — náš model ho splňuje přirozeně (členství v `MembershipFeeGroup` daného roku). Párování loňské úrovně na letošní vypsání se dělá podle identity šablony (`MembershipFeeLevel` v katalogu), ze které obě vypsané úrovně vznikly; pokud loňská úroveň letos není vypsána, default se nenabídne.
 
 **Proč:** Většina členů zůstává rok co rok na stejné úrovni → snižuje tření a chybovost.
 
@@ -187,14 +187,14 @@ Závazné názvy pro implementaci, specifikaci i UI labely. Specs jsou psané an
 
 ## Risks / Trade-offs
 
-- **[Vlastní persistence skupiny místo sdílené `groups`]** → duplikuje část mechanismu členství a historie není v jedné tabulce s ostatními skupinami. Mitigace: sdílet doménový building block `common.usergroup` (žádná duplikace doménové logiky); per rok samostatný agregát `YearlyMembershipFeeGroup` → historie = členství v ročních úrovních. Budoucí sjednocení persistence je možné, ne nutné.
+- **[Vlastní persistence skupiny místo sdílené `groups`]** → duplikuje část mechanismu členství a historie není v jedné tabulce s ostatními skupinami. Mitigace: sdílet doménový building block `common.usergroup` (žádná duplikace doménové logiky); per rok samostatný agregát `MembershipFeeGroup` → historie = členství v ročních úrovních. Budoucí sjednocení persistence je možné, ne nutné.
 - **[Sankce auto-odhlášení je destruktivní]** → omylem nezvolená úroveň odhlásí člena ze závodů; nouzové přiřazení dle D9 jen odblokuje budoucí přihlášky, zrušené neobnovuje. Mitigace: nouzové přiřazení `MEMBERS:ADMIN`; event zpracovat až den po uzávěrce; modul `events` loguje dotčené (auto-odhlášené) přihlášky, aby šlo provést **manuální** znovupřihlášení.
 - **[Idempotence ročního poplatku]** → opakovaný běh cronu nebo restart během běhu by zaúčtoval dvakrát. Mitigace: unikátní marker (člen, rok) před voláním `ChargePort`; transakční hranice per člen.
 - **[Závislost na neexistujícím follow-up]** → přechod snapshotu `EDITABLE→FROZEN` závisí na eventu, který zatím nikdo nepublikuje. Mitigace: design počítá s tím, že do dodání follow-up zůstávají snapshoty `EDITABLE`; žádná funkční regrese.
 
 ## Migration Plan
 
-- Aditivní změna: nové vlastní tabulky modulu `membership-fees` (katalog šablon úrovní; vypsání roku `FeeYearPublication` s uzávěrkou; vypsané úrovně `YearlyMembershipFeeGroup` se snapshotem pravidel a členstvím). Žádná změna tabulky `user_groups`, žádná migrace existujících dat.
+- Aditivní změna: nové vlastní tabulky modulu `membership-fees` (katalog šablon úrovní; vypsání roku `FeeYearPublication` s uzávěrkou; vypsané úrovně `MembershipFeeGroup` se snapshotem pravidel a členstvím). Žádná změna tabulky `user_groups`, žádná migrace existujících dat.
 - Nasazení po částech: (1) katalog šablon úrovní + doména/persistence, (2) vypsání roku + vypsané úrovně se snapshotem, (3) volba člena (členství), (4) scheduler ročního poplatku, (5) sankční event + konzument v `events`, (6) frontend.
 - Rollback: žádná migrace stávajících dat → rollback = odebrání nového kódu a tabulek; moduly `groups` a `finance` nedotčeny.
 
