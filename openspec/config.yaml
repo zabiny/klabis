@@ -37,6 +37,7 @@ rules:
     - "Use Mermaid diagrams in design.md to visualize concepts if applicable"
     - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
     - "Add chapter with glossary of newly introduced domain terms"
+    - "If proposal involves changes in the domain, add decision point about domain changes to the design document. Chapter shall contain class diagram (mermaid) of target domain model with table describing elements and specification of what is added/changed/removed"
 
   proposal:
     - "Use Mermaid diagrams in proposal.md to visualize concepts if applicable"
