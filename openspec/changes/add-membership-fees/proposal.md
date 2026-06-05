@@ -17,8 +17,8 @@ Tento change definuje samotnou **doménu členských příspěvků**: úrovně, 
 - Pravidla pro spoluúčast jsou rozlišena podle **typu závodu** (event-type) a **žebříčku/série** závodu a mohou mít formu:
   - **Procento** ze základní ceny závodu (např. 50 % oblastní, 100 % celostátní)
   - **Fixní příplatek** v Kč
-- **Vypsání úrovní pro nadcházející rok**: admin (`MEMBERS:ADMIN`) vypíše sadu úrovní platných pro daný kalendářní rok a stanoví uzávěrku voleb. Vypsáním vznikne pro každou úroveň skupina (nový typ user-group, viz Impact) obsahující kompletní snapshot úrovně.
-- **Volba úrovně členem**: do uzávěrky si každý člen sám zvolí svou úroveň pro nadcházející rok (= vstoupí do odpovídající skupiny). Volbu může do uzávěrky libovolně měnit. Po uzávěrce je volba zamknuta.
+- **Vypsání úrovní pro nadcházející rok**: admin (`MEMBERS:ADMIN`) vypíše sadu úrovní platných pro daný kalendářní rok a stanoví uzávěrku voleb. Vypsáním vznikne pro každou úroveň vypsaná úroveň (`YearlyMembershipFeeGroup` — vlastní typ skupiny modulu, viz Impact) obsahující kompletní snapshot úrovně.
+- **Volba úrovně členem**: do uzávěrky si každý člen sám zvolí svou úroveň pro nadcházející rok (= stane se členem odpovídající vypsané úrovně). Volbu může do uzávěrky libovolně měnit. Po uzávěrce je volba zamknuta.
 - **Nouzové přiřazení / změna úrovně** může provést správce členů (`MEMBERS:ADMIN`) i po uzávěrce.
 - **Sankce za neprovedenou volbu**: pokud se člen do uzávěrky nepřihlásí k úrovni, nesmí se přihlašovat na nové závody a je automaticky odhlášen ze všech závodů s dosud otevřenými přihláškami.
 - **Editace pravidel po vypsání úrovně**: admin smí upravovat pravidla a sazby vypsané úrovně, dokud nebyl spočítán první doplatek na základě této úrovně; poté je snapshot zmrazen (oprava = nová úroveň).
@@ -36,11 +36,11 @@ Tento change definuje samotnou **doménu členských příspěvků**: úrovně, 
 
 ## Impact
 
-- **Nová doména:** `membership-fees` jako agregát (lokace modulu se rozhodne v designu).
-- **Přiřazení člen ↔ úroveň** je technicky realizováno jako **nový typ skupiny v `user-groups`** (vedle Training / Family / Free). Skupina drží snapshot úrovně pro daný rok; členství = volba člena. Vlastní lifecycle skupiny (vznik při vypsání, vstup volbou, sankce, zamčení po uzávěrce) je definován v `membership-fees` capability; samotný `user-groups` spec získá pouze zmínku o existenci tohoto typu.
+- **Nová doména:** modul `membership-fees` s vlastním agregátem **`YearlyMembershipFeeGroup`** (vypsaná úroveň pro rok).
+- **Přiřazení člen ↔ úroveň** je realizováno jako **vlastní typ skupiny v modulu `membership-fees`** — analogicky jako traininggroup/familygroup/freegroup definují svůj agregát. Agregát drží snapshot úrovně pro daný rok i členství (volbu člena). Sdílí pouze doménový building block `common.usergroup`; **vlastní persistenci** (modul `groups` ani `user-groups` spec se nemění). Navenek vystupuje jen pod `membership-fees`, ne v obecném výpisu skupin. Detail viz design.md (D2).
 - **Závislost:** `event-types` (pravidlo referencuje typ závodu); `member-accounts` přijímá generované položky.
 - **Závislost na follow-up proposalu:** atribut `ranking` na závodu a synchronizace ceny startovného z ORIS — tyto změny jsou předpokladem pro výpočet doplatku, ale ten je out-of-scope tohoto changu.
-- **Audit trail:** historie přiřazení úrovní členům (členství ve skupinách napříč roky) pro účetní účely.
+- **Audit trail:** historie přiřazení úrovní členům (členství v ročních úrovních napříč roky) pro účetní účely.
 - **API:** nové HAL+FORMS endpointy pro správu úrovní, vypsání úrovní pro rok, volbu úrovně členem a nouzové přiřazení správcem.
 - **Frontend:** nová sekce v Administraci pro definici úrovní a vypsání; UI pro člena pro volbu úrovně na další rok; widget na profilu člena s aktuální úrovní.
 
