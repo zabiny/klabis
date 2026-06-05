@@ -29,7 +29,10 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
 2. Run `git log --oneline -10` to match existing commit style
 3. Analyze changes — determine type, scope, and concise description
 4. Stage specific files (avoid `git add -A` or `git add .` — be explicit)
+   - **Include untracked files:** Check `git status` output for untracked files that belong to the change and stage them explicitly with `git add <path>`
+   - Do NOT skip newly created files — they are part of the change and must be committed together with modifications
 5. Create commit using HEREDOC format for message
+   - if working on explicit github issue, include it's number in message (using github notation for linking issues)
 6. Verify with `git status` after commit
 
 ## Safety Rules
