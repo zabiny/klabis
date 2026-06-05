@@ -11,7 +11,7 @@ import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.groups.freegroup.domain.InvitationStatus;
 import com.klabis.groups.freegroup.domain.NotInvitedMemberException;
 import com.klabis.members.MemberId;
-import com.klabis.common.usergroup.GroupNotFoundException;
+import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.freegroup.domain.GroupOwnershipRequiredException;

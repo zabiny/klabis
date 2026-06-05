@@ -1,4 +1,4 @@
-package com.klabis.common.usergroup;
+package com.klabis.groups.common.domain;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
 

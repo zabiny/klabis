@@ -1,6 +1,6 @@
 package com.klabis.groups.familygroup.application;
 
-import com.klabis.common.usergroup.GroupNotFoundException;
+import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;

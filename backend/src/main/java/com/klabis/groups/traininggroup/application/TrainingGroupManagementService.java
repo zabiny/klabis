@@ -1,6 +1,6 @@
 package com.klabis.groups.traininggroup.application;
 
-import com.klabis.common.usergroup.GroupNotFoundException;
+import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.groups.common.domain.AgeRangeOverlap;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.TrainingGroupId;
