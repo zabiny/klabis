@@ -1,10 +1,10 @@
 package com.klabis.groups.freegroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.Invitation;
-import com.klabis.common.usergroup.InvitationId;
-import com.klabis.common.usergroup.InvitationStatus;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.freegroup.domain.Invitation;
+import com.klabis.groups.freegroup.domain.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
 import com.klabis.members.MemberId;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -115,8 +115,8 @@ class FreeGroupPersistenceTest {
             assertThat(retrieved.isInvitedMember(invitationId, INVITED_MEMBER)).isTrue();
             Invitation invitation = retrieved.getPendingInvitations().get(0);
             assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.PENDING);
-            assertThat(invitation.getInvitedUser()).isEqualTo(INVITED_MEMBER.toUserId());
-            assertThat(invitation.getInvitedBy()).isEqualTo(CREATOR.toUserId());
+            assertThat(invitation.getInvitedMember()).isEqualTo(INVITED_MEMBER);
+            assertThat(invitation.getInvitedBy()).isEqualTo(CREATOR);
         }
 
         @Test
@@ -227,7 +227,7 @@ class FreeGroupPersistenceTest {
             FreeGroup group = FreeGroup.reconstruct(
                     new FreeGroupId(UUID.randomUUID()), "Test Group",
                     Set.of(CREATOR, MEMBER_A),
-                    Set.of(GroupMembership.of(CREATOR.toUserId()), GroupMembership.of(MEMBER_A.toUserId())),
+                    Set.of(GroupMembership.of(CREATOR), GroupMembership.of(MEMBER_A)),
                     Set.of(), null);
             group = freeGroupRepository.save(group);
             group.removeOwner(MEMBER_A, CREATOR);

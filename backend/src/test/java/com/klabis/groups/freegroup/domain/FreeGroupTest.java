@@ -1,16 +1,16 @@
 package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.usergroup.CannotInviteExistingMemberException;
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.DirectMemberAdditionNotAllowedException;
-import com.klabis.common.usergroup.DuplicatePendingInvitationException;
-import com.klabis.common.usergroup.Invitation;
-import com.klabis.common.usergroup.InvitationId;
-import com.klabis.common.usergroup.InvitationNotCancellableException;
-import com.klabis.common.usergroup.InvitationNotFoundException;
-import com.klabis.common.usergroup.InvitationStatus;
-import com.klabis.common.usergroup.NotInvitedMemberException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.groups.freegroup.domain.CannotInviteExistingMemberException;
+import com.klabis.groups.freegroup.domain.DuplicatePendingInvitationException;
+import com.klabis.groups.freegroup.domain.Invitation;
+import com.klabis.groups.freegroup.domain.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationNotCancellableException;
+import com.klabis.groups.freegroup.domain.InvitationNotFoundException;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
+import com.klabis.groups.freegroup.domain.NotInvitedMemberException;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -298,8 +298,8 @@ class FreeGroupTest {
 
             List<Invitation> pending = group.getPendingInvitations();
             assertThat(pending).hasSize(1);
-            assertThat(pending.get(0).getInvitedUser()).isEqualTo(OTHER_MEMBER.toUserId());
-            assertThat(pending.get(0).getInvitedBy()).isEqualTo(CREATOR.toUserId());
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
+            assertThat(pending.get(0).getInvitedBy()).isEqualTo(CREATOR);
             assertThat(pending.get(0).getStatus()).isEqualTo(InvitationStatus.PENDING);
         }
 
@@ -311,7 +311,7 @@ class FreeGroupTest {
 
             assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
                     .isInstanceOf(CannotInviteExistingMemberException.class)
-                    .hasMessageContaining(OTHER_MEMBER.toUserId().toString());
+                    .hasMessageContaining(OTHER_MEMBER.toString());
         }
 
         @Test
@@ -345,7 +345,7 @@ class FreeGroupTest {
 
             List<Invitation> pending = group.getPendingInvitations();
             assertThat(pending).hasSize(1);
-            assertThat(pending.get(0).getInvitedUser()).isEqualTo(OTHER_MEMBER.toUserId());
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
         }
     }
 
@@ -484,14 +484,14 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             group.invite(CREATOR, ANOTHER_MEMBER);
             InvitationId pendingId = group.getPendingInvitations().stream()
-                    .filter(inv -> inv.getInvitedUser().equals(OTHER_MEMBER.toUserId()))
+                    .filter(inv -> inv.getInvitedMember().equals(OTHER_MEMBER))
                     .findFirst().orElseThrow().getId();
             group.acceptInvitation(pendingId);
 
             List<Invitation> pending = group.getPendingInvitations();
 
             assertThat(pending).hasSize(1);
-            assertThat(pending.get(0).getInvitedUser()).isEqualTo(ANOTHER_MEMBER.toUserId());
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(ANOTHER_MEMBER);
         }
     }
 
@@ -688,7 +688,7 @@ class FreeGroupTest {
 
             List<Invitation> pending = group.getPendingInvitations();
             assertThat(pending).hasSize(1);
-            assertThat(pending.get(0).getInvitedUser()).isEqualTo(OTHER_MEMBER.toUserId());
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
         }
     }
 
@@ -741,7 +741,7 @@ class FreeGroupTest {
     private static void addMemberViaInvitation(FreeGroup group, MemberId member) {
         group.invite(CREATOR, member);
         InvitationId invitationId = group.getPendingInvitations().stream()
-                .filter(inv -> inv.getInvitedUser().equals(member.toUserId()))
+                .filter(inv -> inv.getInvitedMember().equals(member))
                 .findFirst().orElseThrow().getId();
         group.acceptInvitation(invitationId);
     }

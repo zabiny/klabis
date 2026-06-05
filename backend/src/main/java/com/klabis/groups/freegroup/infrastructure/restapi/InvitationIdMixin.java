@@ -2,7 +2,7 @@ package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.klabis.common.usergroup.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationId;
 import org.springframework.boot.jackson.JacksonMixin;
 
 import java.util.UUID;

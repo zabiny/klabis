@@ -1,6 +1,6 @@
 package com.klabis.groups.freegroup;
 
-import com.klabis.common.usergroup.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;

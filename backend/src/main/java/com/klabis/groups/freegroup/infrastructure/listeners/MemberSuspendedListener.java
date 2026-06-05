@@ -44,7 +44,7 @@ class MemberSuspendedListener {
         groupsWithPendingInvitations.forEach(group -> {
             try {
                 group.getPendingInvitations().stream()
-                        .filter(inv -> inv.isForUser(deactivatedMember.toUserId()))
+                        .filter(inv -> inv.isForMember(deactivatedMember))
                         .forEach(inv -> group.cancelInvitation(inv.getId(), Optional.empty(), SYSTEM_CANCEL_REASON));
                 freeGroupRepository.save(group);
             } catch (Exception e) {

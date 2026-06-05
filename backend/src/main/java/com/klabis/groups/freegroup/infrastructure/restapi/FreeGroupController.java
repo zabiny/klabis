@@ -5,9 +5,9 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.Invitation;
-import com.klabis.common.usergroup.InvitationId;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.freegroup.domain.Invitation;
+import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -270,7 +270,7 @@ class FreeGroupController {
     private EntityModel<FreeGroupMembershipResponse> buildMemberModel(
             GroupMembership membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
 
-        MemberId memberId = MemberId.fromUserId(membership.userId());
+        MemberId memberId = membership.memberId();
         FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
 
         EntityModel<FreeGroupMembershipResponse> model = EntityModel.of(response);

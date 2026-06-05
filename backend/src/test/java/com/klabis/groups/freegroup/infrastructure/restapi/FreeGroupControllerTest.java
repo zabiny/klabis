@@ -6,11 +6,10 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.InvitationId;
-import com.klabis.common.usergroup.InvitationStatus;
-import com.klabis.common.usergroup.NotInvitedMemberException;
-import com.klabis.common.users.UserId;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.freegroup.domain.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
+import com.klabis.groups.freegroup.domain.NotInvitedMemberException;
 import com.klabis.members.MemberId;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -33,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import com.klabis.common.usergroup.InvitationNotCancellableException;
+import com.klabis.groups.freegroup.domain.InvitationNotCancellableException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,8 +69,8 @@ class FreeGroupControllerTest {
 
     private FreeGroup buildGroupWithMember(UUID groupUuid, String name, String ownerUuidStr, String memberUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
-        com.klabis.common.users.UserId memberUserId = new com.klabis.common.users.UserId(UUID.fromString(memberUuidStr));
-        GroupMembership membership = new GroupMembership(memberUserId, Instant.now());
+        MemberId member = new MemberId(UUID.fromString(memberUuidStr));
+        GroupMembership membership = GroupMembership.of(member);
         return FreeGroup.reconstruct(
                 new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(membership), Set.of(), null);
     }
@@ -330,8 +329,8 @@ class FreeGroupControllerTest {
         void shouldIncludeCancelAffordanceOnPendingInvitationsForOwner() throws Exception {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitee = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
-            com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
-                    INVITATION_ID, invitee.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
+            com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
+                    INVITATION_ID, invitee, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(
                     GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
@@ -349,8 +348,8 @@ class FreeGroupControllerTest {
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldNotIncludeCancelAffordanceForNonOwner() throws Exception {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
-            com.klabis.common.users.UserId nonOwnerUserId = new com.klabis.common.users.UserId(UUID.fromString(OTHER_MEMBER_ID));
-            GroupMembership membership = new GroupMembership(nonOwnerUserId, Instant.now());
+            MemberId nonOwner = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            GroupMembership membership = GroupMembership.of(nonOwner);
             FreeGroup group = FreeGroup.reconstruct(
                     GROUP_ID, "Sprint Team", Set.of(owner), Set.of(membership), Set.of(), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
@@ -863,7 +862,7 @@ class FreeGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn400WhenNonInvitedMemberAccepts() throws Exception {
             MemberId notInvited = new MemberId(UUID.fromString(MEMBER_ID));
-            doThrow(new NotInvitedMemberException(notInvited.toUserId(), INVITATION_ID))
+            doThrow(new NotInvitedMemberException(notInvited, INVITATION_ID))
                     .when(membersGroupManagementService).acceptInvitation(any(), any(), eq(notInvited));
 
             mockMvc.perform(
@@ -919,7 +918,7 @@ class FreeGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn400WhenNonInvitedMemberRejects() throws Exception {
             MemberId notInvited = new MemberId(UUID.fromString(MEMBER_ID));
-            doThrow(new NotInvitedMemberException(notInvited.toUserId(), INVITATION_ID))
+            doThrow(new NotInvitedMemberException(notInvited, INVITATION_ID))
                     .when(membersGroupManagementService).rejectInvitation(any(), any(), eq(notInvited));
 
             mockMvc.perform(
@@ -1047,8 +1046,8 @@ class FreeGroupControllerTest {
         void shouldReturnPendingInvitations() throws Exception {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
-            com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
-                    INVITATION_ID, invitedMember.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
+            com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
+                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation);
             when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of(view));

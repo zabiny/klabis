@@ -1,7 +1,7 @@
 package com.klabis.groups.freegroup.application;
 
 import com.klabis.common.usergroup.GroupNotFoundException;
-import com.klabis.common.usergroup.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -129,7 +129,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     public List<PendingInvitationView> getPendingInvitationsForMember(MemberId memberId) {
         return freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(memberId)).stream()
                 .flatMap(group -> group.getPendingInvitations().stream()
-                        .filter(inv -> inv.isForUser(memberId.toUserId()))
+                        .filter(inv -> inv.isForMember(memberId))
                         .map(inv -> new PendingInvitationView(group.getId(), group.getName(), inv)))
                 .toList();
     }

@@ -1,7 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.Invitation;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -65,10 +65,10 @@ class MemberSuspendedListenerTest {
         @Test
         @DisplayName("should cancel all pending invitations for the deactivated member and save the group")
         void shouldCancelAllPendingInvitationsForDeactivatedMember() {
-            Invitation pending = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
+            Invitation pending = Invitation.createPending(OWNER, INVITEE);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group",
                     Set.of(OWNER),
-                    Set.of(GroupMembership.of(OWNER.toUserId())),
+                    Set.of(GroupMembership.of(OWNER)),
                     Set.of(pending),
                     null);
 
@@ -85,12 +85,12 @@ class MemberSuspendedListenerTest {
         @Test
         @DisplayName("should cancel pending invitations across multiple groups — each group saved once")
         void shouldCancelPendingInvitationsAcrossMultipleGroups() {
-            Invitation pending1 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
-            Invitation pending2 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
+            Invitation pending1 = Invitation.createPending(OWNER, INVITEE);
+            Invitation pending2 = Invitation.createPending(OWNER, INVITEE);
             FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER.toUserId())), Set.of(pending1), null);
+                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending1), null);
             FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER.toUserId())), Set.of(pending2), null);
+                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending2), null);
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));
@@ -126,12 +126,12 @@ class MemberSuspendedListenerTest {
         @Test
         @DisplayName("should continue cancelling remaining groups when one save fails")
         void shouldContinueWhenOneGroupSaveFails() {
-            Invitation pending1 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
-            Invitation pending2 = Invitation.createPending(OWNER.toUserId(), INVITEE.toUserId());
+            Invitation pending1 = Invitation.createPending(OWNER, INVITEE);
+            Invitation pending2 = Invitation.createPending(OWNER, INVITEE);
             FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER.toUserId())), Set.of(pending1), null);
+                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending1), null);
             FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER.toUserId())), Set.of(pending2), null);
+                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending2), null);
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));

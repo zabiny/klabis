@@ -1,9 +1,10 @@
 package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.domain.KlabisAggregateRoot;
-import com.klabis.common.usergroup.*;
-import com.klabis.common.users.UserId;
+import com.klabis.common.usergroup.CannotPromoteNonMemberToOwnerException;
+import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.common.domain.MemberGroup;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
@@ -16,21 +17,20 @@ import java.time.Instant;
 import java.util.*;
 
 @AggregateRoot
-public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> implements WithInvitations {
+public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
     @Identity
     private final FreeGroupId id;
-    private final UserGroup userGroup;
     private final Set<Invitation> invitations;
 
-    private FreeGroup(FreeGroupId id, UserGroup userGroup, Set<Invitation> invitations) {
+    private FreeGroup(FreeGroupId id, String name, Set<MemberId> owners,
+                      Set<GroupMembership> members, Set<Invitation> invitations) {
+        super(name, owners, members);
         Assert.notNull(id, "FreeGroupId is required");
-        Assert.notNull(userGroup, "UserGroup is required");
         Assert.notNull(invitations, "Invitations set is required");
         this.id = id;
-        this.userGroup = userGroup;
         this.invitations = new HashSet<>(invitations);
     }
 
@@ -44,17 +44,14 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
 
     public static FreeGroup create(CreateFreeGroup command) {
         FreeGroupId id = new FreeGroupId(UUID.randomUUID());
-        UserGroup userGroup = UserGroup.create(command.name(), command.creator().toUserId());
-        return new FreeGroup(id, userGroup, Set.of());
+        return new FreeGroup(id, command.name(), Set.of(command.creator()),
+                Set.of(GroupMembership.of(command.creator())), Set.of());
     }
 
     public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
-                                           Set<GroupMembership> members, Set<Invitation> invitations,
-                                           AuditMetadata auditMetadata) {
-        Set<UserId> ownerIds = new HashSet<>();
-        owners.forEach(m -> ownerIds.add(m.toUserId()));
-        UserGroup userGroup = UserGroup.reconstruct(name, ownerIds, members);
-        FreeGroup group = new FreeGroup(id, userGroup, invitations);
+                                        Set<GroupMembership> members, Set<Invitation> invitations,
+                                        AuditMetadata auditMetadata) {
+        FreeGroup group = new FreeGroup(id, name, owners, members, invitations);
         group.updateAuditMetadata(auditMetadata);
         return group;
     }
@@ -64,76 +61,58 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
         return id;
     }
 
-    public String getName() {
-        return userGroup.getName();
-    }
-
-    public Set<MemberId> getOwners() {
-        return userGroup.getOwners().stream()
-                .map(MemberId::fromUserId)
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
-    }
-
-    public Set<GroupMembership> getMembers() {
-        return userGroup.getMembers();
-    }
-
     public void rename(String newName, MemberId actingMember) {
         requireOwner(actingMember);
-        userGroup.rename(newName);
+        rename(newName);
     }
 
     public void addOwner(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
         requireOwner(actingMember);
-        if (!userGroup.hasMember(memberId.toUserId())) {
+        if (!hasMember(memberId)) {
             throw new CannotPromoteNonMemberToOwnerException(memberId.toUserId());
         }
-        userGroup.addOwner(memberId.toUserId());
+        addOwner(memberId);
     }
 
     public void removeOwner(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
         requireOwner(actingMember);
-        userGroup.removeOwner(memberId.toUserId());
+        removeOwner(memberId);
     }
 
     public void removeMember(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
         requireOwner(actingMember);
-        userGroup.removeMember(memberId.toUserId());
+        removeMember(memberId);
     }
 
     public void requireOwner(MemberId actingMember) {
         Assert.notNull(actingMember, "actingMember is required");
-        if (!userGroup.isOwner(actingMember.toUserId())) {
+        if (!isOwner(actingMember)) {
             throw new GroupOwnershipRequiredException(actingMember, id);
         }
     }
 
+    // Direct member addition is not allowed — members must go through the invitation flow
     @Override
-    public boolean hasMember(UserId userId) {
-        return userGroup.hasMember(userId);
+    public void addMember(MemberId memberId) {
+        throw new DirectMemberAdditionNotAllowedException();
     }
 
-    // authorization enforced at port layer; no additional owner check here
     @Override
-    public void invite(UserId invitedBy, UserId target) {
+    public void invite(MemberId invitedBy, MemberId target) {
         Assert.notNull(invitedBy, "invitedBy is required");
         Assert.notNull(target, "target is required");
-        if (userGroup.hasMember(target) || userGroup.isOwner(target)) {
+        if (hasMember(target) || isOwner(target)) {
             throw new CannotInviteExistingMemberException(target);
         }
         boolean pendingAlreadyExists = invitations.stream()
-                .anyMatch(inv -> inv.isForUser(target) && inv.isPending());
+                .anyMatch(inv -> inv.isForMember(target) && inv.isPending());
         if (pendingAlreadyExists) {
             throw new DuplicatePendingInvitationException(target);
         }
         invitations.add(Invitation.createPending(invitedBy, target));
-    }
-
-    public void invite(MemberId invitedBy, MemberId target) {
-        invite(invitedBy.toUserId(), target.toUserId());
     }
 
     @Override
@@ -141,13 +120,13 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
         invitation.accept();
-        userGroup.addMember(invitation.getInvitedUser());
+        super.addMember(invitation.getInvitedMember());
     }
 
     public void acceptInvitation(InvitationId invitationId, MemberId acceptingMember) {
         Assert.notNull(acceptingMember, "acceptingMember is required");
-        if (!isInvitedMember(acceptingMember.toUserId(), invitationId)) {
-            throw new NotInvitedMemberException(acceptingMember.toUserId(), invitationId);
+        if (!isInvitedMember(acceptingMember, invitationId)) {
+            throw new NotInvitedMemberException(acceptingMember, invitationId);
         }
         acceptInvitation(invitationId);
     }
@@ -161,8 +140,8 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
 
     public void rejectInvitation(InvitationId invitationId, MemberId rejectingMember) {
         Assert.notNull(rejectingMember, "rejectingMember is required");
-        if (!isInvitedMember(rejectingMember.toUserId(), invitationId)) {
-            throw new NotInvitedMemberException(rejectingMember.toUserId(), invitationId);
+        if (!isInvitedMember(rejectingMember, invitationId)) {
+            throw new NotInvitedMemberException(rejectingMember, invitationId);
         }
         rejectInvitation(invitationId);
     }
@@ -178,12 +157,11 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
 
         Set<MemberId> recipientOwnerIds = new HashSet<>(getOwners());
         actor.ifPresent(recipientOwnerIds::remove);
-        MemberId inviteeMemberId = MemberId.fromUserId(invitation.getInvitedUser());
         registerEvent(new FreeGroupInvitationCancelledEvent(
                 UUID.randomUUID(),
                 id,
                 invitationId,
-                inviteeMemberId,
+                invitation.getInvitedMember(),
                 actor,
                 Optional.ofNullable(reason),
                 Collections.unmodifiableSet(recipientOwnerIds),
@@ -203,35 +181,18 @@ public class FreeGroup extends KlabisAggregateRoot<FreeGroup, FreeGroupId> imple
     }
 
     @Override
-    public boolean isInvitedMember(UserId userId) {
-        return invitations.stream().anyMatch(inv -> inv.isForUser(userId));
+    public boolean isInvitedMember(MemberId memberId) {
+        return invitations.stream().anyMatch(inv -> inv.isForMember(memberId));
     }
 
-    public boolean isInvitedMember(UserId userId, InvitationId invitationId) {
+    public boolean isInvitedMember(MemberId memberId, InvitationId invitationId) {
         return invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
-                .anyMatch(inv -> inv.isForUser(userId));
+                .anyMatch(inv -> inv.isForMember(memberId));
     }
 
     public boolean isInvitedMember(InvitationId invitationId, MemberId memberId) {
-        return isInvitedMember(memberId.toUserId(), invitationId);
-    }
-
-    public boolean isOwner(MemberId memberId) {
-        return userGroup.isOwner(memberId.toUserId());
-    }
-
-    public boolean hasMember(MemberId memberId) {
-        return userGroup.hasMember(memberId.toUserId());
-    }
-
-    public boolean isLastOwner(MemberId memberId) {
-        return userGroup.isLastOwner(memberId.toUserId());
-    }
-
-    // Direct member addition is not allowed — members must go through the invitation flow
-    public void addMember(MemberId memberId) {
-        throw new DirectMemberAdditionNotAllowedException();
+        return isInvitedMember(memberId, invitationId);
     }
 
     private Invitation findPendingInvitation(InvitationId invitationId) {

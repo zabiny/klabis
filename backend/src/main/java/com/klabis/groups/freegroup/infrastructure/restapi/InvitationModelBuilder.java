@@ -1,6 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
-import com.klabis.common.usergroup.Invitation;
+import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -31,8 +31,8 @@ class InvitationModelBuilder {
             FreeGroupId groupId, String groupName, Invitation invitation, boolean includeOwnerAffordances) {
         UUID groupUuid = groupId.uuid();
         UUID invitationUuid = invitation.getId().value();
-        UUID invitedByUuid = MemberId.fromUserId(invitation.getInvitedBy()).uuid();
-        UUID invitedMemberUuid = MemberId.fromUserId(invitation.getInvitedUser()).uuid();
+        UUID invitedByUuid = invitation.getInvitedBy().uuid();
+        UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
 
         PendingInvitationResponse response = new PendingInvitationResponse(
                 groupId, groupName, invitation.getId(), invitedByUuid);

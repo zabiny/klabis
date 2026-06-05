@@ -1,7 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
-import com.klabis.common.usergroup.InvitationNotCancellableException;
-import com.klabis.common.usergroup.NotInvitedMemberException;
+import com.klabis.groups.freegroup.domain.InvitationNotCancellableException;
+import com.klabis.groups.freegroup.domain.NotInvitedMemberException;
 import com.klabis.groups.freegroup.domain.GroupOwnershipRequiredException;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatusCode;

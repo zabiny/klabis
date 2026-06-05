@@ -1,7 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
 import com.klabis.CleanupTestData;
-import com.klabis.common.usergroup.InvitationStatus;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
 import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
@@ -77,7 +77,7 @@ class MemberSuspendedEventIntegrationTest {
 
                     var cancelled = reloaded.getInvitations().iterator().next();
                     assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
-                    assertThat(cancelled.getInvitedUser()).isEqualTo(INVITEE.toUserId());
+                    assertThat(cancelled.getInvitedMember()).isEqualTo(INVITEE);
                     assertThat(cancelled.getCancellationReason())
                             .contains(MemberSuspendedListener.SYSTEM_CANCEL_REASON);
                     assertThat(cancelled.getCancelledBy()).isEmpty();
@@ -109,7 +109,7 @@ class MemberSuspendedEventIntegrationTest {
                     return cancelledInvitations.isEmpty() ? null : cancelledInvitations.get(0);
                 })
                 .andVerify(cancelledInvitation -> {
-                    assertThat(cancelledInvitation.getInvitedUser()).isEqualTo(INVITEE.toUserId());
+                    assertThat(cancelledInvitation.getInvitedMember()).isEqualTo(INVITEE);
                     assertThat(cancelledInvitation.getCancellationReason())
                             .contains(MemberSuspendedListener.SYSTEM_CANCEL_REASON);
                     assertThat(cancelledInvitation.getCancelledBy()).isEmpty();

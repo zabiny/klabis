@@ -2,11 +2,9 @@ package com.klabis.groups.common.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.Invitation;
-import com.klabis.common.usergroup.InvitationId;
-import com.klabis.common.usergroup.InvitationStatus;
-import com.klabis.common.users.UserId;
+import com.klabis.groups.freegroup.domain.Invitation;
+import com.klabis.groups.freegroup.domain.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
 import com.klabis.members.MemberId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
@@ -90,18 +88,18 @@ public class GroupMemento implements Persistable<UUID> {
     public static GroupMemento fromFreeGroup(FreeGroup group) {
         GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR);
         memento.owners = mapOwners(group.getOwners());
-        memento.members = mapMembershipsToMementa(group.getMembers());
         memento.invitations = group.getInvitations().stream()
                 .map(inv -> new GroupInvitationMemento(
                         inv.getId().value(),
-                        inv.getInvitedUser().uuid(),
-                        inv.getInvitedBy().uuid(),
+                        inv.getInvitedMember().value(),
+                        inv.getInvitedBy().value(),
                         inv.getStatus().name(),
                         inv.getCreatedAt(),
                         inv.getCancelledAt().orElse(null),
                         inv.getCancelledBy().map(MemberId::value).orElse(null),
                         inv.getCancellationReason().orElse(null)))
                 .collect(Collectors.toSet());
+        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
         return memento;
     }
 
@@ -125,8 +123,8 @@ public class GroupMemento implements Persistable<UUID> {
         Set<Invitation> invitationSet = invitations.stream()
                 .map(inv -> Invitation.reconstruct(
                         new InvitationId(inv.getId()),
-                        new UserId(inv.getInvitedMemberId()),
-                        new UserId(inv.getInvitedByMemberId()),
+                        new MemberId(inv.getInvitedMemberId()),
+                        new MemberId(inv.getInvitedByMemberId()),
                         InvitationStatus.valueOf(inv.getStatus()),
                         inv.getCreatedAt(),
                         inv.getCancelledAt(),
@@ -135,7 +133,7 @@ public class GroupMemento implements Persistable<UUID> {
                 .collect(Collectors.toSet());
 
         return FreeGroup.reconstruct(new FreeGroupId(this.id), this.name,
-                mapOwnerIds(), mapMemberships(), invitationSet, buildAuditMetadata());
+                mapOwnerIds(), mapMembershipsForMemberGroup(), invitationSet, buildAuditMetadata());
     }
 
     public TrainingGroup toTrainingGroup() {
@@ -194,21 +192,9 @@ public class GroupMemento implements Persistable<UUID> {
                 .collect(Collectors.toSet());
     }
 
-    private Set<GroupMembership> mapMemberships() {
-        return members.stream()
-                .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
-                .collect(Collectors.toSet());
-    }
-
     private static Set<GroupOwnerMemento> mapOwners(Set<MemberId> source) {
         return source.stream()
                 .map(memberId -> new GroupOwnerMemento(memberId.value()))
-                .collect(Collectors.toSet());
-    }
-
-    private static Set<GroupMemberMemento> mapMembershipsToMementa(Set<GroupMembership> source) {
-        return source.stream()
-                .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
                 .collect(Collectors.toSet());
     }
 
