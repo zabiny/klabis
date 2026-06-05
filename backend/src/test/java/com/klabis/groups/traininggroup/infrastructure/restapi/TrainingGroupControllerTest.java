@@ -6,11 +6,10 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
@@ -60,7 +59,7 @@ class TrainingGroupControllerTest {
     private TrainingGroup buildTrainingGroupWithMember(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr, String memberUuidStr) {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));
         MemberId member = new MemberId(UUID.fromString(memberUuidStr));
-        GroupMembership membership = GroupMembership.of(member.toUserId());
+        GroupMembership membership = GroupMembership.of(member);
         return TrainingGroup.reconstruct(
                 new TrainingGroupId(groupUuid), name, Set.of(trainer), Set.of(membership), ageRange, null);
     }

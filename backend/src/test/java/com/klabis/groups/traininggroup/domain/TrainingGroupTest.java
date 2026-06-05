@@ -1,6 +1,6 @@
 package com.klabis.groups.traininggroup.domain;
 
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.members.MemberId;
 import com.klabis.groups.traininggroup.TrainingGroupId;

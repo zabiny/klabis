@@ -1,11 +1,10 @@
 package com.klabis.groups.traininggroup.application;
 
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.usergroup.GroupNotFoundException;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.common.patch.PatchField;
-import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
@@ -113,7 +112,7 @@ class TrainingGroupManagementServiceTest {
             verify(trainingGroupRepository).save(captor.capture());
             TrainingGroup saved = captor.getValue();
             assertThat(saved.getMembers())
-                    .extracting(m -> new MemberId(m.userId().uuid()))
+                    .extracting(GroupMembership::memberId)
                     .containsExactlyInAnyOrder(matchingMember1, matchingMember2);
         }
 
@@ -328,7 +327,7 @@ class TrainingGroupManagementServiceTest {
         void shouldThrowWhenMemberIsAlreadyTraineeOfAnotherGroup() {
             TrainingGroup conflictingGroup = TrainingGroup.reconstruct(
                     OTHER_GROUP_ID, "Seniors", Set.of(TRAINER),
-                    Set.of(new GroupMembership(new UserId(MEMBER.uuid()), Instant.now())),
+                    Set.of(GroupMembership.of(MEMBER)),
                     new AgeRange(19, 30), null);
 
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class))).thenReturn(Optional.of(conflictingGroup));

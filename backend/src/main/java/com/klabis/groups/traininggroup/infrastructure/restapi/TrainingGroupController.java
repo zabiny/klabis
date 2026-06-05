@@ -4,7 +4,7 @@ import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.groups.traininggroup.TrainingGroupId;
@@ -257,7 +257,7 @@ class TrainingGroupController {
     private EntityModel<GroupMembershipResponse> buildMemberModel(
             GroupMembership membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
 
-        MemberId memberId = MemberId.fromUserId(membership.userId());
+        MemberId memberId = membership.memberId();
         GroupMembershipResponse response = new GroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))

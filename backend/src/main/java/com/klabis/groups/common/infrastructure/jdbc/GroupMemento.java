@@ -110,7 +110,7 @@ public class GroupMemento implements Persistable<UUID> {
         memento.ageRangeMin = group.getAgeRange().minAge();
         memento.ageRangeMax = group.getAgeRange().maxAge();
         memento.owners = mapOwners(group.getTrainers());
-        memento.members = mapMembershipsToMementa(group.getMembers());
+        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
         return memento;
     }
 
@@ -140,7 +140,7 @@ public class GroupMemento implements Persistable<UUID> {
 
     public TrainingGroup toTrainingGroup() {
         return TrainingGroup.reconstruct(new TrainingGroupId(this.id), this.name,
-                mapOwnerIds(), mapMemberships(),
+                mapOwnerIds(), mapMembershipsForMemberGroup(),
                 new AgeRange(this.ageRangeMin, this.ageRangeMax), buildAuditMetadata());
     }
 
@@ -188,6 +188,12 @@ public class GroupMemento implements Persistable<UUID> {
                 .collect(Collectors.toSet());
     }
 
+    private Set<com.klabis.groups.common.domain.GroupMembership> mapMembershipsForMemberGroup() {
+        return members.stream()
+                .map(m -> new com.klabis.groups.common.domain.GroupMembership(new MemberId(m.getMemberId()), m.getJoinedAt()))
+                .collect(Collectors.toSet());
+    }
+
     private Set<GroupMembership> mapMemberships() {
         return members.stream()
                 .map(m -> new GroupMembership(new UserId(m.getMemberId()), m.getJoinedAt()))
@@ -203,6 +209,12 @@ public class GroupMemento implements Persistable<UUID> {
     private static Set<GroupMemberMemento> mapMembershipsToMementa(Set<GroupMembership> source) {
         return source.stream()
                 .map(m -> new GroupMemberMemento(m.userId().uuid(), m.joinedAt()))
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<GroupMemberMemento> mapMemberGroupMembershipsToMementa(Set<com.klabis.groups.common.domain.GroupMembership> source) {
+        return source.stream()
+                .map(m -> new GroupMemberMemento(m.memberId().value(), m.joinedAt()))
                 .collect(Collectors.toSet());
     }
 
