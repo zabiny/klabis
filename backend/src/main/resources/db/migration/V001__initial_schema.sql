@@ -655,6 +655,204 @@ COMMENT ON COLUMN finance_transaction.occurred_at IS 'Date when the underlying f
 COMMENT ON COLUMN finance_transaction.reverses_transaction_id IS 'If set, this transaction is a reversal of the referenced transaction';
 
 -- ============================================================================
+-- 28. MEMBERSHIP_FEE_LEVEL TABLE
+-- Catalog of membership fee level templates (MembershipFeeLevel aggregate root).
+-- Editable at any time; published levels keep a snapshot (membership_fee_group).
+-- ============================================================================
+
+CREATE TABLE membership_fee_level
+(
+    id                    UUID           NOT NULL PRIMARY KEY,
+    name                  VARCHAR(200)   NOT NULL,
+    yearly_fee_amount     DECIMAL(19, 4) NOT NULL,
+    yearly_fee_currency   VARCHAR(3)     NOT NULL DEFAULT 'CZK'
+);
+
+-- Comments for membership_fee_level
+COMMENT ON TABLE membership_fee_level IS 'Catalog of membership fee level templates. Editable; published levels snapshot this into membership_fee_group.';
+COMMENT ON COLUMN membership_fee_level.yearly_fee_amount IS 'Annual membership fee for this level';
+COMMENT ON COLUMN membership_fee_level.yearly_fee_currency IS 'ISO 4217 currency code (default CZK)';
+
+-- ============================================================================
+-- 29. MEMBERSHIP_PAYMENT_RULE TABLE
+-- Co-payment rules owned by a MembershipFeeLevel (value objects).
+-- Key: (membership_fee_level_id, event_type_id, ranking_short_name) — unique per level.
+-- ============================================================================
+
+CREATE TABLE membership_payment_rule
+(
+    id                       UUID        NOT NULL PRIMARY KEY,
+    membership_fee_level_id  UUID        NOT NULL REFERENCES membership_fee_level (id) ON DELETE CASCADE,
+    event_type_id            UUID        NOT NULL,
+    ranking_short_name       VARCHAR(100) NOT NULL,
+    rule_type                VARCHAR(20) NOT NULL,
+    rule_percentage          INT         NULL,
+    rule_fixed_amount        DECIMAL(19, 4) NULL,
+    rule_fixed_currency      VARCHAR(3)  NULL,
+
+    CONSTRAINT uk_membership_payment_rule UNIQUE (membership_fee_level_id, event_type_id, ranking_short_name),
+    CONSTRAINT chk_membership_payment_rule_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_SURCHARGE'))
+);
+
+-- Indexes for membership_payment_rule
+CREATE INDEX idx_membership_payment_rule_level ON membership_payment_rule (membership_fee_level_id);
+
+-- Comments for membership_payment_rule
+COMMENT ON TABLE membership_payment_rule IS 'Co-payment rules per (event_type, ranking) combination within a fee level template';
+COMMENT ON COLUMN membership_payment_rule.event_type_id IS 'Reference to EventType aggregate (no FK — cross-module value object reference)';
+COMMENT ON COLUMN membership_payment_rule.ranking_short_name IS 'Ranking short name as natural key (e.g. A, B, LOB); no FK until ranking table exists';
+COMMENT ON COLUMN membership_payment_rule.rule_type IS 'PERCENTAGE: percent of base entry fee; FIXED_SURCHARGE: fixed amount added to entry fee';
+COMMENT ON COLUMN membership_payment_rule.rule_percentage IS 'Percentage value (0-100+) — populated only when rule_type = PERCENTAGE';
+COMMENT ON COLUMN membership_payment_rule.rule_fixed_amount IS 'Fixed surcharge amount — populated only when rule_type = FIXED_SURCHARGE';
+COMMENT ON COLUMN membership_payment_rule.rule_fixed_currency IS 'Currency for fixed surcharge — populated only when rule_type = FIXED_SURCHARGE';
+
+-- ============================================================================
+-- 30. FEE_YEAR_PUBLICATION TABLE
+-- Published set of fee levels for a calendar year (FeeYearPublication aggregate root).
+-- One publication per year; owns the voting deadline for all levels in that year.
+-- ============================================================================
+
+CREATE TABLE fee_year_publication
+(
+    id                      UUID    NOT NULL PRIMARY KEY,
+    year                    INT     NOT NULL,
+    voting_deadline         DATE    NOT NULL,
+    deadline_processed_at   TIMESTAMPTZ NULL,
+
+    CONSTRAINT uk_fee_year_publication_year UNIQUE (year)
+);
+
+-- Comments for fee_year_publication
+COMMENT ON TABLE fee_year_publication IS 'Published fee level set for a calendar year with a single voting deadline';
+COMMENT ON COLUMN fee_year_publication.year IS 'Calendar year this publication applies to (unique)';
+COMMENT ON COLUMN fee_year_publication.voting_deadline IS 'Deadline by which members must choose their level';
+COMMENT ON COLUMN fee_year_publication.deadline_processed_at IS 'Timestamp when the post-deadline scheduler ran (null until processed)';
+
+-- ============================================================================
+-- 31. FEE_YEAR_PUBLICATION_LEVEL TABLE
+-- Join table: FeeYearPublication → MembershipFeeGroup references.
+-- ============================================================================
+
+CREATE TABLE fee_year_publication_level
+(
+    fee_year_publication_id UUID NOT NULL REFERENCES fee_year_publication (id) ON DELETE CASCADE,
+    membership_fee_group_id UUID NOT NULL,
+    PRIMARY KEY (fee_year_publication_id, membership_fee_group_id)
+);
+
+-- Comments for fee_year_publication_level
+COMMENT ON TABLE fee_year_publication_level IS 'Links a FeeYearPublication to its published MembershipFeeGroup instances';
+COMMENT ON COLUMN fee_year_publication_level.membership_fee_group_id IS 'Reference to MembershipFeeGroup (no FK — same-module reference managed by aggregate)';
+
+-- ============================================================================
+-- 32. MEMBERSHIP_FEE_GROUP TABLE
+-- Published fee level for one year (MembershipFeeGroup aggregate root).
+-- Holds a snapshot of the level template at publication time plus membership records.
+-- ============================================================================
+
+CREATE TABLE membership_fee_group
+(
+    id                              UUID           NOT NULL PRIMARY KEY,
+    source_level_id                 UUID           NOT NULL REFERENCES membership_fee_level (id),
+    name                            VARCHAR(200)   NOT NULL,
+    year                            INT            NOT NULL,
+    yearly_fee_snapshot_amount      DECIMAL(19, 4) NOT NULL,
+    yearly_fee_snapshot_currency    VARCHAR(3)     NOT NULL DEFAULT 'CZK',
+    status                          VARCHAR(20)    NOT NULL DEFAULT 'EDITABLE',
+
+    CONSTRAINT chk_membership_fee_group_status CHECK (status IN ('EDITABLE', 'FROZEN'))
+);
+
+-- Indexes for membership_fee_group
+CREATE INDEX idx_membership_fee_group_year ON membership_fee_group (year);
+CREATE INDEX idx_membership_fee_group_source_level ON membership_fee_group (source_level_id);
+
+-- Comments for membership_fee_group
+COMMENT ON TABLE membership_fee_group IS 'Snapshot of a fee level for a specific year; contains membership records for member choices';
+COMMENT ON COLUMN membership_fee_group.source_level_id IS 'Template level this snapshot was created from (for D8: previous-year default lookup)';
+COMMENT ON COLUMN membership_fee_group.name IS 'Snapshot of the level name at publication time';
+COMMENT ON COLUMN membership_fee_group.year IS 'Calendar year this group applies to';
+COMMENT ON COLUMN membership_fee_group.yearly_fee_snapshot_amount IS 'Snapshot of the yearly fee at publication time; immutable after FROZEN';
+COMMENT ON COLUMN membership_fee_group.status IS 'EDITABLE: snapshot can be changed before voting deadline; FROZEN: locked after deadline';
+
+-- ============================================================================
+-- 33. MEMBERSHIP_FEE_GROUP_RULE_SNAPSHOT TABLE
+-- Snapshot of co-payment rules for a published MembershipFeeGroup (MembershipPaymentRuleSnapshot value objects).
+-- ============================================================================
+
+CREATE TABLE membership_fee_group_rule_snapshot
+(
+    id                      UUID        NOT NULL PRIMARY KEY,
+    membership_fee_group_id UUID        NOT NULL REFERENCES membership_fee_group (id) ON DELETE CASCADE,
+    event_type_id           UUID        NOT NULL,
+    ranking_short_name      VARCHAR(100) NOT NULL,
+    rule_type               VARCHAR(20) NOT NULL,
+    rule_percentage         INT         NULL,
+    rule_fixed_amount       DECIMAL(19, 4) NULL,
+    rule_fixed_currency     VARCHAR(3)  NULL,
+
+    CONSTRAINT uk_membership_fee_group_rule_snapshot UNIQUE (membership_fee_group_id, event_type_id, ranking_short_name),
+    CONSTRAINT chk_membership_fee_group_rule_snapshot_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_SURCHARGE'))
+);
+
+-- Indexes for membership_fee_group_rule_snapshot
+CREATE INDEX idx_membership_fee_group_rule_snapshot_group ON membership_fee_group_rule_snapshot (membership_fee_group_id);
+
+-- Comments for membership_fee_group_rule_snapshot
+COMMENT ON TABLE membership_fee_group_rule_snapshot IS 'Snapshot of co-payment rules copied from the level template at publication time; independent of catalog changes';
+COMMENT ON COLUMN membership_fee_group_rule_snapshot.event_type_id IS 'Reference to EventType (no FK — cross-module value object reference)';
+COMMENT ON COLUMN membership_fee_group_rule_snapshot.ranking_short_name IS 'Ranking short name as natural key; no FK until ranking table exists (D3)';
+
+-- ============================================================================
+-- 34. FEE_GROUP_MEMBERSHIP TABLE
+-- Member's choice or admin assignment to a MembershipFeeGroup for a year (FeeGroupMembership value objects).
+-- ============================================================================
+
+CREATE TABLE fee_group_membership
+(
+    id                      UUID        NOT NULL PRIMARY KEY,
+    membership_fee_group_id UUID        NOT NULL REFERENCES membership_fee_group (id) ON DELETE CASCADE,
+    member_id               UUID        NOT NULL,
+    joined_at               DATE        NOT NULL,
+    assignment_source       VARCHAR(20) NOT NULL,
+    assigned_by             UUID        NULL,
+
+    CONSTRAINT uk_fee_group_membership UNIQUE (membership_fee_group_id, member_id),
+    CONSTRAINT chk_fee_group_membership_source CHECK (assignment_source IN ('MEMBER_CHOICE', 'ADMIN_ASSIGNMENT'))
+);
+
+-- Indexes for fee_group_membership
+CREATE INDEX idx_fee_group_membership_group ON fee_group_membership (membership_fee_group_id);
+CREATE INDEX idx_fee_group_membership_member ON fee_group_membership (member_id);
+
+-- Comments for fee_group_membership
+COMMENT ON TABLE fee_group_membership IS 'Records which members chose (or were assigned to) a fee level for a given year';
+COMMENT ON COLUMN fee_group_membership.member_id IS 'Reference to Member aggregate (no FK — cross-module value object reference)';
+COMMENT ON COLUMN fee_group_membership.joined_at IS 'Date the member was added to this fee group';
+COMMENT ON COLUMN fee_group_membership.assignment_source IS 'MEMBER_CHOICE: member self-selected; ADMIN_ASSIGNMENT: assigned by admin (e.g. emergency assignment after deadline)';
+COMMENT ON COLUMN fee_group_membership.assigned_by IS 'MemberId of the admin who performed an ADMIN_ASSIGNMENT; null for MEMBER_CHOICE';
+
+-- ============================================================================
+-- 35. YEARLY_FEE_CHARGE_MARKER TABLE
+-- Idempotency marker preventing double-charging of yearly membership fee (D6).
+-- Primary key on (member_id, year) ensures at-most-once per member per year.
+-- ============================================================================
+
+CREATE TABLE yearly_fee_charge_marker
+(
+    member_id   UUID      NOT NULL,
+    year        INT       NOT NULL,
+    charged_at  TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (member_id, year)
+);
+
+-- Comments for yearly_fee_charge_marker
+COMMENT ON TABLE yearly_fee_charge_marker IS 'Idempotency guard: prevents double-posting the yearly membership fee for a (member, year) pair (D6)';
+COMMENT ON COLUMN yearly_fee_charge_marker.member_id IS 'Reference to Member aggregate (no FK — cross-module value object reference)';
+COMMENT ON COLUMN yearly_fee_charge_marker.year IS 'Calendar year for which the yearly fee was charged';
+COMMENT ON COLUMN yearly_fee_charge_marker.charged_at IS 'Timestamp when the fee was successfully posted to finance module';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

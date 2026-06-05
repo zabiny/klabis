@@ -6,9 +6,9 @@
 
 ## 1. Module scaffolding
 
-- [ ] 1.1 Create module `com.klabis.membership-fees` with `package-info.java` declaring `@ApplicationModule(displayName = "Členské příspěvky")`
-- [ ] 1.2 Add architecture test expectation so the new module passes `JMoleculesArchitectureTest` (allowed value-object refs: `MemberId`, `EventTypeId`; allowed ports: `AllMembersPort`, `ChargePort`)
-- [ ] 1.3 Add DDL for all `membership-fees` tables into V001 (catalog, rules, `fee_year_publication` with `deadline_processed_at`, `membership_fee_group` with snapshot + members, yearly fee idempotency marker); no changes to `user_groups`
+- [x] 1.1 Create module `com.klabis.membership-fees` with `package-info.java` declaring `@ApplicationModule(displayName = "Členské příspěvky")`
+- [x] 1.2 Add architecture test expectation so the new module passes `JMoleculesArchitectureTest` (allowed value-object refs: `MemberId`, `EventTypeId`; allowed ports: `AllMembersPort`, `ChargePort`)
+- [x] 1.3 Add DDL for all `membership-fees` tables into V001 (catalog, rules, `fee_year_publication` with `deadline_processed_at`, `membership_fee_group` with snapshot + members, yearly fee idempotency marker); no changes to `user_groups`
 
 ## 2. Fee level catalog (slice: define a level template end-to-end)
 
