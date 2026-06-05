@@ -1,10 +1,10 @@
 package com.klabis.groups.familygroup.domain;
 
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.MemberAlreadyInGroupException;
-import com.klabis.common.usergroup.MemberNotInGroupException;
-import com.klabis.common.usergroup.OwnerCannotBeRemovedFromGroupException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.common.domain.MemberAlreadyInGroupException;
+import com.klabis.groups.common.domain.MemberNotInGroupException;
+import com.klabis.groups.common.domain.OwnerCannotBeRemovedFromGroupException;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -77,7 +77,7 @@ class FamilyGroupTest {
         @DisplayName("should reconstruct group with existing members and owners")
         void shouldReconstructWithMembersAndOwners() {
             FamilyGroupId id = new FamilyGroupId(UUID.randomUUID());
-            Set<GroupMembership> memberships = Set.of(GroupMembership.of(MEMBER_A.toUserId()));
+            Set<GroupMembership> memberships = Set.of(GroupMembership.of(MEMBER_A));
 
             FamilyGroup group = FamilyGroup.reconstruct(id, "Novákovi", Set.of(PARENT_A), memberships, null);
 
@@ -279,7 +279,7 @@ class FamilyGroupTest {
             group.addChild(MEMBER_B);
 
             assertThat(group.getChildren())
-                    .extracting(m -> MemberId.fromUserId(m.userId()))
+                    .extracting(GroupMembership::memberId)
                     .containsExactlyInAnyOrder(MEMBER_A, MEMBER_B);
         }
 
@@ -291,7 +291,7 @@ class FamilyGroupTest {
             group.addChild(MEMBER_A);
 
             assertThat(group.getChildren())
-                    .extracting(m -> MemberId.fromUserId(m.userId()))
+                    .extracting(GroupMembership::memberId)
                     .containsExactly(MEMBER_A)
                     .doesNotContain(PARENT_A, PARENT_B);
         }

@@ -117,7 +117,7 @@ public class GroupMemento implements Persistable<UUID> {
     public static GroupMemento fromFamilyGroup(FamilyGroup group) {
         GroupMemento memento = initCommon(group, group.getId().value(), group.getName(), FamilyGroup.TYPE_DISCRIMINATOR);
         memento.owners = mapOwners(group.getParents());
-        memento.members = mapMembershipsToMementa(group.getMembers());
+        memento.members = mapMemberGroupMembershipsToMementa(group.getMembers());
         return memento;
     }
 
@@ -146,7 +146,7 @@ public class GroupMemento implements Persistable<UUID> {
 
     public FamilyGroup toFamilyGroup() {
         return FamilyGroup.reconstruct(new FamilyGroupId(this.id), this.name,
-                mapOwnerIds(), mapMemberships(), buildAuditMetadata());
+                mapOwnerIds(), mapMembershipsForMemberGroup(), buildAuditMetadata());
     }
 
     @DomainEvents

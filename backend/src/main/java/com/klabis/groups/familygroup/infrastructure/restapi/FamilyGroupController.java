@@ -3,7 +3,7 @@ package com.klabis.groups.familygroup.infrastructure.restapi;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -208,7 +208,7 @@ class FamilyGroupController {
     }
 
     private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership membership, UUID groupUuid, boolean hasMembersManage) {
-        MemberId memberId = MemberId.fromUserId(membership.userId());
+        MemberId memberId = membership.memberId();
         FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))

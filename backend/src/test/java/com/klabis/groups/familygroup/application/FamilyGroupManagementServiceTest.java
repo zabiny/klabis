@@ -1,8 +1,8 @@
 package com.klabis.groups.familygroup.application;
 
-import com.klabis.common.usergroup.CannotRemoveLastOwnerException;
+import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.usergroup.GroupNotFoundException;
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
@@ -210,7 +210,7 @@ class FamilyGroupManagementServiceTest {
         @DisplayName("should add child and save")
         void shouldAddChildAndSave() {
             FamilyGroup group = FamilyGroup.reconstruct(
-                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A.toUserId())), null);
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A)), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -245,7 +245,7 @@ class FamilyGroupManagementServiceTest {
         void shouldRemoveChildAndSave() {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A),
-                    Set.of(GroupMembership.of(PARENT_A.toUserId()), GroupMembership.of(MEMBER_A.toUserId())), null);
+                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A)), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -275,7 +275,7 @@ class FamilyGroupManagementServiceTest {
         void shouldRemoveParentFromOwnersAndMembers() {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A, PARENT_B),
-                    Set.of(GroupMembership.of(PARENT_A.toUserId()), GroupMembership.of(PARENT_B.toUserId())), null);
+                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(PARENT_B)), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -293,7 +293,7 @@ class FamilyGroupManagementServiceTest {
         void shouldThrowWhenRemovingLastParent() {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A),
-                    Set.of(GroupMembership.of(PARENT_A.toUserId())), null);
+                    Set.of(GroupMembership.of(PARENT_A)), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
             assertThatThrownBy(() -> service.removeParent(GROUP_ID, PARENT_A))

@@ -5,10 +5,9 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
-import com.klabis.common.usergroup.GroupMembership;
-import com.klabis.common.usergroup.MemberAlreadyInGroupException;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.common.domain.MemberAlreadyInGroupException;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.application.MemberAlreadyInFamilyGroupException;
@@ -57,7 +56,7 @@ class FamilyGroupControllerTest {
     private FamilyGroup buildFamilyGroupWithChild(UUID groupUuid, String name, String ownerUuidStr, String childUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
         MemberId child = new MemberId(UUID.fromString(childUuidStr));
-        GroupMembership childMembership = GroupMembership.of(child.toUserId());
+        GroupMembership childMembership = GroupMembership.of(child);
         return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(childMembership), null);
     }
 
@@ -414,7 +413,7 @@ class FamilyGroupControllerTest {
         @DisplayName("should return 400 when child is already a parent of the same group (parent/child conflict)")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenChildIsAlreadyParent() throws Exception {
-            doThrow(new MemberAlreadyInGroupException(new UserId(UUID.fromString(MEMBER_ID))))
+            doThrow(new MemberAlreadyInGroupException(new MemberId(UUID.fromString(MEMBER_ID))))
                     .when(familyGroupManagementService).addChild(any(FamilyGroupId.class), any(MemberId.class));
 
             mockMvc.perform(

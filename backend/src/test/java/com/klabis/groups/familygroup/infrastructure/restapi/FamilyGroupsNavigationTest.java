@@ -4,7 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.common.usergroup.GroupMembership;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
@@ -71,7 +71,7 @@ class FamilyGroupsNavigationTest {
     @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
     void shouldNotIncludeFamilyGroupsLinkForNonAdmin() throws Exception {
         MemberId member = new MemberId(UUID.fromString(MEMBER_ID));
-        GroupMembership membership = GroupMembership.of(member.toUserId());
+        GroupMembership membership = GroupMembership.of(member);
         MemberId parent = new MemberId(UUID.fromString(ADMIN_ID));
         FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi", Set.of(parent), Set.of(membership), null);
         when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
