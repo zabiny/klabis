@@ -53,7 +53,7 @@ class InvitationTest {
             InvitationId id = InvitationId.newId();
             Instant createdAt = Instant.now();
 
-            Invitation invitation = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.ACCEPTED, createdAt);
+            Invitation invitation = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.ACCEPTED, createdAt, null, null, null);
 
             assertThat(invitation.getId()).isEqualTo(id);
             assertThat(invitation.getInvitedUser()).isEqualTo(INVITED);
@@ -161,8 +161,8 @@ class InvitationTest {
         @DisplayName("should be equal when same invitation ID")
         void shouldBeEqualForSameId() {
             InvitationId id = InvitationId.newId();
-            Invitation inv1 = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.PENDING, Instant.now());
-            Invitation inv2 = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.ACCEPTED, Instant.now());
+            Invitation inv1 = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.PENDING, Instant.now(), null, null, null);
+            Invitation inv2 = Invitation.reconstruct(id, INVITED, INVITER, InvitationStatus.ACCEPTED, Instant.now(), null, null, null);
 
             assertThat(inv1).isEqualTo(inv2);
             assertThat(inv1.hashCode()).isEqualTo(inv2.hashCode());

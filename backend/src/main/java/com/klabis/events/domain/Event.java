@@ -338,28 +338,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String cancellationReason,
             Integer orisId,
             List<String> categories,
-            List<EventRegistration> registrations,
-            AuditMetadata auditMetadata) {
-
-        return reconstruct(id, name, eventDate, location, organizer, websiteUrl, eventCoordinatorId,
-                eventTypeId, registrationDeadlines, status, cancellationReason, orisId, categories,
-                null, null, registrations, auditMetadata);
-    }
-
-    public static Event reconstruct(
-            EventId id,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId,
-            EventTypeId eventTypeId,
-            RegistrationDeadlines registrationDeadlines,
-            EventStatus status,
-            String cancellationReason,
-            Integer orisId,
-            List<String> categories,
             EventRanking ranking,
             Money baseEntryFee,
             List<EventRegistration> registrations,

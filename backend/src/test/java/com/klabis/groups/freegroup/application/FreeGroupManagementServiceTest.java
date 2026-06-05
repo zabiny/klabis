@@ -492,7 +492,7 @@ class FreeGroupManagementServiceTest {
         void shouldReturnFlatListOfPendingInvitations() {
             InvitationId invitationId = InvitationId.newId();
             Invitation invitation = Invitation.reconstruct(
-                    invitationId, OTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
+                    invitationId, OTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(invitation), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
@@ -511,7 +511,7 @@ class FreeGroupManagementServiceTest {
         void shouldFilterInvitationsForOtherMembers() {
             InvitationId invForOther = InvitationId.newId();
             Invitation otherInvitation = Invitation.reconstruct(
-                    invForOther, ANOTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now());
+                    invForOther, ANOTHER_MEMBER.toUserId(), CREATOR.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR.toUserId())), Set.of(otherInvitation), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))

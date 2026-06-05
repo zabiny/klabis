@@ -42,11 +42,6 @@ public class Invitation {
     }
 
     public static Invitation reconstruct(InvitationId id, UserId invitedUser, UserId invitedBy,
-                                         InvitationStatus status, Instant createdAt) {
-        return new Invitation(id, invitedUser, invitedBy, status, createdAt);
-    }
-
-    public static Invitation reconstruct(InvitationId id, UserId invitedUser, UserId invitedBy,
                                          InvitationStatus status, Instant createdAt,
                                          Instant cancelledAt, MemberId cancelledBy, String cancellationReason) {
         Invitation invitation = new Invitation(id, invitedUser, invitedBy, status, createdAt);

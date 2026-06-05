@@ -269,6 +269,7 @@ class EventRegistrationServiceTest {
                     "Test Location", "OOB",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -292,6 +293,7 @@ class EventRegistrationServiceTest {
                     "Test Location", "OOB",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -323,6 +325,7 @@ class EventRegistrationServiceTest {
                     EventStatus.ACTIVE,
                     null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(TEST_MEMBER_ID).siCardNumber(SiCardNumber.of("123456")).build())),
                     null

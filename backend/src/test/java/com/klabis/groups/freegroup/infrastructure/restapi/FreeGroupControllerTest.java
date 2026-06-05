@@ -331,7 +331,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitee = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
-                    INVITATION_ID, invitee.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now());
+                    INVITATION_ID, invitee.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(
                     GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
@@ -1048,7 +1048,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.common.usergroup.Invitation invitation = com.klabis.common.usergroup.Invitation.reconstruct(
-                    INVITATION_ID, invitedMember.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now());
+                    INVITATION_ID, invitedMember.toUserId(), owner.toUserId(), InvitationStatus.PENDING, Instant.now(), null, null, null);
             PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation);
             when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of(view));

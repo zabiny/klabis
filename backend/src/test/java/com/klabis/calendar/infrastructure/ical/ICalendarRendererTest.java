@@ -52,6 +52,8 @@ class ICalendarRendererTest {
                 null,
                 null,
                 List.of(),
+                null,
+                null,
                 List.of(),
                 null
         );

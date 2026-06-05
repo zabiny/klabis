@@ -67,6 +67,8 @@ class IcalFeedServiceTest {
                 null,
                 null,
                 List.of(),
+                null,
+                null,
                 List.of(),
                 null
         );

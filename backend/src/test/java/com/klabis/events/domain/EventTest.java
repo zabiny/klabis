@@ -683,6 +683,7 @@ class EventTest {
                     "Test Location", "Test Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -702,6 +703,7 @@ class EventTest {
                     "Test Location", "Test Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
                     null
@@ -1494,6 +1496,7 @@ class EventTest {
                     RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
                     EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
                     null
@@ -1516,6 +1519,7 @@ class EventTest {
                     "Location", "Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
                     null
@@ -1538,6 +1542,7 @@ class EventTest {
                     "Location", "Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null, null,
                     List.of(),
+                    null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(siCard).build())),
                     null
