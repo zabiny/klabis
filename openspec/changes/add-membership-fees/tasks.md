@@ -93,8 +93,8 @@
 
 ## 12. Frontend — member
 
-- [ ] 12.1 Add member page to choose the level for the upcoming year (pre-filled with previous year's level as non-binding default, hidden after deadline)
-- [ ] 12.2 Add profile widget showing the member's current fee level (with prompt to choose when none and voting open)
+- [x] 12.1 Add member page to choose the level for the upcoming year (pre-filled with previous year's level as non-binding default, hidden after deadline)
+- [x] 12.2 Add profile widget showing the member's current fee level (with prompt to choose when none and voting open)
 
 ## 13. Integration and wrap-up
 

@@ -507,6 +507,25 @@ export const labels = {
         errorIncorrectCurrentPassword: 'Zadané aktuální heslo je nesprávné.',
     },
 
+    memberFee: {
+        choicePageTitle: (year: number) => `Výběr úrovně členského příspěvku pro rok ${year}`,
+        sectionTitle: 'ČLENSKÝ PŘÍSPĚVEK',
+        currentLevel: 'Aktuální úroveň příspěvku',
+        choiceLevel: 'Výběr úrovně příspěvku',
+        deadlineExpired: 'Lhůta pro výběr uplynula',
+        chooseLevel: 'Zvolit úroveň',
+        changeLevel: 'Změnit úroveň',
+        cancelChoice: 'Zrušit volbu',
+        noChoiceMade: 'Výběr ještě nebyl proveden',
+        viewHistory: 'Zobrazit historii příspěvků',
+        feeLevel: 'Úroveň členského příspěvku',
+        annualFee: 'Roční poplatek',
+        noChoiceWarning: 'Lhůta pro výběr příspěvku uplynula bez provedené volby.',
+        choiceLockedInfo: 'Volba je uzamčena.',
+        votingOpenChoiceExists: 'Máte zvolenu úroveň příspěvku. Volbu je možné změnit.',
+        votingOpenNoChoice: 'Probíhá volba úrovně příspěvku. Zvolte si svou úroveň.',
+    },
+
     calendarFeed: {
         sectionTitle: 'KALENDÁŘOVÝ FEED',
         intro: 'Přihlaste se k odběru svých akcí v externím kalendáři.',
