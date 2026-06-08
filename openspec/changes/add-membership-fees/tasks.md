@@ -12,23 +12,23 @@
 
 ## 2. Fee level catalog (slice: define a level template end-to-end)
 
-- [ ] 2.1 Write failing domain tests for `MembershipFeeLevel` aggregate: create with name + yearly fee + rules, edit name/fee/rules, identity `MembershipFeeLevelId`
-- [ ] 2.2 Write failing domain tests for `MembershipPaymentRule` value object: percentage vs fixed surcharge, unique `(EventTypeId, rankingShortName)` per level, duplicate rejected
-- [ ] 2.3 Implement `MembershipFeeLevel` + `MembershipPaymentRule` to make domain tests pass; refactor
-- [ ] 2.4 Implement own persistence: `MembershipFeeLevelMemento` + repository + adapter (DDL already in V001); write repository round-trip test
-- [ ] 2.5 Implement application port `MembershipFeeLevelManagementPort` + service (create / edit / get / list) with `MEMBERS:ADMIN` authorization
-- [ ] 2.6 Implement HAL+FORMS `MembershipFeeLevelController` (catalog CRUD) with `_links` and afford templates; write web slice test
-- [ ] 2.7 Verify spec scenarios: "Membership Fee Level Catalog", "Membership Payment Rules by Event Type and Ranking"
+- [x] 2.1 Write failing domain tests for `MembershipFeeLevel` aggregate: create with name + yearly fee + rules, edit name/fee/rules, identity `MembershipFeeLevelId`
+- [x] 2.2 Write failing domain tests for `MembershipPaymentRule` value object: percentage vs fixed surcharge, unique `(EventTypeId, rankingShortName)` per level, duplicate rejected
+- [x] 2.3 Implement `MembershipFeeLevel` + `MembershipPaymentRule` to make domain tests pass; refactor
+- [x] 2.4 Implement own persistence: `MembershipFeeLevelMemento` + repository + adapter (DDL already in V001); write repository round-trip test
+- [x] 2.5 Implement application port `MembershipFeeLevelManagementPort` + service (create / edit / get / list) with `MEMBERS:ADMIN` authorization
+- [x] 2.6 Implement HAL+FORMS `MembershipFeeLevelController` (catalog CRUD) with `_links` and afford templates; write web slice test
+- [x] 2.7 Verify spec scenarios: "Membership Fee Level Catalog", "Membership Payment Rules by Event Type and Ranking"
 
 ## 3. Publishing levels for a year (slice: publish a year end-to-end)
 
-- [ ] 3.1 Write failing domain tests for `FeeYearPublication`: holds year + single voting deadline + set of `MembershipFeeGroupId` refs; cannot publish a year twice; `deadlineProcessedAt` null until scheduler runs; `markProcessed(at)` sets it
-- [ ] 3.2 Write failing domain tests for `MembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, own membership logic (`addMember` / `removeMember` / `hasMember` over `Set<MemberId>`)
-- [ ] 3.3 Implement publishing: copying catalog level into a frozen-on-demand snapshot; implement aggregates; refactor
-- [ ] 3.4 Implement own persistence for `FeeYearPublication` and `MembershipFeeGroup` as separate aggregate roots (DDL already in V001); repository round-trip test for each
-- [ ] 3.5 Implement application port + service for publishing a year (`MEMBERS:ADMIN`)
-- [ ] 3.6 Implement HAL+FORMS endpoints to publish a year and to list published levels per year; web slice test
-- [ ] 3.7 Verify spec scenarios: "Publishing Fee Levels for a Calendar Year"
+- [x] 3.1 Write failing domain tests for `FeeYearPublication`: holds year + single voting deadline + set of `MembershipFeeGroupId` refs; cannot publish a year twice; `deadlineProcessedAt` null until scheduler runs; `markProcessed(at)` sets it
+- [x] 3.2 Write failing domain tests for `MembershipFeeGroup`: snapshot of yearly fee + rules copied from catalog, year of validity, state `EDITABLE`, own membership logic (`addMember` / `removeMember` / `hasMember` over `Set<MemberId>`)
+- [x] 3.3 Implement publishing: copying catalog level into a frozen-on-demand snapshot; implement aggregates; refactor
+- [x] 3.4 Implement own persistence for `FeeYearPublication` and `MembershipFeeGroup` as separate aggregate roots (DDL already in V001); repository round-trip test for each
+- [x] 3.5 Implement application port + service for publishing a year (`MEMBERS:ADMIN`)
+- [x] 3.6 Implement HAL+FORMS endpoints to publish a year and to list published levels per year; web slice test
+- [x] 3.7 Verify spec scenarios: "Publishing Fee Levels for a Calendar Year"
 
 ## 4. Member chooses a level (slice: member self-selection end-to-end)
 

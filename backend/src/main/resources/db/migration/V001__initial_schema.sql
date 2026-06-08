@@ -720,16 +720,21 @@ COMMENT ON COLUMN membership_payment_rule.rule_fixed_currency IS 'Currency for f
 CREATE TABLE fee_year_publication
 (
     id                      UUID    NOT NULL PRIMARY KEY,
-    year                    INT     NOT NULL,
+    publication_year        INT     NOT NULL,
     voting_deadline         DATE    NOT NULL,
-    deadline_processed_at   TIMESTAMPTZ NULL,
+    deadline_processed_at   TIMESTAMP NULL,
+    created_at              TIMESTAMP NULL,
+    created_by              VARCHAR(255) NULL,
+    modified_at             TIMESTAMP NULL,
+    modified_by             VARCHAR(255) NULL,
+    version                 BIGINT  NOT NULL DEFAULT 0,
 
-    CONSTRAINT uk_fee_year_publication_year UNIQUE (year)
+    CONSTRAINT uk_fee_year_publication_year UNIQUE (publication_year)
 );
 
 -- Comments for fee_year_publication
 COMMENT ON TABLE fee_year_publication IS 'Published fee level set for a calendar year with a single voting deadline';
-COMMENT ON COLUMN fee_year_publication.year IS 'Calendar year this publication applies to (unique)';
+COMMENT ON COLUMN fee_year_publication.publication_year IS 'Calendar year this publication applies to (unique)';
 COMMENT ON COLUMN fee_year_publication.voting_deadline IS 'Deadline by which members must choose their level';
 COMMENT ON COLUMN fee_year_publication.deadline_processed_at IS 'Timestamp when the post-deadline scheduler ran (null until processed)';
 
@@ -760,23 +765,28 @@ CREATE TABLE membership_fee_group
     id                              UUID           NOT NULL PRIMARY KEY,
     source_level_id                 UUID           NOT NULL REFERENCES membership_fee_level (id),
     name                            VARCHAR(200)   NOT NULL,
-    year                            INT            NOT NULL,
+    group_year                      INT            NOT NULL,
     yearly_fee_snapshot_amount      DECIMAL(19, 4) NOT NULL,
     yearly_fee_snapshot_currency    VARCHAR(3)     NOT NULL DEFAULT 'CZK',
     status                          VARCHAR(20)    NOT NULL DEFAULT 'EDITABLE',
+    created_at                      TIMESTAMP NULL,
+    created_by                      VARCHAR(255) NULL,
+    modified_at                     TIMESTAMP NULL,
+    modified_by                     VARCHAR(255) NULL,
+    version                         BIGINT         NOT NULL DEFAULT 0,
 
     CONSTRAINT chk_membership_fee_group_status CHECK (status IN ('EDITABLE', 'FROZEN'))
 );
 
 -- Indexes for membership_fee_group
-CREATE INDEX idx_membership_fee_group_year ON membership_fee_group (year);
+CREATE INDEX idx_membership_fee_group_year ON membership_fee_group (group_year);
 CREATE INDEX idx_membership_fee_group_source_level ON membership_fee_group (source_level_id);
 
 -- Comments for membership_fee_group
 COMMENT ON TABLE membership_fee_group IS 'Snapshot of a fee level for a specific year; contains membership records for member choices';
 COMMENT ON COLUMN membership_fee_group.source_level_id IS 'Template level this snapshot was created from (for D8: previous-year default lookup)';
 COMMENT ON COLUMN membership_fee_group.name IS 'Snapshot of the level name at publication time';
-COMMENT ON COLUMN membership_fee_group.year IS 'Calendar year this group applies to';
+COMMENT ON COLUMN membership_fee_group.group_year IS 'Calendar year this group applies to';
 COMMENT ON COLUMN membership_fee_group.yearly_fee_snapshot_amount IS 'Snapshot of the yearly fee at publication time; immutable after FROZEN';
 COMMENT ON COLUMN membership_fee_group.status IS 'EDITABLE: snapshot can be changed before voting deadline; FROZEN: locked after deadline';
 
@@ -845,16 +855,16 @@ COMMENT ON COLUMN fee_group_membership.assigned_by IS 'MemberId of the admin who
 
 CREATE TABLE yearly_fee_charge_marker
 (
-    member_id   UUID      NOT NULL,
-    year        INT       NOT NULL,
-    charged_at  TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (member_id, year)
+    member_id    UUID      NOT NULL,
+    charge_year  INT       NOT NULL,
+    charged_at   TIMESTAMP NOT NULL,
+    PRIMARY KEY (member_id, charge_year)
 );
 
 -- Comments for yearly_fee_charge_marker
 COMMENT ON TABLE yearly_fee_charge_marker IS 'Idempotency guard: prevents double-posting the yearly membership fee for a (member, year) pair (D6)';
 COMMENT ON COLUMN yearly_fee_charge_marker.member_id IS 'Reference to Member aggregate (no FK — cross-module value object reference)';
-COMMENT ON COLUMN yearly_fee_charge_marker.year IS 'Calendar year for which the yearly fee was charged';
+COMMENT ON COLUMN yearly_fee_charge_marker.charge_year IS 'Calendar year for which the yearly fee was charged';
 COMMENT ON COLUMN yearly_fee_charge_marker.charged_at IS 'Timestamp when the fee was successfully posted to finance module';
 
 -- ============================================================================
