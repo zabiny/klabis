@@ -3,26 +3,9 @@ import {Link} from 'react-router-dom';
 import {Section} from './MemberSection';
 import {labels} from '../../localization';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import type {FeeSummaryData} from '../membership-fees/memberFeeTypes';
 
 const l = labels.memberFee;
-
-interface FeeSummaryGroup {
-    id: string;
-    name: string;
-    yearlyFee: number;
-}
-
-interface FeeSummaryLinks {
-    self: {href: string};
-    feeHistory?: {href: string};
-}
-
-interface FeeSummaryData {
-    currentGroup: FeeSummaryGroup | null;
-    votingOpen: boolean;
-    recommendedLevelId: string | null;
-    _links: FeeSummaryLinks;
-}
 
 interface MemberFeeSectionProps {
     feeSummaryHref: string;

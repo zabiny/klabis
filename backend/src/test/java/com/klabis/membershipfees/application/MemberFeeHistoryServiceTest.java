@@ -125,8 +125,8 @@ class MemberFeeHistoryServiceTest {
                     .thenReturn(Optional.of(publication));
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.of(previousYearGroup));
-            org.mockito.Mockito.when(groupRepository.findByYear(YEAR))
-                    .thenReturn(List.of(currentYearGroup));
+            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID))
+                    .thenReturn(true);
 
             MemberFeeHistoryPort.CurrentLevelInfo result = service.getCurrentLevelInfo(MEMBER_ID, YEAR);
 

@@ -200,7 +200,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should charge yearly fee for each member in group")
         void shouldChargeYearlyFeeForMembersInGroup() {
-            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
+            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
@@ -217,7 +217,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should save marker after successful charge")
         void shouldSaveMarkerAfterCharge() {
-            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
+            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
@@ -227,7 +227,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should skip charge for member who already has a marker (idempotence)")
         void shouldSkipChargeForAlreadyMarkedMember() {
-            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, 2026)).thenReturn(true);
+            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of(MEMBER_WITH_CHOICE));
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
@@ -281,7 +281,7 @@ class FeeSelectionDeadlineSchedulerTest {
                     .thenReturn(List.of(publication));
             when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
-            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
+            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 

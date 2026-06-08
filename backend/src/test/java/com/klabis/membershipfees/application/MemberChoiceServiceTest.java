@@ -167,12 +167,9 @@ class MemberChoiceServiceTest {
             MembershipFeeGroup previousYearGroup = buildEditableGroup(LEVEL_ID_A);
             previousYearGroup.addMember(MEMBER_ID, LocalDate.of(YEAR - 1, 2, 1), AssignmentSource.MEMBER_CHOICE);
 
-            MembershipFeeGroup currentYearGroupWithSameLevel = buildEditableGroup(LEVEL_ID_A);
-
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.of(previousYearGroup));
-            when(groupRepository.findByYear(YEAR))
-                    .thenReturn(List.of(currentYearGroupWithSameLevel));
+            when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID_A)).thenReturn(true);
 
             Optional<MembershipFeeLevelId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
 
@@ -195,12 +192,9 @@ class MemberChoiceServiceTest {
             MembershipFeeGroup previousYearGroup = buildEditableGroup(LEVEL_ID_A);
             previousYearGroup.addMember(MEMBER_ID, LocalDate.of(YEAR - 1, 2, 1), AssignmentSource.MEMBER_CHOICE);
 
-            MembershipFeeGroup currentYearGroupWithDifferentLevel = buildEditableGroup(LEVEL_ID_B);
-
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.of(previousYearGroup));
-            when(groupRepository.findByYear(YEAR))
-                    .thenReturn(List.of(currentYearGroupWithDifferentLevel));
+            when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID_A)).thenReturn(false);
 
             Optional<MembershipFeeLevelId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
 

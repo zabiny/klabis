@@ -29,4 +29,7 @@ interface MembershipFeeGroupJdbcRepository extends CrudRepository<MembershipFeeG
             ORDER BY g.group_year DESC
             """)
     List<MembershipFeeGroupMemento> findByMember(@Param("memberId") UUID memberId);
+
+    @Query("SELECT COUNT(*) > 0 FROM membership_fee_group WHERE group_year = :year AND source_level_id = :sourceLevelId")
+    boolean existsByYearAndSourceLevelId(@Param("year") int year, @Param("sourceLevelId") UUID sourceLevelId);
 }

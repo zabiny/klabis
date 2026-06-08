@@ -69,11 +69,6 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
     private Optional<MembershipFeeLevelId> resolveRecommendedLevel(MemberId memberId, int year) {
         return groupRepository.findByMemberAndYear(memberId, year - 1)
                 .map(MembershipFeeGroup::getSourceLevelId)
-                .filter(lastYearLevelId -> isLevelPublishedForYear(lastYearLevelId, year));
-    }
-
-    private boolean isLevelPublishedForYear(MembershipFeeLevelId levelId, int year) {
-        return groupRepository.findByYear(year).stream()
-                .anyMatch(group -> group.getSourceLevelId().equals(levelId));
+                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));
     }
 }

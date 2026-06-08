@@ -1,31 +1,22 @@
 package com.klabis.membershipfees.infrastructure.jdbc;
 
-import com.klabis.common.domain.AuditMetadata;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.MembershipFeeLevel;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
-import org.springframework.data.annotation.*;
-import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Currency;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Table("membership_fee_level")
-class MembershipFeeLevelMemento implements Persistable<UUID> {
-
-    @Id
-    @Column("id")
-    private UUID id;
+class MembershipFeeLevelMemento extends AbstractMembershipFeeMemento {
 
     @Column("name")
     private String name;
@@ -38,29 +29,6 @@ class MembershipFeeLevelMemento implements Persistable<UUID> {
 
     @MappedCollection(idColumn = "membership_fee_level_id")
     private Set<MembershipPaymentRuleMemento> rules = new HashSet<>();
-
-    @CreatedDate
-    @Column("created_at")
-    private Instant createdAt;
-
-    @CreatedBy
-    @Column("created_by")
-    private String createdBy;
-
-    @LastModifiedDate
-    @Column("modified_at")
-    private Instant lastModifiedAt;
-
-    @LastModifiedBy
-    @Column("modified_by")
-    private String lastModifiedBy;
-
-    @Version
-    @Column("version")
-    private Long version;
-
-    @Transient
-    private boolean isNew = true;
 
     protected MembershipFeeLevelMemento() {
     }
@@ -75,7 +43,7 @@ class MembershipFeeLevelMemento implements Persistable<UUID> {
                 .map(MembershipPaymentRuleMemento::from)
                 .collect(Collectors.toSet());
         memento.isNew = (level.getAuditMetadata() == null);
-        applyAudit(memento, level.getAuditMetadata());
+        memento.applyAudit(level.getAuditMetadata());
         return memento;
     }
 
@@ -86,31 +54,7 @@ class MembershipFeeLevelMemento implements Persistable<UUID> {
 
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(yearlyFeeCurrency));
 
-        AuditMetadata auditMetadata = createdAt != null
-                ? new AuditMetadata(createdAt, createdBy, lastModifiedAt, lastModifiedBy, version)
-                : null;
-
         return MembershipFeeLevel.reconstruct(new MembershipFeeLevelId(id), name, yearlyFee,
-                domainRules, auditMetadata);
-    }
-
-    @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public boolean isNew() {
-        return isNew;
-    }
-
-    private static void applyAudit(MembershipFeeLevelMemento memento, AuditMetadata auditMetadata) {
-        if (auditMetadata != null) {
-            memento.createdAt = auditMetadata.createdAt();
-            memento.createdBy = auditMetadata.createdBy();
-            memento.lastModifiedAt = auditMetadata.lastModifiedAt();
-            memento.lastModifiedBy = auditMetadata.lastModifiedBy();
-            memento.version = auditMetadata.version();
-        }
+                domainRules, toAuditMetadata());
     }
 }

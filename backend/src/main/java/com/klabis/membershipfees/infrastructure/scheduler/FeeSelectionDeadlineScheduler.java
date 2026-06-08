@@ -110,10 +110,12 @@ class FeeSelectionDeadlineScheduler {
         LocalDate occurredAt = publication.getVotingDeadline().plusDays(1);
         String note = "Roční členský příspěvek " + year;
 
+        Set<MemberId> alreadyCharged = markerRepository.findChargedMemberIdsForYear(year);
+
         for (MembershipFeeGroup group : groups) {
             for (FeeGroupMembership membership : group.getMemberships()) {
                 MemberId memberId = membership.memberId();
-                if (markerRepository.existsByMemberIdAndYear(memberId, year)) {
+                if (alreadyCharged.contains(memberId)) {
                     log.debug("Skipping yearly fee charge for member {} year {} — already charged", memberId, year);
                     continue;
                 }

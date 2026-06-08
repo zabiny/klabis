@@ -13,7 +13,6 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -81,12 +80,6 @@ class MemberChoiceService implements MemberChoicePort {
     public Optional<MembershipFeeLevelId> getRecommendedLevelForYear(MemberId memberId, int year) {
         return groupRepository.findByMemberAndYear(memberId, year - 1)
                 .map(MembershipFeeGroup::getSourceLevelId)
-                .filter(lastYearLevelId -> isLevelPublishedForYear(lastYearLevelId, year));
-    }
-
-    private boolean isLevelPublishedForYear(MembershipFeeLevelId levelId, int year) {
-        List<MembershipFeeGroup> currentYearGroups = groupRepository.findByYear(year);
-        return currentYearGroups.stream()
-                .anyMatch(group -> group.getSourceLevelId().equals(levelId));
+                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));
     }
 }

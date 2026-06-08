@@ -4,25 +4,11 @@ import {Alert, Button, Skeleton} from '../../components/UI';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import type {HalFormsTemplate} from '../../api';
+import type {FeeSummaryData as FeeSummaryBase} from './memberFeeTypes';
 
 const l = labels.memberFee;
 
-interface FeeSummaryGroup {
-    id: string;
-    name: string;
-    yearlyFee: number;
-}
-
-interface FeeSummaryLinks {
-    self: {href: string};
-    feeHistory?: {href: string};
-}
-
-interface FeeSummaryData {
-    currentGroup: FeeSummaryGroup | null;
-    votingOpen: boolean;
-    recommendedLevelId: string | null;
-    _links: FeeSummaryLinks;
+interface FeeSummaryData extends FeeSummaryBase {
     _templates?: {
         chooseLevel?: HalFormsTemplate;
         cancelChoice?: HalFormsTemplate;

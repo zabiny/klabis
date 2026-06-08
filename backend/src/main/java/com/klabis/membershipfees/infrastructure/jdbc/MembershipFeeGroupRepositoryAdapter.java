@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import com.klabis.members.MemberId;
@@ -53,5 +54,10 @@ class MembershipFeeGroupRepositoryAdapter implements MembershipFeeGroupRepositor
         return jdbcRepository.findByMember(memberId.value()).stream()
                 .map(MembershipFeeGroupMemento::toGroup)
                 .toList();
+    }
+
+    @Override
+    public boolean existsByYearAndSourceLevelId(int year, MembershipFeeLevelId sourceLevelId) {
+        return jdbcRepository.existsByYearAndSourceLevelId(year, sourceLevelId.value());
     }
 }

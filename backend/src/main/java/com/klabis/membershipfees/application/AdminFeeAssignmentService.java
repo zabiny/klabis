@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.application;
 
-import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
@@ -18,16 +17,13 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeYearPublicationRepository publicationRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final MemberRegistrationSanctionPort sanctionPort;
 
     AdminFeeAssignmentService(MembershipFeeGroupRepository groupRepository,
                               FeeYearPublicationRepository publicationRepository,
-                              ApplicationEventPublisher eventPublisher,
-                              MemberRegistrationSanctionPort sanctionPort) {
+                              ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
         this.eventPublisher = eventPublisher;
-        this.sanctionPort = sanctionPort;
     }
 
     @Transactional
@@ -49,8 +45,7 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
         targetGroup.addMember(command.targetMemberId(), LocalDate.now(), AssignmentSource.ADMIN_ASSIGNMENT, command.adminId());
         groupRepository.save(targetGroup);
 
-        if (sanctionPort.isMemberBlocked(command.targetMemberId())) {
-            eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(command.targetMemberId(), command.year()));
-        }
+        // Always publish — listener's unblockMember() is idempotent (no-op when member is not blocked)
+        eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(command.targetMemberId(), command.year()));
     }
 }

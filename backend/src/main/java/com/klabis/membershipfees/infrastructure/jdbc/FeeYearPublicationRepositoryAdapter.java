@@ -7,9 +7,9 @@ import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 @SecondaryAdapter
 @Repository
@@ -38,9 +38,9 @@ class FeeYearPublicationRepositoryAdapter implements FeeYearPublicationRepositor
 
     @Override
     public List<FeeYearPublication> findAll() {
-        List<FeeYearPublication> result = new ArrayList<>();
-        jdbcRepository.findAll().forEach(m -> result.add(m.toPublication()));
-        return result;
+        return StreamSupport.stream(jdbcRepository.findAll().spliterator(), false)
+                .map(FeeYearPublicationMemento::toPublication)
+                .toList();
     }
 
     @Override
