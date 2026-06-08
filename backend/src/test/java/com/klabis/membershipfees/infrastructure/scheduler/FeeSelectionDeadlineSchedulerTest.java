@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.infrastructure.scheduler;
 
+import com.klabis.finance.application.ChargePort;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.AssignmentSource;
@@ -9,6 +10,7 @@ import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
+import com.klabis.membershipfees.domain.YearlyFeeChargeMarkerRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,13 +51,18 @@ class FeeSelectionDeadlineSchedulerTest {
     private AllMembersPort allMembersPort;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private ChargePort chargePort;
+    @Mock
+    private YearlyFeeChargeMarkerRepository markerRepository;
 
     private FeeSelectionDeadlineScheduler scheduler;
 
     @BeforeEach
     void setUp() {
         scheduler = new FeeSelectionDeadlineScheduler(
-                publicationRepository, groupRepository, allMembersPort, eventPublisher);
+                publicationRepository, groupRepository, allMembersPort, eventPublisher,
+                chargePort, markerRepository);
     }
 
     @Nested
@@ -70,7 +77,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
-            verifyNoInteractions(allMembersPort, eventPublisher);
+            verifyNoInteractions(allMembersPort, eventPublisher, chargePort, markerRepository);
         }
     }
 
@@ -189,6 +196,44 @@ class FeeSelectionDeadlineSchedulerTest {
             verify(eventPublisher, atLeastOnce()).publishEvent(eventCaptor.capture());
             assertThat(eventCaptor.getAllValues()).isNotEmpty();
         }
+
+        @Test
+        @DisplayName("should charge yearly fee for each member in group")
+        void shouldChargeYearlyFeeForMembersInGroup() {
+            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor = ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
+            verify(chargePort, times(1)).charge(chargeCaptor.capture());
+
+            ChargePort.ChargeCommand command = chargeCaptor.getValue();
+            assertThat(command.memberId()).isEqualTo(MEMBER_WITH_CHOICE);
+            assertThat(command.amount()).isEqualByComparingTo(BigDecimal.valueOf(500));
+            assertThat(command.occurredAt()).isEqualTo(DAY_AFTER_DEADLINE);
+            assertThat(command.note()).contains("2026");
+        }
+
+        @Test
+        @DisplayName("should save marker after successful charge")
+        void shouldSaveMarkerAfterCharge() {
+            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, 2026);
+        }
+
+        @Test
+        @DisplayName("should skip charge for member who already has a marker (idempotence)")
+        void shouldSkipChargeForAlreadyMarkedMember() {
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, 2026)).thenReturn(true);
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verifyNoInteractions(chargePort);
+            verify(markerRepository, never()).markCharged(any(), anyInt());
+        }
     }
 
     @Nested
@@ -203,7 +248,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
-            verifyNoInteractions(allMembersPort, eventPublisher);
+            verifyNoInteractions(allMembersPort, eventPublisher, chargePort, markerRepository);
         }
     }
 
@@ -236,11 +281,49 @@ class FeeSelectionDeadlineSchedulerTest {
                     .thenReturn(List.of(publication));
             when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
+            when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(false);
 
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(eventPublisher);
+            verify(chargePort, times(1)).charge(any(ChargePort.ChargeCommand.class));
             verify(publicationRepository).save(any(FeeYearPublication.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("yearly fee charging — member not in any group")
+    class MemberNotInAnyGroup {
+
+        @Test
+        @DisplayName("should not charge members not belonging to any group")
+        void shouldNotChargeMembersWithoutGroup() {
+            FeeYearPublication publication = FeeYearPublication.reconstruct(
+                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+                    2026,
+                    DEADLINE,
+                    null,
+                    List.of());
+
+            MembershipFeeGroup emptyGroup = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    "Empty",
+                    2026,
+                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    Set.of(),
+                    null);
+
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of(publication));
+            when(groupRepository.findByYear(2026)).thenReturn(List.of(emptyGroup));
+            when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITHOUT_CHOICE));
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verifyNoInteractions(chargePort);
         }
     }
 }
