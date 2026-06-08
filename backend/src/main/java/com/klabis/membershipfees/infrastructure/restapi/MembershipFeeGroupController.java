@@ -3,13 +3,18 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.members.ActingMember;
+import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -32,9 +38,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MembershipFeeGroupController {
 
     private final FeeYearPublicationManagementPort managementPort;
+    private final AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    MembershipFeeGroupController(FeeYearPublicationManagementPort managementPort) {
+    MembershipFeeGroupController(FeeYearPublicationManagementPort managementPort,
+                                 AdminFeeAssignmentPort adminFeeAssignmentPort) {
         this.managementPort = managementPort;
+        this.adminFeeAssignmentPort = adminFeeAssignmentPort;
     }
 
     @GetMapping("/{id}")
@@ -43,6 +52,24 @@ class MembershipFeeGroupController {
             @Parameter(description = "Group UUID") @PathVariable UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
         return ResponseEntity.ok(entityModelWithDomain(MembershipFeeGroupResponse.from(group), group));
+    }
+
+    @PostMapping(value = "/{groupId}/members/{memberId}", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> assignMember(
+            @Parameter(description = "Fee group UUID") @PathVariable UUID groupId,
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+            @Valid @RequestBody AdminAssignMemberRequest request,
+            @ActingMember MemberId actingAdmin) {
+
+        adminFeeAssignmentPort.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                actingAdmin,
+                new MemberId(memberId),
+                new MembershipFeeGroupId(groupId),
+                request.year()));
+
+        return ResponseEntity.noContent().build();
     }
 }
 
@@ -54,7 +81,9 @@ class MembershipFeeGroupDetailsPostprocessor
     public void process(EntityModel<MembershipFeeGroupResponse> dtoModel, MembershipFeeGroup group) {
         UUID id = group.getId().uuid();
         klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(id))
-                .map(link -> link.withSelfRel())
+                .map(link -> link.withSelfRel()
+                        .andAffordances(klabisAfford(
+                                methodOn(MembershipFeeGroupController.class).assignMember(id, null, null, null))))
                 .ifPresent(dtoModel::add);
     }
 }

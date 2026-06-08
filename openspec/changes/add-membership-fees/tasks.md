@@ -41,10 +41,10 @@
 
 ## 5. Emergency assignment by administrator (slice)
 
-- [ ] 5.1 Write failing tests: `MEMBERS:ADMIN` assigns/changes a member's level after the deadline, overriding the lock
-- [ ] 5.2 Implement emergency assignment domain + service path; refactor
-- [ ] 5.3 Implement HAL+FORMS admin endpoint for emergency assignment; web slice test
-- [ ] 5.4 Verify spec scenarios: "Emergency Assignment by Administrator"
+- [x] 5.1 Write failing tests: `MEMBERS:ADMIN` assigns/changes a member's level after the deadline, overriding the lock
+- [x] 5.2 Implement emergency assignment domain + service path; refactor
+- [x] 5.3 Implement HAL+FORMS admin endpoint for emergency assignment; web slice test
+- [x] 5.4 Verify spec scenarios: "Emergency Assignment by Administrator"
 
 ## 6. Sanction for a missing choice (slice: cross-module via events)
 

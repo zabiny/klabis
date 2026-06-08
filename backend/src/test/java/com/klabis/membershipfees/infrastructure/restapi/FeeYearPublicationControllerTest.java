@@ -8,6 +8,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.FeeYearPublicationNotFoundException;
 import com.klabis.membershipfees.domain.FeeYearPublication;
@@ -49,6 +50,9 @@ class FeeYearPublicationControllerTest {
 
     @MockitoBean
     private FeeYearPublicationManagementPort managementPort;
+
+    @MockitoBean
+    private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
     private FeeYearPublication buildPublication(UUID id, int year) {
         return FeeYearPublication.reconstruct(

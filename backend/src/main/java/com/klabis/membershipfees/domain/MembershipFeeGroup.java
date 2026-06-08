@@ -8,6 +8,7 @@ import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
@@ -132,6 +133,10 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     }
 
     public void addMember(MemberId memberId, LocalDate today, AssignmentSource source) {
+        addMember(memberId, today, source, null);
+    }
+
+    public void addMember(MemberId memberId, LocalDate today, AssignmentSource source, @Nullable MemberId assignedBy) {
         Assert.notNull(memberId, "MemberId is required");
         Assert.notNull(today, "Today is required");
         Assert.notNull(source, "AssignmentSource is required");
@@ -146,7 +151,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
             return;
         }
 
-        memberships.add(new FeeGroupMembership(memberId, today, source, null));
+        memberships.add(new FeeGroupMembership(memberId, today, source, assignedBy));
     }
 
     public void removeMember(MemberId memberId) {
