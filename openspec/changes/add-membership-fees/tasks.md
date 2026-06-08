@@ -72,11 +72,11 @@
 
 ## 9. Yearly membership fee posting (slice: charge to account end-to-end)
 
-- [ ] 9.1 Write failing tests for the yearly-fee scheduler: runs day after the voting deadline; posts each member's assigned level yearly fee; idempotent per member+year; member without a level gets nothing
-- [ ] 9.2 Implement scheduler calling `finance.ChargePort.charge(...)` with idempotency marker (member, year); refactor
-- [ ] 9.3 In module `finance` / `member-accounts`: write failing test — generated yearly fee appears in account history and is identifiable as system-generated
-- [ ] 9.4 Implement the member-accounts side so the auto-generated yearly fee is recorded as system-generated; refactor
-- [ ] 9.5 Verify spec scenarios: "Generating the Yearly Membership Fee" + member-accounts "Automatic Yearly Membership Fee Posting"
+- [x] 9.1 Write failing tests for the yearly-fee scheduler: runs day after the voting deadline; posts each member's assigned level yearly fee; idempotent per member+year; member without a level gets nothing
+- [x] 9.2 Implement scheduler calling `finance.ChargePort.charge(...)` with idempotency marker (member, year); refactor
+- [x] 9.3 In module `finance` / `member-accounts`: write failing test — generated yearly fee appears in account history and is identifiable as system-generated
+- [x] 9.4 Implement the member-accounts side so the auto-generated yearly fee is recorded as system-generated; refactor
+- [x] 9.5 Verify spec scenarios: "Generating the Yearly Membership Fee" + member-accounts "Automatic Yearly Membership Fee Posting"
 
 ## 10. Member visibility and audit trail (slice)
 
