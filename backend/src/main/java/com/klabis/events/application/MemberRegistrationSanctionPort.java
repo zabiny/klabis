@@ -21,4 +21,11 @@ public interface MemberRegistrationSanctionPort {
      * due to a missed fee selection.
      */
     boolean isMemberBlocked(MemberId memberId);
+
+    /**
+     * Removes the registration block imposed by a missed fee selection sanction.
+     * Only unblocks future registrations — previously auto-cancelled registrations
+     * remain cancelled and must be restored manually if needed (D9).
+     */
+    void unblockMember(MemberId memberId);
 }

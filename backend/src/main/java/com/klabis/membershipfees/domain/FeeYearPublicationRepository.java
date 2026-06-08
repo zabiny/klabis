@@ -16,4 +16,10 @@ public interface FeeYearPublicationRepository {
     Optional<FeeYearPublication> findByYear(int year);
 
     List<FeeYearPublication> findAll();
+
+    /**
+     * Returns all publications whose voting deadline has passed (deadline < today)
+     * and that have not yet been processed by the scheduler (deadlineProcessedAt is null).
+     */
+    List<FeeYearPublication> findUnprocessedClosedPublications(java.time.LocalDate today);
 }

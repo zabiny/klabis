@@ -6,6 +6,7 @@ import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,5 +41,12 @@ class FeeYearPublicationRepositoryAdapter implements FeeYearPublicationRepositor
         List<FeeYearPublication> result = new ArrayList<>();
         jdbcRepository.findAll().forEach(m -> result.add(m.toPublication()));
         return result;
+    }
+
+    @Override
+    public List<FeeYearPublication> findUnprocessedClosedPublications(LocalDate today) {
+        return jdbcRepository.findUnprocessedClosedPublications(today).stream()
+                .map(FeeYearPublicationMemento::toPublication)
+                .toList();
     }
 }

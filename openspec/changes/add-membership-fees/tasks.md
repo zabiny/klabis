@@ -56,11 +56,11 @@
 
 ## 7. Lifting the sanction (slice)
 
-- [ ] 7.1 Write failing tests: emergency assignment of a sanctioned member publishes `MemberFeeSelectionResolvedEvent`
-- [ ] 7.2 Implement publishing of `MemberFeeSelectionResolvedEvent` from emergency assignment path
-- [ ] 7.3 In module `events`: write failing listener test — on `MemberFeeSelectionResolvedEvent` lift the registration block; previously deregistered registrations are NOT auto-restored
-- [ ] 7.4 Implement the `events` listener; refactor
-- [ ] 7.5 Verify spec scenarios: "Lifting the Sanction by Emergency Assignment"
+- [x] 7.1 Write failing tests: emergency assignment of a sanctioned member publishes `MemberFeeSelectionResolvedEvent`
+- [x] 7.2 Implement publishing of `MemberFeeSelectionResolvedEvent` from emergency assignment path
+- [x] 7.3 In module `events`: write failing listener test — on `MemberFeeSelectionResolvedEvent` lift the registration block; previously deregistered registrations are NOT auto-restored
+- [x] 7.4 Implement the `events` listener; refactor
+- [x] 7.5 Verify spec scenarios: "Lifting the Sanction by Emergency Assignment"
 
 ## 8. Editing window of a published level (slice)
 

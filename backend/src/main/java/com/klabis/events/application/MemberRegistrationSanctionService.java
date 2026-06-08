@@ -45,6 +45,12 @@ class MemberRegistrationSanctionService implements MemberRegistrationSanctionPor
         return blockRepository.isBlocked(memberId);
     }
 
+    @Override
+    public void unblockMember(MemberId memberId) {
+        log.info("Lifting registration sanction for member {}", memberId);
+        blockRepository.unblock(memberId);
+    }
+
     private void autoUnregisterFromOpenEvents(MemberId memberId) {
         EventFilter filter = EventFilter.byStatus(EventStatus.ACTIVE)
                 .withRegisteredBy(memberId);
