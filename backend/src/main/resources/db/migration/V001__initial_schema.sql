@@ -868,6 +868,26 @@ COMMENT ON COLUMN yearly_fee_charge_marker.charge_year IS 'Calendar year for whi
 COMMENT ON COLUMN yearly_fee_charge_marker.charged_at IS 'Timestamp when the fee was successfully posted to finance module';
 
 -- ============================================================================
+-- 36. MEMBER_REGISTRATION_BLOCK TABLE
+-- Persists registration blocks applied as sanctions for members who missed the
+-- fee selection deadline. A row means the member is currently blocked from
+-- registering for new events. Rows are deleted when the sanction is lifted.
+-- Owned by the events module.
+-- ============================================================================
+
+CREATE TABLE member_registration_block
+(
+    member_id  UUID      NOT NULL,
+    blocked_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (member_id)
+);
+
+-- Comments for member_registration_block
+COMMENT ON TABLE member_registration_block IS 'Active event-registration blocks for members who missed the fee selection deadline. Owned by the events module.';
+COMMENT ON COLUMN member_registration_block.member_id IS 'Reference to Member aggregate (no FK — cross-module value object reference)';
+COMMENT ON COLUMN member_registration_block.blocked_at IS 'Timestamp when the block was applied';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

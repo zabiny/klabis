@@ -48,11 +48,11 @@
 
 ## 6. Sanction for a missing choice (slice: cross-module via events)
 
-- [ ] 6.1 Write failing tests for sanction trigger: day after deadline, members without a choice are identified via `AllMembersPort` (including suspended) minus members present in any `MembershipFeeGroup` for that year
-- [ ] 6.2 Implement scheduler publishing `MemberMissedFeeSelectionEvent` for members who missed the choice; call `FeeYearPublication.markProcessed(now)` and persist; idempotent (sanctioning already-sanctioned member is a no-op in `events`)
-- [ ] 6.3 In module `events`: write failing listener test — on `MemberMissedFeeSelectionEvent` block new registrations + deregister from events with open registrations; log affected registrations for manual restore
-- [ ] 6.4 Implement the `events` listener; refactor
-- [ ] 6.5 Verify spec scenarios: "Sanction for a Missing Choice" (member sanctioned vs not sanctioned)
+- [x] 6.1 Write failing tests for sanction trigger: day after deadline, members without a choice are identified via `AllMembersPort` (including suspended) minus members present in any `MembershipFeeGroup` for that year
+- [x] 6.2 Implement scheduler publishing `MemberMissedFeeSelectionEvent` for members who missed the choice; call `FeeYearPublication.markProcessed(now)` and persist; idempotent (sanctioning already-sanctioned member is a no-op in `events`)
+- [x] 6.3 In module `events`: write failing listener test — on `MemberMissedFeeSelectionEvent` block new registrations + deregister from events with open registrations; log affected registrations for manual restore
+- [x] 6.4 Implement the `events` listener; refactor
+- [x] 6.5 Verify spec scenarios: "Sanction for a Missing Choice" (member sanctioned vs not sanctioned)
 
 ## 7. Lifting the sanction (slice)
 

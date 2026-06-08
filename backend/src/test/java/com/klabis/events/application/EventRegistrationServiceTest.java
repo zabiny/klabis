@@ -43,11 +43,14 @@ class EventRegistrationServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private MemberRegistrationSanctionPort sanctionPort;
+
     private EventRegistrationPort service;
 
     @BeforeEach
     void setUp() {
-        service = new EventRegistrationService(eventRepository);
+        service = new EventRegistrationService(eventRepository, sanctionPort);
     }
 
     @Nested

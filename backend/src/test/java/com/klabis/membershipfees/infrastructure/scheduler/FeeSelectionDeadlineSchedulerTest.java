@@ -1,0 +1,210 @@
+package com.klabis.membershipfees.infrastructure.scheduler;
+
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.domain.AssignmentSource;
+import com.klabis.membershipfees.domain.FeeGroupMembership;
+import com.klabis.membershipfees.domain.FeeYearPublication;
+import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
+import com.klabis.membershipfees.domain.PublishedLevelStatus;
+import com.klabis.members.MemberId;
+import com.klabis.members.application.AllMembersPort;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("FeeSelectionDeadlineScheduler")
+class FeeSelectionDeadlineSchedulerTest {
+
+    private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
+    private static final LocalDate DAY_AFTER_DEADLINE = DEADLINE.plusDays(1);
+
+    private static final MemberId MEMBER_WITHOUT_CHOICE = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final MemberId MEMBER_WITH_CHOICE = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+
+    @Mock
+    private FeeYearPublicationRepository publicationRepository;
+    @Mock
+    private MembershipFeeGroupRepository groupRepository;
+    @Mock
+    private AllMembersPort allMembersPort;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    private FeeSelectionDeadlineScheduler scheduler;
+
+    @BeforeEach
+    void setUp() {
+        scheduler = new FeeSelectionDeadlineScheduler(
+                publicationRepository, groupRepository, allMembersPort, eventPublisher);
+    }
+
+    @Nested
+    @DisplayName("when no unprocessed closed publications exist")
+    class WhenNoUnprocessedPublications {
+
+        @Test
+        @DisplayName("should do nothing")
+        void shouldDoNothing() {
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of());
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verifyNoInteractions(allMembersPort, eventPublisher);
+        }
+    }
+
+    @Nested
+    @DisplayName("when a closed unprocessed publication exists")
+    class WhenUnprocessedPublicationExists {
+
+        private FeeYearPublication publication;
+        private MembershipFeeGroup groupWithMemberWithChoice;
+
+        @BeforeEach
+        void setUp() {
+            publication = FeeYearPublication.reconstruct(
+                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+                    2026,
+                    DEADLINE,
+                    null,
+                    List.of());
+
+            groupWithMemberWithChoice = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    "Youth",
+                    2026,
+                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
+                    null);
+
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of(publication));
+            when(groupRepository.findByYear(2026))
+                    .thenReturn(List.of(groupWithMemberWithChoice));
+            when(allMembersPort.findAll())
+                    .thenReturn(Set.of(MEMBER_WITHOUT_CHOICE, MEMBER_WITH_CHOICE));
+        }
+
+        @Test
+        @DisplayName("should publish MemberMissedFeeSelectionEvent only for members without a choice")
+        void shouldPublishEventOnlyForMembersWithoutChoice() {
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+            verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+            Object publishedEvent = eventCaptor.getValue();
+            assertThat(publishedEvent).isInstanceOf(com.klabis.membershipfees.MemberMissedFeeSelectionEvent.class);
+
+            com.klabis.membershipfees.MemberMissedFeeSelectionEvent event =
+                    (com.klabis.membershipfees.MemberMissedFeeSelectionEvent) publishedEvent;
+            assertThat(event.memberId()).isEqualTo(MEMBER_WITHOUT_CHOICE);
+            assertThat(event.year()).isEqualTo(2026);
+        }
+
+        @Test
+        @DisplayName("should not publish event for members who already have a choice")
+        void shouldNotPublishEventForMembersWithChoice() {
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+            verify(eventPublisher, atMostOnce()).publishEvent(eventCaptor.capture());
+
+            List<Object> publishedEvents = eventCaptor.getAllValues();
+            publishedEvents.forEach(e -> {
+                com.klabis.membershipfees.MemberMissedFeeSelectionEvent event =
+                        (com.klabis.membershipfees.MemberMissedFeeSelectionEvent) e;
+                assertThat(event.memberId()).isNotEqualTo(MEMBER_WITH_CHOICE);
+            });
+        }
+
+        @Test
+        @DisplayName("should mark publication as processed after handling")
+        void shouldMarkPublicationAsProcessed() {
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<FeeYearPublication> savedCaptor = ArgumentCaptor.forClass(FeeYearPublication.class);
+            verify(publicationRepository).save(savedCaptor.capture());
+
+            FeeYearPublication saved = savedCaptor.getValue();
+            assertThat(saved.getDeadlineProcessedAt()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("when publication was already processed")
+    class WhenAlreadyProcessed {
+
+        @Test
+        @DisplayName("should not process again (idempotence)")
+        void shouldNotReprocess() {
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of());
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verifyNoInteractions(allMembersPort, eventPublisher);
+        }
+    }
+
+    @Nested
+    @DisplayName("when all members have chosen")
+    class WhenAllMembersHaveChosen {
+
+        @Test
+        @DisplayName("should not publish any event")
+        void shouldPublishNoEvents() {
+            FeeYearPublication publication = FeeYearPublication.reconstruct(
+                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+                    2026,
+                    DEADLINE,
+                    null,
+                    List.of());
+
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    "Youth",
+                    2026,
+                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
+                    null);
+
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of(publication));
+            when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
+            when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            verifyNoInteractions(eventPublisher);
+            verify(publicationRepository).save(any(FeeYearPublication.class));
+        }
+    }
+}
