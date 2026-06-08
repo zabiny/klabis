@@ -8,4 +8,8 @@ public class FeeYearPublicationNotFoundException extends BusinessRuleViolationEx
     public FeeYearPublicationNotFoundException(FeeYearPublicationId id) {
         super("FeeYearPublication not found: " + id.value());
     }
+
+    public FeeYearPublicationNotFoundException(int year) {
+        super("No FeeYearPublication found for year: " + year);
+    }
 }

@@ -5,10 +5,12 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -127,5 +129,33 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
 
     public void freeze() {
         this.status = PublishedLevelStatus.FROZEN;
+    }
+
+    public void addMember(MemberId memberId, LocalDate today, AssignmentSource source) {
+        Assert.notNull(memberId, "MemberId is required");
+        Assert.notNull(today, "Today is required");
+        Assert.notNull(source, "AssignmentSource is required");
+
+        if (status == PublishedLevelStatus.FROZEN && source == AssignmentSource.MEMBER_CHOICE) {
+            throw new VotingClosedException();
+        }
+
+        boolean alreadyMember = memberships.stream()
+                .anyMatch(m -> m.memberId().equals(memberId));
+        if (alreadyMember) {
+            return;
+        }
+
+        memberships.add(new FeeGroupMembership(memberId, today, source, null));
+    }
+
+    public void removeMember(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        memberships.removeIf(m -> m.memberId().equals(memberId));
+    }
+
+    public boolean hasMember(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        return memberships.stream().anyMatch(m -> m.memberId().equals(memberId));
     }
 }

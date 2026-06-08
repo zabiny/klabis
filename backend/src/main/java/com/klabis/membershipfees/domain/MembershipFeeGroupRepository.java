@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.domain;
 
 import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.List;
@@ -14,4 +15,8 @@ public interface MembershipFeeGroupRepository {
     Optional<MembershipFeeGroup> findById(MembershipFeeGroupId id);
 
     List<MembershipFeeGroup> findByYear(int year);
+
+    List<MembershipFeeGroup> saveAll(List<MembershipFeeGroup> groups);
+
+    Optional<MembershipFeeGroup> findByMemberAndYear(MemberId memberId, int year);
 }

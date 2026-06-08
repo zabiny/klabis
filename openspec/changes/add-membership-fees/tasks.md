@@ -32,12 +32,12 @@
 
 ## 4. Member chooses a level (slice: member self-selection end-to-end)
 
-- [ ] 4.1 Write failing domain tests: member joins a `MembershipFeeGroup` before deadline; changing choice moves membership; choice locked after deadline
-- [ ] 4.2 Write failing test for "previous year's level offered as default": application service resolves pre-fill from year N-1 matched by `MembershipFeeLevelId` (sourceLevelId); default is non-binding (not a choice until confirmed)
-- [ ] 4.3 Implement choice + change + lock-after-deadline domain logic; refactor
-- [ ] 4.4 Implement application port + service for member choice and change (member acting on self)
-- [ ] 4.5 Implement HAL+FORMS member-facing endpoints for choosing/changing the level for the upcoming year, with conditional afford metadata (hidden after deadline); web slice test
-- [ ] 4.6 Verify spec scenarios: "Member Chooses a Fee Level for the Upcoming Year"
+- [x] 4.1 Write failing domain tests: member joins a `MembershipFeeGroup` before deadline; changing choice moves membership; choice locked after deadline
+- [x] 4.2 Write failing test for "previous year's level offered as default": application service resolves pre-fill from year N-1 matched by `MembershipFeeLevelId` (sourceLevelId); default is non-binding (not a choice until confirmed)
+- [x] 4.3 Implement choice + change + lock-after-deadline domain logic; refactor
+- [x] 4.4 Implement application port + service for member choice and change (member acting on self)
+- [x] 4.5 Implement HAL+FORMS member-facing endpoints for choosing/changing the level for the upcoming year, with conditional afford metadata (hidden after deadline); web slice test
+- [x] 4.6 Verify spec scenarios: "Member Chooses a Fee Level for the Upcoming Year"
 
 ## 5. Emergency assignment by administrator (slice)
 
