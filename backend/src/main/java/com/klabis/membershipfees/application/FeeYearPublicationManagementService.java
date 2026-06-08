@@ -81,4 +81,13 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
         return groupRepository.findById(id)
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(id));
     }
+
+    @Transactional
+    @Override
+    public void editGroupSnapshot(MembershipFeeGroupId id, EditGroupSnapshotCommand command) {
+        MembershipFeeGroup group = groupRepository.findById(id)
+                .orElseThrow(() -> new MembershipFeeGroupNotFoundException(id));
+        group.editSnapshot(command.yearlyFee(), command.rules());
+        groupRepository.save(group);
+    }
 }

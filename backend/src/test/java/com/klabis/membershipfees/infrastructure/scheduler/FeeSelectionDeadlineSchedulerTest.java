@@ -153,6 +153,42 @@ class FeeSelectionDeadlineSchedulerTest {
             FeeYearPublication saved = savedCaptor.getValue();
             assertThat(saved.getDeadlineProcessedAt()).isNotNull();
         }
+
+        @Test
+        @DisplayName("should freeze all groups for the year before sanctioning members")
+        void shouldFreezeGroupsBeforeSanctioning() {
+            assertThat(groupWithMemberWithChoice.getStatus()).isEqualTo(PublishedLevelStatus.EDITABLE);
+
+            when(groupRepository.save(any(MembershipFeeGroup.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<MembershipFeeGroup> groupCaptor = ArgumentCaptor.forClass(MembershipFeeGroup.class);
+            verify(groupRepository).save(groupCaptor.capture());
+            assertThat(groupCaptor.getValue().getStatus()).isEqualTo(PublishedLevelStatus.FROZEN);
+        }
+
+        @Test
+        @DisplayName("should both freeze and persist the group and publish sanction events in the same run")
+        void shouldFreezeAndPublishInSameRun() {
+            List<MembershipFeeGroup> savedGroups = new java.util.ArrayList<>();
+
+            when(groupRepository.save(any(MembershipFeeGroup.class)))
+                    .thenAnswer(inv -> {
+                        MembershipFeeGroup g = inv.getArgument(0);
+                        savedGroups.add(g);
+                        return g;
+                    });
+
+            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+
+            assertThat(savedGroups).isNotEmpty();
+            assertThat(savedGroups.get(0).getStatus()).isEqualTo(PublishedLevelStatus.FROZEN);
+            ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+            verify(eventPublisher, atLeastOnce()).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getAllValues()).isNotEmpty();
+        }
     }
 
     @Nested

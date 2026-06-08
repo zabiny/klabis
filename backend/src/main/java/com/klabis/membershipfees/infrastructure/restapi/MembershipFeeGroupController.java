@@ -8,6 +8,7 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +55,16 @@ class MembershipFeeGroupController {
         return ResponseEntity.ok(entityModelWithDomain(MembershipFeeGroupResponse.from(group), group));
     }
 
+    @PatchMapping(value = "/{id}", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Edit yearly fee and payment rules of a published level (requires MEMBERS:MANAGE, only while EDITABLE)")
+    ResponseEntity<Void> editSnapshot(
+            @Parameter(description = "Group UUID") @PathVariable UUID id,
+            @Valid @RequestBody EditGroupSnapshotRequest request) {
+        managementPort.editGroupSnapshot(new MembershipFeeGroupId(id), request.toCommand());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(value = "/{groupId}/members/{memberId}", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
@@ -81,9 +92,16 @@ class MembershipFeeGroupDetailsPostprocessor
     public void process(EntityModel<MembershipFeeGroupResponse> dtoModel, MembershipFeeGroup group) {
         UUID id = group.getId().uuid();
         klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(id))
-                .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(
-                                methodOn(MembershipFeeGroupController.class).assignMember(id, null, null, null))))
+                .map(link -> {
+                    var self = link.withSelfRel()
+                            .andAffordances(klabisAfford(
+                                    methodOn(MembershipFeeGroupController.class).assignMember(id, null, null, null)));
+                    if (group.getStatus() == PublishedLevelStatus.EDITABLE) {
+                        self = self.andAffordances(klabisAfford(
+                                methodOn(MembershipFeeGroupController.class).editSnapshot(id, null)));
+                    }
+                    return self;
+                })
                 .ifPresent(dtoModel::add);
     }
 }

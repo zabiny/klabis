@@ -118,7 +118,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
 
     public void editSnapshot(Money yearlyFee, List<MembershipPaymentRuleSnapshot> rules) {
         if (status != PublishedLevelStatus.EDITABLE) {
-            throw new IllegalStateException("Cannot edit snapshot of a FROZEN MembershipFeeGroup");
+            throw new SnapshotFrozenException();
         }
         Assert.notNull(yearlyFee, "YearlyFee is required");
         this.yearlyFeeSnapshot = yearlyFee;

@@ -11,6 +11,7 @@ import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
+import com.klabis.membershipfees.domain.SnapshotFrozenException;
 import com.klabis.finance.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,7 +29,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -59,6 +62,16 @@ class MembershipFeeGroupControllerTest {
                 "Dospělý", 2026,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
+                List.of(), Set.of(), null);
+    }
+
+    private MembershipFeeGroup buildEditableGroup() {
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(GROUP_UUID),
+                new MembershipFeeLevelId(UUID.randomUUID()),
+                "Dospělý", 2026,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.EDITABLE,
                 List.of(), Set.of(), null);
     }
 
@@ -144,6 +157,90 @@ class MembershipFeeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.assignMember").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/membership-fee-groups/{id} — edit snapshot")
+    class EditSnapshotTests {
+
+        private static final String EDIT_BODY = """
+                {"yearlyFeeAmount": 1500.00, "yearlyFeeCurrency": "CZK", "rules": []}
+                """;
+
+        @Test
+        @DisplayName("should return 204 when admin edits an EDITABLE group")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenEditable() throws Exception {
+            doNothing().when(managementPort).editGroupSnapshot(any(), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isNoContent());
+
+            verify(managementPort).editGroupSnapshot(
+                    eq(new MembershipFeeGroupId(GROUP_UUID)),
+                    any(FeeYearPublicationManagementPort.EditGroupSnapshotCommand.class));
+        }
+
+        @Test
+        @DisplayName("should return 400 when group is FROZEN (SnapshotFrozenException)")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenFrozen() throws Exception {
+            doThrow(new SnapshotFrozenException())
+                    .when(managementPort).editGroupSnapshot(any(), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user does not have MEMBERS_MANAGE authority")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID)
+        void shouldReturn403WhenNotAdmin() throws Exception {
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("GET should include editSnapshot affordance only for EDITABLE groups")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEditAffordanceOnlyForEditable() throws Exception {
+            MembershipFeeGroup editableGroup = buildEditableGroup();
+            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
+                    .thenReturn(editableGroup);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editSnapshot").exists());
+        }
+
+        @Test
+        @DisplayName("GET should NOT include editSnapshot affordance for FROZEN groups")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotIncludeEditAffordanceForFrozen() throws Exception {
+            MembershipFeeGroup frozenGroup = buildFrozenGroup();
+            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
+                    .thenReturn(frozenGroup);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editSnapshot").doesNotExist());
         }
     }
 }

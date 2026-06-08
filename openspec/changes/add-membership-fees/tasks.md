@@ -64,11 +64,11 @@
 
 ## 8. Editing window of a published level (slice)
 
-- [ ] 8.1 Write failing tests: published level editable while `EDITABLE`; edit rejected once `FROZEN`
-- [ ] 8.2 Write failing test: snapshot transitions `EDITABLE` → `FROZEN` automatically when `votingDeadline` passes
-- [ ] 8.3 Implement freeze-on-deadline logic (snapshot transitions `EDITABLE` → `FROZEN` when `votingDeadline` passes); refactor
-- [ ] 8.4 Implement HAL+FORMS endpoint to edit a published level (afford present only while `EDITABLE`); web slice test
-- [ ] 8.5 Verify spec scenarios: "Editing a Published Level Until First Surcharge"
+- [x] 8.1 Write failing tests: published level editable while `EDITABLE`; edit rejected once `FROZEN`
+- [x] 8.2 Write failing test: snapshot transitions `EDITABLE` → `FROZEN` automatically when `votingDeadline` passes
+- [x] 8.3 Implement freeze-on-deadline logic (snapshot transitions `EDITABLE` → `FROZEN` when `votingDeadline` passes); refactor
+- [x] 8.4 Implement HAL+FORMS endpoint to edit a published level (afford present only while `EDITABLE`); web slice test
+- [x] 8.5 Verify spec scenarios: "Editing a Published Level Until First Surcharge"
 
 ## 9. Yearly membership fee posting (slice: charge to account end-to-end)
 

@@ -17,7 +17,7 @@ public record MembershipPaymentRuleSnapshot(
         Assert.notNull(value, "RuleValue is required");
     }
 
-    static MembershipPaymentRuleSnapshot from(MembershipPaymentRule rule) {
+    public static MembershipPaymentRuleSnapshot from(MembershipPaymentRule rule) {
         return new MembershipPaymentRuleSnapshot(rule.eventTypeId(), rule.rankingShortName(), rule.value());
     }
 }

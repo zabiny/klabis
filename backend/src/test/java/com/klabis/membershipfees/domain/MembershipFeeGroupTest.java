@@ -98,14 +98,14 @@ class MembershipFeeGroupTest {
         }
 
         @Test
-        @DisplayName("should throw when group is FROZEN")
+        @DisplayName("should throw SnapshotFrozenException when group is FROZEN")
         void shouldThrowWhenFrozen() {
             MembershipFeeGroup group = buildGroup();
             group.freeze();
 
             assertThatThrownBy(() -> group.editSnapshot(
                     Money.ofCzk(new BigDecimal("1500.00")), List.of()))
-                    .isInstanceOf(IllegalStateException.class);
+                    .isInstanceOf(SnapshotFrozenException.class);
         }
     }
 

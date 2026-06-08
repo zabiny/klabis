@@ -3,7 +3,9 @@ package com.klabis.membershipfees.infrastructure.scheduler;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
+import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
 import org.jmolecules.ddd.annotation.Service;
@@ -61,7 +63,11 @@ class FeeSelectionDeadlineScheduler {
         int year = publication.getYear();
         log.info("Processing missed selections for year {}", year);
 
-        Set<MemberId> membersWithChoice = groupRepository.findByYear(year).stream()
+        List<MembershipFeeGroup> groups = groupRepository.findByYear(year);
+
+        freezeGroups(groups);
+
+        Set<MemberId> membersWithChoice = groups.stream()
                 .flatMap(group -> group.getMemberships().stream())
                 .map(membership -> membership.memberId())
                 .collect(Collectors.toSet());
@@ -80,5 +86,15 @@ class FeeSelectionDeadlineScheduler {
 
         publication.markProcessed(Instant.now());
         publicationRepository.save(publication);
+    }
+
+    private void freezeGroups(List<MembershipFeeGroup> groups) {
+        for (MembershipFeeGroup group : groups) {
+            if (group.getStatus() != PublishedLevelStatus.FROZEN) {
+                group.freeze();
+                groupRepository.save(group);
+                log.info("Froze MembershipFeeGroup {}", group.getId());
+            }
+        }
     }
 }
