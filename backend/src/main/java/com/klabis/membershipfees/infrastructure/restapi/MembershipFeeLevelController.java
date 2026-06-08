@@ -5,7 +5,6 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeLevel;
