@@ -98,7 +98,7 @@
 
 ## 13. Integration and wrap-up
 
-- [ ] 13.1 Add `@ApplicationModuleTest` covering the cross-module event flows (sanction, lifting) between `membership-fees`, `events`, and yearly fee posting to `finance`
-- [ ] 13.2 Run module-boundary verification (`JMoleculesArchitectureTest`) and full test suite; confirm coverage targets
-- [ ] 13.3 Code review (proper agent) before commit
-- [ ] 13.4 Add label `BackendCompleted` to GitHub issue #274
+- [x] 13.1 Add `@ApplicationModuleTest` covering the cross-module event flows (sanction, lifting) between `membership-fees`, `events`, and yearly fee posting to `finance`
+- [x] 13.2 Run module-boundary verification (`JMoleculesArchitectureTest`) and full test suite; confirm coverage targets
+- [x] 13.3 Code review (proper agent) before commit
+- [x] 13.4 Add label `BackendCompleted` to GitHub issue #274

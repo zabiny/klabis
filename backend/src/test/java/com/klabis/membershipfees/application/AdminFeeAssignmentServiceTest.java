@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.application;
 
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MembershipFeeGroupId;
@@ -52,12 +53,14 @@ class AdminFeeAssignmentServiceTest {
     private FeeYearPublicationRepository publicationRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private MemberRegistrationSanctionPort sanctionPort;
 
     private AdminFeeAssignmentService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminFeeAssignmentService(groupRepository, publicationRepository, eventPublisher);
+        service = new AdminFeeAssignmentService(groupRepository, publicationRepository, eventPublisher, sanctionPort);
     }
 
     private MembershipFeeGroup buildFrozenGroup(MembershipFeeLevelId sourceLevelId) {
@@ -225,8 +228,8 @@ class AdminFeeAssignmentServiceTest {
     class SanctionLifting {
 
         @Test
-        @DisplayName("should always publish MemberFeeSelectionResolvedEvent on admin assignment regardless of block state")
-        void shouldAlwaysPublishResolvedEvent() {
+        @DisplayName("should publish MemberFeeSelectionResolvedEvent when member is blocked (sanctioned)")
+        void shouldPublishResolvedEventWhenMemberIsBlocked() {
             MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
             MembershipFeeGroupId groupId = group.getId();
 
@@ -234,6 +237,7 @@ class AdminFeeAssignmentServiceTest {
             when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
             when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(sanctionPort.isMemberBlocked(TARGET_MEMBER_ID)).thenReturn(true);
 
             service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
@@ -244,6 +248,24 @@ class AdminFeeAssignmentServiceTest {
             MemberFeeSelectionResolvedEvent event = (MemberFeeSelectionResolvedEvent) eventCaptor.getValue();
             assertThat(event.memberId()).isEqualTo(TARGET_MEMBER_ID);
             assertThat(event.year()).isEqualTo(YEAR);
+        }
+
+        @Test
+        @DisplayName("should NOT publish MemberFeeSelectionResolvedEvent when member is not blocked")
+        void shouldNotPublishResolvedEventWhenMemberIsNotBlocked() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
+            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(sanctionPort.isMemberBlocked(TARGET_MEMBER_ID)).thenReturn(false);
+
+            service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                    ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
+
+            verify(eventPublisher, never()).publishEvent(any());
         }
     }
 }

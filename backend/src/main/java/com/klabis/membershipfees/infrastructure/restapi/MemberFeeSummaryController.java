@@ -58,6 +58,11 @@ class MemberFeeSummaryController {
                     model.add(self);
                 });
 
+        if (info.groupId() != null) {
+            klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(info.groupId().uuid()))
+                    .ifPresent(link -> model.add(link.withRel("group")));
+        }
+
         return ResponseEntity.ok(model);
     }
 

@@ -4,6 +4,8 @@ import com.klabis.events.domain.MemberRegistrationBlockRepository;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
 
 import java.time.Instant;
 
@@ -12,14 +14,21 @@ import java.time.Instant;
 class MemberRegistrationBlockRepositoryAdapter implements MemberRegistrationBlockRepository {
 
     private final MemberRegistrationBlockJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
 
-    MemberRegistrationBlockRepositoryAdapter(MemberRegistrationBlockJdbcRepository jdbcRepository) {
+    MemberRegistrationBlockRepositoryAdapter(MemberRegistrationBlockJdbcRepository jdbcRepository,
+                                             JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.jdbcRepository = jdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
     public void block(MemberId memberId) {
-        jdbcRepository.save(new MemberRegistrationBlockMemento(memberId.value(), Instant.now()));
+        try {
+            jdbcAggregateTemplate.insert(new MemberRegistrationBlockMemento(memberId.value(), Instant.now()));
+        } catch (DataIntegrityViolationException e) {
+            // already blocked — idempotent
+        }
     }
 
     @Override

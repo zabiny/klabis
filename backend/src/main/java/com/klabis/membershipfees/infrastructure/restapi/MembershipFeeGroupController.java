@@ -103,5 +103,7 @@ class MembershipFeeGroupDetailsPostprocessor
                     return self;
                 })
                 .ifPresent(dtoModel::add);
+        klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(group.getSourceLevelId().uuid()))
+                .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }
 }

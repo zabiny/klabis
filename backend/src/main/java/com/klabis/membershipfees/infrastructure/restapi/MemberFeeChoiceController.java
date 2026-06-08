@@ -61,6 +61,14 @@ class MemberFeeChoiceController {
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceController.class)
                                 .removeChoice(memberId, year, null)))));
 
+        currentChoice.ifPresent(groupId ->
+                klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(groupId.uuid()))
+                        .ifPresent(link -> model.add(link.withRel("currentGroup"))));
+
+        recommended.ifPresent(levelId ->
+                klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(levelId.value()))
+                        .ifPresent(link -> model.add(link.withRel("recommendedLevel"))));
+
         return ResponseEntity.ok(model);
     }
 

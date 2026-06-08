@@ -1,11 +1,11 @@
 package com.klabis.membershipfees.application;
 
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +18,16 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeYearPublicationRepository publicationRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final MemberRegistrationSanctionPort sanctionPort;
 
     AdminFeeAssignmentService(MembershipFeeGroupRepository groupRepository,
                               FeeYearPublicationRepository publicationRepository,
-                              ApplicationEventPublisher eventPublisher) {
+                              ApplicationEventPublisher eventPublisher,
+                              MemberRegistrationSanctionPort sanctionPort) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
         this.eventPublisher = eventPublisher;
+        this.sanctionPort = sanctionPort;
     }
 
     @Transactional
@@ -46,6 +49,8 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
         targetGroup.addMember(command.targetMemberId(), LocalDate.now(), AssignmentSource.ADMIN_ASSIGNMENT, command.adminId());
         groupRepository.save(targetGroup);
 
-        eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(command.targetMemberId(), command.year()));
+        if (sanctionPort.isMemberBlocked(command.targetMemberId())) {
+            eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(command.targetMemberId(), command.year()));
+        }
     }
 }
