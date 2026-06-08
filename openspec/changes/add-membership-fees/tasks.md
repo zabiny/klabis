@@ -87,9 +87,9 @@
 
 ## 11. Frontend — administration
 
-- [ ] 11.1 Add Administration section: define/edit fee level catalog (name, yearly fee, payment rules by event type + ranking, percentage vs fixed)
-- [ ] 11.2 Add UI to publish levels for a year with a single voting deadline and to track member choices
-- [ ] 11.3 Wire HAL+FORMS afford-driven forms (catalog CRUD, publishing, emergency assignment)
+- [x] 11.1 Add Administration section: define/edit fee level catalog (name, yearly fee, payment rules by event type + ranking, percentage vs fixed)
+- [x] 11.2 Add UI to publish levels for a year with a single voting deadline and to track member choices
+- [x] 11.3 Wire HAL+FORMS afford-driven forms (catalog CRUD, publishing, emergency assignment)
 
 ## 12. Frontend — member
 

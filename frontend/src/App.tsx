@@ -28,6 +28,11 @@ import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
+import {MembershipFeeLevelsPage} from "./pages/membership-fees/MembershipFeeLevelsPage.tsx";
+import {MembershipFeeLevelDetailPage} from "./pages/membership-fees/MembershipFeeLevelDetailPage.tsx";
+import {FeeYearPublicationsPage} from "./pages/membership-fees/FeeYearPublicationsPage.tsx";
+import {FeeYearPublicationDetailPage} from "./pages/membership-fees/FeeYearPublicationDetailPage.tsx";
+import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 import {TokenRenewalOverlay} from "./components/UI/TokenRenewalOverlay.tsx";
@@ -108,6 +113,11 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
+                                    <Route path="/administration/membership-fee-levels" element={<MembershipFeeLevelsPage/>}/>
+                                    <Route path="/administration/membership-fee-levels/:id" element={<MembershipFeeLevelDetailPage/>}/>
+                                    <Route path="/administration/fee-year-publications" element={<FeeYearPublicationsPage/>}/>
+                                    <Route path="/administration/fee-year-publications/:id" element={<FeeYearPublicationDetailPage/>}/>
+                                    <Route path="/administration/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

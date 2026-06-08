@@ -10,6 +10,9 @@ export const labels = {
         'category-presets': 'Šablony kategorií',
         'event-types': 'Typy akcí',
         account: 'Finance',
+        'membership-fee-levels': 'Katalog úrovní',
+        'fee-year-publications': 'Vypsání pro rok',
+        'membership-fees': 'Členské příspěvky',
     },
 
     buttons: {
@@ -86,6 +89,12 @@ export const labels = {
         deposit: 'Vložit',
         charge: 'Strhnout',
         reverse: 'Stornovat',
+        createMembershipFeeLevel: 'Přidat úroveň',
+        updateMembershipFeeLevel: 'Upravit úroveň',
+        deleteMembershipFeeLevel: 'Smazat úroveň',
+        publishFeeYear: 'Vypsat rok',
+        updateMembershipFeeGroup: 'Upravit skupinu',
+        assignMember: 'Přiřadit člena',
     },
 
     dialogTitles: {
@@ -169,6 +178,14 @@ export const labels = {
         orisDisciplineIds: 'ORIS disciplíny',
         ranking: 'Žebříček',
         baseEntryFee: 'Startovné',
+        annualFee: 'Roční poplatek',
+        choiceDeadline: 'Uzávěrka voleb',
+        groupStatus: 'Stav skupiny',
+        ruleType: 'Typ pravidla',
+        percentage: 'Procento (%)',
+        fixedSurcharge: 'Fixní příplatek (Kč)',
+        raceTypeId: 'Typ závodu',
+        source: 'Zdroj přiřazení',
     },
 
     finance: {
@@ -229,6 +246,14 @@ export const labels = {
             ODHLASKA: 'Odhlášení',
             PRESTUP: 'Přestup',
             OTHER: 'Jiný důvod',
+        },
+        feeGroupStatus: {
+            EDITABLE: 'Editovatelná',
+            FROZEN: 'Zmrazená',
+        },
+        feeMemberSource: {
+            MEMBER_CHOICE: 'Vlastní volba',
+            ADMIN_ASSIGNMENT: 'Přiřazeno adminem',
         },
     },
 
@@ -382,6 +407,11 @@ export const labels = {
         eventCoordination: 'VEDENÍ AKCE',
         eventDeadlines: 'UZÁVĚRKY PŘIHLÁŠEK',
         eventCategories: 'KATEGORIE',
+        membershipFeeLevelsList: 'Katalog úrovní',
+        membershipFeeGroups: 'Skupiny',
+        membershipFeeGroupMembers: 'ČLENOVÉ',
+        feeYearPublicationsList: 'Vypsání pro rok',
+        coParticipationRules: 'PRAVIDLA SPOLUÚČASTI',
     },
 
     dashboard: {
