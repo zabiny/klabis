@@ -19,4 +19,6 @@ public interface MembershipFeeGroupRepository {
     List<MembershipFeeGroup> saveAll(List<MembershipFeeGroup> groups);
 
     Optional<MembershipFeeGroup> findByMemberAndYear(MemberId memberId, int year);
+
+    List<MembershipFeeGroup> findByMember(MemberId memberId);
 }

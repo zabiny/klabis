@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.domain;
 
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.members.MemberId;
@@ -24,7 +23,7 @@ class MembershipFeeGroupTest {
             new MembershipFeeLevelId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final int YEAR = 2026;
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
-    private static final EventTypeId EVENT_TYPE = EventTypeId.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     private MembershipFeeGroup buildGroup() {
         return MembershipFeeGroup.createSnapshot(

@@ -80,10 +80,10 @@
 
 ## 10. Member visibility and audit trail (slice)
 
-- [ ] 10.1 Write failing tests: member sees current assigned level; prompt to choose when none and voting open; past-year assignment retrievable (audit trail)
-- [ ] 10.2 Implement query for current/past level assignment; refactor
-- [ ] 10.3 Implement HAL+FORMS endpoint feeding the profile widget (current level) with `_links`; web slice test
-- [ ] 10.4 Verify spec scenarios: "Member Sees Their Current Fee Level", "Audit Trail of Level Assignments"
+- [x] 10.1 Write failing tests: member sees current assigned level; prompt to choose when none and voting open; past-year assignment retrievable (audit trail)
+- [x] 10.2 Implement query for current/past level assignment; refactor
+- [x] 10.3 Implement HAL+FORMS endpoint feeding the profile widget (current level) with `_links`; web slice test
+- [x] 10.4 Verify spec scenarios: "Member Sees Their Current Fee Level", "Audit Trail of Level Assignments"
 
 ## 11. Frontend — administration
 

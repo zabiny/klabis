@@ -47,4 +47,11 @@ class MembershipFeeGroupRepositoryAdapter implements MembershipFeeGroupRepositor
         return jdbcRepository.findByMemberAndYear(memberId.value(), year)
                 .map(MembershipFeeGroupMemento::toGroup);
     }
+
+    @Override
+    public List<MembershipFeeGroup> findByMember(MemberId memberId) {
+        return jdbcRepository.findByMember(memberId.value()).stream()
+                .map(MembershipFeeGroupMemento::toGroup)
+                .toList();
+    }
 }

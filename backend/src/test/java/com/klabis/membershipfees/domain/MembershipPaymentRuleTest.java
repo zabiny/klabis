@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.domain;
 
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("MembershipPaymentRule value object tests")
 class MembershipPaymentRuleTest {
 
-    private static final EventTypeId EVENT_TYPE_A = EventTypeId.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static final EventTypeId EVENT_TYPE_B = EventTypeId.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static final EventTypeReference EVENT_TYPE_A = EventTypeReference.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final EventTypeReference EVENT_TYPE_B = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Nested
     @DisplayName("Percentage rule")
@@ -58,7 +57,7 @@ class MembershipPaymentRuleTest {
 
         @Test
         @DisplayName("should reject null eventTypeId")
-        void shouldRejectNullEventTypeId() {
+        void shouldRejectNullEventTypeReference() {
             assertThatThrownBy(() -> MembershipPaymentRule.percentage(null, "A", 50))
                     .isInstanceOf(IllegalArgumentException.class);
         }
@@ -103,7 +102,7 @@ class MembershipPaymentRuleTest {
 
         @Test
         @DisplayName("should reject null eventTypeId")
-        void shouldRejectNullEventTypeId() {
+        void shouldRejectNullEventTypeReference() {
             Money amount = Money.ofCzk(new BigDecimal("200.00"));
             assertThatThrownBy(() -> MembershipPaymentRule.fixedSurcharge(null, "LOB", amount))
                     .isInstanceOf(IllegalArgumentException.class);

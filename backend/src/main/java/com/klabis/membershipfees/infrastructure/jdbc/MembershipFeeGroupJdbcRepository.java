@@ -21,4 +21,12 @@ interface MembershipFeeGroupJdbcRepository extends CrudRepository<MembershipFeeG
             """)
     Optional<MembershipFeeGroupMemento> findByMemberAndYear(@Param("memberId") UUID memberId,
                                                              @Param("year") int year);
+
+    @Query("""
+            SELECT g.* FROM membership_fee_group g
+            JOIN fee_group_membership m ON m.membership_fee_group_id = g.id
+            WHERE m.member_id = :memberId
+            ORDER BY g.group_year DESC
+            """)
+    List<MembershipFeeGroupMemento> findByMember(@Param("memberId") UUID memberId);
 }

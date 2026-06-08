@@ -1,10 +1,9 @@
 package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.FeeYearPublicationId;
-import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
@@ -36,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @CleanupTestData
 class FeeYearPublicationPersistenceTest {
 
-    private static final EventTypeId EVENT_TYPE = EventTypeId.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
 

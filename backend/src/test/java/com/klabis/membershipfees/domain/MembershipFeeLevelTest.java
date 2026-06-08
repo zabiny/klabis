@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.domain;
 
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import org.junit.jupiter.api.DisplayName;
@@ -20,8 +19,8 @@ class MembershipFeeLevelTest {
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final Money OTHER_FEE = Money.ofCzk(new BigDecimal("800.00"));
 
-    private static final EventTypeId EVENT_TYPE_A = EventTypeId.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static final EventTypeId EVENT_TYPE_B = EventTypeId.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static final EventTypeReference EVENT_TYPE_A = EventTypeReference.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final EventTypeReference EVENT_TYPE_B = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Nested
     @DisplayName("MembershipFeeLevelId")

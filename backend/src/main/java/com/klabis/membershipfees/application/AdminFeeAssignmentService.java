@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.application;
 
-import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
@@ -18,16 +17,13 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
 
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeYearPublicationRepository publicationRepository;
-    private final MemberRegistrationSanctionPort sanctionPort;
     private final ApplicationEventPublisher eventPublisher;
 
     AdminFeeAssignmentService(MembershipFeeGroupRepository groupRepository,
                               FeeYearPublicationRepository publicationRepository,
-                              MemberRegistrationSanctionPort sanctionPort,
                               ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
-        this.sanctionPort = sanctionPort;
         this.eventPublisher = eventPublisher;
     }
 
@@ -50,12 +46,6 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
         targetGroup.addMember(command.targetMemberId(), LocalDate.now(), AssignmentSource.ADMIN_ASSIGNMENT, command.adminId());
         groupRepository.save(targetGroup);
 
-        publishResolvedEventIfMemberWasBlocked(command.targetMemberId(), command.year());
-    }
-
-    private void publishResolvedEventIfMemberWasBlocked(MemberId memberId, int year) {
-        if (sanctionPort.isMemberBlocked(memberId)) {
-            eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(memberId, year));
-        }
+        eventPublisher.publishEvent(new MemberFeeSelectionResolvedEvent(command.targetMemberId(), command.year()));
     }
 }

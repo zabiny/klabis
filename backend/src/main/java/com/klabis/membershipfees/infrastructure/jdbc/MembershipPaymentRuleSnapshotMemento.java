@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.infrastructure.jdbc;
 
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
 import org.springframework.data.annotation.Id;
@@ -67,6 +67,6 @@ class MembershipPaymentRuleSnapshotMemento {
                     Money.of(ruleFixedAmount, Currency.getInstance(ruleFixedCurrency)));
             default -> throw new IllegalStateException("Unknown rule type: " + ruleType);
         };
-        return new MembershipPaymentRuleSnapshot(EventTypeId.of(eventTypeId), rankingShortName, value);
+        return new MembershipPaymentRuleSnapshot(EventTypeReference.of(eventTypeId), rankingShortName, value);
     }
 }

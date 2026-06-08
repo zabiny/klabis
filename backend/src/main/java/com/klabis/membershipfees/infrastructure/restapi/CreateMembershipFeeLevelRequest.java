@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
-import com.klabis.events.EventTypeId;
 import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import jakarta.validation.constraints.NotBlank;
@@ -36,7 +36,7 @@ record CreateMembershipFeeLevelRequest(
             String fixedCurrency
     ) {
         MembershipPaymentRule toDomain() {
-            EventTypeId evtTypeId = EventTypeId.of(eventTypeId);
+            EventTypeReference evtTypeId = EventTypeReference.of(eventTypeId);
             return switch (ruleType) {
                 case "PERCENTAGE" -> MembershipPaymentRule.percentage(evtTypeId, rankingShortName, percent);
                 case "FIXED_SURCHARGE" -> {
