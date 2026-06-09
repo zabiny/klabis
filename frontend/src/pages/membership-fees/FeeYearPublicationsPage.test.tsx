@@ -84,7 +84,7 @@ describe('FeeYearPublicationsPage', () => {
     it('renders table column headers', () => {
         renderPage(createMockPageData(null));
         expect(screen.getByText('Rok')).toBeInTheDocument();
-        expect(screen.getByText('Uzávěrka voleb')).toBeInTheDocument();
+        expect(screen.getByText('Uzávěrka hlasování')).toBeInTheDocument();
     });
 
     it('shows skeleton loading state when data is loading', () => {

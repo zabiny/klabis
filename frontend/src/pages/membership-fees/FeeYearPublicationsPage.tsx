@@ -47,7 +47,7 @@ export const FeeYearPublicationsPage = (): ReactElement => {
                         sortable
                         column="votingDeadline"
                         dataRender={({value}) => typeof value === 'string' ? formatDate(value) : String(value)}
-                    >{labels.fields.choiceDeadline}</TableCell>
+                    >{labels.fields.votingDeadline}</TableCell>
                 </HalEmbeddedTable>
             </div>
         </div>

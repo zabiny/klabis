@@ -35,7 +35,7 @@ export const MembershipFeeLevelsPage = (): ReactElement => {
                     <HalFormButton name="createLevel" modal={true}/>
                 </div>
                 <HalEmbeddedTable<FeeLevelSummary>
-                    collectionName="membershipFeeLevelResponseList"
+                    collectionName="membershipFeeLevelSummaryResponseList"
                     tableId="membership-fee-levels"
                     defaultOrderBy="name"
                     onRowClick={route.navigateToResource}

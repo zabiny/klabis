@@ -120,7 +120,7 @@ describe('MembershipFeeLevelsPage', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/membership-fee-levels'}},
             _embedded: {
-                membershipFeeLevelResponseList: [{
+                membershipFeeLevelSummaryResponseList: [{
                     id: 'level-1',
                     name: 'Základní členství',
                     yearlyFeeAmount: 500,

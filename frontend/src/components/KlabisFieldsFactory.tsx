@@ -4,6 +4,7 @@ import {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
+import {getFieldLabel} from "../localization";
 
 interface SubField {
     key: string;
@@ -22,7 +23,8 @@ const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]):
             ))}
         </>;
     }
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
+    const baseName = props.prop.name.replace(/\.\d+$/, '');
+    return <FormGroupWrapper label={props.prop.prompt || getFieldLabel(baseName)}>
         {subFields.map(sf => (
             <HalFormsInput key={sf.key} {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
         ))}
@@ -39,6 +41,15 @@ const ADDRESS_FIELDS: SubField[] = [
 const IDENTITY_CARD_FIELDS: SubField[] = [
     {key: "cardNumber", attr: "cardNumber", prompt: "Číslo OP"},
     {key: "validityDate", attr: "validityDate", prompt: "Platnost OP", type: "date"},
+];
+
+const PAYMENT_RULE_FIELDS: SubField[] = [
+    {key: "eventTypeId", attr: "eventTypeId", prompt: "Typ akce", type: "UUID"},
+    {key: "rankingShortName", attr: "rankingShortName", prompt: "Zkratka žebříčku"},
+    {key: "ruleType", attr: "ruleType", prompt: "Typ pravidla"},
+    {key: "percent", attr: "percent", prompt: "Procento (%)", type: "number"},
+    {key: "fixedAmount", attr: "fixedAmount", prompt: "Fixní částka", type: "number"},
+    {key: "fixedCurrency", attr: "fixedCurrency", prompt: "Měna fixní částky"},
 ];
 
 const GUARDIAN_FIELDS: SubField[] = [
@@ -186,6 +197,11 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
                 {key: "shortName", attr: "shortName", prompt: "Zkratka"},
                 {key: "name", attr: "name", prompt: "Název"},
             ]);
+        case "PaymentRuleRequest":
+            // For multi/collection: return null so HalFormsCollectionField handles iteration.
+            // For a single item (inside the collection): render sub-fields.
+            if (isMultipleProperty(conf.prop)) return null;
+            return renderCompositeField(conf, PAYMENT_RULE_FIELDS);
         case "EntryFeeRequest":
             return renderCompositeField(conf, [
                 {key: "amount", attr: "amount", prompt: "Částka", type: "number"},
