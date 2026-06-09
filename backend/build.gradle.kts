@@ -129,7 +129,8 @@ dependencies {
 
     // Development tools (excluded from production JAR automatically)
     developmentOnly("org.springframework.boot:spring-boot-devtools")
-    developmentOnly("org.springframework.boot:spring-boot-h2console")
+    // While we are in development phase, let's have it also on production. After migrate to postgres, make this as developmentOnly again
+    runtimeOnly("org.springframework.boot:spring-boot-h2console")
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
