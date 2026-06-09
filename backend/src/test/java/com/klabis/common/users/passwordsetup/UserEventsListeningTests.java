@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {"jasypt.encryptor.password=example"})
 @DisplayName("Password setup token integration with User events")
 @Sql(statements = {
-        "INSERT INTO users (id, user_name, password_hash, account_status) VALUES ('11111111-1111-1111-1111-111111111111', 'test', 'hashedpw', 'PENDING_ACTIVATION')"
+        "INSERT INTO common.users (id, user_name, password_hash, account_status) VALUES ('11111111-1111-1111-1111-111111111111', 'test', 'hashedpw', 'PENDING_ACTIVATION')"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class UserEventsListeningTests {
 

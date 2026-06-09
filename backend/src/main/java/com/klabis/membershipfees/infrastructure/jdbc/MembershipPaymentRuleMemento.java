@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
 
-@Table("membership_payment_rule")
+@Table(schema = "membershipfees", value = "membership_payment_rule")
 class MembershipPaymentRuleMemento {
 
     @Id

@@ -17,7 +17,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Table("calendar_items")
+@Table(schema = "calendar", value = "calendar_items")
 class CalendarMemento implements Persistable<UUID> {
 
     @Id

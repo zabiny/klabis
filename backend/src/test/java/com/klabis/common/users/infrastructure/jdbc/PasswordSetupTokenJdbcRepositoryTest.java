@@ -68,12 +68,12 @@ class PasswordSetupTokenJdbcRepositoryTest {
     }
 
     private int countAllTokens() {
-        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM password_setup_tokens", Integer.class);
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM common.password_setup_tokens", Integer.class);
         return count != null ? count : 0;
     }
 
     private List<java.util.UUID> findAllTokenUserIds() {
-        return jdbcTemplate.queryForList("SELECT user_id FROM password_setup_tokens", java.util.UUID.class);
+        return jdbcTemplate.queryForList("SELECT user_id FROM common.password_setup_tokens", java.util.UUID.class);
     }
 
     private User createTestUser(String username) {
@@ -86,7 +86,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
 
     private void insertExpiredToken(UUID tokenId, UUID userId, String tokenHash, Instant createdAt, Instant expiresAt) {
         jdbcTemplate.update(
-                "INSERT INTO password_setup_tokens (id, user_id, token_hash, created_at, expires_at, version) VALUES (?, ?, ?, ?, ?, 0)",
+                "INSERT INTO common.password_setup_tokens (id, user_id, token_hash, created_at, expires_at, version) VALUES (?, ?, ?, ?, ?, 0)",
                 tokenId, userId, tokenHash, createdAt, expiresAt
         );
     }
@@ -99,7 +99,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         @DisplayName("should save new token with all fields")
         void shouldSaveNewToken() {
             // Given
-            jdbcTemplate.queryForList("SELECT * FROM users")
+            jdbcTemplate.queryForList("SELECT * FROM common.users")
                     .stream()
                     .map(e -> e.toString())
                     .forEach(System.out::println);

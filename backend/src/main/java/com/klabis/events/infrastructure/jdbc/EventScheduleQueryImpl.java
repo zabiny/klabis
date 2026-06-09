@@ -26,13 +26,13 @@ class EventScheduleQueryImpl implements EventScheduleQuery {
     @Override
     public Set<EventId> findEventIdsForMemberSchedule(MemberId memberId, LocalDate from, LocalDate to) {
         String sql = """
-                SELECT e.id FROM events e
+                SELECT e.id FROM events.events e
                 WHERE e.event_date >= :from
                   AND e.event_date <= :to
                   AND (
                       e.event_coordinator_id = :memberId
                       OR EXISTS (
-                          SELECT 1 FROM event_registrations r
+                          SELECT 1 FROM events.event_registrations r
                           WHERE r.event_id = e.id AND r.member_id = :memberId
                       )
                   )

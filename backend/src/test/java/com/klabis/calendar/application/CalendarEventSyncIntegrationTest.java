@@ -69,7 +69,7 @@ class CalendarEventSyncIntegrationTest {
 
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")
-    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
     void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario) {
         // Given: Event data
         final EventId eventId = EVENT_ID;
@@ -102,8 +102,8 @@ class CalendarEventSyncIntegrationTest {
 
     @Test
     @DisplayName("should update calendar item when EventUpdatedEvent arrives")
-    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
-    @Sql(config = @SqlConfig(separator = ";"), statements = "INSERT INTO calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
+    @Sql(config = @SqlConfig(separator = ";"), statements = "INSERT INTO calendar.calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
     void shouldUpdateCalendarItemWhenEventIsUpdated(Scenario scenario) {
         // Given: An existing calendar item
         final EventId eventId = EVENT_ID;
@@ -143,8 +143,8 @@ class CalendarEventSyncIntegrationTest {
 
     @Test
     @DisplayName("should delete calendar item when EventCancelledEvent arrives")
-    @Sql(statements = "INSERT INTO calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('d3cc82a1-2342-4d8a-a819-8c38f56e226d', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
-    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+    @Sql(statements = "INSERT INTO calendar.calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('d3cc82a1-2342-4d8a-a819-8c38f56e226d', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
     void shouldDeleteCalendarItemWhenEventIsCancelled(Scenario scenario) {
         // Given: An existing calendar item
         final EventId eventId = EVENT_ID;
@@ -170,7 +170,7 @@ class CalendarEventSyncIntegrationTest {
 
         @Test
         @DisplayName("publish event without deadline creates exactly one EVENT_DATE item")
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
         void publishWithoutDeadlineCreatesOneEventDateItem(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
@@ -196,7 +196,7 @@ class CalendarEventSyncIntegrationTest {
 
         @Test
         @DisplayName("publish event with deadline creates EVENT_DATE and EVENT_REGISTRATION_DATE items")
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
         void publishWithDeadlineCreatesTwoItems(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
@@ -226,8 +226,8 @@ class CalendarEventSyncIntegrationTest {
 
         @Test
         @DisplayName("update event to add deadline creates EVENT_REGISTRATION_DATE item alongside existing EVENT_DATE")
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
-        @Sql(config = @SqlConfig(separator = ";"), statements = "INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'EVENT_DATE', 'Jarní sprint', 'Les Brdy - OOB', '2025-06-14', '2025-06-14', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
+        @Sql(config = @SqlConfig(separator = ";"), statements = "INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'EVENT_DATE', 'Jarní sprint', 'Les Brdy - OOB', '2025-06-14', '2025-06-14', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
         void updateToAddDeadlineCreatesTwoItems(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
@@ -264,11 +264,11 @@ class CalendarEventSyncIntegrationTest {
 
         @Test
         @DisplayName("update event to clear deadline removes EVENT_REGISTRATION_DATE, keeps EVENT_DATE")
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
         @Sql(config = @SqlConfig(separator = ";"), statements = """
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'EVENT_DATE', 'Jarní sprint', 'Les Brdy - OOB', '2025-06-14', '2025-06-14', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0);
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('7a9e2c11-bbbb-4321-9876-aabbccddeeff', 'EVENT_REGISTRATION_DATE', 'Přihlášky - Jarní sprint', NULL, '2025-06-07', '2025-06-07', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)
                 """)
         void updateToClearDeadlineRemovesDeadlineItem(Scenario scenario) {
@@ -300,11 +300,11 @@ class CalendarEventSyncIntegrationTest {
 
         @Test
         @DisplayName("update event name propagates to both EVENT_DATE and EVENT_REGISTRATION_DATE labels")
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
         @Sql(config = @SqlConfig(separator = ";"), statements = """
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'EVENT_DATE', 'Jarní sprint', 'Les Brdy - OOB', '2025-06-14', '2025-06-14', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0);
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('7a9e2c11-bbbb-4321-9876-aabbccddeeff', 'EVENT_REGISTRATION_DATE', 'Přihlášky - Jarní sprint', NULL, '2025-06-07', '2025-06-07', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)
                 """)
         void renameEventUpdatesBothItemLabels(Scenario scenario) {
@@ -347,12 +347,12 @@ class CalendarEventSyncIntegrationTest {
         @Test
         @DisplayName("cancel event with two items removes both")
         @Sql(statements = """
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'EVENT_DATE', 'Jarní sprint', 'Les Brdy - OOB', '2025-06-14', '2025-06-14', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0);
-                INSERT INTO calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
+                INSERT INTO calendar.calendar_items (id, kind, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version)
                 VALUES ('7a9e2c11-bbbb-4321-9876-aabbccddeeff', 'EVENT_REGISTRATION_DATE', 'Přihlášky - Jarní sprint', NULL, '2025-06-07', '2025-06-07', 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)
                 """)
-        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+        @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
         void cancelEventWithTwoItemsRemovesBoth(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 

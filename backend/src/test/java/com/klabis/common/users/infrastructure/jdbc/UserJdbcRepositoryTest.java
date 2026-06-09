@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM users")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM common.users")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 class UserJdbcRepositoryTest {

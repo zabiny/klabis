@@ -2,12 +2,12 @@
 -- Creates User + Member + UserPermissions with NULL email (uses guardian email)
 
 -- Clean up existing test data
-DELETE FROM user_permissions WHERE user_id = '33333333-3333-3333-3333-333333333333';
-DELETE FROM users WHERE id = '33333333-3333-3333-3333-333333333333';
-DELETE FROM members WHERE id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM common.user_permissions WHERE user_id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM common.users WHERE id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM members.members WHERE id = '33333333-3333-3333-3333-333333333333';
 
 -- Insert Member entity with NO email (minor with guardian)
-INSERT INTO members (
+INSERT INTO members.members (
     id,
     registration_number,
     first_name,
@@ -64,7 +64,7 @@ INSERT INTO members (
 );
 
 -- Insert User entity (password: 'password123', BCrypt hashed)
-INSERT INTO users (
+INSERT INTO common.users (
     id,
     user_name,
     password_hash,
@@ -85,7 +85,7 @@ INSERT INTO users (
 );
 
 -- Insert UserPermissions (application-level permissions)
-INSERT INTO user_permissions (
+INSERT INTO common.user_permissions (
     user_id,
     authorities,
     created_at,

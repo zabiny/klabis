@@ -27,7 +27,7 @@ import java.util.UUID;
 @Repository
 interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, PagingAndSortingRepository<EventMemento, UUID> {
 
-    @Query("SELECT EXISTS(SELECT 1 FROM events WHERE oris_id = :orisId)")
+    @Query("SELECT EXISTS(SELECT 1 FROM events.events WHERE oris_id = :orisId)")
     boolean existsByOrisId(@Param("orisId") int orisId);
 
     // findAll(Pageable) is inherited from PagingAndSortingRepository

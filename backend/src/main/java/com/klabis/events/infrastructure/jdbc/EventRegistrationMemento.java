@@ -17,7 +17,7 @@ import java.util.UUID;
  * This class handles the conversion between the domain EventRegistration entity
  * and the database representation.
  */
-@Table("event_registrations")
+@Table(schema = "events", value = "event_registrations")
 class EventRegistrationMemento {
 
     @Column("id")

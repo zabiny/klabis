@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
 
-@Table("membership_fee_group_rule_snapshot")
+@Table(schema = "membershipfees", value = "membership_fee_group_rule_snapshot")
 class MembershipPaymentRuleSnapshotMemento {
 
     @Id

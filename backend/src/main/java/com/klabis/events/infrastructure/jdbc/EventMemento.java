@@ -44,7 +44,7 @@ import static com.klabis.events.infrastructure.jdbc.CsvListConverter.serialize;
  * The Event entity remains a pure domain object without Spring annotations,
  * while this memento handles all infrastructure concerns.
  */
-@Table("events")
+@Table(schema = "events", value = "events")
 class EventMemento implements Persistable<UUID> {
 
     @Id

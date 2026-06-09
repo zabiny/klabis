@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Table("membership_fee_group")
+@Table(schema = "membershipfees", value = "membership_fee_group")
 class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
 
     @Column("source_level_id")

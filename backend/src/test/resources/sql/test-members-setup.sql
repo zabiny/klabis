@@ -4,11 +4,11 @@
 
 -- Clean up any existing test data
 DELETE
-FROM members
+FROM members.members
 WHERE id IN ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222');
 
 -- Insert test member
-INSERT INTO members (id,
+INSERT INTO members.members (id,
                      registration_number,
                      first_name,
                      last_name,
@@ -51,7 +51,7 @@ VALUES ('11111111-1111-1111-1111-111111111111', -- User ID 1
        );
 
 -- Insert second test member
-INSERT INTO members (id,
+INSERT INTO members.members (id,
                      registration_number,
                      first_name,
                      last_name,

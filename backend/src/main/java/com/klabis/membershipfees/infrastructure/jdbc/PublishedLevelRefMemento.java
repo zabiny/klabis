@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-@Table("fee_year_publication_level")
+@Table(schema = "membershipfees", value = "fee_year_publication_level")
 class PublishedLevelRefMemento {
 
     @Column("membership_fee_group_id")

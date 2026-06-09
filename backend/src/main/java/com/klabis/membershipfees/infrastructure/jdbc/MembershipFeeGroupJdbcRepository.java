@@ -10,12 +10,12 @@ import java.util.UUID;
 
 interface MembershipFeeGroupJdbcRepository extends CrudRepository<MembershipFeeGroupMemento, UUID> {
 
-    @Query("SELECT * FROM membership_fee_group WHERE group_year = :year")
+    @Query("SELECT * FROM membershipfees.membership_fee_group WHERE group_year = :year")
     List<MembershipFeeGroupMemento> findByYear(@Param("year") int year);
 
     @Query("""
-            SELECT g.* FROM membership_fee_group g
-            JOIN fee_group_membership m ON m.membership_fee_group_id = g.id
+            SELECT g.* FROM membershipfees.membership_fee_group g
+            JOIN membershipfees.membership_fee_group_members m ON m.membership_fee_group_id = g.id
             WHERE m.member_id = :memberId AND g.group_year = :year
             LIMIT 1
             """)
@@ -23,13 +23,13 @@ interface MembershipFeeGroupJdbcRepository extends CrudRepository<MembershipFeeG
                                                              @Param("year") int year);
 
     @Query("""
-            SELECT g.* FROM membership_fee_group g
-            JOIN fee_group_membership m ON m.membership_fee_group_id = g.id
+            SELECT g.* FROM membershipfees.membership_fee_group g
+            JOIN membershipfees.membership_fee_group_members m ON m.membership_fee_group_id = g.id
             WHERE m.member_id = :memberId
             ORDER BY g.group_year DESC
             """)
     List<MembershipFeeGroupMemento> findByMember(@Param("memberId") UUID memberId);
 
-    @Query("SELECT COUNT(*) > 0 FROM membership_fee_group WHERE group_year = :year AND source_level_id = :sourceLevelId")
+    @Query("SELECT COUNT(*) > 0 FROM membershipfees.membership_fee_group WHERE group_year = :year AND source_level_id = :sourceLevelId")
     boolean existsByYearAndSourceLevelId(@Param("year") int year, @Param("sourceLevelId") UUID sourceLevelId);
 }

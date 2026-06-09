@@ -10,7 +10,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Table("fee_group_membership")
+@Table(schema = "membershipfees", value = "membership_fee_group_members")
 class FeeGroupMembershipMemento {
 
     @Id

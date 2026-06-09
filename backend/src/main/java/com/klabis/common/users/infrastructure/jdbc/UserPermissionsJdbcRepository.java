@@ -40,8 +40,8 @@ public interface UserPermissionsJdbcRepository extends CrudRepository<UserPermis
      */
     @Query("""
             SELECT COUNT(*)
-            FROM user_permissions up
-                inner join users u on up.user_id = u.id
+            FROM common.user_permissions up
+                inner join common.users u on up.user_id = u.id
             WHERE u.account_status = 'ACTIVE'
             AND up.authorities LIKE '%' || :authority || '%'
             """)

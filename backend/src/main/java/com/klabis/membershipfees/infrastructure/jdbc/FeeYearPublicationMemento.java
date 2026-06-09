@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Table("fee_year_publication")
+@Table(schema = "membershipfees", value = "fee_year_publication")
 class FeeYearPublicationMemento extends AbstractMembershipFeeMemento {
 
     @Column("publication_year")

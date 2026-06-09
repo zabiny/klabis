@@ -60,7 +60,7 @@ interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID>, Pagi
      * @param birthYear the birth year to count
      * @return number of members born in that year
      */
-    @Query("SELECT COUNT(*) FROM members WHERE EXTRACT(YEAR FROM date_of_birth) = :birthYear")
+    @Query("SELECT COUNT(*) FROM members.members WHERE EXTRACT(YEAR FROM date_of_birth) = :birthYear")
     int countByBirthYear(@Param("birthYear") int birthYear);
 
     List<MemberMemento> findAllByActiveTrueOrderByLastNameAscFirstNameAsc();

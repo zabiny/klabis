@@ -30,7 +30,7 @@ import java.util.UUID;
  * Note: Unlike User and Member, PasswordSetupToken does not publish domain events
  * or require audit metadata tracking.
  */
-@Table("password_setup_tokens")
+@Table(schema = "common", value = "password_setup_tokens")
 public class PasswordSetupTokenMemento implements Persistable<UUID> {
 
     @Id

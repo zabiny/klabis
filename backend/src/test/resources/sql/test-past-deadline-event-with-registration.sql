@@ -1,4 +1,4 @@
-INSERT INTO events (id, name, event_date, location, organizer, status, registration_deadline,
+INSERT INTO events.events (id, name, event_date, location, organizer, status, registration_deadline,
                     created_at, created_by, modified_at, modified_by, version)
 VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         'Deadline Passed Event',
@@ -11,7 +11,7 @@ VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         CURRENT_TIMESTAMP, 'test-setup',
         0);
 
-INSERT INTO event_registrations (id, event_id, member_id, si_card_number, registered_at)
+INSERT INTO events.event_registrations (id, event_id, member_id, si_card_number, registered_at)
 VALUES (gen_random_uuid(),
         'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         '11111111-1111-1111-1111-111111111111',

@@ -29,7 +29,7 @@ class YearlyFeeChargeMarkerRepositoryAdapter implements YearlyFeeChargeMarkerRep
     @Override
     public boolean existsByMemberIdAndYear(MemberId memberId, int year) {
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM yearly_fee_charge_marker WHERE member_id = ? AND charge_year = ?",
+                "SELECT COUNT(*) FROM membershipfees.yearly_fee_charge_marker WHERE member_id = ? AND charge_year = ?",
                 Integer.class, memberId.value(), year);
         return count != null && count > 0;
     }
@@ -38,7 +38,7 @@ class YearlyFeeChargeMarkerRepositoryAdapter implements YearlyFeeChargeMarkerRep
     public void markCharged(MemberId memberId, int year) {
         try {
             jdbcTemplate.update(
-                    "INSERT INTO yearly_fee_charge_marker (member_id, charge_year, charged_at) VALUES (?, ?, ?)",
+                    "INSERT INTO membershipfees.yearly_fee_charge_marker (member_id, charge_year, charged_at) VALUES (?, ?, ?)",
                     memberId.value(), year, Instant.now());
         } catch (DataIntegrityViolationException e) {
             log.debug("Yearly fee charge marker already exists for member {} year {} — ignoring duplicate", memberId, year);
@@ -48,7 +48,7 @@ class YearlyFeeChargeMarkerRepositoryAdapter implements YearlyFeeChargeMarkerRep
     @Override
     public Set<MemberId> findChargedMemberIdsForYear(int year) {
         return jdbcTemplate.queryForList(
-                        "SELECT member_id FROM yearly_fee_charge_marker WHERE charge_year = ?",
+                        "SELECT member_id FROM membershipfees.yearly_fee_charge_marker WHERE charge_year = ?",
                         UUID.class, year)
                 .stream()
                 .map(MemberId::new)

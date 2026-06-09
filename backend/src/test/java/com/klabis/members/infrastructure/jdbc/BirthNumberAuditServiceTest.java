@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD,
-     statements = "DELETE FROM birth_number_audit_log")
+     statements = "DELETE FROM members.birth_number_audit_log")
 @ActiveProfiles("test")
 class BirthNumberAuditServiceTest {
 
@@ -53,7 +53,7 @@ class BirthNumberAuditServiceTest {
         auditLogRepository.save(entry);
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT * FROM birth_number_audit_log WHERE member_id = ?", memberId);
+                "SELECT * FROM members.birth_number_audit_log WHERE member_id = ?", memberId);
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).get("user_id")).isEqualTo(userId);
         assertThat(rows.get(0).get("action")).isEqualTo("VIEW_BIRTH_NUMBER");
@@ -74,7 +74,7 @@ class BirthNumberAuditServiceTest {
         auditLogRepository.save(entry);
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT * FROM birth_number_audit_log WHERE member_id = ?", memberId);
+                "SELECT * FROM members.birth_number_audit_log WHERE member_id = ?", memberId);
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).get("action")).isEqualTo("MODIFY_BIRTH_NUMBER");
     }
@@ -95,7 +95,7 @@ class BirthNumberAuditServiceTest {
         auditLogRepository.save(entry);
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT * FROM birth_number_audit_log WHERE member_id = ?", memberId);
+                "SELECT * FROM members.birth_number_audit_log WHERE member_id = ?", memberId);
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).get("user_id")).isEqualTo(userId);
         assertThat(rows.get(0).get("member_id")).isEqualTo(memberId);

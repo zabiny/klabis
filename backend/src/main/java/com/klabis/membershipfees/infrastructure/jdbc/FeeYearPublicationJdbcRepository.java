@@ -11,9 +11,9 @@ import java.util.UUID;
 
 interface FeeYearPublicationJdbcRepository extends CrudRepository<FeeYearPublicationMemento, UUID> {
 
-    @Query("SELECT * FROM fee_year_publication WHERE publication_year = :year")
+    @Query("SELECT * FROM membershipfees.fee_year_publication WHERE publication_year = :year")
     Optional<FeeYearPublicationMemento> findByYear(@Param("year") int year);
 
-    @Query("SELECT * FROM fee_year_publication WHERE voting_deadline < :today AND deadline_processed_at IS NULL")
+    @Query("SELECT * FROM membershipfees.fee_year_publication WHERE voting_deadline < :today AND deadline_processed_at IS NULL")
     List<FeeYearPublicationMemento> findUnprocessedClosedPublications(@Param("today") LocalDate today);
 }

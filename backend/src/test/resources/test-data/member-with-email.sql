@@ -2,12 +2,12 @@
 -- Creates User + Member + UserPermissions with valid email address
 
 -- Clean up existing test data
-DELETE FROM user_permissions WHERE user_id = '22222222-2222-2222-2222-222222222222';
-DELETE FROM users WHERE id = '22222222-2222-2222-2222-222222222222';
-DELETE FROM members WHERE id = '22222222-2222-2222-2222-222222222222';
+DELETE FROM common.user_permissions WHERE user_id = '22222222-2222-2222-2222-222222222222';
+DELETE FROM common.users WHERE id = '22222222-2222-2222-2222-222222222222';
+DELETE FROM members.members WHERE id = '22222222-2222-2222-2222-222222222222';
 
 -- Insert Member entity (User and Member share same ID)
-INSERT INTO members (
+INSERT INTO members.members (
     id,
     registration_number,
     first_name,
@@ -54,7 +54,7 @@ INSERT INTO members (
 );
 
 -- Insert User entity (password: 'password123', BCrypt hashed)
-INSERT INTO users (
+INSERT INTO common.users (
     id,
     user_name,
     password_hash,
@@ -75,7 +75,7 @@ INSERT INTO users (
 );
 
 -- Insert UserPermissions (application-level permissions)
-INSERT INTO user_permissions (
+INSERT INTO common.user_permissions (
     user_id,
     authorities,
     created_at,

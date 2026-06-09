@@ -169,7 +169,7 @@ class MemberRepositoryAdapter implements MemberRepository {
     private List<UUID> findIdsByFulltext(String query) {
         String[] tokens = query.split("\\s+");
 
-        StringBuilder sql = new StringBuilder("SELECT id FROM members WHERE ");
+        StringBuilder sql = new StringBuilder("SELECT id FROM members.members WHERE ");
         MapSqlParameterSource params = new MapSqlParameterSource();
 
         List<String> tokenClauses = new ArrayList<>();

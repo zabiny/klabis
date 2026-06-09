@@ -12,7 +12,7 @@ import org.springframework.util.Assert;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("calendar_feed_token")
+@Table(schema = "calendar", value = "calendar_feed_token")
 class CalendarFeedTokenMemento implements Persistable<UUID> {
 
     @Id

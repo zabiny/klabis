@@ -46,12 +46,12 @@ class IcalFeedControllerTest {
 
     @BeforeEach
     void setUpUserAndToken() {
-        jdbcTemplate.execute("DELETE FROM calendar_feed_token WHERE user_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
-        jdbcTemplate.execute("DELETE FROM members WHERE id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
-        jdbcTemplate.execute("DELETE FROM users WHERE id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
-        jdbcTemplate.execute("INSERT INTO users (id, user_name, password_hash, account_status, created_at, modified_at, version) " +
+        jdbcTemplate.execute("DELETE FROM calendar.calendar_feed_token WHERE user_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
+        jdbcTemplate.execute("DELETE FROM members.members WHERE id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
+        jdbcTemplate.execute("DELETE FROM common.users WHERE id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
+        jdbcTemplate.execute("INSERT INTO common.users (id, user_name, password_hash, account_status, created_at, modified_at, version) " +
                 "VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'ZBM8100', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)");
-        jdbcTemplate.execute("INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) " +
+        jdbcTemplate.execute("INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) " +
                 "VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'ZBM8100', 'Test', 'Member', '1990-01-01', 'CZ', 'MALE', 'test@test.cz', '+420111111111', 'Street 1', 'City', '10000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)");
         validRawToken = icalTokenPort.generateOrRotate(USER_ID).rawToken();
     }
@@ -152,22 +152,22 @@ class IcalFeedControllerTest {
 
         @BeforeEach
         void insertEvents() {
-            jdbcTemplate.execute("DELETE FROM event_registrations WHERE member_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
-            jdbcTemplate.execute("DELETE FROM events WHERE id IN ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'dddddddd-dddd-dddd-dddd-dddddddddddd')");
+            jdbcTemplate.execute("DELETE FROM events.event_registrations WHERE member_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
+            jdbcTemplate.execute("DELETE FROM events.events WHERE id IN ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'dddddddd-dddd-dddd-dddd-dddddddddddd')");
             // Coordinator event (2 months from now, within the 12-month future window)
-            jdbcTemplate.execute("INSERT INTO events (id, name, event_date, location, organizer, status, event_coordinator_id, created_at, created_by, modified_at, modified_by, version) " +
+            jdbcTemplate.execute("INSERT INTO events.events (id, name, event_date, location, organizer, status, event_coordinator_id, created_at, created_by, modified_at, modified_by, version) " +
                     "VALUES ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'Koordinovaná akce', DATEADD(MONTH, 2, CURRENT_DATE), 'Praha', 'ZBM', 'ACTIVE', 'cccccccc-cccc-cccc-cccc-cccccccccccc', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP, 'system', 0)");
             // Cancelled event with registration (3 months from now, within the 12-month future window)
-            jdbcTemplate.execute("INSERT INTO events (id, name, event_date, location, organizer, status, created_at, created_by, modified_at, modified_by, version) " +
+            jdbcTemplate.execute("INSERT INTO events.events (id, name, event_date, location, organizer, status, created_at, created_by, modified_at, modified_by, version) " +
                     "VALUES ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'Zrušená akce', DATEADD(MONTH, 3, CURRENT_DATE), 'Brno', 'ZBM', 'CANCELLED', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP, 'system', 0)");
-            jdbcTemplate.execute("INSERT INTO event_registrations (id, event_id, member_id, si_card_number) " +
+            jdbcTemplate.execute("INSERT INTO events.event_registrations (id, event_id, member_id, si_card_number) " +
                     "VALUES ('11111111-1111-1111-1111-111111111111', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'cccccccc-cccc-cccc-cccc-cccccccccccc', '0000000')");
         }
 
         @AfterEach
         void deleteEvents() {
-            jdbcTemplate.execute("DELETE FROM event_registrations WHERE id = '11111111-1111-1111-1111-111111111111'");
-            jdbcTemplate.execute("DELETE FROM events WHERE id IN ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'dddddddd-dddd-dddd-dddd-dddddddddddd')");
+            jdbcTemplate.execute("DELETE FROM events.event_registrations WHERE id = '11111111-1111-1111-1111-111111111111'");
+            jdbcTemplate.execute("DELETE FROM events.events WHERE id IN ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'dddddddd-dddd-dddd-dddd-dddddddddddd')");
         }
 
         @Test

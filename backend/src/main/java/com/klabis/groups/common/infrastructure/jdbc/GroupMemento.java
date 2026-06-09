@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Table("user_groups")
+@Table(schema = "groups", value = "user_groups")
 public class GroupMemento implements Persistable<UUID> {
 
     @Id

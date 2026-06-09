@@ -7,7 +7,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("member_registration_block")
+@Table(schema = "events", value = "member_registration_block")
 class MemberRegistrationBlockMemento {
 
     @Id
