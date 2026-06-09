@@ -67,7 +67,26 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                 <h2 className="text-base font-bold text-zinc-900 mb-4">Základní informace</h2>
                 <hr className="border-slate-100 mb-5"/>
 
-                {editTemplate ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                            Název úrovně
+                        </label>
+                        <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                            {resourceData.name}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                            Roční poplatek (Kč)
+                        </label>
+                        <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                            {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
+                        </div>
+                    </div>
+                </div>
+
+                {editTemplate && (
                     <HalFormDisplay
                         template={editTemplate as HalFormsTemplate}
                         templateName="editLevel"
@@ -78,53 +97,11 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                         submitButtonLabel={labels.buttons.saveChanges}
                         submitIcon={<Save className="w-[15px] h-[15px]"/>}
                         navigateOnSuccess={false}
-                        customLayout={
-                            <div className="flex flex-col gap-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    {/* Fields rendered by HalFormsForm via default layout */}
-                                </div>
-                            </div>
-                        }
                     />
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">
-                                Název úrovně
-                            </label>
-                            <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
-                                {resourceData.name}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">
-                                Roční poplatek (Kč)
-                            </label>
-                            <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
-                                {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
-                            </div>
-                        </div>
-                    </div>
                 )}
 
-                {/* Action buttons row */}
-                {(editTemplate || deleteTemplate) && !editTemplate && (
-                    <div className="flex gap-3 mt-5">
-                        {deleteTemplate && (
-                            <button
-                                type="button"
-                                onClick={() => setDeleteModal(true)}
-                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
-                            >
-                                <Trash2 className="w-[15px] h-[15px]"/>
-                                {labels.templates.deleteMembershipFeeLevel}
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {deleteTemplate && editTemplate && (
-                    <div className="flex gap-3 mt-2">
+                {deleteTemplate && (
+                    <div className="flex gap-3 mt-4">
                         <button
                             type="button"
                             onClick={() => setDeleteModal(true)}
