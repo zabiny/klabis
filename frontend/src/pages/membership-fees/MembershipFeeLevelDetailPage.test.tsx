@@ -29,7 +29,7 @@ const buildFeeLevelDetail = (overrides?: Partial<HalResponse>): HalResponse => (
     name: 'Základní členství',
     yearlyFeeAmount: 500,
     yearlyFeeCurrency: 'CZK',
-    coParticipationRules: [
+    rules: [
         {
             eventTypeId: 'sprint',
             rankingShortName: 'A',
@@ -114,7 +114,7 @@ describe('MembershipFeeLevelDetailPage', () => {
     });
 
     it('does not render rules table when coParticipationRules is empty', () => {
-        const resourceData = buildFeeLevelDetail({coParticipationRules: []});
+        const resourceData = buildFeeLevelDetail({rules: []});
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByText('Zkratka žebříčku')).not.toBeInTheDocument();
     });
@@ -136,7 +136,7 @@ describe('MembershipFeeLevelDetailPage', () => {
 
     it('renders FIXED_SURCHARGE rule with fixedAmount and currency', () => {
         const resourceData = buildFeeLevelDetail({
-            coParticipationRules: [
+            rules: [
                 {
                     eventTypeId: 'relay',
                     rankingShortName: 'B',
@@ -155,7 +155,7 @@ describe('MembershipFeeLevelDetailPage', () => {
 
     it('renders multiple rules', () => {
         const resourceData = buildFeeLevelDetail({
-            coParticipationRules: [
+            rules: [
                 {eventTypeId: 'sprint', rankingShortName: 'A', ruleType: 'PERCENTAGE', percent: 50},
                 {eventTypeId: 'relay', rankingShortName: 'B', ruleType: 'FIXED_SURCHARGE', fixedAmount: 100, fixedCurrency: 'CZK'},
             ],

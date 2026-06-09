@@ -22,7 +22,7 @@ interface FeeLevelDetail extends HalResponse {
     name: string;
     yearlyFeeAmount: number;
     yearlyFeeCurrency: string;
-    coParticipationRules?: CoParticipationRule[];
+    rules?: CoParticipationRule[];
 }
 
 const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): ReactElement => {
@@ -33,7 +33,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
 
     const editTemplate = resourceData._templates?.editLevel ?? null;
     const deleteTemplate = resourceData._templates?.deleteLevel ?? null;
-    const rules = resourceData.coParticipationRules ?? [];
+    const rules = resourceData.rules ?? [];
 
     return (
         <div className="flex flex-col gap-8">
