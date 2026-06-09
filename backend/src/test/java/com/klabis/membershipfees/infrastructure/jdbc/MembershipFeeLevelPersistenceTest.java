@@ -2,8 +2,8 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipFeeLevel;
 import com.klabis.membershipfees.domain.MembershipFeeLevelRepository;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -150,6 +150,7 @@ class MembershipFeeLevelPersistenceTest {
 
     @Nested
     @DisplayName("findAll()")
+    @CleanupTestData
     class FindAll {
 
         @Test

@@ -5,6 +5,7 @@ import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} 
 import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
+import {useEventTypes} from "../hooks/useEventTypes";
 
 interface SubField {
     key: string;
@@ -41,15 +42,6 @@ const ADDRESS_FIELDS: SubField[] = [
 const IDENTITY_CARD_FIELDS: SubField[] = [
     {key: "cardNumber", attr: "cardNumber", prompt: "Číslo OP"},
     {key: "validityDate", attr: "validityDate", prompt: "Platnost OP", type: "date"},
-];
-
-const PAYMENT_RULE_FIELDS: SubField[] = [
-    {key: "eventTypeId", attr: "eventTypeId", prompt: "Typ akce", type: "UUID"},
-    {key: "rankingShortName", attr: "rankingShortName", prompt: "Zkratka žebříčku"},
-    {key: "ruleType", attr: "ruleType", prompt: "Typ pravidla"},
-    {key: "percent", attr: "percent", prompt: "Procento (%)", type: "number"},
-    {key: "fixedAmount", attr: "fixedAmount", prompt: "Fixní částka", type: "number"},
-    {key: "fixedCurrency", attr: "fixedCurrency", prompt: "Měna fixní částky"},
 ];
 
 const GUARDIAN_FIELDS: SubField[] = [
@@ -95,6 +87,60 @@ const renderLicenseField = (conf: HalFormsInputProps, levelOptions: {value: stri
     return <FormGroupWrapper label={title}>
         <HalFormsSelect key="level" {...levelSubProps} prop={levelPropWithOptions}/>
         <HalFormsInput key="validityDate" {...validitySubProps}/>
+    </FormGroupWrapper>;
+};
+
+const RULE_TYPE_OPTIONS = [
+    {value: "PERCENTAGE", prompt: "Procentuální (% ze startovného)"},
+    {value: "FIXED_SURCHARGE", prompt: "Fixní příplatek (CZK)"},
+];
+
+const PaymentRuleFormFields = (conf: HalFormsInputProps): ReactElement => {
+    const {eventTypes} = useEventTypes();
+    const eventTypeOptions = eventTypes.map(et => ({value: et.id, prompt: et.name}));
+
+    const eventTypeSubProps = conf.subElementProps("eventTypeId", {prompt: "Typ akce"});
+    const eventTypePropWithOptions = {...eventTypeSubProps.prop, options: {inline: eventTypeOptions}};
+
+    const ruleTypeSubProps = conf.subElementProps("ruleType", {prompt: "Typ pravidla"});
+    const ruleTypePropWithOptions = {...ruleTypeSubProps.prop, options: {inline: RULE_TYPE_OPTIONS}};
+
+    const rankingSubProps = conf.subElementProps("rankingShortName", {prompt: "Zkratka žebříčku"});
+    const percentSubProps = conf.subElementProps("percent", {prompt: "Procento (%)", type: "number"});
+    const fixedAmountSubProps = conf.subElementProps("fixedAmount", {prompt: "Fixní částka", type: "number"});
+    const fixedCurrencySubProps = conf.subElementProps("fixedCurrency", {prompt: "Měna fixní částky"});
+
+    if (conf.renderMode === 'input') {
+        return <>
+            <DetailRow label="Typ akce">
+                <HalFormsSelect {...eventTypeSubProps} prop={eventTypePropWithOptions}/>
+            </DetailRow>
+            <DetailRow label="Zkratka žebříčku">
+                <HalFormsInput {...rankingSubProps}/>
+            </DetailRow>
+            <DetailRow label="Typ pravidla">
+                <HalFormsSelect {...ruleTypeSubProps} prop={ruleTypePropWithOptions}/>
+            </DetailRow>
+            <DetailRow label="Procento (%)">
+                <HalFormsInput {...percentSubProps}/>
+            </DetailRow>
+            <DetailRow label="Fixní částka">
+                <HalFormsInput {...fixedAmountSubProps}/>
+            </DetailRow>
+            <DetailRow label="Měna fixní částky">
+                <HalFormsInput {...fixedCurrencySubProps}/>
+            </DetailRow>
+        </>;
+    }
+
+    const baseName = conf.prop.name.replace(/\.\d+$/, '');
+    return <FormGroupWrapper label={conf.prop.prompt || getFieldLabel(baseName)}>
+        <HalFormsSelect {...eventTypeSubProps} prop={eventTypePropWithOptions}/>
+        <HalFormsInput {...rankingSubProps}/>
+        <HalFormsSelect {...ruleTypeSubProps} prop={ruleTypePropWithOptions}/>
+        <HalFormsInput {...percentSubProps}/>
+        <HalFormsInput {...fixedAmountSubProps}/>
+        <HalFormsInput {...fixedCurrencySubProps}/>
     </FormGroupWrapper>;
 };
 
@@ -199,9 +245,9 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             ]);
         case "PaymentRuleRequest":
             // For multi/collection: return null so HalFormsCollectionField handles iteration.
-            // For a single item (inside the collection): render sub-fields.
+            // For a single item (inside the collection): render sub-fields with custom select renderers.
             if (isMultipleProperty(conf.prop)) return null;
-            return renderCompositeField(conf, PAYMENT_RULE_FIELDS);
+            return <PaymentRuleFormFields {...conf}/>;
         case "EntryFeeRequest":
             return renderCompositeField(conf, [
                 {key: "amount", attr: "amount", prompt: "Částka", type: "number"},

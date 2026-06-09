@@ -10,6 +10,7 @@ import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeLevelNotFoundException;
 import com.klabis.membershipfees.domain.MembershipFeeLevel;
+import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -101,6 +104,33 @@ class MembershipFeeLevelControllerTest {
                                             {"name": "", "yearlyFeeAmount": 1200}
                                             """))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should deserialize rules and pass PERCENTAGE rule to command")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldDeserializeRulesAndPassToCommand() throws Exception {
+            var eventTypeUuid = UUID.fromString("e2be588c-91ad-43e4-8d14-efa7de02782d");
+            when(managementPort.createLevel(any())).thenReturn(LEVEL_ID);
+
+            mockMvc.perform(
+                            post("/api/membership-fee-levels")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name":"Závodní","rules":[{"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percent":30}],"yearlyFeeAmount":1200,"yearlyFeeCurrency":"CZK"}
+                                            """.formatted(eventTypeUuid)))
+                    .andExpect(status().isCreated());
+
+            var captor = forClass(MembershipFeeLevelManagementPort.CreateLevelCommand.class);
+            verify(managementPort).createLevel(captor.capture());
+            MembershipFeeLevelManagementPort.CreateLevelCommand command = captor.getValue();
+
+            assertThat(command.rules()).hasSize(1);
+            MembershipPaymentRule rule = command.rules().get(0);
+            assertThat(rule.rankingShortName()).isEqualTo("A");
+            assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.Percentage.class);
+            assertThat(((MembershipPaymentRule.RuleValue.Percentage) rule.value()).percent()).isEqualTo(30);
         }
     }
 
@@ -233,6 +263,32 @@ class MembershipFeeLevelControllerTest {
                                             {"name": "Updated Name"}
                                             """))
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should deserialize FIXED_SURCHARGE rule from PATCH request and pass to command")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldDeserializeRulesInEditCommand() throws Exception {
+            var eventTypeUuid = UUID.fromString("e2be588c-91ad-43e4-8d14-efa7de02782d");
+            doNothing().when(managementPort).editLevel(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-levels/{id}", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"rules":[{"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_SURCHARGE","fixedAmount":200,"fixedCurrency":"CZK"}]}
+                                            """.formatted(eventTypeUuid)))
+                    .andExpect(status().isNoContent());
+
+            var captor = forClass(MembershipFeeLevelManagementPort.EditLevelCommand.class);
+            verify(managementPort).editLevel(eq(LEVEL_ID), captor.capture());
+            MembershipFeeLevelManagementPort.EditLevelCommand command = captor.getValue();
+
+            assertThat(command.rules()).hasSize(1);
+            MembershipPaymentRule rule = command.rules().get(0);
+            assertThat(rule.rankingShortName()).isEqualTo("B");
+            assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedSurcharge.class);
         }
     }
 
