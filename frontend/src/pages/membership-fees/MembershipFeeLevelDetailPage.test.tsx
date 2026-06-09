@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -181,13 +181,14 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('100 CZK')).toBeInTheDocument();
     });
 
-    it('renders save button inside basic info card when editLevel template exists', () => {
+    it('renders save button inside basic info card when editLevel template exists (after clicking edit)', () => {
         const resourceData = buildFeeLevelDetail({
             _templates: {
                 editLevel: mockHalFormsTemplate({title: 'Upravit úroveň', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
+        fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
         expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
     });
 

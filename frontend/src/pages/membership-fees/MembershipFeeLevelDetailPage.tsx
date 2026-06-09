@@ -6,7 +6,7 @@ import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx'
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {labels} from '../../localization';
-import {ChevronRight, Plus, Save, Trash2, X} from 'lucide-react';
+import {ChevronRight, Pencil, Plus, Save, Trash2, X} from 'lucide-react';
 
 interface CoParticipationRule {
     eventTypeId: string;
@@ -43,6 +43,7 @@ const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE'})
 const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): ReactElement => {
     const {route} = useHalPageData<FeeLevelDetail>();
     const navigate = useNavigate();
+    const [isEditing, setIsEditing] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [addRuleModal, setAddRuleModal] = useState(false);
 
@@ -67,50 +68,59 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                 <h2 className="text-base font-bold text-zinc-900 mb-4">Základní informace</h2>
                 <hr className="border-slate-100 mb-5"/>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">
-                            Název úrovně
-                        </label>
-                        <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
-                            {resourceData.name}
+                {!isEditing ? (
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Název úrovně</label>
+                                <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                                    {resourceData.name}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Roční poplatek (Kč)</label>
+                                <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                                    {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">
-                            Roční poplatek (Kč)
-                        </label>
-                        <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
-                            {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
+                        <div className="flex gap-3">
+                            {editTemplate && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                                >
+                                    <Pencil className="w-[15px] h-[15px]"/>
+                                    {labels.buttons.edit}
+                                </button>
+                            )}
+                            {deleteTemplate && (
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteModal(true)}
+                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+                                >
+                                    <Trash2 className="w-[15px] h-[15px]"/>
+                                    {labels.templates.deleteMembershipFeeLevel}
+                                </button>
+                            )}
                         </div>
-                    </div>
-                </div>
-
-                {editTemplate && (
-                    <HalFormDisplay
-                        template={editTemplate as HalFormsTemplate}
-                        templateName="editLevel"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => {}}
-                        successMessage={labels.ui.savedSuccessfully}
-                        submitButtonLabel={labels.buttons.saveChanges}
-                        submitIcon={<Save className="w-[15px] h-[15px]"/>}
-                        navigateOnSuccess={false}
-                    />
-                )}
-
-                {deleteTemplate && (
-                    <div className="flex gap-3 mt-4">
-                        <button
-                            type="button"
-                            onClick={() => setDeleteModal(true)}
-                            className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
-                        >
-                            <Trash2 className="w-[15px] h-[15px]"/>
-                            {labels.templates.deleteMembershipFeeLevel}
-                        </button>
-                    </div>
+                    </>
+                ) : (
+                    editTemplate && (
+                        <HalFormDisplay
+                            template={editTemplate as HalFormsTemplate}
+                            templateName="editLevel"
+                            resourceData={resourceData as unknown as Record<string, unknown>}
+                            pathname={route.pathname}
+                            onClose={() => setIsEditing(false)}
+                            successMessage={labels.ui.savedSuccessfully}
+                            submitButtonLabel={labels.buttons.saveChanges}
+                            submitIcon={<Save className="w-[15px] h-[15px]"/>}
+                            navigateOnSuccess={false}
+                        />
+                    )
                 )}
             </div>
 
