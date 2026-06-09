@@ -1,8 +1,9 @@
 import {type ReactElement} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import {ArrowRight} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {Alert, Card, Skeleton} from '../../components/UI';
+import {Alert, Skeleton} from '../../components/UI';
 import type {HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -34,6 +35,17 @@ interface FeeYearPublicationDetail extends HalResponse {
     };
 }
 
+const GroupStatusBadge = ({status}: {status: FeeGroupSummary['status']}): ReactElement => {
+    const colorClass = status === 'EDITABLE'
+        ? 'bg-[#DCFCE7] text-[#15803D]'
+        : 'bg-[#F4F4F5] text-[#71717A]';
+    return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}>
+            {getEnumLabel('feeGroupStatus', status)}
+        </span>
+    );
+};
+
 const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearPublicationDetail}): ReactElement => {
     const navigate = useNavigate();
     const levelsHref = resourceData._links?.levels?.href ?? '';
@@ -48,69 +60,86 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
     };
 
     return (
-        <div className="flex flex-col gap-8">
-            <div>
-                <Link to="/fee-year-publications" className="text-sm text-primary hover:text-primary-light">
+        <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-2 text-sm text-[#71717A]">
+                <Link to="/fee-year-publications" className="hover:text-[#18181B]">
                     {labels.ui.backToList}
                 </Link>
+                <span>/</span>
+                <span className="text-[#18181B] font-medium">{resourceData.year}</span>
             </div>
 
-            <h1 className="text-3xl font-bold text-text-primary">{resourceData.year}</h1>
+            <h1 className="text-[28px] font-bold text-[#18181B]">{resourceData.year}</h1>
 
-            <Card className="p-6">
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white border border-[#E4E4E7] rounded-xl p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.votingDeadline}</dt>
-                        <dd className="mt-1 text-text-primary font-medium">{resourceData.votingDeadline ? formatDate(resourceData.votingDeadline) : '—'}</dd>
+                        <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">Rok</p>
+                        <p className="mt-1 text-[#18181B] font-medium">{resourceData.year}</p>
                     </div>
-                </dl>
-            </Card>
+                    <div>
+                        <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">{labels.fields.votingDeadline}</p>
+                        <p className="mt-1 text-[#18181B] font-medium">
+                            {resourceData.votingDeadline ? formatDate(resourceData.votingDeadline) : '—'}
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-text-primary">{labels.sections.membershipFeeGroups}</h2>
+                <h2 className="text-xl font-bold text-[#18181B]">{labels.sections.membershipFeeGroups}</h2>
                 {groups.length === 0 ? (
-                    <p className="text-text-secondary text-sm">Žádné skupiny.</p>
+                    <p className="text-sm text-[#71717A]">Žádné skupiny.</p>
                 ) : (
-                    <Card className="p-0 overflow-hidden">
+                    <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border bg-surface-secondary">
-                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.name}</th>
-                                    <th className="px-4 py-3 text-right font-semibold text-text-secondary">{labels.fields.memberCount}</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.groupStatus}</th>
+                                <tr className="bg-[#F8FAFC] border-b border-[#E4E4E7]" style={{height: '44px'}}>
+                                    <th className="px-5 text-left text-xs font-semibold text-[#71717A]">{labels.fields.name}</th>
+                                    <th className="px-5 text-right text-xs font-semibold text-[#71717A]">{labels.fields.memberCount}</th>
+                                    <th className="px-5 text-left text-xs font-semibold text-[#71717A]">{labels.fields.groupStatus}</th>
+                                    <th className="px-5 w-12"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {groups.map((group) => (
                                     <tr
                                         key={group.id}
-                                        className="border-b border-border last:border-0 hover:bg-surface-secondary cursor-pointer"
+                                        className="border-b border-[#E4E4E7] last:border-0 hover:bg-[#F8FAFC] cursor-pointer"
+                                        style={{height: '60px'}}
                                         onClick={() => handleGroupClick(group)}
                                     >
-                                        <td className="px-4 py-3 text-text-primary font-medium">
+                                        <td className="px-5 text-[#18181B] font-medium">
                                             <Link
                                                 to={extractNavigationPath(group._links.self.href)}
-                                                className="text-primary hover:text-primary-light"
+                                                className="hover:text-[#2563EB]"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 {group.name}
                                             </Link>
                                         </td>
-                                        <td className="px-4 py-3 text-right text-text-primary">{group.memberCount}</td>
-                                        <td className="px-4 py-3 text-text-primary">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                group.status === 'EDITABLE'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                            }`}>
-                                                {getEnumLabel('feeGroupStatus', group.status)}
-                                            </span>
+                                        <td className="px-5 text-right text-[#18181B]">{group.memberCount}</td>
+                                        <td className="px-5">
+                                            <GroupStatusBadge status={group.status}/>
+                                        </td>
+                                        <td className="px-5">
+                                            <button
+                                                type="button"
+                                                className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#F8FAFC] text-[#71717A] hover:bg-[#F1F5F9]"
+                                                aria-label="Otevřít detail skupiny"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleGroupClick(group);
+                                                }}
+                                            >
+                                                <ArrowRight size={16}/>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </Card>
+                    </div>
                 )}
             </div>
         </div>

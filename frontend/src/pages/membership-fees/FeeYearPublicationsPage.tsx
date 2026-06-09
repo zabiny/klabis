@@ -1,4 +1,5 @@
 import {type ReactElement} from 'react';
+import {ArrowRight, Plus} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
@@ -26,14 +27,21 @@ export const FeeYearPublicationsPage = (): ReactElement => {
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-bold text-text-primary">{labels.sections.feeYearPublicationsList}</h1>
-
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.feeYearPublicationsList}</h2>
-                    <HalFormButton name="publishYear" modal={true}/>
+        <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-[28px] font-bold text-[#18181B]">{labels.sections.feeYearPublicationsList}</h1>
+                    <p className="text-sm text-[#71717A] mt-0.5">Vypsání výběru úrovní příspěvků pro jednotlivé roky</p>
                 </div>
+                <HalFormButton
+                    name="publishYear"
+                    modal={true}
+                    icon={<Plus size={16} className="text-white"/>}
+                    className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
+                />
+            </div>
+
+            <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
                 <HalEmbeddedTable<FeeYearPublicationSummary>
                     collectionName="feeYearPublicationResponseList"
                     tableId="fee-year-publications"
@@ -48,6 +56,20 @@ export const FeeYearPublicationsPage = (): ReactElement => {
                         column="votingDeadline"
                         dataRender={({value}) => typeof value === 'string' ? formatDate(value) : String(value)}
                     >{labels.fields.votingDeadline}</TableCell>
+                    <TableCell
+                        column="_links"
+                        dataRender={() => (
+                            <button
+                                type="button"
+                                className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#F8FAFC] text-[#71717A] hover:bg-[#F1F5F9]"
+                                aria-label="Otevřít detail"
+                            >
+                                <ArrowRight size={16}/>
+                            </button>
+                        )}
+                    >
+                        {''}
+                    </TableCell>
                 </HalEmbeddedTable>
             </div>
         </div>

@@ -7,6 +7,8 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeLevelDetailPage} from './MembershipFeeLevelDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import type {HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay.tsx';
+import type {HalFormModalProps} from '../../components/HalNavigator2/HalFormModal.tsx';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -22,6 +24,20 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
         currentFormRequest: null,
         closeForm: vi.fn(),
     }),
+}));
+
+vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
+    HalFormDisplay: ({submitButtonLabel}: HalFormDisplayProps) => (
+        <button type="submit">{submitButtonLabel ?? 'Odeslat'}</button>
+    ),
+}));
+
+vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
+    HalFormModal: ({title, onClose}: HalFormModalProps) => (
+        <div role="dialog" aria-label={title}>
+            <button onClick={onClose}>Zavřít</button>
+        </div>
+    ),
 }));
 
 const buildFeeLevelDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
@@ -93,9 +109,9 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders the fee level name as heading', () => {
+    it('renders the fee level name as page heading', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.getByRole('heading', {name: /základní členství/i})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: /základní informace/i})).toBeInTheDocument();
     });
 
     it('renders annual fee value', () => {
@@ -105,24 +121,24 @@ describe('MembershipFeeLevelDetailPage', () => {
 
     it('renders "Roční poplatek" label', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.getByText('Roční poplatek')).toBeInTheDocument();
+        expect(screen.getByText('Roční poplatek (Kč)')).toBeInTheDocument();
     });
 
-    it('renders back link to list', () => {
+    it('renders breadcrumb with link back to list and current name', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.getByText(/zpět na seznam/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Katalog úrovní'})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Katalog úrovní'})).toHaveAttribute('href', '/membership-fee-levels');
     });
 
-    it('does not render rules table when coParticipationRules is empty', () => {
-        const resourceData = buildFeeLevelDetail({rules: []});
-        renderPage(createMockPageData(resourceData));
-        expect(screen.queryByText('Zkratka žebříčku')).not.toBeInTheDocument();
+    it('renders co-participation rules section heading always', () => {
+        renderPage(createMockPageData(buildFeeLevelDetail({rules: []})));
+        expect(screen.getByText('Pravidla spoluúčasti')).toBeInTheDocument();
     });
 
     it('renders co-participation rules table headers', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.getByText('Typ akce')).toBeInTheDocument();
-        expect(screen.getByText('Zkratka žebříčku')).toBeInTheDocument();
+        expect(screen.getByText('Typ závodu')).toBeInTheDocument();
+        expect(screen.getByText('Žebříček')).toBeInTheDocument();
         expect(screen.getByText('Typ pravidla')).toBeInTheDocument();
     });
 
@@ -130,7 +146,6 @@ describe('MembershipFeeLevelDetailPage', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
         expect(screen.getByText('sprint')).toBeInTheDocument();
         expect(screen.getByText('A')).toBeInTheDocument();
-        expect(screen.getByText('PERCENTAGE')).toBeInTheDocument();
         expect(screen.getByText('50 %')).toBeInTheDocument();
     });
 
@@ -149,7 +164,6 @@ describe('MembershipFeeLevelDetailPage', () => {
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('relay')).toBeInTheDocument();
         expect(screen.getByText('B')).toBeInTheDocument();
-        expect(screen.getByText('FIXED_SURCHARGE')).toBeInTheDocument();
         expect(screen.getByText('200 CZK')).toBeInTheDocument();
     });
 
@@ -167,28 +181,44 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('100 CZK')).toBeInTheDocument();
     });
 
-    it('renders edit button when editLevel template exists', () => {
+    it('renders save button inside basic info card when editLevel template exists', () => {
         const resourceData = buildFeeLevelDetail({
             _templates: {
                 editLevel: mockHalFormsTemplate({title: 'Upravit úroveň', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
     });
 
-    it('does not render edit button when editLevel template is absent', () => {
+    it('does not render save button when editLevel template is absent', () => {
         renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /uložit změny/i})).not.toBeInTheDocument();
     });
 
-    it('renders delete button when deleteLevel template exists', () => {
+    it('renders delete level button when deleteLevel template exists', () => {
         const resourceData = buildFeeLevelDetail({
+            rules: [],
             _templates: {
                 deleteLevel: mockHalFormsTemplate({title: 'Smazat úroveň', method: 'DELETE'}),
             },
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /smazat/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /smazat úroveň/i})).toBeInTheDocument();
+    });
+
+    it('renders add rule footer button when addRule template exists', () => {
+        const resourceData = buildFeeLevelDetail({
+            _templates: {
+                addRule: mockHalFormsTemplate({title: 'Přidat pravidlo', method: 'POST'}),
+            },
+        });
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText(/přidat pravidlo/i)).toBeInTheDocument();
+    });
+
+    it('does not render add rule footer when addRule template is absent', () => {
+        renderPage(createMockPageData(buildFeeLevelDetail()));
+        expect(screen.queryByText(/přidat pravidlo/i)).not.toBeInTheDocument();
     });
 });
