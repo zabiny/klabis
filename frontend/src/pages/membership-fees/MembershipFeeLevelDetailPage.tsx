@@ -9,10 +9,12 @@ import {labels} from '../../localization';
 import {Pencil, Trash2} from 'lucide-react';
 
 interface CoParticipationRule {
-    raceTypeId: string;
-    ranking: string;
+    eventTypeId: string;
+    rankingShortName: string;
     ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE';
-    value: number;
+    percent?: number;
+    fixedAmount?: number;
+    fixedCurrency?: string;
 }
 
 interface FeeLevelDetail extends HalResponse {
@@ -98,8 +100,8 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-surface-secondary">
-                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.raceTypeId}</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.ranking}</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.eventTypeId}</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.rankingShortName}</th>
                                     <th className="px-4 py-3 text-left font-semibold text-text-secondary">{labels.fields.ruleType}</th>
                                     <th className="px-4 py-3 text-right font-semibold text-text-secondary">{labels.tables.value}</th>
                                 </tr>
@@ -107,13 +109,13 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                             <tbody>
                                 {rules.map((rule, index) => (
                                     <tr key={index} className="border-b border-border last:border-0">
-                                        <td className="px-4 py-3 text-text-primary">{rule.raceTypeId}</td>
-                                        <td className="px-4 py-3 text-text-primary">{rule.ranking}</td>
+                                        <td className="px-4 py-3 text-text-primary">{rule.eventTypeId}</td>
+                                        <td className="px-4 py-3 text-text-primary">{rule.rankingShortName}</td>
                                         <td className="px-4 py-3 text-text-primary">{rule.ruleType}</td>
                                         <td className="px-4 py-3 text-right text-text-primary">
                                             {rule.ruleType === 'PERCENTAGE'
-                                                ? `${rule.value} %`
-                                                : `${rule.value} ${labels.finance.currency}`}
+                                                ? `${rule.percent} %`
+                                                : `${rule.fixedAmount} ${rule.fixedCurrency ?? labels.finance.currency}`}
                                         </td>
                                     </tr>
                                 ))}
