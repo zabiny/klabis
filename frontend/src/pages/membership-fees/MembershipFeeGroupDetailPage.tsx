@@ -25,7 +25,8 @@ interface FeeGroupMember {
 interface MembershipFeeGroupDetail extends HalResponse {
     id: string;
     name: string;
-    annualFeeSnapshot: number;
+    yearlyFeeAmount: number;
+    yearlyFeeCurrency: string;
     status: 'EDITABLE' | 'FROZEN';
     coParticipationRules?: CoParticipationRule[];
     members?: FeeGroupMember[];
@@ -36,7 +37,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     const [isEditing, setIsEditing] = useState(false);
     const [assignMemberModal, setAssignMemberModal] = useState(false);
 
-    const editTemplate = resourceData._templates?.updateMembershipFeeGroup ?? null;
+    const editTemplate = resourceData._templates?.editSnapshot ?? null;
     const assignMemberTemplate = resourceData._templates?.assignMember ?? null;
 
     const rules = resourceData.coParticipationRules ?? [];
@@ -71,7 +72,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                             onClick={() => setIsEditing(true)}
                             startIcon={<Pencil className="w-4 h-4"/>}
                         >
-                            {labels.templates.updateMembershipFeeGroup}
+                            {labels.buttons.edit}
                         </Button>
                     )}
                     {assignMemberTemplate && (
@@ -89,8 +90,8 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
             <Card className="p-6">
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.annualFee}</dt>
-                        <dd className="mt-1 text-text-primary font-medium">{resourceData.annualFeeSnapshot} {labels.finance.currency}</dd>
+                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.yearlyFeeAmount}</dt>
+                        <dd className="mt-1 text-text-primary font-medium">{resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}</dd>
                     </div>
                 </dl>
             </Card>
@@ -99,7 +100,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                 <Card className="p-6">
                     <HalFormDisplay
                         template={editTemplate as HalFormsTemplate}
-                        templateName="updateMembershipFeeGroup"
+                        templateName="editSnapshot"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setIsEditing(false)}

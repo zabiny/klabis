@@ -18,7 +18,8 @@ interface CoParticipationRule {
 interface FeeLevelDetail extends HalResponse {
     id: string;
     name: string;
-    annualFee: number;
+    yearlyFeeAmount: number;
+    yearlyFeeCurrency: string;
     coParticipationRules?: CoParticipationRule[];
 }
 
@@ -28,14 +29,14 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
     const [isEditing, setIsEditing] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
 
-    const editTemplate = resourceData._templates?.updateMembershipFeeLevel ?? null;
-    const deleteTemplate = resourceData._templates?.deleteMembershipFeeLevel ?? null;
+    const editTemplate = resourceData._templates?.editLevel ?? null;
+    const deleteTemplate = resourceData._templates?.deleteLevel ?? null;
     const rules = resourceData.coParticipationRules ?? [];
 
     return (
         <div className="flex flex-col gap-8">
             <div>
-                <Link to="/administration/membership-fee-levels" className="text-sm text-primary hover:text-primary-light">
+                <Link to="/membership-fee-levels" className="text-sm text-primary hover:text-primary-light">
                     {labels.ui.backToList}
                 </Link>
             </div>
@@ -50,7 +51,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                             onClick={() => setIsEditing(true)}
                             startIcon={<Pencil className="w-4 h-4"/>}
                         >
-                            {labels.templates.updateMembershipFeeLevel}
+                            {labels.buttons.edit}
                         </Button>
                     )}
                     {deleteTemplate && (
@@ -68,8 +69,8 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
             <Card className="p-6">
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.annualFee}</dt>
-                        <dd className="mt-1 text-text-primary font-medium">{resourceData.annualFee} {labels.finance.currency}</dd>
+                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.yearlyFeeAmount}</dt>
+                        <dd className="mt-1 text-text-primary font-medium">{resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}</dd>
                     </div>
                 </dl>
             </Card>
@@ -78,7 +79,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                 <Card className="p-6">
                     <HalFormDisplay
                         template={editTemplate as HalFormsTemplate}
-                        templateName="updateMembershipFeeLevel"
+                        templateName="editLevel"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
                         onClose={() => setIsEditing(false)}
@@ -126,11 +127,11 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                 <HalFormModal
                     title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteMembershipFeeLevel}
                     template={deleteTemplate as HalFormsTemplate}
-                    templateName="deleteMembershipFeeLevel"
+                    templateName="deleteLevel"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/administration/membership-fee-levels')}
+                    onSubmitSuccess={() => navigate('/membership-fee-levels')}
                 />
             )}
         </div>

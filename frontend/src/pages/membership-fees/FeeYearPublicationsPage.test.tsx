@@ -97,11 +97,11 @@ describe('FeeYearPublicationsPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders "Vypsat rok" button when publishFeeYear template exists', () => {
+    it('renders "Vypsat rok" button when publishYear template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/fee-year-publications'}},
             _templates: {
-                publishFeeYear: mockHalFormsTemplate({title: 'Vypsat rok', method: 'POST'}),
+                publishYear: mockHalFormsTemplate({title: 'Vypsat rok', method: 'POST'}),
             },
         };
         renderPage(createMockPageData(resourceData));
@@ -123,7 +123,7 @@ describe('FeeYearPublicationsPage', () => {
                 feeYearPublicationResponseList: [{
                     id: 'pub-1',
                     year: 2025,
-                    choiceDeadline: '2025-03-31',
+                    votingDeadline: '2025-03-31',
                     _links: {self: {href: '/api/fee-year-publications/pub-1'}},
                 }],
             },

@@ -97,11 +97,11 @@ describe('MembershipFeeLevelsPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders "Přidat úroveň" button when createMembershipFeeLevel template exists', () => {
+    it('renders "Přidat úroveň" button when createLevel template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/membership-fee-levels'}},
             _templates: {
-                createMembershipFeeLevel: mockHalFormsTemplate({title: 'Přidat úroveň', method: 'POST'}),
+                createLevel: mockHalFormsTemplate({title: 'Přidat úroveň', method: 'POST'}),
             },
         };
         renderPage(createMockPageData(resourceData));
@@ -123,7 +123,7 @@ describe('MembershipFeeLevelsPage', () => {
                 membershipFeeLevelResponseList: [{
                     id: 'level-1',
                     name: 'Základní členství',
-                    annualFee: 500,
+                    yearlyFeeAmount: 500,
                     coParticipationRules: [],
                     _links: {self: {href: '/api/membership-fee-levels/level-1'}},
                 }],

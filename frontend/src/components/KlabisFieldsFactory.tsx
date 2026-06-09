@@ -95,6 +95,13 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
 }
 
 const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
+    // If backend already provides inline options, respect them instead of defaulting to members list
+    if (conf.prop.options?.inline) {
+        if (isMultipleProperty(conf.prop)) {
+            return <HalFormsCheckboxGroup {...conf} />;
+        }
+        return <HalFormsSelect {...conf} />;
+    }
     const propWithMemberOptions = {
         ...conf.prop,
         options: {

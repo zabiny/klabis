@@ -116,11 +116,11 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
-                                    <Route path="/administration/membership-fee-levels" element={<MembershipFeeLevelsPage/>}/>
-                                    <Route path="/administration/membership-fee-levels/:id" element={<MembershipFeeLevelDetailPage/>}/>
-                                    <Route path="/administration/fee-year-publications" element={<FeeYearPublicationsPage/>}/>
-                                    <Route path="/administration/fee-year-publications/:id" element={<FeeYearPublicationDetailPage/>}/>
-                                    <Route path="/administration/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
+                                    <Route path="/membership-fee-levels" element={<MembershipFeeLevelsPage/>}/>
+                                    <Route path="/membership-fee-levels/:id" element={<MembershipFeeLevelDetailPage/>}/>
+                                    <Route path="/fee-year-publications" element={<FeeYearPublicationsPage/>}/>
+                                    <Route path="/fee-year-publications/:id" element={<FeeYearPublicationDetailPage/>}/>
+                                    <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

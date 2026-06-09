@@ -3,12 +3,17 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {FeeYearPublicationDetailPage} from './FeeYearPublicationDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
+}));
+
+vi.mock('../../hooks/useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
@@ -23,27 +28,31 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
+const mockGroups = [
+    {
+        id: 'group-1',
+        name: 'Základní členství',
+        memberCount: 10,
+        status: 'EDITABLE',
+        _links: {self: {href: '/api/membership-fee-groups/group-1'}},
+    },
+    {
+        id: 'group-2',
+        name: 'Aktivní závodník',
+        memberCount: 5,
+        status: 'FROZEN',
+        _links: {self: {href: '/api/membership-fee-groups/group-2'}},
+    },
+];
+
 const buildPublicationDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     id: 'pub-1',
     year: 2025,
-    choiceDeadline: '2025-03-31',
-    groups: [
-        {
-            id: 'group-1',
-            name: 'Základní členství',
-            memberCount: 10,
-            status: 'EDITABLE',
-            _links: {self: {href: '/api/membership-fee-groups/group-1'}},
-        },
-        {
-            id: 'group-2',
-            name: 'Aktivní závodník',
-            memberCount: 5,
-            status: 'FROZEN',
-            _links: {self: {href: '/api/membership-fee-groups/group-2'}},
-        },
-    ],
-    _links: {self: {href: '/api/fee-year-publications/pub-1'}},
+    votingDeadline: '2025-03-31',
+    _links: {
+        self: {href: '/api/fee-year-publications/pub-1'},
+        levels: {href: '/api/fee-year-publications/pub-1/levels'},
+    },
     ...overrides,
 });
 
@@ -106,7 +115,7 @@ describe('FeeYearPublicationDetailPage', () => {
 
     it('renders choice deadline label', () => {
         renderPage(createMockPageData(buildPublicationDetail()));
-        expect(screen.getByText('Uzávěrka voleb')).toBeInTheDocument();
+        expect(screen.getByText('Uzávěrka hlasování')).toBeInTheDocument();
     });
 
     it('renders back link to list', () => {
@@ -120,22 +129,38 @@ describe('FeeYearPublicationDetailPage', () => {
     });
 
     it('renders group names', () => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
+            error: null,
+        } as ReturnType<typeof useAuthorizedQuery>);
         renderPage(createMockPageData(buildPublicationDetail()));
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
         expect(screen.getByText('Aktivní závodník')).toBeInTheDocument();
     });
 
     it('renders EDITABLE group status as "Editovatelná"', () => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
+            error: null,
+        } as ReturnType<typeof useAuthorizedQuery>);
         renderPage(createMockPageData(buildPublicationDetail()));
         expect(screen.getByText('Editovatelná')).toBeInTheDocument();
     });
 
     it('renders FROZEN group status as "Zmrazená"', () => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
+            error: null,
+        } as ReturnType<typeof useAuthorizedQuery>);
         renderPage(createMockPageData(buildPublicationDetail()));
         expect(screen.getByText('Zmrazená')).toBeInTheDocument();
     });
 
     it('renders links to group details', () => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
+            error: null,
+        } as ReturnType<typeof useAuthorizedQuery>);
         renderPage(createMockPageData(buildPublicationDetail()));
         const links = screen.getAllByRole('link');
         const groupLinks = links.filter(l => l.getAttribute('href')?.includes('membership-fee-groups'));

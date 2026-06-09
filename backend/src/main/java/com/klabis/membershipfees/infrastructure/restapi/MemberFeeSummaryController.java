@@ -1,6 +1,8 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.users.Authority;
+import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
@@ -15,9 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -29,9 +33,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberFeeSummaryController {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
+    private final FeeYearPublicationManagementPort publicationManagementPort;
 
-    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort) {
+    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort,
+                                FeeYearPublicationManagementPort publicationManagementPort) {
         this.memberFeeHistoryPort = memberFeeHistoryPort;
+        this.publicationManagementPort = publicationManagementPort;
     }
 
     @GetMapping("/fee-summary/{year}")
@@ -48,12 +55,17 @@ class MemberFeeSummaryController {
         MemberFeeSummaryResponse response = MemberFeeSummaryResponse.from(info);
         EntityModel<MemberFeeSummaryResponse> model = EntityModel.of(response);
 
+        List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
+                .map(group -> new HalFormsInlineOption(group.getId().uuid().toString(), group.getName()))
+                .toList();
+
         klabisLinkTo(methodOn(MemberFeeSummaryController.class).getFeeSummary(memberId, year, null))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
-                        self = self.andAffordances(klabisAfford(
-                                methodOn(MemberFeeChoiceController.class).chooseLevel(memberId, year, null, null)));
+                        self = self.andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(MemberFeeChoiceController.class).chooseLevel(memberId, year, null, null),
+                                Map.of("membershipFeeGroupId", groupOptions)));
                     }
                     model.add(self);
                 });

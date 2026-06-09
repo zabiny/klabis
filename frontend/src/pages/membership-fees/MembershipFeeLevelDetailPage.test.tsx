@@ -27,7 +27,7 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 const buildFeeLevelDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     id: 'level-1',
     name: 'Základní členství',
-    annualFee: 500,
+    yearlyFeeAmount: 500,
     coParticipationRules: [
         {
             raceTypeId: 'sprint',
@@ -123,20 +123,20 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('A')).toBeInTheDocument();
     });
 
-    it('renders edit button when updateMembershipFeeLevel template exists', () => {
+    it('renders edit button when editLevel template exists', () => {
         const resourceData = buildFeeLevelDetail({
             _templates: {
-                updateMembershipFeeLevel: mockHalFormsTemplate({title: 'Upravit úroveň', method: 'PATCH'}),
+                editLevel: mockHalFormsTemplate({title: 'Upravit úroveň', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
     });
 
-    it('renders delete button when deleteMembershipFeeLevel template exists', () => {
+    it('renders delete button when deleteLevel template exists', () => {
         const resourceData = buildFeeLevelDetail({
             _templates: {
-                deleteMembershipFeeLevel: mockHalFormsTemplate({title: 'Smazat úroveň', method: 'DELETE'}),
+                deleteLevel: mockHalFormsTemplate({title: 'Smazat úroveň', method: 'DELETE'}),
             },
         });
         renderPage(createMockPageData(resourceData));

@@ -11,7 +11,7 @@ import {formatDate} from '../../utils/dateUtils.ts';
 type FeeYearPublicationSummary = EntityModel<{
     id: string;
     year: number;
-    choiceDeadline: string;
+    votingDeadline: string;
 }>;
 
 export const FeeYearPublicationsPage = (): ReactElement => {
@@ -32,7 +32,7 @@ export const FeeYearPublicationsPage = (): ReactElement => {
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.feeYearPublicationsList}</h2>
-                    <HalFormButton name="publishFeeYear" modal={true}/>
+                    <HalFormButton name="publishYear" modal={true}/>
                 </div>
                 <HalEmbeddedTable<FeeYearPublicationSummary>
                     collectionName="feeYearPublicationResponseList"
@@ -45,7 +45,7 @@ export const FeeYearPublicationsPage = (): ReactElement => {
                     <TableCell sortable column="year">Rok</TableCell>
                     <TableCell
                         sortable
-                        column="choiceDeadline"
+                        column="votingDeadline"
                         dataRender={({value}) => typeof value === 'string' ? formatDate(value) : String(value)}
                     >{labels.fields.choiceDeadline}</TableCell>
                 </HalEmbeddedTable>

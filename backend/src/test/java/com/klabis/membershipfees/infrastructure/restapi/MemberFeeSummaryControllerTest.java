@@ -7,8 +7,11 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
+import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,9 +57,17 @@ class MemberFeeSummaryControllerTest {
     @MockitoBean
     private MemberFeeHistoryPort memberFeeHistoryPort;
 
+    @MockitoBean
+    private FeeYearPublicationManagementPort publicationManagementPort;
+
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-summary/{year}")
     class GetFeeSummaryTests {
+
+        @BeforeEach
+        void stubGroups() {
+            when(publicationManagementPort.listGroupsForYear(anyInt())).thenReturn(List.of());
+        }
 
         @Test
         @DisplayName("should return 200 with current group info when member has chosen a level")
@@ -106,6 +118,26 @@ class MemberFeeSummaryControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.chooseLevel").exists());
+        }
+
+        @Test
+        @DisplayName("should include inline group options on chooseLevel affordance membershipFeeGroupId property")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldIncludeInlineGroupOptionsOnChooseLevelAffordance() throws Exception {
+            MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
+                    null, null, null, true, Optional.empty());
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
+
+            MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
+                    new MembershipFeeLevelId(LEVEL_UUID), "Základní", YEAR, FEE, List.of());
+            when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.chooseLevel.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
+                            .value("Základní"));
         }
 
         @Test

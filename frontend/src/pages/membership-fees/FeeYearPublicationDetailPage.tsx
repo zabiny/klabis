@@ -1,6 +1,7 @@
 import {type ReactElement} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {Alert, Card, Skeleton} from '../../components/UI';
 import type {HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
@@ -17,16 +18,30 @@ interface FeeGroupSummary {
     };
 }
 
+interface FeeGroupsCollection {
+    _embedded?: {
+        membershipFeeGroupResponseList?: FeeGroupSummary[];
+    };
+}
+
 interface FeeYearPublicationDetail extends HalResponse {
     id: string;
     year: number;
-    choiceDeadline: string;
-    groups?: FeeGroupSummary[];
+    votingDeadline: string;
+    _links: {
+        self: {href: string};
+        levels?: {href: string};
+    };
 }
 
 const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearPublicationDetail}): ReactElement => {
     const navigate = useNavigate();
-    const groups = resourceData.groups ?? [];
+    const levelsHref = resourceData._links?.levels?.href ?? '';
+    const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
+        levelsHref ? extractNavigationPath(levelsHref) : '',
+        {enabled: !!levelsHref}
+    );
+    const groups = groupsData?._embedded?.membershipFeeGroupResponseList ?? [];
 
     const handleGroupClick = (group: FeeGroupSummary) => {
         navigate(extractNavigationPath(group._links.self.href));
@@ -35,7 +50,7 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
     return (
         <div className="flex flex-col gap-8">
             <div>
-                <Link to="/administration/fee-year-publications" className="text-sm text-primary hover:text-primary-light">
+                <Link to="/fee-year-publications" className="text-sm text-primary hover:text-primary-light">
                     {labels.ui.backToList}
                 </Link>
             </div>
@@ -45,8 +60,8 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
             <Card className="p-6">
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.choiceDeadline}</dt>
-                        <dd className="mt-1 text-text-primary font-medium">{formatDate(resourceData.choiceDeadline)}</dd>
+                        <dt className="text-xs uppercase font-semibold text-text-secondary">{labels.fields.votingDeadline}</dt>
+                        <dd className="mt-1 text-text-primary font-medium">{resourceData.votingDeadline ? formatDate(resourceData.votingDeadline) : '—'}</dd>
                     </div>
                 </dl>
             </Card>

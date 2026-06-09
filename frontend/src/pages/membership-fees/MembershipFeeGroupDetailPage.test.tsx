@@ -27,7 +27,7 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 const buildGroupDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     id: 'group-1',
     name: 'Základní členství',
-    annualFeeSnapshot: 500,
+    yearlyFeeAmount: 500,
     status: 'EDITABLE',
     coParticipationRules: [
         {raceTypeId: 'sprint', ranking: 'A', ruleType: 'PERCENTAGE', value: 50},
@@ -135,10 +135,10 @@ describe('MembershipFeeGroupDetailPage', () => {
         expect(screen.getByText('Přiřazeno adminem')).toBeInTheDocument();
     });
 
-    it('renders edit snapshot button when updateMembershipFeeGroup template exists and status is EDITABLE', () => {
+    it('renders edit snapshot button when editSnapshot template exists and status is EDITABLE', () => {
         const resourceData = buildGroupDetail({
             _templates: {
-                updateMembershipFeeGroup: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'}),
+                editSnapshot: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -159,7 +159,7 @@ describe('MembershipFeeGroupDetailPage', () => {
         const resourceData = buildGroupDetail({
             status: 'FROZEN',
             _templates: {
-                updateMembershipFeeGroup: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'}),
+                editSnapshot: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));

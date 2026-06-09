@@ -1,12 +1,14 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,10 +26,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -41,9 +44,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class FeeYearPublicationController {
 
     private final FeeYearPublicationManagementPort managementPort;
+    private final MembershipFeeLevelManagementPort levelManagementPort;
 
-    FeeYearPublicationController(FeeYearPublicationManagementPort managementPort) {
+    FeeYearPublicationController(FeeYearPublicationManagementPort managementPort,
+                                  MembershipFeeLevelManagementPort levelManagementPort) {
         this.managementPort = managementPort;
+        this.levelManagementPort = levelManagementPort;
     }
 
     @PostMapping(consumes = "application/json")
@@ -64,10 +70,16 @@ class FeeYearPublicationController {
                 .map(this::buildSummaryModel)
                 .toList();
 
+        List<HalFormsInlineOption> levelOptions = levelManagementPort.listLevels().stream()
+                .map(level -> new HalFormsInlineOption(level.getId().uuid().toString(), level.getName()))
+                .toList();
+
         CollectionModel<EntityModel<FeeYearPublicationResponse>> model = CollectionModel.of(items);
         klabisLinkTo(methodOn(FeeYearPublicationController.class).listPublications())
                 .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FeeYearPublicationController.class).publishYear(null)))));
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(FeeYearPublicationController.class).publishYear(null),
+                                Map.of("levelIds", levelOptions)))));
 
         return ResponseEntity.ok(model);
     }

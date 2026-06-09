@@ -11,6 +11,7 @@ import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.FeeYearPublicationNotFoundException;
+import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.finance.domain.Money;
@@ -50,6 +51,9 @@ class FeeYearPublicationControllerTest {
 
     @MockitoBean
     private FeeYearPublicationManagementPort managementPort;
+
+    @MockitoBean
+    private MembershipFeeLevelManagementPort levelManagementPort;
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
