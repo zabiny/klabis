@@ -1,8 +1,8 @@
 spring:
   mail:
     host: ${KLABIS_SMTP_HOST}
-    port: ${KLABIS_SMTP_PORT:587}
-    username: ${KLABIS_SMTP_USERNAME:}
+    port: ${KLABIS_SMTP_PORT:8026}
+    username: ${KLABIS_SMTP_USERNAME:klabis}
     password: ${KLABIS_SMTP_PASSWORD:}
     properties:
       mail:
