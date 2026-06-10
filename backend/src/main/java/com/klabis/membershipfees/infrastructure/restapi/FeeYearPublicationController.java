@@ -8,7 +8,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,9 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -44,10 +42,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class FeeYearPublicationController {
 
     private final FeeYearPublicationManagementPort managementPort;
-    private final MembershipFeeLevelManagementPort levelManagementPort;
+    private final MembershipFeeTierManagementPort levelManagementPort;
 
     FeeYearPublicationController(FeeYearPublicationManagementPort managementPort,
-                                  MembershipFeeLevelManagementPort levelManagementPort) {
+                                  MembershipFeeTierManagementPort levelManagementPort) {
         this.managementPort = managementPort;
         this.levelManagementPort = levelManagementPort;
     }
@@ -70,7 +68,7 @@ class FeeYearPublicationController {
                 .map(this::buildSummaryModel)
                 .toList();
 
-        List<HalFormsInlineOption> levelOptions = levelManagementPort.listLevels().stream()
+        List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
                 .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
                 .toList();
 

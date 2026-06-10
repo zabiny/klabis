@@ -28,8 +28,8 @@ import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
-import {MembershipFeeLevelsPage} from "./pages/membership-fees/MembershipFeeLevelsPage.tsx";
-import {MembershipFeeLevelDetailPage} from "./pages/membership-fees/MembershipFeeLevelDetailPage.tsx";
+import {MembershipFeeTiersPage} from "./pages/membership-fees/MembershipFeeTiersPage.tsx";
+import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
 import {FeeYearPublicationsPage} from "./pages/membership-fees/FeeYearPublicationsPage.tsx";
 import {FeeYearPublicationDetailPage} from "./pages/membership-fees/FeeYearPublicationDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
@@ -116,8 +116,8 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
-                                    <Route path="/membership-fee-levels" element={<MembershipFeeLevelsPage/>}/>
-                                    <Route path="/membership-fee-levels/:id" element={<MembershipFeeLevelDetailPage/>}/>
+                                    <Route path="/membership-fee-tiers" element={<MembershipFeeTiersPage/>}/>
+                                    <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
                                     <Route path="/fee-year-publications" element={<FeeYearPublicationsPage/>}/>
                                     <Route path="/fee-year-publications/:id" element={<FeeYearPublicationDetailPage/>}/>
                                     <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>

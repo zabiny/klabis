@@ -4,13 +4,13 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.members.ActingMember;
+import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
-import com.klabis.members.ActingMember;
-import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,9 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
@@ -103,7 +101,7 @@ class MembershipFeeGroupDetailsPostprocessor
                     return self;
                 })
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(group.getSourceLevelId().value()))
+        klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(group.getSourceLevelId().value()))
                 .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }
 }

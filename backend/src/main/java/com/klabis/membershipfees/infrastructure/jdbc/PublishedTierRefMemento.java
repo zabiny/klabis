@@ -6,15 +6,15 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.util.UUID;
 
 @Table(schema = "membershipfees", value = "fee_year_publication_level")
-class PublishedLevelRefMemento {
+class PublishedTierRefMemento {
 
     @Column("membership_fee_group_id")
     private UUID membershipFeeGroupId;
 
-    protected PublishedLevelRefMemento() {
+    protected PublishedTierRefMemento() {
     }
 
-    PublishedLevelRefMemento(UUID membershipFeeGroupId) {
+    PublishedTierRefMemento(UUID membershipFeeGroupId) {
         this.membershipFeeGroupId = membershipFeeGroupId;
     }
 

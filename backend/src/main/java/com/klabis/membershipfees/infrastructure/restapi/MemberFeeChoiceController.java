@@ -1,11 +1,11 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
-import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.application.MemberChoicePort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -49,7 +49,7 @@ class MemberFeeChoiceController {
 
         MemberId memberIdObj = new MemberId(memberId);
         Optional<MembershipFeeGroupId> currentChoice = memberChoicePort.getCurrentChoice(memberIdObj, year);
-        Optional<MembershipFeeLevelId> recommended = memberChoicePort.getRecommendedLevelForYear(memberIdObj, year);
+        Optional<MembershipFeeTierId> recommended = memberChoicePort.getRecommendedLevelForYear(memberIdObj, year);
 
         MemberFeeChoiceResponse response = MemberFeeChoiceResponse.of(memberId, year, currentChoice, recommended);
         EntityModel<MemberFeeChoiceResponse> model = EntityModel.of(response);
@@ -66,7 +66,7 @@ class MemberFeeChoiceController {
                         .ifPresent(link -> model.add(link.withRel("currentGroup"))));
 
         recommended.ifPresent(levelId ->
-                klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(levelId.value()))
+                klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(levelId.value()))
                         .ifPresent(link -> model.add(link.withRel("recommendedLevel"))));
 
         return ResponseEntity.ok(model);

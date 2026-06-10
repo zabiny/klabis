@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -13,11 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Currency;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Table(schema = "membershipfees", value = "membership_fee_group")
@@ -84,7 +80,7 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
         Money yearlyFee = Money.of(yearlyFeeSnapshotAmount, Currency.getInstance(yearlyFeeSnapshotCurrency));
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
-                new MembershipFeeLevelId(sourceLevelId),
+                new MembershipFeeTierId(sourceLevelId),
                 name, year, votingDeadline, yearlyFee,
                 PublishedLevelStatus.valueOf(status),
                 snapshots, membershipSet, toAuditMetadata());

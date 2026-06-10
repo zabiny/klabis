@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 
 import java.math.BigDecimal;
@@ -25,7 +25,7 @@ record MemberFeeSummaryResponse(
                         info.yearlyFee().amount())
                 : null;
         UUID recommendedLevelId = info.recommendedLevelId()
-                .map(MembershipFeeLevelId::value)
+                .map(MembershipFeeTierId::value)
                 .orElse(null);
         return new MemberFeeSummaryResponse(currentGroup, info.votingOpen(), recommendedLevelId);
     }

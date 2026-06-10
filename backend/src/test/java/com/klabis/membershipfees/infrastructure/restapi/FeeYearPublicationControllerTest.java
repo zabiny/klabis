@@ -5,16 +5,16 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
+import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.FeeYearPublicationNotFoundException;
-import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.finance.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,8 +31,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("FeeYearPublicationController API tests")
@@ -53,7 +54,7 @@ class FeeYearPublicationControllerTest {
     private FeeYearPublicationManagementPort managementPort;
 
     @MockitoBean
-    private MembershipFeeLevelManagementPort levelManagementPort;
+    private MembershipFeeTierManagementPort levelManagementPort;
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
@@ -70,7 +71,7 @@ class FeeYearPublicationControllerTest {
     private MembershipFeeGroup buildGroup(UUID id, int year) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
-                new MembershipFeeLevelId(UUID.randomUUID()),
+                new MembershipFeeTierId(UUID.randomUUID()),
                 "Dospělý", year, LocalDate.of(year, 3, 31),
                 Money.ofCzk(new BigDecimal("1200.00")),
                 com.klabis.membershipfees.domain.PublishedLevelStatus.EDITABLE,

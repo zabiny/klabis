@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
-import {MembershipFeeLevelsPage} from './MembershipFeeLevelsPage';
+import {MembershipFeeTiersPage} from './MembershipFeeTiersPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
@@ -40,11 +40,11 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     error: null,
     isAdmin: false,
     route: {
-        pathname: '/administration/membership-fee-levels',
+        pathname: '/administration/membership-fee-tiers',
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-levels'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -64,21 +64,21 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/administration/membership-fee-levels']}>
-                <MembershipFeeLevelsPage/>
+            <MemoryRouter initialEntries={['/administration/membership-fee-tiers']}>
+                <MembershipFeeTiersPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-describe('MembershipFeeLevelsPage', () => {
+describe('MembershipFeeTiersPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('renders page title "Katalog úrovní"', () => {
+    it('renders page title "Katalog tierů"', () => {
         renderPage(createMockPageData(null));
-        expect(screen.getByRole('heading', {level: 1, name: 'Katalog úrovní'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {level: 1, name: 'Katalog tierů'})).toBeInTheDocument();
     });
 
     it('renders table column headers', () => {
@@ -97,35 +97,35 @@ describe('MembershipFeeLevelsPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders "Přidat úroveň" button when createLevel template exists', () => {
+    it('renders "Přidat tier" button when createTier template exists', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-levels'}},
+            _links: {self: {href: '/api/membership-fee-tiers'}},
             _templates: {
-                createLevel: mockHalFormsTemplate({title: 'Přidat úroveň', method: 'POST'}),
+                createTier: mockHalFormsTemplate({title: 'Přidat tier', method: 'POST'}),
             },
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /přidat úroveň/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /přidat tier/i})).toBeInTheDocument();
     });
 
     it('does not render create button when template is absent', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-levels'}},
+            _links: {self: {href: '/api/membership-fee-tiers'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('button', {name: /přidat úroveň/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /přidat tier/i})).not.toBeInTheDocument();
     });
 
-    it('renders fee level name in the table', () => {
+    it('renders fee tier name in the table', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-levels'}},
+            _links: {self: {href: '/api/membership-fee-tiers'}},
             _embedded: {
-                membershipFeeLevelSummaryResponseList: [{
-                    id: 'level-1',
+                membershipFeeTierSummaryResponseList: [{
+                    id: 'tier-1',
                     name: 'Základní členství',
                     yearlyFeeAmount: 500,
                     coParticipationRules: [],
-                    _links: {self: {href: '/api/membership-fee-levels/level-1'}},
+                    _links: {self: {href: '/api/membership-fee-tiers/tier-1'}},
                 }],
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},

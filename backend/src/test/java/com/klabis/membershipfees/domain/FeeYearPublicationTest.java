@@ -22,8 +22,8 @@ class FeeYearPublicationTest {
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
 
-    private MembershipFeeLevel buildLevel(String name) {
-        return MembershipFeeLevel.create(name, YEARLY_FEE, List.of());
+    private MembershipFeeTier buildLevel(String name) {
+        return MembershipFeeTier.create(name, YEARLY_FEE, List.of());
     }
 
     @Nested
@@ -33,7 +33,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should create publication with year, deadline, and groups for each level")
         void shouldCreatePublicationWithYearAndDeadline() {
-            MembershipFeeLevel level = buildLevel("Dospělý");
+            MembershipFeeTier level = buildLevel("Dospělý");
 
             var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level));
 
@@ -46,8 +46,8 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should create one MembershipFeeGroup snapshot per level")
         void shouldCreateGroupSnapshotsForEachLevel() {
-            MembershipFeeLevel level1 = buildLevel("Dospělý");
-            MembershipFeeLevel level2 = buildLevel("Mládež");
+            MembershipFeeTier level1 = buildLevel("Dospělý");
+            MembershipFeeTier level2 = buildLevel("Mládež");
 
             var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level1, level2));
 
@@ -58,7 +58,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should expose created groups via groups()")
         void shouldExposeCreatedGroups() {
-            MembershipFeeLevel level = buildLevel("Závodník");
+            MembershipFeeTier level = buildLevel("Závodník");
 
             var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level));
 

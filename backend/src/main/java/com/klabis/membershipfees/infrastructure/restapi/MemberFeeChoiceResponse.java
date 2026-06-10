@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -16,11 +16,11 @@ record MemberFeeChoiceResponse(
 ) {
     static MemberFeeChoiceResponse of(UUID memberId, int year,
                                        Optional<MembershipFeeGroupId> currentChoice,
-                                       Optional<MembershipFeeLevelId> recommended) {
+                                       Optional<MembershipFeeTierId> recommended) {
         return new MemberFeeChoiceResponse(
                 memberId,
                 year,
                 currentChoice.map(MembershipFeeGroupId::value).orElse(null),
-                recommended.map(MembershipFeeLevelId::value).orElse(null));
+                recommended.map(MembershipFeeTierId::value).orElse(null));
     }
 }

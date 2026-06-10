@@ -671,12 +671,12 @@ COMMENT ON COLUMN finance.finance_transaction.occurred_at IS 'Date when the unde
 COMMENT ON COLUMN finance.finance_transaction.reverses_transaction_id IS 'If set, this transaction is a reversal of the referenced transaction';
 
 -- ============================================================================
--- 28. MEMBERSHIP_FEE_LEVEL TABLE
--- Catalog of membership fee level templates (MembershipFeeLevel aggregate root).
--- Editable at any time; published levels keep a snapshot (membership_fee_group).
+-- 28. MEMBERSHIP_FEE_TIER TABLE
+-- Catalog of membership fee tier templates (MembershipFeeTier aggregate root).
+-- Editable at any time; published tiers keep a snapshot (membership_fee_group).
 -- ============================================================================
 
-CREATE TABLE membershipfees.membership_fee_level
+CREATE TABLE membershipfees.membership_fee_tier
 (
     id                    UUID           NOT NULL PRIMARY KEY,
     name                  VARCHAR(200)   NOT NULL,
@@ -689,21 +689,21 @@ CREATE TABLE membershipfees.membership_fee_level
     version               BIGINT         NOT NULL DEFAULT 0
 );
 
--- Comments for membership_fee_level
-COMMENT ON TABLE membershipfees.membership_fee_level IS 'Catalog of membership fee level templates. Editable; published levels snapshot this into membership_fee_group.';
-COMMENT ON COLUMN membershipfees.membership_fee_level.yearly_fee_amount IS 'Annual membership fee for this level';
-COMMENT ON COLUMN membershipfees.membership_fee_level.yearly_fee_currency IS 'ISO 4217 currency code (default CZK)';
+-- Comments for membership_fee_tier
+COMMENT ON TABLE membershipfees.membership_fee_tier IS 'Catalog of membership fee tier templates. Editable; published tiers snapshot this into membership_fee_group.';
+COMMENT ON COLUMN membershipfees.membership_fee_tier.yearly_fee_amount IS 'Annual membership fee for this tier';
+COMMENT ON COLUMN membershipfees.membership_fee_tier.yearly_fee_currency IS 'ISO 4217 currency code (default CZK)';
 
 -- ============================================================================
 -- 29. MEMBERSHIP_PAYMENT_RULE TABLE
--- Co-payment rules owned by a MembershipFeeLevel (value objects).
--- Key: (membership_fee_level_id, event_type_id, ranking_short_name) — unique per level.
+-- Co-payment rules owned by a MembershipFeeTier (value objects).
+-- Key: (membership_fee_tier_id, event_type_id, ranking_short_name) — unique per tier.
 -- ============================================================================
 
 CREATE TABLE membershipfees.membership_payment_rule
 (
     id                       UUID        NOT NULL PRIMARY KEY,
-    membership_fee_level_id  UUID        NOT NULL REFERENCES membershipfees.membership_fee_level (id) ON DELETE CASCADE,
+    membership_fee_tier_id   UUID        NOT NULL REFERENCES membershipfees.membership_fee_tier (id) ON DELETE CASCADE,
     event_type_id            UUID        NOT NULL,
     ranking_short_name       VARCHAR(100) NOT NULL,
     rule_type                VARCHAR(20) NOT NULL,
@@ -711,15 +711,15 @@ CREATE TABLE membershipfees.membership_payment_rule
     rule_fixed_amount        DECIMAL(19, 4) NULL,
     rule_fixed_currency      VARCHAR(3)  NULL,
 
-    CONSTRAINT uk_membership_payment_rule UNIQUE (membership_fee_level_id, event_type_id, ranking_short_name),
+    CONSTRAINT uk_membership_payment_rule UNIQUE (membership_fee_tier_id, event_type_id, ranking_short_name),
     CONSTRAINT chk_membership_payment_rule_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_AMOUNT'))
 );
 
 -- Indexes for membership_payment_rule
-CREATE INDEX idx_membership_payment_rule_level ON membershipfees.membership_payment_rule (membership_fee_level_id);
+CREATE INDEX idx_membership_payment_rule_tier ON membershipfees.membership_payment_rule (membership_fee_tier_id);
 
 -- Comments for membership_payment_rule
-COMMENT ON TABLE membershipfees.membership_payment_rule IS 'Co-payment rules per (event_type, ranking) combination within a fee level template';
+COMMENT ON TABLE membershipfees.membership_payment_rule IS 'Co-payment rules per (event_type, ranking) combination within a fee tier template';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.event_type_id IS 'Reference to EventType aggregate (no FK — cross-module value object reference)';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.ranking_short_name IS 'Ranking short name as natural key (e.g. A, B, LOB); no FK until ranking table exists';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_type IS 'PERCENTAGE: percent of base entry fee; FIXED_AMOUNT: fixed amount added to entry fee';
@@ -779,7 +779,7 @@ COMMENT ON COLUMN membershipfees.fee_year_publication_level.membership_fee_group
 CREATE TABLE membershipfees.membership_fee_group
 (
     id                              UUID           NOT NULL PRIMARY KEY,
-    source_level_id                 UUID           NOT NULL REFERENCES membershipfees.membership_fee_level (id),
+    source_level_id                 UUID           NOT NULL REFERENCES membershipfees.membership_fee_tier (id),
     name                            VARCHAR(200)   NOT NULL,
     group_year                      INT            NOT NULL,
     yearly_fee_snapshot_amount      DECIMAL(19, 4) NOT NULL,

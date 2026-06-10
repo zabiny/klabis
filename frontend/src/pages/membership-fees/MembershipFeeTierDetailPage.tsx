@@ -17,7 +17,7 @@ interface CoParticipationRule {
     fixedCurrency?: string;
 }
 
-interface FeeLevelDetail extends HalResponse {
+interface FeeTierDetail extends HalResponse {
     id: string;
     name: string;
     yearlyFeeAmount: number;
@@ -40,15 +40,15 @@ const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'}): R
     );
 };
 
-const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): ReactElement => {
-    const {route} = useHalPageData<FeeLevelDetail>();
+const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
+    const {route} = useHalPageData<FeeTierDetail>();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [addRuleModal, setAddRuleModal] = useState(false);
 
-    const editTemplate = resourceData._templates?.editLevel ?? null;
-    const deleteTemplate = resourceData._templates?.deleteLevel ?? null;
+    const editTemplate = resourceData._templates?.editTier ?? null;
+    const deleteTemplate = resourceData._templates?.deleteTier ?? null;
     const addRuleTemplate = resourceData._templates?.addRule ?? null;
     const rules = resourceData.rules ?? [];
 
@@ -56,8 +56,8 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
         <div className="flex flex-col gap-6">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1 text-sm text-zinc-500">
-                <Link to="/membership-fee-levels" className="hover:text-zinc-700 transition-colors">
-                    Katalog úrovní
+                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
+                    Katalog tierů
                 </Link>
                 <ChevronRight className="w-4 h-4 text-zinc-400"/>
                 <span className="text-zinc-800 font-medium">{resourceData.name}</span>
@@ -72,7 +72,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Název úrovně</label>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Název tieru</label>
                                 <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
                                     {resourceData.name}
                                 </div>
@@ -102,7 +102,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                                     className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>
-                                    {labels.templates.deleteMembershipFeeLevel}
+                                    {labels.templates.deleteMembershipFeeTier}
                                 </button>
                             )}
                         </div>
@@ -111,7 +111,7 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
                     editTemplate && (
                         <HalFormDisplay
                             template={editTemplate as HalFormsTemplate}
-                            templateName="editLevel"
+                            templateName="editTier"
                             resourceData={resourceData as unknown as Record<string, unknown>}
                             pathname={route.pathname}
                             onClose={() => setIsEditing(false)}
@@ -191,13 +191,13 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
             {/* Delete modal */}
             {deleteTemplate && deleteModal && (
                 <HalFormModal
-                    title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteMembershipFeeLevel}
+                    title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteMembershipFeeTier}
                     template={deleteTemplate as HalFormsTemplate}
-                    templateName="deleteLevel"
+                    templateName="deleteTier"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/membership-fee-levels')}
+                    onSubmitSuccess={() => navigate('/membership-fee-tiers')}
                 />
             )}
 
@@ -216,8 +216,8 @@ const FeeLevelDetailContent = ({resourceData}: {resourceData: FeeLevelDetail}): 
     );
 };
 
-export const MembershipFeeLevelDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<FeeLevelDetail>();
+export const MembershipFeeTierDetailPage = (): ReactElement => {
+    const {resourceData, isLoading, error} = useHalPageData<FeeTierDetail>();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -231,5 +231,5 @@ export const MembershipFeeLevelDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    return <FeeLevelDetailContent resourceData={resourceData}/>;
+    return <FeeTierDetailContent resourceData={resourceData}/>;
 };

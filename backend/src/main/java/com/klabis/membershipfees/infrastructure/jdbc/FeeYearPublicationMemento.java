@@ -27,7 +27,7 @@ class FeeYearPublicationMemento extends AbstractMembershipFeeMemento {
     private Instant deadlineProcessedAt;
 
     @MappedCollection(idColumn = "fee_year_publication_id")
-    private Set<PublishedLevelRefMemento> publishedLevels = new HashSet<>();
+    private Set<PublishedTierRefMemento> publishedLevels = new HashSet<>();
 
     protected FeeYearPublicationMemento() {
     }
@@ -39,7 +39,7 @@ class FeeYearPublicationMemento extends AbstractMembershipFeeMemento {
         memento.votingDeadline = publication.getVotingDeadline();
         memento.deadlineProcessedAt = publication.getDeadlineProcessedAt();
         memento.publishedLevels = publication.getPublishedGroupIds().stream()
-                .map(groupId -> new PublishedLevelRefMemento(groupId.value()))
+                .map(groupId -> new PublishedTierRefMemento(groupId.value()))
                 .collect(Collectors.toSet());
         memento.isNew = (publication.getAuditMetadata() == null);
         memento.applyAudit(publication.getAuditMetadata());

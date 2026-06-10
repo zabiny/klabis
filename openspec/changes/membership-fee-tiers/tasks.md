@@ -2,15 +2,15 @@
 
 > **MUST use IntelliJ MCP rename-refactoring tools** for all symbol renames (per design D1). Do NOT use textual find-and-replace. Do NOT touch ORIS `OrisApiClient.listLevels()` / `LevelListEntry` — those are unrelated. Build + run the full membership-fees test suite after each batch.
 
-- [ ] 1.1 Rename domain types: `MembershipFeeLevel` → `MembershipFeeTier`, `MembershipFeeLevelId` → `MembershipFeeTierId`, `MembershipFeeLevelRepository` → `MembershipFeeTierRepository`, and any `*Level*` exceptions/events in the domain package
-- [ ] 1.2 Rename application layer: `MembershipFeeLevelManagementPort`/`Service`, `MembershipFeeLevelNotFoundException`, `CreateLevelCommand`/`EditLevelCommand` → `*Tier*` equivalents
-- [ ] 1.3 Rename infrastructure: JDBC mementos/adapters (`MembershipFeeLevelMemento`, `MembershipFeeLevelJdbcRepository`, `MembershipFeeLevelRepositoryAdapter`, `PublishedLevelRefMemento`, etc.) → `*Tier*`
-- [ ] 1.4 Rename REST layer: controller, request/response DTOs, postprocessors; change request mapping `/api/membership-fee-levels` → `/api/membership-fee-tiers` and all link rels (`membership-fee-levels` → `membership-fee-tiers`)
-- [ ] 1.5 Update V001 migration DDL: rename tables/columns `*level*` → `*tier*` for the catalog aggregate (keep published-snapshot tables consistent)
-- [ ] 1.6 Run full backend test suite; fix any remaining references; confirm green
-- [ ] 1.7 Frontend rename: `MembershipFeeLevelsPage`/`MembershipFeeLevelDetailPage` → `*Tier*`, routes, and the `interface FeeLevelDetail` → `FeeTierDetail`; update `App.tsx` routing
-- [ ] 1.8 Update Czech labels in `src/localization/labels.ts` (level → úroveň/tier wording per UX); regenerate OpenAPI types (`npm run openapi`) after backend URL change
-- [ ] 1.9 Run frontend test suite; confirm green
+- [x] 1.1 Rename domain types: `MembershipFeeLevel` → `MembershipFeeTier`, `MembershipFeeLevelId` → `MembershipFeeTierId`, `MembershipFeeLevelRepository` → `MembershipFeeTierRepository`, and any `*Level*` exceptions/events in the domain package
+- [x] 1.2 Rename application layer: `MembershipFeeLevelManagementPort`/`Service`, `MembershipFeeLevelNotFoundException`, `CreateLevelCommand`/`EditLevelCommand` → `*Tier*` equivalents
+- [x] 1.3 Rename infrastructure: JDBC mementos/adapters (`MembershipFeeLevelMemento`, `MembershipFeeLevelJdbcRepository`, `MembershipFeeLevelRepositoryAdapter`, `PublishedLevelRefMemento`, etc.) → `*Tier*`
+- [x] 1.4 Rename REST layer: controller, request/response DTOs, postprocessors; change request mapping `/api/membership-fee-levels` → `/api/membership-fee-tiers` and all link rels (`membership-fee-levels` → `membership-fee-tiers`)
+- [x] 1.5 Update V001 migration DDL: rename tables/columns `*level*` → `*tier*` for the catalog aggregate (keep published-snapshot tables consistent)
+- [x] 1.6 Run full backend test suite; fix any remaining references; confirm green
+- [x] 1.7 Frontend rename: `MembershipFeeLevelsPage`/`MembershipFeeLevelDetailPage` → `*Tier*`, routes, and the `interface FeeLevelDetail` → `FeeTierDetail`; update `App.tsx` routing
+- [x] 1.8 Update Czech labels in `src/localization/labels.ts` (level → úroveň/tier wording per UX); regenerate OpenAPI types (`npm run openapi`) after backend URL change
+- [x] 1.9 Run frontend test suite; confirm green
 
 ## 2. Tier creation without rules (vertical slice)
 

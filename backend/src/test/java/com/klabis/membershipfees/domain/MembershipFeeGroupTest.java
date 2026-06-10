@@ -1,8 +1,8 @@
 package com.klabis.membershipfees.domain;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,15 +12,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("MembershipFeeGroup domain tests")
 class MembershipFeeGroupTest {
 
-    private static final MembershipFeeLevelId SOURCE_LEVEL_ID =
-            new MembershipFeeLevelId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final MembershipFeeTierId SOURCE_LEVEL_ID =
+            new MembershipFeeTierId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final int YEAR = 2026;
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));

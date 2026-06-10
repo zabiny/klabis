@@ -5,14 +5,14 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
+import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.membershipfees.domain.SnapshotFrozenException;
-import com.klabis.finance.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,11 +30,10 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("MembershipFeeGroupController API tests")
 @WebMvcTest(controllers = MembershipFeeGroupController.class)
@@ -60,7 +59,7 @@ class MembershipFeeGroupControllerTest {
     private MembershipFeeGroup buildFrozenGroup() {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeLevelId(UUID.randomUUID()),
+                new MembershipFeeTierId(UUID.randomUUID()),
                 "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
@@ -70,7 +69,7 @@ class MembershipFeeGroupControllerTest {
     private MembershipFeeGroup buildEditableGroup() {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeLevelId(UUID.randomUUID()),
+                new MembershipFeeTierId(UUID.randomUUID()),
                 "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,

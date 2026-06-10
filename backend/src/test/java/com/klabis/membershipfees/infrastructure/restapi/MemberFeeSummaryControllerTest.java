@@ -6,7 +6,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
@@ -29,9 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -93,7 +91,7 @@ class MemberFeeSummaryControllerTest {
         void shouldReturnVotingOpenWithRecommended() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true,
-                    Optional.of(new MembershipFeeLevelId(LEVEL_UUID)));
+                    Optional.of(new MembershipFeeTierId(LEVEL_UUID)));
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
@@ -129,7 +127,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    new MembershipFeeLevelId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
+                    new MembershipFeeTierId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
                     LocalDate.of(YEAR, 3, 31));
             when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
 

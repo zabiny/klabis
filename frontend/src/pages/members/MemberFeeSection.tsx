@@ -53,7 +53,7 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
                             to={feeChoicePath}
                             className="text-sm text-primary hover:text-primary-light underline self-start"
                         >
-                            {l.chooseLevel}
+                            {l.chooseTier}
                         </Link>
                     )}
 
@@ -62,7 +62,7 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
                             to={feeChoicePath}
                             className="text-sm text-primary hover:text-primary-light underline self-start"
                         >
-                            {l.changeLevel}
+                            {l.changeTier}
                         </Link>
                     )}
 

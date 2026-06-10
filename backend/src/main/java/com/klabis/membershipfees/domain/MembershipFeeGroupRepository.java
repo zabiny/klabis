@@ -1,8 +1,8 @@
 package com.klabis.membershipfees.domain;
 
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.List;
@@ -23,5 +23,5 @@ public interface MembershipFeeGroupRepository {
 
     List<MembershipFeeGroup> findByMember(MemberId memberId);
 
-    boolean existsByYearAndSourceLevelId(int year, MembershipFeeLevelId sourceLevelId);
+    boolean existsByYearAndSourceLevelId(int year, MembershipFeeTierId sourceLevelId);
 }

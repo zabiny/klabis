@@ -3,28 +3,23 @@ package com.klabis.membershipfees.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @AggregateRoot
 public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, MembershipFeeGroupId> {
 
     @Identity
     private final MembershipFeeGroupId id;
-    private final MembershipFeeLevelId sourceLevelId;
+    private final MembershipFeeTierId sourceLevelId;
     private final String name;
     private final int year;
     private final LocalDate votingDeadline;
@@ -33,7 +28,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     private final List<MembershipPaymentRule> rulesSnapshot;
     private final Set<FeeGroupMembership> memberships;
 
-    private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeLevelId sourceLevelId,
+    private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeTierId sourceLevelId,
                                 String name, int year, LocalDate votingDeadline,
                                 Money yearlyFeeSnapshot,
                                 PublishedLevelStatus status,
@@ -56,10 +51,10 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         this.memberships = new HashSet<>(memberships);
     }
 
-    public static MembershipFeeGroup createSnapshot(MembershipFeeLevelId sourceLevelId,
-                                                     String name, int year, Money yearlyFeeSnapshot,
-                                                     List<MembershipPaymentRule> rulesSnapshot,
-                                                     LocalDate votingDeadline) {
+    public static MembershipFeeGroup createSnapshot(MembershipFeeTierId sourceLevelId,
+                                                    String name, int year, Money yearlyFeeSnapshot,
+                                                    List<MembershipPaymentRule> rulesSnapshot,
+                                                    LocalDate votingDeadline) {
         return new MembershipFeeGroup(
                 new MembershipFeeGroupId(UUID.randomUUID()),
                 sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot,
@@ -69,7 +64,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     }
 
     public static MembershipFeeGroup reconstruct(MembershipFeeGroupId id,
-                                                  MembershipFeeLevelId sourceLevelId,
+                                                  MembershipFeeTierId sourceLevelId,
                                                   String name, int year,
                                                   LocalDate votingDeadline,
                                                   Money yearlyFeeSnapshot,
@@ -90,7 +85,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         return id;
     }
 
-    public MembershipFeeLevelId getSourceLevelId() {
+    public MembershipFeeTierId getSourceLevelId() {
         return sourceLevelId;
     }
 

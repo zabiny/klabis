@@ -1,17 +1,10 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
-import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.FeeYearPublication;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.PublishedLevelStatus;
-import com.klabis.membershipfees.domain.VotingClosedException;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,11 +17,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,10 +29,10 @@ import static org.mockito.Mockito.*;
 class MemberChoiceServiceTest {
 
     private static final MemberId MEMBER_ID = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static final MembershipFeeLevelId LEVEL_ID_A =
-            new MembershipFeeLevelId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-    private static final MembershipFeeLevelId LEVEL_ID_B =
-            new MembershipFeeLevelId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final MembershipFeeTierId LEVEL_ID_A =
+            new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MembershipFeeTierId LEVEL_ID_B =
+            new MembershipFeeTierId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final int YEAR = 2026;
 
     @Mock
@@ -63,7 +52,7 @@ class MemberChoiceServiceTest {
 
     private static final LocalDate GROUP_DEADLINE = TODAY.plusDays(30);
 
-    private MembershipFeeGroup buildEditableGroup(MembershipFeeLevelId sourceLevelId) {
+    private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId sourceLevelId) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
                 sourceLevelId,
@@ -207,7 +196,7 @@ class MemberChoiceServiceTest {
                     .thenReturn(Optional.of(previousYearGroup));
             when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID_A)).thenReturn(true);
 
-            Optional<MembershipFeeLevelId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
 
             assertThat(result).contains(LEVEL_ID_A);
         }
@@ -217,7 +206,7 @@ class MemberChoiceServiceTest {
         void shouldReturnEmptyWhenNoLastYearChoice() {
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1)).thenReturn(Optional.empty());
 
-            Optional<MembershipFeeLevelId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
 
             assertThat(result).isEmpty();
         }
@@ -232,7 +221,7 @@ class MemberChoiceServiceTest {
                     .thenReturn(Optional.of(previousYearGroup));
             when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID_A)).thenReturn(false);
 
-            Optional<MembershipFeeLevelId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
 
             assertThat(result).isEmpty();
         }

@@ -1,18 +1,11 @@
 package com.klabis.membershipfees.infrastructure.scheduler;
 
 import com.klabis.finance.application.ChargePort;
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
-import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.FeeYearPublication;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.PublishedLevelStatus;
-import com.klabis.membershipfees.domain.YearlyFeeChargeMarkerRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -99,7 +92,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             groupWithMemberWithChoice = MembershipFeeGroup.reconstruct(
                     new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    new MembershipFeeTierId(UUID.randomUUID()),
                     "Youth",
                     2026, DEADLINE,
                     com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
@@ -268,7 +261,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
                     new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    new MembershipFeeTierId(UUID.randomUUID()),
                     "Youth",
                     2026, DEADLINE,
                     com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
@@ -307,7 +300,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             MembershipFeeGroup emptyGroup = MembershipFeeGroup.reconstruct(
                     new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeLevelId(UUID.randomUUID()),
+                    new MembershipFeeTierId(UUID.randomUUID()),
                     "Empty",
                     2026, DEADLINE,
                     com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),

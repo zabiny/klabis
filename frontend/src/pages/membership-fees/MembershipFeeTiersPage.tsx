@@ -8,7 +8,7 @@ import {Alert, Skeleton} from '../../components/UI';
 import type {EntityModel} from '../../api';
 import {labels} from '../../localization';
 
-type FeeLevelSummary = EntityModel<{
+type FeeTierSummary = EntityModel<{
     id: string;
     name: string;
     description?: string;
@@ -16,7 +16,7 @@ type FeeLevelSummary = EntityModel<{
     yearlyFeeCurrency: string;
 }>;
 
-export const MembershipFeeLevelsPage = (): ReactElement => {
+export const MembershipFeeTiersPage = (): ReactElement => {
     const {isLoading, error, route} = useHalPageData();
 
     if (isLoading) {
@@ -31,11 +31,11 @@ export const MembershipFeeLevelsPage = (): ReactElement => {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-[28px] font-bold text-[#18181B]">{labels.sections.membershipFeeLevelsList}</h1>
-                    <p className="text-sm text-[#71717A] mt-0.5">Správa úrovní členských příspěvků</p>
+                    <h1 className="text-[28px] font-bold text-[#18181B]">{labels.sections.membershipFeeTiersList}</h1>
+                    <p className="text-sm text-[#71717A] mt-0.5">Správa tierů členských příspěvků</p>
                 </div>
                 <HalFormButton
-                    name="createLevel"
+                    name="createTier"
                     modal={true}
                     icon={<Plus size={16} className="text-white"/>}
                     className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
@@ -43,23 +43,23 @@ export const MembershipFeeLevelsPage = (): ReactElement => {
             </div>
 
             <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
-                <HalEmbeddedTable<FeeLevelSummary>
-                    collectionName="membershipFeeLevelSummaryResponseList"
-                    tableId="membership-fee-levels"
+                <HalEmbeddedTable<FeeTierSummary>
+                    collectionName="membershipFeeTierSummaryResponseList"
+                    tableId="membership-fee-tiers"
                     defaultOrderBy="name"
                     onRowClick={route.navigateToResource}
-                    emptyMessage="Žádné úrovně členských příspěvků."
+                    emptyMessage="Žádné tiery členských příspěvků."
                 >
                     <TableCell
                         sortable
                         column="name"
                         dataRender={({item}) => {
-                            const level = item as unknown as FeeLevelSummary;
+                            const tier = item as unknown as FeeTierSummary;
                             return (
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-[#18181B]">{level.name}</span>
-                                    {level.description && (
-                                        <span className="text-xs text-[#71717A]">{level.description}</span>
+                                    <span className="text-sm font-bold text-[#18181B]">{tier.name}</span>
+                                    {tier.description && (
+                                        <span className="text-xs text-[#71717A]">{tier.description}</span>
                                     )}
                                 </div>
                             );

@@ -2,9 +2,8 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.FeeYearPublicationId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
@@ -46,13 +45,13 @@ class FeeYearPublicationPersistenceTest {
     private MembershipFeeGroupRepository groupRepository;
 
     @Autowired
-    private MembershipFeeLevelRepository levelRepository;
+    private MembershipFeeTierRepository levelRepository;
 
-    private MembershipFeeLevel savedLevel(String name) {
-        return levelRepository.save(MembershipFeeLevel.create(name, YEARLY_FEE, List.of()));
+    private MembershipFeeTier savedLevel(String name) {
+        return levelRepository.save(MembershipFeeTier.create(name, YEARLY_FEE, List.of()));
     }
 
-    private FeeYearPublication publishAndSaveGroups(int year, List<MembershipFeeLevel> levels) {
+    private FeeYearPublication publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {
         var result = FeeYearPublication.publish(year, DEADLINE, levels);
         for (MembershipFeeGroup group : result.groups()) {
             groupRepository.save(group);
@@ -67,7 +66,7 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should save and retrieve publication with year and deadline")
         void shouldSaveAndRetrieveBasicFields() {
-            MembershipFeeLevel level = savedLevel("Dospělý");
+            MembershipFeeTier level = savedLevel("Dospělý");
             FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level));
 
             FeeYearPublication saved = publicationRepository.save(publication);
@@ -84,8 +83,8 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should persist publishedGroupIds correctly")
         void shouldPersistGroupIds() {
-            MembershipFeeLevel level1 = savedLevel("Dospělý");
-            MembershipFeeLevel level2 = savedLevel("Mládež");
+            MembershipFeeTier level1 = savedLevel("Dospělý");
+            MembershipFeeTier level2 = savedLevel("Mládež");
             FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level1, level2));
 
             FeeYearPublication saved = publicationRepository.save(publication);
@@ -97,7 +96,7 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should persist deadlineProcessedAt after markProcessed()")
         void shouldPersistDeadlineProcessedAt() {
-            MembershipFeeLevel level = savedLevel("Dospělý");
+            MembershipFeeTier level = savedLevel("Dospělý");
             FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level));
             FeeYearPublication saved = publicationRepository.save(publication);
             Instant processedAt = Instant.parse("2026-04-01T10:00:00Z");
@@ -126,7 +125,7 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should find publication by year")
         void shouldFindByYear() {
-            MembershipFeeLevel level = savedLevel("Dospělý");
+            MembershipFeeTier level = savedLevel("Dospělý");
             FeeYearPublication publication = publishAndSaveGroups(2027, List.of(level));
             publicationRepository.save(publication);
 
@@ -150,8 +149,8 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should save and retrieve group with snapshot fields")
         void shouldSaveAndRetrieveGroupSnapshot() {
-            MembershipFeeLevel level = savedLevel("Závodník");
-            MembershipFeeLevelId sourceLevelId = level.getId();
+            MembershipFeeTier level = savedLevel("Závodník");
+            MembershipFeeTierId sourceLevelId = level.getId();
             MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(50));
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
@@ -173,7 +172,7 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should persist rule snapshot correctly")
         void shouldPersistRuleSnapshot() {
-            MembershipFeeLevel level = savedLevel("Závodník2");
+            MembershipFeeTier level = savedLevel("Závodník2");
             MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "LOB", new MembershipPaymentRule.RuleValue.FixedAmount(
                     Money.ofCzk(new BigDecimal("200.00"))));
@@ -193,7 +192,7 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should persist FROZEN status after freeze()")
         void shouldPersistFrozenStatus() {
-            MembershipFeeLevel level = savedLevel("DospělýFreeze");
+            MembershipFeeTier level = savedLevel("DospělýFreeze");
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
                     level.getId(), "DospělýFreeze", 2026, YEARLY_FEE, List.of(), DEADLINE);
             MembershipFeeGroup saved = groupRepository.save(group);
@@ -208,9 +207,9 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should find groups by year")
         void shouldFindGroupsByYear() {
-            MembershipFeeLevel level1 = savedLevel("Dospělý2026A");
-            MembershipFeeLevel level2 = savedLevel("Mládež2026A");
-            MembershipFeeLevel level3 = savedLevel("JinýRok2025A");
+            MembershipFeeTier level1 = savedLevel("Dospělý2026A");
+            MembershipFeeTier level2 = savedLevel("Mládež2026A");
+            MembershipFeeTier level3 = savedLevel("JinýRok2025A");
             groupRepository.save(MembershipFeeGroup.createSnapshot(level1.getId(), "Dospělý", 2026, YEARLY_FEE, List.of(), DEADLINE));
             groupRepository.save(MembershipFeeGroup.createSnapshot(level2.getId(), "Mládež", 2026, YEARLY_FEE, List.of(), DEADLINE));
             groupRepository.save(MembershipFeeGroup.createSnapshot(level3.getId(), "Jiný rok", 2025, YEARLY_FEE, List.of(), DEADLINE));

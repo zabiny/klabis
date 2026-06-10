@@ -4,8 +4,8 @@ import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
-import com.klabis.membershipfees.domain.MembershipFeeLevel;
+import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.domain.MembershipFeeTier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @CleanupTestData
-@DisplayName("MembershipFeeLevel with rules — full-stack integration")
-class MembershipFeeLevelWithRulesIntegrationTest {
+@DisplayName("MembershipFeeTier with rules — full-stack integration")
+class MembershipFeeTierWithRulesIntegrationTest {
 
     private static final String ADMIN_UUID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final String EVENT_TYPE_UUID = "e2be588c-91ad-43e4-8d14-efa7de02782d";
@@ -34,13 +34,13 @@ class MembershipFeeLevelWithRulesIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private MembershipFeeLevelManagementPort managementPort;
+    private MembershipFeeTierManagementPort managementPort;
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("POST /api/membership-fee-levels with PERCENTAGE rule should return 201")
+    @DisplayName("POST /api/membership-fee-tiers with PERCENTAGE rule should return 201")
     void shouldCreateLevelWithPercentageRuleAndReturn201() throws Exception {
-        mockMvc.perform(post("/api/membership-fee-levels")
+        mockMvc.perform(post("/api/membership-fee-tiers")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
@@ -51,9 +51,9 @@ class MembershipFeeLevelWithRulesIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("POST /api/membership-fee-levels with FIXED_AMOUNT rule should return 201")
+    @DisplayName("POST /api/membership-fee-tiers with FIXED_AMOUNT rule should return 201")
     void shouldCreateLevelWithFixedAmountRuleAndReturn201() throws Exception {
-        mockMvc.perform(post("/api/membership-fee-levels")
+        mockMvc.perform(post("/api/membership-fee-tiers")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
@@ -64,9 +64,9 @@ class MembershipFeeLevelWithRulesIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("PATCH /api/membership-fee-levels/{id} with rules should return 204 and persist correct ruleType")
+    @DisplayName("PATCH /api/membership-fee-tiers/{id} with rules should return 204 and persist correct ruleType")
     void shouldEditLevelWithRulesAndReturn204() throws Exception {
-        var createResult = mockMvc.perform(post("/api/membership-fee-levels")
+        var createResult = mockMvc.perform(post("/api/membership-fee-tiers")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
@@ -78,7 +78,7 @@ class MembershipFeeLevelWithRulesIntegrationTest {
         String location = createResult.getResponse().getHeader("Location");
         String levelUuid = location.substring(location.lastIndexOf('/') + 1);
 
-        mockMvc.perform(patch("/api/membership-fee-levels/{id}", levelUuid)
+        mockMvc.perform(patch("/api/membership-fee-tiers/{id}", levelUuid)
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
@@ -86,8 +86,8 @@ class MembershipFeeLevelWithRulesIntegrationTest {
                                 """.formatted(EVENT_TYPE_UUID)))
                 .andExpect(status().isNoContent());
 
-        var levelId = new com.klabis.membershipfees.MembershipFeeLevelId(java.util.UUID.fromString(levelUuid));
-        MembershipFeeLevel saved = managementPort.getLevel(levelId);
+        var levelId = new MembershipFeeTierId(java.util.UUID.fromString(levelUuid));
+        MembershipFeeTier saved = managementPort.getTier(levelId);
         assertThat(saved.getRules()).hasSize(1);
         assertThat(saved.getRules().get(0).value())
                 .isInstanceOf(com.klabis.membershipfees.domain.MembershipPaymentRule.RuleValue.Percentage.class);

@@ -3,7 +3,7 @@ package com.klabis.membershipfees.application;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -17,7 +17,7 @@ import java.util.Optional;
 @PrimaryPort
 public interface FeeYearPublicationManagementPort {
 
-    record PublishYearCommand(int year, LocalDate votingDeadline, List<MembershipFeeLevelId> levelIds) {
+    record PublishYearCommand(int year, LocalDate votingDeadline, List<MembershipFeeTierId> levelIds) {
         public PublishYearCommand {
             Assert.notNull(votingDeadline, "VotingDeadline is required");
             Assert.notEmpty(levelIds, "At least one level ID is required");

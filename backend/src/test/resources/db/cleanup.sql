@@ -57,7 +57,7 @@ DELETE FROM membershipfees.fee_year_publication_level;
 DELETE FROM membershipfees.fee_year_publication;
 DELETE FROM membershipfees.yearly_fee_charge_marker;
 DELETE FROM membershipfees.membership_payment_rule;
-DELETE FROM membershipfees.membership_fee_level;
+DELETE FROM membershipfees.membership_fee_tier;
 
 -- Members table
 DELETE FROM members.members;

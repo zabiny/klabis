@@ -87,7 +87,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            const link = screen.getByRole('link', {name: /Zvolit úroveň/i});
+            const link = screen.getByRole('link', {name: /Zvolit tier/i});
             expect(link).toBeInTheDocument();
             expect(link).toHaveAttribute('href', expect.stringContaining('/members/member-1/fee-choice'));
         });
@@ -107,7 +107,7 @@ describe('MemberFeeSection', () => {
             expect(screen.getByText('Základ')).toBeInTheDocument();
         });
 
-        it('shows "Změnit úroveň" link when voting open and choice exists', () => {
+        it('shows "Změnit tier" link when voting open and choice exists', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
@@ -117,7 +117,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            const link = screen.getByRole('link', {name: /Změnit úroveň/i});
+            const link = screen.getByRole('link', {name: /Změnit tier/i});
             expect(link).toBeInTheDocument();
             expect(link).toHaveAttribute('href', expect.stringContaining('/members/member-1/fee-choice'));
         });
@@ -173,7 +173,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            expect(screen.queryByRole('link', {name: /Změnit úroveň/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('link', {name: /Změnit tier/i})).not.toBeInTheDocument();
         });
     });
 
@@ -201,7 +201,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            expect(screen.queryByRole('link', {name: /Zvolit úroveň/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('link', {name: /Zvolit tier/i})).not.toBeInTheDocument();
         });
     });
 

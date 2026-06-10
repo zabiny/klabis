@@ -1,12 +1,12 @@
 package com.klabis.membershipfees.application;
 
+import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,7 +75,7 @@ class MemberChoiceService implements MemberChoicePort {
 
     @Transactional(readOnly = true)
     @Override
-    public Optional<MembershipFeeLevelId> getRecommendedLevelForYear(MemberId memberId, int year) {
+    public Optional<MembershipFeeTierId> getRecommendedLevelForYear(MemberId memberId, int year) {
         return groupRepository.findByMemberAndYear(memberId, year - 1)
                 .map(MembershipFeeGroup::getSourceLevelId)
                 .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));

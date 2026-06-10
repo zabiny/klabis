@@ -1,25 +1,25 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.klabis.membershipfees.domain.MembershipFeeLevel;
+import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-record MembershipFeeLevelResponse(
+record MembershipFeeTierResponse(
         UUID id,
         String name,
         BigDecimal yearlyFeeAmount,
         String yearlyFeeCurrency,
         List<PaymentRuleResponse> rules
 ) {
-    static MembershipFeeLevelResponse from(MembershipFeeLevel level) {
+    static MembershipFeeTierResponse from(MembershipFeeTier level) {
         List<PaymentRuleResponse> ruleResponses = level.getRules().stream()
                 .map(PaymentRuleResponse::from)
                 .toList();
-        return new MembershipFeeLevelResponse(
+        return new MembershipFeeTierResponse(
                 level.getId().value(),
                 level.getName(),
                 level.getYearlyFee().amount(),

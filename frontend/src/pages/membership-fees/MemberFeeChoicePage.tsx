@@ -11,7 +11,7 @@ const l = labels.memberFee;
 
 interface FeeSummaryData extends FeeSummaryBase {
     _templates?: {
-        chooseLevel?: HalFormsTemplate;
+        chooseTier?: HalFormsTemplate;
         cancelChoice?: HalFormsTemplate;
     };
 }
@@ -75,7 +75,7 @@ const LockedChoiceCard = ({name, yearlyFee}: {name: string; yearlyFee: number}):
         className="p-4 rounded-lg border"
         style={{background: '#F8FAFC', borderColor: '#E4E4E7', borderRadius: '8px'}}
     >
-        <p className="text-sm font-medium mb-1" style={{color: '#71717A'}}>{l.currentLevel}</p>
+        <p className="text-sm font-medium mb-1" style={{color: '#71717A'}}>{l.currentTier}</p>
         <p className="text-lg font-semibold" style={{color: '#18181B'}}>{name}</p>
         <p className="text-sm mt-1" style={{color: '#71717A'}}>
             {yearlyFee} {labels.finance.currency} / rok
@@ -105,7 +105,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
         return <Alert severity="error">{(error as Error).message}</Alert>;
     }
 
-    const chooseLevelTemplate = summary?._templates?.chooseLevel;
+    const chooseLevelTemplate = summary?._templates?.chooseTier;
     const cancelChoiceTemplate = summary?._templates?.cancelChoice;
 
     const groupOptions: ChooseLevelOption[] =
@@ -181,7 +181,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                     {/* Current choice info */}
                     {summary.currentGroup && (
                         <div className="flex flex-col gap-2">
-                            <p className="text-sm font-medium" style={{color: '#71717A'}}>{l.currentLevel}</p>
+                            <p className="text-sm font-medium" style={{color: '#71717A'}}>{l.currentTier}</p>
                             <LockedChoiceCard
                                 name={summary.currentGroup.name}
                                 yearlyFee={summary.currentGroup.yearlyFee}
@@ -193,12 +193,12 @@ export const MemberFeeChoicePage = (): ReactElement => {
                     {chooseLevelTemplate && groupOptions.length > 0 && (
                         <div className="flex flex-col gap-3">
                             <p className="text-sm font-medium" style={{color: '#71717A'}}>
-                                {l.choiceLevel}
+                                {l.choiceTier}
                             </p>
 
                             <div
                                 role="radiogroup"
-                                aria-label={l.choiceLevel}
+                                aria-label={l.choiceTier}
                                 className="flex flex-col"
                                 style={{gap: '12px'}}
                             >
@@ -219,7 +219,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                                     disabled={!effectiveGroupId || isChoosing}
                                     loading={isChoosing}
                                 >
-                                    {summary.currentGroup ? l.changeLevel : l.chooseLevel}
+                                    {summary.currentGroup ? l.changeTier : l.chooseTier}
                                 </Button>
 
                                 {cancelChoiceTemplate && summary.currentGroup && (

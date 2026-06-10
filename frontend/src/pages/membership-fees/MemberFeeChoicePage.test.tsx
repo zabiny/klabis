@@ -141,15 +141,15 @@ describe('MemberFeeChoicePage', () => {
         });
     });
 
-    describe('voting open with chooseLevel template', () => {
-        it('shows choose level form when chooseLevel template exists', () => {
+    describe('voting open with chooseTier template', () => {
+        it('shows choose tier form when chooseTier template exists', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
                 recommendedLevelId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
-                    chooseLevel: {
+                    chooseTier: {
                         method: 'POST',
                         target: '/api/members/member-1/fee-choice/2026',
                         properties: [
@@ -171,7 +171,7 @@ describe('MemberFeeChoicePage', () => {
 
             renderPage();
 
-            expect(screen.getByText(/Zvolit úroveň/i)).toBeInTheDocument();
+            expect(screen.getByText(/Zvolit tier/i)).toBeInTheDocument();
         });
 
         it('shows current choice and change option when voting open and choice exists', () => {
@@ -181,7 +181,7 @@ describe('MemberFeeChoicePage', () => {
                 recommendedLevelId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
-                    chooseLevel: {
+                    chooseTier: {
                         method: 'POST',
                         target: '/api/members/member-1/fee-choice/2026',
                         properties: [

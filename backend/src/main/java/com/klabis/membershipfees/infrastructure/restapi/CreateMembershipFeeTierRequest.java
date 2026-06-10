@@ -1,8 +1,8 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
-import com.klabis.membershipfees.application.MembershipFeeLevelManagementPort;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,18 +13,18 @@ import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
-record CreateMembershipFeeLevelRequest(
+record CreateMembershipFeeTierRequest(
         @NotBlank String name,
         @NotNull @Positive BigDecimal yearlyFeeAmount,
         String yearlyFeeCurrency,
         List<PaymentRuleRequest> rules
 ) {
-    MembershipFeeLevelManagementPort.CreateLevelCommand toCommand() {
+    MembershipFeeTierManagementPort.CreateTierCommand toCommand() {
         String currency = yearlyFeeCurrency != null ? yearlyFeeCurrency : "CZK";
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(currency));
         List<MembershipPaymentRule> domainRules = rules == null ? List.of()
                 : rules.stream().map(PaymentRuleRequest::toDomain).toList();
-        return new MembershipFeeLevelManagementPort.CreateLevelCommand(name, yearlyFee, domainRules);
+        return new MembershipFeeTierManagementPort.CreateTierCommand(name, yearlyFee, domainRules);
     }
 
     record PaymentRuleRequest(

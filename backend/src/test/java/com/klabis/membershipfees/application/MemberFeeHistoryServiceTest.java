@@ -1,16 +1,10 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
-import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.FeeYearPublication;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MemberFeeHistoryServiceTest {
 
     private static final MemberId MEMBER_ID = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static final MembershipFeeLevelId LEVEL_ID = new MembershipFeeLevelId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MembershipFeeTierId LEVEL_ID = new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     private static final MembershipFeeGroupId GROUP_ID = new MembershipFeeGroupId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final int YEAR = 2026;
 

@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.domain;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,8 +13,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("MembershipFeeLevel domain unit tests")
-class MembershipFeeLevelTest {
+@DisplayName("MembershipFeeTier domain unit tests")
+class MembershipFeeTierTest {
 
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final Money OTHER_FEE = Money.ofCzk(new BigDecimal("800.00"));
@@ -23,14 +23,14 @@ class MembershipFeeLevelTest {
     private static final EventTypeReference EVENT_TYPE_B = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Nested
-    @DisplayName("MembershipFeeLevelId")
+    @DisplayName("MembershipFeeTierId")
     class IdTests {
 
         @Test
         @DisplayName("should wrap UUID value")
         void shouldWrapUuidValue() {
             UUID uuid = UUID.randomUUID();
-            MembershipFeeLevelId id = new MembershipFeeLevelId(uuid);
+            MembershipFeeTierId id = new MembershipFeeTierId(uuid);
 
             assertThat(id.value()).isEqualTo(uuid);
         }
@@ -39,25 +39,25 @@ class MembershipFeeLevelTest {
         @DisplayName("two IDs with the same UUID should be equal")
         void shouldBeEqualWhenSameUuid() {
             UUID uuid = UUID.randomUUID();
-            assertThat(new MembershipFeeLevelId(uuid)).isEqualTo(new MembershipFeeLevelId(uuid));
+            assertThat(new MembershipFeeTierId(uuid)).isEqualTo(new MembershipFeeTierId(uuid));
         }
 
         @Test
         @DisplayName("two IDs with different UUIDs should not be equal")
         void shouldNotBeEqualWhenDifferentUuid() {
-            assertThat(new MembershipFeeLevelId(UUID.randomUUID()))
-                    .isNotEqualTo(new MembershipFeeLevelId(UUID.randomUUID()));
+            assertThat(new MembershipFeeTierId(UUID.randomUUID()))
+                    .isNotEqualTo(new MembershipFeeTierId(UUID.randomUUID()));
         }
     }
 
     @Nested
-    @DisplayName("MembershipFeeLevel.create()")
+    @DisplayName("MembershipFeeTier.create()")
     class CreateMethod {
 
         @Test
         @DisplayName("should create level with name and yearly fee")
         void shouldCreateLevelWithNameAndYearlyFee() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Dospělý", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Dospělý", YEARLY_FEE, List.of());
 
             assertThat(level.getId()).isNotNull();
             assertThat(level.getName()).isEqualTo("Dospělý");
@@ -69,7 +69,7 @@ class MembershipFeeLevelTest {
         void shouldCreateLevelWithRules() {
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
 
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of(rule));
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of(rule));
 
             assertThat(level.getRules()).hasSize(1);
             assertThat(level.getRules()).contains(rule);
@@ -78,8 +78,8 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should generate unique IDs for each created level")
         void shouldGenerateUniqueIds() {
-            MembershipFeeLevel level1 = MembershipFeeLevel.create("Level A", YEARLY_FEE, List.of());
-            MembershipFeeLevel level2 = MembershipFeeLevel.create("Level B", YEARLY_FEE, List.of());
+            MembershipFeeTier level1 = MembershipFeeTier.create("Level A", YEARLY_FEE, List.of());
+            MembershipFeeTier level2 = MembershipFeeTier.create("Level B", YEARLY_FEE, List.of());
 
             assertThat(level1.getId()).isNotEqualTo(level2.getId());
         }
@@ -87,21 +87,21 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject blank name")
         void shouldRejectBlankName() {
-            assertThatThrownBy(() -> MembershipFeeLevel.create("", YEARLY_FEE, List.of()))
+            assertThatThrownBy(() -> MembershipFeeTier.create("", YEARLY_FEE, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("should reject null name")
         void shouldRejectNullName() {
-            assertThatThrownBy(() -> MembershipFeeLevel.create(null, YEARLY_FEE, List.of()))
+            assertThatThrownBy(() -> MembershipFeeTier.create(null, YEARLY_FEE, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("should reject null yearly fee")
         void shouldRejectNullYearlyFee() {
-            assertThatThrownBy(() -> MembershipFeeLevel.create("Dospělý", null, List.of()))
+            assertThatThrownBy(() -> MembershipFeeTier.create("Dospělý", null, List.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -113,7 +113,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should update the name")
         void shouldUpdateName() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Old Name", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Old Name", YEARLY_FEE, List.of());
 
             level.editName("New Name");
 
@@ -123,7 +123,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject blank name")
         void shouldRejectBlankName() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Some Name", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Some Name", YEARLY_FEE, List.of());
 
             assertThatThrownBy(() -> level.editName(""))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -132,7 +132,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject null name")
         void shouldRejectNullName() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Some Name", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Some Name", YEARLY_FEE, List.of());
 
             assertThatThrownBy(() -> level.editName(null))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -146,7 +146,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should update the yearly fee")
         void shouldUpdateYearlyFee() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Dospělý", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Dospělý", YEARLY_FEE, List.of());
 
             level.editYearlyFee(OTHER_FEE);
 
@@ -156,7 +156,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject null fee")
         void shouldRejectNullFee() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Dospělý", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Dospělý", YEARLY_FEE, List.of());
 
             assertThatThrownBy(() -> level.editYearlyFee(null))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -171,7 +171,7 @@ class MembershipFeeLevelTest {
         @DisplayName("should replace all existing rules with new set")
         void shouldReplaceRules() {
             MembershipPaymentRule originalRule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of(originalRule));
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of(originalRule));
 
             MembershipPaymentRule newRule1 = MembershipPaymentRule.percentage(EVENT_TYPE_B, "B", 30);
             MembershipPaymentRule newRule2 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A",
@@ -187,7 +187,7 @@ class MembershipFeeLevelTest {
         @DisplayName("should allow replacing with empty set")
         void shouldAllowEmptyReplacement() {
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of(rule));
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of(rule));
 
             level.replaceRules(List.of());
 
@@ -200,7 +200,7 @@ class MembershipFeeLevelTest {
             MembershipPaymentRule rule1 = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
             MembershipPaymentRule rule2 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A",
                     Money.ofCzk(new BigDecimal("200")));
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of());
 
             assertThatThrownBy(() -> level.replaceRules(List.of(rule1, rule2)))
                     .isInstanceOf(DuplicatePaymentRuleException.class);
@@ -214,7 +214,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should add a new rule to the level")
         void shouldAddRule() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of());
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
 
             level.addRule(rule);
@@ -226,7 +226,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should allow adding rules for different event type + ranking combinations")
         void shouldAllowDifferentCombinations() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of());
 
             level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
             level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "B", 30));
@@ -238,7 +238,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject duplicate (eventTypeId, rankingShortName) combination")
         void shouldRejectDuplicateRule() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of());
             level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
 
             assertThatThrownBy(() -> level.addRule(
@@ -249,7 +249,7 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reject null rule")
         void shouldRejectNullRule() {
-            MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
+            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE, List.of());
 
             assertThatThrownBy(() -> level.addRule(null))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -263,10 +263,10 @@ class MembershipFeeLevelTest {
         @Test
         @DisplayName("should reconstruct level with all fields")
         void shouldReconstructWithAllFields() {
-            MembershipFeeLevelId id = new MembershipFeeLevelId(UUID.randomUUID());
+            MembershipFeeTierId id = new MembershipFeeTierId(UUID.randomUUID());
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
 
-            MembershipFeeLevel level = MembershipFeeLevel.reconstruct(id, "Dospělý", YEARLY_FEE, List.of(rule), null);
+            MembershipFeeTier level = MembershipFeeTier.reconstruct(id, "Dospělý", YEARLY_FEE, List.of(rule), null);
 
             assertThat(level.getId()).isEqualTo(id);
             assertThat(level.getName()).isEqualTo("Dospělý");

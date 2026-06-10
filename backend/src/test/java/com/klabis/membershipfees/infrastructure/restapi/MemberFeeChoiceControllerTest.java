@@ -5,7 +5,7 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.membershipfees.domain.VotingClosedException;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +25,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("MemberFeeChoiceController API tests")
 @WebMvcTest(controllers = MemberFeeChoiceController.class)
@@ -75,7 +76,7 @@ class MemberFeeChoiceControllerTest {
             when(memberChoicePort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
             when(memberChoicePort.getRecommendedLevelForYear(any(), eq(YEAR)))
-                    .thenReturn(Optional.of(new MembershipFeeLevelId(LEVEL_UUID)));
+                    .thenReturn(Optional.of(new MembershipFeeTierId(LEVEL_UUID)));
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)

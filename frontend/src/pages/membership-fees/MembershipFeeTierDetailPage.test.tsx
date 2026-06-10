@@ -4,7 +4,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
-import {MembershipFeeLevelDetailPage} from './MembershipFeeLevelDetailPage';
+import {MembershipFeeTierDetailPage} from './MembershipFeeTierDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import type {HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay.tsx';
@@ -40,8 +40,8 @@ vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
     ),
 }));
 
-const buildFeeLevelDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
-    id: 'level-1',
+const buildFeeTierDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
+    id: 'tier-1',
     name: 'Základní členství',
     yearlyFeeAmount: 500,
     yearlyFeeCurrency: 'CZK',
@@ -53,7 +53,7 @@ const buildFeeLevelDetail = (overrides?: Partial<HalResponse>): HalResponse => (
             percent: 50,
         },
     ],
-    _links: {self: {href: '/api/membership-fee-levels/level-1'}},
+    _links: {self: {href: '/api/membership-fee-tiers/tier-1'}},
     ...overrides,
 });
 
@@ -63,11 +63,11 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     error: null,
     isAdmin: false,
     route: {
-        pathname: '/administration/membership-fee-levels/level-1',
+        pathname: '/administration/membership-fee-tiers/tier-1',
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-levels/level-1'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers/tier-1'}),
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -87,14 +87,14 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/administration/membership-fee-levels/level-1']}>
-                <MembershipFeeLevelDetailPage/>
+            <MemoryRouter initialEntries={['/administration/membership-fee-tiers/tier-1']}>
+                <MembershipFeeTierDetailPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-describe('MembershipFeeLevelDetailPage', () => {
+describe('MembershipFeeTierDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -109,48 +109,48 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders the fee level name as page heading', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+    it('renders the fee tier name as page heading', () => {
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByRole('heading', {name: /základní informace/i})).toBeInTheDocument();
     });
 
     it('renders annual fee value', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByText(/500/)).toBeInTheDocument();
     });
 
     it('renders "Roční poplatek" label', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByText('Roční poplatek (Kč)')).toBeInTheDocument();
     });
 
     it('renders breadcrumb with link back to list and current name', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
-        expect(screen.getByRole('link', {name: 'Katalog úrovní'})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: 'Katalog úrovní'})).toHaveAttribute('href', '/membership-fee-levels');
+        renderPage(createMockPageData(buildFeeTierDetail()));
+        expect(screen.getByRole('link', {name: 'Katalog tierů'})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Katalog tierů'})).toHaveAttribute('href', '/membership-fee-tiers');
     });
 
     it('renders co-participation rules section heading always', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail({rules: []})));
+        renderPage(createMockPageData(buildFeeTierDetail({rules: []})));
         expect(screen.getByText('Pravidla spoluúčasti')).toBeInTheDocument();
     });
 
     it('renders co-participation rules table headers', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByText('Typ závodu')).toBeInTheDocument();
         expect(screen.getByText('Žebříček')).toBeInTheDocument();
         expect(screen.getByText('Typ pravidla')).toBeInTheDocument();
     });
 
     it('renders PERCENTAGE rule with eventTypeId and rankingShortName', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByText('sprint')).toBeInTheDocument();
         expect(screen.getByText('A')).toBeInTheDocument();
         expect(screen.getByText('50 %')).toBeInTheDocument();
     });
 
     it('renders FIXED_AMOUNT rule with fixedAmount and currency', () => {
-        const resourceData = buildFeeLevelDetail({
+        const resourceData = buildFeeTierDetail({
             rules: [
                 {
                     eventTypeId: 'relay',
@@ -168,7 +168,7 @@ describe('MembershipFeeLevelDetailPage', () => {
     });
 
     it('renders multiple rules', () => {
-        const resourceData = buildFeeLevelDetail({
+        const resourceData = buildFeeTierDetail({
             rules: [
                 {eventTypeId: 'sprint', rankingShortName: 'A', ruleType: 'PERCENTAGE', percent: 50},
                 {eventTypeId: 'relay', rankingShortName: 'B', ruleType: 'FIXED_AMOUNT', fixedAmount: 100, fixedCurrency: 'CZK'},
@@ -181,10 +181,10 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('100 CZK')).toBeInTheDocument();
     });
 
-    it('renders save button inside basic info card when editLevel template exists (after clicking edit)', () => {
-        const resourceData = buildFeeLevelDetail({
+    it('renders save button inside basic info card when editTier template exists (after clicking edit)', () => {
+        const resourceData = buildFeeTierDetail({
             _templates: {
-                editLevel: mockHalFormsTemplate({title: 'Upravit úroveň', method: 'PATCH'}),
+                editTier: mockHalFormsTemplate({title: 'Upravit tier', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -192,24 +192,24 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
     });
 
-    it('does not render save button when editLevel template is absent', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+    it('does not render save button when editTier template is absent', () => {
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.queryByRole('button', {name: /uložit změny/i})).not.toBeInTheDocument();
     });
 
-    it('renders delete level button when deleteLevel template exists', () => {
-        const resourceData = buildFeeLevelDetail({
+    it('renders delete tier button when deleteTier template exists', () => {
+        const resourceData = buildFeeTierDetail({
             rules: [],
             _templates: {
-                deleteLevel: mockHalFormsTemplate({title: 'Smazat úroveň', method: 'DELETE'}),
+                deleteTier: mockHalFormsTemplate({title: 'Smazat tier', method: 'DELETE'}),
             },
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /smazat úroveň/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /smazat tier/i})).toBeInTheDocument();
     });
 
     it('renders add rule footer button when addRule template exists', () => {
-        const resourceData = buildFeeLevelDetail({
+        const resourceData = buildFeeTierDetail({
             _templates: {
                 addRule: mockHalFormsTemplate({title: 'Přidat pravidlo', method: 'POST'}),
             },
@@ -219,7 +219,7 @@ describe('MembershipFeeLevelDetailPage', () => {
     });
 
     it('does not render add rule footer when addRule template is absent', () => {
-        renderPage(createMockPageData(buildFeeLevelDetail()));
+        renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.queryByText(/přidat pravidlo/i)).not.toBeInTheDocument();
     });
 });

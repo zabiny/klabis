@@ -1,10 +1,10 @@
 package com.klabis.membershipfees.application;
 
-import com.klabis.membershipfees.MembershipFeeLevelId;
+import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +47,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
                     votingOpen, Optional.empty());
         }
 
-        Optional<MembershipFeeLevelId> recommended = votingOpen
+        Optional<MembershipFeeTierId> recommended = votingOpen
                 ? memberChoicePort.getRecommendedLevelForYear(memberId, year)
                 : Optional.empty();
 

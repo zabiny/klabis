@@ -2,13 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.domain.DuplicateYearPublicationException;
-import com.klabis.membershipfees.domain.FeeYearPublication;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.MembershipFeeLevel;
-import com.klabis.membershipfees.domain.MembershipFeeLevelRepository;
+import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +14,11 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
 
     private final FeeYearPublicationRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
-    private final MembershipFeeLevelRepository levelRepository;
+    private final MembershipFeeTierRepository levelRepository;
 
     FeeYearPublicationManagementService(FeeYearPublicationRepository publicationRepository,
                                          MembershipFeeGroupRepository groupRepository,
-                                         MembershipFeeLevelRepository levelRepository) {
+                                         MembershipFeeTierRepository levelRepository) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
         this.levelRepository = levelRepository;
@@ -37,9 +31,9 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
             throw new DuplicateYearPublicationException(command.year());
         });
 
-        List<MembershipFeeLevel> levels = command.levelIds().stream()
+        List<MembershipFeeTier> levels = command.levelIds().stream()
                 .map(id -> levelRepository.findById(id)
-                        .orElseThrow(() -> new MembershipFeeLevelNotFoundException(id)))
+                        .orElseThrow(() -> new MembershipFeeTierNotFoundException(id)))
                 .toList();
 
         FeeYearPublication.FeeYearPublicationWithGroups result = FeeYearPublication.publish(
