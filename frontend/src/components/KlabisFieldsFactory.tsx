@@ -92,7 +92,7 @@ const renderLicenseField = (conf: HalFormsInputProps, levelOptions: {value: stri
 
 const RULE_TYPE_OPTIONS = [
     {value: "PERCENTAGE", prompt: "Procentuální (% ze startovného)"},
-    {value: "FIXED_SURCHARGE", prompt: "Fixní příplatek (CZK)"},
+    {value: "FIXED_AMOUNT", prompt: "Fixní částka (Kč)"},
 ];
 
 // eslint-disable-next-line react-refresh/only-export-components

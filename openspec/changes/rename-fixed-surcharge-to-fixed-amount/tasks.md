@@ -9,10 +9,10 @@
 
 ## 2. Frontend labels
 
-- [ ] 2.1 Rename key `fixedSurcharge` → `fixedAmount` and update label to `'Fixní částka (Kč)'` in `src/localization/labels.ts`
-- [ ] 2.2 Update enum value `"FIXED_SURCHARGE"` → `"FIXED_AMOUNT"` and prompt `"Fixní příplatek (CZK)"` → `"Fixní částka (Kč)"` in `KlabisFieldsFactory.tsx`
-- [ ] 2.3 Replace hardcoded `"Fixní příplatek"` → `"Fixní částka"` in `MembershipFeeLevelDetailPage.tsx` and `MembershipFeeGroupDetailPage.tsx`
-- [ ] 2.4 Run frontend tests — confirm no failures
+- [x] 2.1 Rename key `fixedSurcharge` → `fixedAmount` and update label to `'Fixní částka (Kč)'` in `src/localization/labels.ts`
+- [x] 2.2 Update enum value `"FIXED_SURCHARGE"` → `"FIXED_AMOUNT"` and prompt `"Fixní příplatek (CZK)"` → `"Fixní částka (Kč)"` in `KlabisFieldsFactory.tsx`
+- [x] 2.3 Replace hardcoded `"Fixní příplatek"` → `"Fixní částka"` in `MembershipFeeLevelDetailPage.tsx` and `MembershipFeeGroupDetailPage.tsx`
+- [x] 2.4 Run frontend tests — confirm no failures
 
 ## 3. Spec terminology sync
 
