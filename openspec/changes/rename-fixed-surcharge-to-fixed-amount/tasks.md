@@ -16,4 +16,4 @@
 
 ## 3. Spec terminology sync
 
-- [ ] 3.1 In `openspec/specs/membership-fees/spec.md` apply delta from change specs: replace "fixed surcharge amount" → "fixed amount", "fixed surcharge rule" → "fixed amount rule", "fixed surcharge" (rule-type context) → "fixed amount" — leave "surcharge" unchanged where it refers to the calculated event charge result (lines 139–148)
+- [x] 3.1 In `openspec/specs/membership-fees/spec.md` apply delta from change specs: replace "fixed surcharge amount" → "fixed amount", "fixed surcharge rule" → "fixed amount rule", "fixed surcharge" (rule-type context) → "fixed amount" — leave "surcharge" unchanged where it refers to the calculated event charge result (lines 139–148)
