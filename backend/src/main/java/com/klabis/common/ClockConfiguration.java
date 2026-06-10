@@ -1,4 +1,4 @@
-package com.klabis.membershipfees.application;
+package com.klabis.common;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Clock;
 
 @Configuration
-class MembershipFeesConfiguration {
+class ClockConfiguration {
 
     @Bean
-    Clock membershipFeesClock() {
+    Clock clock() {
         return Clock.systemDefaultZone();
     }
 }
