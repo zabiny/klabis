@@ -21,9 +21,9 @@ public record MembershipPaymentRule(
         return new MembershipPaymentRule(eventTypeId, rankingShortName, new RuleValue.Percentage(percent));
     }
 
-    public static MembershipPaymentRule fixedSurcharge(EventTypeReference eventTypeId, String rankingShortName, Money amount) {
-        Assert.notNull(amount, "Amount is required for fixed surcharge rule");
-        return new MembershipPaymentRule(eventTypeId, rankingShortName, new RuleValue.FixedSurcharge(amount));
+    public static MembershipPaymentRule fixedAmount(EventTypeReference eventTypeId, String rankingShortName, Money amount) {
+        Assert.notNull(amount, "Amount is required for fixed amount rule");
+        return new MembershipPaymentRule(eventTypeId, rankingShortName, new RuleValue.FixedAmount(amount));
     }
 
     public boolean hasSameKey(MembershipPaymentRule other) {
@@ -31,7 +31,7 @@ public record MembershipPaymentRule(
                 && this.rankingShortName.equals(other.rankingShortName);
     }
 
-    public sealed interface RuleValue permits RuleValue.Percentage, RuleValue.FixedSurcharge {
+    public sealed interface RuleValue permits RuleValue.Percentage, RuleValue.FixedAmount {
 
         record Percentage(int percent) implements RuleValue {
             public Percentage {
@@ -39,9 +39,9 @@ public record MembershipPaymentRule(
             }
         }
 
-        record FixedSurcharge(Money amount) implements RuleValue {
-            public FixedSurcharge {
-                Assert.notNull(amount, "Amount is required for fixed surcharge");
+        record FixedAmount(Money amount) implements RuleValue {
+            public FixedAmount {
+                Assert.notNull(amount, "Amount is required for fixed amount");
             }
         }
     }

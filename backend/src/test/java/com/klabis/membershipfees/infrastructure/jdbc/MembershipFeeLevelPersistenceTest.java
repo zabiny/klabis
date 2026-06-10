@@ -92,10 +92,10 @@ class MembershipFeeLevelPersistenceTest {
         }
 
         @Test
-        @DisplayName("should save and retrieve level with fixed surcharge payment rule")
-        void shouldSaveAndRetrieveLevelWithFixedSurchargeRule() {
+        @DisplayName("should save and retrieve level with fixed amount payment rule")
+        void shouldSaveAndRetrieveLevelWithFixedAmountRule() {
             Money surchargeAmount = Money.ofCzk(new BigDecimal("200.00"));
-            MembershipPaymentRule rule = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_B, "LOB", surchargeAmount);
+            MembershipPaymentRule rule = MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB", surchargeAmount);
             MembershipFeeLevel level = MembershipFeeLevel.create("Mládež", YEARLY_FEE, List.of(rule));
 
             MembershipFeeLevel saved = repository.save(level);
@@ -105,8 +105,8 @@ class MembershipFeeLevelPersistenceTest {
             List<MembershipPaymentRule> rules = found.get().getRules();
             assertThat(rules).hasSize(1);
             MembershipPaymentRule retrievedRule = rules.get(0);
-            assertThat(retrievedRule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedSurcharge.class);
-            assertThat(((MembershipPaymentRule.RuleValue.FixedSurcharge) retrievedRule.value()).amount())
+            assertThat(retrievedRule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
+            assertThat(((MembershipPaymentRule.RuleValue.FixedAmount) retrievedRule.value()).amount())
                     .isEqualTo(surchargeAmount);
         }
 
@@ -115,7 +115,7 @@ class MembershipFeeLevelPersistenceTest {
         void shouldSaveAndRetrieveLevelWithMultipleRules() {
             MembershipPaymentRule rule1 = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
             MembershipPaymentRule rule2 = MembershipPaymentRule.percentage(EVENT_TYPE_A, "B", 30);
-            MembershipPaymentRule rule3 = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_B, "LOB",
+            MembershipPaymentRule rule3 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB",
                     Money.ofCzk(new BigDecimal("100")));
             MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of(rule1, rule2, rule3));
 

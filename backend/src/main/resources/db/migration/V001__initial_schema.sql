@@ -712,7 +712,7 @@ CREATE TABLE membershipfees.membership_payment_rule
     rule_fixed_currency      VARCHAR(3)  NULL,
 
     CONSTRAINT uk_membership_payment_rule UNIQUE (membership_fee_level_id, event_type_id, ranking_short_name),
-    CONSTRAINT chk_membership_payment_rule_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_SURCHARGE'))
+    CONSTRAINT chk_membership_payment_rule_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_AMOUNT'))
 );
 
 -- Indexes for membership_payment_rule
@@ -722,10 +722,10 @@ CREATE INDEX idx_membership_payment_rule_level ON membershipfees.membership_paym
 COMMENT ON TABLE membershipfees.membership_payment_rule IS 'Co-payment rules per (event_type, ranking) combination within a fee level template';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.event_type_id IS 'Reference to EventType aggregate (no FK — cross-module value object reference)';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.ranking_short_name IS 'Ranking short name as natural key (e.g. A, B, LOB); no FK until ranking table exists';
-COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_type IS 'PERCENTAGE: percent of base entry fee; FIXED_SURCHARGE: fixed amount added to entry fee';
+COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_type IS 'PERCENTAGE: percent of base entry fee; FIXED_AMOUNT: fixed amount added to entry fee';
 COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_percentage IS 'Percentage value (0-100+) — populated only when rule_type = PERCENTAGE';
-COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_fixed_amount IS 'Fixed surcharge amount — populated only when rule_type = FIXED_SURCHARGE';
-COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_fixed_currency IS 'Currency for fixed surcharge — populated only when rule_type = FIXED_SURCHARGE';
+COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_fixed_amount IS 'Fixed amount — populated only when rule_type = FIXED_AMOUNT';
+COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_fixed_currency IS 'Currency for fixed amount — populated only when rule_type = FIXED_AMOUNT';
 
 -- ============================================================================
 -- 30. FEE_YEAR_PUBLICATION TABLE
@@ -824,7 +824,7 @@ CREATE TABLE membershipfees.membership_fee_group_rule_snapshot
     rule_fixed_currency     VARCHAR(3)  NULL,
 
     CONSTRAINT uk_membership_fee_group_rule_snapshot UNIQUE (membership_fee_group_id, event_type_id, ranking_short_name),
-    CONSTRAINT chk_membership_fee_group_rule_snapshot_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_SURCHARGE'))
+    CONSTRAINT chk_membership_fee_group_rule_snapshot_type CHECK (rule_type IN ('PERCENTAGE', 'FIXED_AMOUNT'))
 );
 
 -- Indexes for membership_fee_group_rule_snapshot

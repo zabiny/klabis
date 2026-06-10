@@ -42,9 +42,9 @@ record MembershipFeeLevelResponse(
                 case MembershipPaymentRule.RuleValue.Percentage p ->
                         new PaymentRuleResponse(rule.eventTypeId().value(), rule.rankingShortName(),
                                 "PERCENTAGE", p.percent(), null, null);
-                case MembershipPaymentRule.RuleValue.FixedSurcharge f ->
+                case MembershipPaymentRule.RuleValue.FixedAmount f ->
                         new PaymentRuleResponse(rule.eventTypeId().value(), rule.rankingShortName(),
-                                "FIXED_SURCHARGE", null, f.amount().amount(),
+                                "FIXED_AMOUNT", null, f.amount().amount(),
                                 f.amount().currency().getCurrencyCode());
             };
         }

@@ -50,8 +50,8 @@ class MembershipPaymentRuleSnapshotMemento {
                 memento.ruleType = "PERCENTAGE";
                 memento.rulePercentage = p.percent();
             }
-            case MembershipPaymentRule.RuleValue.FixedSurcharge f -> {
-                memento.ruleType = "FIXED_SURCHARGE";
+            case MembershipPaymentRule.RuleValue.FixedAmount f -> {
+                memento.ruleType = "FIXED_AMOUNT";
                 memento.ruleFixedAmount = f.amount().amount();
                 memento.ruleFixedCurrency = f.amount().currency().getCurrencyCode();
             }
@@ -62,7 +62,7 @@ class MembershipPaymentRuleSnapshotMemento {
     MembershipPaymentRule toRule() {
         MembershipPaymentRule.RuleValue value = switch (ruleType) {
             case "PERCENTAGE" -> new MembershipPaymentRule.RuleValue.Percentage(rulePercentage);
-            case "FIXED_SURCHARGE" -> new MembershipPaymentRule.RuleValue.FixedSurcharge(
+            case "FIXED_AMOUNT" -> new MembershipPaymentRule.RuleValue.FixedAmount(
                     Money.of(ruleFixedAmount, Currency.getInstance(ruleFixedCurrency)));
             default -> throw new IllegalStateException("Unknown rule type: " + ruleType);
         };

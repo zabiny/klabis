@@ -175,7 +175,7 @@ class FeeYearPublicationPersistenceTest {
         void shouldPersistRuleSnapshot() {
             MembershipFeeLevel level = savedLevel("Závodník2");
             MembershipPaymentRule rule = new MembershipPaymentRule(
-                    EVENT_TYPE, "LOB", new MembershipPaymentRule.RuleValue.FixedSurcharge(
+                    EVENT_TYPE, "LOB", new MembershipPaymentRule.RuleValue.FixedAmount(
                     Money.ofCzk(new BigDecimal("200.00"))));
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
                     level.getId(), "Závodník2", 2026, YEARLY_FEE, List.of(rule), DEADLINE);
@@ -187,7 +187,7 @@ class FeeYearPublicationPersistenceTest {
             MembershipPaymentRule retrieved = found.getRulesSnapshot().get(0);
             assertThat(retrieved.eventTypeId()).isEqualTo(EVENT_TYPE);
             assertThat(retrieved.rankingShortName()).isEqualTo("LOB");
-            assertThat(retrieved.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedSurcharge.class);
+            assertThat(retrieved.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
         }
 
         @Test

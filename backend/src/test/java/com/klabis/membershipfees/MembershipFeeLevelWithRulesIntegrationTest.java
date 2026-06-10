@@ -51,13 +51,13 @@ class MembershipFeeLevelWithRulesIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("POST /api/membership-fee-levels with FIXED_SURCHARGE rule should return 201")
-    void shouldCreateLevelWithFixedSurchargeRuleAndReturn201() throws Exception {
+    @DisplayName("POST /api/membership-fee-levels with FIXED_AMOUNT rule should return 201")
+    void shouldCreateLevelWithFixedAmountRuleAndReturn201() throws Exception {
         mockMvc.perform(post("/api/membership-fee-levels")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
-                                {"name":"Mládež","rules":[{"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_SURCHARGE","fixedAmount":200,"fixedCurrency":"CZK"}],"yearlyFeeAmount":800,"yearlyFeeCurrency":"CZK"}
+                                {"name":"Mládež","rules":[{"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_AMOUNT","fixedAmount":200,"fixedCurrency":"CZK"}],"yearlyFeeAmount":800,"yearlyFeeCurrency":"CZK"}
                                 """.formatted(EVENT_TYPE_UUID)))
                 .andExpect(status().isCreated());
     }

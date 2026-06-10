@@ -39,9 +39,9 @@ record CreateMembershipFeeLevelRequest(
             EventTypeReference evtTypeId = EventTypeReference.of(eventTypeId);
             return switch (ruleType) {
                 case "PERCENTAGE" -> MembershipPaymentRule.percentage(evtTypeId, rankingShortName, percent);
-                case "FIXED_SURCHARGE" -> {
+                case "FIXED_AMOUNT" -> {
                     String curr = fixedCurrency != null ? fixedCurrency : "CZK";
-                    yield MembershipPaymentRule.fixedSurcharge(evtTypeId, rankingShortName,
+                    yield MembershipPaymentRule.fixedAmount(evtTypeId, rankingShortName,
                             Money.of(fixedAmount, Currency.getInstance(curr)));
                 }
                 default -> throw new IllegalArgumentException("Unknown rule type: " + ruleType);

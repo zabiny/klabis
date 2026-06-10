@@ -78,25 +78,25 @@ class MembershipPaymentRuleTest {
     }
 
     @Nested
-    @DisplayName("Fixed surcharge rule")
-    class FixedSurchargeRule {
+    @DisplayName("Fixed amount rule")
+    class FixedAmountRule {
 
         @Test
-        @DisplayName("should create fixed surcharge rule with CZK amount")
-        void shouldCreateFixedSurchargeRule() {
+        @DisplayName("should create fixed amount rule with CZK amount")
+        void shouldCreateFixedAmountRule() {
             Money amount = Money.ofCzk(new BigDecimal("200.00"));
-            MembershipPaymentRule rule = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_B, "LOB", amount);
+            MembershipPaymentRule rule = MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB", amount);
 
             assertThat(rule.eventTypeId()).isEqualTo(EVENT_TYPE_B);
             assertThat(rule.rankingShortName()).isEqualTo("LOB");
-            assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedSurcharge.class);
-            assertThat(((MembershipPaymentRule.RuleValue.FixedSurcharge) rule.value()).amount()).isEqualTo(amount);
+            assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
+            assertThat(((MembershipPaymentRule.RuleValue.FixedAmount) rule.value()).amount()).isEqualTo(amount);
         }
 
         @Test
         @DisplayName("should reject null amount")
         void shouldRejectNullAmount() {
-            assertThatThrownBy(() -> MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_B, "LOB", null))
+            assertThatThrownBy(() -> MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB", null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -104,7 +104,7 @@ class MembershipPaymentRuleTest {
         @DisplayName("should reject null eventTypeId")
         void shouldRejectNullEventTypeReference() {
             Money amount = Money.ofCzk(new BigDecimal("200.00"));
-            assertThatThrownBy(() -> MembershipPaymentRule.fixedSurcharge(null, "LOB", amount))
+            assertThatThrownBy(() -> MembershipPaymentRule.fixedAmount(null, "LOB", amount))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -117,7 +117,7 @@ class MembershipPaymentRuleTest {
         @DisplayName("two rules with same eventTypeId and ranking are key-equal regardless of value type")
         void sameKeyDifferentValueTypes() {
             MembershipPaymentRule percentageRule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
-            MembershipPaymentRule fixedRule = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_A, "A",
+            MembershipPaymentRule fixedRule = MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A",
                     Money.ofCzk(new BigDecimal("200")));
 
             assertThat(percentageRule.hasSameKey(fixedRule)).isTrue();
@@ -155,9 +155,9 @@ class MembershipPaymentRuleTest {
         }
 
         @Test
-        @DisplayName("FixedSurcharge is a RuleValue")
-        void fixedSurchargeIsRuleValue() {
-            MembershipPaymentRule.RuleValue value = new MembershipPaymentRule.RuleValue.FixedSurcharge(
+        @DisplayName("FixedAmount is a RuleValue")
+        void fixedAmountIsRuleValue() {
+            MembershipPaymentRule.RuleValue value = new MembershipPaymentRule.RuleValue.FixedAmount(
                     Money.ofCzk(new BigDecimal("200")));
 
             assertThat(value).isInstanceOf(MembershipPaymentRule.RuleValue.class);

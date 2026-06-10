@@ -174,7 +174,7 @@ class MembershipFeeLevelTest {
             MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of(originalRule));
 
             MembershipPaymentRule newRule1 = MembershipPaymentRule.percentage(EVENT_TYPE_B, "B", 30);
-            MembershipPaymentRule newRule2 = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_A, "A",
+            MembershipPaymentRule newRule2 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A",
                     Money.ofCzk(new BigDecimal("200")));
 
             level.replaceRules(List.of(newRule1, newRule2));
@@ -198,7 +198,7 @@ class MembershipFeeLevelTest {
         @DisplayName("should reject duplicate rule key in replacement set")
         void shouldRejectDuplicateKeyInReplacement() {
             MembershipPaymentRule rule1 = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
-            MembershipPaymentRule rule2 = MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_A, "A",
+            MembershipPaymentRule rule2 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A",
                     Money.ofCzk(new BigDecimal("200")));
             MembershipFeeLevel level = MembershipFeeLevel.create("Závodník", YEARLY_FEE, List.of());
 
@@ -242,7 +242,7 @@ class MembershipFeeLevelTest {
             level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
 
             assertThatThrownBy(() -> level.addRule(
-                    MembershipPaymentRule.fixedSurcharge(EVENT_TYPE_A, "A", Money.ofCzk(new BigDecimal("200")))))
+                    MembershipPaymentRule.fixedAmount(EVENT_TYPE_A, "A", Money.ofCzk(new BigDecimal("200")))))
                     .isInstanceOf(DuplicatePaymentRuleException.class);
         }
 
