@@ -95,6 +95,7 @@ const RULE_TYPE_OPTIONS = [
     {value: "FIXED_SURCHARGE", prompt: "Fixní příplatek (CZK)"},
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 const PaymentRuleFormFields = (conf: HalFormsInputProps): ReactElement => {
     const {eventTypes} = useEventTypes();
     const eventTypeOptions = eventTypes.map(et => ({value: et.id, prompt: et.name}));
