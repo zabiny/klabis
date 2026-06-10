@@ -149,13 +149,13 @@ describe('MembershipFeeLevelDetailPage', () => {
         expect(screen.getByText('50 %')).toBeInTheDocument();
     });
 
-    it('renders FIXED_SURCHARGE rule with fixedAmount and currency', () => {
+    it('renders FIXED_AMOUNT rule with fixedAmount and currency', () => {
         const resourceData = buildFeeLevelDetail({
             rules: [
                 {
                     eventTypeId: 'relay',
                     rankingShortName: 'B',
-                    ruleType: 'FIXED_SURCHARGE',
+                    ruleType: 'FIXED_AMOUNT',
                     fixedAmount: 200,
                     fixedCurrency: 'CZK',
                 },
@@ -171,7 +171,7 @@ describe('MembershipFeeLevelDetailPage', () => {
         const resourceData = buildFeeLevelDetail({
             rules: [
                 {eventTypeId: 'sprint', rankingShortName: 'A', ruleType: 'PERCENTAGE', percent: 50},
-                {eventTypeId: 'relay', rankingShortName: 'B', ruleType: 'FIXED_SURCHARGE', fixedAmount: 100, fixedCurrency: 'CZK'},
+                {eventTypeId: 'relay', rankingShortName: 'B', ruleType: 'FIXED_AMOUNT', fixedAmount: 100, fixedCurrency: 'CZK'},
             ],
         });
         renderPage(createMockPageData(resourceData));

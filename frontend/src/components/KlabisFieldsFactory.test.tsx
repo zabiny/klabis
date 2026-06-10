@@ -467,7 +467,7 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getByTestId('hal-select-parent.eventTypeId')).toBeInTheDocument();
         });
 
-        it('should render ruleType as a select with PERCENTAGE and FIXED_SURCHARGE options', () => {
+        it('should render ruleType as a select with PERCENTAGE and FIXED_AMOUNT options', () => {
             const mockSubElementProps = createMockSubElementProps();
             const mockConf = createMockConf({
                 prop: {name: 'rules.0', prompt: 'Pravidlo', type: 'PaymentRuleRequest'},

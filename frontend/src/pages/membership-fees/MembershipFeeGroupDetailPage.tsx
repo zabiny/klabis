@@ -12,7 +12,7 @@ import {formatDate} from '../../utils/dateUtils.ts';
 interface CoParticipationRule {
     raceTypeId: string;
     ranking: string;
-    ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE';
+    ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT';
     value: number;
 }
 
@@ -32,7 +32,7 @@ interface MembershipFeeGroupDetail extends HalResponse {
     members?: FeeGroupMember[];
 }
 
-const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE'}): ReactElement => {
+const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'}): ReactElement => {
     if (ruleType === 'PERCENTAGE') {
         return (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">

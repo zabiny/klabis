@@ -11,7 +11,7 @@ import {ChevronRight, Pencil, Plus, Save, Trash2, X} from 'lucide-react';
 interface CoParticipationRule {
     eventTypeId: string;
     rankingShortName: string;
-    ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE';
+    ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT';
     percent?: number;
     fixedAmount?: number;
     fixedCurrency?: string;
@@ -25,7 +25,7 @@ interface FeeLevelDetail extends HalResponse {
     rules?: CoParticipationRule[];
 }
 
-const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_SURCHARGE'}): ReactElement => {
+const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'}): ReactElement => {
     if (ruleType === 'PERCENTAGE') {
         return (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
