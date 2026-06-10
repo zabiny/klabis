@@ -56,7 +56,7 @@ class MemberFeeSummaryController {
         EntityModel<MemberFeeSummaryResponse> model = EntityModel.of(response);
 
         List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
-                .map(group -> new HalFormsInlineOption(group.getId().uuid().toString(), group.getName()))
+                .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
                 .toList();
 
         klabisLinkTo(methodOn(MemberFeeSummaryController.class).getFeeSummary(memberId, year, null))
@@ -71,7 +71,7 @@ class MemberFeeSummaryController {
                 });
 
         if (info.groupId() != null) {
-            klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(info.groupId().uuid()))
+            klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(info.groupId().value()))
                     .ifPresent(link -> model.add(link.withRel("group")));
         }
 

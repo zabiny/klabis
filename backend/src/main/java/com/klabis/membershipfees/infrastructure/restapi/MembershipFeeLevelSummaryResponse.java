@@ -13,7 +13,7 @@ record MembershipFeeLevelSummaryResponse(
 ) {
     static MembershipFeeLevelSummaryResponse from(MembershipFeeLevel level) {
         return new MembershipFeeLevelSummaryResponse(
-                level.getId().uuid(),
+                level.getId().value(),
                 level.getName(),
                 level.getYearlyFee().amount(),
                 level.getYearlyFee().currency().getCurrencyCode(),

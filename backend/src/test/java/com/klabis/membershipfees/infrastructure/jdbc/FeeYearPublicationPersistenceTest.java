@@ -152,10 +152,10 @@ class FeeYearPublicationPersistenceTest {
         void shouldSaveAndRetrieveGroupSnapshot() {
             MembershipFeeLevel level = savedLevel("Závodník");
             MembershipFeeLevelId sourceLevelId = level.getId();
-            MembershipPaymentRuleSnapshot rule = new MembershipPaymentRuleSnapshot(
+            MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(50));
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    sourceLevelId, "Závodník", 2026, YEARLY_FEE, List.of(rule));
+                    sourceLevelId, "Závodník", 2026, YEARLY_FEE, List.of(rule), DEADLINE);
 
             MembershipFeeGroup saved = groupRepository.save(group);
             Optional<MembershipFeeGroup> found = groupRepository.findById(saved.getId());
@@ -174,17 +174,17 @@ class FeeYearPublicationPersistenceTest {
         @DisplayName("should persist rule snapshot correctly")
         void shouldPersistRuleSnapshot() {
             MembershipFeeLevel level = savedLevel("Závodník2");
-            MembershipPaymentRuleSnapshot rule = new MembershipPaymentRuleSnapshot(
+            MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "LOB", new MembershipPaymentRule.RuleValue.FixedSurcharge(
                     Money.ofCzk(new BigDecimal("200.00"))));
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    level.getId(), "Závodník2", 2026, YEARLY_FEE, List.of(rule));
+                    level.getId(), "Závodník2", 2026, YEARLY_FEE, List.of(rule), DEADLINE);
 
             MembershipFeeGroup saved = groupRepository.save(group);
             MembershipFeeGroup found = groupRepository.findById(saved.getId()).orElseThrow();
 
             assertThat(found.getRulesSnapshot()).hasSize(1);
-            MembershipPaymentRuleSnapshot retrieved = found.getRulesSnapshot().get(0);
+            MembershipPaymentRule retrieved = found.getRulesSnapshot().get(0);
             assertThat(retrieved.eventTypeId()).isEqualTo(EVENT_TYPE);
             assertThat(retrieved.rankingShortName()).isEqualTo("LOB");
             assertThat(retrieved.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedSurcharge.class);
@@ -195,7 +195,7 @@ class FeeYearPublicationPersistenceTest {
         void shouldPersistFrozenStatus() {
             MembershipFeeLevel level = savedLevel("DospělýFreeze");
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    level.getId(), "DospělýFreeze", 2026, YEARLY_FEE, List.of());
+                    level.getId(), "DospělýFreeze", 2026, YEARLY_FEE, List.of(), DEADLINE);
             MembershipFeeGroup saved = groupRepository.save(group);
             saved.freeze();
 
@@ -211,9 +211,9 @@ class FeeYearPublicationPersistenceTest {
             MembershipFeeLevel level1 = savedLevel("Dospělý2026A");
             MembershipFeeLevel level2 = savedLevel("Mládež2026A");
             MembershipFeeLevel level3 = savedLevel("JinýRok2025A");
-            groupRepository.save(MembershipFeeGroup.createSnapshot(level1.getId(), "Dospělý", 2026, YEARLY_FEE, List.of()));
-            groupRepository.save(MembershipFeeGroup.createSnapshot(level2.getId(), "Mládež", 2026, YEARLY_FEE, List.of()));
-            groupRepository.save(MembershipFeeGroup.createSnapshot(level3.getId(), "Jiný rok", 2025, YEARLY_FEE, List.of()));
+            groupRepository.save(MembershipFeeGroup.createSnapshot(level1.getId(), "Dospělý", 2026, YEARLY_FEE, List.of(), DEADLINE));
+            groupRepository.save(MembershipFeeGroup.createSnapshot(level2.getId(), "Mládež", 2026, YEARLY_FEE, List.of(), DEADLINE));
+            groupRepository.save(MembershipFeeGroup.createSnapshot(level3.getId(), "Jiný rok", 2025, YEARLY_FEE, List.of(), DEADLINE));
 
             List<MembershipFeeGroup> groups = groupRepository.findByYear(2026);
 

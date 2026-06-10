@@ -20,7 +20,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,33 +43,39 @@ class MemberFeeHistoryServiceTest {
     private MembershipFeeGroupRepository groupRepository;
     @Mock
     private FeeYearPublicationRepository publicationRepository;
+    @Mock
+    private MemberChoicePort memberChoicePort;
+
+    private static final LocalDate TODAY = LocalDate.of(2026, 3, 15);
+    private final Clock fixedClock = Clock.fixed(TODAY.atStartOfDay(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 
     private MemberFeeHistoryService service;
 
     @BeforeEach
     void setUp() {
-        service = new MemberFeeHistoryService(groupRepository, publicationRepository);
+        service = new MemberFeeHistoryService(groupRepository, publicationRepository, memberChoicePort, fixedClock);
     }
+
+    private static final LocalDate GROUP_DEADLINE = TODAY.plusDays(30);
 
     private MembershipFeeGroup buildGroupWithMember(MembershipFeeGroupId id, int year,
                                                      MemberId memberId, LocalDate joinedAt,
                                                      AssignmentSource source) {
-        MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+        return MembershipFeeGroup.reconstruct(
                 id, LEVEL_ID,
-                "Základ", year,
+                "Základ", year, GROUP_DEADLINE,
                 Money.ofCzk(new BigDecimal("500.00")),
                 PublishedLevelStatus.FROZEN,
                 List.of(),
                 Set.of(new FeeGroupMembership(memberId, joinedAt, source, null)),
                 null);
-        return group;
     }
 
     private FeeYearPublication buildOpenPublication(int year) {
         return FeeYearPublication.reconstruct(
                 new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
                 year,
-                LocalDate.now().plusDays(30),
+                TODAY.plusDays(30),
                 null,
                 List.of(GROUP_ID));
     }
@@ -76,7 +84,7 @@ class MemberFeeHistoryServiceTest {
         return FeeYearPublication.reconstruct(
                 new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
                 year,
-                LocalDate.now().minusDays(1),
+                TODAY.minusDays(1),
                 null,
                 List.of(GROUP_ID));
     }
@@ -110,23 +118,13 @@ class MemberFeeHistoryServiceTest {
         @DisplayName("should return null groupId with votingOpen=true and recommendedLevelId when no choice and voting is open")
         void shouldReturnVotingOpenWithRecommendedWhenNoChoice() {
             FeeYearPublication publication = buildOpenPublication(YEAR);
-            MembershipFeeGroup previousYearGroup = buildGroupWithMember(
-                    new MembershipFeeGroupId(UUID.randomUUID()), YEAR - 1,
-                    MEMBER_ID, LocalDate.of(YEAR - 1, 1, 10), AssignmentSource.MEMBER_CHOICE);
-            MembershipFeeGroup currentYearGroup = MembershipFeeGroup.reconstruct(
-                    GROUP_ID, LEVEL_ID, "Základ", YEAR,
-                    Money.ofCzk(new BigDecimal("500.00")),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(), Set.of(), null);
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.empty());
             org.mockito.Mockito.when(publicationRepository.findByYear(YEAR))
                     .thenReturn(Optional.of(publication));
-            org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
-                    .thenReturn(Optional.of(previousYearGroup));
-            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID))
-                    .thenReturn(true);
+            org.mockito.Mockito.when(memberChoicePort.getRecommendedLevelForYear(MEMBER_ID, YEAR))
+                    .thenReturn(Optional.of(LEVEL_ID));
 
             MemberFeeHistoryPort.CurrentLevelInfo result = service.getCurrentLevelInfo(MEMBER_ID, YEAR);
 

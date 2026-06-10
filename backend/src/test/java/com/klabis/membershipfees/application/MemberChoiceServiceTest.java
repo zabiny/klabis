@@ -4,6 +4,7 @@ import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.AssignmentSource;
+import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -20,7 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -47,30 +51,25 @@ class MemberChoiceServiceTest {
     @Mock
     private FeeYearPublicationRepository publicationRepository;
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 3, 15);
+    private final Clock fixedClock = Clock.fixed(TODAY.atStartOfDay(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
     private MemberChoiceService service;
 
     @BeforeEach
     void setUp() {
-        service = new MemberChoiceService(groupRepository, publicationRepository);
+        service = new MemberChoiceService(groupRepository, publicationRepository, fixedClock);
     }
+
+    private static final LocalDate GROUP_DEADLINE = TODAY.plusDays(30);
 
     private MembershipFeeGroup buildEditableGroup(MembershipFeeLevelId sourceLevelId) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
                 sourceLevelId,
-                "Test Group", YEAR,
+                "Test Group", YEAR, GROUP_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
-                List.of(), Set.of(), null);
-    }
-
-    private MembershipFeeGroup buildFrozenGroup(MembershipFeeLevelId sourceLevelId) {
-        return MembershipFeeGroup.reconstruct(
-                new MembershipFeeGroupId(UUID.randomUUID()),
-                sourceLevelId,
-                "Frozen Group", YEAR,
-                Money.ofCzk(new BigDecimal("1200.00")),
-                PublishedLevelStatus.FROZEN,
                 List.of(), Set.of(), null);
     }
 
@@ -78,16 +77,7 @@ class MemberChoiceServiceTest {
         return FeeYearPublication.reconstruct(
                 new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
                 YEAR,
-                LocalDate.now().plusDays(30),
-                null,
-                List.of());
-    }
-
-    private FeeYearPublication buildClosedPublication() {
-        return FeeYearPublication.reconstruct(
-                new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
-                YEAR,
-                LocalDate.now().minusDays(1),
+                TODAY.plusDays(30),
                 null,
                 List.of());
     }
@@ -131,12 +121,18 @@ class MemberChoiceServiceTest {
         }
 
         @Test
-        @DisplayName("should throw VotingClosedException when publication is closed")
+        @DisplayName("should throw VotingClosedException when group voting deadline has passed")
         void shouldThrowWhenVotingClosed() {
-            MembershipFeeGroup group = buildEditableGroup(LEVEL_ID_A);
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    LEVEL_ID_A,
+                    "Expired Group", YEAR, TODAY.minusDays(1),
+                    Money.ofCzk(new BigDecimal("1200.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(), Set.of(), null);
             MembershipFeeGroupId groupId = group.getId();
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
-            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildOpenPublication()));
 
             assertThatThrownBy(() -> service.chooseFeeLevel(
                     new MemberChoicePort.ChooseFeeLevel(MEMBER_ID, groupId, YEAR)))
@@ -154,6 +150,46 @@ class MemberChoiceServiceTest {
             assertThatThrownBy(() -> service.chooseFeeLevel(
                     new MemberChoicePort.ChooseFeeLevel(MEMBER_ID, groupId, YEAR)))
                     .isInstanceOf(FeeYearPublicationNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should allow choice on the group deadline day itself (boundary: deadline not yet passed)")
+        void shouldAllowChoiceOnDeadlineDay() {
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    LEVEL_ID_A,
+                    "Deadline Today", YEAR, TODAY,
+                    Money.ofCzk(new BigDecimal("1200.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(), Set.of(), null);
+            MembershipFeeGroupId groupId = group.getId();
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildOpenPublication()));
+            when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(MEMBER_ID, groupId, YEAR));
+
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_ID)));
+        }
+
+        @Test
+        @DisplayName("should throw VotingClosedException the day after the group deadline")
+        void shouldThrowDayAfterDeadline() {
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    LEVEL_ID_A,
+                    "Deadline Yesterday", YEAR, TODAY.minusDays(1),
+                    Money.ofCzk(new BigDecimal("1200.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(), Set.of(), null);
+            MembershipFeeGroupId groupId = group.getId();
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildOpenPublication()));
+
+            assertThatThrownBy(() -> service.chooseFeeLevel(
+                    new MemberChoicePort.ChooseFeeLevel(MEMBER_ID, groupId, YEAR)))
+                    .isInstanceOf(VotingClosedException.class);
         }
     }
 
@@ -258,9 +294,21 @@ class MemberChoiceServiceTest {
         }
 
         @Test
-        @DisplayName("should throw VotingClosedException when removing after deadline")
+        @DisplayName("should throw VotingClosedException when removing after group voting deadline")
         void shouldThrowWhenRemovingAfterDeadline() {
-            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    LEVEL_ID_A,
+                    "Expired Group", YEAR, TODAY.minusDays(1),
+                    Money.ofCzk(new BigDecimal("1200.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    new HashSet<>(Set.of(new FeeGroupMembership(
+                            MEMBER_ID, LocalDate.of(YEAR, 1, 5),
+                            AssignmentSource.MEMBER_CHOICE, null))),
+                    null);
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildOpenPublication()));
+            when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(group));
 
             assertThatThrownBy(() -> service.removeFeeChoice(MEMBER_ID, YEAR))
                     .isInstanceOf(VotingClosedException.class);

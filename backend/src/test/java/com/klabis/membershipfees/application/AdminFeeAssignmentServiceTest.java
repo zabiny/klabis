@@ -60,11 +60,13 @@ class AdminFeeAssignmentServiceTest {
         service = new AdminFeeAssignmentService(groupRepository, publicationRepository, eventPublisher);
     }
 
+    private static final LocalDate VOTING_DEADLINE = LocalDate.of(YEAR, 3, 31);
+
     private MembershipFeeGroup buildFrozenGroup(MembershipFeeLevelId sourceLevelId) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
                 sourceLevelId,
-                "Frozen Group", YEAR,
+                "Frozen Group", YEAR, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
                 List.of(), Set.of(), null);
@@ -74,7 +76,7 @@ class AdminFeeAssignmentServiceTest {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
                 sourceLevelId,
-                "Editable Group", YEAR,
+                "Editable Group", YEAR, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
                 List.of(), Set.of(), null);
@@ -159,7 +161,7 @@ class AdminFeeAssignmentServiceTest {
                     new FeeGroupMembership(TARGET_MEMBER_ID, LocalDate.of(YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE, null));
             MembershipFeeGroup oldGroup = MembershipFeeGroup.reconstruct(
                     new MembershipFeeGroupId(UUID.randomUUID()),
-                    LEVEL_ID_A, "Old Frozen Group", YEAR,
+                    LEVEL_ID_A, "Old Frozen Group", YEAR, VOTING_DEADLINE,
                     Money.ofCzk(new BigDecimal("1200.00")),
                     PublishedLevelStatus.FROZEN,
                     List.of(), existingMemberships, null);

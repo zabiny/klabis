@@ -55,11 +55,13 @@ class MembershipFeeGroupControllerTest {
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
+    private static final java.time.LocalDate VOTING_DEADLINE = java.time.LocalDate.of(2026, 3, 31);
+
     private MembershipFeeGroup buildFrozenGroup() {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
                 new MembershipFeeLevelId(UUID.randomUUID()),
-                "Dospělý", 2026,
+                "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
                 List.of(), Set.of(), null);
@@ -69,7 +71,7 @@ class MembershipFeeGroupControllerTest {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
                 new MembershipFeeLevelId(UUID.randomUUID()),
-                "Dospělý", 2026,
+                "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
                 List.of(), Set.of(), null);

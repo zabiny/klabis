@@ -14,7 +14,7 @@ record FeeYearPublicationResponse(
 ) {
     static FeeYearPublicationResponse from(FeeYearPublication publication) {
         return new FeeYearPublicationResponse(
-                publication.getId().uuid(),
+                publication.getId().value(),
                 publication.getYear(),
                 publication.getVotingDeadline(),
                 publication.getDeadlineProcessedAt()

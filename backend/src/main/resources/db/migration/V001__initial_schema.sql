@@ -785,6 +785,7 @@ CREATE TABLE membershipfees.membership_fee_group
     yearly_fee_snapshot_amount      DECIMAL(19, 4) NOT NULL,
     yearly_fee_snapshot_currency    VARCHAR(3)     NOT NULL DEFAULT 'CZK',
     status                          VARCHAR(20)    NOT NULL DEFAULT 'EDITABLE',
+    voting_deadline                 DATE           NOT NULL DEFAULT '2099-12-31',
     created_at                      TIMESTAMP NULL,
     created_by                      VARCHAR(255) NULL,
     modified_at                     TIMESTAMP NULL,

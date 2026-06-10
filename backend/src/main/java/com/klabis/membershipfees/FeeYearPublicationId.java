@@ -14,7 +14,5 @@ public record FeeYearPublicationId(UUID value) implements Identifier {
         }
     }
 
-    public UUID uuid() {
-        return this.value;
-    }
+
 }

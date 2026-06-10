@@ -58,7 +58,7 @@ class FeeYearPublicationController {
     ResponseEntity<Void> publishYear(@Valid @RequestBody PublishYearRequest request) {
         FeeYearPublicationId id = managementPort.publishYear(request.toCommand());
         return ResponseEntity.created(
-                linkTo(methodOn(FeeYearPublicationController.class).getPublication(id.uuid())).toUri()
+                linkTo(methodOn(FeeYearPublicationController.class).getPublication(id.value())).toUri()
         ).build();
     }
 
@@ -71,7 +71,7 @@ class FeeYearPublicationController {
                 .toList();
 
         List<HalFormsInlineOption> levelOptions = levelManagementPort.listLevels().stream()
-                .map(level -> new HalFormsInlineOption(level.getId().uuid().toString(), level.getName()))
+                .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
                 .toList();
 
         CollectionModel<EntityModel<FeeYearPublicationResponse>> model = CollectionModel.of(items);
@@ -102,7 +102,7 @@ class FeeYearPublicationController {
                 .map(group -> {
                     MembershipFeeGroupResponse response = MembershipFeeGroupResponse.from(group);
                     EntityModel<MembershipFeeGroupResponse> model = EntityModel.of(response);
-                    klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(group.getId().uuid()))
+                    klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(group.getId().value()))
                             .ifPresent(link -> model.add(link.withSelfRel()));
                     return model;
                 })
@@ -116,7 +116,7 @@ class FeeYearPublicationController {
     }
 
     private EntityModel<FeeYearPublicationResponse> buildSummaryModel(FeeYearPublication publication) {
-        UUID publicationId = publication.getId().uuid();
+        UUID publicationId = publication.getId().value();
         FeeYearPublicationResponse response = FeeYearPublicationResponse.from(publication);
         EntityModel<FeeYearPublicationResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(FeeYearPublicationController.class).getPublication(publicationId))
@@ -131,7 +131,7 @@ class FeeYearPublicationDetailsPostprocessor
 
     @Override
     public void process(EntityModel<FeeYearPublicationResponse> dtoModel, FeeYearPublication publication) {
-        UUID id = publication.getId().uuid();
+        UUID id = publication.getId().value();
         klabisLinkTo(methodOn(FeeYearPublicationController.class).getPublication(id))
                 .map(link -> link.withSelfRel())
                 .ifPresent(dtoModel::add);

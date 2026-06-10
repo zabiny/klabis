@@ -20,7 +20,7 @@ record MembershipFeeLevelResponse(
                 .map(PaymentRuleResponse::from)
                 .toList();
         return new MembershipFeeLevelResponse(
-                level.getId().uuid(),
+                level.getId().value(),
                 level.getName(),
                 level.getYearlyFee().amount(),
                 level.getYearlyFee().currency().getCurrencyCode(),

@@ -3,15 +3,14 @@ package com.klabis.membershipfees.application;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.VotingClosedException;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -20,11 +19,14 @@ class MemberChoiceService implements MemberChoicePort {
 
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeYearPublicationRepository publicationRepository;
+    private final Clock clock;
 
     MemberChoiceService(MembershipFeeGroupRepository groupRepository,
-                        FeeYearPublicationRepository publicationRepository) {
+                        FeeYearPublicationRepository publicationRepository,
+                        Clock clock) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -33,18 +35,16 @@ class MemberChoiceService implements MemberChoicePort {
         MembershipFeeGroup targetGroup = groupRepository.findById(command.groupId())
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(command.groupId()));
 
-        FeeYearPublication publication = publicationRepository.findByYear(command.year())
-                .orElseThrow(() -> new FeeYearPublicationNotFoundException(command.year()));
-
-        LocalDate today = LocalDate.now();
-        if (publication.isClosed(today)) {
-            throw new VotingClosedException();
+        if (publicationRepository.findByYear(command.year()).isEmpty()) {
+            throw new FeeYearPublicationNotFoundException(command.year());
         }
+
+        LocalDate today = LocalDate.now(clock);
 
         groupRepository.findByMemberAndYear(command.memberId(), command.year())
                 .filter(currentGroup -> !currentGroup.getId().equals(command.groupId()))
                 .ifPresent(currentGroup -> {
-                    currentGroup.removeMember(command.memberId());
+                    currentGroup.removeMemberChoice(command.memberId(), today);
                     groupRepository.save(currentGroup);
                 });
 
@@ -55,15 +55,13 @@ class MemberChoiceService implements MemberChoicePort {
     @Transactional
     @Override
     public void removeFeeChoice(MemberId memberId, int year) {
-        FeeYearPublication publication = publicationRepository.findByYear(year)
-                .orElseThrow(() -> new FeeYearPublicationNotFoundException(year));
-
-        if (publication.isClosed(LocalDate.now())) {
-            throw new VotingClosedException();
+        if (publicationRepository.findByYear(year).isEmpty()) {
+            throw new FeeYearPublicationNotFoundException(year);
         }
 
+        LocalDate today = LocalDate.now(clock);
         groupRepository.findByMemberAndYear(memberId, year).ifPresent(group -> {
-            group.removeMember(memberId);
+            group.removeMemberChoice(memberId, today);
             groupRepository.save(group);
         });
     }

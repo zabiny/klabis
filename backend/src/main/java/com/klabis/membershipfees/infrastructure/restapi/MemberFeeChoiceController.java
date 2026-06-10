@@ -62,7 +62,7 @@ class MemberFeeChoiceController {
                                 .removeChoice(memberId, year, null)))));
 
         currentChoice.ifPresent(groupId ->
-                klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(groupId.uuid()))
+                klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(groupId.value()))
                         .ifPresent(link -> model.add(link.withRel("currentGroup"))));
 
         recommended.ifPresent(levelId ->

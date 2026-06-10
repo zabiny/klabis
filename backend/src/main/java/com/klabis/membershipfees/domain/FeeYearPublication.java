@@ -51,9 +51,8 @@ public class FeeYearPublication extends KlabisAggregateRoot<FeeYearPublication, 
                         level.getName(),
                         year,
                         level.getYearlyFee(),
-                        level.getRules().stream()
-                                .map(MembershipPaymentRuleSnapshot::from)
-                                .toList()))
+                        level.getRules(),
+                        votingDeadline))
                 .toList();
 
         List<MembershipFeeGroupId> groupIds = groups.stream()

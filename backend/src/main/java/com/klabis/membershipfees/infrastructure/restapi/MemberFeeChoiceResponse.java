@@ -20,7 +20,7 @@ record MemberFeeChoiceResponse(
         return new MemberFeeChoiceResponse(
                 memberId,
                 year,
-                currentChoice.map(MembershipFeeGroupId::uuid).orElse(null),
+                currentChoice.map(MembershipFeeGroupId::value).orElse(null),
                 recommended.map(MembershipFeeLevelId::value).orElse(null));
     }
 }

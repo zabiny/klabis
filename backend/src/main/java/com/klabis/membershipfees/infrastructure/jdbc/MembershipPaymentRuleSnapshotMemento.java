@@ -3,7 +3,6 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
-import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -40,13 +39,13 @@ class MembershipPaymentRuleSnapshotMemento {
     protected MembershipPaymentRuleSnapshotMemento() {
     }
 
-    static MembershipPaymentRuleSnapshotMemento from(MembershipPaymentRuleSnapshot snapshot) {
+    static MembershipPaymentRuleSnapshotMemento from(MembershipPaymentRule rule) {
         MembershipPaymentRuleSnapshotMemento memento = new MembershipPaymentRuleSnapshotMemento();
         memento.id = UUID.randomUUID();
-        memento.eventTypeId = snapshot.eventTypeId().value();
-        memento.rankingShortName = snapshot.rankingShortName();
+        memento.eventTypeId = rule.eventTypeId().value();
+        memento.rankingShortName = rule.rankingShortName();
 
-        switch (snapshot.value()) {
+        switch (rule.value()) {
             case MembershipPaymentRule.RuleValue.Percentage p -> {
                 memento.ruleType = "PERCENTAGE";
                 memento.rulePercentage = p.percent();
@@ -60,13 +59,13 @@ class MembershipPaymentRuleSnapshotMemento {
         return memento;
     }
 
-    MembershipPaymentRuleSnapshot toSnapshot() {
+    MembershipPaymentRule toRule() {
         MembershipPaymentRule.RuleValue value = switch (ruleType) {
             case "PERCENTAGE" -> new MembershipPaymentRule.RuleValue.Percentage(rulePercentage);
             case "FIXED_SURCHARGE" -> new MembershipPaymentRule.RuleValue.FixedSurcharge(
                     Money.of(ruleFixedAmount, Currency.getInstance(ruleFixedCurrency)));
             default -> throw new IllegalStateException("Unknown rule type: " + ruleType);
         };
-        return new MembershipPaymentRuleSnapshot(EventTypeReference.of(eventTypeId), rankingShortName, value);
+        return new MembershipPaymentRule(EventTypeReference.of(eventTypeId), rankingShortName, value);
     }
 }

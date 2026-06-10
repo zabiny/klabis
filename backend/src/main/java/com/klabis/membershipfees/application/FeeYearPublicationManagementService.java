@@ -8,6 +8,7 @@ import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import com.klabis.membershipfees.domain.MembershipFeeLevel;
+import com.klabis.membershipfees.domain.MembershipFeeLevelRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +20,14 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
 
     private final FeeYearPublicationRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
-    private final MembershipFeeLevelManagementPort levelManagementPort;
+    private final MembershipFeeLevelRepository levelRepository;
 
     FeeYearPublicationManagementService(FeeYearPublicationRepository publicationRepository,
                                          MembershipFeeGroupRepository groupRepository,
-                                         MembershipFeeLevelManagementPort levelManagementPort) {
+                                         MembershipFeeLevelRepository levelRepository) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
-        this.levelManagementPort = levelManagementPort;
+        this.levelRepository = levelRepository;
     }
 
     @Transactional
@@ -37,7 +38,8 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
         });
 
         List<MembershipFeeLevel> levels = command.levelIds().stream()
-                .map(levelManagementPort::getLevel)
+                .map(id -> levelRepository.findById(id)
+                        .orElseThrow(() -> new MembershipFeeLevelNotFoundException(id)))
                 .toList();
 
         FeeYearPublication.FeeYearPublicationWithGroups result = FeeYearPublication.publish(

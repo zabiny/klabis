@@ -8,6 +8,7 @@ import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -18,11 +19,17 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
 
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeYearPublicationRepository publicationRepository;
+    private final MemberChoicePort memberChoicePort;
+    private final Clock clock;
 
     MemberFeeHistoryService(MembershipFeeGroupRepository groupRepository,
-                             FeeYearPublicationRepository publicationRepository) {
+                             FeeYearPublicationRepository publicationRepository,
+                             MemberChoicePort memberChoicePort,
+                             Clock clock) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
+        this.memberChoicePort = memberChoicePort;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -30,7 +37,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
     public CurrentLevelInfo getCurrentLevelInfo(MemberId memberId, int year) {
         Optional<MembershipFeeGroup> currentGroup = groupRepository.findByMemberAndYear(memberId, year);
         boolean votingOpen = publicationRepository.findByYear(year)
-                .map(pub -> !pub.isClosed(LocalDate.now()))
+                .map(pub -> !pub.isClosed(LocalDate.now(clock)))
                 .orElse(false);
 
         if (currentGroup.isPresent()) {
@@ -41,7 +48,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
         }
 
         Optional<MembershipFeeLevelId> recommended = votingOpen
-                ? resolveRecommendedLevel(memberId, year)
+                ? memberChoicePort.getRecommendedLevelForYear(memberId, year)
                 : Optional.empty();
 
         return new CurrentLevelInfo(null, null, null, votingOpen, recommended);
@@ -66,9 +73,4 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
                         m.joinedAt(), m.source()));
     }
 
-    private Optional<MembershipFeeLevelId> resolveRecommendedLevel(MemberId memberId, int year) {
-        return groupRepository.findByMemberAndYear(memberId, year - 1)
-                .map(MembershipFeeGroup::getSourceLevelId)
-                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));
-    }
 }

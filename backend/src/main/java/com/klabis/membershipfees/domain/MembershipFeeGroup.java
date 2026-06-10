@@ -27,25 +27,29 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     private final MembershipFeeLevelId sourceLevelId;
     private final String name;
     private final int year;
+    private final LocalDate votingDeadline;
     private Money yearlyFeeSnapshot;
     private PublishedLevelStatus status;
-    private final List<MembershipPaymentRuleSnapshot> rulesSnapshot;
+    private final List<MembershipPaymentRule> rulesSnapshot;
     private final Set<FeeGroupMembership> memberships;
 
     private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeLevelId sourceLevelId,
-                                String name, int year, Money yearlyFeeSnapshot,
+                                String name, int year, LocalDate votingDeadline,
+                                Money yearlyFeeSnapshot,
                                 PublishedLevelStatus status,
-                                List<MembershipPaymentRuleSnapshot> rulesSnapshot,
+                                List<MembershipPaymentRule> rulesSnapshot,
                                 Set<FeeGroupMembership> memberships) {
         Assert.notNull(id, "MembershipFeeGroupId is required");
         Assert.notNull(sourceLevelId, "SourceLevelId is required");
         Assert.hasText(name, "Name is required");
+        Assert.notNull(votingDeadline, "VotingDeadline is required");
         Assert.notNull(yearlyFeeSnapshot, "YearlyFeeSnapshot is required");
         Assert.notNull(status, "Status is required");
         this.id = id;
         this.sourceLevelId = sourceLevelId;
         this.name = name;
         this.year = year;
+        this.votingDeadline = votingDeadline;
         this.yearlyFeeSnapshot = yearlyFeeSnapshot;
         this.status = status;
         this.rulesSnapshot = new ArrayList<>(rulesSnapshot);
@@ -54,10 +58,11 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
 
     public static MembershipFeeGroup createSnapshot(MembershipFeeLevelId sourceLevelId,
                                                      String name, int year, Money yearlyFeeSnapshot,
-                                                     List<MembershipPaymentRuleSnapshot> rulesSnapshot) {
+                                                     List<MembershipPaymentRule> rulesSnapshot,
+                                                     LocalDate votingDeadline) {
         return new MembershipFeeGroup(
                 new MembershipFeeGroupId(UUID.randomUUID()),
-                sourceLevelId, name, year, yearlyFeeSnapshot,
+                sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot,
                 PublishedLevelStatus.EDITABLE,
                 rulesSnapshot != null ? rulesSnapshot : List.of(),
                 Set.of());
@@ -66,13 +71,14 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     public static MembershipFeeGroup reconstruct(MembershipFeeGroupId id,
                                                   MembershipFeeLevelId sourceLevelId,
                                                   String name, int year,
+                                                  LocalDate votingDeadline,
                                                   Money yearlyFeeSnapshot,
                                                   PublishedLevelStatus status,
-                                                  List<MembershipPaymentRuleSnapshot> rulesSnapshot,
+                                                  List<MembershipPaymentRule> rulesSnapshot,
                                                   Set<FeeGroupMembership> memberships,
                                                   AuditMetadata auditMetadata) {
         MembershipFeeGroup group = new MembershipFeeGroup(
-                id, sourceLevelId, name, year, yearlyFeeSnapshot, status, rulesSnapshot, memberships);
+                id, sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot, status, rulesSnapshot, memberships);
         if (auditMetadata != null) {
             group.updateAuditMetadata(auditMetadata);
         }
@@ -96,6 +102,10 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         return year;
     }
 
+    public LocalDate getVotingDeadline() {
+        return votingDeadline;
+    }
+
     public Money getYearlyFeeSnapshot() {
         return yearlyFeeSnapshot;
     }
@@ -104,7 +114,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         return status;
     }
 
-    public List<MembershipPaymentRuleSnapshot> getRulesSnapshot() {
+    public List<MembershipPaymentRule> getRulesSnapshot() {
         return Collections.unmodifiableList(rulesSnapshot);
     }
 
@@ -116,7 +126,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         return memberships.size();
     }
 
-    public void editSnapshot(Money yearlyFee, List<MembershipPaymentRuleSnapshot> rules) {
+    public void editSnapshot(Money yearlyFee, List<MembershipPaymentRule> rules) {
         if (status != PublishedLevelStatus.EDITABLE) {
             throw new SnapshotFrozenException();
         }
@@ -141,7 +151,8 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         Assert.notNull(today, "Today is required");
         Assert.notNull(source, "AssignmentSource is required");
 
-        if (status == PublishedLevelStatus.FROZEN && source == AssignmentSource.MEMBER_CHOICE) {
+        if (source == AssignmentSource.MEMBER_CHOICE
+                && (today.isAfter(votingDeadline) || status == PublishedLevelStatus.FROZEN)) {
             throw new VotingClosedException();
         }
 
@@ -156,6 +167,15 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
 
     public void removeMember(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
+        memberships.removeIf(m -> m.memberId().equals(memberId));
+    }
+
+    public void removeMemberChoice(MemberId memberId, LocalDate today) {
+        Assert.notNull(memberId, "MemberId is required");
+        Assert.notNull(today, "Today is required");
+        if (today.isAfter(votingDeadline) || status == PublishedLevelStatus.FROZEN) {
+            throw new VotingClosedException();
+        }
         memberships.removeIf(m -> m.memberId().equals(memberId));
     }
 

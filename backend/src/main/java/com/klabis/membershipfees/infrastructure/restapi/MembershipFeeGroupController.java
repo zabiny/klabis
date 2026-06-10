@@ -90,7 +90,7 @@ class MembershipFeeGroupDetailsPostprocessor
 
     @Override
     public void process(EntityModel<MembershipFeeGroupResponse> dtoModel, MembershipFeeGroup group) {
-        UUID id = group.getId().uuid();
+        UUID id = group.getId().value();
         klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(id))
                 .map(link -> {
                     var self = link.withSelfRel()
@@ -103,7 +103,7 @@ class MembershipFeeGroupDetailsPostprocessor
                     return self;
                 })
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(group.getSourceLevelId().uuid()))
+        klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(group.getSourceLevelId().value()))
                 .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }
 }

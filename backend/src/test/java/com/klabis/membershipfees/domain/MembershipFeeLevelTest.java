@@ -36,15 +36,6 @@ class MembershipFeeLevelTest {
         }
 
         @Test
-        @DisplayName("should expose uuid() convenience accessor")
-        void shouldExposeUuidAccessor() {
-            UUID uuid = UUID.randomUUID();
-            MembershipFeeLevelId id = new MembershipFeeLevelId(uuid);
-
-            assertThat(id.uuid()).isEqualTo(uuid);
-        }
-
-        @Test
         @DisplayName("two IDs with the same UUID should be equal")
         void shouldBeEqualWhenSameUuid() {
             UUID uuid = UUID.randomUUID();

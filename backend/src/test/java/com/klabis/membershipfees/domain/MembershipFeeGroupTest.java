@@ -24,10 +24,11 @@ class MembershipFeeGroupTest {
     private static final int YEAR = 2026;
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static final LocalDate VOTING_DEADLINE = LocalDate.of(YEAR, 3, 31);
 
     private MembershipFeeGroup buildGroup() {
         return MembershipFeeGroup.createSnapshot(
-                SOURCE_LEVEL_ID, "Dospělý", YEAR, YEARLY_FEE, List.of());
+                SOURCE_LEVEL_ID, "Dospělý", YEAR, YEARLY_FEE, List.of(), VOTING_DEADLINE);
     }
 
     @Nested
@@ -57,14 +58,14 @@ class MembershipFeeGroupTest {
         @Test
         @DisplayName("should copy rules snapshot from source level")
         void shouldCopyRulesFromLevel() {
-            MembershipPaymentRuleSnapshot rule = new MembershipPaymentRuleSnapshot(
+            MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(50));
 
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    SOURCE_LEVEL_ID, "Závodník", YEAR, YEARLY_FEE, List.of(rule));
+                    SOURCE_LEVEL_ID, "Závodník", YEAR, YEARLY_FEE, List.of(rule), VOTING_DEADLINE);
 
             assertThat(group.getRulesSnapshot()).hasSize(1);
-            MembershipPaymentRuleSnapshot retrieved = group.getRulesSnapshot().get(0);
+            MembershipPaymentRule retrieved = group.getRulesSnapshot().get(0);
             assertThat(retrieved.eventTypeId()).isEqualTo(EVENT_TYPE);
             assertThat(retrieved.rankingShortName()).isEqualTo("A");
         }
@@ -87,7 +88,7 @@ class MembershipFeeGroupTest {
         void shouldUpdateWhenEditable() {
             MembershipFeeGroup group = buildGroup();
             Money newFee = Money.ofCzk(new BigDecimal("1500.00"));
-            MembershipPaymentRuleSnapshot rule = new MembershipPaymentRuleSnapshot(
+            MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(60));
 
             group.editSnapshot(newFee, List.of(rule));
@@ -200,6 +201,37 @@ class MembershipFeeGroupTest {
             group.addMember(MEMBER_A, today, AssignmentSource.MEMBER_CHOICE);
 
             assertThat(group.memberCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("should throw VotingClosedException for MEMBER_CHOICE after votingDeadline (date-based guard)")
+        void shouldThrowWhenTodayIsAfterDeadline() {
+            MembershipFeeGroup group = buildGroup();
+            LocalDate afterDeadline = VOTING_DEADLINE.plusDays(1);
+
+            assertThatThrownBy(() -> group.addMember(MEMBER_A, afterDeadline, AssignmentSource.MEMBER_CHOICE))
+                    .isInstanceOf(VotingClosedException.class);
+        }
+
+        @Test
+        @DisplayName("should allow MEMBER_CHOICE on the deadline day itself")
+        void shouldAllowChoiceOnDeadlineDay() {
+            MembershipFeeGroup group = buildGroup();
+
+            group.addMember(MEMBER_A, VOTING_DEADLINE, AssignmentSource.MEMBER_CHOICE);
+
+            assertThat(group.hasMember(MEMBER_A)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should allow ADMIN_ASSIGNMENT after votingDeadline regardless of date")
+        void shouldAllowAdminAssignmentAfterDeadline() {
+            MembershipFeeGroup group = buildGroup();
+            LocalDate afterDeadline = VOTING_DEADLINE.plusDays(10);
+
+            group.addMember(MEMBER_A, afterDeadline, AssignmentSource.ADMIN_ASSIGNMENT);
+
+            assertThat(group.hasMember(MEMBER_A)).isTrue();
         }
     }
 

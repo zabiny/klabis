@@ -129,7 +129,8 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    new MembershipFeeLevelId(LEVEL_UUID), "Základní", YEAR, FEE, List.of());
+                    new MembershipFeeLevelId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
+                    LocalDate.of(YEAR, 3, 31));
             when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
 
             mockMvc.perform(

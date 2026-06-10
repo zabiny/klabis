@@ -5,13 +5,14 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
+import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Currency;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,9 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
     @Column("status")
     private String status;
 
+    @Column("voting_deadline")
+    private LocalDate votingDeadline;
+
     @MappedCollection(idColumn = "membership_fee_group_id")
     private Set<MembershipPaymentRuleSnapshotMemento> rulesSnapshot = new HashSet<>();
 
@@ -58,6 +62,7 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
         memento.yearlyFeeSnapshotAmount = group.getYearlyFeeSnapshot().amount();
         memento.yearlyFeeSnapshotCurrency = group.getYearlyFeeSnapshot().currency().getCurrencyCode();
         memento.status = group.getStatus().name();
+        memento.votingDeadline = group.getVotingDeadline();
         memento.rulesSnapshot = group.getRulesSnapshot().stream()
                 .map(MembershipPaymentRuleSnapshotMemento::from)
                 .collect(Collectors.toSet());
@@ -70,8 +75,8 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
     }
 
     MembershipFeeGroup toGroup() {
-        List<MembershipPaymentRuleSnapshot> snapshots = rulesSnapshot.stream()
-                .map(MembershipPaymentRuleSnapshotMemento::toSnapshot)
+        List<MembershipPaymentRule> snapshots = rulesSnapshot.stream()
+                .map(MembershipPaymentRuleSnapshotMemento::toRule)
                 .toList();
         Set<FeeGroupMembership> membershipSet = memberships.stream()
                 .map(FeeGroupMembershipMemento::toMembership)
@@ -80,7 +85,7 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
                 new MembershipFeeLevelId(sourceLevelId),
-                name, year, yearlyFee,
+                name, year, votingDeadline, yearlyFee,
                 PublishedLevelStatus.valueOf(status),
                 snapshots, membershipSet, toAuditMetadata());
     }

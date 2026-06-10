@@ -71,7 +71,7 @@ class FeeYearPublicationControllerTest {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
                 new MembershipFeeLevelId(UUID.randomUUID()),
-                "Dospělý", year,
+                "Dospělý", year, LocalDate.of(year, 3, 31),
                 Money.ofCzk(new BigDecimal("1200.00")),
                 com.klabis.membershipfees.domain.PublishedLevelStatus.EDITABLE,
                 List.of(), java.util.Set.of(), null);

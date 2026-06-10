@@ -1,9 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipPaymentRule;
-import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,11 +15,11 @@ record MembershipFeeGroupResponse(
         String yearlyFeeCurrency,
         String status,
         int memberCount,
-        List<RuleSnapshotResponse> rulesSnapshot
+        List<MembershipFeeLevelResponse.PaymentRuleResponse> rulesSnapshot
 ) {
     static MembershipFeeGroupResponse from(MembershipFeeGroup group) {
         return new MembershipFeeGroupResponse(
-                group.getId().uuid(),
+                group.getId().value(),
                 group.getSourceLevelId().value(),
                 group.getName(),
                 group.getYear(),
@@ -30,29 +27,7 @@ record MembershipFeeGroupResponse(
                 group.getYearlyFeeSnapshot().currency().getCurrencyCode(),
                 group.getStatus().name(),
                 group.memberCount(),
-                group.getRulesSnapshot().stream().map(RuleSnapshotResponse::from).toList()
+                group.getRulesSnapshot().stream().map(MembershipFeeLevelResponse.PaymentRuleResponse::from).toList()
         );
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record RuleSnapshotResponse(
-            UUID eventTypeId,
-            String rankingShortName,
-            String ruleType,
-            Integer percent,
-            BigDecimal fixedAmount,
-            String fixedCurrency
-    ) {
-        static RuleSnapshotResponse from(MembershipPaymentRuleSnapshot snapshot) {
-            return switch (snapshot.value()) {
-                case MembershipPaymentRule.RuleValue.Percentage p ->
-                        new RuleSnapshotResponse(snapshot.eventTypeId().value(), snapshot.rankingShortName(),
-                                "PERCENTAGE", p.percent(), null, null);
-                case MembershipPaymentRule.RuleValue.FixedSurcharge f ->
-                        new RuleSnapshotResponse(snapshot.eventTypeId().value(), snapshot.rankingShortName(),
-                                "FIXED_SURCHARGE", null, f.amount().amount(),
-                                f.amount().currency().getCurrencyCode());
-            };
-        }
     }
 }

@@ -52,7 +52,7 @@ class MembershipFeeLevelController {
         MembershipFeeLevelManagementPort.CreateLevelCommand command = request.toCommand();
         MembershipFeeLevelId id = managementPort.createLevel(command);
         return ResponseEntity.created(
-                linkTo(methodOn(MembershipFeeLevelController.class).getLevel(id.uuid())).toUri()
+                linkTo(methodOn(MembershipFeeLevelController.class).getLevel(id.value())).toUri()
         ).build();
     }
 
@@ -102,7 +102,7 @@ class MembershipFeeLevelController {
     }
 
     private EntityModel<MembershipFeeLevelSummaryResponse> buildSummaryModel(MembershipFeeLevel level) {
-        UUID levelId = level.getId().uuid();
+        UUID levelId = level.getId().value();
         MembershipFeeLevelSummaryResponse summary = MembershipFeeLevelSummaryResponse.from(level);
         EntityModel<MembershipFeeLevelSummaryResponse> model = EntityModel.of(summary);
         klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(levelId))
@@ -117,7 +117,7 @@ class MembershipFeeLevelDetailsPostprocessor
 
     @Override
     public void process(EntityModel<MembershipFeeLevelResponse> dtoModel, MembershipFeeLevel level) {
-        UUID id = level.getId().uuid();
+        UUID id = level.getId().value();
         klabisLinkTo(methodOn(MembershipFeeLevelController.class).getLevel(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeLevelController.class).editLevel(id, null)))

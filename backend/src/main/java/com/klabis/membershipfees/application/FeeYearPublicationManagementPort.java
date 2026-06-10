@@ -6,7 +6,7 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeLevelId;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
+import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.util.Assert;
 
@@ -24,7 +24,7 @@ public interface FeeYearPublicationManagementPort {
         }
     }
 
-    record EditGroupSnapshotCommand(Money yearlyFee, List<MembershipPaymentRuleSnapshot> rules) {
+    record EditGroupSnapshotCommand(Money yearlyFee, List<MembershipPaymentRule> rules) {
         public EditGroupSnapshotCommand {
             Assert.notNull(yearlyFee, "YearlyFee is required");
             if (rules == null) {

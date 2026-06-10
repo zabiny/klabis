@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
-import com.klabis.membershipfees.domain.MembershipPaymentRuleSnapshot;
+import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -18,8 +18,8 @@ record EditGroupSnapshotRequest(
     FeeYearPublicationManagementPort.EditGroupSnapshotCommand toCommand() {
         String currency = yearlyFeeCurrency != null ? yearlyFeeCurrency : "CZK";
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(currency));
-        List<MembershipPaymentRuleSnapshot> domainRules = rules == null ? List.of()
-                : rules.stream().map(r -> MembershipPaymentRuleSnapshot.from(r.toDomain())).toList();
+        List<MembershipPaymentRule> domainRules = rules == null ? List.of()
+                : rules.stream().map(CreateMembershipFeeLevelRequest.PaymentRuleRequest::toDomain).toList();
         return new FeeYearPublicationManagementPort.EditGroupSnapshotCommand(yearlyFee, domainRules);
     }
 }
