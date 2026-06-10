@@ -38,34 +38,8 @@ class MembershipFeeTierWithRulesIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("POST /api/membership-fee-tiers with PERCENTAGE rule should return 201")
-    void shouldCreateLevelWithPercentageRuleAndReturn201() throws Exception {
-        mockMvc.perform(post("/api/membership-fee-tiers")
-                        .contentType("application/json")
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                        .content("""
-                                {"name":"Závodní","rules":[{"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percent":30}],"yearlyFeeAmount":1200,"yearlyFeeCurrency":"CZK"}
-                                """.formatted(EVENT_TYPE_UUID)))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("POST /api/membership-fee-tiers with FIXED_AMOUNT rule should return 201")
-    void shouldCreateLevelWithFixedAmountRuleAndReturn201() throws Exception {
-        mockMvc.perform(post("/api/membership-fee-tiers")
-                        .contentType("application/json")
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                        .content("""
-                                {"name":"Mládež","rules":[{"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_AMOUNT","fixedAmount":200,"fixedCurrency":"CZK"}],"yearlyFeeAmount":800,"yearlyFeeCurrency":"CZK"}
-                                """.formatted(EVENT_TYPE_UUID)))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("PATCH /api/membership-fee-tiers/{id} with rules should return 204 and persist correct ruleType")
-    void shouldEditLevelWithRulesAndReturn204() throws Exception {
+    @DisplayName("POST /api/membership-fee-tiers should create tier with empty rules list")
+    void shouldCreateTierWithEmptyRulesAndReturn201() throws Exception {
         var createResult = mockMvc.perform(post("/api/membership-fee-tiers")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -76,20 +50,39 @@ class MembershipFeeTierWithRulesIntegrationTest {
                 .andReturn();
 
         String location = createResult.getResponse().getHeader("Location");
-        String levelUuid = location.substring(location.lastIndexOf('/') + 1);
+        String tierUuid = location.substring(location.lastIndexOf('/') + 1);
 
-        mockMvc.perform(patch("/api/membership-fee-tiers/{id}", levelUuid)
+        var tierId = new MembershipFeeTierId(java.util.UUID.fromString(tierUuid));
+        MembershipFeeTier created = managementPort.getTier(tierId);
+        assertThat(created.getRules()).isEmpty();
+    }
+
+    @Test
+    @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
+    @DisplayName("PATCH /api/membership-fee-tiers/{id} should update name and yearlyFee")
+    void shouldEditTierNameAndReturn204() throws Exception {
+        var createResult = mockMvc.perform(post("/api/membership-fee-tiers")
                         .contentType("application/json")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content("""
-                                {"rules":[{"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percent":30}]}
-                                """.formatted(EVENT_TYPE_UUID)))
+                                {"name":"Závodní","yearlyFeeAmount":1200,"yearlyFeeCurrency":"CZK"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String location = createResult.getResponse().getHeader("Location");
+        String tierUuid = location.substring(location.lastIndexOf('/') + 1);
+
+        mockMvc.perform(patch("/api/membership-fee-tiers/{id}", tierUuid)
+                        .contentType("application/json")
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                        .content("""
+                                {"name":"Updated Name"}
+                                """))
                 .andExpect(status().isNoContent());
 
-        var levelId = new MembershipFeeTierId(java.util.UUID.fromString(levelUuid));
-        MembershipFeeTier saved = managementPort.getTier(levelId);
-        assertThat(saved.getRules()).hasSize(1);
-        assertThat(saved.getRules().get(0).value())
-                .isInstanceOf(com.klabis.membershipfees.domain.MembershipPaymentRule.RuleValue.Percentage.class);
+        var tierId = new MembershipFeeTierId(java.util.UUID.fromString(tierUuid));
+        MembershipFeeTier saved = managementPort.getTier(tierId);
+        assertThat(saved.getName()).isEqualTo("Updated Name");
     }
 }

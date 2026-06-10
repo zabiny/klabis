@@ -23,7 +23,7 @@ class FeeYearPublicationTest {
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
 
     private MembershipFeeTier buildLevel(String name) {
-        return MembershipFeeTier.create(name, YEARLY_FEE, List.of());
+        return MembershipFeeTier.create(name, YEARLY_FEE);
     }
 
     @Nested

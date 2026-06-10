@@ -48,7 +48,7 @@ class FeeYearPublicationPersistenceTest {
     private MembershipFeeTierRepository levelRepository;
 
     private MembershipFeeTier savedLevel(String name) {
-        return levelRepository.save(MembershipFeeTier.create(name, YEARLY_FEE, List.of()));
+        return levelRepository.save(MembershipFeeTier.create(name, YEARLY_FEE));
     }
 
     private FeeYearPublication publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {

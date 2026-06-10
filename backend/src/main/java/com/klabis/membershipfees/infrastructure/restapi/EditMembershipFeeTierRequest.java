@@ -12,7 +12,7 @@ record EditMembershipFeeTierRequest(
         String name,
         BigDecimal yearlyFeeAmount,
         String yearlyFeeCurrency,
-        List<CreateMembershipFeeTierRequest.PaymentRuleRequest> rules
+        List<PaymentRuleRequest> rules
 ) {
     MembershipFeeTierManagementPort.EditTierCommand toCommand() {
         Money yearlyFee = null;
@@ -21,7 +21,7 @@ record EditMembershipFeeTierRequest(
             yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(currency));
         }
         List<MembershipPaymentRule> domainRules = rules == null ? null
-                : rules.stream().map(CreateMembershipFeeTierRequest.PaymentRuleRequest::toDomain).toList();
+                : rules.stream().map(PaymentRuleRequest::toDomain).toList();
         return new MembershipFeeTierManagementPort.EditTierCommand(name, yearlyFee, domainRules);
     }
 }

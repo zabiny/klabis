@@ -33,13 +33,9 @@ public class MembershipFeeTier extends KlabisAggregateRoot<MembershipFeeTier, Me
         this.rules = new ArrayList<>(rules);
     }
 
-    public static MembershipFeeTier create(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
+    public static MembershipFeeTier create(String name, Money yearlyFee) {
         MembershipFeeTierId id = new MembershipFeeTierId(UUID.randomUUID());
-        MembershipFeeTier level = new MembershipFeeTier(id, name, yearlyFee, List.of());
-        if (rules != null && !rules.isEmpty()) {
-            level.replaceRules(rules);
-        }
-        return level;
+        return new MembershipFeeTier(id, name, yearlyFee, List.of());
     }
 
     public static MembershipFeeTier reconstruct(MembershipFeeTierId id, String name, Money yearlyFee,
@@ -86,25 +82,4 @@ public class MembershipFeeTier extends KlabisAggregateRoot<MembershipFeeTier, Me
         rules.add(rule);
     }
 
-    public void replaceRules(List<MembershipPaymentRule> newRules) {
-        validateNoDuplicateKeys(newRules);
-        rules.clear();
-        if (newRules != null) {
-            rules.addAll(newRules);
-        }
-    }
-
-    private void validateNoDuplicateKeys(List<MembershipPaymentRule> newRules) {
-        if (newRules == null || newRules.isEmpty()) {
-            return;
-        }
-        for (int i = 0; i < newRules.size(); i++) {
-            for (int j = i + 1; j < newRules.size(); j++) {
-                if (newRules.get(i).hasSameKey(newRules.get(j))) {
-                    MembershipPaymentRule dup = newRules.get(i);
-                    throw new DuplicatePaymentRuleException(dup.eventTypeId(), dup.rankingShortName());
-                }
-            }
-        }
-    }
 }

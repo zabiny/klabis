@@ -13,13 +13,13 @@ import java.util.List;
 record EditGroupSnapshotRequest(
         @NotNull @Positive BigDecimal yearlyFeeAmount,
         String yearlyFeeCurrency,
-        List<CreateMembershipFeeTierRequest.PaymentRuleRequest> rules
+        List<PaymentRuleRequest> rules
 ) {
     FeeYearPublicationManagementPort.EditGroupSnapshotCommand toCommand() {
         String currency = yearlyFeeCurrency != null ? yearlyFeeCurrency : "CZK";
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(currency));
         List<MembershipPaymentRule> domainRules = rules == null ? List.of()
-                : rules.stream().map(CreateMembershipFeeTierRequest.PaymentRuleRequest::toDomain).toList();
+                : rules.stream().map(PaymentRuleRequest::toDomain).toList();
         return new FeeYearPublicationManagementPort.EditGroupSnapshotCommand(yearlyFee, domainRules);
     }
 }

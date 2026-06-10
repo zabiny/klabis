@@ -12,13 +12,10 @@ import java.util.List;
 @PrimaryPort
 public interface MembershipFeeTierManagementPort {
 
-    record CreateTierCommand(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
+    record CreateTierCommand(String name, Money yearlyFee) {
         public CreateTierCommand {
             Assert.hasText(name, "Name is required");
             Assert.notNull(yearlyFee, "YearlyFee is required");
-            if (rules == null) {
-                rules = List.of();
-            }
         }
     }
 

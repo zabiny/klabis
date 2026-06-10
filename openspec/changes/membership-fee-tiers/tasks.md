@@ -14,10 +14,10 @@
 
 ## 2. Tier creation without rules (vertical slice)
 
-- [ ] 2.1 Write failing test: creating a tier with name + yearly fee produces an empty-rules tier; `CreateTierCommand` no longer carries rules
-- [ ] 2.2 Remove `rules` from `CreateTierCommand` and `CreateMembershipFeeTierRequest`; change `MembershipFeeTier.create(name, yearlyFee)` to start with no rules; remove `replaceRules`
-- [ ] 2.3 Refactor; confirm domain + service + controller tests green
-- [ ] 2.4 Verify frontend create form posts name + yearly fee only (no rules); adjust if needed
+- [x] 2.1 Write failing test: creating a tier with name + yearly fee produces an empty-rules tier; `CreateTierCommand` no longer carries rules
+- [x] 2.2 Remove `rules` from `CreateTierCommand` and `CreateMembershipFeeTierRequest`; change `MembershipFeeTier.create(name, yearlyFee)` to start with no rules; remove `replaceRules`
+- [x] 2.3 Refactor; confirm domain + service + controller tests green
+- [x] 2.4 Verify frontend create form posts name + yearly fee only (no rules); adjust if needed
 
 ## 3. Add a rule (vertical slice)
 

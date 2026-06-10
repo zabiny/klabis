@@ -107,10 +107,9 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("should deserialize rules and pass PERCENTAGE rule to command")
+        @DisplayName("should map name and yearlyFee to CreateTierCommand without rules")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldDeserializeRulesAndPassToCommand() throws Exception {
-            var eventTypeUuid = UUID.fromString("e2be588c-91ad-43e4-8d14-efa7de02782d");
+        void shouldMapRequestToCommandWithoutRules() throws Exception {
             when(managementPort.createTier(any())).thenReturn(LEVEL_ID);
 
             mockMvc.perform(
@@ -118,19 +117,16 @@ class MembershipFeeTierControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name":"Závodní","rules":[{"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percent":30}],"yearlyFeeAmount":1200,"yearlyFeeCurrency":"CZK"}
-                                            """.formatted(eventTypeUuid)))
+                                            {"name":"Závodní","yearlyFeeAmount":1200,"yearlyFeeCurrency":"CZK"}
+                                            """))
                     .andExpect(status().isCreated());
 
             var captor = forClass(MembershipFeeTierManagementPort.CreateTierCommand.class);
             verify(managementPort).createTier(captor.capture());
             MembershipFeeTierManagementPort.CreateTierCommand command = captor.getValue();
 
-            assertThat(command.rules()).hasSize(1);
-            MembershipPaymentRule rule = command.rules().get(0);
-            assertThat(rule.rankingShortName()).isEqualTo("A");
-            assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.Percentage.class);
-            assertThat(((MembershipPaymentRule.RuleValue.Percentage) rule.value()).percent()).isEqualTo(30);
+            assertThat(command.name()).isEqualTo("Závodní");
+            assertThat(command.yearlyFee()).isNotNull();
         }
     }
 

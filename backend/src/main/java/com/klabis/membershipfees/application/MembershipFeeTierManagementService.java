@@ -20,7 +20,7 @@ class MembershipFeeTierManagementService implements MembershipFeeTierManagementP
     @Transactional
     @Override
     public MembershipFeeTierId createTier(CreateTierCommand command) {
-        MembershipFeeTier level = MembershipFeeTier.create(command.name(), command.yearlyFee(), command.rules());
+        MembershipFeeTier level = MembershipFeeTier.create(command.name(), command.yearlyFee());
         return repository.save(level).getId();
     }
 
@@ -33,9 +33,6 @@ class MembershipFeeTierManagementService implements MembershipFeeTierManagementP
         }
         if (command.yearlyFee() != null) {
             level.editYearlyFee(command.yearlyFee());
-        }
-        if (command.rules() != null) {
-            level.replaceRules(command.rules());
         }
         repository.save(level);
     }
