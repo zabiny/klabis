@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("MembershipFeeTierController API tests")
-@WebMvcTest(controllers = {MembershipFeeTierController.class})
+@WebMvcTest(controllers = {MembershipFeeTierController.class, MembershipFeesExceptionHandler.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 @WithPostprocessors
 class MembershipFeeTierControllerTest {
@@ -285,6 +285,100 @@ class MembershipFeeTierControllerTest {
             MembershipPaymentRule rule = command.rules().get(0);
             assertThat(rule.rankingShortName()).isEqualTo("B");
             assertThat(rule.value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/membership-fee-tiers/{id}/rules")
+    class AddRuleTests {
+
+        private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percentage":50}
+                                            """.formatted(EVENT_TYPE_UUID)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 201 when adding a percentage rule")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn201ForPercentageRule() throws Exception {
+            doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percentage":50}
+                                            """.formatted(EVENT_TYPE_UUID)))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("should return 201 when adding a fixed-amount rule")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn201ForFixedAmountRule() throws Exception {
+            doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_AMOUNT","fixedAmount":200,"fixedCurrency":"CZK"}
+                                            """.formatted(EVENT_TYPE_UUID)))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("should return 409 when rule with same key already exists")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409OnDuplicateRule() throws Exception {
+            doThrow(new com.klabis.membershipfees.domain.DuplicatePaymentRuleException(
+                    com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID), "A"))
+                    .when(managementPort).addRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percentage":50}
+                                            """.formatted(EVENT_TYPE_UUID)))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should map request fields to AddRuleCommand correctly")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldMapRequestToCommand() throws Exception {
+            doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_AMOUNT","fixedAmount":300,"fixedCurrency":"CZK"}
+                                            """.formatted(EVENT_TYPE_UUID)))
+                    .andExpect(status().isCreated());
+
+            var captor = forClass(MembershipFeeTierManagementPort.AddRuleCommand.class);
+            verify(managementPort).addRule(eq(LEVEL_ID), captor.capture());
+            MembershipFeeTierManagementPort.AddRuleCommand command = captor.getValue();
+
+            assertThat(command.rule().rankingShortName()).isEqualTo("B");
+            assertThat(command.rule().value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
         }
     }
 

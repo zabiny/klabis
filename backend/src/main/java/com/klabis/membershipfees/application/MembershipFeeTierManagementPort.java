@@ -22,9 +22,17 @@ public interface MembershipFeeTierManagementPort {
     record EditTierCommand(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
     }
 
+    record AddRuleCommand(MembershipPaymentRule rule) {
+        public AddRuleCommand {
+            Assert.notNull(rule, "Rule is required");
+        }
+    }
+
     MembershipFeeTierId createTier(CreateTierCommand command);
 
     void editTier(MembershipFeeTierId id, EditTierCommand command);
+
+    void addRule(MembershipFeeTierId tierId, AddRuleCommand command);
 
     MembershipFeeTier getTier(MembershipFeeTierId id);
 

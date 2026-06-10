@@ -21,10 +21,10 @@
 
 ## 3. Add a rule (vertical slice)
 
-- [ ] 3.1 Write failing domain test: `addRule` adds a rule; adding a duplicate `(eventTypeId, ranking)` throws `DuplicatePaymentRuleException`
-- [ ] 3.2 Write failing REST test: `POST /api/membership-fee-tiers/{id}/rules` adds a percentage rule and a fixed-amount rule; duplicate combination is rejected
-- [ ] 3.3 Implement the add-rule command on the management port + service, and the `POST .../rules` controller endpoint (requires MEMBERS:MANAGE)
-- [ ] 3.4 Expose the `addRule` affordance on the tier-detail representation; refactor; confirm green
+- [x] 3.1 Write failing domain test: `addRule` adds a rule; adding a duplicate `(eventTypeId, ranking)` throws `DuplicatePaymentRuleException`
+- [x] 3.2 Write failing REST test: `POST /api/membership-fee-tiers/{id}/rules` adds a percentage rule and a fixed-amount rule; duplicate combination is rejected
+- [x] 3.3 Implement the add-rule command on the management port + service, and the `POST .../rules` controller endpoint (requires MEMBERS:MANAGE)
+- [x] 3.4 Expose the `addRule` affordance on the tier-detail representation; refactor; confirm green
 
 ## 4. Ranking dropdown from ORIS (vertical slice)
 

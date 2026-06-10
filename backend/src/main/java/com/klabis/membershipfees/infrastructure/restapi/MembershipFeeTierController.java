@@ -7,6 +7,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +20,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -90,6 +92,18 @@ class MembershipFeeTierController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/rules", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Add a payment rule to a membership fee tier (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> addRule(
+            @Parameter(description = "Tier UUID") @PathVariable UUID id,
+            @Valid @RequestBody AddPaymentRuleRequest request) {
+        MembershipFeeTierManagementPort.AddRuleCommand command = new MembershipFeeTierManagementPort.AddRuleCommand(
+                request.toDomain());
+        managementPort.addRule(new MembershipFeeTierId(id), command);
+        return ResponseEntity.status(201).build();
+    }
+
     @DeleteMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Delete a membership fee tier (requires MEMBERS:MANAGE)")
@@ -119,7 +133,8 @@ class MembershipFeeTierDetailsPostprocessor
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).editTier(id, null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id))))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id)))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).addRule(id, null))))
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
