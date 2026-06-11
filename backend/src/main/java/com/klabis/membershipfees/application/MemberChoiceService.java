@@ -4,7 +4,7 @@ import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -18,11 +18,11 @@ import java.util.Optional;
 class MemberChoiceService implements MemberChoicePort {
 
     private final MembershipFeeGroupRepository groupRepository;
-    private final FeeYearPublicationRepository publicationRepository;
+    private final FeeSelectionCampaignRepository publicationRepository;
     private final Clock clock;
 
     MemberChoiceService(MembershipFeeGroupRepository groupRepository,
-                        FeeYearPublicationRepository publicationRepository,
+                        FeeSelectionCampaignRepository publicationRepository,
                         Clock clock) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
@@ -36,7 +36,7 @@ class MemberChoiceService implements MemberChoicePort {
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(command.groupId()));
 
         if (publicationRepository.findByYear(command.year()).isEmpty()) {
-            throw new FeeYearPublicationNotFoundException(command.year());
+            throw new FeeSelectionCampaignNotFoundException(command.year());
         }
 
         LocalDate today = LocalDate.now(clock);
@@ -56,7 +56,7 @@ class MemberChoiceService implements MemberChoicePort {
     @Override
     public void removeFeeChoice(MemberId memberId, int year) {
         if (publicationRepository.findByYear(year).isEmpty()) {
-            throw new FeeYearPublicationNotFoundException(year);
+            throw new FeeSelectionCampaignNotFoundException(year);
         }
 
         LocalDate today = LocalDate.now(clock);

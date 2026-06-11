@@ -3,6 +3,7 @@ package com.klabis.membershipfees.infrastructure.scheduler;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
@@ -37,7 +38,7 @@ class FeeSelectionDeadlineSchedulerTest {
     private static final MemberId MEMBER_WITH_CHOICE = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Mock
-    private FeeYearPublicationRepository publicationRepository;
+    private FeeSelectionCampaignRepository publicationRepository;
     @Mock
     private MembershipFeeGroupRepository groupRepository;
     @Mock
@@ -78,13 +79,13 @@ class FeeSelectionDeadlineSchedulerTest {
     @DisplayName("when a closed unprocessed publication exists")
     class WhenUnprocessedPublicationExists {
 
-        private FeeYearPublication publication;
+        private FeeSelectionCampaign publication;
         private MembershipFeeGroup groupWithMemberWithChoice;
 
         @BeforeEach
         void setUp() {
-            publication = FeeYearPublication.reconstruct(
-                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+            publication = FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
                     2026,
                     DEADLINE,
                     null,
@@ -147,10 +148,10 @@ class FeeSelectionDeadlineSchedulerTest {
         void shouldMarkPublicationAsProcessed() {
             scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
 
-            ArgumentCaptor<FeeYearPublication> savedCaptor = ArgumentCaptor.forClass(FeeYearPublication.class);
+            ArgumentCaptor<FeeSelectionCampaign> savedCaptor = ArgumentCaptor.forClass(FeeSelectionCampaign.class);
             verify(publicationRepository).save(savedCaptor.capture());
 
-            FeeYearPublication saved = savedCaptor.getValue();
+            FeeSelectionCampaign saved = savedCaptor.getValue();
             assertThat(saved.getDeadlineProcessedAt()).isNotNull();
         }
 
@@ -252,8 +253,8 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should not publish any event")
         void shouldPublishNoEvents() {
-            FeeYearPublication publication = FeeYearPublication.reconstruct(
-                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
                     2026,
                     DEADLINE,
                     null,
@@ -280,7 +281,7 @@ class FeeSelectionDeadlineSchedulerTest {
 
             verifyNoInteractions(eventPublisher);
             verify(chargePort, times(1)).charge(any(ChargePort.ChargeCommand.class));
-            verify(publicationRepository).save(any(FeeYearPublication.class));
+            verify(publicationRepository).save(any(FeeSelectionCampaign.class));
         }
     }
 
@@ -291,8 +292,8 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should not charge members not belonging to any group")
         void shouldNotChargeMembersWithoutGroup() {
-            FeeYearPublication publication = FeeYearPublication.reconstruct(
-                    new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
                     2026,
                     DEADLINE,
                     null,

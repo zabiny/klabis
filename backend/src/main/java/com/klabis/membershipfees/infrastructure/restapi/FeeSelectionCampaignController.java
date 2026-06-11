@@ -6,10 +6,10 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.membershipfees.FeeYearPublicationId;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.domain.FeeYearPublication;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,17 +35,17 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/fee-year-publications", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "FeeYearPublications", description = "Publishing fee levels for a calendar year")
+@RequestMapping(value = "/api/fee-selection-campaigns", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@Tag(name = "FeeSelectionCampaigns", description = "Publishing fee levels for a calendar year")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-@ExposesResourceFor(FeeYearPublication.class)
-class FeeYearPublicationController {
+@ExposesResourceFor(FeeSelectionCampaign.class)
+class FeeSelectionCampaignController {
 
-    private final FeeYearPublicationManagementPort managementPort;
+    private final FeeSelectionCampaignManagementPort managementPort;
     private final MembershipFeeTierManagementPort levelManagementPort;
 
-    FeeYearPublicationController(FeeYearPublicationManagementPort managementPort,
-                                  MembershipFeeTierManagementPort levelManagementPort) {
+    FeeSelectionCampaignController(FeeSelectionCampaignManagementPort managementPort,
+                                   MembershipFeeTierManagementPort levelManagementPort) {
         this.managementPort = managementPort;
         this.levelManagementPort = levelManagementPort;
     }
@@ -54,17 +54,17 @@ class FeeYearPublicationController {
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Publish fee levels for a calendar year (requires MEMBERS:MANAGE)")
     ResponseEntity<Void> publishYear(@Valid @RequestBody PublishYearRequest request) {
-        FeeYearPublicationId id = managementPort.publishYear(request.toCommand());
+        FeeSelectionCampaignId id = managementPort.publishYear(request.toCommand());
         return ResponseEntity.created(
-                linkTo(methodOn(FeeYearPublicationController.class).getPublication(id.value())).toUri()
+                linkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id.value())).toUri()
         ).build();
     }
 
     @GetMapping
     @Operation(summary = "List all fee year publications")
-    ResponseEntity<CollectionModel<EntityModel<FeeYearPublicationResponse>>> listPublications() {
-        List<FeeYearPublication> publications = managementPort.listPublications();
-        List<EntityModel<FeeYearPublicationResponse>> items = publications.stream()
+    ResponseEntity<CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> listPublications() {
+        List<FeeSelectionCampaign> publications = managementPort.listPublications();
+        List<EntityModel<FeeSelectionCampaignResponse>> items = publications.stream()
                 .map(this::buildSummaryModel)
                 .toList();
 
@@ -72,11 +72,11 @@ class FeeYearPublicationController {
                 .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
                 .toList();
 
-        CollectionModel<EntityModel<FeeYearPublicationResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).listPublications())
+        CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model = CollectionModel.of(items);
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(FeeYearPublicationController.class).publishYear(null),
+                                methodOn(FeeSelectionCampaignController.class).publishYear(null),
                                 Map.of("levelIds", levelOptions)))));
 
         return ResponseEntity.ok(model);
@@ -84,10 +84,10 @@ class FeeYearPublicationController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get fee year publication details")
-    ResponseEntity<EntityModel<FeeYearPublicationResponse>> getPublication(
+    ResponseEntity<EntityModel<FeeSelectionCampaignResponse>> getPublication(
             @Parameter(description = "Publication UUID") @PathVariable UUID id) {
-        FeeYearPublication publication = managementPort.getPublication(new FeeYearPublicationId(id));
-        FeeYearPublicationResponse response = FeeYearPublicationResponse.from(publication);
+        FeeSelectionCampaign publication = managementPort.getPublication(new FeeSelectionCampaignId(id));
+        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(publication);
         return ResponseEntity.ok(entityModelWithDomain(response, publication));
     }
 
@@ -107,46 +107,46 @@ class FeeYearPublicationController {
                 .toList();
 
         CollectionModel<EntityModel<MembershipFeeGroupResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).listGroupsForYear(year))
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listGroupsForYear(year))
                 .ifPresent(link -> model.add(link.withSelfRel()));
 
         return ResponseEntity.ok(model);
     }
 
-    private EntityModel<FeeYearPublicationResponse> buildSummaryModel(FeeYearPublication publication) {
+    private EntityModel<FeeSelectionCampaignResponse> buildSummaryModel(FeeSelectionCampaign publication) {
         UUID publicationId = publication.getId().value();
-        FeeYearPublicationResponse response = FeeYearPublicationResponse.from(publication);
-        EntityModel<FeeYearPublicationResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).getPublication(publicationId))
+        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(publication);
+        EntityModel<FeeSelectionCampaignResponse> model = EntityModel.of(response);
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(publicationId))
                 .ifPresent(link -> model.add(link.withSelfRel()));
         return model;
     }
 }
 
 @MvcComponent
-class FeeYearPublicationDetailsPostprocessor
-        extends ModelWithDomainPostprocessor<FeeYearPublicationResponse, FeeYearPublication> {
+class FeeSelectionCampaignDetailsPostprocessor
+        extends ModelWithDomainPostprocessor<FeeSelectionCampaignResponse, FeeSelectionCampaign> {
 
     @Override
-    public void process(EntityModel<FeeYearPublicationResponse> dtoModel, FeeYearPublication publication) {
+    public void process(EntityModel<FeeSelectionCampaignResponse> dtoModel, FeeSelectionCampaign publication) {
         UUID id = publication.getId().value();
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).getPublication(id))
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id))
                 .map(link -> link.withSelfRel())
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).listPublications())
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).listGroupsForYear(publication.getYear()))
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listGroupsForYear(publication.getYear()))
                 .ifPresent(link -> dtoModel.add(link.withRel("levels")));
     }
 }
 
 @MvcComponent
-class FeeYearPublicationsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+class FeeSelectionCampaignsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FeeYearPublicationController.class).listPublications())
-                .ifPresent(link -> model.add(link.withRel("fee-year-publications")));
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
+                .ifPresent(link -> model.add(link.withRel("fee-selection-campaigns")));
         return model;
     }
 }

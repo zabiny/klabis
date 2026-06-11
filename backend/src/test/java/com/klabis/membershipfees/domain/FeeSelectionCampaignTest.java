@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.domain;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.FeeYearPublicationId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,8 +15,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("FeeYearPublication domain tests")
-class FeeYearPublicationTest {
+@DisplayName("FeeSelectionCampaign domain tests")
+class FeeSelectionCampaignTest {
 
     private static final int YEAR = 2026;
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
@@ -35,7 +35,7 @@ class FeeYearPublicationTest {
         void shouldCreatePublicationWithYearAndDeadline() {
             MembershipFeeTier level = buildLevel("Dospělý");
 
-            var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level));
+            var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level));
 
             assertThat(result.publication().getId()).isNotNull();
             assertThat(result.publication().getYear()).isEqualTo(YEAR);
@@ -49,7 +49,7 @@ class FeeYearPublicationTest {
             MembershipFeeTier level1 = buildLevel("Dospělý");
             MembershipFeeTier level2 = buildLevel("Mládež");
 
-            var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level1, level2));
+            var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level1, level2));
 
             assertThat(result.publication().getPublishedGroupIds()).hasSize(2);
             assertThat(result.groups()).hasSize(2);
@@ -60,7 +60,7 @@ class FeeYearPublicationTest {
         void shouldExposeCreatedGroups() {
             MembershipFeeTier level = buildLevel("Závodník");
 
-            var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(level));
+            var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level));
 
             assertThat(result.groups()).hasSize(1);
             MembershipFeeGroup group = result.groups().get(0);
@@ -72,7 +72,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should set deadlineProcessedAt to null at creation")
         void shouldHaveNullDeadlineProcessedAt() {
-            var result = FeeYearPublication.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý")));
+            var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý")));
 
             assertThat(result.publication().getDeadlineProcessedAt()).isNull();
         }
@@ -85,7 +85,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should return true when today is after voting deadline")
         void shouldReturnTrueWhenAfterDeadline() {
-            var publication = FeeYearPublication.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
             LocalDate dayAfterDeadline = DEADLINE.plusDays(1);
 
             assertThat(publication.isClosed(dayAfterDeadline)).isTrue();
@@ -94,7 +94,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should return false when today is on the voting deadline")
         void shouldReturnFalseOnDeadline() {
-            var publication = FeeYearPublication.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
 
             assertThat(publication.isClosed(DEADLINE)).isFalse();
         }
@@ -102,7 +102,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should return false when today is before voting deadline")
         void shouldReturnFalseBeforeDeadline() {
-            var publication = FeeYearPublication.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
             LocalDate dayBeforeDeadline = DEADLINE.minusDays(1);
 
             assertThat(publication.isClosed(dayBeforeDeadline)).isFalse();
@@ -116,7 +116,7 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should set deadlineProcessedAt to the given instant")
         void shouldSetDeadlineProcessedAt() {
-            var publication = FeeYearPublication.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
             Instant processedAt = Instant.parse("2026-04-01T10:00:00Z");
 
             publication.markProcessed(processedAt);
@@ -132,11 +132,11 @@ class FeeYearPublicationTest {
         @Test
         @DisplayName("should reconstruct publication with all fields")
         void shouldReconstructWithAllFields() {
-            FeeYearPublicationId id = new FeeYearPublicationId(UUID.randomUUID());
+            FeeSelectionCampaignId id = new FeeSelectionCampaignId(UUID.randomUUID());
             MembershipFeeGroupId groupId = new MembershipFeeGroupId(UUID.randomUUID());
             Instant processedAt = Instant.parse("2026-04-01T10:00:00Z");
 
-            FeeYearPublication publication = FeeYearPublication.reconstruct(
+            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
                     id, YEAR, DEADLINE, processedAt, List.of(groupId));
 
             assertThat(publication.getId()).isEqualTo(id);

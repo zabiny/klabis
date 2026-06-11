@@ -8,7 +8,7 @@ import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +36,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ExposesResourceFor(MembershipFeeGroup.class)
 class MembershipFeeGroupController {
 
-    private final FeeYearPublicationManagementPort managementPort;
+    private final FeeSelectionCampaignManagementPort managementPort;
     private final AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    MembershipFeeGroupController(FeeYearPublicationManagementPort managementPort,
+    MembershipFeeGroupController(FeeSelectionCampaignManagementPort managementPort,
                                  AdminFeeAssignmentPort adminFeeAssignmentPort) {
         this.managementPort = managementPort;
         this.adminFeeAssignmentPort = adminFeeAssignmentPort;

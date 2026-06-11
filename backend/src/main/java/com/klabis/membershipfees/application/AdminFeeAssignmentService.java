@@ -2,7 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.domain.AssignmentSource;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -15,11 +15,11 @@ import java.time.LocalDate;
 class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
 
     private final MembershipFeeGroupRepository groupRepository;
-    private final FeeYearPublicationRepository publicationRepository;
+    private final FeeSelectionCampaignRepository publicationRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     AdminFeeAssignmentService(MembershipFeeGroupRepository groupRepository,
-                              FeeYearPublicationRepository publicationRepository,
+                              FeeSelectionCampaignRepository publicationRepository,
                               ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
@@ -33,7 +33,7 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(command.groupId()));
 
         publicationRepository.findByYear(command.year())
-                .orElseThrow(() -> new FeeYearPublicationNotFoundException(command.year()));
+                .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(command.year()));
 
         groupRepository.findByMemberAndYear(command.targetMemberId(), command.year())
                 .filter(currentGroup -> !currentGroup.getId().equals(command.groupId()))

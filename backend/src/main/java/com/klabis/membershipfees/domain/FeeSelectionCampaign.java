@@ -2,7 +2,7 @@ package com.klabis.membershipfees.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
-import com.klabis.membershipfees.FeeYearPublicationId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -18,20 +18,20 @@ import java.util.UUID;
 
 
 @AggregateRoot
-public class FeeYearPublication extends KlabisAggregateRoot<FeeYearPublication, FeeYearPublicationId> {
+public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampaign, FeeSelectionCampaignId> {
 
     @Identity
-    private final FeeYearPublicationId id;
+    private final FeeSelectionCampaignId id;
     private final int year;
     private final LocalDate votingDeadline;
     @Nullable
     private Instant deadlineProcessedAt;
     private final List<MembershipFeeGroupId> publishedGroupIds;
 
-    private FeeYearPublication(FeeYearPublicationId id, int year, LocalDate votingDeadline,
-                                @Nullable Instant deadlineProcessedAt,
-                                List<MembershipFeeGroupId> publishedGroupIds) {
-        Assert.notNull(id, "FeeYearPublicationId is required");
+    private FeeSelectionCampaign(FeeSelectionCampaignId id, int year, LocalDate votingDeadline,
+                                 @Nullable Instant deadlineProcessedAt,
+                                 List<MembershipFeeGroupId> publishedGroupIds) {
+        Assert.notNull(id, "FeeSelectionCampaignId is required");
         Assert.notNull(votingDeadline, "VotingDeadline is required");
         this.id = id;
         this.year = year;
@@ -40,8 +40,8 @@ public class FeeYearPublication extends KlabisAggregateRoot<FeeYearPublication, 
         this.publishedGroupIds = new ArrayList<>(publishedGroupIds);
     }
 
-    public static FeeYearPublicationWithGroups publish(int year, LocalDate votingDeadline,
-                                                        List<MembershipFeeTier> levels) {
+    public static FeeSelectionCampaignWithGroups publish(int year, LocalDate votingDeadline,
+                                                         List<MembershipFeeTier> levels) {
         Assert.notNull(votingDeadline, "VotingDeadline is required");
         Assert.notEmpty(levels, "At least one level is required for publishing");
 
@@ -59,27 +59,27 @@ public class FeeYearPublication extends KlabisAggregateRoot<FeeYearPublication, 
                 .map(MembershipFeeGroup::getId)
                 .toList();
 
-        FeeYearPublication publication = new FeeYearPublication(
-                new FeeYearPublicationId(UUID.randomUUID()),
+        FeeSelectionCampaign publication = new FeeSelectionCampaign(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
                 year, votingDeadline, null, groupIds);
-        return new FeeYearPublicationWithGroups(publication, groups);
+        return new FeeSelectionCampaignWithGroups(publication, groups);
     }
 
-    public record FeeYearPublicationWithGroups(FeeYearPublication publication, List<MembershipFeeGroup> groups) {}
+    public record FeeSelectionCampaignWithGroups(FeeSelectionCampaign publication, List<MembershipFeeGroup> groups) {}
 
-    public static FeeYearPublication reconstruct(FeeYearPublicationId id, int year,
-                                                  LocalDate votingDeadline,
-                                                  @Nullable Instant deadlineProcessedAt,
-                                                  List<MembershipFeeGroupId> publishedGroupIds) {
+    public static FeeSelectionCampaign reconstruct(FeeSelectionCampaignId id, int year,
+                                                   LocalDate votingDeadline,
+                                                   @Nullable Instant deadlineProcessedAt,
+                                                   List<MembershipFeeGroupId> publishedGroupIds) {
         return reconstruct(id, year, votingDeadline, deadlineProcessedAt, publishedGroupIds, null);
     }
 
-    public static FeeYearPublication reconstruct(FeeYearPublicationId id, int year,
-                                                  LocalDate votingDeadline,
-                                                  @Nullable Instant deadlineProcessedAt,
-                                                  List<MembershipFeeGroupId> publishedGroupIds,
-                                                  @Nullable AuditMetadata auditMetadata) {
-        FeeYearPublication publication = new FeeYearPublication(id, year, votingDeadline, deadlineProcessedAt,
+    public static FeeSelectionCampaign reconstruct(FeeSelectionCampaignId id, int year,
+                                                   LocalDate votingDeadline,
+                                                   @Nullable Instant deadlineProcessedAt,
+                                                   List<MembershipFeeGroupId> publishedGroupIds,
+                                                   @Nullable AuditMetadata auditMetadata) {
+        FeeSelectionCampaign publication = new FeeSelectionCampaign(id, year, votingDeadline, deadlineProcessedAt,
                 publishedGroupIds);
         if (auditMetadata != null) {
             publication.updateAuditMetadata(auditMetadata);
@@ -88,7 +88,7 @@ public class FeeYearPublication extends KlabisAggregateRoot<FeeYearPublication, 
     }
 
     @Override
-    public FeeYearPublicationId getId() {
+    public FeeSelectionCampaignId getId() {
         return id;
     }
 

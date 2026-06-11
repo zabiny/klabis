@@ -4,7 +4,7 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.users.Authority;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,10 +36,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberFeeSummaryController {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
-    private final FeeYearPublicationManagementPort publicationManagementPort;
+    private final FeeSelectionCampaignManagementPort publicationManagementPort;
 
     MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort,
-                                FeeYearPublicationManagementPort publicationManagementPort) {
+                                FeeSelectionCampaignManagementPort publicationManagementPort) {
         this.memberFeeHistoryPort = memberFeeHistoryPort;
         this.publicationManagementPort = publicationManagementPort;
     }

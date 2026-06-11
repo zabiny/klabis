@@ -2,16 +2,10 @@ package com.klabis.membershipfees.infrastructure.scheduler;
 
 import com.klabis.common.users.UserId;
 import com.klabis.finance.application.ChargePort;
-import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
-import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.FeeYearPublication;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
-import com.klabis.membershipfees.domain.PublishedLevelStatus;
-import com.klabis.membershipfees.domain.YearlyFeeChargeMarkerRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
+import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
+import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,19 +27,19 @@ class FeeSelectionDeadlineScheduler {
 
     static final UserId SYSTEM_USER_ID = new UserId(UUID.fromString("00000000-0000-0000-0000-000000000000"));
 
-    private final FeeYearPublicationRepository publicationRepository;
+    private final FeeSelectionCampaignRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
     private final AllMembersPort allMembersPort;
     private final ApplicationEventPublisher eventPublisher;
     private final ChargePort chargePort;
     private final YearlyFeeChargeMarkerRepository markerRepository;
 
-    FeeSelectionDeadlineScheduler(FeeYearPublicationRepository publicationRepository,
-                                   MembershipFeeGroupRepository groupRepository,
-                                   AllMembersPort allMembersPort,
-                                   ApplicationEventPublisher eventPublisher,
-                                   ChargePort chargePort,
-                                   YearlyFeeChargeMarkerRepository markerRepository) {
+    FeeSelectionDeadlineScheduler(FeeSelectionCampaignRepository publicationRepository,
+                                  MembershipFeeGroupRepository groupRepository,
+                                  AllMembersPort allMembersPort,
+                                  ApplicationEventPublisher eventPublisher,
+                                  ChargePort chargePort,
+                                  YearlyFeeChargeMarkerRepository markerRepository) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
         this.allMembersPort = allMembersPort;
@@ -61,7 +55,7 @@ class FeeSelectionDeadlineScheduler {
 
     @Transactional
     void processMissedSelections(LocalDate today) {
-        List<FeeYearPublication> unprocessed = publicationRepository.findUnprocessedClosedPublications(today);
+        List<FeeSelectionCampaign> unprocessed = publicationRepository.findUnprocessedClosedPublications(today);
         if (unprocessed.isEmpty()) {
             return;
         }
@@ -69,12 +63,12 @@ class FeeSelectionDeadlineScheduler {
 
         Set<MemberId> allMembers = allMembersPort.findAll();
 
-        for (FeeYearPublication publication : unprocessed) {
+        for (FeeSelectionCampaign publication : unprocessed) {
             processPublication(publication, allMembers);
         }
     }
 
-    private void processPublication(FeeYearPublication publication, Set<MemberId> allMembers) {
+    private void processPublication(FeeSelectionCampaign publication, Set<MemberId> allMembers) {
         int year = publication.getYear();
         log.info("Processing missed selections for year {}", year);
 
@@ -105,7 +99,7 @@ class FeeSelectionDeadlineScheduler {
         publicationRepository.save(publication);
     }
 
-    private void chargeYearlyFees(FeeYearPublication publication, List<MembershipFeeGroup> groups) {
+    private void chargeYearlyFees(FeeSelectionCampaign publication, List<MembershipFeeGroup> groups) {
         int year = publication.getYear();
         LocalDate occurredAt = publication.getVotingDeadline().plusDays(1);
         String note = "Roční členský příspěvek " + year;

@@ -6,11 +6,11 @@ import org.jmolecules.ddd.types.Identifier;
 import java.util.UUID;
 
 @ValueObject
-public record FeeYearPublicationId(UUID value) implements Identifier {
+public record FeeSelectionCampaignId(UUID value) implements Identifier {
 
-    public FeeYearPublicationId {
+    public FeeSelectionCampaignId {
         if (value == null) {
-            throw new IllegalArgumentException("FeeYearPublicationId value is required");
+            throw new IllegalArgumentException("FeeSelectionCampaignId value is required");
         }
     }
 

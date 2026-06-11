@@ -7,7 +7,7 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -56,7 +56,7 @@ class MemberFeeSummaryControllerTest {
     private MemberFeeHistoryPort memberFeeHistoryPort;
 
     @MockitoBean
-    private FeeYearPublicationManagementPort publicationManagementPort;
+    private FeeSelectionCampaignManagementPort publicationManagementPort;
 
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-summary/{year}")

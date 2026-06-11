@@ -6,14 +6,14 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.FeeYearPublicationId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
-import com.klabis.membershipfees.application.FeeYearPublicationNotFoundException;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.domain.FeeYearPublication;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,22 +36,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@DisplayName("FeeYearPublicationController API tests")
-@WebMvcTest(controllers = {FeeYearPublicationController.class, MembershipFeeGroupController.class})
+@DisplayName("FeeSelectionCampaignController API tests")
+@WebMvcTest(controllers = {FeeSelectionCampaignController.class, MembershipFeeGroupController.class})
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 @WithPostprocessors
-class FeeYearPublicationControllerTest {
+class FeeSelectionCampaignControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final UUID PUBLICATION_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    private static final FeeYearPublicationId PUBLICATION_ID = new FeeYearPublicationId(PUBLICATION_UUID);
+    private static final FeeSelectionCampaignId PUBLICATION_ID = new FeeSelectionCampaignId(PUBLICATION_UUID);
     private static final UUID GROUP_UUID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private FeeYearPublicationManagementPort managementPort;
+    private FeeSelectionCampaignManagementPort managementPort;
 
     @MockitoBean
     private MembershipFeeTierManagementPort levelManagementPort;
@@ -59,9 +59,9 @@ class FeeYearPublicationControllerTest {
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    private FeeYearPublication buildPublication(UUID id, int year) {
-        return FeeYearPublication.reconstruct(
-                new FeeYearPublicationId(id),
+    private FeeSelectionCampaign buildPublication(UUID id, int year) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(id),
                 year,
                 LocalDate.of(year, 3, 31),
                 null,
@@ -79,7 +79,7 @@ class FeeYearPublicationControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/fee-year-publications")
+    @DisplayName("POST /api/fee-selection-campaigns")
     class PublishYearTests {
 
         @Test
@@ -87,7 +87,7 @@ class FeeYearPublicationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            post("/api/fee-year-publications")
+                            post("/api/fee-selection-campaigns")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -103,7 +103,7 @@ class FeeYearPublicationControllerTest {
             when(managementPort.publishYear(any())).thenReturn(PUBLICATION_ID);
 
             mockMvc.perform(
-                            post("/api/fee-year-publications")
+                            post("/api/fee-selection-campaigns")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -111,7 +111,7 @@ class FeeYearPublicationControllerTest {
                                             """.formatted(UUID.randomUUID())))
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
-                            org.hamcrest.Matchers.endsWith("/api/fee-year-publications/" + PUBLICATION_UUID)));
+                            org.hamcrest.Matchers.endsWith("/api/fee-selection-campaigns/" + PUBLICATION_UUID)));
         }
 
         @Test
@@ -119,7 +119,7 @@ class FeeYearPublicationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenLevelIdsIsEmpty() throws Exception {
             mockMvc.perform(
-                            post("/api/fee-year-publications")
+                            post("/api/fee-selection-campaigns")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -130,7 +130,7 @@ class FeeYearPublicationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/fee-year-publications")
+    @DisplayName("GET /api/fee-selection-campaigns")
     class ListPublicationsTests {
 
         @Test
@@ -143,12 +143,12 @@ class FeeYearPublicationControllerTest {
             ));
 
             mockMvc.perform(
-                            get("/api/fee-year-publications")
+                            get("/api/fee-selection-campaigns")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$._embedded.feeYearPublicationResponseList").isArray())
-                    .andExpect(jsonPath("$._embedded.feeYearPublicationResponseList.length()").value(2));
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList").isArray())
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList.length()").value(2));
         }
 
         @Test
@@ -158,7 +158,7 @@ class FeeYearPublicationControllerTest {
             when(managementPort.listPublications()).thenReturn(List.of());
 
             mockMvc.perform(
-                            get("/api/fee-year-publications")
+                            get("/api/fee-selection-campaigns")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.publishYear").exists());
@@ -166,7 +166,7 @@ class FeeYearPublicationControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/fee-year-publications/{id}")
+    @DisplayName("GET /api/fee-selection-campaigns/{id}")
     class GetPublicationTests {
 
         @Test
@@ -177,7 +177,7 @@ class FeeYearPublicationControllerTest {
                     .thenReturn(buildPublication(PUBLICATION_UUID, 2026));
 
             mockMvc.perform(
-                            get("/api/fee-year-publications/{id}", PUBLICATION_UUID)
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.year").value(2026))
@@ -189,17 +189,17 @@ class FeeYearPublicationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn400WhenNotFound() throws Exception {
             when(managementPort.getPublication(PUBLICATION_ID))
-                    .thenThrow(new FeeYearPublicationNotFoundException(PUBLICATION_ID));
+                    .thenThrow(new FeeSelectionCampaignNotFoundException(PUBLICATION_ID));
 
             mockMvc.perform(
-                            get("/api/fee-year-publications/{id}", PUBLICATION_UUID)
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("GET /api/fee-year-publications/{year}/levels")
+    @DisplayName("GET /api/fee-selection-campaigns/{year}/levels")
     class ListGroupsForYearTests {
 
         @Test
@@ -210,7 +210,7 @@ class FeeYearPublicationControllerTest {
                     .thenReturn(List.of(buildGroup(GROUP_UUID, 2026)));
 
             mockMvc.perform(
-                            get("/api/fee-year-publications/{year}/levels", 2026)
+                            get("/api/fee-selection-campaigns/{year}/levels", 2026)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.membershipFeeGroupResponseList").isArray())

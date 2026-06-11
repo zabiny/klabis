@@ -2,13 +2,13 @@
 
 > **Pro přejmenování tříd použít JetBrains IDEA MCP `rename_refactoring`** (zachová všechny reference). NEpoužívat ruční find/replace. Pozn.: nesmí běžet v git worktree (viz feedback `jetbrains-tools`).
 
-- [ ] 1.1 Přejmenovat doménový objekt `FeeYearPublication` → `FeeSelectionCampaign` a `FeeYearPublicationId` → `FeeSelectionCampaignId` (rename refactoring)
-- [ ] 1.2 Přejmenovat `FeeYearPublicationRepository` → `FeeSelectionCampaignRepository`, `FeeYearPublicationManagementPort` → `FeeSelectionCampaignManagementPort`, `FeeYearPublicationManagementService` → `FeeSelectionCampaignManagementService` (rename refactoring)
-- [ ] 1.3 Přejmenovat REST controller a DTO třídy (`FeeYearPublication*` → `FeeSelectionCampaign*`) rename refactoringem; URL path `/publications` → `/campaigns` upravit ručně
-- [ ] 1.4 Přejmenovat exception třídy rename refactoringem (`FeeYearPublicationNotFoundException` → `FeeSelectionCampaignNotFoundException`, `DuplicateYearPublicationException` → `ActiveCampaignExistsException`)
-- [ ] 1.5 Aktualizovat DB migraci: přejmenovat tabulku `fee_year_publication` → `fee_selection_campaign`
-- [ ] 1.6 Aktualizovat persistence (memento, JDBC repository) pro nový název tabulky
-- [ ] 1.7 Spustit testy a opravit kompilační chyby
+- [x] 1.1 Přejmenovat doménový objekt `FeeYearPublication` → `FeeSelectionCampaign` a `FeeYearPublicationId` → `FeeSelectionCampaignId` (rename refactoring)
+- [x] 1.2 Přejmenovat `FeeYearPublicationRepository` → `FeeSelectionCampaignRepository`, `FeeYearPublicationManagementPort` → `FeeSelectionCampaignManagementPort`, `FeeYearPublicationManagementService` → `FeeSelectionCampaignManagementService` (rename refactoring)
+- [x] 1.3 Přejmenovat REST controller a DTO třídy (`FeeYearPublication*` → `FeeSelectionCampaign*`) rename refactoringem; URL path `/publications` → `/campaigns` upravit ručně
+- [x] 1.4 Přejmenovat exception třídy rename refactoringem (`FeeYearPublicationNotFoundException` → `FeeSelectionCampaignNotFoundException`, `DuplicateYearPublicationException` → `ActiveCampaignExistsException`)
+- [x] 1.5 Aktualizovat DB migraci: přejmenovat tabulku `fee_year_publication` → `fee_selection_campaign`
+- [x] 1.6 Aktualizovat persistence (memento, JDBC repository) pro nový název tabulky
+- [x] 1.7 Spustit testy a opravit kompilační chyby
 
 ## 2. Doménová logika: changeDeadline
 

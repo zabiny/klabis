@@ -2,7 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -18,12 +18,12 @@ import java.util.Optional;
 class MemberFeeHistoryService implements MemberFeeHistoryPort {
 
     private final MembershipFeeGroupRepository groupRepository;
-    private final FeeYearPublicationRepository publicationRepository;
+    private final FeeSelectionCampaignRepository publicationRepository;
     private final MemberChoicePort memberChoicePort;
     private final Clock clock;
 
     MemberFeeHistoryService(MembershipFeeGroupRepository groupRepository,
-                             FeeYearPublicationRepository publicationRepository,
+                             FeeSelectionCampaignRepository publicationRepository,
                              MemberChoicePort memberChoicePort,
                              Clock clock) {
         this.groupRepository = groupRepository;

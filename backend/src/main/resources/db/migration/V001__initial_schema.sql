@@ -729,11 +729,11 @@ COMMENT ON COLUMN membershipfees.membership_payment_rule.rule_fixed_currency IS 
 
 -- ============================================================================
 -- 30. FEE_YEAR_PUBLICATION TABLE
--- Published set of fee levels for a calendar year (FeeYearPublication aggregate root).
+-- Published set of fee levels for a calendar year (FeeSelectionCampaign aggregate root).
 -- One publication per year; owns the voting deadline for all levels in that year.
 -- ============================================================================
 
-CREATE TABLE membershipfees.fee_year_publication
+CREATE TABLE membershipfees.fee_selection_campaign
 (
     id                      UUID    NOT NULL PRIMARY KEY,
     publication_year        INT     NOT NULL,
@@ -745,30 +745,30 @@ CREATE TABLE membershipfees.fee_year_publication
     modified_by             VARCHAR(255) NULL,
     version                 BIGINT  NOT NULL DEFAULT 0,
 
-    CONSTRAINT uk_fee_year_publication_year UNIQUE (publication_year)
+    CONSTRAINT uk_fee_selection_campaign_year UNIQUE (publication_year)
 );
 
--- Comments for fee_year_publication
-COMMENT ON TABLE membershipfees.fee_year_publication IS 'Published fee level set for a calendar year with a single voting deadline';
-COMMENT ON COLUMN membershipfees.fee_year_publication.publication_year IS 'Calendar year this publication applies to (unique)';
-COMMENT ON COLUMN membershipfees.fee_year_publication.voting_deadline IS 'Deadline by which members must choose their level';
-COMMENT ON COLUMN membershipfees.fee_year_publication.deadline_processed_at IS 'Timestamp when the post-deadline scheduler ran (null until processed)';
+-- Comments for fee_selection_campaign
+COMMENT ON TABLE membershipfees.fee_selection_campaign IS 'Published fee level set for a calendar year with a single voting deadline';
+COMMENT ON COLUMN membershipfees.fee_selection_campaign.publication_year IS 'Calendar year this publication applies to (unique)';
+COMMENT ON COLUMN membershipfees.fee_selection_campaign.voting_deadline IS 'Deadline by which members must choose their level';
+COMMENT ON COLUMN membershipfees.fee_selection_campaign.deadline_processed_at IS 'Timestamp when the post-deadline scheduler ran (null until processed)';
 
 -- ============================================================================
--- 31. FEE_YEAR_PUBLICATION_LEVEL TABLE
--- Join table: FeeYearPublication → MembershipFeeGroup references.
+-- 31. FEE_SELECTION_CAMPAIGN_LEVEL TABLE
+-- Join table: FeeSelectionCampaign → MembershipFeeGroup references.
 -- ============================================================================
 
-CREATE TABLE membershipfees.fee_year_publication_level
+CREATE TABLE membershipfees.fee_selection_campaign_level
 (
-    fee_year_publication_id UUID NOT NULL REFERENCES membershipfees.fee_year_publication (id) ON DELETE CASCADE,
+    fee_selection_campaign_id UUID NOT NULL REFERENCES membershipfees.fee_selection_campaign (id) ON DELETE CASCADE,
     membership_fee_group_id UUID NOT NULL,
-    PRIMARY KEY (fee_year_publication_id, membership_fee_group_id)
+    PRIMARY KEY (fee_selection_campaign_id, membership_fee_group_id)
 );
 
--- Comments for fee_year_publication_level
-COMMENT ON TABLE membershipfees.fee_year_publication_level IS 'Links a FeeYearPublication to its published MembershipFeeGroup instances';
-COMMENT ON COLUMN membershipfees.fee_year_publication_level.membership_fee_group_id IS 'Reference to MembershipFeeGroup (no FK — same-module reference managed by aggregate)';
+-- Comments for fee_selection_campaign_level
+COMMENT ON TABLE membershipfees.fee_selection_campaign_level IS 'Links a FeeSelectionCampaign to its published MembershipFeeGroup instances';
+COMMENT ON COLUMN membershipfees.fee_selection_campaign_level.membership_fee_group_id IS 'Reference to MembershipFeeGroup (no FK — same-module reference managed by aggregate)';
 
 -- ============================================================================
 -- 32. MEMBERSHIP_FEE_GROUP TABLE

@@ -2,6 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
@@ -43,7 +44,7 @@ class AdminFeeAssignmentServiceTest {
     @Mock
     private MembershipFeeGroupRepository groupRepository;
     @Mock
-    private FeeYearPublicationRepository publicationRepository;
+    private FeeSelectionCampaignRepository publicationRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -76,9 +77,9 @@ class AdminFeeAssignmentServiceTest {
                 List.of(), Set.of(), null);
     }
 
-    private FeeYearPublication buildClosedPublication() {
-        return FeeYearPublication.reconstruct(
-                new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+    private FeeSelectionCampaign buildClosedPublication() {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
                 YEAR,
                 LocalDate.now().minusDays(1),
                 null,
@@ -203,7 +204,7 @@ class AdminFeeAssignmentServiceTest {
         }
 
         @Test
-        @DisplayName("should throw FeeYearPublicationNotFoundException when no publication for year")
+        @DisplayName("should throw FeeSelectionCampaignNotFoundException when no publication for year")
         void shouldThrowWhenNoPublication() {
             MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
             MembershipFeeGroupId groupId = group.getId();
@@ -212,7 +213,7 @@ class AdminFeeAssignmentServiceTest {
 
             assertThatThrownBy(() -> service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR)))
-                    .isInstanceOf(FeeYearPublicationNotFoundException.class);
+                    .isInstanceOf(FeeSelectionCampaignNotFoundException.class);
         }
     }
 

@@ -2,6 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
@@ -36,7 +37,7 @@ class MemberFeeHistoryServiceTest {
     @Mock
     private MembershipFeeGroupRepository groupRepository;
     @Mock
-    private FeeYearPublicationRepository publicationRepository;
+    private FeeSelectionCampaignRepository publicationRepository;
     @Mock
     private MemberChoicePort memberChoicePort;
 
@@ -65,18 +66,18 @@ class MemberFeeHistoryServiceTest {
                 null);
     }
 
-    private FeeYearPublication buildOpenPublication(int year) {
-        return FeeYearPublication.reconstruct(
-                new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+    private FeeSelectionCampaign buildOpenPublication(int year) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
                 year,
                 TODAY.plusDays(30),
                 null,
                 List.of(GROUP_ID));
     }
 
-    private FeeYearPublication buildClosedPublication(int year) {
-        return FeeYearPublication.reconstruct(
-                new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+    private FeeSelectionCampaign buildClosedPublication(int year) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
                 year,
                 TODAY.minusDays(1),
                 null,
@@ -92,7 +93,7 @@ class MemberFeeHistoryServiceTest {
         void shouldReturnGroupInfoWhenMemberHasChosen() {
             MembershipFeeGroup group = buildGroupWithMember(
                     GROUP_ID, YEAR, MEMBER_ID, LocalDate.of(YEAR, 1, 15), AssignmentSource.MEMBER_CHOICE);
-            FeeYearPublication publication = buildOpenPublication(YEAR);
+            FeeSelectionCampaign publication = buildOpenPublication(YEAR);
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.of(group));
@@ -111,7 +112,7 @@ class MemberFeeHistoryServiceTest {
         @Test
         @DisplayName("should return null groupId with votingOpen=true and recommendedLevelId when no choice and voting is open")
         void shouldReturnVotingOpenWithRecommendedWhenNoChoice() {
-            FeeYearPublication publication = buildOpenPublication(YEAR);
+            FeeSelectionCampaign publication = buildOpenPublication(YEAR);
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.empty());
@@ -130,7 +131,7 @@ class MemberFeeHistoryServiceTest {
         @Test
         @DisplayName("should return null groupId with votingOpen=false when no choice and voting is closed")
         void shouldReturnVotingClosedWhenNoChoiceAndClosed() {
-            FeeYearPublication publication = buildClosedPublication(YEAR);
+            FeeSelectionCampaign publication = buildClosedPublication(YEAR);
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.empty());

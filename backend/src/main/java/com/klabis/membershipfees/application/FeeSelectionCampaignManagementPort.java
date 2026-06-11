@@ -1,10 +1,10 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.FeeYearPublicationId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.domain.FeeYearPublication;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @PrimaryPort
-public interface FeeYearPublicationManagementPort {
+public interface FeeSelectionCampaignManagementPort {
 
     record PublishYearCommand(int year, LocalDate votingDeadline, List<MembershipFeeTierId> levelIds) {
         public PublishYearCommand {
@@ -33,13 +33,13 @@ public interface FeeYearPublicationManagementPort {
         }
     }
 
-    FeeYearPublicationId publishYear(PublishYearCommand command);
+    FeeSelectionCampaignId publishYear(PublishYearCommand command);
 
-    FeeYearPublication getPublication(FeeYearPublicationId id);
+    FeeSelectionCampaign getPublication(FeeSelectionCampaignId id);
 
-    Optional<FeeYearPublication> getPublicationForYear(int year);
+    Optional<FeeSelectionCampaign> getPublicationForYear(int year);
 
-    List<FeeYearPublication> listPublications();
+    List<FeeSelectionCampaign> listPublications();
 
     List<MembershipFeeGroup> listGroupsForYear(int year);
 

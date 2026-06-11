@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.FeeYearPublicationId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
@@ -25,21 +25,21 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("FeeYearPublication JDBC Persistence Tests")
+@DisplayName("FeeSelectionCampaign JDBC Persistence Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @CleanupTestData
-class FeeYearPublicationPersistenceTest {
+class FeeSelectionCampaignPersistenceTest {
 
     private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
 
     @Autowired
-    private FeeYearPublicationRepository publicationRepository;
+    private FeeSelectionCampaignRepository publicationRepository;
 
     @Autowired
     private MembershipFeeGroupRepository groupRepository;
@@ -51,8 +51,8 @@ class FeeYearPublicationPersistenceTest {
         return levelRepository.save(MembershipFeeTier.create(name, YEARLY_FEE));
     }
 
-    private FeeYearPublication publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {
-        var result = FeeYearPublication.publish(year, DEADLINE, levels);
+    private FeeSelectionCampaign publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {
+        var result = FeeSelectionCampaign.publish(year, DEADLINE, levels);
         for (MembershipFeeGroup group : result.groups()) {
             groupRepository.save(group);
         }
@@ -60,20 +60,20 @@ class FeeYearPublicationPersistenceTest {
     }
 
     @Nested
-    @DisplayName("FeeYearPublication save() and findById() — round-trip")
+    @DisplayName("FeeSelectionCampaign save() and findById() — round-trip")
     class SaveAndFindById {
 
         @Test
         @DisplayName("should save and retrieve publication with year and deadline")
         void shouldSaveAndRetrieveBasicFields() {
             MembershipFeeTier level = savedLevel("Dospělý");
-            FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level));
+            FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level));
 
-            FeeYearPublication saved = publicationRepository.save(publication);
-            Optional<FeeYearPublication> found = publicationRepository.findById(saved.getId());
+            FeeSelectionCampaign saved = publicationRepository.save(publication);
+            Optional<FeeSelectionCampaign> found = publicationRepository.findById(saved.getId());
 
             assertThat(found).isPresent();
-            FeeYearPublication retrieved = found.get();
+            FeeSelectionCampaign retrieved = found.get();
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
             assertThat(retrieved.getYear()).isEqualTo(2026);
             assertThat(retrieved.getVotingDeadline()).isEqualTo(DEADLINE);
@@ -85,10 +85,10 @@ class FeeYearPublicationPersistenceTest {
         void shouldPersistGroupIds() {
             MembershipFeeTier level1 = savedLevel("Dospělý");
             MembershipFeeTier level2 = savedLevel("Mládež");
-            FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level1, level2));
+            FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level1, level2));
 
-            FeeYearPublication saved = publicationRepository.save(publication);
-            FeeYearPublication found = publicationRepository.findById(saved.getId()).orElseThrow();
+            FeeSelectionCampaign saved = publicationRepository.save(publication);
+            FeeSelectionCampaign found = publicationRepository.findById(saved.getId()).orElseThrow();
 
             assertThat(found.getPublishedGroupIds()).hasSize(2);
         }
@@ -97,13 +97,13 @@ class FeeYearPublicationPersistenceTest {
         @DisplayName("should persist deadlineProcessedAt after markProcessed()")
         void shouldPersistDeadlineProcessedAt() {
             MembershipFeeTier level = savedLevel("Dospělý");
-            FeeYearPublication publication = publishAndSaveGroups(2026, List.of(level));
-            FeeYearPublication saved = publicationRepository.save(publication);
+            FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level));
+            FeeSelectionCampaign saved = publicationRepository.save(publication);
             Instant processedAt = Instant.parse("2026-04-01T10:00:00Z");
             saved.markProcessed(processedAt);
 
             publicationRepository.save(saved);
-            FeeYearPublication found = publicationRepository.findById(saved.getId()).orElseThrow();
+            FeeSelectionCampaign found = publicationRepository.findById(saved.getId()).orElseThrow();
 
             assertThat(found.getDeadlineProcessedAt()).isNotNull();
         }
@@ -111,8 +111,8 @@ class FeeYearPublicationPersistenceTest {
         @Test
         @DisplayName("should return empty when publication not found")
         void shouldReturnEmptyWhenNotFound() {
-            Optional<FeeYearPublication> found =
-                    publicationRepository.findById(new FeeYearPublicationId(UUID.randomUUID()));
+            Optional<FeeSelectionCampaign> found =
+                    publicationRepository.findById(new FeeSelectionCampaignId(UUID.randomUUID()));
 
             assertThat(found).isEmpty();
         }
@@ -126,10 +126,10 @@ class FeeYearPublicationPersistenceTest {
         @DisplayName("should find publication by year")
         void shouldFindByYear() {
             MembershipFeeTier level = savedLevel("Dospělý");
-            FeeYearPublication publication = publishAndSaveGroups(2027, List.of(level));
+            FeeSelectionCampaign publication = publishAndSaveGroups(2027, List.of(level));
             publicationRepository.save(publication);
 
-            Optional<FeeYearPublication> found = publicationRepository.findByYear(2027);
+            Optional<FeeSelectionCampaign> found = publicationRepository.findByYear(2027);
 
             assertThat(found).isPresent();
             assertThat(found.get().getYear()).isEqualTo(2027);

@@ -9,7 +9,7 @@ import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
-import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.membershipfees.domain.SnapshotFrozenException;
@@ -49,7 +49,7 @@ class MembershipFeeGroupControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private FeeYearPublicationManagementPort managementPort;
+    private FeeSelectionCampaignManagementPort managementPort;
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
@@ -184,7 +184,7 @@ class MembershipFeeGroupControllerTest {
 
             verify(managementPort).editGroupSnapshot(
                     eq(new MembershipFeeGroupId(GROUP_UUID)),
-                    any(FeeYearPublicationManagementPort.EditGroupSnapshotCommand.class));
+                    any(FeeSelectionCampaignManagementPort.EditGroupSnapshotCommand.class));
         }
 
         @Test

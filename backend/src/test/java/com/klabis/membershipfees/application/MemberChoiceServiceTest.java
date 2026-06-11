@@ -2,6 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
@@ -38,7 +39,7 @@ class MemberChoiceServiceTest {
     @Mock
     private MembershipFeeGroupRepository groupRepository;
     @Mock
-    private FeeYearPublicationRepository publicationRepository;
+    private FeeSelectionCampaignRepository publicationRepository;
 
     private static final LocalDate TODAY = LocalDate.of(2026, 3, 15);
     private final Clock fixedClock = Clock.fixed(TODAY.atStartOfDay(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
@@ -62,9 +63,9 @@ class MemberChoiceServiceTest {
                 List.of(), Set.of(), null);
     }
 
-    private FeeYearPublication buildOpenPublication() {
-        return FeeYearPublication.reconstruct(
-                new com.klabis.membershipfees.FeeYearPublicationId(UUID.randomUUID()),
+    private FeeSelectionCampaign buildOpenPublication() {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
                 YEAR,
                 TODAY.plusDays(30),
                 null,
@@ -129,7 +130,7 @@ class MemberChoiceServiceTest {
         }
 
         @Test
-        @DisplayName("should throw FeeYearPublicationNotFoundException when no publication for year")
+        @DisplayName("should throw FeeSelectionCampaignNotFoundException when no publication for year")
         void shouldThrowWhenNoPublication() {
             MembershipFeeGroup group = buildEditableGroup(LEVEL_ID_A);
             MembershipFeeGroupId groupId = group.getId();
@@ -138,7 +139,7 @@ class MemberChoiceServiceTest {
 
             assertThatThrownBy(() -> service.chooseFeeLevel(
                     new MemberChoicePort.ChooseFeeLevel(MEMBER_ID, groupId, YEAR)))
-                    .isInstanceOf(FeeYearPublicationNotFoundException.class);
+                    .isInstanceOf(FeeSelectionCampaignNotFoundException.class);
         }
 
         @Test
