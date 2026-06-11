@@ -51,9 +51,9 @@
 
 ## 7. Typed event-type id in rule payload
 
-- [ ] 7.1 Write failing test: the rule response serializes `eventTypeId` via its typed id value object (not a bare UUID string)
-- [ ] 7.2 Update `PaymentRuleResponse` to carry the typed id; adjust serializer/mixin as needed; refactor; confirm green
-- [ ] 7.3 Frontend: confirm event-type name still resolves via `useEventTypes()`; adjust the rule table mapping if the field shape changed
+- [x] 7.1 Write failing test: the rule response serializes `eventTypeId` via its typed id value object (not a bare UUID string)
+- [x] 7.2 Update `PaymentRuleResponse` to carry the typed id; adjust serializer/mixin as needed; refactor; confirm green
+- [x] 7.3 Frontend: confirm event-type name still resolves via `useEventTypes()`; adjust the rule table mapping if the field shape changed
 
 ## 8. End-to-end verification
 

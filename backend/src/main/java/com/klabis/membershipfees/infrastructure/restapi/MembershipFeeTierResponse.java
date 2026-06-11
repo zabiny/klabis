@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 
@@ -30,7 +31,7 @@ record MembershipFeeTierResponse(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record PaymentRuleResponse(
-            UUID eventTypeId,
+            EventTypeReference eventTypeId,
             String rankingShortName,
             String ruleType,
             Integer percent,
@@ -40,10 +41,10 @@ record MembershipFeeTierResponse(
         static PaymentRuleResponse from(MembershipPaymentRule rule) {
             return switch (rule.value()) {
                 case MembershipPaymentRule.RuleValue.Percentage p ->
-                        new PaymentRuleResponse(rule.eventTypeId().value(), rule.rankingShortName(),
+                        new PaymentRuleResponse(rule.eventTypeId(), rule.rankingShortName(),
                                 "PERCENTAGE", p.percent(), null, null);
                 case MembershipPaymentRule.RuleValue.FixedAmount f ->
-                        new PaymentRuleResponse(rule.eventTypeId().value(), rule.rankingShortName(),
+                        new PaymentRuleResponse(rule.eventTypeId(), rule.rankingShortName(),
                                 "FIXED_AMOUNT", null, f.amount().amount(),
                                 f.amount().currency().getCurrencyCode());
             };

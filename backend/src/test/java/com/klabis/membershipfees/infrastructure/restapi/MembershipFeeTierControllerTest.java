@@ -194,6 +194,28 @@ class MembershipFeeTierControllerTest {
     class GetLevelTests {
 
         @Test
+        @DisplayName("should serialize rules[0].eventTypeId as plain UUID string, not as object")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldSerializeEventTypeIdAsPlainUuidString() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
+                            "A", 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.rules[0].eventTypeId").value(eventTypeUuid.toString()))
+                    .andExpect(jsonPath("$.rules[0].eventTypeId").isString());
+        }
+
+        @Test
         @DisplayName("should return 200 with level details")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnLevelDetails() throws Exception {

@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.domain;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.springframework.util.Assert;
 
@@ -20,6 +21,12 @@ public record EventTypeReference(UUID value) {
 
     public static EventTypeReference of(UUID value) {
         return new EventTypeReference(value);
+    }
+
+    @JsonValue
+    @Override
+    public UUID value() {
+        return value;
     }
 
     @Override
