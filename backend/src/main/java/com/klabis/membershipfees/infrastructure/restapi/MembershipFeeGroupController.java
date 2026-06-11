@@ -63,18 +63,17 @@ class MembershipFeeGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{groupId}/members/{memberId}", consumes = "application/json")
+    @PostMapping(value = "/{groupId}/members", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
     ResponseEntity<Void> assignMember(
             @Parameter(description = "Fee group UUID") @PathVariable UUID groupId,
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Valid @RequestBody AdminAssignMemberRequest request,
             @ActingMember MemberId actingAdmin) {
 
         adminFeeAssignmentPort.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                 actingAdmin,
-                new MemberId(memberId),
+                new MemberId(request.memberId()),
                 new MembershipFeeGroupId(groupId),
                 request.year()));
 
@@ -93,7 +92,7 @@ class MembershipFeeGroupDetailsPostprocessor
                 .map(link -> {
                     var self = link.withSelfRel()
                             .andAffordances(klabisAfford(
-                                    methodOn(MembershipFeeGroupController.class).assignMember(id, null, null, null)));
+                                    methodOn(MembershipFeeGroupController.class).assignMember(id, null, null)));
                     if (group.getStatus() == PublishedLevelStatus.EDITABLE) {
                         self = self.andAffordances(klabisAfford(
                                 methodOn(MembershipFeeGroupController.class).editSnapshot(id, null)));

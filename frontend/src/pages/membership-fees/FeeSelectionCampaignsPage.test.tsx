@@ -97,15 +97,15 @@ describe('FeeSelectionCampaignsPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
-    it('renders "Vypsat rok" button when publishYear template exists', () => {
+    it('renders "Vypsat kampaň" button when publishYear template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/fee-selection-campaigns'}},
             _templates: {
-                publishYear: mockHalFormsTemplate({title: 'Vypsat rok', method: 'POST'}),
+                publishYear: mockHalFormsTemplate({title: 'Vypsat kampaň', method: 'POST'}),
             },
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /vypsat rok/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /vypsat kampaň/i})).toBeInTheDocument();
     });
 
     it('does not render publish button when template is absent', () => {
@@ -113,7 +113,7 @@ describe('FeeSelectionCampaignsPage', () => {
             _links: {self: {href: '/api/fee-selection-campaigns'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('button', {name: /vypsat rok/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /vypsat kampaň/i})).not.toBeInTheDocument();
     });
 
     it('renders campaign year in the table', () => {

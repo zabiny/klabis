@@ -649,6 +649,43 @@ describe('MemberDetailPage', () => {
         });
     });
 
+    describe('fee section', () => {
+        it('shows MemberFeeSection when feeSummary link is present and member is active', () => {
+            const data = mockMemberDetailData({
+                active: true,
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+        });
+
+        it('does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)', () => {
+            const data = mockMemberDetailData({
+                active: true,
+                _links: {
+                    self: {href: '/api/members/123'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
+        });
+
+        it('does NOT show MemberFeeSection when member is inactive even with feeSummary link', () => {
+            const data = mockMemberDetailData({
+                active: false,
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
+        });
+    });
+
     describe('calendar feed section', () => {
         it('shows CalendarFeedSection when ical-token link is present on member detail resource', () => {
             const data = mockMemberDetailData({

@@ -302,6 +302,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                     pathname={route.pathname}
                     onClose={() => { setAssignMemberModal(false); void route.refetch(); }}
                     successMessage={labels.ui.savedSuccessfully}
+                    navigateOnSuccess={false}
                 />
             )}
         </div>

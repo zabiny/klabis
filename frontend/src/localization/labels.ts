@@ -97,7 +97,7 @@ export const labels = {
         addRule: 'Přidat pravidlo',
         editRule: 'Upravit pravidlo',
         removeRule: 'Smazat pravidlo',
-        publishYear: 'Vypsat rok',
+        publishYear: 'Vypsat kampaň',
         changeDeadline: 'Změnit deadline',
         editSnapshot: 'Upravit skupinu',
         assignMember: 'Přiřadit člena',

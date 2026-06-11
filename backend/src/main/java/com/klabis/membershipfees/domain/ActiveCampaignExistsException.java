@@ -4,7 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 
 public class ActiveCampaignExistsException extends BusinessRuleViolationException {
 
-    public ActiveCampaignExistsException(int year) {
-        super("Fee levels for year " + year + " have already been published");
+    public ActiveCampaignExistsException() {
+        super("Cannot start a new campaign while another campaign is still active");
     }
 }

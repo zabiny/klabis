@@ -114,7 +114,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const selfLink = resourceData._links?.self;
     const selfHref = selfLink ? (Array.isArray(selfLink) ? (selfLink[0] as {href: string}).href : (selfLink as {href: string}).href) : null;
     const selfMemberId = selfHref?.split('/').pop() ?? '';
-    const currentFeeSummaryYear = new Date().getFullYear();
+
+    const feeSummaryLink = resourceData._links?.feeSummary;
+    const feeSummaryHref = feeSummaryLink
+        ? (Array.isArray(feeSummaryLink)
+            ? (feeSummaryLink[0] as {href: string}).href
+            : (feeSummaryLink as {href: string}).href)
+        : null;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
@@ -388,9 +394,9 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     <CalendarFeedSection icalTokenHref={icalTokenHref}/>
                 )}
 
-                {!isEditing && member.active && (
+                {!isEditing && member.active && feeSummaryHref && (
                     <MemberFeeSection
-                        feeSummaryHref={`/api/members/${selfMemberId}/fee-summary/${currentFeeSummaryYear}`}
+                        feeSummaryHref={feeSummaryHref}
                         memberId={selfMemberId}
                     />
                 )}

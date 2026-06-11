@@ -37,7 +37,7 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
             throw new DeadlineNotInFutureException(command.votingDeadline());
         }
         publicationRepository.findActive(today).ifPresent(existing -> {
-            throw new ActiveCampaignExistsException(existing.getYear());
+            throw new ActiveCampaignExistsException();
         });
 
         List<MembershipFeeTier> levels = command.levelIds().stream()
@@ -104,5 +104,13 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(id));
         group.editSnapshot(command.yearlyFee(), command.rules());
         groupRepository.save(group);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public int relevantFeeYear(LocalDate today) {
+        return publicationRepository.findActive(today)
+                .map(FeeSelectionCampaign::getYear)
+                .orElse(today.getYear());
     }
 }

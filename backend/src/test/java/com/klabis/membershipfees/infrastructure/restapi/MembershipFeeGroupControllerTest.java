@@ -98,7 +98,7 @@ class MembershipFeeGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/membership-fee-groups/{groupId}/members/{memberId} — admin assignment")
+    @DisplayName("POST /api/membership-fee-groups/{groupId}/members — admin assignment")
     class AdminAssignTests {
 
         @Test
@@ -108,12 +108,12 @@ class MembershipFeeGroupControllerTest {
             doNothing().when(adminFeeAssignmentPort).assignLevel(any());
 
             mockMvc.perform(
-                            post("/api/membership-fee-groups/{groupId}/members/{memberId}", GROUP_UUID, MEMBER_UUID)
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"year": 2026}
-                                            """))
+                                            {"memberId": "%s", "year": 2026}
+                                            """.formatted(MEMBER_UUID)))
                     .andExpect(status().isNoContent());
 
             verify(adminFeeAssignmentPort).assignLevel(any(AdminFeeAssignmentPort.AssignFeeLevel.class));
@@ -124,13 +124,27 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID)
         void shouldReturn403WhenNotAdmin() throws Exception {
             mockMvc.perform(
-                            post("/api/membership-fee-groups/{groupId}/members/{memberId}", GROUP_UUID, MEMBER_UUID)
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s", "year": 2026}
+                                            """.formatted(MEMBER_UUID)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 400 when memberId is missing from request body")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenMemberIdMissing() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
                                             {"year": 2026}
                                             """))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -138,17 +152,19 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenYearMissing() throws Exception {
             mockMvc.perform(
-                            post("/api/membership-fee-groups/{groupId}/members/{memberId}", GROUP_UUID, MEMBER_UUID)
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{}"))
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(MEMBER_UUID)))
                     .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("GET should include admin-assign affordance on group detail")
+        @DisplayName("GET should include admin-assign affordance on group detail with stable URL (no memberId in path)")
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldIncludeAdminAssignAffordanceForAdmin() throws Exception {
+        void shouldIncludeAdminAssignAffordanceWithStableUrl() throws Exception {
             MembershipFeeGroup group = buildFrozenGroup();
             org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
                     .thenReturn(group);
@@ -157,7 +173,11 @@ class MembershipFeeGroupControllerTest {
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.assignMember").exists());
+                    .andExpect(jsonPath("$._templates.assignMember").exists())
+                    .andExpect(jsonPath("$._templates.assignMember.target").value(
+                            "http://localhost/api/membership-fee-groups/" + GROUP_UUID + "/members"))
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')]").exists())
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='year')]").exists());
         }
     }
 

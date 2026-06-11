@@ -54,4 +54,11 @@ public interface FeeSelectionCampaignManagementPort {
     void editGroupSnapshot(MembershipFeeGroupId id, EditGroupSnapshotCommand command);
 
     void changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command);
+
+    /**
+     * Returns the year of the currently active campaign if one exists,
+     * or the current calendar year as a fallback.
+     * Used to build links pointing to the most relevant fee summary endpoint.
+     */
+    int relevantFeeYear(LocalDate today);
 }
