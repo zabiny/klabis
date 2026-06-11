@@ -20,21 +20,21 @@ class MembershipFeeTierManagementService implements MembershipFeeTierManagementP
     @Transactional
     @Override
     public MembershipFeeTierId createTier(CreateTierCommand command) {
-        MembershipFeeTier level = MembershipFeeTier.create(command.name(), command.yearlyFee());
-        return repository.save(level).getId();
+        MembershipFeeTier tier = MembershipFeeTier.create(command.name(), command.yearlyFee());
+        return repository.save(tier).getId();
     }
 
     @Transactional
     @Override
     public void editTier(MembershipFeeTierId id, EditTierCommand command) {
-        MembershipFeeTier level = loadTier(id);
+        MembershipFeeTier tier = loadTier(id);
         if (command.name() != null) {
-            level.editName(command.name());
+            tier.editName(command.name());
         }
         if (command.yearlyFee() != null) {
-            level.editYearlyFee(command.yearlyFee());
+            tier.editYearlyFee(command.yearlyFee());
         }
-        repository.save(level);
+        repository.save(tier);
     }
 
     @Transactional(readOnly = true)

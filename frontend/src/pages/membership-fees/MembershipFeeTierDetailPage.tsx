@@ -7,7 +7,8 @@ import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {authorizedFetch} from '../../api/authorizedFetch.ts';
 import {labels} from '../../localization';
-import {ChevronRight, Pencil, Plus, Save, Trash2, X} from 'lucide-react';
+import {ChevronRight, Loader2, Pencil, Plus, Save, Trash2, X} from 'lucide-react';
+import {useEventTypes} from '../../hooks/useEventTypes.ts';
 
 interface CoParticipationRule {
     eventTypeId: string;
@@ -19,8 +20,8 @@ interface CoParticipationRule {
 }
 
 interface EditRuleModalState {
-    rule: CoParticipationRule;
-    resolvedUrl: string;
+    template: HalFormsTemplate;
+    resourceUrl: string;
 }
 
 interface FeeTierDetail extends HalResponse {
@@ -49,36 +50,54 @@ const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'}): R
 const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
     const {route} = useHalPageData<FeeTierDetail>();
     const navigate = useNavigate();
+    const {getById: getEventTypeById} = useEventTypes();
     const [isEditing, setIsEditing] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [addRuleModal, setAddRuleModal] = useState(false);
     const [editRuleModal, setEditRuleModal] = useState<EditRuleModalState | null>(null);
+    const [loadingEditRuleKey, setLoadingEditRuleKey] = useState<string | null>(null);
 
     const editTemplate = resourceData._templates?.editTier ?? null;
     const deleteTemplate = resourceData._templates?.deleteTier ?? null;
     const addRuleTemplate = resourceData._templates?.addRule ?? null;
-    const editRuleTemplate = resourceData._templates?.editRule ?? null;
     const editRuleLink = resourceData._links?.editRule;
     const deleteRuleLink = resourceData._links?.deleteRule;
     const rules = resourceData.rules ?? [];
 
-    const buildEditRuleUrl = (rule: CoParticipationRule): string | null => {
-        if (!editRuleLink) return null;
-        const href = Array.isArray(editRuleLink) ? editRuleLink[0]?.href : editRuleLink.href;
+    const buildRuleUrlFromTemplate = (link: typeof editRuleLink, rule: CoParticipationRule): string | null => {
+        if (!link) return null;
+        const href = Array.isArray(link) ? link[0]?.href : link.href;
         if (!href) return null;
         return href
             .replace('{eventTypeId}', encodeURIComponent(rule.eventTypeId))
             .replace('{ranking}', encodeURIComponent(rule.rankingShortName));
     };
 
-    const buildDeleteRuleUrl = (rule: CoParticipationRule): string | null => {
-        if (!deleteRuleLink) return null;
-        const href = Array.isArray(deleteRuleLink) ? deleteRuleLink[0]?.href : deleteRuleLink.href;
-        if (!href) return null;
-        return href
-            .replace('{eventTypeId}', encodeURIComponent(rule.eventTypeId))
-            .replace('{ranking}', encodeURIComponent(rule.rankingShortName));
+    const handleEditRule = async (rule: CoParticipationRule): Promise<void> => {
+        const getUrl = buildRuleUrlFromTemplate(editRuleLink, rule);
+        if (!getUrl) return;
+        const ruleKey = `${rule.eventTypeId}/${rule.rankingShortName}`;
+        setLoadingEditRuleKey(ruleKey);
+        try {
+            const response = await authorizedFetch(getUrl, {
+                method: 'GET',
+                headers: {Accept: 'application/prs.hal-forms+json'},
+            });
+            const data = await response.json() as HalResponse & {_templates?: Record<string, HalFormsTemplate>};
+            const template = data._templates?.editRule;
+            const resourceUrl = Array.isArray(data._links?.self)
+                ? data._links.self[0]?.href
+                : data._links?.self?.href;
+            if (template && resourceUrl) {
+                setEditRuleModal({template, resourceUrl});
+            }
+        } finally {
+            setLoadingEditRuleKey(null);
+        }
     };
+
+    const buildDeleteRuleUrl = (rule: CoParticipationRule): string | null =>
+        buildRuleUrlFromTemplate(deleteRuleLink, rule);
 
     const handleDeleteRule = async (rule: CoParticipationRule): Promise<void> => {
         const url = buildDeleteRuleUrl(rule);
@@ -182,7 +201,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                     <tbody>
                         {rules.map((rule, index) => (
                             <tr key={index} className="border-t border-zinc-100" style={{height: '52px'}}>
-                                <td className="px-5 text-zinc-800">{rule.eventTypeId}</td>
+                                <td className="px-5 text-zinc-800">{getEventTypeById(rule.eventTypeId)?.name ?? rule.eventTypeId}</td>
                                 <td className="px-5 text-zinc-800">{rule.rankingShortName}</td>
                                 <td className="px-5">
                                     <RuleTypeBadge ruleType={rule.ruleType}/>
@@ -194,17 +213,18 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                 </td>
                                 <td className="px-3">
                                     <div className="flex items-center gap-1">
-                                        {editRuleTemplate && editRuleLink && (
+                                        {editRuleLink && (
                                             <button
                                                 type="button"
                                                 aria-label="Upravit pravidlo"
-                                                onClick={() => {
-                                                    const url = buildEditRuleUrl(rule);
-                                                    if (url) setEditRuleModal({rule, resolvedUrl: url});
-                                                }}
-                                                className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                                                disabled={loadingEditRuleKey !== null}
+                                                onClick={() => void handleEditRule(rule)}
+                                                className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 bg-zinc-50 hover:bg-zinc-100 transition-colors disabled:opacity-50"
                                             >
-                                                <Pencil className="w-4 h-4"/>
+                                                {loadingEditRuleKey === `${rule.eventTypeId}/${rule.rankingShortName}`
+                                                    ? <Loader2 className="w-4 h-4 animate-spin"/>
+                                                    : <Pencil className="w-4 h-4"/>
+                                                }
                                             </button>
                                         )}
                                         {deleteRuleLink && (
@@ -267,13 +287,13 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
             )}
 
             {/* Edit rule modal */}
-            {editRuleTemplate && editRuleModal && (
+            {editRuleModal && (
                 <HalFormModal
-                    title={(editRuleTemplate as HalFormsTemplate).title ?? 'Upravit pravidlo'}
-                    template={editRuleTemplate as HalFormsTemplate}
+                    title={editRuleModal.template.title ?? 'Upravit pravidlo'}
+                    template={editRuleModal.template}
                     templateName="editRule"
                     resourceData={resourceData as unknown as Record<string, unknown>}
-                    resourceUrl={editRuleModal.resolvedUrl}
+                    resourceUrl={editRuleModal.resourceUrl}
                     pathname={route.pathname}
                     onClose={() => setEditRuleModal(null)}
                     navigateOnSuccess={false}

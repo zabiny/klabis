@@ -104,7 +104,7 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should include chooseLevel affordance when voting is open")
+        @DisplayName("should include chooseTier affordance when voting is open")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeChooseLevelAffordanceWhenVotingOpen() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -115,11 +115,11 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseLevel").exists());
+                    .andExpect(jsonPath("$._templates.chooseTier").exists());
         }
 
         @Test
-        @DisplayName("should include inline group options on chooseLevel affordance membershipFeeGroupId property")
+        @DisplayName("should include inline group options on chooseTier affordance membershipFeeGroupId property")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeInlineGroupOptionsOnChooseLevelAffordance() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -135,12 +135,12 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseLevel.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
+                    .andExpect(jsonPath("$._templates.chooseTier.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
                             .value("Základní"));
         }
 
         @Test
-        @DisplayName("should not include chooseLevel affordance when voting is closed")
+        @DisplayName("should not include chooseTier affordance when voting is closed")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldNotIncludeChooseLevelAffordanceWhenVotingClosed() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -151,7 +151,7 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseLevel").doesNotExist());
+                    .andExpect(jsonPath("$._templates.chooseTier").doesNotExist());
         }
 
         @Test

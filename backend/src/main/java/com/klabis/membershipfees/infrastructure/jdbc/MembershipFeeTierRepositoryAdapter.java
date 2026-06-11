@@ -21,18 +21,18 @@ class MembershipFeeTierRepositoryAdapter implements MembershipFeeTierRepository 
 
     @Override
     public MembershipFeeTier save(MembershipFeeTier level) {
-        return jdbcRepository.save(MembershipFeeTierMemento.from(level)).toLevel();
+        return jdbcRepository.save(MembershipFeeTierMemento.from(level)).toTier();
     }
 
     @Override
     public Optional<MembershipFeeTier> findById(MembershipFeeTierId id) {
-        return jdbcRepository.findById(id.value()).map(MembershipFeeTierMemento::toLevel);
+        return jdbcRepository.findById(id.value()).map(MembershipFeeTierMemento::toTier);
     }
 
     @Override
     public List<MembershipFeeTier> findAll() {
         return jdbcRepository.findAll().stream()
-                .map(MembershipFeeTierMemento::toLevel)
+                .map(MembershipFeeTierMemento::toTier)
                 .toList();
     }
 

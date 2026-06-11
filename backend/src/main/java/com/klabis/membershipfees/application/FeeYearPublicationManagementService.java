@@ -2,7 +2,13 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.membershipfees.FeeYearPublicationId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.domain.*;
+import com.klabis.membershipfees.domain.DuplicateYearPublicationException;
+import com.klabis.membershipfees.domain.FeeYearPublication;
+import com.klabis.membershipfees.domain.FeeYearPublicationRepository;
+import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
+import com.klabis.membershipfees.domain.MembershipFeeTier;
+import com.klabis.membershipfees.domain.MembershipFeeTierRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,14 +20,14 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
 
     private final FeeYearPublicationRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
-    private final MembershipFeeTierRepository levelRepository;
+    private final MembershipFeeTierRepository tierRepository;
 
     FeeYearPublicationManagementService(FeeYearPublicationRepository publicationRepository,
                                          MembershipFeeGroupRepository groupRepository,
-                                         MembershipFeeTierRepository levelRepository) {
+                                         MembershipFeeTierRepository tierRepository) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
-        this.levelRepository = levelRepository;
+        this.tierRepository = tierRepository;
     }
 
     @Transactional
@@ -32,7 +38,7 @@ class FeeYearPublicationManagementService implements FeeYearPublicationManagemen
         });
 
         List<MembershipFeeTier> levels = command.levelIds().stream()
-                .map(id -> levelRepository.findById(id)
+                .map(id -> tierRepository.findById(id)
                         .orElseThrow(() -> new MembershipFeeTierNotFoundException(id)))
                 .toList();
 

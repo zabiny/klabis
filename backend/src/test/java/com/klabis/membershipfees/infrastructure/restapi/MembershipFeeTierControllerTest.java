@@ -260,6 +260,22 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
+        @DisplayName("editRule link in tier detail should point to GET rule endpoint (URL template)")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void editRuleLinkShouldPointToGetRuleEndpoint() throws Exception {
+            when(managementPort.getTier(LEVEL_ID))
+                    .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.editRule.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/")));
+        }
+
+        @Test
         @DisplayName("addRule template should include ranking property with inline options from ORIS")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
@@ -364,6 +380,78 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    class GetRuleTests {
+
+        private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        private static final String RANKING = "A";
+
+        @Test
+        @DisplayName("should return 200 with rule details")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnRuleDetails() throws Exception {
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID),
+                            RANKING, 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.eventTypeId").value(EVENT_TYPE_UUID.toString()))
+                    .andExpect(jsonPath("$.rankingShortName").value(RANKING))
+                    .andExpect(jsonPath("$.ruleType").value("PERCENTAGE"))
+                    .andExpect(jsonPath("$.percent").value(50));
+        }
+
+        @Test
+        @DisplayName("should include self link with editRule affordance for MEMBERS:MANAGE user")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEditRuleAffordance() throws Exception {
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID),
+                            RANKING, 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.editRule").exists());
+        }
+
+        @Test
+        @DisplayName("should return 404 when rule not found")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn404WhenRuleNotFound() throws Exception {
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/membership-fee-tiers/{id}/rules")
     class AddRuleTests {
 
@@ -384,7 +472,7 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("should return 201 when adding a percentage rule")
+        @DisplayName("should return 201 with Location header when adding a percentage rule")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn201ForPercentageRule() throws Exception {
             doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
@@ -396,11 +484,14 @@ class MembershipFeeTierControllerTest {
                                     .content("""
                                             {"eventTypeId":"%s","rankingShortName":"A","ruleType":"PERCENTAGE","percentage":50}
                                             """.formatted(EVENT_TYPE_UUID)))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location",
+                            org.hamcrest.Matchers.endsWith(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/A")));
         }
 
         @Test
-        @DisplayName("should return 201 when adding a fixed-amount rule")
+        @DisplayName("should return 201 with Location header when adding a fixed-amount rule")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn201ForFixedAmountRule() throws Exception {
             doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
@@ -412,7 +503,10 @@ class MembershipFeeTierControllerTest {
                                     .content("""
                                             {"eventTypeId":"%s","rankingShortName":"B","ruleType":"FIXED_AMOUNT","fixedAmount":200,"fixedCurrency":"CZK"}
                                             """.formatted(EVENT_TYPE_UUID)))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location",
+                            org.hamcrest.Matchers.endsWith(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/B")));
         }
 
         @Test

@@ -47,10 +47,10 @@ class MembershipFeeTierMemento extends AbstractMembershipFeeMemento {
         return memento;
     }
 
-    MembershipFeeTier toLevel() {
+    MembershipFeeTier toTier() {
         List<MembershipPaymentRule> domainRules = rules.stream()
                 .map(MembershipPaymentRuleMemento::toRule)
-                .collect(Collectors.toList());
+                .toList();
 
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(yearlyFeeCurrency));
 

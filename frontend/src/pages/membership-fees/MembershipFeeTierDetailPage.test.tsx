@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -9,9 +9,23 @@ import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import type {HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import type {HalFormModalProps} from '../../components/HalNavigator2/HalFormModal.tsx';
+import {authorizedFetch} from '../../api/authorizedFetch';
+import {useEventTypes} from '../../hooks/useEventTypes';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
+}));
+
+vi.mock('../../api/authorizedFetch', () => ({
+    authorizedFetch: vi.fn(),
+}));
+
+vi.mock('../../hooks/useEventTypes', () => ({
+    useEventTypes: vi.fn().mockReturnValue({
+        eventTypes: [],
+        isLoading: false,
+        getById: vi.fn().mockReturnValue(undefined),
+    }),
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
@@ -97,6 +111,11 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
 describe('MembershipFeeTierDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(useEventTypes).mockReturnValue({
+            eventTypes: [],
+            isLoading: false,
+            getById: vi.fn().mockReturnValue(undefined),
+        });
     });
 
     it('shows skeleton loading state when data is loading', () => {
@@ -147,6 +166,17 @@ describe('MembershipFeeTierDetailPage', () => {
         expect(screen.getByText('sprint')).toBeInTheDocument();
         expect(screen.getByText('A')).toBeInTheDocument();
         expect(screen.getByText('50 %')).toBeInTheDocument();
+    });
+
+    it('shows event type name instead of raw id when useEventTypes resolves a match', () => {
+        vi.mocked(useEventTypes).mockReturnValue({
+            eventTypes: [{id: 'sprint', name: 'Sprint závod', sortOrder: 1}],
+            isLoading: false,
+            getById: (id) => id === 'sprint' ? {id: 'sprint', name: 'Sprint závod', sortOrder: 1} : undefined,
+        });
+        renderPage(createMockPageData(buildFeeTierDetail()));
+        expect(screen.getByText('Sprint závod')).toBeInTheDocument();
+        expect(screen.queryByText('sprint')).not.toBeInTheDocument();
     });
 
     it('renders FIXED_AMOUNT rule with fixedAmount and currency', () => {
@@ -230,11 +260,19 @@ describe('MembershipFeeTierDetailPage', () => {
                     self: {href: '/api/membership-fee-tiers/tier-1'},
                     editRule: {href: '/api/membership-fee-tiers/tier-1/rules/{eventTypeId}/{ranking}', templated: true},
                 },
-                _templates: {
-                    editRule: mockHalFormsTemplate({title: 'Upravit pravidlo', method: 'PATCH'}),
-                },
                 ...overrides,
             });
+
+        const mockEditRuleFetchResponse = () => {
+            vi.mocked(authorizedFetch).mockResolvedValue({
+                json: async () => ({
+                    _links: {self: {href: '/api/membership-fee-tiers/tier-1/rules/sprint/A'}},
+                    _templates: {
+                        editRule: mockHalFormsTemplate({title: 'Upravit pravidlo', method: 'PATCH'}),
+                    },
+                }),
+            } as unknown as Response);
+        };
 
         it('renders edit button for each rule row when editRule link is present', () => {
             renderPage(createMockPageData(buildTierWithEditRuleLink()));
@@ -246,15 +284,30 @@ describe('MembershipFeeTierDetailPage', () => {
             expect(screen.queryByRole('button', {name: /upravit pravidlo/i})).not.toBeInTheDocument();
         });
 
-        it('opens edit rule modal when edit button is clicked', () => {
-            renderPage(createMockPageData(buildTierWithEditRuleLink()));
-            fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
-            expect(screen.getByRole('dialog', {name: /upravit pravidlo/i})).toBeInTheDocument();
+        it('does not render edit rule button when only _templates.editRule exists without link (old tier response)', () => {
+            const resourceData = buildFeeTierDetail({
+                _templates: {
+                    editRule: mockHalFormsTemplate({title: 'Upravit pravidlo', method: 'PATCH'}),
+                },
+            });
+            renderPage(createMockPageData(resourceData));
+            expect(screen.queryByRole('button', {name: /upravit pravidlo/i})).not.toBeInTheDocument();
         });
 
-        it('closes edit rule modal when close button is clicked', () => {
+        it('opens edit rule modal after fetching rule data when edit button is clicked', async () => {
+            mockEditRuleFetchResponse();
             renderPage(createMockPageData(buildTierWithEditRuleLink()));
             fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
+            await waitFor(() => {
+                expect(screen.getByRole('dialog', {name: /upravit pravidlo/i})).toBeInTheDocument();
+            });
+        });
+
+        it('closes edit rule modal when close button is clicked', async () => {
+            mockEditRuleFetchResponse();
+            renderPage(createMockPageData(buildTierWithEditRuleLink()));
+            fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
+            await waitFor(() => expect(screen.getByRole('dialog', {name: /upravit pravidlo/i})).toBeInTheDocument());
             fireEvent.click(screen.getByRole('button', {name: /zavřít/i}));
             expect(screen.queryByRole('dialog', {name: /upravit pravidlo/i})).not.toBeInTheDocument();
         });

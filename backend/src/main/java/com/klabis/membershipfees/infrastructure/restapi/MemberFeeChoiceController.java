@@ -57,7 +57,7 @@ class MemberFeeChoiceController {
         klabisLinkTo(methodOn(MemberFeeChoiceController.class).getChoice(memberId, year, null))
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceController.class)
-                                .chooseLevel(memberId, year, null, null)))
+                                .chooseTier(memberId, year, null, null)))
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceController.class)
                                 .removeChoice(memberId, year, null)))));
 
@@ -74,7 +74,7 @@ class MemberFeeChoiceController {
 
     @PostMapping(value = "/{year}", consumes = "application/json")
     @Operation(summary = "Choose a fee level for a year")
-    ResponseEntity<Void> chooseLevel(
+    ResponseEntity<Void> chooseTier(
             @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Calendar year") @PathVariable int year,
             @Valid @RequestBody ChooseFeeChoiceRequest request,

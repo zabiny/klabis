@@ -107,7 +107,7 @@ class MemberFeeChoiceControllerTest {
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseLevel").exists())
+                    .andExpect(jsonPath("$._templates.chooseTier").exists())
                     .andExpect(jsonPath("$._templates.removeChoice").exists());
         }
     }
