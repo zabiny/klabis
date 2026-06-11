@@ -13,6 +13,8 @@ import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.domain.CampaignClosedException;
+import com.klabis.membershipfees.domain.DeadlineNotInFutureException;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.junit.jupiter.api.DisplayName;
@@ -26,13 +28,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -65,6 +71,24 @@ class FeeSelectionCampaignControllerTest {
                 year,
                 LocalDate.of(year, 3, 31),
                 null,
+                List.of(new MembershipFeeGroupId(GROUP_UUID)));
+    }
+
+    private FeeSelectionCampaign buildActiveCampaign(UUID id) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(id),
+                2099,
+                LocalDate.of(2099, 12, 31),
+                null,
+                List.of(new MembershipFeeGroupId(GROUP_UUID)));
+    }
+
+    private FeeSelectionCampaign buildClosedCampaign(UUID id) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(id),
+                2020,
+                LocalDate.of(2020, 3, 31),
+                Instant.parse("2020-04-01T00:00:00Z"),
                 List.of(new MembershipFeeGroupId(GROUP_UUID)));
     }
 
@@ -215,6 +239,106 @@ class FeeSelectionCampaignControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.membershipFeeGroupResponseList").isArray())
                     .andExpect(jsonPath("$._embedded.membershipFeeGroupResponseList.length()").value(1));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/fee-selection-campaigns/{id}/deadline")
+    class ChangeDeadlineTests {
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(
+                            patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"votingDeadline": "2099-12-31"}
+                                            """))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 200 with updated campaign when deadline changed successfully")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn200WithUpdatedCampaign() throws Exception {
+            FeeSelectionCampaign activeCampaign = buildActiveCampaign(PUBLICATION_UUID);
+            when(managementPort.getPublication(PUBLICATION_ID)).thenReturn(activeCampaign);
+
+            mockMvc.perform(
+                            patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"votingDeadline": "2099-12-31"}
+                                            """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.year").value(2099))
+                    .andExpect(jsonPath("$.votingDeadline").value("2099-12-31"));
+        }
+
+        @Test
+        @DisplayName("should return 400 when deadline is in the past (DeadlineNotInFutureException)")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenDeadlineInPast() throws Exception {
+            doThrow(new DeadlineNotInFutureException(LocalDate.of(2020, 1, 1)))
+                    .when(managementPort).changeDeadline(eq(PUBLICATION_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"votingDeadline": "2020-01-01"}
+                                            """))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 409 when campaign is closed (CampaignClosedException)")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WhenCampaignClosed() throws Exception {
+            doThrow(new CampaignClosedException())
+                    .when(managementPort).changeDeadline(eq(PUBLICATION_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"votingDeadline": "2020-01-01"}
+                                            """))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should include changeDeadline affordance for active campaign")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeChangeDeadlineAffordanceForActiveCampaign() throws Exception {
+            when(managementPort.getPublication(PUBLICATION_ID))
+                    .thenReturn(buildActiveCampaign(PUBLICATION_UUID));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.changeDeadline").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include changeDeadline affordance for closed campaign")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotIncludeChangeDeadlineAffordanceForClosedCampaign() throws Exception {
+            when(managementPort.getPublication(PUBLICATION_ID))
+                    .thenReturn(buildClosedCampaign(PUBLICATION_UUID));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.changeDeadline").doesNotExist());
         }
     }
 }

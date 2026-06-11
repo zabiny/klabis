@@ -29,10 +29,10 @@
 
 ## 5. REST API: nová affordance
 
-- [ ] 5.1 Napsat controller test pro `PATCH /campaigns/{id}/deadline`: úspěch, deadline v minulosti (400), kampaň uzavřená (409)
-- [ ] 5.2 Implementovat endpoint `PATCH /campaigns/{id}/deadline` s affordancí `changeDeadline` (přítomna pouze pro aktivní kampaně)
-- [ ] 5.3 Přidat validaci `ActiveCampaignExistsException` → `409 Conflict` v exception handleru
-- [ ] 5.4 Spustit všechny backend testy
+- [x] 5.1 Napsat controller test pro `PATCH /campaigns/{id}/deadline`: úspěch, deadline v minulosti (400), kampaň uzavřená (409)
+- [x] 5.2 Implementovat endpoint `PATCH /campaigns/{id}/deadline` s affordancí `changeDeadline` (přítomna pouze pro aktivní kampaně)
+- [x] 5.3 Přidat validaci `ActiveCampaignExistsException` → `409 Conflict` v exception handleru
+- [x] 5.4 Spustit všechny backend testy
 
 ## 6. Frontend: přejmenování a nové akce
 

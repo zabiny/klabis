@@ -25,6 +25,8 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -91,6 +93,18 @@ class FeeSelectionCampaignController {
         return ResponseEntity.ok(entityModelWithDomain(response, publication));
     }
 
+    @PatchMapping(value = "/{id}/deadline", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Change voting deadline of an active campaign (requires MEMBERS:MANAGE)")
+    ResponseEntity<EntityModel<FeeSelectionCampaignResponse>> changeDeadline(
+            @PathVariable UUID id, @Valid @RequestBody ChangeDeadlineRequest request) {
+        FeeSelectionCampaignId campaignId = new FeeSelectionCampaignId(id);
+        managementPort.changeDeadline(campaignId, request.toCommand());
+        FeeSelectionCampaign updated = managementPort.getPublication(campaignId);
+        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(updated);
+        return ResponseEntity.ok(entityModelWithDomain(response, updated));
+    }
+
     @GetMapping("/{year}/levels")
     @Operation(summary = "List published fee groups for a given year")
     ResponseEntity<CollectionModel<EntityModel<MembershipFeeGroupResponse>>> listGroupsForYear(
@@ -127,11 +141,25 @@ class FeeSelectionCampaignController {
 class FeeSelectionCampaignDetailsPostprocessor
         extends ModelWithDomainPostprocessor<FeeSelectionCampaignResponse, FeeSelectionCampaign> {
 
+    private final Clock clock;
+
+    FeeSelectionCampaignDetailsPostprocessor(Clock clock) {
+        this.clock = clock;
+    }
+
     @Override
     public void process(EntityModel<FeeSelectionCampaignResponse> dtoModel, FeeSelectionCampaign publication) {
         UUID id = publication.getId().value();
+        LocalDate today = LocalDate.now(clock);
         klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id))
-                .map(link -> link.withSelfRel())
+                .map(link -> {
+                    var self = link.withSelfRel();
+                    if (!publication.isClosed(today)) {
+                        self = self.andAffordances(klabisAfford(
+                                methodOn(FeeSelectionCampaignController.class).changeDeadline(id, null)));
+                    }
+                    return self;
+                })
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
