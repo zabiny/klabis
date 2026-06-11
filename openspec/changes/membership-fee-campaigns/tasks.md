@@ -44,7 +44,7 @@
 
 ## 7. Spec aktualizace a E2E test
 
-- [ ] 7.1 Syncnout delta spec do hlavní `openspec/specs/membership-fees/spec.md` (spustit `openspec sync-specs`)
+- [x] 7.1 Syncnout delta spec do hlavní `openspec/specs/membership-fees/spec.md` (spustit `openspec sync-specs`)
 - [ ] 7.2 Playwright E2E test KOMPLETNÍHO životního cyklu kampaně dle celé `membership-fees` specifikace — nejen změn z tohoto proposalu. POZOR: tato funkcionalita ještě neprošla E2E testem a očekává se, že část bude nefunkční; nalezené chyby reportovat a opravit (případně rozhodnout o follow-up):
   - Zakládání kampaně administrátorem (výběr úrovní, deadline)
   - Validace při zakládání: odmítnutí při existující aktivní kampani, deadline pouze v budoucnosti
