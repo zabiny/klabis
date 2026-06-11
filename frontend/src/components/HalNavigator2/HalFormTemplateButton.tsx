@@ -29,6 +29,9 @@ export interface HalFormTemplateButtonProps {
 
     /** Optional icon rendered before the label */
     icon?: ReactNode;
+
+    /** Hide the label text — use with icon for icon-only buttons */
+    hideLabel?: boolean;
 }
 
 /**
@@ -50,6 +53,7 @@ export function HalFormTemplateButton({
                                           className = '',
                                           variant = 'primary',
                                           icon,
+                                          hideLabel = false,
                                       }: HalFormTemplateButtonProps): ReactElement {
     const displayText = label || getTemplateLabel(templateName) || template.title || templateName;
 
@@ -64,7 +68,7 @@ export function HalFormTemplateButton({
             data-testid={`form-template-button-${templateName}`}
         >
             {icon && <span className="inline-flex">{icon}</span>}
-            {displayText}
+            {!hideLabel && displayText}
         </Button>
     );
 }

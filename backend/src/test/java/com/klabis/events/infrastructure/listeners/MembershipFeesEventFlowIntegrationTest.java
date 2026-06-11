@@ -4,10 +4,12 @@ import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.MemberRegistrationBlockRepository;
+import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.FinanceAccountLinkSupport;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import com.klabis.members.application.AllMembersPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -35,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@link MemberFeeSelectionResolvedEvent} → member registration block gets lifted</li>
  * </ul>
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE, extraIncludes = "membershipfees")
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)
@@ -56,6 +58,14 @@ class MembershipFeesEventFlowIntegrationTest {
     @MockitoBean
     @SuppressWarnings("unused")
     private FinanceAccountLinkSupport financeAccountLinkSupport;
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private AllMembersPort allMembersPort;
+
+    @MockitoBean
+    @SuppressWarnings("unused")
+    private ChargePort chargePort;
 
     @Autowired
     private MemberRegistrationSanctionPort sanctionPort;

@@ -28,14 +28,17 @@ class OrisRankingOptionsAdapter implements RankingOptionsPort {
     @Override
     public List<HalFormsInlineOption> listRankingOptions() {
         if (orisApiClient.isEmpty()) {
+            log.debug("ORIS client not configured, returning empty ranking options");
             return Collections.emptyList();
         }
         try {
-            return orisApiClient.get().listLevels().payload()
+            List<HalFormsInlineOption> options = orisApiClient.get().listLevels().payload()
                     .map(levels -> levels.values().stream()
                             .map(OrisRankingOptionsAdapter::toInlineOption)
                             .toList())
                     .orElse(Collections.emptyList());
+            log.debug("ORIS ranking options loaded: {} entries", options.size());
+            return options;
         } catch (RuntimeException e) {
             log.warn("ORIS level list unavailable, returning empty ranking options", e);
             return Collections.emptyList();

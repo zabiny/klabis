@@ -1,4 +1,4 @@
-package com.klabis.events.infrastructure.listeners;
+package com.klabis.membershipfees.infrastructure;
 
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;

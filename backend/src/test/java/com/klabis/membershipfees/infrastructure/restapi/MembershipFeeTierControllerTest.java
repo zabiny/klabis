@@ -8,6 +8,7 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
 import com.klabis.membershipfees.application.RankingOptionsPort;
@@ -55,9 +56,13 @@ class MembershipFeeTierControllerTest {
     @Autowired
     private RankingOptionsPort rankingOptionsPortMock;
 
+    @Autowired
+    private EventTypeOptionsPort eventTypeOptionsPortMock;
+
     @BeforeEach
     void setupMocks() {
         when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
+        when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of());
     }
 
     private MembershipFeeTier buildLevel(UUID id, String name) {
@@ -194,28 +199,6 @@ class MembershipFeeTierControllerTest {
     class GetLevelTests {
 
         @Test
-        @DisplayName("should serialize rules[0].eventTypeId as plain UUID string, not as object")
-        @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldSerializeEventTypeIdAsPlainUuidString() throws Exception {
-            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var tier = MembershipFeeTier.reconstruct(
-                    LEVEL_ID, "Závodní",
-                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
-                    List.of(MembershipPaymentRule.percentage(
-                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
-                            "A", 50)),
-                    null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
-
-            mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.rules[0].eventTypeId").value(eventTypeUuid.toString()))
-                    .andExpect(jsonPath("$.rules[0].eventTypeId").isString());
-        }
-
-        @Test
         @DisplayName("should return 200 with level details")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnLevelDetails() throws Exception {
@@ -260,9 +243,9 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("editRule link in tier detail should point to GET rule endpoint (URL template)")
+        @DisplayName("rules link in tier detail should point to the rules collection endpoint")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void editRuleLinkShouldPointToGetRuleEndpoint() throws Exception {
+        void rulesLinkShouldPointToRulesCollectionEndpoint() throws Exception {
             when(managementPort.getTier(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
 
@@ -270,9 +253,9 @@ class MembershipFeeTierControllerTest {
                             get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.editRule.href")
-                            .value(org.hamcrest.Matchers.containsString(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/")));
+                    .andExpect(jsonPath("$._links.rules.href")
+                            .value(org.hamcrest.Matchers.endsWith(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
         }
 
         @Test
@@ -315,6 +298,49 @@ class MembershipFeeTierControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addRule").exists());
+        }
+
+        @Test
+        @DisplayName("addRule template should include eventTypeId property with inline options from event types")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEventTypeOptionsInAddRuleTemplate() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            when(managementPort.getTier(LEVEL_ID))
+                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption(eventTypeUuid.toString(), "Závod"),
+                    new HalFormsInlineOption(UUID.randomUUID().toString(), "Trénink")
+            ));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].value").value(eventTypeUuid.toString()))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].prompt").value("Závod"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.valueField").value("value"));
+        }
+
+        @Test
+        @DisplayName("addRule template should include ruleType property with PERCENTAGE and FIXED_AMOUNT options")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeRuleTypeOptionsInAddRuleTemplate() throws Exception {
+            when(managementPort.getTier(LEVEL_ID))
+                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
         }
     }
 
@@ -380,6 +406,117 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/membership-fee-tiers/{id}/rules")
+    class ListRulesTests {
+
+        @Test
+        @DisplayName("should return 200 with empty collection when tier has no rules")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnEmptyCollectionWhenNoRules() throws Exception {
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href")
+                            .value(org.hamcrest.Matchers.endsWith(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
+        }
+
+        @Test
+        @DisplayName("should serialize rule eventTypeId as plain UUID string, not as object")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldSerializeEventTypeIdAsPlainUuidString() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
+                            "A", 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].eventTypeId").value(eventTypeUuid.toString()))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].eventTypeId").isString());
+        }
+
+        @Test
+        @DisplayName("editRule template should include ruleType inline options PERCENTAGE and FIXED_AMOUNT")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void editRuleTemplateShouldIncludeRuleTypeOptions() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
+                            "A", 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule").exists())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline").isArray())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
+        }
+
+        @Test
+        @DisplayName("rule item should include eventType link pointing to event type resource")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void ruleItemShouldIncludeEventTypeLink() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
+                            "A", 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._links.eventType.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/event-types/" + eventTypeUuid)));
+        }
+
+        @Test
+        @DisplayName("should include self link and editRule+removeRule affordances on each rule item for MEMBERS:MANAGE user")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeAffordancesOnRuleItems() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            var tier = MembershipFeeTier.reconstruct(
+                    LEVEL_ID, "Závodní",
+                    com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
+                    List.of(MembershipPaymentRule.percentage(
+                            com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
+                            "A", 50)),
+                    null);
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule").exists())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.removeRule").exists());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
     class GetRuleTests {
 
@@ -407,7 +544,7 @@ class MembershipFeeTierControllerTest {
                     .andExpect(jsonPath("$.eventTypeId").value(EVENT_TYPE_UUID.toString()))
                     .andExpect(jsonPath("$.rankingShortName").value(RANKING))
                     .andExpect(jsonPath("$.ruleType").value("PERCENTAGE"))
-                    .andExpect(jsonPath("$.percent").value(50));
+                    .andExpect(jsonPath("$.percentage").value(50));
         }
 
         @Test

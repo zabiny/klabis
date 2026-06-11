@@ -7,6 +7,7 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
@@ -21,6 +22,7 @@ import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -94,6 +96,22 @@ class MembershipFeeTierController {
         MembershipFeeTierManagementPort.EditTierCommand command = request.toCommand();
         managementPort.editTier(new MembershipFeeTierId(id), command);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/rules")
+    @Operation(summary = "List payment rules for a membership fee tier")
+    ResponseEntity<CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>>> listRules(
+            @Parameter(description = "Tier UUID") @PathVariable UUID id) {
+        MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
+        List<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> items = tier.getRules().stream()
+                .map(rule -> entityModelWithDomain(
+                        MembershipFeeTierResponse.PaymentRuleResponse.from(rule),
+                        new PaymentRuleDomain(new MembershipFeeTierId(id), rule)))
+                .toList();
+        CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model = CollectionModel.of(items);
+        klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
+                .ifPresent(link -> model.add(link.withSelfRel()));
+        return ResponseEntity.ok(model);
     }
 
     @GetMapping("/{id}/rules/{eventTypeId}/{ranking}")
@@ -186,38 +204,39 @@ class MembershipFeeTierDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MembershipFeeTierResponse, MembershipFeeTier> {
 
     private final RankingOptionsPort rankingOptionsPort;
+    private final EventTypeOptionsPort eventTypeOptionsPort;
 
-    MembershipFeeTierDetailsPostprocessor(RankingOptionsPort rankingOptionsPort) {
+    MembershipFeeTierDetailsPostprocessor(RankingOptionsPort rankingOptionsPort, EventTypeOptionsPort eventTypeOptionsPort) {
         this.rankingOptionsPort = rankingOptionsPort;
+        this.eventTypeOptionsPort = eventTypeOptionsPort;
     }
 
     @Override
     public void process(EntityModel<MembershipFeeTierResponse> dtoModel, MembershipFeeTier tier) {
         UUID id = tier.getId().value();
         List<HalFormsInlineOption> rankingOptions = rankingOptionsPort.listRankingOptions();
+        List<HalFormsInlineOption> eventTypeOptions = eventTypeOptionsPort.listEventTypeOptions();
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).editTier(id, null)))
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id)))
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithMixedOptions(
                                 methodOn(MembershipFeeTierController.class).addRule(id, null),
-                                Map.of("rankingShortName", rankingOptions)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).removeRule(id, null, null))))
+                                Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
+                                Map.of("rankingShortName", rankingOptions, "eventTypeId", eventTypeOptions))))
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
-        // Plain links expose URL templates for per-row table actions (frontend substitutes {eventTypeId} and {ranking})
-        // editRule points to GET rule endpoint — frontend fetches it to get the editRule affordance/template
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).getRule(id, null, null))
-                .ifPresent(link -> dtoModel.add(link.withRel("editRule")));
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).removeRule(id, null, null))
-                .ifPresent(link -> dtoModel.add(link.withRel("deleteRule")));
+        klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
+                .ifPresent(link -> dtoModel.add(link.withRel("rules")));
     }
 }
 
 @MvcComponent
 class PaymentRuleDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MembershipFeeTierResponse.PaymentRuleResponse, MembershipFeeTierController.PaymentRuleDomain> {
+
+    private static final List<String> RULE_TYPE_OPTIONS = List.of("PERCENTAGE", "FIXED_AMOUNT");
 
     @Override
     public void process(EntityModel<MembershipFeeTierResponse.PaymentRuleResponse> dtoModel,
@@ -227,9 +246,13 @@ class PaymentRuleDetailsPostprocessor
         String ranking = domain.rule().rankingShortName();
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(MembershipFeeTierController.class).editRule(tierId, eventTypeId, ranking, null),
+                                Map.of("ruleType", RULE_TYPE_OPTIONS)))
                         .andAffordances(klabisAfford(
-                                methodOn(MembershipFeeTierController.class).editRule(tierId, eventTypeId, ranking, null))))
+                                methodOn(MembershipFeeTierController.class).removeRule(tierId, eventTypeId, ranking))))
                 .ifPresent(dtoModel::add);
+        dtoModel.add(Link.of("/api/event-types/" + eventTypeId, "eventType"));
     }
 }
 

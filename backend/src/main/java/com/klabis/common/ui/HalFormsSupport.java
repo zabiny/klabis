@@ -150,6 +150,24 @@ public class HalFormsSupport {
     }
 
     /**
+     * Like {@link #klabisAffordWithPromptedOptions}, but also accepts plain string options for some properties.
+     * Use when a single affordance needs both value+prompt pairs (prompted) and plain-value options (propertyOptions) for different fields.
+     */
+    public static List<Affordance> klabisAffordWithMixedOptions(Object invocation,
+                                                                  Map<String, List<String>> propertyOptions,
+                                                                  Map<String, List<HalFormsInlineOption>> promptedOptions) {
+        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
+
+        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+            return Collections.emptyList();
+        }
+
+        Affordance result = afford(lastInvocationAware);
+        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware, propertyOptions, promptedOptions);
+        return List.of(modifiedResult);
+    }
+
+    /**
      * Like {@link #klabisAfford}, but injects inline HAL-FORMS options with value+prompt pairs for the given properties.
      * The map keys are property names; values are the inline option lists carrying both a machine value and a human-readable prompt.
      * Options are stored as request attributes and are automatically scoped to the current HTTP request.

@@ -63,6 +63,9 @@ export interface HalFormButtonProps {
 
     /** When false, suppresses auto-navigation after POST+Location response */
     navigateOnSuccess?: boolean;
+
+    /** Hide the label text — use with icon for icon-only buttons */
+    hideLabel?: boolean;
 }
 
 /**
@@ -90,7 +93,7 @@ export interface HalFormButtonProps {
  *   )}
  * </HalFormButton>
  */
-export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess, hideLabel}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -123,6 +126,7 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
             className={className}
             variant={variant}
             icon={icon}
+            hideLabel={hideLabel}
         />
     );
 }
