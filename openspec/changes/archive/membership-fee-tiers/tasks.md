@@ -57,7 +57,7 @@
 
 ## 8. End-to-end verification
 
-- [ ] 8.1 Run full backend + frontend test suites; confirm green and coverage targets met (100% domain, >80% overall)
-- [ ] 8.2 `npm run refresh-backend-server-resources` to publish frontend changes; restart backend
-- [ ] 8.3 Manual/QA smoke: create a tier, add a percentage rule and a fixed-amount rule (ranking from dropdown), edit a rule value, remove a rule — verify the tier detail reflects each step
-- [ ] 8.4 Code review (review agent) before commit
+- [x] 8.1 Run full backend + frontend test suites; confirm green and coverage targets met (100% domain, >80% overall)
+- [x] 8.2 `npm run refresh-backend-server-resources` to publish frontend changes; restart backend
+- [x] 8.3 Manual/QA smoke: create a tier, add a percentage rule and a fixed-amount rule (ranking from dropdown), edit a rule value, remove a rule — verify the tier detail reflects each step
+- [x] 8.4 Code review (review agent) before commit
