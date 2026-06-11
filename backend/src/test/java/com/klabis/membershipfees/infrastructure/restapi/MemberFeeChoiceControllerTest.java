@@ -7,6 +7,7 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberChoicePort;
+import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.VotingClosedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +47,9 @@ class MemberFeeChoiceControllerTest {
 
     @MockitoBean
     private MemberChoicePort memberChoicePort;
+
+    @MockitoBean
+    private RankingOptionsPort rankingOptionsPort;
 
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-choice/{year}")

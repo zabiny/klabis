@@ -28,10 +28,10 @@
 
 ## 4. Ranking dropdown from ORIS (vertical slice)
 
-- [ ] 4.1 Write failing test: the add-rule affordance carries ranking inline options sourced from the ORIS ranking list; empty options when ORIS is unavailable (no error)
-- [ ] 4.2 Add a ranking-options port in membership-fees backed by `OrisApiClient.listLevels()` (mirror `listDisciplineOptions` incl. graceful degradation + warning log)
-- [ ] 4.3 Attach ranking inline options (and event-type options) to the `addRule` affordance; refactor; confirm green
-- [ ] 4.4 Frontend: replace the free-text ranking input in the rule form with a dropdown bound to the affordance's ranking options
+- [x] 4.1 Write failing test: the add-rule affordance carries ranking inline options sourced from the ORIS ranking list; empty options when ORIS is unavailable (no error)
+- [x] 4.2 Add a ranking-options port in membership-fees backed by `OrisApiClient.listLevels()` (mirror `listDisciplineOptions` incl. graceful degradation + warning log)
+- [x] 4.3 Attach ranking inline options (and event-type options) to the `addRule` affordance; refactor; confirm green
+- [x] 4.4 Frontend: replace the free-text ranking input in the rule form with a dropdown bound to the affordance's ranking options
 
 ## 5. Edit a rule's value (vertical slice)
 

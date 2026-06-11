@@ -13,6 +13,7 @@ import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.FeeYearPublicationNotFoundException;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.FeeYearPublication;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +59,9 @@ class FeeYearPublicationControllerTest {
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
+
+    @MockitoBean
+    private RankingOptionsPort rankingOptionsPort;
 
     private FeeYearPublication buildPublication(UUID id, int year) {
         return FeeYearPublication.reconstruct(

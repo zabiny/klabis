@@ -3,14 +3,17 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
+import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,14 @@ class MembershipFeeTierControllerTest {
 
     @MockitoBean
     private MembershipFeeTierManagementPort managementPort;
+
+    @MockitoBean
+    private RankingOptionsPort rankingOptionsPort;
+
+    @BeforeEach
+    void stubRankingOptions() {
+        when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of());
+    }
 
     private MembershipFeeTier buildLevel(UUID id, String name) {
         return MembershipFeeTier.reconstruct(
@@ -224,6 +235,48 @@ class MembershipFeeTierControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.collection.href").exists());
+        }
+
+        @Test
+        @DisplayName("addRule template should include ranking property with inline options from ORIS")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
+            when(managementPort.getTier(LEVEL_ID))
+                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption("A", "Elita"),
+                    new HalFormsInlineOption("B", "Výkonnostní"),
+                    new HalFormsInlineOption("WRE", "World Ranking Event")
+            ));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].value").value("A"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].prompt").value("Elita"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].value").value("B"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].prompt").value("Výkonnostní"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.valueField").value("value"));
+        }
+
+        @Test
+        @DisplayName("addRule template should include empty ranking options when ORIS is unavailable")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
+            when(managementPort.getTier(LEVEL_ID))
+                    .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+            when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists());
         }
     }
 

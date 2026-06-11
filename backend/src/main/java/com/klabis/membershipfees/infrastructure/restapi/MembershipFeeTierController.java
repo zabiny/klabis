@@ -1,12 +1,14 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -127,14 +130,23 @@ class MembershipFeeTierController {
 class MembershipFeeTierDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MembershipFeeTierResponse, MembershipFeeTier> {
 
+    private final RankingOptionsPort rankingOptionsPort;
+
+    MembershipFeeTierDetailsPostprocessor(RankingOptionsPort rankingOptionsPort) {
+        this.rankingOptionsPort = rankingOptionsPort;
+    }
+
     @Override
     public void process(EntityModel<MembershipFeeTierResponse> dtoModel, MembershipFeeTier tier) {
         UUID id = tier.getId().value();
+        List<HalFormsInlineOption> rankingOptions = rankingOptionsPort.listRankingOptions();
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).editTier(id, null)))
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).addRule(id, null))))
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(MembershipFeeTierController.class).addRule(id, null),
+                                Map.of("rankingShortName", rankingOptions))))
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
