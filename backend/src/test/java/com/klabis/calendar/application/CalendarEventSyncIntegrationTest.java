@@ -12,10 +12,12 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Events;
 import com.klabis.events.domain.RegistrationDeadlines;
+import com.klabis.members.infrastructure.restapi.MemberIdMixin;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.ActiveProfiles;
@@ -50,6 +52,7 @@ import static org.mockito.Mockito.when;
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
+@Import(MemberIdMixin.class)
 @DisplayName("Calendar Event Synchronization Integration Tests")
 class CalendarEventSyncIntegrationTest {
 

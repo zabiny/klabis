@@ -52,12 +52,12 @@ class MembershipFeeTierControllerTest {
     @MockitoBean
     private MembershipFeeTierManagementPort managementPort;
 
-    @MockitoBean
-    private RankingOptionsPort rankingOptionsPort;
+    @Autowired
+    private RankingOptionsPort rankingOptionsPortMock;
 
     @BeforeEach
-    void stubRankingOptions() {
-        when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of());
+    void setupMocks() {
+        when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
     }
 
     private MembershipFeeTier buildLevel(UUID id, String name) {
@@ -265,7 +265,7 @@ class MembershipFeeTierControllerTest {
         void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
             when(managementPort.getTier(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-            when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of(
+            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of(
                     new HalFormsInlineOption("A", "Elita"),
                     new HalFormsInlineOption("B", "Výkonnostní"),
                     new HalFormsInlineOption("WRE", "World Ranking Event")
@@ -292,7 +292,7 @@ class MembershipFeeTierControllerTest {
         void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
             when(managementPort.getTier(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
-            when(rankingOptionsPort.listRankingOptions()).thenReturn(List.of());
+            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers/{id}", LEVEL_UUID)

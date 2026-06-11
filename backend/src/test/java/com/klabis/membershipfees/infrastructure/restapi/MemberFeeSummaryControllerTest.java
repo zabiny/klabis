@@ -9,7 +9,6 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
-import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,9 +57,6 @@ class MemberFeeSummaryControllerTest {
 
     @MockitoBean
     private FeeYearPublicationManagementPort publicationManagementPort;
-
-    @MockitoBean
-    private RankingOptionsPort rankingOptionsPort;
 
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-summary/{year}")

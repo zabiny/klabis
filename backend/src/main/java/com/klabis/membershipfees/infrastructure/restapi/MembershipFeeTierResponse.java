@@ -39,12 +39,13 @@ record MembershipFeeTierResponse(
             String fixedCurrency
     ) {
         static PaymentRuleResponse from(MembershipPaymentRule rule) {
+            var eventTypeId = rule.eventTypeId();
             return switch (rule.value()) {
                 case MembershipPaymentRule.RuleValue.Percentage p ->
-                        new PaymentRuleResponse(rule.eventTypeId(), rule.rankingShortName(),
+                        new PaymentRuleResponse(eventTypeId, rule.rankingShortName(),
                                 "PERCENTAGE", p.percent(), null, null);
                 case MembershipPaymentRule.RuleValue.FixedAmount f ->
-                        new PaymentRuleResponse(rule.eventTypeId(), rule.rankingShortName(),
+                        new PaymentRuleResponse(eventTypeId, rule.rankingShortName(),
                                 "FIXED_AMOUNT", null, f.amount().amount(),
                                 f.amount().currency().getCurrencyCode());
             };

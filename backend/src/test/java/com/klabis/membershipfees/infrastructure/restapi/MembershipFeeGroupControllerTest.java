@@ -10,7 +10,6 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeYearPublicationManagementPort;
-import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.membershipfees.domain.SnapshotFrozenException;
@@ -54,9 +53,6 @@ class MembershipFeeGroupControllerTest {
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
-
-    @MockitoBean
-    private RankingOptionsPort rankingOptionsPort;
 
     private static final java.time.LocalDate VOTING_DEADLINE = java.time.LocalDate.of(2026, 3, 31);
 

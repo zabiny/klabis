@@ -3,6 +3,7 @@ package com.klabis.common;
 import com.klabis.common.users.UserService;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.membershipfees.application.RankingOptionsPort;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -35,7 +36,8 @@ import java.lang.annotation.Target;
         FamilyGroupRepository.class,
         TrainingGroupRepository.class,
         UserService.class,
-        UserDetailsService.class
+        UserDetailsService.class,
+        RankingOptionsPort.class
 })
 public @interface WithPostprocessors {
 }
