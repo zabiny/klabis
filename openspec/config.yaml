@@ -38,6 +38,7 @@ rules:
     - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
     - "Add chapter with glossary of newly introduced domain terms"
     - "If proposal involves changes in the domain, add decision point about domain changes to the design document. Chapter shall contain class diagram (mermaid) of target domain model with table describing elements and specification of what is added/changed/removed"
+    - "if proposed changes are affecting REST API from the backend, add chapter in design document with new format of the API - endpoints, parameters, request body, response body, HAL link names, HAL+FORMS affordance names" 
 
   proposal:
     - "Use Mermaid diagrams in proposal.md to visualize concepts if applicable"
