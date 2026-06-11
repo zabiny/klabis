@@ -4,9 +4,10 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import {FeeYearPublicationDetailPage} from './FeeYearPublicationDetailPage';
+import {FeeSelectionCampaignDetailPage} from './FeeSelectionCampaignDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {mockHalFormsTemplate} from '../../__mocks__/halData';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -45,13 +46,13 @@ const mockGroups = [
     },
 ];
 
-const buildPublicationDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
-    id: 'pub-1',
+const buildCampaignDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
+    id: 'campaign-1',
     year: 2025,
     votingDeadline: '2025-03-31',
     _links: {
-        self: {href: '/api/fee-year-publications/pub-1'},
-        levels: {href: '/api/fee-year-publications/pub-1/levels'},
+        self: {href: '/api/fee-selection-campaigns/campaign-1'},
+        levels: {href: '/api/fee-selection-campaigns/campaign-1/levels'},
     },
     ...overrides,
 });
@@ -62,11 +63,11 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     error: null,
     isAdmin: false,
     route: {
-        pathname: '/administration/fee-year-publications/pub-1',
+        pathname: '/administration/fee-selection-campaigns/campaign-1',
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-year-publications/pub-1'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -86,14 +87,14 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/administration/fee-year-publications/pub-1']}>
-                <FeeYearPublicationDetailPage/>
+            <MemoryRouter initialEntries={['/administration/fee-selection-campaigns/campaign-1']}>
+                <FeeSelectionCampaignDetailPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-describe('FeeYearPublicationDetailPage', () => {
+describe('FeeSelectionCampaignDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -109,22 +110,22 @@ describe('FeeYearPublicationDetailPage', () => {
     });
 
     it('renders year as heading', () => {
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByRole('heading', {name: /2025/i})).toBeInTheDocument();
     });
 
     it('renders choice deadline label', () => {
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Uzávěrka hlasování')).toBeInTheDocument();
     });
 
     it('renders back link to list', () => {
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText(/zpět na seznam/i)).toBeInTheDocument();
     });
 
     it('renders groups section heading', () => {
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByRole('heading', {name: /skupiny/i})).toBeInTheDocument();
     });
 
@@ -133,7 +134,7 @@ describe('FeeYearPublicationDetailPage', () => {
             data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
             error: null,
         } as ReturnType<typeof useAuthorizedQuery>);
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
         expect(screen.getByText('Aktivní závodník')).toBeInTheDocument();
     });
@@ -143,7 +144,7 @@ describe('FeeYearPublicationDetailPage', () => {
             data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
             error: null,
         } as ReturnType<typeof useAuthorizedQuery>);
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Editovatelná')).toBeInTheDocument();
     });
 
@@ -152,7 +153,7 @@ describe('FeeYearPublicationDetailPage', () => {
             data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
             error: null,
         } as ReturnType<typeof useAuthorizedQuery>);
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Zmrazená')).toBeInTheDocument();
     });
 
@@ -161,9 +162,24 @@ describe('FeeYearPublicationDetailPage', () => {
             data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
             error: null,
         } as ReturnType<typeof useAuthorizedQuery>);
-        renderPage(createMockPageData(buildPublicationDetail()));
+        renderPage(createMockPageData(buildCampaignDetail()));
         const links = screen.getAllByRole('link');
         const groupLinks = links.filter(l => l.getAttribute('href')?.includes('membership-fee-groups'));
         expect(groupLinks.length).toBeGreaterThan(0);
+    });
+
+    it('does not show "Změnit deadline" button when changeDeadline template is absent', () => {
+        renderPage(createMockPageData(buildCampaignDetail()));
+        expect(screen.queryByRole('button', {name: /změnit deadline/i})).not.toBeInTheDocument();
+    });
+
+    it('shows "Změnit deadline" button when changeDeadline template is present', () => {
+        const resourceData = buildCampaignDetail({
+            _templates: {
+                changeDeadline: mockHalFormsTemplate({title: 'Změnit deadline', method: 'PATCH'}),
+            },
+        });
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByRole('button', {name: /změnit deadline/i})).toBeInTheDocument();
     });
 });

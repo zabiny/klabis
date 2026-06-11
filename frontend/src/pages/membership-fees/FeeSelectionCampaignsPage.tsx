@@ -9,13 +9,13 @@ import type {EntityModel} from '../../api';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 
-type FeeYearPublicationSummary = EntityModel<{
+type FeeSelectionCampaignSummary = EntityModel<{
     id: string;
     year: number;
     votingDeadline: string;
 }>;
 
-export const FeeYearPublicationsPage = (): ReactElement => {
+export const FeeSelectionCampaignsPage = (): ReactElement => {
     const {isLoading, error, route} = useHalPageData();
 
     if (isLoading) {
@@ -30,8 +30,8 @@ export const FeeYearPublicationsPage = (): ReactElement => {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-[28px] font-bold text-[#18181B]">{labels.sections.feeYearPublicationsList}</h1>
-                    <p className="text-sm text-[#71717A] mt-0.5">Vypsání výběru úrovní příspěvků pro jednotlivé roky</p>
+                    <h1 className="text-[28px] font-bold text-[#18181B]">{labels.sections.feeSelectionCampaignsList}</h1>
+                    <p className="text-sm text-[#71717A] mt-0.5">Kampaně pro výběr úrovní členských příspěvků</p>
                 </div>
                 <HalFormButton
                     name="publishYear"
@@ -42,13 +42,13 @@ export const FeeYearPublicationsPage = (): ReactElement => {
             </div>
 
             <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
-                <HalEmbeddedTable<FeeYearPublicationSummary>
-                    collectionName="feeYearPublicationResponseList"
-                    tableId="fee-year-publications"
+                <HalEmbeddedTable<FeeSelectionCampaignSummary>
+                    collectionName="feeSelectionCampaignResponseList"
+                    tableId="fee-selection-campaigns"
                     defaultOrderBy="year"
                     defaultOrderDirection="desc"
                     onRowClick={route.navigateToResource}
-                    emptyMessage="Žádná vypsání pro rok."
+                    emptyMessage="Žádné kampaně volby členského příspěvku."
                 >
                     <TableCell sortable column="year">Rok</TableCell>
                     <TableCell

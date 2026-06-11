@@ -30,8 +30,8 @@ import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
 import {MembershipFeeTiersPage} from "./pages/membership-fees/MembershipFeeTiersPage.tsx";
 import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
-import {FeeYearPublicationsPage} from "./pages/membership-fees/FeeYearPublicationsPage.tsx";
-import {FeeYearPublicationDetailPage} from "./pages/membership-fees/FeeYearPublicationDetailPage.tsx";
+import {FeeSelectionCampaignsPage} from "./pages/membership-fees/FeeSelectionCampaignsPage.tsx";
+import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
 import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
@@ -118,8 +118,8 @@ function App() {
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
                                     <Route path="/membership-fee-tiers" element={<MembershipFeeTiersPage/>}/>
                                     <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
-                                    <Route path="/fee-year-publications" element={<FeeYearPublicationsPage/>}/>
-                                    <Route path="/fee-year-publications/:id" element={<FeeYearPublicationDetailPage/>}/>
+                                    <Route path="/fee-selection-campaigns" element={<FeeSelectionCampaignsPage/>}/>
+                                    <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
                                     <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                                 </Route>
 

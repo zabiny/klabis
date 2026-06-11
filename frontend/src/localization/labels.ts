@@ -11,7 +11,7 @@ export const labels = {
         'event-types': 'Typy akcí',
         account: 'Finance',
         'membership-fee-tiers': 'Katalog tierů',
-        'fee-year-publications': 'Vypsání pro rok',
+        'fee-selection-campaigns': 'Kampaň volby členského příspěvku',
         'membership-fees': 'Členské příspěvky',
     },
 
@@ -98,6 +98,7 @@ export const labels = {
         editRule: 'Upravit pravidlo',
         removeRule: 'Smazat pravidlo',
         publishYear: 'Vypsat rok',
+        changeDeadline: 'Změnit deadline',
         editSnapshot: 'Upravit skupinu',
         assignMember: 'Přiřadit člena',
     },
@@ -422,7 +423,7 @@ export const labels = {
         membershipFeeTiersList: 'Katalog tierů',
         membershipFeeGroups: 'Skupiny',
         membershipFeeGroupMembers: 'ČLENOVÉ',
-        feeYearPublicationsList: 'Vypsání pro rok',
+        feeSelectionCampaignsList: 'Kampaně volby členského příspěvku',
         coParticipationRules: 'PRAVIDLA SPOLUÚČASTI',
     },
 

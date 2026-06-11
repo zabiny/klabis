@@ -1,10 +1,11 @@
-import {type ReactElement} from 'react';
+import {type ReactElement, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {ArrowRight} from 'lucide-react';
+import {ArrowRight, Calendar} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {Alert, Skeleton} from '../../components/UI';
-import type {HalResponse} from '../../api';
+import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
+import type {HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -25,7 +26,7 @@ interface FeeGroupsCollection {
     };
 }
 
-interface FeeYearPublicationDetail extends HalResponse {
+interface FeeSelectionCampaignDetail extends HalResponse {
     id: string;
     year: number;
     votingDeadline: string;
@@ -46,14 +47,19 @@ const GroupStatusBadge = ({status}: {status: FeeGroupSummary['status']}): ReactE
     );
 };
 
-const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearPublicationDetail}): ReactElement => {
+const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSelectionCampaignDetail}): ReactElement => {
+    const {route} = useHalPageData<FeeSelectionCampaignDetail>();
     const navigate = useNavigate();
+    const [changeDeadlineOpen, setChangeDeadlineOpen] = useState(false);
+
     const levelsHref = resourceData._links?.levels?.href ?? '';
     const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
         levelsHref ? extractNavigationPath(levelsHref) : '',
         {enabled: !!levelsHref}
     );
     const groups = groupsData?._embedded?.membershipFeeGroupResponseList ?? [];
+
+    const changeDeadlineTemplate = resourceData._templates?.changeDeadline ?? null;
 
     const handleGroupClick = (group: FeeGroupSummary) => {
         navigate(extractNavigationPath(group._links.self.href));
@@ -62,7 +68,7 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 text-sm text-[#71717A]">
-                <Link to="/fee-year-publications" className="hover:text-[#18181B]">
+                <Link to="/fee-selection-campaigns" className="hover:text-[#18181B]">
                     {labels.ui.backToList}
                 </Link>
                 <span>/</span>
@@ -84,6 +90,20 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
                         </p>
                     </div>
                 </div>
+
+                {changeDeadlineTemplate && (
+                    <div className="mt-5 pt-5 border-t border-[#E4E4E7]">
+                        <button
+                            type="button"
+                            onClick={() => setChangeDeadlineOpen(true)}
+                            className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                            aria-label={labels.templates.changeDeadline}
+                        >
+                            <Calendar className="w-[15px] h-[15px]"/>
+                            {labels.templates.changeDeadline}
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-col gap-4">
@@ -142,12 +162,24 @@ const FeeYearPublicationDetailContent = ({resourceData}: {resourceData: FeeYearP
                     </div>
                 )}
             </div>
+
+            {changeDeadlineTemplate && changeDeadlineOpen && (
+                <HalFormModal
+                    title={labels.templates.changeDeadline}
+                    template={changeDeadlineTemplate as HalFormsTemplate}
+                    templateName="changeDeadline"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setChangeDeadlineOpen(false)}
+                    navigateOnSuccess={false}
+                />
+            )}
         </div>
     );
 };
 
-export const FeeYearPublicationDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<FeeYearPublicationDetail>();
+export const FeeSelectionCampaignDetailPage = (): ReactElement => {
+    const {resourceData, isLoading, error} = useHalPageData<FeeSelectionCampaignDetail>();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -161,5 +193,5 @@ export const FeeYearPublicationDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    return <FeeYearPublicationDetailContent resourceData={resourceData}/>;
+    return <FeeSelectionCampaignDetailContent resourceData={resourceData}/>;
 };

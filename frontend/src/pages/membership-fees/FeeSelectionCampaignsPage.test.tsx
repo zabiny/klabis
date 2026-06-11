@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
-import {FeeYearPublicationsPage} from './FeeYearPublicationsPage';
+import {FeeSelectionCampaignsPage} from './FeeSelectionCampaignsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
@@ -40,11 +40,11 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     error: null,
     isAdmin: false,
     route: {
-        pathname: '/administration/fee-year-publications',
+        pathname: '/administration/fee-selection-campaigns',
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-year-publications'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns'}),
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -64,21 +64,21 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/administration/fee-year-publications']}>
-                <FeeYearPublicationsPage/>
+            <MemoryRouter initialEntries={['/administration/fee-selection-campaigns']}>
+                <FeeSelectionCampaignsPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-describe('FeeYearPublicationsPage', () => {
+describe('FeeSelectionCampaignsPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('renders page title "Vypsání pro rok"', () => {
+    it('renders page title "Kampaně volby členského příspěvku"', () => {
         renderPage(createMockPageData(null));
-        expect(screen.getByRole('heading', {level: 1, name: 'Vypsání pro rok'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {level: 1, name: 'Kampaně volby členského příspěvku'})).toBeInTheDocument();
     });
 
     it('renders table column headers', () => {
@@ -99,7 +99,7 @@ describe('FeeYearPublicationsPage', () => {
 
     it('renders "Vypsat rok" button when publishYear template exists', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/fee-year-publications'}},
+            _links: {self: {href: '/api/fee-selection-campaigns'}},
             _templates: {
                 publishYear: mockHalFormsTemplate({title: 'Vypsat rok', method: 'POST'}),
             },
@@ -110,21 +110,21 @@ describe('FeeYearPublicationsPage', () => {
 
     it('does not render publish button when template is absent', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/fee-year-publications'}},
+            _links: {self: {href: '/api/fee-selection-campaigns'}},
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByRole('button', {name: /vypsat rok/i})).not.toBeInTheDocument();
     });
 
-    it('renders publication year in the table', () => {
+    it('renders campaign year in the table', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/fee-year-publications'}},
+            _links: {self: {href: '/api/fee-selection-campaigns'}},
             _embedded: {
-                feeYearPublicationResponseList: [{
-                    id: 'pub-1',
+                feeSelectionCampaignResponseList: [{
+                    id: 'campaign-1',
                     year: 2025,
                     votingDeadline: '2025-03-31',
-                    _links: {self: {href: '/api/fee-year-publications/pub-1'}},
+                    _links: {self: {href: '/api/fee-selection-campaigns/campaign-1'}},
                 }],
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},

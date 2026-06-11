@@ -36,11 +36,11 @@
 
 ## 6. Frontend: přejmenování a nové akce
 
-- [ ] 6.1 Přejmenovat frontend stránky rename refactoringem (JetBrains IDEA MCP): `FeeYearPublicationsPage` → `FeeSelectionCampaignsPage`, `FeeYearPublicationDetailPage` → `FeeSelectionCampaignDetailPage`
-- [ ] 6.2 Aktualizovat `labels.ts`: "Vypsání pro rok" → "Kampaň volby členského příspěvku", všechny odvozené texty
-- [ ] 6.3 Aktualizovat routy v `App.tsx` pro nové URL `/campaigns`
-- [ ] 6.4 Přidat UI akci "Změnit deadline" na detail stránce kampaně (HalFormButton pro affordanci `changeDeadline`)
-- [ ] 6.5 Spustit frontend testy a opravit
+- [x] 6.1 Přejmenovat frontend stránky rename refactoringem (JetBrains IDEA MCP): `FeeYearPublicationsPage` → `FeeSelectionCampaignsPage`, `FeeYearPublicationDetailPage` → `FeeSelectionCampaignDetailPage`
+- [x] 6.2 Aktualizovat `labels.ts`: "Vypsání pro rok" → "Kampaň volby členského příspěvku", všechny odvozené texty
+- [x] 6.3 Aktualizovat routy v `App.tsx` pro nové URL `/campaigns`
+- [x] 6.4 Přidat UI akci "Změnit deadline" na detail stránce kampaně (HalFormButton pro affordanci `changeDeadline`)
+- [x] 6.5 Spustit frontend testy a opravit
 
 ## 7. Spec aktualizace a E2E test
 
