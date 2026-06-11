@@ -284,6 +284,55 @@ class MembershipFeeTierTest {
     }
 
     @Nested
+    @DisplayName("removeRule()")
+    class RemoveRule {
+
+        @Test
+        @DisplayName("should remove the matching rule from the list")
+        void shouldRemoveMatchingRule() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            tier.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
+
+            tier.removeRule(EVENT_TYPE_A, "A");
+
+            assertThat(tier.getRules()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should leave other rules untouched when removing one rule")
+        void shouldLeaveOtherRulesUntouched() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            MembershipPaymentRule ruleA = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
+            MembershipPaymentRule ruleB = MembershipPaymentRule.percentage(EVENT_TYPE_B, "A", 30);
+            tier.addRule(ruleA);
+            tier.addRule(ruleB);
+
+            tier.removeRule(EVENT_TYPE_A, "A");
+
+            assertThat(tier.getRules()).containsExactly(ruleB);
+        }
+
+        @Test
+        @DisplayName("should throw PaymentRuleNotFoundException when no rule matches the key")
+        void shouldThrowWhenRuleNotFound() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+
+            assertThatThrownBy(() -> tier.removeRule(EVENT_TYPE_A, "A"))
+                    .isInstanceOf(PaymentRuleNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should throw PaymentRuleNotFoundException when ranking does not match")
+        void shouldThrowWhenRankingDoesNotMatch() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            tier.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
+
+            assertThatThrownBy(() -> tier.removeRule(EVENT_TYPE_A, "B"))
+                    .isInstanceOf(PaymentRuleNotFoundException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("reconstruct()")
     class Reconstruct {
 

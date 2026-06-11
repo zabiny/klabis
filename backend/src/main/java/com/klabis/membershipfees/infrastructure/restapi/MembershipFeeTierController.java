@@ -125,6 +125,21 @@ class MembershipFeeTierController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/rules/{eventTypeId}/{ranking}")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Remove a payment rule from a membership fee tier (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> removeRule(
+            @Parameter(description = "Tier UUID") @PathVariable UUID id,
+            @Parameter(description = "Event type UUID") @PathVariable UUID eventTypeId,
+            @Parameter(description = "Ranking short name") @PathVariable String ranking) {
+        MembershipFeeTierManagementPort.RemoveRuleCommand command = new MembershipFeeTierManagementPort.RemoveRuleCommand(
+                EventTypeReference.of(eventTypeId),
+                ranking
+        );
+        managementPort.removeRule(new MembershipFeeTierId(id), command);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Delete a membership fee tier (requires MEMBERS:MANAGE)")
@@ -170,6 +185,8 @@ class MembershipFeeTierDetailsPostprocessor
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
         klabisLinkTo(methodOn(MembershipFeeTierController.class).editRule(id, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("editRule")));
+        klabisLinkTo(methodOn(MembershipFeeTierController.class).removeRule(id, null, null))
+                .ifPresent(link -> dtoModel.add(link.withRel("deleteRule")));
     }
 }
 

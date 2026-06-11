@@ -43,11 +43,11 @@
 
 ## 6. Remove a rule (vertical slice)
 
-- [ ] 6.1 Write failing domain test: `removeRule(eventTypeId, ranking)` removes the matching rule
-- [ ] 6.2 Write failing REST test: `DELETE /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}` removes the rule
-- [ ] 6.3 Implement `removeRule` on the aggregate, the service, and the `DELETE .../rules/{eventTypeId}/{ranking}` endpoint (requires MEMBERS:MANAGE)
-- [ ] 6.4 Expose the `deleteRule` affordance per rule row; refactor; confirm green
-- [ ] 6.5 Frontend: wire the per-row delete button to the `DELETE` endpoint
+- [x] 6.1 Write failing domain test: `removeRule(eventTypeId, ranking)` removes the matching rule
+- [x] 6.2 Write failing REST test: `DELETE /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}` removes the rule
+- [x] 6.3 Implement `removeRule` on the aggregate, the service, and the `DELETE .../rules/{eventTypeId}/{ranking}` endpoint (requires MEMBERS:MANAGE)
+- [x] 6.4 Expose the `deleteRule` affordance per rule row; refactor; confirm green
+- [x] 6.5 Frontend: wire the per-row delete button to the `DELETE` endpoint
 
 ## 7. Typed event-type id in rule payload
 

@@ -537,6 +537,53 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
+    @DisplayName("DELETE /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    class DeleteRuleTests {
+
+        private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        private static final String RANKING = "A";
+
+        @Test
+        @DisplayName("should return 204 when rule is successfully removed")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204OnSuccess() throws Exception {
+            doNothing().when(managementPort).removeRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(
+                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 404 when rule with given key does not exist")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn404WhenRuleNotFound() throws Exception {
+            doThrow(new com.klabis.membershipfees.domain.PaymentRuleNotFoundException(
+                    com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID), RANKING))
+                    .when(managementPort).removeRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("DELETE /api/membership-fee-tiers/{id}")
     class DeleteLevelTests {
 

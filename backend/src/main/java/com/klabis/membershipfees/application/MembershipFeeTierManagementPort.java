@@ -37,6 +37,13 @@ public interface MembershipFeeTierManagementPort {
         }
     }
 
+    record RemoveRuleCommand(EventTypeReference eventTypeId, String rankingShortName) {
+        public RemoveRuleCommand {
+            Assert.notNull(eventTypeId, "EventTypeId is required");
+            Assert.hasText(rankingShortName, "RankingShortName is required");
+        }
+    }
+
     MembershipFeeTierId createTier(CreateTierCommand command);
 
     void editTier(MembershipFeeTierId id, EditTierCommand command);
@@ -44,6 +51,8 @@ public interface MembershipFeeTierManagementPort {
     void addRule(MembershipFeeTierId tierId, AddRuleCommand command);
 
     void editRule(MembershipFeeTierId tierId, EditRuleCommand command);
+
+    void removeRule(MembershipFeeTierId tierId, RemoveRuleCommand command);
 
     MembershipFeeTier getTier(MembershipFeeTierId id);
 

@@ -5,6 +5,7 @@ import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
+import {authorizedFetch} from '../../api/authorizedFetch.ts';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Plus, Save, Trash2, X} from 'lucide-react';
 
@@ -58,6 +59,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     const addRuleTemplate = resourceData._templates?.addRule ?? null;
     const editRuleTemplate = resourceData._templates?.editRule ?? null;
     const editRuleLink = resourceData._links?.editRule;
+    const deleteRuleLink = resourceData._links?.deleteRule;
     const rules = resourceData.rules ?? [];
 
     const buildEditRuleUrl = (rule: CoParticipationRule): string | null => {
@@ -67,6 +69,22 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
         return href
             .replace('{eventTypeId}', encodeURIComponent(rule.eventTypeId))
             .replace('{ranking}', encodeURIComponent(rule.rankingShortName));
+    };
+
+    const buildDeleteRuleUrl = (rule: CoParticipationRule): string | null => {
+        if (!deleteRuleLink) return null;
+        const href = Array.isArray(deleteRuleLink) ? deleteRuleLink[0]?.href : deleteRuleLink.href;
+        if (!href) return null;
+        return href
+            .replace('{eventTypeId}', encodeURIComponent(rule.eventTypeId))
+            .replace('{ranking}', encodeURIComponent(rule.rankingShortName));
+    };
+
+    const handleDeleteRule = async (rule: CoParticipationRule): Promise<void> => {
+        const url = buildDeleteRuleUrl(rule);
+        if (!url) return;
+        await authorizedFetch(url, {method: 'DELETE'});
+        route.refetch();
     };
 
     return (
@@ -189,13 +207,16 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                                 <Pencil className="w-4 h-4"/>
                                             </button>
                                         )}
-                                        <button
-                                            type="button"
-                                            aria-label="Smazat pravidlo"
-                                            className="w-8 h-8 flex items-center justify-center rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
-                                        >
-                                            <X className="w-4 h-4"/>
-                                        </button>
+                                        {deleteRuleLink && (
+                                            <button
+                                                type="button"
+                                                aria-label="Smazat pravidlo"
+                                                onClick={() => void handleDeleteRule(rule)}
+                                                className="w-8 h-8 flex items-center justify-center rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                                            >
+                                                <X className="w-4 h-4"/>
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
