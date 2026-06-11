@@ -46,12 +46,20 @@ services:
     networks:
       - klabis-network
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: klabis-mailhog
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: klabis-mailpit
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "8026:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    environment:
+      - MP_SMTP_AUTH=klabis:???
+      - MP_UI_AUTH=admin:???
+      - MP_SMTP_TLS_CERT=/certs/cert.pem
+      - MP_SMTP_TLS_KEY=/certs/key.pem
+    volumes:
+      - ./tools/mailpit/certs:/certs:ro
+    restart: unless-stopped
     networks:
       - klabis-network
 
