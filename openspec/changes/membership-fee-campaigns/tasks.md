@@ -12,20 +12,20 @@
 
 ## 2. Doménová logika: changeDeadline
 
-- [ ] 2.1 Napsat testy pro `changeDeadline(LocalDate newDeadline, LocalDate today)`: deadline v budoucnosti OK, deadline = dnes OK, deadline v minulosti → výjimka, uzavřená kampaň → výjimka
-- [ ] 2.2 Implementovat `changeDeadline(LocalDate newDeadline, LocalDate today)` na doménovém objektu
+- [x] 2.1 Napsat testy pro `changeDeadline(LocalDate newDeadline, LocalDate today)`: deadline v budoucnosti OK, deadline = dnes OK, deadline v minulosti → výjimka, uzavřená kampaň → výjimka
+- [x] 2.2 Implementovat `changeDeadline(LocalDate newDeadline, LocalDate today)` na doménovém objektu
 
 ## 3. Validace při zakládání kampaně
 
-- [ ] 3.1 Napsat testy pro `FeeSelectionCampaignManagementService.publishYear()`: deadline v minulosti → `DeadlineNotInFutureException`, existuje aktivní kampaň → `ActiveCampaignExistsException`
-- [ ] 3.2 Přidat `findActive(LocalDate today)` metodu na `FeeSelectionCampaignRepository`
-- [ ] 3.3 Implementovat validace v `publishYear()`: deadline > today, žádná aktivní kampaň
-- [ ] 3.4 Přidat `DeadlineNotInFutureException` a mapování na `400` v exception handleru
+- [x] 3.1 Napsat testy pro `FeeSelectionCampaignManagementService.publishYear()`: deadline v minulosti → `DeadlineNotInFutureException`, existuje aktivní kampaň → `ActiveCampaignExistsException`
+- [x] 3.2 Přidat `findActive(LocalDate today)` metodu na `FeeSelectionCampaignRepository`
+- [x] 3.3 Implementovat validace v `publishYear()`: deadline > today, žádná aktivní kampaň
+- [x] 3.4 Přidat `DeadlineNotInFutureException` a mapování na `400` v exception handleru
 
 ## 4. Aplikační vrstva: changeDeadline operace
 
-- [ ] 4.1 Napsat testy pro `changeDeadline` operaci v service: delegace na doménový objekt, uložení
-- [ ] 4.2 Přidat `changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command)` na port a implementovat v service
+- [x] 4.1 Napsat testy pro `changeDeadline` operaci v service: delegace na doménový objekt, uložení
+- [x] 4.2 Přidat `changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command)` na port a implementovat v service
 
 ## 5. REST API: nová affordance
 

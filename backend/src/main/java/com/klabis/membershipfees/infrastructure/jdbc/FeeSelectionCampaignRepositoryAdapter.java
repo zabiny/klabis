@@ -49,4 +49,9 @@ class FeeSelectionCampaignRepositoryAdapter implements FeeSelectionCampaignRepos
                 .map(FeeSelectionCampaignMemento::toPublication)
                 .toList();
     }
+
+    @Override
+    public Optional<FeeSelectionCampaign> findActive(LocalDate today) {
+        return jdbcRepository.findActive(today).map(FeeSelectionCampaignMemento::toPublication);
+    }
 }

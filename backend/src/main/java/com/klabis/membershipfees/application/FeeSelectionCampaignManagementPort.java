@@ -24,6 +24,12 @@ public interface FeeSelectionCampaignManagementPort {
         }
     }
 
+    record ChangeDeadlineCommand(LocalDate votingDeadline) {
+        public ChangeDeadlineCommand {
+            Assert.notNull(votingDeadline, "VotingDeadline is required");
+        }
+    }
+
     record EditGroupSnapshotCommand(Money yearlyFee, List<MembershipPaymentRule> rules) {
         public EditGroupSnapshotCommand {
             Assert.notNull(yearlyFee, "YearlyFee is required");
@@ -46,4 +52,6 @@ public interface FeeSelectionCampaignManagementPort {
     MembershipFeeGroup getGroup(MembershipFeeGroupId id);
 
     void editGroupSnapshot(MembershipFeeGroupId id, EditGroupSnapshotCommand command);
+
+    void changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command);
 }

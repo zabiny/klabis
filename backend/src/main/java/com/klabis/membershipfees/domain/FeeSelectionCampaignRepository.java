@@ -22,4 +22,10 @@ public interface FeeSelectionCampaignRepository {
      * and that have not yet been processed by the scheduler (deadlineProcessedAt is null).
      */
     List<FeeSelectionCampaign> findUnprocessedClosedPublications(java.time.LocalDate today);
+
+    /**
+     * Returns the active campaign (one whose voting deadline has not passed yet),
+     * i.e. votingDeadline >= today.
+     */
+    java.util.Optional<FeeSelectionCampaign> findActive(java.time.LocalDate today);
 }

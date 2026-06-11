@@ -6,6 +6,8 @@ import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,20 +17,27 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
     private final FeeSelectionCampaignRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
     private final MembershipFeeTierRepository tierRepository;
+    private final Clock clock;
 
     FeeSelectionCampaignManagementService(FeeSelectionCampaignRepository publicationRepository,
                                           MembershipFeeGroupRepository groupRepository,
-                                          MembershipFeeTierRepository tierRepository) {
+                                          MembershipFeeTierRepository tierRepository,
+                                          Clock clock) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
         this.tierRepository = tierRepository;
+        this.clock = clock;
     }
 
     @Transactional
     @Override
     public FeeSelectionCampaignId publishYear(PublishYearCommand command) {
-        publicationRepository.findByYear(command.year()).ifPresent(existing -> {
-            throw new ActiveCampaignExistsException(command.year());
+        LocalDate today = LocalDate.now(clock);
+        if (!command.votingDeadline().isAfter(today)) {
+            throw new DeadlineNotInFutureException(command.votingDeadline());
+        }
+        publicationRepository.findActive(today).ifPresent(existing -> {
+            throw new ActiveCampaignExistsException(existing.getYear());
         });
 
         List<MembershipFeeTier> levels = command.levelIds().stream()
@@ -76,6 +85,16 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
     public MembershipFeeGroup getGroup(MembershipFeeGroupId id) {
         return groupRepository.findById(id)
                 .orElseThrow(() -> new MembershipFeeGroupNotFoundException(id));
+    }
+
+    @Transactional
+    @Override
+    public void changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command) {
+        FeeSelectionCampaign campaign = publicationRepository.findById(id)
+                .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(id));
+        LocalDate today = LocalDate.now(clock);
+        campaign.changeDeadline(command.votingDeadline(), today);
+        publicationRepository.save(campaign);
     }
 
     @Transactional

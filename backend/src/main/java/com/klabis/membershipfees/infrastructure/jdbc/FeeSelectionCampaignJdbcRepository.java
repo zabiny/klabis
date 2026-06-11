@@ -16,4 +16,7 @@ interface FeeSelectionCampaignJdbcRepository extends CrudRepository<FeeSelection
 
     @Query("SELECT * FROM membershipfees.fee_selection_campaign WHERE voting_deadline < :today AND deadline_processed_at IS NULL")
     List<FeeSelectionCampaignMemento> findUnprocessedClosedPublications(@Param("today") LocalDate today);
+
+    @Query("SELECT * FROM membershipfees.fee_selection_campaign WHERE voting_deadline >= :today LIMIT 1")
+    Optional<FeeSelectionCampaignMemento> findActive(@Param("today") LocalDate today);
 }

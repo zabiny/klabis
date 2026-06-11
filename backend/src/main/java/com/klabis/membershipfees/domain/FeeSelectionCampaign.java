@@ -23,7 +23,7 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
     @Identity
     private final FeeSelectionCampaignId id;
     private final int year;
-    private final LocalDate votingDeadline;
+    private LocalDate votingDeadline;
     @Nullable
     private Instant deadlineProcessedAt;
     private final List<MembershipFeeGroupId> publishedGroupIds;
@@ -111,6 +111,18 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
 
     public boolean isClosed(LocalDate today) {
         return today.isAfter(votingDeadline);
+    }
+
+    public void changeDeadline(LocalDate newDeadline, LocalDate today) {
+        Assert.notNull(newDeadline, "NewDeadline is required");
+        Assert.notNull(today, "Today is required");
+        if (isClosed(today)) {
+            throw new CampaignClosedException();
+        }
+        if (newDeadline.isBefore(today)) {
+            throw new DeadlineNotInFutureException(newDeadline);
+        }
+        this.votingDeadline = newDeadline;
     }
 
     public void markProcessed(Instant at) {
