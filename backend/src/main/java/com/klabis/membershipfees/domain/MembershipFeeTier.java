@@ -82,4 +82,22 @@ public class MembershipFeeTier extends KlabisAggregateRoot<MembershipFeeTier, Me
         rules.add(rule);
     }
 
+    public void editRuleValue(EventTypeReference eventTypeId, String rankingShortName, MembershipPaymentRule.RuleValue newValue) {
+        Assert.notNull(eventTypeId, "EventTypeId is required");
+        Assert.hasText(rankingShortName, "RankingShortName is required");
+        Assert.notNull(newValue, "New rule value is required");
+        int index = findRuleIndex(eventTypeId, rankingShortName);
+        rules.set(index, new MembershipPaymentRule(eventTypeId, rankingShortName, newValue));
+    }
+
+    private int findRuleIndex(EventTypeReference eventTypeId, String rankingShortName) {
+        for (int i = 0; i < rules.size(); i++) {
+            MembershipPaymentRule rule = rules.get(i);
+            if (rule.eventTypeId().equals(eventTypeId) && rule.rankingShortName().equals(rankingShortName)) {
+                return i;
+            }
+        }
+        throw new PaymentRuleNotFoundException(eventTypeId, rankingShortName);
+    }
+
 }

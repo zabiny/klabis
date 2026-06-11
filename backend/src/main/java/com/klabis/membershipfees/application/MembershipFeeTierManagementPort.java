@@ -2,6 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -28,11 +29,21 @@ public interface MembershipFeeTierManagementPort {
         }
     }
 
+    record EditRuleCommand(EventTypeReference eventTypeId, String rankingShortName, MembershipPaymentRule.RuleValue newValue) {
+        public EditRuleCommand {
+            Assert.notNull(eventTypeId, "EventTypeId is required");
+            Assert.hasText(rankingShortName, "RankingShortName is required");
+            Assert.notNull(newValue, "New rule value is required");
+        }
+    }
+
     MembershipFeeTierId createTier(CreateTierCommand command);
 
     void editTier(MembershipFeeTierId id, EditTierCommand command);
 
     void addRule(MembershipFeeTierId tierId, AddRuleCommand command);
+
+    void editRule(MembershipFeeTierId tierId, EditRuleCommand command);
 
     MembershipFeeTier getTier(MembershipFeeTierId id);
 

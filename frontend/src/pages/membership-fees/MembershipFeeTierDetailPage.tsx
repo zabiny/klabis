@@ -17,6 +17,11 @@ interface CoParticipationRule {
     fixedCurrency?: string;
 }
 
+interface EditRuleModalState {
+    rule: CoParticipationRule;
+    resolvedUrl: string;
+}
+
 interface FeeTierDetail extends HalResponse {
     id: string;
     name: string;
@@ -46,11 +51,23 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     const [isEditing, setIsEditing] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [addRuleModal, setAddRuleModal] = useState(false);
+    const [editRuleModal, setEditRuleModal] = useState<EditRuleModalState | null>(null);
 
     const editTemplate = resourceData._templates?.editTier ?? null;
     const deleteTemplate = resourceData._templates?.deleteTier ?? null;
     const addRuleTemplate = resourceData._templates?.addRule ?? null;
+    const editRuleTemplate = resourceData._templates?.editRule ?? null;
+    const editRuleLink = resourceData._links?.editRule;
     const rules = resourceData.rules ?? [];
+
+    const buildEditRuleUrl = (rule: CoParticipationRule): string | null => {
+        if (!editRuleLink) return null;
+        const href = Array.isArray(editRuleLink) ? editRuleLink[0]?.href : editRuleLink.href;
+        if (!href) return null;
+        return href
+            .replace('{eventTypeId}', encodeURIComponent(rule.eventTypeId))
+            .replace('{ranking}', encodeURIComponent(rule.rankingShortName));
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -158,13 +175,28 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                         : `${rule.fixedAmount} ${rule.fixedCurrency ?? labels.finance.currency}`}
                                 </td>
                                 <td className="px-3">
-                                    <button
-                                        type="button"
-                                        aria-label="Smazat pravidlo"
-                                        className="w-8 h-8 flex items-center justify-center rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
-                                    >
-                                        <X className="w-4 h-4"/>
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        {editRuleTemplate && editRuleLink && (
+                                            <button
+                                                type="button"
+                                                aria-label="Upravit pravidlo"
+                                                onClick={() => {
+                                                    const url = buildEditRuleUrl(rule);
+                                                    if (url) setEditRuleModal({rule, resolvedUrl: url});
+                                                }}
+                                                className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-500 bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                                            >
+                                                <Pencil className="w-4 h-4"/>
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            aria-label="Smazat pravidlo"
+                                            className="w-8 h-8 flex items-center justify-center rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                                        >
+                                            <X className="w-4 h-4"/>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -210,6 +242,20 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setAddRuleModal(false)}
+                />
+            )}
+
+            {/* Edit rule modal */}
+            {editRuleTemplate && editRuleModal && (
+                <HalFormModal
+                    title={(editRuleTemplate as HalFormsTemplate).title ?? 'Upravit pravidlo'}
+                    template={editRuleTemplate as HalFormsTemplate}
+                    templateName="editRule"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    resourceUrl={editRuleModal.resolvedUrl}
+                    pathname={route.pathname}
+                    onClose={() => setEditRuleModal(null)}
+                    navigateOnSuccess={false}
                 />
             )}
         </div>

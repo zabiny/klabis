@@ -210,6 +210,80 @@ class MembershipFeeTierTest {
     }
 
     @Nested
+    @DisplayName("editRuleValue()")
+    class EditRuleValue {
+
+        @Test
+        @DisplayName("should update the value of an existing rule, keeping the key unchanged")
+        void shouldUpdateRuleValue() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            tier.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
+
+            tier.editRuleValue(EVENT_TYPE_A, "A", new MembershipPaymentRule.RuleValue.Percentage(75));
+
+            MembershipPaymentRule updated = tier.getRules().get(0);
+            assertThat(updated.eventTypeId()).isEqualTo(EVENT_TYPE_A);
+            assertThat(updated.rankingShortName()).isEqualTo("A");
+            assertThat(updated.value()).isEqualTo(new MembershipPaymentRule.RuleValue.Percentage(75));
+        }
+
+        @Test
+        @DisplayName("should update percentage rule to fixed amount rule")
+        void shouldUpdatePercentageToFixedAmount() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            tier.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "B", 30));
+            Money newAmount = Money.ofCzk(new BigDecimal("200.00"));
+
+            tier.editRuleValue(EVENT_TYPE_A, "B", new MembershipPaymentRule.RuleValue.FixedAmount(newAmount));
+
+            MembershipPaymentRule updated = tier.getRules().get(0);
+            assertThat(updated.eventTypeId()).isEqualTo(EVENT_TYPE_A);
+            assertThat(updated.rankingShortName()).isEqualTo("B");
+            assertThat(updated.value()).isEqualTo(new MembershipPaymentRule.RuleValue.FixedAmount(newAmount));
+        }
+
+        @Test
+        @DisplayName("should not affect other rules when editing one rule's value")
+        void shouldNotAffectOtherRules() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            MembershipPaymentRule ruleA = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
+            MembershipPaymentRule ruleB = MembershipPaymentRule.percentage(EVENT_TYPE_B, "A", 30);
+            tier.addRule(ruleA);
+            tier.addRule(ruleB);
+
+            tier.editRuleValue(EVENT_TYPE_A, "A", new MembershipPaymentRule.RuleValue.Percentage(90));
+
+            assertThat(tier.getRules()).hasSize(2);
+            assertThat(tier.getRules().stream()
+                    .filter(r -> r.eventTypeId().equals(EVENT_TYPE_B) && r.rankingShortName().equals("A"))
+                    .findFirst()).isPresent().get()
+                    .extracting(MembershipPaymentRule::value)
+                    .isEqualTo(new MembershipPaymentRule.RuleValue.Percentage(30));
+        }
+
+        @Test
+        @DisplayName("should throw PaymentRuleNotFoundException when no rule with the given key exists")
+        void shouldThrowWhenRuleNotFound() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+
+            assertThatThrownBy(() ->
+                    tier.editRuleValue(EVENT_TYPE_A, "A", new MembershipPaymentRule.RuleValue.Percentage(50)))
+                    .isInstanceOf(PaymentRuleNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should throw PaymentRuleNotFoundException when rule exists for the event type but different ranking")
+        void shouldThrowWhenRankingDoesNotMatch() {
+            MembershipFeeTier tier = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            tier.addRule(MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50));
+
+            assertThatThrownBy(() ->
+                    tier.editRuleValue(EVENT_TYPE_A, "B", new MembershipPaymentRule.RuleValue.Percentage(50)))
+                    .isInstanceOf(PaymentRuleNotFoundException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("reconstruct()")
     class Reconstruct {
 

@@ -59,6 +59,14 @@ class MembershipFeeTierManagementService implements MembershipFeeTierManagementP
 
     @Transactional
     @Override
+    public void editRule(MembershipFeeTierId tierId, EditRuleCommand command) {
+        MembershipFeeTier tier = loadTier(tierId);
+        tier.editRuleValue(command.eventTypeId(), command.rankingShortName(), command.newValue());
+        repository.save(tier);
+    }
+
+    @Transactional
+    @Override
     public void deleteTier(MembershipFeeTierId id) {
         loadTier(id);
         repository.delete(id);

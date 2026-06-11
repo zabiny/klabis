@@ -10,6 +10,7 @@ import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -107,6 +108,23 @@ class MembershipFeeTierController {
         return ResponseEntity.status(201).build();
     }
 
+    @PatchMapping(value = "/{id}/rules/{eventTypeId}/{ranking}", consumes = "application/json")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Edit a payment rule's value on a membership fee tier (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> editRule(
+            @Parameter(description = "Tier UUID") @PathVariable UUID id,
+            @Parameter(description = "Event type UUID") @PathVariable UUID eventTypeId,
+            @Parameter(description = "Ranking short name") @PathVariable String ranking,
+            @Valid @RequestBody EditPaymentRuleRequest request) {
+        MembershipFeeTierManagementPort.EditRuleCommand command = new MembershipFeeTierManagementPort.EditRuleCommand(
+                EventTypeReference.of(eventTypeId),
+                ranking,
+                request.toRuleValue(eventTypeId, ranking)
+        );
+        managementPort.editRule(new MembershipFeeTierId(id), command);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Delete a membership fee tier (requires MEMBERS:MANAGE)")
@@ -150,6 +168,8 @@ class MembershipFeeTierDetailsPostprocessor
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+        klabisLinkTo(methodOn(MembershipFeeTierController.class).editRule(id, null, null, null))
+                .ifPresent(link -> dtoModel.add(link.withRel("editRule")));
     }
 }
 

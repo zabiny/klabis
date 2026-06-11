@@ -35,11 +35,11 @@
 
 ## 5. Edit a rule's value (vertical slice)
 
-- [ ] 5.1 Write failing domain test: `editRuleValue(eventTypeId, ranking, value)` updates the value and keeps the key; editing a non-existent rule is rejected
-- [ ] 5.2 Write failing REST test: `PATCH /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}` updates percentage/fixed amount; key stays unchanged
-- [ ] 5.3 Implement `editRuleValue` on the aggregate, the edit command/service, and the `PATCH .../rules/{eventTypeId}/{ranking}` endpoint (requires MEMBERS:MANAGE)
-- [ ] 5.4 Expose the `editRule` affordance per rule row; refactor; confirm green
-- [ ] 5.5 Frontend: wire the per-row edit form to the `PATCH` endpoint (value fields only; key read-only)
+- [x] 5.1 Write failing domain test: `editRuleValue(eventTypeId, ranking, value)` updates the value and keeps the key; editing a non-existent rule is rejected
+- [x] 5.2 Write failing REST test: `PATCH /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}` updates percentage/fixed amount; key stays unchanged
+- [x] 5.3 Implement `editRuleValue` on the aggregate, the edit command/service, and the `PATCH .../rules/{eventTypeId}/{ranking}` endpoint (requires MEMBERS:MANAGE)
+- [x] 5.4 Expose the `editRule` affordance per rule row; refactor; confirm green
+- [x] 5.5 Frontend: wire the per-row edit form to the `PATCH` endpoint (value fields only; key read-only)
 
 ## 6. Remove a rule (vertical slice)
 

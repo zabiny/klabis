@@ -436,6 +436,107 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
+    @DisplayName("PATCH /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    class EditRuleTests {
+
+        private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        private static final String RANKING = "A";
+
+        @Test
+        @DisplayName("should return 204 when editing a rule's percentage value")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204ForPercentageEdit() throws Exception {
+            doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ruleType":"PERCENTAGE","percentage":75}
+                                            """))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 204 when editing a rule's fixed amount value")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204ForFixedAmountEdit() throws Exception {
+            doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ruleType":"FIXED_AMOUNT","fixedAmount":300,"fixedCurrency":"CZK"}
+                                            """))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should pass correct EditRuleCommand from path variables and body")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldMapPathVariablesAndBodyToCommand() throws Exception {
+            doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, "B")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ruleType":"PERCENTAGE","percentage":40}
+                                            """))
+                    .andExpect(status().isNoContent());
+
+            var captor = forClass(MembershipFeeTierManagementPort.EditRuleCommand.class);
+            verify(managementPort).editRule(eq(LEVEL_ID), captor.capture());
+            MembershipFeeTierManagementPort.EditRuleCommand command = captor.getValue();
+
+            assertThat(command.eventTypeId().value()).isEqualTo(EVENT_TYPE_UUID);
+            assertThat(command.rankingShortName()).isEqualTo("B");
+            assertThat(command.newValue()).isInstanceOf(MembershipPaymentRule.RuleValue.Percentage.class);
+        }
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(
+                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ruleType":"PERCENTAGE","percentage":75}
+                                            """))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 404 when rule with given key does not exist")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn404WhenRuleNotFound() throws Exception {
+            doThrow(new com.klabis.membershipfees.domain.PaymentRuleNotFoundException(
+                    com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID), RANKING))
+                    .when(managementPort).editRule(eq(LEVEL_ID), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                                    LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ruleType":"PERCENTAGE","percentage":75}
+                                            """))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("DELETE /api/membership-fee-tiers/{id}")
     class DeleteLevelTests {
 

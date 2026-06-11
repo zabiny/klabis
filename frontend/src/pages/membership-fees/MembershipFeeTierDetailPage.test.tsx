@@ -222,4 +222,52 @@ describe('MembershipFeeTierDetailPage', () => {
         renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.queryByText(/přidat pravidlo/i)).not.toBeInTheDocument();
     });
+
+    describe('per-rule edit button', () => {
+        const buildTierWithEditRuleLink = (overrides?: Partial<HalResponse>): HalResponse =>
+            buildFeeTierDetail({
+                _links: {
+                    self: {href: '/api/membership-fee-tiers/tier-1'},
+                    editRule: {href: '/api/membership-fee-tiers/tier-1/rules/{eventTypeId}/{ranking}', templated: true},
+                },
+                _templates: {
+                    editRule: mockHalFormsTemplate({title: 'Upravit pravidlo', method: 'PATCH'}),
+                },
+                ...overrides,
+            });
+
+        it('renders edit button for each rule row when editRule link is present', () => {
+            renderPage(createMockPageData(buildTierWithEditRuleLink()));
+            expect(screen.getByRole('button', {name: /upravit pravidlo/i})).toBeInTheDocument();
+        });
+
+        it('does not render edit rule button when editRule link is absent', () => {
+            renderPage(createMockPageData(buildFeeTierDetail()));
+            expect(screen.queryByRole('button', {name: /upravit pravidlo/i})).not.toBeInTheDocument();
+        });
+
+        it('opens edit rule modal when edit button is clicked', () => {
+            renderPage(createMockPageData(buildTierWithEditRuleLink()));
+            fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
+            expect(screen.getByRole('dialog', {name: /upravit pravidlo/i})).toBeInTheDocument();
+        });
+
+        it('closes edit rule modal when close button is clicked', () => {
+            renderPage(createMockPageData(buildTierWithEditRuleLink()));
+            fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
+            fireEvent.click(screen.getByRole('button', {name: /zavřít/i}));
+            expect(screen.queryByRole('dialog', {name: /upravit pravidlo/i})).not.toBeInTheDocument();
+        });
+
+        it('renders edit buttons for each rule when multiple rules exist', () => {
+            const resourceData = buildTierWithEditRuleLink({
+                rules: [
+                    {eventTypeId: 'sprint', rankingShortName: 'A', ruleType: 'PERCENTAGE', percent: 50},
+                    {eventTypeId: 'relay', rankingShortName: 'B', ruleType: 'FIXED_AMOUNT', fixedAmount: 100, fixedCurrency: 'CZK'},
+                ],
+            });
+            renderPage(createMockPageData(resourceData));
+            expect(screen.getAllByRole('button', {name: /upravit pravidlo/i})).toHaveLength(2);
+        });
+    });
 });
