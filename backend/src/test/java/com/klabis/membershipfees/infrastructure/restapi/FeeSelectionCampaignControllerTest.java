@@ -265,7 +265,7 @@ class FeeSelectionCampaignControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn200WithUpdatedCampaign() throws Exception {
             FeeSelectionCampaign activeCampaign = buildActiveCampaign(PUBLICATION_UUID);
-            when(managementPort.getPublication(PUBLICATION_ID)).thenReturn(activeCampaign);
+            when(managementPort.changeDeadline(eq(PUBLICATION_ID), any())).thenReturn(activeCampaign);
 
             mockMvc.perform(
                             patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)

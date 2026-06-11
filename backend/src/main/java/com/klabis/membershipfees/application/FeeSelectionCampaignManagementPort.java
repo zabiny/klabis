@@ -53,7 +53,7 @@ public interface FeeSelectionCampaignManagementPort {
 
     void editGroupSnapshot(MembershipFeeGroupId id, EditGroupSnapshotCommand command);
 
-    void changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command);
+    FeeSelectionCampaign changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command);
 
     /**
      * Returns the year of the currently active campaign if one exists,

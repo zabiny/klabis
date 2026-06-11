@@ -2,7 +2,6 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.membershipfees.domain.ActiveCampaignExistsException;
 import com.klabis.membershipfees.domain.CampaignClosedException;
-import com.klabis.membershipfees.domain.DeadlineNotInFutureException;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
 import com.klabis.membershipfees.domain.PaymentRuleNotFoundException;
 import org.springframework.core.annotation.Order;
@@ -28,13 +27,6 @@ class MembershipFeesExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(404), ex.getMessage());
         problem.setTitle("Payment Rule Not Found");
         return ResponseEntity.status(404).body(problem);
-    }
-
-    @ExceptionHandler(DeadlineNotInFutureException.class)
-    ResponseEntity<ProblemDetail> handleDeadlineNotInFuture(DeadlineNotInFutureException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(400), ex.getMessage());
-        problem.setTitle("Deadline Not In Future");
-        return ResponseEntity.status(400).body(problem);
     }
 
     @ExceptionHandler(ActiveCampaignExistsException.class)

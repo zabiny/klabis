@@ -98,9 +98,7 @@ class FeeSelectionCampaignController {
     @Operation(summary = "Change voting deadline of an active campaign (requires MEMBERS:MANAGE)")
     ResponseEntity<EntityModel<FeeSelectionCampaignResponse>> changeDeadline(
             @PathVariable UUID id, @Valid @RequestBody ChangeDeadlineRequest request) {
-        FeeSelectionCampaignId campaignId = new FeeSelectionCampaignId(id);
-        managementPort.changeDeadline(campaignId, request.toCommand());
-        FeeSelectionCampaign updated = managementPort.getPublication(campaignId);
+        FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id), request.toCommand());
         FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(updated);
         return ResponseEntity.ok(entityModelWithDomain(response, updated));
     }

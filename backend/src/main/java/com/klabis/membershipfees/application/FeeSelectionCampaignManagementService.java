@@ -89,12 +89,12 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     @Transactional
     @Override
-    public void changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command) {
+    public FeeSelectionCampaign changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command) {
         FeeSelectionCampaign campaign = publicationRepository.findById(id)
                 .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(id));
         LocalDate today = LocalDate.now(clock);
         campaign.changeDeadline(command.votingDeadline(), today);
-        publicationRepository.save(campaign);
+        return publicationRepository.save(campaign);
     }
 
     @Transactional
