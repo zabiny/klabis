@@ -5,16 +5,11 @@ import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResponse} from '../../api';
-import {labels, getEnumLabel} from '../../localization';
+import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
-
-interface CoParticipationRule {
-    raceTypeId: string;
-    ranking: string;
-    ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT';
-    value: number;
-}
+import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
+import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
 interface FeeGroupMember {
     memberId: string;
@@ -28,24 +23,8 @@ interface MembershipFeeGroupDetail extends HalResponse {
     yearlyFeeAmount: number;
     yearlyFeeCurrency: string;
     status: 'EDITABLE' | 'FROZEN';
-    coParticipationRules?: CoParticipationRule[];
     members?: FeeGroupMember[];
 }
-
-const RuleTypeBadge = ({ruleType}: {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'}): ReactElement => {
-    if (ruleType === 'PERCENTAGE') {
-        return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
-                Procento
-            </span>
-        );
-    }
-    return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
-            Fixní částka
-        </span>
-    );
-};
 
 const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT'}): ReactElement => {
     if (source === 'MEMBER_CHOICE') {
@@ -96,15 +75,11 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
     const assignMemberTemplate = resourceData._templates?.assignMember ?? null;
-
-    const rules = resourceData.coParticipationRules ?? [];
     const members = resourceData.members ?? [];
-
     const canEdit = resourceData.status === 'EDITABLE' && !!editTemplate;
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Breadcrumb */}
             <nav className="flex items-center gap-1 text-sm" style={{color: '#71717A'}}>
                 <Link to=".." relative="path" className="hover:text-zinc-700 transition-colors">
                     {labels.ui.backToList}
@@ -115,7 +90,6 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
             <h1 className="sr-only">{resourceData.name}</h1>
 
-            {/* Basic info card */}
             <div
                 className="rounded-xl border p-6"
                 style={{background: '#FFFFFF', borderColor: '#E4E4E7', borderRadius: '12px'}}
@@ -186,66 +160,10 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                 )}
             </div>
 
-            {/* Co-participation rules card */}
-            <div
-                className="rounded-xl border overflow-hidden"
-                style={{background: '#FFFFFF', borderColor: '#E4E4E7', borderRadius: '12px'}}
-            >
-                <div className="px-6 py-4">
-                    <h2 className="font-bold" style={{fontSize: '16px', color: '#18181B'}}>
-                        {labels.sections.coParticipationRules}
-                    </h2>
-                    <p className="text-[13px] mt-0.5" style={{color: '#71717A'}}>
-                        Příplatky ke startovnému na závodech
-                    </p>
-                </div>
-                <hr style={{borderColor: '#E4E4E7'}}/>
+            <HalSubresourceProvider subresourceLinkName="rules">
+                <RulesTable/>
+            </HalSubresourceProvider>
 
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr style={{background: '#F8FAFC', height: '44px'}}>
-                            <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
-                                {labels.fields.raceTypeId}
-                            </th>
-                            <th className="px-5 text-left text-xs font-semibold w-[100px]" style={{color: '#71717A'}}>
-                                {labels.fields.ranking}
-                            </th>
-                            <th className="px-5 text-left text-xs font-semibold w-[160px]" style={{color: '#71717A'}}>
-                                {labels.fields.ruleType}
-                            </th>
-                            <th className="px-5 text-left text-xs font-semibold w-[100px]" style={{color: '#71717A'}}>
-                                {labels.tables.value}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rules.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-5 py-8 text-center text-sm" style={{color: '#71717A'}}>
-                                    Žádná pravidla spoluúčasti
-                                </td>
-                            </tr>
-                        ) : (
-                            rules.map((rule, index) => (
-                                <tr key={index} className="border-t" style={{borderColor: '#F4F4F5', height: '52px'}}>
-                                    <td className="px-5" style={{color: '#18181B'}}>{rule.raceTypeId}</td>
-                                    <td className="px-5" style={{color: '#18181B'}}>{rule.ranking}</td>
-                                    <td className="px-5">
-                                        <RuleTypeBadge ruleType={rule.ruleType}/>
-                                    </td>
-                                    <td className="px-5" style={{color: '#18181B'}}>
-                                        {rule.ruleType === 'PERCENTAGE'
-                                            ? `${rule.value} %`
-                                            : `${rule.value} ${labels.finance.currency}`}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Members card */}
             <div
                 className="rounded-xl border overflow-hidden"
                 style={{background: '#FFFFFF', borderColor: '#E4E4E7', borderRadius: '12px'}}
@@ -292,7 +210,6 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                 )}
             </div>
 
-            {/* Assign member modal */}
             {assignMemberTemplate && assignMemberModal && (
                 <HalFormModal
                     title={labels.templates.assignMember}

@@ -258,90 +258,6 @@ class MembershipFeeTierControllerTest {
                                     "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
         }
 
-        @Test
-        @DisplayName("addRule template should include ranking property with inline options from ORIS")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
-                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of(
-                    new HalFormsInlineOption("A", "Elita"),
-                    new HalFormsInlineOption("B", "Výkonnostní"),
-                    new HalFormsInlineOption("WRE", "World Ranking Event")
-            ));
-
-            mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.addRule").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')]").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].value").value("A"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].prompt").value("Elita"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].value").value("B"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].prompt").value("Výkonnostní"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.promptField").value("prompt"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.valueField").value("value"));
-        }
-
-        @Test
-        @DisplayName("addRule template should include empty ranking options when ORIS is unavailable")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
-                    .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
-            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
-
-            mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.addRule").exists());
-        }
-
-        @Test
-        @DisplayName("addRule template should include eventTypeId property with inline options from event types")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldIncludeEventTypeOptionsInAddRuleTemplate() throws Exception {
-            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            when(managementPort.getTier(LEVEL_ID))
-                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-            when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of(
-                    new HalFormsInlineOption(eventTypeUuid.toString(), "Závod"),
-                    new HalFormsInlineOption(UUID.randomUUID().toString(), "Trénink")
-            ));
-
-            mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.addRule").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')]").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].value").value(eventTypeUuid.toString()))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].prompt").value("Závod"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.promptField").value("prompt"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.valueField").value("value"));
-        }
-
-        @Test
-        @DisplayName("addRule template should include ruleType property with PERCENTAGE and FIXED_AMOUNT options")
-        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldIncludeRuleTypeOptionsInAddRuleTemplate() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
-                    .thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-
-            mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.addRule").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')]").exists())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
-        }
     }
 
     @Nested
@@ -513,6 +429,87 @@ class MembershipFeeTierControllerTest {
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._links.self.href").exists())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule").exists())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.removeRule").exists());
+        }
+
+        @Test
+        @DisplayName("addRule template should include ranking property with inline options from ORIS")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption("A", "Elita"),
+                    new HalFormsInlineOption("B", "Výkonnostní"),
+                    new HalFormsInlineOption("WRE", "World Ranking Event")
+            ));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].value").value("A"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[0].prompt").value("Elita"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].value").value("B"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.inline[1].prompt").value("Výkonnostní"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='rankingShortName')].options.valueField").value("value"));
+        }
+
+        @Test
+        @DisplayName("addRule template should include empty ranking options when ORIS is unavailable")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists());
+        }
+
+        @Test
+        @DisplayName("addRule template should include eventTypeId property with inline options from event types")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEventTypeOptionsInAddRuleTemplate() throws Exception {
+            var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of(
+                    new HalFormsInlineOption(eventTypeUuid.toString(), "Závod"),
+                    new HalFormsInlineOption(UUID.randomUUID().toString(), "Trénink")
+            ));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].value").value(eventTypeUuid.toString()))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.inline[0].prompt").value("Závod"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.promptField").value("prompt"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='eventTypeId')].options.valueField").value("value"));
+        }
+
+        @Test
+        @DisplayName("addRule template should include ruleType property with PERCENTAGE and FIXED_AMOUNT options")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeRuleTypeOptionsInAddRuleTemplate() throws Exception {
+            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addRule").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')]").exists())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
         }
     }
 

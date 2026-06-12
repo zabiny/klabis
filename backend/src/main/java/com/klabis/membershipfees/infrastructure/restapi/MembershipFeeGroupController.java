@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -63,6 +64,20 @@ class MembershipFeeGroupController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/rules")
+    @Operation(summary = "List payment rules snapshot for a membership fee group")
+    ResponseEntity<CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>>> listGroupRules(
+            @Parameter(description = "Group UUID") @PathVariable UUID id) {
+        MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
+        var items = group.getRulesSnapshot().stream()
+                .map(rule -> EntityModel.of(MembershipFeeTierResponse.PaymentRuleResponse.from(rule)))
+                .toList();
+        CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model = CollectionModel.of(items);
+        klabisLinkTo(methodOn(MembershipFeeGroupController.class).listGroupRules(id))
+                .ifPresent(link -> model.add(link.withSelfRel()));
+        return ResponseEntity.ok(model);
+    }
+
     @PostMapping(value = "/{groupId}/members", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
@@ -100,6 +115,8 @@ class MembershipFeeGroupDetailsPostprocessor
                     return self;
                 })
                 .ifPresent(dtoModel::add);
+        klabisLinkTo(methodOn(MembershipFeeGroupController.class).listGroupRules(id))
+                .ifPresent(link -> dtoModel.add(link.withRel("rules")));
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(group.getSourceLevelId().value()))
                 .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }

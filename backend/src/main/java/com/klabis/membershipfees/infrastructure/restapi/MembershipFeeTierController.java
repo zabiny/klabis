@@ -46,9 +46,15 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MembershipFeeTierController {
 
     private final MembershipFeeTierManagementPort managementPort;
+    private final RankingOptionsPort rankingOptionsPort;
+    private final EventTypeOptionsPort eventTypeOptionsPort;
 
-    MembershipFeeTierController(MembershipFeeTierManagementPort managementPort) {
+    MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
+                                RankingOptionsPort rankingOptionsPort,
+                                EventTypeOptionsPort eventTypeOptionsPort) {
         this.managementPort = managementPort;
+        this.rankingOptionsPort = rankingOptionsPort;
+        this.eventTypeOptionsPort = eventTypeOptionsPort;
     }
 
     @PostMapping(consumes = "application/json")
@@ -108,9 +114,15 @@ class MembershipFeeTierController {
                         MembershipFeeTierResponse.PaymentRuleResponse.from(rule),
                         new PaymentRuleDomain(new MembershipFeeTierId(id), rule)))
                 .toList();
+        List<HalFormsInlineOption> rankingOptions = rankingOptionsPort.listRankingOptions();
+        List<HalFormsInlineOption> eventTypeOptions = eventTypeOptionsPort.listEventTypeOptions();
         CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model = CollectionModel.of(items);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
-                .ifPresent(link -> model.add(link.withSelfRel()));
+                .ifPresent(link -> model.add(link.withSelfRel()
+                        .andAffordances(klabisAffordWithMixedOptions(
+                                methodOn(MembershipFeeTierController.class).addRule(id, null),
+                                Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
+                                Map.of("rankingShortName", rankingOptions, "eventTypeId", eventTypeOptions)))));
         return ResponseEntity.ok(model);
     }
 
@@ -203,27 +215,13 @@ class MembershipFeeTierController {
 class MembershipFeeTierDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MembershipFeeTierResponse, MembershipFeeTier> {
 
-    private final RankingOptionsPort rankingOptionsPort;
-    private final EventTypeOptionsPort eventTypeOptionsPort;
-
-    MembershipFeeTierDetailsPostprocessor(RankingOptionsPort rankingOptionsPort, EventTypeOptionsPort eventTypeOptionsPort) {
-        this.rankingOptionsPort = rankingOptionsPort;
-        this.eventTypeOptionsPort = eventTypeOptionsPort;
-    }
-
     @Override
     public void process(EntityModel<MembershipFeeTierResponse> dtoModel, MembershipFeeTier tier) {
         UUID id = tier.getId().value();
-        List<HalFormsInlineOption> rankingOptions = rankingOptionsPort.listRankingOptions();
-        List<HalFormsInlineOption> eventTypeOptions = eventTypeOptionsPort.listEventTypeOptions();
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).editTier(id, null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id)))
-                        .andAffordances(klabisAffordWithMixedOptions(
-                                methodOn(MembershipFeeTierController.class).addRule(id, null),
-                                Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
-                                Map.of("rankingShortName", rankingOptions, "eventTypeId", eventTypeOptions))))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id))))
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
