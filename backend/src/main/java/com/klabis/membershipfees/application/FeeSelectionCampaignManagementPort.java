@@ -47,6 +47,10 @@ public interface FeeSelectionCampaignManagementPort {
 
     List<FeeSelectionCampaign> listPublications();
 
+    List<FeeSelectionCampaign> listClosedPublications();
+
+    Optional<FeeSelectionCampaign> findActiveCampaign(LocalDate today);
+
     List<MembershipFeeGroup> listGroupsForYear(int year);
 
     MembershipFeeGroup getGroup(MembershipFeeGroupId id);

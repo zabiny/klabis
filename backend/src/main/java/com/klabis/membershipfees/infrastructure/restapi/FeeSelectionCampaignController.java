@@ -63,9 +63,12 @@ class FeeSelectionCampaignController {
     }
 
     @GetMapping
-    @Operation(summary = "List all fee year publications")
-    ResponseEntity<CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> listPublications() {
-        List<FeeSelectionCampaign> publications = managementPort.listPublications();
+    @Operation(summary = "List fee year publications, optionally filtered by status")
+    ResponseEntity<CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> listPublications(
+            @Parameter(description = "Filter by status: 'closed' returns only past campaigns") @RequestParam(required = false) String status) {
+        List<FeeSelectionCampaign> publications = "closed".equals(status)
+                ? managementPort.listClosedPublications()
+                : managementPort.listPublications();
         List<EntityModel<FeeSelectionCampaignResponse>> items = publications.stream()
                 .map(this::buildSummaryModel)
                 .toList();
@@ -75,7 +78,7 @@ class FeeSelectionCampaignController {
                 .toList();
 
         CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(FeeSelectionCampaignController.class).publishYear(null),
@@ -159,7 +162,7 @@ class FeeSelectionCampaignDetailsPostprocessor
                     return self;
                 })
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
         klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listGroupsForYear(publication.getYear()))
                 .ifPresent(link -> dtoModel.add(link.withRel("levels")));
@@ -171,7 +174,7 @@ class FeeSelectionCampaignsRootPostprocessor implements RepresentationModelProce
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications())
+        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
                 .ifPresent(link -> model.add(link.withRel("fee-selection-campaigns")));
         return model;
     }

@@ -76,6 +76,21 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     @Transactional(readOnly = true)
     @Override
+    public List<FeeSelectionCampaign> listClosedPublications() {
+        LocalDate today = LocalDate.now(clock);
+        return publicationRepository.findAll().stream()
+                .filter(c -> c.isClosed(today))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<FeeSelectionCampaign> findActiveCampaign(LocalDate today) {
+        return publicationRepository.findActive(today);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
     public List<MembershipFeeGroup> listGroupsForYear(int year) {
         return groupRepository.findByYear(year);
     }

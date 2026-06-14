@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -8,9 +9,11 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PaymentRuleNotFoundException;
@@ -27,10 +30,14 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -48,13 +55,19 @@ class MembershipFeeTierController {
     private final MembershipFeeTierManagementPort managementPort;
     private final RankingOptionsPort rankingOptionsPort;
     private final EventTypeOptionsPort eventTypeOptionsPort;
+    private final FeeSelectionCampaignManagementPort campaignManagementPort;
+    private final Clock clock;
 
     MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
                                 RankingOptionsPort rankingOptionsPort,
-                                EventTypeOptionsPort eventTypeOptionsPort) {
+                                EventTypeOptionsPort eventTypeOptionsPort,
+                                FeeSelectionCampaignManagementPort campaignManagementPort,
+                                Clock clock) {
         this.managementPort = managementPort;
         this.rankingOptionsPort = rankingOptionsPort;
         this.eventTypeOptionsPort = eventTypeOptionsPort;
+        this.campaignManagementPort = campaignManagementPort;
+        this.clock = clock;
     }
 
     @PostMapping(consumes = "application/json")
@@ -81,7 +94,23 @@ class MembershipFeeTierController {
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null)))));
 
+        if (isAdmin()) {
+            Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign(LocalDate.now(clock));
+            activeCampaign.ifPresent(campaign ->
+                    model.add(Link.of(linkTo(methodOn(FeeSelectionCampaignController.class)
+                            .getPublication(campaign.getId().value())).toUri().toString(), "activeCampaign"))
+            );
+            model.add(klabisLinkTo(methodOn(FeeSelectionCampaignController.class)
+                    .listPublications("closed")).map(link -> link.withRel("pastCampaigns")).orElseThrow());
+        }
+
         return ResponseEntity.ok(model);
+    }
+
+    private boolean isAdmin() {
+        return SecuritySpelEvaluator.hasAuthority(
+                SecurityContextHolder.getContext().getAuthentication(),
+                Authority.MEMBERS_MANAGE);
     }
 
     @GetMapping("/{id}")

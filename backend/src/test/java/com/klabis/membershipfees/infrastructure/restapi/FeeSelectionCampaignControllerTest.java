@@ -187,6 +187,57 @@ class FeeSelectionCampaignControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.publishYear").exists());
         }
+
+        @Test
+        @DisplayName("should return only closed campaigns when status=closed is provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnOnlyClosedCampaignsWhenStatusClosed() throws Exception {
+            when(managementPort.listClosedPublications()).thenReturn(List.of(
+                    buildClosedCampaign(PUBLICATION_UUID)
+            ));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns")
+                                    .param("status", "closed")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList").isArray())
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("should return all campaigns when no status parameter is provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnAllCampaignsWithoutStatusParam() throws Exception {
+            when(managementPort.listPublications()).thenReturn(List.of(
+                    buildActiveCampaign(UUID.randomUUID()),
+                    buildClosedCampaign(PUBLICATION_UUID)
+            ));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("each closed campaign in status=closed response should carry a self link")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void eachClosedCampaignShouldHaveSelfLink() throws Exception {
+            when(managementPort.listClosedPublications()).thenReturn(List.of(
+                    buildClosedCampaign(PUBLICATION_UUID)
+            ));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns")
+                                    .param("status", "closed")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.feeSelectionCampaignResponseList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/fee-selection-campaigns/" + PUBLICATION_UUID)));
+        }
     }
 
     @Nested

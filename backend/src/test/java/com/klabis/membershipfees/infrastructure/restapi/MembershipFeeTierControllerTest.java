@@ -7,11 +7,15 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
 import com.klabis.membershipfees.application.RankingOptionsPort;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +30,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,12 +52,16 @@ class MembershipFeeTierControllerTest {
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final UUID LEVEL_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final MembershipFeeTierId LEVEL_ID = new MembershipFeeTierId(LEVEL_UUID);
+    private static final UUID CAMPAIGN_UUID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private MembershipFeeTierManagementPort managementPort;
+
+    @MockitoBean
+    private FeeSelectionCampaignManagementPort campaignManagementPort;
 
     @Autowired
     private RankingOptionsPort rankingOptionsPortMock;
@@ -63,6 +73,16 @@ class MembershipFeeTierControllerTest {
     void setupMocks() {
         when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
         when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of());
+        when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.empty());
+    }
+
+    private FeeSelectionCampaign buildActiveCampaign(UUID id) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(id),
+                2099,
+                LocalDate.of(2099, 12, 31),
+                null,
+                List.of(new MembershipFeeGroupId(UUID.randomUUID())));
     }
 
     private MembershipFeeTier buildLevel(UUID id, String name) {
@@ -191,6 +211,54 @@ class MembershipFeeTierControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createTier").exists());
+        }
+
+        @Test
+        @DisplayName("should include activeCampaign and pastCampaigns links for MEMBERS:MANAGE user when active campaign exists")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeActiveCampaignAndPastCampaignLinksForAdminWhenCampaignActive() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of());
+            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.activeCampaign.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/fee-selection-campaigns/" + CAMPAIGN_UUID)))
+                    .andExpect(jsonPath("$._links.pastCampaigns.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/fee-selection-campaigns?status=closed")));
+        }
+
+        @Test
+        @DisplayName("should not include activeCampaign or pastCampaigns links for non-admin user")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotIncludeCampaignLinksForNonAdmin() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of());
+            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.activeCampaign").doesNotExist())
+                    .andExpect(jsonPath("$._links.pastCampaigns").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should omit activeCampaign link but include pastCampaigns link when no active campaign exists")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldOmitActiveCampaignLinkWhenNoCampaignActive() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of());
+            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.empty());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.activeCampaign").doesNotExist())
+                    .andExpect(jsonPath("$._links.pastCampaigns.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/fee-selection-campaigns?status=closed")));
         }
     }
 
