@@ -26,12 +26,16 @@ interface PastCampaignsSectionProps {
 }
 
 export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionProps): ReactElement | null => {
-    const {data: campaignsData} = useAuthorizedQuery<CampaignsCollection>(
+    const {data: campaignsData, isLoading} = useAuthorizedQuery<CampaignsCollection>(
         pastCampaignsHref ? extractNavigationPath(pastCampaignsHref) : '',
         {enabled: !!pastCampaignsHref}
     );
 
     if (!pastCampaignsHref) {
+        return null;
+    }
+
+    if (isLoading) {
         return null;
     }
 

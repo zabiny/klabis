@@ -107,4 +107,50 @@ describe('useRootNavigation — section assignment', () => {
         const items = result.current.data!;
         expect(items.find(i => i.rel === 'family-groups')).toBeUndefined();
     });
+
+    it('assigns admin section to membership-fees rel', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'membership-fees']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data!;
+        expect(items.find(i => i.rel === 'membership-fees')?.section).toBe('admin');
+    });
+
+    it('assigns label "Členské příspěvky" to membership-fees rel', async () => {
+        mockFetchWithResponse(buildHalResponse(['membership-fees']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data!;
+        expect(items.find(i => i.rel === 'membership-fees')?.label).toBe('Členské příspěvky');
+    });
+
+    it('does NOT include membership-fee-tiers as separate menu entry when absent from root links', async () => {
+        // Backend no longer contributes membership-fee-tiers as a root link after the merge.
+        mockFetchWithResponse(buildHalResponse(['events', 'membership-fees']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data!;
+        expect(items.find(i => i.rel === 'membership-fee-tiers')).toBeUndefined();
+    });
+
+    it('does NOT include fee-selection-campaigns as separate menu entry when absent from root links', async () => {
+        // Backend no longer contributes fee-selection-campaigns as a root link after the merge.
+        mockFetchWithResponse(buildHalResponse(['events', 'membership-fees']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data!;
+        expect(items.find(i => i.rel === 'fee-selection-campaigns')).toBeUndefined();
+    });
 });

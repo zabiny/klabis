@@ -179,10 +179,10 @@ describe('MembershipFeeTierDetailPage', () => {
         expect(screen.getByText('Roční poplatek (Kč)')).toBeInTheDocument();
     });
 
-    it('renders breadcrumb with link back to list and current name', () => {
+    it('renders breadcrumb with link back to merged fees page', () => {
         renderPage(createMockPageData(buildFeeTierDetail()));
-        expect(screen.getByRole('link', {name: 'Katalog tierů'})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: 'Katalog tierů'})).toHaveAttribute('href', '/membership-fee-tiers');
+        expect(screen.getByRole('link', {name: 'Členské příspěvky'})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Členské příspěvky'})).toHaveAttribute('href', '/membership-fees');
     });
 
     it('renders co-participation rules section heading always', () => {

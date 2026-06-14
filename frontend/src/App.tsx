@@ -28,9 +28,8 @@ import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
-import {MembershipFeeTiersPage} from "./pages/membership-fees/MembershipFeeTiersPage.tsx";
+import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdminPage.tsx";
 import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
-import {FeeSelectionCampaignsPage} from "./pages/membership-fees/FeeSelectionCampaignsPage.tsx";
 import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
 import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
@@ -116,9 +115,8 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
-                                    <Route path="/membership-fee-tiers" element={<MembershipFeeTiersPage/>}/>
+                                    <Route path="/membership-fees" element={<MembershipFeesAdminPage/>}/>
                                     <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
-                                    <Route path="/fee-selection-campaigns" element={<FeeSelectionCampaignsPage/>}/>
                                     <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
                                     <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                                 </Route>
