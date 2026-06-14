@@ -424,6 +424,8 @@ export const labels = {
         membershipFeeGroups: 'Skupiny',
         membershipFeeGroupMembers: 'ČLENOVÉ',
         feeSelectionCampaignsList: 'Kampaně volby členského příspěvku',
+        activeCampaign: 'Aktivní kampaň',
+        pastCampaigns: 'Minulé kampaně',
         coParticipationRules: 'PRAVIDLA SPOLUÚČASTI',
     },
 
