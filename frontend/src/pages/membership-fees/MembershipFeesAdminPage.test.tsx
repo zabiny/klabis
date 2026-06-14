@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -19,6 +20,10 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
         isPending: false,
         error: null,
     }),
+}));
+
+vi.mock('../../components/HalNavigator2/HalFormModal', () => ({
+    HalFormModal: ({title}: {title: string}) => <div data-testid="hal-form-modal">{title}</div>,
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
@@ -70,10 +75,21 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     );
 };
 
+const publishYearTemplate = {
+    method: 'POST' as const,
+    target: '/api/fee-selection-campaigns',
+    properties: [{name: 'year', type: 'number', required: true}],
+};
+
 const tierCatalogResource: HalResponse = {
     _links: {
         self: {href: '/api/membership-fee-tiers'},
     },
+};
+
+const tierCatalogResourceWithPublishYear: HalResponse = {
+    _links: {self: {href: '/api/membership-fee-tiers'}},
+    _templates: {publishYear: publishYearTemplate},
 };
 
 const tierCatalogResourceWithActiveCampaign: HalResponse = {
@@ -189,5 +205,41 @@ describe('MembershipFeesAdminPage', () => {
         expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
+    });
+
+    describe('when publishYear template is present and no activeCampaign', () => {
+        it('renders publishYear button', () => {
+            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            expect(screen.getByRole('button', {name: /vypsat kampaň/i})).toBeInTheDocument();
+        });
+
+        it('opens modal when publishYear button is clicked', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            await user.click(screen.getByRole('button', {name: /vypsat kampaň/i}));
+            expect(screen.getByTestId('hal-form-modal')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-form-modal')).toHaveTextContent('Vypsat kampaň');
+        });
+    });
+
+    describe('when publishYear template is absent', () => {
+        it('does not render publishYear button', () => {
+            renderPage(createMockPageData(tierCatalogResource));
+            expect(screen.queryByRole('button', {name: /vypsat kampaň/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('when activeCampaign link is present (even if publishYear template exists)', () => {
+        it('does not render publishYear button when activeCampaign link exists', () => {
+            const resourceWithBoth: HalResponse = {
+                _links: {
+                    self: {href: '/api/membership-fee-tiers'},
+                    activeCampaign: {href: '/api/fee-selection-campaigns/campaign-1'},
+                },
+                _templates: {publishYear: publishYearTemplate},
+            };
+            renderPage(createMockPageData(resourceWithBoth));
+            expect(screen.queryByRole('button', {name: /vypsat kampaň/i})).not.toBeInTheDocument();
+        });
     });
 });

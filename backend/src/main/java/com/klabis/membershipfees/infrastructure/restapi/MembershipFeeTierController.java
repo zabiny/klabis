@@ -12,11 +12,7 @@ import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
-import com.klabis.membershipfees.domain.EventTypeReference;
-import com.klabis.membershipfees.domain.FeeSelectionCampaign;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
-import com.klabis.membershipfees.domain.MembershipPaymentRule;
-import com.klabis.membershipfees.domain.PaymentRuleNotFoundException;
+import com.klabis.membershipfees.domain.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -88,18 +84,21 @@ class MembershipFeeTierController {
         CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model = CollectionModel.of(items);
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
                 .ifPresent(link -> model.add(link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignController.class).publishYear(null)))
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null)))));
 
         if (isAdmin()) {
             Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign();
             activeCampaign.ifPresent(campaign ->
-                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId().value()))
+                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId()
+                            .value()))
                             .map(link -> link.withRel("activeCampaign"))
                             .ifPresent(model::add)
             );
             klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications("closed"))
                     .map(link -> link.withRel("pastCampaigns"))
                     .ifPresent(model::add);
+
         }
 
         return ResponseEntity.ok(model);
@@ -169,7 +168,8 @@ class MembershipFeeTierController {
                 new PaymentRuleDomain(new MembershipFeeTierId(id), rule)));
     }
 
-    record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {}
+    record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
+    }
 
     @PostMapping(value = "/{id}/rules", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
@@ -272,7 +272,10 @@ class PaymentRuleDetailsPostprocessor
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAffordWithOptions(
-                                methodOn(MembershipFeeTierController.class).editRule(tierId, eventTypeId, ranking, null),
+                                methodOn(MembershipFeeTierController.class).editRule(tierId,
+                                        eventTypeId,
+                                        ranking,
+                                        null),
                                 Map.of("ruleType", RULE_TYPE_OPTIONS)))
                         .andAffordances(klabisAfford(
                                 methodOn(MembershipFeeTierController.class).removeRule(tierId, eventTypeId, ranking))))

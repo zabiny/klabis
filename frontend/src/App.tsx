@@ -115,7 +115,7 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
-                                    <Route path="/membership-fees" element={<MembershipFeesAdminPage/>}/>
+                                    <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
                                     <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
                                     <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
                                     <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
