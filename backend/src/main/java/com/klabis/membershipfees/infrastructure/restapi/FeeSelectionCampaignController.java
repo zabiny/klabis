@@ -3,7 +3,6 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
@@ -21,7 +20,6 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -169,13 +167,3 @@ class FeeSelectionCampaignDetailsPostprocessor
     }
 }
 
-@MvcComponent
-class FeeSelectionCampaignsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
-
-    @Override
-    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
-                .ifPresent(link -> model.add(link.withRel("fee-selection-campaigns")));
-        return model;
-    }
-}

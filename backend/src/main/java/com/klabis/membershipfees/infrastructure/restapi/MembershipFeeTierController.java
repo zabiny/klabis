@@ -30,6 +30,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -97,11 +98,13 @@ class MembershipFeeTierController {
         if (isAdmin()) {
             Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign(LocalDate.now(clock));
             activeCampaign.ifPresent(campaign ->
-                    model.add(Link.of(linkTo(methodOn(FeeSelectionCampaignController.class)
-                            .getPublication(campaign.getId().value())).toUri().toString(), "activeCampaign"))
+                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId().value()))
+                            .map(link -> link.withRel("activeCampaign"))
+                            .ifPresent(model::add)
             );
-            model.add(klabisLinkTo(methodOn(FeeSelectionCampaignController.class)
-                    .listPublications("closed")).map(link -> link.withRel("pastCampaigns")).orElseThrow());
+            klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications("closed"))
+                    .map(link -> link.withRel("pastCampaigns"))
+                    .ifPresent(model::add);
         }
 
         return ResponseEntity.ok(model);
@@ -284,12 +287,18 @@ class PaymentRuleDetailsPostprocessor
 }
 
 @MvcComponent
-class MembershipFeeTiersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(Authority.MEMBERS_MANAGE.getValue()))) {
+            return model;
+        }
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
-                .ifPresent(link -> model.add(link.withRel("membership-fee-tiers")));
+                .ifPresent(link -> model.add(link.withRel("membership-fees")));
         return model;
     }
 }
+
