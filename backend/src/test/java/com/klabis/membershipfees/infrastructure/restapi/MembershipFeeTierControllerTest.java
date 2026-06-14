@@ -73,7 +73,7 @@ class MembershipFeeTierControllerTest {
     void setupMocks() {
         when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
         when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of());
-        when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.empty());
+        when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
     }
 
     private FeeSelectionCampaign buildActiveCampaign(UUID id) {
@@ -218,7 +218,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeActiveCampaignAndPastCampaignLinksForAdminWhenCampaignActive() throws Exception {
             when(managementPort.listTiers()).thenReturn(List.of());
-            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
+            when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers")
@@ -235,7 +235,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldNotIncludeCampaignLinksForNonAdmin() throws Exception {
             when(managementPort.listTiers()).thenReturn(List.of());
-            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
+            when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers")
@@ -250,7 +250,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldOmitActiveCampaignLinkWhenNoCampaignActive() throws Exception {
             when(managementPort.listTiers()).thenReturn(List.of());
-            when(campaignManagementPort.findActiveCampaign(any())).thenReturn(Optional.empty());
+            when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers")

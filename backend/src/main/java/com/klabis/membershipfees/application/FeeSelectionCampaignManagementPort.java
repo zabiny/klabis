@@ -49,7 +49,7 @@ public interface FeeSelectionCampaignManagementPort {
 
     List<FeeSelectionCampaign> listClosedPublications();
 
-    Optional<FeeSelectionCampaign> findActiveCampaign(LocalDate today);
+    Optional<FeeSelectionCampaign> findActiveCampaign();
 
     List<MembershipFeeGroup> listGroupsForYear(int year);
 

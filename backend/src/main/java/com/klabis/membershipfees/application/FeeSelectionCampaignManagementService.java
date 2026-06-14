@@ -85,8 +85,8 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     @Transactional(readOnly = true)
     @Override
-    public Optional<FeeSelectionCampaign> findActiveCampaign(LocalDate today) {
-        return publicationRepository.findActive(today);
+    public Optional<FeeSelectionCampaign> findActiveCampaign() {
+        return publicationRepository.findActive(LocalDate.now(clock));
     }
 
     @Transactional(readOnly = true)

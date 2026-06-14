@@ -34,8 +34,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Clock;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,18 +55,15 @@ class MembershipFeeTierController {
     private final RankingOptionsPort rankingOptionsPort;
     private final EventTypeOptionsPort eventTypeOptionsPort;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
-    private final Clock clock;
 
     MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
                                 RankingOptionsPort rankingOptionsPort,
                                 EventTypeOptionsPort eventTypeOptionsPort,
-                                FeeSelectionCampaignManagementPort campaignManagementPort,
-                                Clock clock) {
+                                FeeSelectionCampaignManagementPort campaignManagementPort) {
         this.managementPort = managementPort;
         this.rankingOptionsPort = rankingOptionsPort;
         this.eventTypeOptionsPort = eventTypeOptionsPort;
         this.campaignManagementPort = campaignManagementPort;
-        this.clock = clock;
     }
 
     @PostMapping(consumes = "application/json")
@@ -96,7 +91,7 @@ class MembershipFeeTierController {
                         .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null)))));
 
         if (isAdmin()) {
-            Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign(LocalDate.now(clock));
+            Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign();
             activeCampaign.ifPresent(campaign ->
                     klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId().value()))
                             .map(link -> link.withRel("activeCampaign"))
@@ -292,8 +287,7 @@ class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<En
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(Authority.MEMBERS_MANAGE.getValue()))) {
+        if (!SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
             return model;
         }
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
