@@ -182,12 +182,12 @@ describe('MembershipFeeTierDetailPage', () => {
     it('renders breadcrumb with link back to merged fees page', () => {
         renderPage(createMockPageData(buildFeeTierDetail()));
         expect(screen.getByRole('link', {name: 'Členské příspěvky'})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: 'Členské příspěvky'})).toHaveAttribute('href', '/membership-fees');
+        expect(screen.getByRole('link', {name: 'Členské příspěvky'})).toHaveAttribute('href', '/membership-fee-tiers');
     });
 
     it('renders co-participation rules section heading always', () => {
         renderPage(createMockPageData(buildFeeTierDetail()));
-        expect(screen.getByText('Pravidla spoluúčasti')).toBeInTheDocument();
+        expect(screen.getByText('PRAVIDLA SPOLUÚČASTI')).toBeInTheDocument();
     });
 
     it('renders co-participation rules table headers', () => {
@@ -219,26 +219,22 @@ describe('MembershipFeeTierDetailPage', () => {
     });
 
     it('translates rankingShortName code to label using addRule template options', () => {
-        const tierData = buildFeeTierDetail({
-            _templates: {
-                addRule: mockHalFormsTemplate({
-                    title: 'Přidat pravidlo',
-                    method: 'POST',
-                    properties: [
-                        {
-                            name: 'rankingShortName',
-                            prompt: 'Žebříček',
-                            type: 'text',
-                            options: {
-                                inline: [
-                                    {value: '2', prompt: 'Žebříček A'},
-                                    {value: '3', prompt: 'Žebříček B'},
-                                ],
-                            },
-                        },
-                    ],
-                }),
-            },
+        const addRuleTemplate = mockHalFormsTemplate({
+            title: 'Přidat pravidlo',
+            method: 'POST',
+            properties: [
+                {
+                    name: 'rankingShortName',
+                    prompt: 'Žebříček',
+                    type: 'text',
+                    options: {
+                        inline: [
+                            {value: '2', prompt: 'Žebříček A'},
+                            {value: '3', prompt: 'Žebříček B'},
+                        ],
+                    },
+                },
+            ],
         });
         const rules: PaymentRuleItem[] = [{
             eventTypeId: 'sprint',
@@ -246,9 +242,11 @@ describe('MembershipFeeTierDetailPage', () => {
             ruleType: 'PERCENTAGE',
             percentage: 50,
         }];
+        const rulesCollection = buildRulesCollection(rules);
+        const rulesCollectionWithTemplate = {...rulesCollection, _templates: {addRule: addRuleTemplate}};
         renderPage(
-            createMockPageData(tierData),
-            createMockRulesPageData(buildRulesCollection(rules)),
+            createMockPageData(buildFeeTierDetail()),
+            createMockRulesPageData(rulesCollectionWithTemplate),
         );
         expect(screen.getByText('Žebříček A')).toBeInTheDocument();
         expect(screen.queryByText('2')).not.toBeInTheDocument();
@@ -347,12 +345,15 @@ describe('MembershipFeeTierDetailPage', () => {
     });
 
     it('renders add rule footer button when addRule template exists', () => {
-        const resourceData = buildFeeTierDetail({
-            _templates: {
-                addRule: mockHalFormsTemplate({title: 'Přidat pravidlo', method: 'POST'}),
-            },
-        });
-        renderPage(createMockPageData(resourceData));
+        const rulesCollection = buildRulesCollection([]);
+        const rulesCollectionWithTemplate = {
+            ...rulesCollection,
+            _templates: {addRule: mockHalFormsTemplate({title: 'Přidat pravidlo', method: 'POST'})},
+        };
+        renderPage(
+            createMockPageData(buildFeeTierDetail()),
+            createMockRulesPageData(rulesCollectionWithTemplate),
+        );
         expect(screen.getByText(/přidat pravidlo/i)).toBeInTheDocument();
     });
 

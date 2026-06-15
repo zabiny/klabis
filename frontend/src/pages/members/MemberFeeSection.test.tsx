@@ -77,19 +77,33 @@ describe('MemberFeeSection', () => {
             expect(screen.getByText(/Probíhá volba/i)).toBeInTheDocument();
         });
 
-        it('renders link to fee choice page when voting is open and no choice made', () => {
+        it('renders link to fee choice page including year derived from self link', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
                 recommendedLevelId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
             renderSection();
 
             const link = screen.getByRole('link', {name: /Zvolit tier/i});
             expect(link).toBeInTheDocument();
-            expect(link).toHaveAttribute('href', expect.stringContaining('/members/member-1/fee-choice'));
+            expect(link).toHaveAttribute('href', '/members/member-1/fee-choice/2027');
+        });
+
+        it('uses year from self link, not current calendar year', () => {
+            mockFeeSummary({
+                currentGroup: null,
+                votingOpen: true,
+                recommendedLevelId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2099'}},
+            });
+
+            renderSection();
+
+            const link = screen.getByRole('link', {name: /Zvolit tier/i});
+            expect(link).toHaveAttribute('href', '/members/member-1/fee-choice/2099');
         });
     });
 
@@ -107,19 +121,19 @@ describe('MemberFeeSection', () => {
             expect(screen.getByText('Základ')).toBeInTheDocument();
         });
 
-        it('shows "Změnit tier" link when voting open and choice exists', () => {
+        it('shows "Změnit tier" link with year derived from self link', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedLevelId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
             renderSection();
 
             const link = screen.getByRole('link', {name: /Změnit tier/i});
             expect(link).toBeInTheDocument();
-            expect(link).toHaveAttribute('href', expect.stringContaining('/members/member-1/fee-choice'));
+            expect(link).toHaveAttribute('href', '/members/member-1/fee-choice/2027');
         });
 
         it('shows yearly fee when choice exists', () => {

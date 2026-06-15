@@ -44,7 +44,7 @@ const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSel
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 text-sm text-[#71717A]">
-                <Link to="/membership-fees" className="hover:text-[#18181B]">
+                <Link to="/membership-fee-tiers" className="hover:text-[#18181B]">
                     {labels.ui.backToList}
                 </Link>
                 <span>/</span>

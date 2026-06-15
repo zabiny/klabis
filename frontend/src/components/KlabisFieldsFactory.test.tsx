@@ -16,6 +16,13 @@ vi.mock('../hooks/useEventTypes', () => ({
     }),
 }));
 
+vi.mock('../hooks/useMembershipFeeTierOptions', () => ({
+    useMembershipFeeTierOptions: () => [
+        {value: 'uuid-tier-a', prompt: 'Základní'},
+        {value: 'uuid-tier-b', prompt: 'Premium'},
+    ],
+}));
+
 vi.mock('./HalNavigator2/halforms/fields', async () => {
     const actual = await vi.importActual('./HalNavigator2/halforms/fields');
     return {
@@ -508,6 +515,47 @@ describe('KlabisFieldsFactory', () => {
 
             const eventTypeSelect = screen.getByTestId('hal-select-parent.eventTypeId');
             expect(eventTypeSelect).toBeInTheDocument();
+        });
+    });
+
+    describe('MembershipFeeTierMultiSelect field type', () => {
+
+        it('should render HalFormsCheckboxGroup for MembershipFeeTierMultiSelect type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+        });
+
+        it('should populate options from useMembershipFeeTierOptions', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+
+            const checkboxGroup = screen.getByTestId('hal-forms-checkboxgroup-mock');
+            expect(checkboxGroup).toBeInTheDocument();
+        });
+
+        it('should preserve original prop name and prompt', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            render(result!);
+
+            expect(screen.getByTestId('checkboxgroup-name')).toHaveTextContent('tierIds');
+            expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Výběr tarifů');
         });
     });
 

@@ -30,9 +30,11 @@ vi.mock('../../contexts/HalFormContext.tsx', () => ({
     HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 
+const {mockDisplayHalForm} = vi.hoisted(() => ({mockDisplayHalForm: vi.fn()}));
+
 vi.mock('../../contexts/halFormContext.ts', () => ({
     useHalForm: vi.fn().mockReturnValue({
-        displayHalForm: vi.fn(),
+        displayHalForm: mockDisplayHalForm,
         currentFormRequest: null,
         closeForm: vi.fn(),
     }),
@@ -44,7 +46,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     error: null,
     isAdmin: false,
     route: {
-        pathname: '/membership-fees',
+        pathname: '/membership-fee-tiers',
         navigateToResource: vi.fn(),
         refetch: async () => {},
         queryState: 'success' as const,
@@ -68,7 +70,7 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/membership-fees']}>
+            <MemoryRouter initialEntries={['/membership-fee-tiers']}>
                 <MembershipFeesAdminPage/>
             </MemoryRouter>
         </QueryClientProvider>
@@ -110,6 +112,7 @@ const tierCatalogResourceWithoutActiveCampaign: HalResponse = {
 describe('MembershipFeesAdminPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockDisplayHalForm.mockClear();
     });
 
     it('shows skeleton loading state when data is loading', () => {
@@ -217,8 +220,9 @@ describe('MembershipFeesAdminPage', () => {
             const user = userEvent.setup();
             renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
             await user.click(screen.getByRole('button', {name: /vypsat kampaň/i}));
-            expect(screen.getByTestId('hal-form-modal')).toBeInTheDocument();
-            expect(screen.getByTestId('hal-form-modal')).toHaveTextContent('Vypsat kampaň');
+            expect(mockDisplayHalForm).toHaveBeenCalledWith(
+                expect.objectContaining({templateName: 'publishYear', modal: true}),
+            );
         });
     });
 

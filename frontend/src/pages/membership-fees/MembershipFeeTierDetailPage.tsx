@@ -29,11 +29,11 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     return (
         <div className="flex flex-col gap-6">
             <nav className="flex items-center gap-1 text-sm text-zinc-500">
-                <Link to="/membership-fees" className="hover:text-zinc-700 transition-colors">
+                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
                     {labels.nav['membership-fees']}
                 </Link>
                 <ChevronRight className="w-4 h-4 text-zinc-400"/>
-                <Link to="/membership-fees" className="hover:text-zinc-700 transition-colors">
+                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
                     {labels.nav['membership-fee-tiers']}
                 </Link>
                 <ChevronRight className="w-4 h-4 text-zinc-400"/>
@@ -112,7 +112,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/membership-fees')}
+                    onSubmitSuccess={() => navigate('/membership-fee-tiers')}
                 />
             )}
         </div>

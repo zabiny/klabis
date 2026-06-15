@@ -6,6 +6,7 @@ import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
 import {useEventTypes} from "../hooks/useEventTypes";
+import {useMembershipFeeTierOptions} from "../hooks/useMembershipFeeTierOptions";
 
 interface SubField {
     key: string;
@@ -145,6 +146,13 @@ const PaymentRuleFormFields = (conf: HalFormsInputProps): ReactElement => {
     </FormGroupWrapper>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
+const MembershipFeeTierMultiSelectField = (conf: HalFormsInputProps): ReactElement => {
+    const tierOptions = useMembershipFeeTierOptions();
+    const propWithTierOptions = {...conf.prop, options: {inline: tierOptions}};
+    return <HalFormsCheckboxGroup {...conf} prop={propWithTierOptions}/>;
+};
+
 const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFormsInputProps => {
     return {
         ...prop,
@@ -244,6 +252,8 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
                 {key: "shortName", attr: "shortName", prompt: "Zkratka"},
                 {key: "name", attr: "name", prompt: "Název"},
             ]);
+        case "MembershipFeeTierMultiSelect":
+            return <MembershipFeeTierMultiSelectField {...conf}/>;
         case "PaymentRuleRequest":
             // For multi/collection: return null so HalFormsCollectionField handles iteration.
             // For a single item (inside the collection): render sub-fields with custom select renderers.
