@@ -5,6 +5,9 @@ import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,9 +19,12 @@ import java.util.stream.StreamSupport;
 class FeeSelectionCampaignRepositoryAdapter implements FeeSelectionCampaignRepository {
 
     private final FeeSelectionCampaignJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
 
-    FeeSelectionCampaignRepositoryAdapter(FeeSelectionCampaignJdbcRepository jdbcRepository) {
+    FeeSelectionCampaignRepositoryAdapter(FeeSelectionCampaignJdbcRepository jdbcRepository,
+                                          JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.jdbcRepository = jdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
@@ -33,7 +39,9 @@ class FeeSelectionCampaignRepositoryAdapter implements FeeSelectionCampaignRepos
 
     @Override
     public Optional<FeeSelectionCampaign> findByYear(int year) {
-        return jdbcRepository.findByYear(year).map(FeeSelectionCampaignMemento::toPublication);
+        Query query = Query.query(Criteria.where("publication_year").is(year));
+        return jdbcAggregateTemplate.findOne(query, FeeSelectionCampaignMemento.class)
+                .map(FeeSelectionCampaignMemento::toPublication);
     }
 
     @Override
@@ -45,13 +53,18 @@ class FeeSelectionCampaignRepositoryAdapter implements FeeSelectionCampaignRepos
 
     @Override
     public List<FeeSelectionCampaign> findUnprocessedClosedPublications(LocalDate today) {
-        return jdbcRepository.findUnprocessedClosedPublications(today).stream()
+        Criteria criteria = Criteria.where("voting_deadline").lessThan(today)
+                .and(Criteria.where("deadline_processed_at").isNull());
+        Query query = Query.query(criteria);
+        return jdbcAggregateTemplate.findAll(query, FeeSelectionCampaignMemento.class).stream()
                 .map(FeeSelectionCampaignMemento::toPublication)
                 .toList();
     }
 
     @Override
     public Optional<FeeSelectionCampaign> findActive(LocalDate today) {
-        return jdbcRepository.findActive(today).map(FeeSelectionCampaignMemento::toPublication);
+        Query query = Query.query(Criteria.where("voting_deadline").greaterThanOrEquals(today)).limit(1);
+        return jdbcAggregateTemplate.findOne(query, FeeSelectionCampaignMemento.class)
+                .map(FeeSelectionCampaignMemento::toPublication);
     }
 }
