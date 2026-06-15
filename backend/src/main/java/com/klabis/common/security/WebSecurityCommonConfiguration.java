@@ -1,14 +1,13 @@
 package com.klabis.common.security;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -125,17 +124,16 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
         http
                 .securityMatcher("/h2-console/**")
                 .authorizeHttpRequests(authorize -> authorize
-                        // H2 console is only available in dev profile
-                        // In production profile, H2 console is explicitly disabled via application.yml
-                        .requestMatchers("/h2-console/**")
-                        .permitAll()  // Only accessible when H2 console is enabled (dev profile)
+                        .requestMatchers("/h2-console/**").authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                )
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
                 .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())  // More restrictive than disable()
-                )
-                .httpBasic(Customizer.withDefaults());
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                );
 
         return http.build();
     }
