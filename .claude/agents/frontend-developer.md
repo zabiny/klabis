@@ -1,6 +1,6 @@
 ---
 name: frontend-developer
-description: Frontend Typescript developer for React applications. Use proactively for any implementation, modification or bug fixes in typescript/react applications.
+description: Frontend Typescript developer for React applications. Use proactively for any implementation, modification or bug fixes in typescript/react applications. Pass description of expected outcome and let it figure solution. 
 model: sonnet
 color: red
 memory: project
