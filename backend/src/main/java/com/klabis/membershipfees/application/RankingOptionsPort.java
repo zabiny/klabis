@@ -1,11 +1,11 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.common.ui.HalFormsInlineOption;
-import org.jmolecules.architecture.hexagonal.SecondaryPort;
+import org.jmolecules.architecture.hexagonal.Port;
 
 import java.util.List;
 
-@SecondaryPort
+@Port
 public interface RankingOptionsPort {
 
     /**
