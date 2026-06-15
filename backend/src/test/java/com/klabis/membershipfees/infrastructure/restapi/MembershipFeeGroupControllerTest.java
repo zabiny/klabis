@@ -1,0 +1,327 @@
+package com.klabis.membershipfees.infrastructure.restapi;
+
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.WithPostprocessors;
+import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.users.Authority;
+import com.klabis.finance.domain.Money;
+import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
+import com.klabis.members.Members;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.domain.AssignmentSource;
+import com.klabis.membershipfees.domain.FeeGroupMembership;
+import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.membershipfees.domain.PublishedLevelStatus;
+import com.klabis.membershipfees.domain.SnapshotFrozenException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.hateoas.MediaTypes;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@DisplayName("MembershipFeeGroupController API tests")
+@WebMvcTest(controllers = MembershipFeeGroupController.class)
+@Import({EncryptionConfiguration.class, HalFormsSupport.class})
+@WithPostprocessors
+class MembershipFeeGroupControllerTest {
+
+    private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static final UUID MEMBER_UUID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final String ADMIN_MEMBER_ID = "00000000-0000-0000-0000-000000000001";
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private FeeSelectionCampaignManagementPort managementPort;
+
+    @MockitoBean
+    private AdminFeeAssignmentPort adminFeeAssignmentPort;
+
+    @MockitoBean
+    private Members members;
+
+    private static final LocalDate VOTING_DEADLINE = LocalDate.of(2026, 3, 31);
+
+    private MembershipFeeGroup buildFrozenGroup() {
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(GROUP_UUID),
+                new MembershipFeeTierId(UUID.randomUUID()),
+                "Dospělý", 2026, VOTING_DEADLINE,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.FROZEN,
+                List.of(), Set.of(), null);
+    }
+
+    private MembershipFeeGroup buildFrozenGroupWithMember() {
+        MemberId memberId = new MemberId(MEMBER_UUID);
+        FeeGroupMembership membership = new FeeGroupMembership(memberId, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null);
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(GROUP_UUID),
+                new MembershipFeeTierId(UUID.randomUUID()),
+                "Dospělý", 2026, VOTING_DEADLINE,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.FROZEN,
+                List.of(), Set.of(membership), null);
+    }
+
+    private MembershipFeeGroup buildEditableGroup() {
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(GROUP_UUID),
+                new MembershipFeeTierId(UUID.randomUUID()),
+                "Dospělý", 2026, VOTING_DEADLINE,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.EDITABLE,
+                List.of(), Set.of(), null);
+    }
+
+    @Nested
+    @DisplayName("GET /api/membership-fee-groups/{id}")
+    class GetGroupTests {
+
+        @Test
+        @DisplayName("should return 200 with group details")
+        @WithKlabisMockUser
+        void shouldReturnGroupDetails() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Dospělý"))
+                    .andExpect(jsonPath("$.year").value(2026));
+        }
+
+        @Test
+        @DisplayName("should return embedded members list with name and registration number when group has members")
+        @WithKlabisMockUser
+        void shouldReturnEmbeddedMembersWithDetails() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroupWithMember();
+            MemberDto memberDto = new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0));
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(Set.of(new MemberId(MEMBER_UUID)))).thenReturn(Map.of(new MemberId(MEMBER_UUID), memberDto));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.members").isArray())
+                    .andExpect(jsonPath("$._embedded.members[0].memberId").value(MEMBER_UUID.toString()))
+                    .andExpect(jsonPath("$._embedded.members[0].firstName").value("Jan"))
+                    .andExpect(jsonPath("$._embedded.members[0].lastName").value("Novák"))
+                    .andExpect(jsonPath("$._embedded.members[0].registrationNumber").value("ZBM1234"))
+                    .andExpect(jsonPath("$._embedded.members[0].source").value("MEMBER_CHOICE"))
+                    .andExpect(jsonPath("$._embedded.members[0].joinedAt").value("2026-01-15"));
+        }
+
+        @Test
+        @DisplayName("should not include members in embedded when group has no members")
+        @WithKlabisMockUser
+        void shouldNotEmbedMembersWhenGroupHasNoMembers() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.memberCount").value(0));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/membership-fee-groups/{groupId}/members — admin assignment")
+    class AdminAssignTests {
+
+        @Test
+        @DisplayName("should return 204 when admin assigns a member to a group")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenAdminAssigns() throws Exception {
+            doNothing().when(adminFeeAssignmentPort).assignLevel(any());
+
+            mockMvc.perform(
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s", "year": 2026}
+                                            """.formatted(MEMBER_UUID)))
+                    .andExpect(status().isNoContent());
+
+            verify(adminFeeAssignmentPort).assignLevel(any(AdminFeeAssignmentPort.AssignFeeLevel.class));
+        }
+
+        @Test
+        @DisplayName("should return 403 when user does not have MEMBERS_MANAGE authority")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID)
+        void shouldReturn403WhenNotAdmin() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s", "year": 2026}
+                                            """.formatted(MEMBER_UUID)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 400 when memberId is missing from request body")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenMemberIdMissing() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"year": 2026}
+                                            """))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 400 when year is missing from request body")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenYearMissing() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(MEMBER_UUID)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("GET should include admin-assign affordance on group detail with stable URL (no memberId in path)")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeAdminAssignAffordanceWithStableUrl() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.assignMember").exists())
+                    .andExpect(jsonPath("$._templates.assignMember.target").value(
+                            "http://localhost/api/membership-fee-groups/" + GROUP_UUID + "/members"))
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')]").exists())
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='year')]").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/membership-fee-groups/{id} — edit snapshot")
+    class EditSnapshotTests {
+
+        private static final String EDIT_BODY = """
+                {"yearlyFeeAmount": 1500.00, "yearlyFeeCurrency": "CZK", "rules": []}
+                """;
+
+        @Test
+        @DisplayName("should return 204 when admin edits an EDITABLE group")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenEditable() throws Exception {
+            doNothing().when(managementPort).editGroupSnapshot(any(), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isNoContent());
+
+            verify(managementPort).editGroupSnapshot(
+                    eq(new MembershipFeeGroupId(GROUP_UUID)),
+                    any(FeeSelectionCampaignManagementPort.EditGroupSnapshotCommand.class));
+        }
+
+        @Test
+        @DisplayName("should return 400 when group is FROZEN (SnapshotFrozenException)")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenFrozen() throws Exception {
+            doThrow(new SnapshotFrozenException())
+                    .when(managementPort).editGroupSnapshot(any(), any());
+
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user does not have MEMBERS_MANAGE authority")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID)
+        void shouldReturn403WhenNotAdmin() throws Exception {
+            mockMvc.perform(
+                            patch("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(EDIT_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("GET should include editSnapshot affordance only for EDITABLE groups")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeEditAffordanceOnlyForEditable() throws Exception {
+            MembershipFeeGroup editableGroup = buildEditableGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(editableGroup);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editSnapshot").exists());
+        }
+
+        @Test
+        @DisplayName("GET should NOT include editSnapshot affordance for FROZEN groups")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotIncludeEditAffordanceForFrozen() throws Exception {
+            MembershipFeeGroup frozenGroup = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(frozenGroup);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editSnapshot").doesNotExist());
+        }
+    }
+}

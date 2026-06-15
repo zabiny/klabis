@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Table("members")
+@Table(schema = "members", value = "members")
 class MemberMemento implements Persistable<UUID> {
 
     @Id

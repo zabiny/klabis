@@ -34,7 +34,7 @@ import java.util.UUID;
  * Authorities are stored as JSON array string in the database (VARCHAR(1000)).
  * This approach is pragmatic for H2 and can be migrated to PostgreSQL JSONB later.
  */
-@Table("user_permissions")
+@Table(schema = "common", value = "user_permissions")
 public class UserPermissionsMemento implements Persistable<UUID> {
 
     private static final ObjectMapper objectMapper = new JsonMapper();

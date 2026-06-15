@@ -16,7 +16,7 @@ import java.util.UUID;
 import static com.klabis.events.infrastructure.jdbc.CsvListConverter.deserialize;
 import static com.klabis.events.infrastructure.jdbc.CsvListConverter.serialize;
 
-@Table("category_presets")
+@Table(schema = "events", value = "category_presets")
 class CategoryPresetMemento implements Persistable<UUID> {
 
     @Id

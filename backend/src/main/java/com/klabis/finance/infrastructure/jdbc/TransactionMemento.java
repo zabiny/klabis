@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.UUID;
 
-@Table("finance_transaction")
+@Table(schema = "finance", value = "finance_transaction")
 class TransactionMemento {
 
     @Id

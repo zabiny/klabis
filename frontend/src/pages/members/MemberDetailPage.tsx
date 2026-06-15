@@ -21,6 +21,7 @@ import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
+import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -109,6 +110,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const trainerLicense = member.trainerLicense;
     const refereeLicense = member.refereeLicense;
     const showDeactivation = member.active === false;
+
+    const extractLinkHref = (link: unknown): string | null => {
+        if (!link) return null;
+        return Array.isArray(link) ? (link[0] as {href: string}).href : (link as {href: string}).href;
+    };
+
+    const selfHref = extractLinkHref(resourceData._links?.self);
+    const selfMemberId = selfHref?.split('/').pop() ?? '';
+    const feeSummaryHref = extractLinkHref(resourceData._links?.feeSummary);
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
@@ -380,6 +390,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
                 {!isEditing && icalTokenHref && (
                     <CalendarFeedSection icalTokenHref={icalTokenHref}/>
+                )}
+
+                {!isEditing && member.active && feeSummaryHref && (
+                    <MemberFeeSection
+                        feeSummaryHref={feeSummaryHref}
+                        memberId={selfMemberId}
+                    />
                 )}
 
                 {isEditing && (

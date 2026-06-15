@@ -46,10 +46,10 @@ class IcalTokenControllerTest {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute("DELETE FROM calendar_feed_token WHERE user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'");
-        jdbcTemplate.execute("DELETE FROM users WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'");
+        jdbcTemplate.execute("DELETE FROM calendar.calendar_feed_token WHERE user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'");
+        jdbcTemplate.execute("DELETE FROM common.users WHERE id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'");
         jdbcTemplate.execute("""
-                INSERT INTO users (id, user_name, password_hash, account_status, created_at, modified_at, version)
+                INSERT INTO common.users (id, user_name, password_hash, account_status, created_at, modified_at, version)
                 VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'ZBM8200', 'hash', 'ACTIVE',
                         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
                 """);

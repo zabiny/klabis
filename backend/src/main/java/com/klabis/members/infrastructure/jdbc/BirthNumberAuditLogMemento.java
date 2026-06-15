@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("birth_number_audit_log")
+@Table(schema = "members", value = "birth_number_audit_log")
 public class BirthNumberAuditLogMemento implements Persistable<UUID> {
 
     @Id

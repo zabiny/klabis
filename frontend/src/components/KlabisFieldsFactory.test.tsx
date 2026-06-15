@@ -3,7 +3,25 @@ import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
 import {klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalNavigator2/halforms';
-import type {HalFormsProperty, HalFormsOptionValue, OptionItem} from '../api/types';
+import type {HalFormsOptionValue, HalFormsProperty, OptionItem} from '../api/types';
+
+vi.mock('../hooks/useEventTypes', () => ({
+    useEventTypes: () => ({
+        eventTypes: [
+            {id: 'uuid-race', name: 'Závod', color: 'red', sortOrder: 1},
+            {id: 'uuid-training', name: 'Trénink', color: 'blue', sortOrder: 2},
+        ],
+        isLoading: false,
+        getById: vi.fn(),
+    }),
+}));
+
+vi.mock('../hooks/useMembershipFeeTierOptions', () => ({
+    useMembershipFeeTierOptions: () => [
+        {value: 'uuid-tier-a', prompt: 'Základní'},
+        {value: 'uuid-tier-b', prompt: 'Premium'},
+    ],
+}));
 
 vi.mock('./HalNavigator2/halforms/fields', async () => {
     const actual = await vi.importActual('./HalNavigator2/halforms/fields');
@@ -421,6 +439,123 @@ describe('KlabisFieldsFactory', () => {
             render(fieldElement!);
 
             expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Trenéři');
+        });
+    });
+
+    describe('PaymentRuleRequest field type', () => {
+
+        it('should delegate to HalFormsCollectionField for multiple/collection PaymentRuleRequest', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'rules', prompt: 'Pravidla', type: 'PaymentRuleRequest', multiple: true},
+            });
+
+            const result = klabisFieldsFactory('PaymentRuleRequest', mockConf);
+            // multiple=true falls through to halFormsFieldsFactory which returns HalFormsCollectionField
+            expect(result).not.toBeNull();
+            const element = result as React.ReactElement;
+            const componentName = (element.type as {displayName?: string; name?: string}).displayName
+                ?? (element.type as {displayName?: string; name?: string}).name;
+            expect(componentName).toMatch(/CollectionField/i);
+        });
+
+        it('should render eventTypeId as a select with event type options', () => {
+            const mockSubElementProps = createMockSubElementProps();
+            const mockConf = createMockConf({
+                prop: {name: 'rules.0', prompt: 'Pravidlo', type: 'PaymentRuleRequest'},
+                subElementProps: mockSubElementProps,
+            });
+
+            const result = klabisFieldsFactory('PaymentRuleRequest', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+
+            // subElementProps mock returns "parent.<attr>" as the field name
+            expect(screen.getByTestId('hal-select-parent.eventTypeId')).toBeInTheDocument();
+        });
+
+        it('should render ruleType as a select with PERCENTAGE and FIXED_AMOUNT options', () => {
+            const mockSubElementProps = createMockSubElementProps();
+            const mockConf = createMockConf({
+                prop: {name: 'rules.0', prompt: 'Pravidlo', type: 'PaymentRuleRequest'},
+                subElementProps: mockSubElementProps,
+            });
+
+            const result = klabisFieldsFactory('PaymentRuleRequest', mockConf);
+            render(result!);
+
+            expect(screen.getByTestId('hal-select-parent.ruleType')).toBeInTheDocument();
+        });
+
+        it('should render rankingShortName, percent, fixedAmount, fixedCurrency as inputs', () => {
+            const mockSubElementProps = createMockSubElementProps();
+            const mockConf = createMockConf({
+                prop: {name: 'rules.0', prompt: 'Pravidlo', type: 'PaymentRuleRequest'},
+                subElementProps: mockSubElementProps,
+            });
+
+            const result = klabisFieldsFactory('PaymentRuleRequest', mockConf);
+            render(result!);
+
+            expect(screen.getByTestId('hal-input-parent.rankingShortName')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-input-parent.percent')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-input-parent.fixedAmount')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-input-parent.fixedCurrency')).toBeInTheDocument();
+        });
+
+        it('should populate eventTypeId select with options from event types API', () => {
+            const mockSubElementProps = createMockSubElementProps();
+            const mockConf = createMockConf({
+                prop: {name: 'rules.0', prompt: 'Pravidlo', type: 'PaymentRuleRequest'},
+                subElementProps: mockSubElementProps,
+            });
+
+            const result = klabisFieldsFactory('PaymentRuleRequest', mockConf);
+            render(result!);
+
+            const eventTypeSelect = screen.getByTestId('hal-select-parent.eventTypeId');
+            expect(eventTypeSelect).toBeInTheDocument();
+        });
+    });
+
+    describe('MembershipFeeTierMultiSelect field type', () => {
+
+        it('should render HalFormsCheckboxGroup for MembershipFeeTierMultiSelect type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+        });
+
+        it('should populate options from useMembershipFeeTierOptions', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+
+            const checkboxGroup = screen.getByTestId('hal-forms-checkboxgroup-mock');
+            expect(checkboxGroup).toBeInTheDocument();
+        });
+
+        it('should preserve original prop name and prompt', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            render(result!);
+
+            expect(screen.getByTestId('checkboxgroup-name')).toHaveTextContent('tierIds');
+            expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Výběr tarifů');
         });
     });
 

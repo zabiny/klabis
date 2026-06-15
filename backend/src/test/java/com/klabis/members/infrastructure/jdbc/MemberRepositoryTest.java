@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 )
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM members")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM members.members")
 @ActiveProfiles("test")
 class MemberRepositoryTest {
 

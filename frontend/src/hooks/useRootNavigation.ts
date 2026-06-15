@@ -13,7 +13,7 @@ export interface NavigationItem {
     section: 'main' | 'admin';
 }
 
-const ADMIN_RELS = new Set(['training-groups', 'category-presets', 'family-groups', 'event-types']);
+const ADMIN_RELS = new Set(['training-groups', 'category-presets', 'family-groups', 'event-types', 'membership-fees']);
 
 const navLabels = labels.nav as Record<string, string>;
 

@@ -17,13 +17,19 @@ import java.util.List;
 public class EventRegistrationService implements EventRegistrationPort {
 
     private final EventRepository eventRepository;
+    private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventRegistrationService(EventRepository eventRepository) {
+    EventRegistrationService(EventRepository eventRepository, MemberRegistrationSanctionPort sanctionPort) {
         this.eventRepository = eventRepository;
+        this.sanctionPort = sanctionPort;
     }
 
     @Override
     public void registerMember(@NonNull EventId eventId, @NonNull MemberId memberId, Event.RegisterCommand command) {
+        if (sanctionPort.isMemberBlocked(memberId)) {
+            throw new MemberRegistrationBlockedException(memberId);
+        }
+
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 

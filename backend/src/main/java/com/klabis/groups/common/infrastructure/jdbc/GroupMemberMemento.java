@@ -6,7 +6,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("user_group_members")
+@Table(schema = "groups", value = "user_group_members")
 class GroupMemberMemento {
 
     @Column("member_id")

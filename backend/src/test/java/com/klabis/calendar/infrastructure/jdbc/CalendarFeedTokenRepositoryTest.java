@@ -32,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @CleanupTestData
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
-        "INSERT INTO users (id, user_name, password_hash, account_status, created_at, modified_at, version) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'ZBM0001', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)",
-        "INSERT INTO users (id, user_name, password_hash, account_status, created_at, modified_at, version) VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'ZBM0002', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)"
+        "INSERT INTO common.users (id, user_name, password_hash, account_status, created_at, modified_at, version) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'ZBM0001', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)",
+        "INSERT INTO common.users (id, user_name, password_hash, account_status, created_at, modified_at, version) VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'ZBM0002', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)"
 })
 class CalendarFeedTokenRepositoryTest {
 

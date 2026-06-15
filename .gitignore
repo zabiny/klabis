@@ -28,3 +28,6 @@ backend/local.env
 /tasks/**
 /.playwright-mcp/*
 /node_modules/*
+
+# mailpit TLS certificates (generate locally, never commit private key)
+/tools/mailpit/certs/

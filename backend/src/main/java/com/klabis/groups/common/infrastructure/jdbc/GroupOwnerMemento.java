@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-@Table("user_group_owners")
+@Table(schema = "groups", value = "user_group_owners")
 class GroupOwnerMemento {
 
     @Column("member_id")

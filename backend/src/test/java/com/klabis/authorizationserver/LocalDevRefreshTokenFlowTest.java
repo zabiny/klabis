@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(TestApplicationConfiguration.class)
-@ActiveProfiles({"test", "local-dev"})
+@ActiveProfiles({"test", "local-dev", "test-bootstrap"})
 @TestPropertySource(properties = {
         "klabis.bootstrap.admin.username=admin",
         "klabis.bootstrap.admin.password=admin123",

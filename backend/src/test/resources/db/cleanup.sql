@@ -15,42 +15,52 @@ DELETE FROM oauth2_authorization;
 -- OAuth2 registered clients
 DELETE FROM oauth2_registered_client;
 
--- Calendar feed tokens (owned by calendar module, FK → users with cascade)
-DELETE FROM calendar_feed_token;
+-- Calendar feed tokens (owned by calendar module, FK → common.users with cascade)
+DELETE FROM calendar.calendar_feed_token;
 
 -- Users aggregate (password tokens and user permissions are deleted through cascade)
--- DELETE FROM password_setup_tokens;
--- DELETE FROM user_permissions;
-DELETE FROM users;
+-- DELETE FROM common.password_setup_tokens;
+-- DELETE FROM common.user_permissions;
+DELETE FROM common.users;
 
 -- Event publication outbox table
 DELETE FROM event_publication;
 
 -- Calendar items (references events)
-DELETE FROM calendar_items;
+DELETE FROM calendar.calendar_items;
 
 -- Events table (registrations are deleted through cascade)
--- DELETE FROM event_registrations;
-DELETE FROM events;
+-- DELETE FROM events.event_registrations;
+DELETE FROM events.events;
 
--- Event types (must follow events due to FK: events.event_type_id → event_types.id)
-DELETE FROM event_types;
+-- Event types (must follow events due to FK: events.events.event_type_id → events.event_types.id)
+DELETE FROM events.event_types;
 
 -- User groups — unified table covering FREE (FreeGroup), TRAINING, FAMILY aggregate types
 -- Child tables cascade on user_groups delete, but explicit deletes preserve order clarity
-DELETE FROM user_group_invitations;
-DELETE FROM user_group_members;
-DELETE FROM user_group_owners;
-DELETE FROM user_groups;
+DELETE FROM groups.user_group_invitations;
+DELETE FROM groups.user_group_members;
+DELETE FROM groups.user_group_owners;
+DELETE FROM groups.user_groups;
 
 -- Finance transactions (must precede member_account due to FK constraint)
-DELETE FROM finance_transaction;
+DELETE FROM finance.finance_transaction;
 
 -- Member financial accounts (owned by finance module, no FK to members table by design)
-DELETE FROM member_account;
+DELETE FROM finance.member_account;
+
+-- Membership fees (fee group memberships → groups → levels, rules, publications)
+DELETE FROM membershipfees.membership_fee_group_members;
+DELETE FROM membershipfees.membership_fee_group_rule_snapshot;
+DELETE FROM membershipfees.membership_fee_group;
+DELETE FROM membershipfees.fee_selection_campaign_level;
+DELETE FROM membershipfees.fee_selection_campaign;
+DELETE FROM membershipfees.yearly_fee_charge_marker;
+DELETE FROM membershipfees.membership_payment_rule;
+DELETE FROM membershipfees.membership_fee_tier;
 
 -- Members table
-DELETE FROM members;
+DELETE FROM members.members;
 
 -- Re-enable foreign key checks (if disabled above)
 -- SET FOREIGN_KEY_CHECKS = 1;  -- MySQL

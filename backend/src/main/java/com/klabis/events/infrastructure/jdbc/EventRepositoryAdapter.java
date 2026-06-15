@@ -185,7 +185,7 @@ class EventRepositoryAdapter implements EventRepository {
         }
         MapSqlParameterSource params = new MapSqlParameterSource("ids", candidateOrisIds);
         List<Integer> found = namedJdbc.query(
-                "SELECT oris_id FROM events WHERE oris_id IN (:ids)",
+                "SELECT oris_id FROM events.events WHERE oris_id IN (:ids)",
                 params,
                 (rs, rowNum) -> rs.getInt(1)
         );
@@ -276,7 +276,7 @@ class EventRepositoryAdapter implements EventRepository {
         // fulltextQuery is already trimmed and non-blank per EventFilter compact constructor invariant
         String[] tokens = query.split("\\s+");
 
-        StringBuilder sql = new StringBuilder("SELECT id FROM events WHERE ");
+        StringBuilder sql = new StringBuilder("SELECT id FROM events.events WHERE ");
         MapSqlParameterSource params = new MapSqlParameterSource();
 
         List<String> tokenClauses = new ArrayList<>();
@@ -304,9 +304,9 @@ class EventRepositoryAdapter implements EventRepository {
      */
     private List<UUID> findIdsByRegisteredMember(MemberId memberId) {
         String sql = """
-                SELECT id FROM events e
+                SELECT id FROM events.events e
                 WHERE EXISTS (
-                    SELECT 1 FROM event_registrations er
+                    SELECT 1 FROM events.event_registrations er
                     WHERE er.event_id = e.id AND er.member_id = :memberId
                 )
                 """;
@@ -328,7 +328,7 @@ class EventRepositoryAdapter implements EventRepository {
      */
     private List<UUID> findIdsByDeadlineWithin(LocalDate today, LocalDate deadlineUntil) {
         String sql = """
-                SELECT id FROM events e
+                SELECT id FROM events.events e
                 WHERE e.registration_deadline IS NOT NULL
                   AND CASE
                         WHEN e.registration_deadline > :today THEN e.registration_deadline
@@ -352,9 +352,9 @@ class EventRepositoryAdapter implements EventRepository {
      */
     private List<UUID> findIdsByNotRegisteredMember(MemberId memberId) {
         String sql = """
-                SELECT id FROM events e
+                SELECT id FROM events.events e
                 WHERE NOT EXISTS (
-                    SELECT 1 FROM event_registrations er
+                    SELECT 1 FROM events.event_registrations er
                     WHERE er.event_id = e.id AND er.member_id = :memberId
                 )
                 """;

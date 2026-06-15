@@ -2,7 +2,7 @@
 -- Provides a controlled set of members with varied names and active/inactive state
 -- to verify fulltext (q) and status filter combinations.
 
-DELETE FROM members
+DELETE FROM members.members
 WHERE id IN (
     '00000001-0001-0001-0001-000000000001',
     '00000001-0001-0001-0001-000000000002',
@@ -12,7 +12,7 @@ WHERE id IN (
 );
 
 -- Calling admin user — required so the JWT member claim resolves to a real member row
-INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
+INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
                      email, phone, street, city, postal_code, country, is_active,
                      created_at, created_by, modified_at, modified_by, version, chip_number)
 VALUES ('00000001-0001-0001-0001-000000000099',
@@ -21,7 +21,7 @@ VALUES ('00000001-0001-0001-0001-000000000099',
         CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0, NULL);
 
 -- Active member: Jan Novak
-INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
+INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
                      email, phone, street, city, postal_code, country, is_active,
                      created_at, created_by, modified_at, modified_by, version, chip_number)
 VALUES ('00000001-0001-0001-0001-000000000001',
@@ -30,7 +30,7 @@ VALUES ('00000001-0001-0001-0001-000000000001',
         CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0, NULL);
 
 -- Active member: Petra Cermakova (diacritics in last name — tests unaccent)
-INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
+INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
                      email, phone, street, city, postal_code, country, is_active,
                      created_at, created_by, modified_at, modified_by, version, chip_number)
 VALUES ('00000001-0001-0001-0001-000000000002',
@@ -39,7 +39,7 @@ VALUES ('00000001-0001-0001-0001-000000000002',
         CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0, NULL);
 
 -- Active member: Karel Novak (same last name as Jan — tiebreak by firstName)
-INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
+INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
                      email, phone, street, city, postal_code, country, is_active,
                      created_at, created_by, modified_at, modified_by, version, chip_number)
 VALUES ('00000001-0001-0001-0001-000000000003',
@@ -48,7 +48,7 @@ VALUES ('00000001-0001-0001-0001-000000000003',
         CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0, NULL);
 
 -- Inactive member: Jana Novakova
-INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
+INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender,
                      email, phone, street, city, postal_code, country, is_active,
                      created_at, created_by, modified_at, modified_by, version, chip_number)
 VALUES ('00000001-0001-0001-0001-000000000004',

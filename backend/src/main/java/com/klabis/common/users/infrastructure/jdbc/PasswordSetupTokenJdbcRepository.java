@@ -55,7 +55,7 @@ public interface PasswordSetupTokenJdbcRepository extends CrudRepository<Passwor
      */
     @Query("""
             SELECT *
-            FROM password_setup_tokens
+            FROM common.password_setup_tokens
             WHERE user_id = :userId
             AND used_at IS NULL
             AND expires_at > :currentTime
@@ -74,7 +74,7 @@ public interface PasswordSetupTokenJdbcRepository extends CrudRepository<Passwor
      */
     @Modifying
     @Query("""
-            DELETE FROM password_setup_tokens
+            DELETE FROM common.password_setup_tokens
             WHERE expires_at < :expirationTime
             """)
     int deleteByExpiresAtBefore(@Param("expirationTime") Instant expirationTime);
@@ -89,7 +89,7 @@ public interface PasswordSetupTokenJdbcRepository extends CrudRepository<Passwor
      */
     @Modifying
     @Query("""
-            DELETE FROM password_setup_tokens
+            DELETE FROM common.password_setup_tokens
             WHERE user_id = :userId
             """)
     void deleteAllByUserId(@Param("userId") UUID userId);

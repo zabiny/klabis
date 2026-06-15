@@ -11,25 +11,25 @@ import java.util.UUID;
 
 public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> {
 
-    @Query("SELECT * FROM user_groups WHERE id = :id AND type = :type")
+    @Query("SELECT * FROM groups.user_groups WHERE id = :id AND type = :type")
     Optional<GroupMemento> findByIdAndType(@Param("id") UUID id, @Param("type") String type);
 
-    @Query("SELECT EXISTS (SELECT 1 FROM user_groups WHERE id = :id AND type = :type)")
+    @Query("SELECT EXISTS (SELECT 1 FROM groups.user_groups WHERE id = :id AND type = :type)")
     boolean existsByIdAndType(@Param("id") UUID id, @Param("type") String type);
 
-    @Query("DELETE FROM user_groups WHERE id = :id AND type = :type")
+    @Query("DELETE FROM groups.user_groups WHERE id = :id AND type = :type")
     @Modifying
     void deleteByIdAndType(@Param("id") UUID id, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
+            SELECT ug.* FROM groups.user_groups ug
             WHERE ug.type = :type
               AND (
                 EXISTS (
-                    SELECT 1 FROM user_group_owners ugo
+                    SELECT 1 FROM groups.user_group_owners ugo
                     WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
                 ) OR EXISTS (
-                    SELECT 1 FROM user_group_members ugm
+                    SELECT 1 FROM groups.user_group_members ugm
                     WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
                 )
               )
@@ -37,8 +37,8 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     List<GroupMemento> findOwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT DISTINCT ug.* FROM user_groups ug
-            JOIN user_group_invitations ugi ON ugi.user_group_id = ug.id
+            SELECT DISTINCT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_invitations ugi ON ugi.user_group_id = ug.id
             WHERE ug.type = :type
               AND ugi.invited_member_id = :memberId
               AND ugi.status = 'PENDING'
@@ -46,14 +46,14 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     List<GroupMemento> findWithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
+            SELECT ug.* FROM groups.user_groups ug
             WHERE ug.type = :type
               AND (
                 EXISTS (
-                    SELECT 1 FROM user_group_owners ugo
+                    SELECT 1 FROM groups.user_group_owners ugo
                     WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
                 ) OR EXISTS (
-                    SELECT 1 FROM user_group_members ugm
+                    SELECT 1 FROM groups.user_group_members ugm
                     WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
                 )
               )
@@ -62,8 +62,8 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     List<GroupMemento> findFirst2OwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT DISTINCT ug.* FROM user_groups ug
-            JOIN user_group_invitations ugi ON ugi.user_group_id = ug.id
+            SELECT DISTINCT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_invitations ugi ON ugi.user_group_id = ug.id
             WHERE ug.type = :type
               AND ugi.invited_member_id = :memberId
               AND ugi.status = 'PENDING'
@@ -72,16 +72,16 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     List<GroupMemento> findFirst2WithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
-            JOIN user_group_members ugm ON ug.id = ugm.user_group_id
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_members ugm ON ug.id = ugm.user_group_id
             WHERE ug.type = :type
               AND ugm.member_id = :memberId
             """)
     List<GroupMemento> findByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
-            JOIN user_group_members ugm ON ug.id = ugm.user_group_id
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_members ugm ON ug.id = ugm.user_group_id
             WHERE ug.type = :type
               AND ugm.member_id = :memberId
             LIMIT 2
@@ -89,16 +89,16 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
     List<GroupMemento> findFirst2ByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
-            JOIN user_group_owners ugo ON ug.id = ugo.user_group_id
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
             WHERE ug.type = :type
               AND ugo.member_id = :trainerId
             """)
     List<GroupMemento> findByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
 
     @Query("""
-            SELECT ug.* FROM user_groups ug
-            JOIN user_group_owners ugo ON ug.id = ugo.user_group_id
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
             WHERE ug.type = :type
               AND ugo.member_id = :trainerId
             LIMIT 2

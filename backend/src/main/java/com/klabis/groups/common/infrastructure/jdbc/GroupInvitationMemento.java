@@ -7,7 +7,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("user_group_invitations")
+@Table(schema = "groups", value = "user_group_invitations")
 class GroupInvitationMemento {
 
     @Id

@@ -30,7 +30,7 @@ import java.util.UUID;
  * The User entity remains a pure domain object without Spring annotations,
  * while this memento handles all infrastructure concerns.
  */
-@Table("users")
+@Table(schema = "common", value = "users")
 public class UserMemento implements Persistable<UUID> {
 
     @Id

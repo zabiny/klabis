@@ -1,0 +1,181 @@
+package com.klabis.membershipfees.domain;
+
+import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.finance.domain.Money;
+import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.MembershipFeeTierId;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
+import org.springframework.util.Assert;
+
+import java.time.LocalDate;
+import java.util.*;
+
+@AggregateRoot
+public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, MembershipFeeGroupId> {
+
+    @Identity
+    private final MembershipFeeGroupId id;
+    private final MembershipFeeTierId sourceLevelId;
+    private final String name;
+    private final int year;
+    private final LocalDate votingDeadline;
+    private Money yearlyFeeSnapshot;
+    private PublishedLevelStatus status;
+    private final List<MembershipPaymentRule> rulesSnapshot;
+    private final Set<FeeGroupMembership> memberships;
+
+    private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeTierId sourceLevelId,
+                                String name, int year, LocalDate votingDeadline,
+                                Money yearlyFeeSnapshot,
+                                PublishedLevelStatus status,
+                                List<MembershipPaymentRule> rulesSnapshot,
+                                Set<FeeGroupMembership> memberships) {
+        Assert.notNull(id, "MembershipFeeGroupId is required");
+        Assert.notNull(sourceLevelId, "SourceLevelId is required");
+        Assert.hasText(name, "Name is required");
+        Assert.notNull(votingDeadline, "VotingDeadline is required");
+        Assert.notNull(yearlyFeeSnapshot, "YearlyFeeSnapshot is required");
+        Assert.notNull(status, "Status is required");
+        this.id = id;
+        this.sourceLevelId = sourceLevelId;
+        this.name = name;
+        this.year = year;
+        this.votingDeadline = votingDeadline;
+        this.yearlyFeeSnapshot = yearlyFeeSnapshot;
+        this.status = status;
+        this.rulesSnapshot = new ArrayList<>(rulesSnapshot);
+        this.memberships = new HashSet<>(memberships);
+    }
+
+    public static MembershipFeeGroup createSnapshot(MembershipFeeTierId sourceLevelId,
+                                                    String name, int year, Money yearlyFeeSnapshot,
+                                                    List<MembershipPaymentRule> rulesSnapshot,
+                                                    LocalDate votingDeadline) {
+        return new MembershipFeeGroup(
+                new MembershipFeeGroupId(UUID.randomUUID()),
+                sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot,
+                PublishedLevelStatus.EDITABLE,
+                rulesSnapshot != null ? rulesSnapshot : List.of(),
+                Set.of());
+    }
+
+    public static MembershipFeeGroup reconstruct(MembershipFeeGroupId id,
+                                                  MembershipFeeTierId sourceLevelId,
+                                                  String name, int year,
+                                                  LocalDate votingDeadline,
+                                                  Money yearlyFeeSnapshot,
+                                                  PublishedLevelStatus status,
+                                                  List<MembershipPaymentRule> rulesSnapshot,
+                                                  Set<FeeGroupMembership> memberships,
+                                                  AuditMetadata auditMetadata) {
+        MembershipFeeGroup group = new MembershipFeeGroup(
+                id, sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot, status, rulesSnapshot, memberships);
+        if (auditMetadata != null) {
+            group.updateAuditMetadata(auditMetadata);
+        }
+        return group;
+    }
+
+    @Override
+    public MembershipFeeGroupId getId() {
+        return id;
+    }
+
+    public MembershipFeeTierId getSourceLevelId() {
+        return sourceLevelId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public LocalDate getVotingDeadline() {
+        return votingDeadline;
+    }
+
+    public Money getYearlyFeeSnapshot() {
+        return yearlyFeeSnapshot;
+    }
+
+    public PublishedLevelStatus getStatus() {
+        return status;
+    }
+
+    public List<MembershipPaymentRule> getRulesSnapshot() {
+        return Collections.unmodifiableList(rulesSnapshot);
+    }
+
+    public Set<FeeGroupMembership> getMemberships() {
+        return Collections.unmodifiableSet(memberships);
+    }
+
+    public int memberCount() {
+        return memberships.size();
+    }
+
+    public void editSnapshot(Money yearlyFee, List<MembershipPaymentRule> rules) {
+        if (status != PublishedLevelStatus.EDITABLE) {
+            throw new SnapshotFrozenException();
+        }
+        Assert.notNull(yearlyFee, "YearlyFee is required");
+        this.yearlyFeeSnapshot = yearlyFee;
+        this.rulesSnapshot.clear();
+        if (rules != null) {
+            this.rulesSnapshot.addAll(rules);
+        }
+    }
+
+    public void freeze() {
+        this.status = PublishedLevelStatus.FROZEN;
+    }
+
+    public void addMember(MemberId memberId, LocalDate today, AssignmentSource source) {
+        addMember(memberId, today, source, null);
+    }
+
+    public void addMember(MemberId memberId, LocalDate today, AssignmentSource source, @Nullable MemberId assignedBy) {
+        Assert.notNull(memberId, "MemberId is required");
+        Assert.notNull(today, "Today is required");
+        Assert.notNull(source, "AssignmentSource is required");
+
+        if (source == AssignmentSource.MEMBER_CHOICE
+                && (today.isAfter(votingDeadline) || status == PublishedLevelStatus.FROZEN)) {
+            throw new VotingClosedException();
+        }
+
+        boolean alreadyMember = memberships.stream()
+                .anyMatch(m -> m.memberId().equals(memberId));
+        if (alreadyMember) {
+            return;
+        }
+
+        memberships.add(new FeeGroupMembership(memberId, today, source, assignedBy));
+    }
+
+    public void removeMember(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        memberships.removeIf(m -> m.memberId().equals(memberId));
+    }
+
+    public void removeMemberChoice(MemberId memberId, LocalDate today) {
+        Assert.notNull(memberId, "MemberId is required");
+        Assert.notNull(today, "Today is required");
+        if (today.isAfter(votingDeadline) || status == PublishedLevelStatus.FROZEN) {
+            throw new VotingClosedException();
+        }
+        memberships.removeIf(m -> m.memberId().equals(memberId));
+    }
+
+    public boolean hasMember(MemberId memberId) {
+        Assert.notNull(memberId, "MemberId is required");
+        return memberships.stream().anyMatch(m -> m.memberId().equals(memberId));
+    }
+}

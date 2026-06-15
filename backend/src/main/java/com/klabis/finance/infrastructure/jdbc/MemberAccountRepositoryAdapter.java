@@ -67,7 +67,7 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
 
     @Override
     public Optional<Money> findBalanceById(MemberId memberId) {
-        String sql = "SELECT balance_amount, balance_currency FROM member_account WHERE member_id = :memberId";
+        String sql = "SELECT balance_amount, balance_currency FROM finance.member_account WHERE member_id = :memberId";
         MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
         try {
             return Optional.ofNullable(namedJdbc.queryForObject(sql, params, (rs, rowNum) ->
@@ -80,7 +80,7 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
 
     @Override
     public Optional<Transaction> findReversalOf(TransactionId transactionId) {
-        String sql = "SELECT * FROM finance_transaction WHERE reverses_transaction_id = :txId";
+        String sql = "SELECT * FROM finance.finance_transaction WHERE reverses_transaction_id = :txId";
         MapSqlParameterSource params = new MapSqlParameterSource("txId", transactionId.value());
         List<Transaction> results = namedJdbc.query(sql, params, new TransactionRowMapper());
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
@@ -92,7 +92,7 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
             return Map.of();
         }
         List<UUID> ids = transactionIds.stream().map(TransactionId::value).toList();
-        String sql = "SELECT id, reverses_transaction_id FROM finance_transaction WHERE reverses_transaction_id IN (:ids)";
+        String sql = "SELECT id, reverses_transaction_id FROM finance.finance_transaction WHERE reverses_transaction_id IN (:ids)";
         MapSqlParameterSource params = new MapSqlParameterSource("ids", ids);
         Map<TransactionId, TransactionId> result = new HashMap<>();
         namedJdbc.query(sql, params, rs -> {
@@ -131,11 +131,11 @@ class MemberAccountRepositoryAdapter implements MemberAccountRepository {
         }
 
         String whereClause = conditions.stream().collect(Collectors.joining(" AND "));
-        String countSql = "SELECT COUNT(*) FROM finance_transaction WHERE " + whereClause;
+        String countSql = "SELECT COUNT(*) FROM finance.finance_transaction WHERE " + whereClause;
 
         Pageable dbPageable = TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
         String orderClause = buildOrderClause(dbPageable.getSort());
-        String dataSql = "SELECT * FROM finance_transaction WHERE " + whereClause + orderClause
+        String dataSql = "SELECT * FROM finance.finance_transaction WHERE " + whereClause + orderClause
                 + " LIMIT " + dbPageable.getPageSize() + " OFFSET " + dbPageable.getOffset();
 
         long total = Optional.ofNullable(namedJdbc.queryForObject(countSql, params, Long.class)).orElse(0L);

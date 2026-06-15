@@ -43,7 +43,25 @@ jsou dostupne tyto sluzby:
 - [Prometheus](http://localhost:9090)
 - [Grafana](http://localhost:9030) (default user `admin`:`admin`)
 - [Zipkin](http://localhost:9411)
-- [MailHog](http://localhost:8025) — zachytává odeslané emaily (spustit: `docker compose up mailhog -d`)
+- [MailPit](http://localhost:8025) — zachytává odeslané emaily (spustit viz níže)
+
+#### MailPit — první spuštění
+
+TLS certifikát není součástí repozitáře. Před prvním spuštěním ho vygeneruj:
+
+```bash
+mkdir -p tools/mailpit/certs
+openssl req -x509 -newkey rsa:4096 \
+  -keyout tools/mailpit/certs/key.pem \
+  -out tools/mailpit/certs/cert.pem \
+  -days 3650 -nodes -subj "/CN=mailpit"
+```
+
+Pak spusť kontejner:
+
+```bash
+docker compose -f docker-compose.mailpit.yml up -d
+```
 
 ## Analýza
 

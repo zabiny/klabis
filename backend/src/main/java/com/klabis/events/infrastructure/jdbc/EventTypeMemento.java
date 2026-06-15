@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Table("event_types")
+@Table(schema = "events", value = "event_types")
 class EventTypeMemento implements Persistable<UUID> {
 
     @Id

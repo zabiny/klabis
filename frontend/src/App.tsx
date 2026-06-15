@@ -28,6 +28,11 @@ import {FamilyGroupsPage} from "./pages/family-groups/FamilyGroupsPage.tsx";
 import {FamilyGroupDetailPage} from "./pages/family-groups/FamilyGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
+import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdminPage.tsx";
+import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
+import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
+import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
+import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 import {TokenRenewalOverlay} from "./components/UI/TokenRenewalOverlay.tsx";
@@ -97,6 +102,8 @@ function App() {
                                     <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
+                                    <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
+                                    <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
                                     <Route path="/events/:id" element={<EventDetailPage/>}/>
                                     <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>
@@ -108,6 +115,10 @@ function App() {
                                     <Route path="/family-groups/:id" element={<FamilyGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                     <Route path="/event-types" element={<EventTypesPage/>}/>
+                                    <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
+                                    <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
+                                    <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
+                                    <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

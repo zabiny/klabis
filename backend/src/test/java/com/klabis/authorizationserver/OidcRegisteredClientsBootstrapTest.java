@@ -2,6 +2,7 @@ package com.klabis.authorizationserver;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.bootstrap.BootstrapDataLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,13 +15,11 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import com.klabis.common.bootstrap.BootstrapDataLoader;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(TestApplicationConfiguration.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "test-bootstrap"})
 @TestPropertySource(properties = {
         "klabis.bootstrap.admin.username=admin",
         "klabis.bootstrap.admin.password=admin123",

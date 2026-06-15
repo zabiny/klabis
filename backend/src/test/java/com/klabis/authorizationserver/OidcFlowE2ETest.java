@@ -51,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "test-bootstrap"})
 @TestPropertySource(properties = {
         "klabis.bootstrap.admin.username=" + OidcFlowE2ETest.ADMIN_USERNAME,
         "klabis.bootstrap.admin.password=" + OidcFlowE2ETest.ADMIN_PASSWORD,
