@@ -6,6 +6,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
+import com.klabis.members.Members;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
@@ -64,6 +65,9 @@ class FeeSelectionCampaignControllerTest {
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
+
+    @MockitoBean
+    private Members members;
 
     private FeeSelectionCampaign buildPublication(UUID id, int year) {
         return FeeSelectionCampaign.reconstruct(

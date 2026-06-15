@@ -5,10 +5,13 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.members.ActingMember;
+import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,11 +23,17 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -39,19 +48,44 @@ class MembershipFeeGroupController {
 
     private final FeeSelectionCampaignManagementPort managementPort;
     private final AdminFeeAssignmentPort adminFeeAssignmentPort;
+    private final Members members;
+    private final MembershipFeeGroupDetailsPostprocessor groupDetailsPostprocessor;
 
     MembershipFeeGroupController(FeeSelectionCampaignManagementPort managementPort,
-                                 AdminFeeAssignmentPort adminFeeAssignmentPort) {
+                                 AdminFeeAssignmentPort adminFeeAssignmentPort,
+                                 Members members,
+                                 MembershipFeeGroupDetailsPostprocessor groupDetailsPostprocessor) {
         this.managementPort = managementPort;
         this.adminFeeAssignmentPort = adminFeeAssignmentPort;
+        this.members = members;
+        this.groupDetailsPostprocessor = groupDetailsPostprocessor;
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get membership fee group details with snapshot and member count")
-    ResponseEntity<EntityModel<MembershipFeeGroupResponse>> getGroup(
+    ResponseEntity<RepresentationModel<?>> getGroup(
             @Parameter(description = "Group UUID") @PathVariable UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
-        return ResponseEntity.ok(entityModelWithDomain(MembershipFeeGroupResponse.from(group), group));
+        EntityModel<MembershipFeeGroupResponse> entityModel = entityModelWithDomain(MembershipFeeGroupResponse.from(group), group);
+        groupDetailsPostprocessor.process(entityModel, group);
+
+        List<MembershipFeeGroupResponse.MemberInGroupResponse> groupMembers = buildGroupMembers(group);
+        RepresentationModel<?> model = HalModelBuilder.halModelOf(entityModel)
+                .embed(groupMembers, MembershipFeeGroupResponse.MemberInGroupResponse.class)
+                .build();
+        return ResponseEntity.ok(model);
+    }
+
+    private List<MembershipFeeGroupResponse.MemberInGroupResponse> buildGroupMembers(MembershipFeeGroup group) {
+        Set<FeeGroupMembership> memberships = group.getMemberships();
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
+        Set<MemberId> memberIds = memberships.stream().map(FeeGroupMembership::memberId).collect(Collectors.toSet());
+        Map<MemberId, MemberDto> memberDtos = members.findByIds(memberIds);
+        return memberships.stream()
+                .map(membership -> MembershipFeeGroupResponse.MemberInGroupResponse.from(membership, memberDtos.get(membership.memberId())))
+                .toList();
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -120,4 +154,5 @@ class MembershipFeeGroupDetailsPostprocessor
         klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(group.getSourceLevelId().value()))
                 .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }
+
 }

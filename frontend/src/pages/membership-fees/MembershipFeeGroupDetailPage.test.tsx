@@ -24,26 +24,44 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
+vi.mock('../../contexts/HalRouteContext.tsx', () => ({
+    HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../hooks/useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedMutation: vi.fn().mockReturnValue({
+        mutate: vi.fn(),
+        isPending: false,
+        error: null,
+    }),
+}));
+
 const buildGroupDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     id: 'group-1',
     name: 'Základní členství',
     yearlyFeeAmount: 500,
     status: 'EDITABLE',
-    coParticipationRules: [
-        {raceTypeId: 'sprint', ranking: 'A', ruleType: 'PERCENTAGE', value: 50},
-    ],
-    members: [
-        {
-            memberId: 'member-1',
-            joinedAt: '2025-01-15',
-            source: 'MEMBER_CHOICE',
-        },
-        {
-            memberId: 'member-2',
-            joinedAt: '2025-02-10',
-            source: 'ADMIN_ASSIGNMENT',
-        },
-    ],
+    _embedded: {
+        members: [
+            {
+                memberId: 'member-1',
+                firstName: 'Jan',
+                lastName: 'Novák',
+                registrationNumber: 'ZBM1234',
+                joinedAt: '2025-01-15',
+                source: 'MEMBER_CHOICE',
+            },
+            {
+                memberId: 'member-2',
+                firstName: 'Petra',
+                lastName: 'Svobodová',
+                registrationNumber: 'ZBM5678',
+                joinedAt: '2025-02-10',
+                source: 'ADMIN_ASSIGNMENT',
+            },
+        ],
+    },
     _links: {self: {href: '/api/membership-fee-groups/group-1'}},
     ...overrides,
 });
@@ -125,6 +143,18 @@ describe('MembershipFeeGroupDetailPage', () => {
         expect(screen.getByText(/členové/i)).toBeInTheDocument();
     });
 
+    it('renders member full name from embedded members', () => {
+        renderPage(createMockPageData(buildGroupDetail()));
+        expect(screen.getByText('Jan Novák')).toBeInTheDocument();
+        expect(screen.getByText('Petra Svobodová')).toBeInTheDocument();
+    });
+
+    it('renders member registration number from embedded members', () => {
+        renderPage(createMockPageData(buildGroupDetail()));
+        expect(screen.getByText('ZBM1234')).toBeInTheDocument();
+        expect(screen.getByText('ZBM5678')).toBeInTheDocument();
+    });
+
     it('renders MEMBER_CHOICE source as "Vlastní volba"', () => {
         renderPage(createMockPageData(buildGroupDetail()));
         expect(screen.getByText('Vlastní volba')).toBeInTheDocument();
@@ -133,6 +163,18 @@ describe('MembershipFeeGroupDetailPage', () => {
     it('renders ADMIN_ASSIGNMENT source as "Přiřazeno adminem"', () => {
         renderPage(createMockPageData(buildGroupDetail()));
         expect(screen.getByText('Přiřazeno adminem')).toBeInTheDocument();
+    });
+
+    it('shows empty state when no members in embedded', () => {
+        const resourceData = buildGroupDetail({_embedded: {members: []}});
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText(/žádní členové ve skupině/i)).toBeInTheDocument();
+    });
+
+    it('shows empty state when embedded is absent', () => {
+        const resourceData = buildGroupDetail({_embedded: undefined});
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText(/žádní členové ve skupině/i)).toBeInTheDocument();
     });
 
     it('renders edit snapshot button when editSnapshot template exists and status is EDITABLE', () => {

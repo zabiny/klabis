@@ -13,6 +13,9 @@ import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
 interface FeeGroupMember {
     memberId: string;
+    firstName?: string;
+    lastName?: string;
+    registrationNumber?: string;
     joinedAt: string;
     source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT';
 }
@@ -23,7 +26,9 @@ interface MembershipFeeGroupDetail extends HalResponse {
     yearlyFeeAmount: number;
     yearlyFeeCurrency: string;
     status: 'EDITABLE' | 'FROZEN';
-    members?: FeeGroupMember[];
+    _embedded?: {
+        members?: FeeGroupMember[];
+    };
 }
 
 const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT'}): ReactElement => {
@@ -75,7 +80,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
     const assignMemberTemplate = resourceData._templates?.assignMember ?? null;
-    const members = resourceData.members ?? [];
+    const members = resourceData._embedded?.members ?? [];
     const canEdit = resourceData.status === 'EDITABLE' && !!editTemplate;
 
     return (
@@ -188,6 +193,9 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                     {labels.fields.memberId}
                                 </th>
                                 <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
+                                    {labels.fields.registrationNumber}
+                                </th>
+                                <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
                                     {labels.tables.joinedAt}
                                 </th>
                                 <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
@@ -198,7 +206,12 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                         <tbody>
                             {members.map((member) => (
                                 <tr key={member.memberId} className="border-t" style={{borderColor: '#F4F4F5', height: '60px'}}>
-                                    <td className="px-5 font-medium" style={{color: '#18181B'}}>{member.memberId}</td>
+                                    <td className="px-5 font-medium" style={{color: '#18181B'}}>
+                                        {member.firstName && member.lastName
+                                            ? `${member.firstName} ${member.lastName}`
+                                            : member.memberId}
+                                    </td>
+                                    <td className="px-5" style={{color: '#18181B'}}>{member.registrationNumber ?? '—'}</td>
                                     <td className="px-5" style={{color: '#18181B'}}>{formatDate(member.joinedAt)}</td>
                                     <td className="px-5">
                                         <MemberSourceBadge source={member.source}/>

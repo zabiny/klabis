@@ -6,10 +6,15 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
+import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.domain.AssignmentSource;
+import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.membershipfees.domain.SnapshotFrozenException;
@@ -24,7 +29,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,7 +62,10 @@ class MembershipFeeGroupControllerTest {
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    private static final java.time.LocalDate VOTING_DEADLINE = java.time.LocalDate.of(2026, 3, 31);
+    @MockitoBean
+    private Members members;
+
+    private static final LocalDate VOTING_DEADLINE = LocalDate.of(2026, 3, 31);
 
     private MembershipFeeGroup buildFrozenGroup() {
         return MembershipFeeGroup.reconstruct(
@@ -64,6 +75,18 @@ class MembershipFeeGroupControllerTest {
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
                 List.of(), Set.of(), null);
+    }
+
+    private MembershipFeeGroup buildFrozenGroupWithMember() {
+        MemberId memberId = new MemberId(MEMBER_UUID);
+        FeeGroupMembership membership = new FeeGroupMembership(memberId, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null);
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(GROUP_UUID),
+                new MembershipFeeTierId(UUID.randomUUID()),
+                "Dospělý", 2026, VOTING_DEADLINE,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.FROZEN,
+                List.of(), Set.of(membership), null);
     }
 
     private MembershipFeeGroup buildEditableGroup() {
@@ -85,8 +108,8 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser
         void shouldReturnGroupDetails() throws Exception {
             MembershipFeeGroup group = buildFrozenGroup();
-            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
-                    .thenReturn(group);
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
@@ -94,6 +117,43 @@ class MembershipFeeGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Dospělý"))
                     .andExpect(jsonPath("$.year").value(2026));
+        }
+
+        @Test
+        @DisplayName("should return embedded members list with name and registration number when group has members")
+        @WithKlabisMockUser
+        void shouldReturnEmbeddedMembersWithDetails() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroupWithMember();
+            MemberDto memberDto = new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0));
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(Set.of(new MemberId(MEMBER_UUID)))).thenReturn(Map.of(new MemberId(MEMBER_UUID), memberDto));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.members").isArray())
+                    .andExpect(jsonPath("$._embedded.members[0].memberId").value(MEMBER_UUID.toString()))
+                    .andExpect(jsonPath("$._embedded.members[0].firstName").value("Jan"))
+                    .andExpect(jsonPath("$._embedded.members[0].lastName").value("Novák"))
+                    .andExpect(jsonPath("$._embedded.members[0].registrationNumber").value("ZBM1234"))
+                    .andExpect(jsonPath("$._embedded.members[0].source").value("MEMBER_CHOICE"))
+                    .andExpect(jsonPath("$._embedded.members[0].joinedAt").value("2026-01-15"));
+        }
+
+        @Test
+        @DisplayName("should not include members in embedded when group has no members")
+        @WithKlabisMockUser
+        void shouldNotEmbedMembersWhenGroupHasNoMembers() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.memberCount").value(0));
         }
     }
 
@@ -166,8 +226,8 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeAdminAssignAffordanceWithStableUrl() throws Exception {
             MembershipFeeGroup group = buildFrozenGroup();
-            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
-                    .thenReturn(group);
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
@@ -239,8 +299,8 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeEditAffordanceOnlyForEditable() throws Exception {
             MembershipFeeGroup editableGroup = buildEditableGroup();
-            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
-                    .thenReturn(editableGroup);
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(editableGroup);
+            when(members.findByIds(any())).thenReturn(Map.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
@@ -254,8 +314,8 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldNotIncludeEditAffordanceForFrozen() throws Exception {
             MembershipFeeGroup frozenGroup = buildFrozenGroup();
-            org.mockito.Mockito.when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID)))
-                    .thenReturn(frozenGroup);
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(frozenGroup);
+            when(members.findByIds(any())).thenReturn(Map.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
