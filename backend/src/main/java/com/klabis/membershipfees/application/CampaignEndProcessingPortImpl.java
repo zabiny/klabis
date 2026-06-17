@@ -44,6 +44,7 @@ class CampaignEndProcessingPortImpl implements CampaignEndProcessingPort {
 
         for (FeeSelectionCampaign publication : unprocessed) {
             campaignProcessor.processPublication(publication, allMembers);
+            publicationRepository.save(publication);
         }
     }
 

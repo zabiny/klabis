@@ -109,6 +109,10 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
         return Collections.unmodifiableList(publishedGroupIds);
     }
 
+    public boolean isProcessed() {
+        return deadlineProcessedAt != null;
+    }
+
     public boolean isClosed(LocalDate today) {
         return today.isAfter(votingDeadline);
     }

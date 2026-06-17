@@ -18,9 +18,7 @@ class MembershipFeesExceptionHandler {
 
     @ExceptionHandler(DuplicatePaymentRuleException.class)
     ResponseEntity<ProblemDetail> handleDuplicatePaymentRule(DuplicatePaymentRuleException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
-        problem.setTitle("Duplicate Payment Rule");
-        return ResponseEntity.status(409).body(problem);
+        return conflict("Duplicate Payment Rule", ex);
     }
 
     @ExceptionHandler(PaymentRuleNotFoundException.class)
@@ -32,22 +30,22 @@ class MembershipFeesExceptionHandler {
 
     @ExceptionHandler(ActiveCampaignExistsException.class)
     ResponseEntity<ProblemDetail> handleActiveCampaignExists(ActiveCampaignExistsException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
-        problem.setTitle("Active Campaign Already Exists");
-        return ResponseEntity.status(409).body(problem);
+        return conflict("Active Campaign Already Exists", ex);
     }
 
     @ExceptionHandler(CampaignClosedException.class)
     ResponseEntity<ProblemDetail> handleCampaignClosed(CampaignClosedException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
-        problem.setTitle("Campaign Closed");
-        return ResponseEntity.status(409).body(problem);
+        return conflict("Campaign Closed", ex);
     }
 
     @ExceptionHandler(CampaignAlreadyProcessedException.class)
     ResponseEntity<ProblemDetail> handleCampaignAlreadyProcessed(CampaignAlreadyProcessedException ex) {
+        return conflict("Campaign Already Processed", ex);
+    }
+
+    private ResponseEntity<ProblemDetail> conflict(String title, Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
-        problem.setTitle("Campaign Already Processed");
+        problem.setTitle(title);
         return ResponseEntity.status(409).body(problem);
     }
 }

@@ -28,16 +28,13 @@ class CampaignProcessor {
     private final ApplicationEventPublisher eventPublisher;
     private final ChargePort chargePort;
     private final YearlyFeeChargeMarkerRepository markerRepository;
-    private final FeeSelectionCampaignRepository campaignRepository;
 
     CampaignProcessor(MembershipFeeGroupRepository groupRepository, ApplicationEventPublisher eventPublisher,
-                      ChargePort chargePort, YearlyFeeChargeMarkerRepository markerRepository,
-                      FeeSelectionCampaignRepository campaignRepository) {
+                      ChargePort chargePort, YearlyFeeChargeMarkerRepository markerRepository) {
         this.groupRepository = groupRepository;
         this.eventPublisher = eventPublisher;
         this.chargePort = chargePort;
         this.markerRepository = markerRepository;
-        this.campaignRepository = campaignRepository;
     }
 
     void processPublication(FeeSelectionCampaign publication, Set<MemberId> allMembers) {
@@ -55,20 +52,17 @@ class CampaignProcessor {
                 .map(FeeGroupMembership::memberId)
                 .collect(Collectors.toSet());
 
-        Set<MemberId> membersWithoutChoice = allMembers.stream()
-                .filter(memberId -> !membersWithChoice.contains(memberId))
-                .collect(Collectors.toSet());
-
         log.info("Year {}: {} members total, {} with choice, {} without choice",
-                year, allMembers.size(), membersWithChoice.size(), membersWithoutChoice.size());
+                year, allMembers.size(), membersWithChoice.size(), allMembers.size() - membersWithChoice.size());
 
-        membersWithoutChoice.forEach(memberId -> {
-            log.warn("Member {} missed fee selection for year {} — publishing sanction event", memberId, year);
-            eventPublisher.publishEvent(new MemberMissedFeeSelectionEvent(memberId, year));
-        });
+        allMembers.stream()
+                .filter(memberId -> !membersWithChoice.contains(memberId))
+                .forEach(memberId -> {
+                    log.warn("Member {} missed fee selection for year {} — publishing sanction event", memberId, year);
+                    eventPublisher.publishEvent(new MemberMissedFeeSelectionEvent(memberId, year));
+                });
 
         publication.markProcessed(Instant.now());
-        campaignRepository.save(publication);
     }
 
     private void freezeGroups(List<MembershipFeeGroup> groups) {

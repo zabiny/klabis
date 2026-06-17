@@ -55,7 +55,7 @@ class CampaignEndProcessingPortTest {
     @BeforeEach
     void setUp() {
         CampaignProcessor campaignProcessor = new CampaignProcessor(
-                groupRepository, eventPublisher, chargePort, markerRepository, publicationRepository);
+                groupRepository, eventPublisher, chargePort, markerRepository);
         testedInstance = new CampaignEndProcessingPortImpl(
                 publicationRepository, allMembersPort, campaignProcessor);
     }

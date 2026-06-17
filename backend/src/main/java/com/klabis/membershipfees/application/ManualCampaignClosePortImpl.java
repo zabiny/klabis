@@ -31,11 +31,12 @@ class ManualCampaignClosePortImpl implements ManualCampaignClosePort {
         FeeSelectionCampaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(campaignId));
 
-        if (campaign.getDeadlineProcessedAt() != null) {
+        if (campaign.isProcessed()) {
             throw new CampaignAlreadyProcessedException();
         }
 
         Set<MemberId> allMembers = allMembersPort.findAll();
         campaignProcessor.processPublication(campaign, allMembers);
+        campaignRepository.save(campaign);
     }
 }

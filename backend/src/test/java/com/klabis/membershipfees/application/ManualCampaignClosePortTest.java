@@ -55,7 +55,7 @@ class ManualCampaignClosePortTest {
     @BeforeEach
     void setUp() {
         CampaignProcessor campaignProcessor = new CampaignProcessor(
-                groupRepository, eventPublisher, chargePort, markerRepository, campaignRepository);
+                groupRepository, eventPublisher, chargePort, markerRepository);
         testedInstance = new ManualCampaignClosePortImpl(campaignRepository, allMembersPort, campaignProcessor);
     }
 

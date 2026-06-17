@@ -168,7 +168,7 @@ class FeeSelectionCampaignDetailsPostprocessor
                     if (!publication.isClosed(today)) {
                         self = self.andAffordances(klabisAfford(
                                 methodOn(FeeSelectionCampaignController.class).changeDeadline(id, null)));
-                        if (publication.getDeadlineProcessedAt() == null) {
+                        if (!publication.isProcessed()) {
                             self = self.andAffordances(klabisAfford(
                                     methodOn(FeeSelectionCampaignController.class).closeCampaign(id)));
                         }
