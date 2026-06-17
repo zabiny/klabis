@@ -81,7 +81,7 @@ springdoc:
       display-name: Members API
       packages-to-scan:
         - com.klabis.members
-        - com.klabis.users
+        - com.klabis.common.users
     - group: events
       display-name: Events API
       packages-to-scan:
@@ -90,6 +90,22 @@ springdoc:
       display-name: Finances API
       packages-to-scan:
         - com.klabis.finance
+    - group: calendar
+      display-name: Calendar API
+      packages-to-scan:
+        - com.klabis.calendar
+    - group: membergroups
+      display-name: Member groups API
+      packages-to-scan:
+        - com.klabis.groups
+    - group: membershipfees
+      display-name: Membership fees API
+      packages-to-scan:
+        - com.klabis.membershipfees
+    - group: oris
+      display-name: ORIS proxy API
+      packages-to-scan:
+        - com.klabis.oris
     - group: all
       display-name: X All endpoints
       paths-to-match:
