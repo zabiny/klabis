@@ -3,9 +3,7 @@
 ## Purpose
 
 Defines how the application presents its main navigation menu and how navigation behaves after user actions such as form submissions. The menu is driven by authorization-gated API links; its layout adapts to the current device (desktop sidebar vs. mobile bottom bar).
-
 ## Requirements
-
 ### Requirement: Main Menu is Driven by Authorization-Gated Links
 
 The system SHALL derive the application's main menu from the links returned by the root API response. Each menu entry SHALL correspond to a link the current user is authorized to receive; links the user is not authorized to receive SHALL NOT appear in the menu.
@@ -48,7 +46,7 @@ The system SHALL include a "Finance" entry in the main menu for every authentica
 
 ### Requirement: Desktop Sidebar Splits Menu Into Main and Administrative Sections
 
-On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as training groups, category presets, and family groups.
+On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as training groups, category presets, family groups, and membership fees.
 
 #### Scenario: Manager sees the Administrace section with all authorized admin items
 
@@ -141,3 +139,24 @@ Edit submissions (`200 OK` / `204 No Content` without a `Location` header) and d
 - **WHEN** a create-style form submission succeeds but the backend response does not include a `Location` header
 - **THEN** the user is not navigated elsewhere
 - **AND** the current page is refreshed
+
+### Requirement: Main Menu Offers a "Členské příspěvky" Entry for Membership Administrators
+
+The system SHALL include a single "Členské příspěvky" entry in the Administrace section of the main menu for members authorized to administer membership fees. Following the entry SHALL open the membership fees administration page. The system SHALL NOT present membership fee tiers and fee selection campaigns as two separate menu entries.
+
+#### Scenario: Membership administrator sees one membership fees entry in Administrace
+
+- **WHEN** a member with membership administration authorization views the desktop sidebar
+- **THEN** the Administrace section shows a single "Členské příspěvky" entry
+- **AND** no separate fee tier catalog or fee selection campaigns entries are shown
+
+#### Scenario: Following the entry opens the membership fees page
+
+- **WHEN** a membership administrator follows the "Členské příspěvky" entry
+- **THEN** the membership fees administration page opens
+
+#### Scenario: Member without membership administration does not see the entry
+
+- **WHEN** a member without membership administration authorization views the main menu
+- **THEN** the "Členské příspěvky" entry is not shown
+
