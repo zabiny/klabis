@@ -7,6 +7,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.ManualCampaignClosePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -43,11 +44,14 @@ class FeeSelectionCampaignController {
 
     private final FeeSelectionCampaignManagementPort managementPort;
     private final MembershipFeeTierManagementPort levelManagementPort;
+    private final ManualCampaignClosePort manualCampaignClosePort;
 
     FeeSelectionCampaignController(FeeSelectionCampaignManagementPort managementPort,
-                                   MembershipFeeTierManagementPort levelManagementPort) {
+                                   MembershipFeeTierManagementPort levelManagementPort,
+                                   ManualCampaignClosePort manualCampaignClosePort) {
         this.managementPort = managementPort;
         this.levelManagementPort = levelManagementPort;
+        this.manualCampaignClosePort = manualCampaignClosePort;
     }
 
     @PostMapping(consumes = "application/json")
@@ -102,6 +106,14 @@ class FeeSelectionCampaignController {
         FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id), request.toCommand());
         FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(updated);
         return ResponseEntity.ok(entityModelWithDomain(response, updated));
+    }
+
+    @PostMapping("/{id}/close")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Operation(summary = "Manually close a campaign — processes it immediately regardless of deadline (requires MEMBERS:MANAGE)")
+    ResponseEntity<Void> closeCampaign(@Parameter(description = "Campaign UUID") @PathVariable UUID id) {
+        manualCampaignClosePort.closeCampaign(new FeeSelectionCampaignId(id));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{year}/levels")

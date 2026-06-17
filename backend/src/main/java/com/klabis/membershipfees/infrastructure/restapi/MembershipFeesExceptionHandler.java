@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.domain.ActiveCampaignExistsException;
 import com.klabis.membershipfees.domain.CampaignClosedException;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
@@ -40,6 +41,13 @@ class MembershipFeesExceptionHandler {
     ResponseEntity<ProblemDetail> handleCampaignClosed(CampaignClosedException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
         problem.setTitle("Campaign Closed");
+        return ResponseEntity.status(409).body(problem);
+    }
+
+    @ExceptionHandler(CampaignAlreadyProcessedException.class)
+    ResponseEntity<ProblemDetail> handleCampaignAlreadyProcessed(CampaignAlreadyProcessedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), ex.getMessage());
+        problem.setTitle("Campaign Already Processed");
         return ResponseEntity.status(409).body(problem);
     }
 }

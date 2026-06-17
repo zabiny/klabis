@@ -6,11 +6,11 @@
 
 ## 2. Backend — nový port a endpoint pro manuální uzavření
 
-- [ ] 2.1 Napsat test pro `ManualCampaignClosePort.closeCampaign(campaignId)` — scénáře: úspěšné uzavření, 409 při opakovaném volání
-- [ ] 2.2 Vytvořit rozhraní `ManualCampaignClosePort` (`@PrimaryPort`) s metodou `closeCampaign(FeeSelectionCampaignId)`
-- [ ] 2.3 Implementovat `ManualCampaignClosePortImpl` s využitím `CampaignProcessor`
-- [ ] 2.4 Napsat test pro `POST /api/fee-selection-campaigns/{id}/close` v `FeeSelectionCampaignControllerTest` — scénáře: 204 pro aktivní kampaň, 409 pro již uzavřenou, 403 bez autority
-- [ ] 2.5 Přidat endpoint `POST /{id}/close` do `FeeSelectionCampaignController` (`@HasAuthority(MEMBERS_MANAGE)`, vrací 204)
+- [x] 2.1 Napsat test pro `ManualCampaignClosePort.closeCampaign(campaignId)` — scénáře: úspěšné uzavření, 409 při opakovaném volání
+- [x] 2.2 Vytvořit rozhraní `ManualCampaignClosePort` (`@PrimaryPort`) s metodou `closeCampaign(FeeSelectionCampaignId)`
+- [x] 2.3 Implementovat `ManualCampaignClosePortImpl` s využitím `CampaignProcessor`
+- [x] 2.4 Napsat test pro `POST /api/fee-selection-campaigns/{id}/close` v `FeeSelectionCampaignControllerTest` — scénáře: 204 pro aktivní kampaň, 409 pro již uzavřenou, 403 bez autority
+- [x] 2.5 Přidat endpoint `POST /{id}/close` do `FeeSelectionCampaignController` (`@HasAuthority(MEMBERS_MANAGE)`, vrací 204)
 
 ## 3. Backend — HAL affordance na detailu kampaně
 

@@ -11,8 +11,10 @@ import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
+import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
+import com.klabis.membershipfees.application.ManualCampaignClosePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.CampaignClosedException;
 import com.klabis.membershipfees.domain.DeadlineNotInFutureException;
@@ -65,6 +67,9 @@ class FeeSelectionCampaignControllerTest {
 
     @MockitoBean
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
+
+    @MockitoBean
+    private ManualCampaignClosePort manualCampaignClosePort;
 
     @MockitoBean
     private Members members;
@@ -394,6 +399,44 @@ class FeeSelectionCampaignControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.changeDeadline").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/fee-selection-campaigns/{id}/close")
+    class CloseCampaignTests {
+
+        @Test
+        @DisplayName("should return 204 when campaign closed successfully with MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenClosedSuccessfully() throws Exception {
+            mockMvc.perform(
+                            post("/api/fee-selection-campaigns/{id}/close", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 409 when campaign was already processed (CampaignAlreadyProcessedException)")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WhenAlreadyProcessed() throws Exception {
+            doThrow(new CampaignAlreadyProcessedException())
+                    .when(manualCampaignClosePort).closeCampaign(PUBLICATION_ID);
+
+            mockMvc.perform(
+                            post("/api/fee-selection-campaigns/{id}/close", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn403WhenMissingAuthority() throws Exception {
+            mockMvc.perform(
+                            post("/api/fee-selection-campaigns/{id}/close", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
         }
     }
 }
