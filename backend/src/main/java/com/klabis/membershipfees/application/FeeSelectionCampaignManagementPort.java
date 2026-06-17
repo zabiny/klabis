@@ -43,8 +43,6 @@ public interface FeeSelectionCampaignManagementPort {
 
     FeeSelectionCampaign getPublication(FeeSelectionCampaignId id);
 
-    Optional<FeeSelectionCampaign> getPublicationForYear(int year);
-
     List<FeeSelectionCampaign> listPublications();
 
     List<FeeSelectionCampaign> listClosedPublications();

@@ -64,12 +64,6 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     @Transactional(readOnly = true)
     @Override
-    public Optional<FeeSelectionCampaign> getPublicationForYear(int year) {
-        return publicationRepository.findByYear(year);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
     public List<FeeSelectionCampaign> listPublications() {
         return publicationRepository.findAll();
     }
