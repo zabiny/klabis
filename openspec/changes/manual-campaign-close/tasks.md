@@ -14,8 +14,8 @@
 
 ## 3. Backend — HAL affordance na detailu kampaně
 
-- [ ] 3.1 Přidat affordance `close` na self-link v `FeeSelectionCampaignDetailsPostprocessor` — podmíněnou `!campaign.isClosed(today) && campaign.getDeadlineProcessedAt() == null`
-- [ ] 3.2 Ověřit v controlleru testu, že affordance je přítomna pouze pro aktivní nezpracované kampaně
+- [x] 3.1 Přidat affordance `close` na self-link v `FeeSelectionCampaignDetailsPostprocessor` — podmíněnou `!campaign.isClosed(today) && campaign.getDeadlineProcessedAt() == null`
+- [x] 3.2 Ověřit v controlleru testu, že affordance je přítomna pouze pro aktivní nezpracované kampaně
 
 ## 4. Frontend — tlačítko uzavření kampaně
 

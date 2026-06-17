@@ -403,6 +403,39 @@ class FeeSelectionCampaignControllerTest {
     }
 
     @Nested
+    @DisplayName("HAL affordance: close")
+    class CloseAffordanceTests {
+
+        @Test
+        @DisplayName("should include close affordance for active unprocessed campaign")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldIncludeCloseAffordanceForActiveCampaign() throws Exception {
+            when(managementPort.getPublication(PUBLICATION_ID))
+                    .thenReturn(buildActiveCampaign(PUBLICATION_UUID));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.closeCampaign").exists());
+        }
+
+        @Test
+        @DisplayName("should NOT include close affordance for closed campaign")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotIncludeCloseAffordanceForClosedCampaign() throws Exception {
+            when(managementPort.getPublication(PUBLICATION_ID))
+                    .thenReturn(buildClosedCampaign(PUBLICATION_UUID));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.closeCampaign").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/fee-selection-campaigns/{id}/close")
     class CloseCampaignTests {
 
