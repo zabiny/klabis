@@ -1,4 +1,4 @@
-package com.klabis.membershipfees.infrastructure.scheduler;
+package com.klabis.membershipfees.application;
 
 import com.klabis.finance.application.ChargePort;
 import com.klabis.members.MemberId;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FeeSelectionDeadlineScheduler")
-class FeeSelectionDeadlineSchedulerTest {
+class CampaignEndProcessingPortTest {
 
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
     private static final LocalDate DAY_AFTER_DEADLINE = DEADLINE.plusDays(1);
@@ -50,11 +50,11 @@ class FeeSelectionDeadlineSchedulerTest {
     @Mock
     private YearlyFeeChargeMarkerRepository markerRepository;
 
-    private FeeSelectionDeadlineScheduler scheduler;
+    private CampaignEndProcessingPortImpl testedInstance;
 
     @BeforeEach
     void setUp() {
-        scheduler = new FeeSelectionDeadlineScheduler(
+        testedInstance = new CampaignEndProcessingPortImpl(
                 publicationRepository, groupRepository, allMembersPort, eventPublisher,
                 chargePort, markerRepository);
     }
@@ -69,7 +69,7 @@ class FeeSelectionDeadlineSchedulerTest {
             when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
                     .thenReturn(List.of());
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(allMembersPort, eventPublisher, chargePort, markerRepository);
         }
@@ -113,7 +113,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should publish MemberMissedFeeSelectionEvent only for members without a choice")
         void shouldPublishEventOnlyForMembersWithoutChoice() {
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
             verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
@@ -130,7 +130,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should not publish event for members who already have a choice")
         void shouldNotPublishEventForMembersWithChoice() {
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
             verify(eventPublisher, atMostOnce()).publishEvent(eventCaptor.capture());
@@ -146,7 +146,7 @@ class FeeSelectionDeadlineSchedulerTest {
         @Test
         @DisplayName("should mark publication as processed after handling")
         void shouldMarkPublicationAsProcessed() {
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             ArgumentCaptor<FeeSelectionCampaign> savedCaptor = ArgumentCaptor.forClass(FeeSelectionCampaign.class);
             verify(publicationRepository).save(savedCaptor.capture());
@@ -163,7 +163,7 @@ class FeeSelectionDeadlineSchedulerTest {
             when(groupRepository.save(any(MembershipFeeGroup.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             ArgumentCaptor<MembershipFeeGroup> groupCaptor = ArgumentCaptor.forClass(MembershipFeeGroup.class);
             verify(groupRepository).save(groupCaptor.capture());
@@ -182,7 +182,7 @@ class FeeSelectionDeadlineSchedulerTest {
                         return g;
                     });
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             assertThat(savedGroups).isNotEmpty();
             assertThat(savedGroups.get(0).getStatus()).isEqualTo(PublishedLevelStatus.FROZEN);
@@ -196,7 +196,7 @@ class FeeSelectionDeadlineSchedulerTest {
         void shouldChargeYearlyFeeForMembersInGroup() {
             when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor = ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
             verify(chargePort, times(1)).charge(chargeCaptor.capture());
@@ -213,7 +213,7 @@ class FeeSelectionDeadlineSchedulerTest {
         void shouldSaveMarkerAfterCharge() {
             when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, 2026);
         }
@@ -223,7 +223,7 @@ class FeeSelectionDeadlineSchedulerTest {
         void shouldSkipChargeForAlreadyMarkedMember() {
             when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of(MEMBER_WITH_CHOICE));
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(chargePort);
             verify(markerRepository, never()).markCharged(any(), anyInt());
@@ -240,7 +240,7 @@ class FeeSelectionDeadlineSchedulerTest {
             when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
                     .thenReturn(List.of());
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(allMembersPort, eventPublisher, chargePort, markerRepository);
         }
@@ -277,7 +277,7 @@ class FeeSelectionDeadlineSchedulerTest {
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
             when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(eventPublisher);
             verify(chargePort, times(1)).charge(any(ChargePort.ChargeCommand.class));
@@ -315,7 +315,7 @@ class FeeSelectionDeadlineSchedulerTest {
             when(groupRepository.findByYear(2026)).thenReturn(List.of(emptyGroup));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITHOUT_CHOICE));
 
-            scheduler.processMissedSelections(DAY_AFTER_DEADLINE);
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(chargePort);
         }
