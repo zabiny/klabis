@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import {Link} from 'react-router-dom';
-import {Calendar} from 'lucide-react';
+import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {Alert, Skeleton} from '../../components/UI';
@@ -31,6 +31,7 @@ interface FeeSelectionCampaignDetail extends HalResponse {
 const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSelectionCampaignDetail}): ReactElement => {
     const {route} = useHalPageData<FeeSelectionCampaignDetail>();
     const [changeDeadlineOpen, setChangeDeadlineOpen] = useState(false);
+    const [closeCampaignOpen, setCloseCampaignOpen] = useState(false);
 
     const levelsHref = resourceData._links?.levels?.href ?? '';
     const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
@@ -40,6 +41,7 @@ const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSel
     const groups = groupsData?._embedded?.membershipFeeGroupResponseList ?? [];
 
     const changeDeadlineTemplate = resourceData._templates?.changeDeadline ?? null;
+    const closeCampaignTemplate = resourceData._templates?.closeCampaign ?? null;
 
     return (
         <div className="flex flex-col gap-6">
@@ -67,17 +69,30 @@ const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSel
                     </div>
                 </div>
 
-                {changeDeadlineTemplate && (
-                    <div className="mt-5 pt-5 border-t border-[#E4E4E7]">
-                        <button
-                            type="button"
-                            onClick={() => setChangeDeadlineOpen(true)}
-                            className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
-                            aria-label={labels.templates.changeDeadline}
-                        >
-                            <Calendar className="w-[15px] h-[15px]"/>
-                            {labels.templates.changeDeadline}
-                        </button>
+                {(changeDeadlineTemplate || closeCampaignTemplate) && (
+                    <div className="mt-5 pt-5 border-t border-[#E4E4E7] flex flex-wrap gap-2">
+                        {changeDeadlineTemplate && (
+                            <button
+                                type="button"
+                                onClick={() => setChangeDeadlineOpen(true)}
+                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                                aria-label={labels.templates.changeDeadline}
+                            >
+                                <Calendar className="w-[15px] h-[15px]"/>
+                                {labels.templates.changeDeadline}
+                            </button>
+                        )}
+                        {closeCampaignTemplate && (
+                            <button
+                                type="button"
+                                onClick={() => setCloseCampaignOpen(true)}
+                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-red-600 border border-red-600 hover:bg-red-700 transition-colors"
+                                aria-label={labels.templates.closeCampaign}
+                            >
+                                <Lock className="w-[15px] h-[15px]"/>
+                                {labels.templates.closeCampaign}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -95,6 +110,18 @@ const FeeSelectionCampaignDetailContent = ({resourceData}: {resourceData: FeeSel
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={() => setChangeDeadlineOpen(false)}
+                    navigateOnSuccess={false}
+                />
+            )}
+
+            {closeCampaignTemplate && closeCampaignOpen && (
+                <HalFormModal
+                    title={labels.templates.closeCampaign}
+                    template={closeCampaignTemplate as HalFormsTemplate}
+                    templateName="closeCampaign"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setCloseCampaignOpen(false)}
                     navigateOnSuccess={false}
                 />
             )}

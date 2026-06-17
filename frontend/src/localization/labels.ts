@@ -99,6 +99,7 @@ export const labels = {
         removeRule: 'Smazat pravidlo',
         publishYear: 'Vypsat kampaň',
         changeDeadline: 'Změnit deadline',
+        closeCampaign: 'Uzavřít kampaň',
         editSnapshot: 'Upravit skupinu',
         assignMember: 'Přiřadit člena',
     },

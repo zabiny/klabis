@@ -19,5 +19,5 @@
 
 ## 4. Frontend — tlačítko uzavření kampaně
 
-- [ ] 4.1 Přidat tlačítko „Uzavřít kampaň" na stránku detailu kampaně renderované z HAL+FORMS affordance `close`
-- [ ] 4.2 Ověřit, že tlačítko se nezobrazí na detailu uzavřené kampaně
+- [x] 4.1 Přidat tlačítko „Uzavřít kampaň" na stránku detailu kampaně renderované z HAL+FORMS affordance `close`
+- [x] 4.2 Ověřit, že tlačítko se nezobrazí na detailu uzavřené kampaně

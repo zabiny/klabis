@@ -182,4 +182,19 @@ describe('FeeSelectionCampaignDetailPage', () => {
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /změnit deadline/i})).toBeInTheDocument();
     });
+
+    it('does not show "Uzavřít kampaň" button when closeCampaign template is absent', () => {
+        renderPage(createMockPageData(buildCampaignDetail()));
+        expect(screen.queryByRole('button', {name: /uzavřít kampaň/i})).not.toBeInTheDocument();
+    });
+
+    it('shows "Uzavřít kampaň" button when closeCampaign template is present', () => {
+        const resourceData = buildCampaignDetail({
+            _templates: {
+                closeCampaign: mockHalFormsTemplate({title: 'Uzavřít kampaň', method: 'POST', properties: []}),
+            },
+        });
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByRole('button', {name: /uzavřít kampaň/i})).toBeInTheDocument();
+    });
 });
