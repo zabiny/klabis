@@ -189,6 +189,7 @@ export const labels = {
         yearlyFeeCurrency: 'Měna',
         tierIds: 'Tiery',
         votingDeadline: 'Uzávěrka hlasování',
+        year: 'Rok',
         membershipFeeGroupId: 'Tier poplatku',
         groupStatus: 'Stav skupiny',
         ruleType: 'Typ pravidla',

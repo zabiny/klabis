@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {MembershipFeesAdminPage} from './MembershipFeesAdminPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -28,6 +27,14 @@ vi.mock('../../components/HalNavigator2/HalFormModal', () => ({
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
     HalFormProvider: ({children}: {children: React.ReactNode}) => children,
+}));
+
+vi.mock('../../contexts/HalRouteContext.tsx', () => ({
+    HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+}));
+
+vi.mock('../../components/membership-fees/CampaignDetail', () => ({
+    CampaignDetail: () => <div data-testid="campaign-detail">Campaign Detail</div>,
 }));
 
 const {mockDisplayHalForm} = vi.hoisted(() => ({mockDisplayHalForm: vi.fn()}));
@@ -136,28 +143,26 @@ describe('MembershipFeesAdminPage', () => {
     });
 
     describe('when activeCampaign link is present', () => {
-        it('renders ActiveCampaignSection heading', () => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({
-                data: {
-                    id: 'campaign-1',
-                    year: 2025,
-                    votingDeadline: '2025-03-31',
-                    _links: {
-                        self: {href: '/api/fee-selection-campaigns/campaign-1'},
-                        levels: {href: '/api/fee-selection-campaigns/campaign-1/levels'},
-                    },
-                },
-                error: null,
-            } as ReturnType<typeof useAuthorizedQuery>);
+        it('renders active campaign section heading', () => {
             renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
             expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
+        });
+
+        it('renders CampaignDetail component', () => {
+            renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
+            expect(screen.getByTestId('campaign-detail')).toBeInTheDocument();
         });
     });
 
     describe('when activeCampaign link is absent', () => {
-        it('does not render ActiveCampaignSection heading', () => {
+        it('does not render active campaign section heading', () => {
             renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
             expect(screen.queryByRole('heading', {name: /aktivní kampaň/i})).not.toBeInTheDocument();
+        });
+
+        it('does not render CampaignDetail component', () => {
+            renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
+            expect(screen.queryByTestId('campaign-detail')).not.toBeInTheDocument();
         });
 
         it('still renders TierCatalogSection', () => {
@@ -172,19 +177,7 @@ describe('MembershipFeesAdminPage', () => {
     });
 
     describe('when both activeCampaign and pastCampaigns links are present', () => {
-        it('renders both ActiveCampaignSection and PastCampaignsSection', () => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({
-                data: {
-                    id: 'campaign-1',
-                    year: 2025,
-                    votingDeadline: '2025-03-31',
-                    _links: {
-                        self: {href: '/api/fee-selection-campaigns/campaign-1'},
-                        levels: {href: '/api/fee-selection-campaigns/campaign-1/levels'},
-                    },
-                },
-                error: null,
-            } as ReturnType<typeof useAuthorizedQuery>);
+        it('renders both active campaign section and PastCampaignsSection', () => {
             renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
             expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
             expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
@@ -192,18 +185,6 @@ describe('MembershipFeesAdminPage', () => {
     });
 
     it('renders all three section headings when all links are present', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {
-                id: 'campaign-1',
-                year: 2025,
-                votingDeadline: '2025-03-31',
-                _links: {
-                    self: {href: '/api/fee-selection-campaigns/campaign-1'},
-                    levels: {href: '/api/fee-selection-campaigns/campaign-1/levels'},
-                },
-            },
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
         renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
         expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
