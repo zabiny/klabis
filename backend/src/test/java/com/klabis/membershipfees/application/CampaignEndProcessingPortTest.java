@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.finance.application.ChargePort;
+import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
@@ -97,7 +98,7 @@ class CampaignEndProcessingPortTest {
                     new MembershipFeeTierId(UUID.randomUUID()),
                     "Youth",
                     2026, DEADLINE,
-                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    Money.ofCzk(BigDecimal.valueOf(500)),
                     PublishedLevelStatus.EDITABLE,
                     List.of(),
                     Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
@@ -266,7 +267,7 @@ class CampaignEndProcessingPortTest {
                     new MembershipFeeTierId(UUID.randomUUID()),
                     "Youth",
                     2026, DEADLINE,
-                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    Money.ofCzk(BigDecimal.valueOf(500)),
                     PublishedLevelStatus.EDITABLE,
                     List.of(),
                     Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
@@ -305,7 +306,7 @@ class CampaignEndProcessingPortTest {
                     new MembershipFeeTierId(UUID.randomUUID()),
                     "Empty",
                     2026, DEADLINE,
-                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(500)),
+                    Money.ofCzk(BigDecimal.valueOf(500)),
                     PublishedLevelStatus.EDITABLE,
                     List.of(),
                     Set.of(),
@@ -343,7 +344,7 @@ class CampaignEndProcessingPortTest {
                     new MembershipFeeTierId(UUID.randomUUID()),
                     "Youth",
                     2026, DEADLINE,
-                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(300)),
+                    Money.ofCzk(BigDecimal.valueOf(300)),
                     PublishedLevelStatus.EDITABLE,
                     List.of(),
                     Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),

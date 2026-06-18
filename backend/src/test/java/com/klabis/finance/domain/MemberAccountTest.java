@@ -233,7 +233,7 @@ class MemberAccountTest {
     @Test
     @DisplayName("reverse bypasses overdraft limit and can push balance below the limit")
     void reverseBypassesOverdraftLimit() {
-        MemberAccount account2 = MemberAccount.openFor(new com.klabis.members.MemberId(java.util.UUID.randomUUID()));
+        MemberAccount account2 = MemberAccount.openFor(new MemberId(UUID.randomUUID()));
         // balance = -500 (exactly at limit). Now reverse a prior deposit of 200 → balance = -700 (below limit)
         account2.deposit(Money.ofCzk(BigDecimal.valueOf(200)), "initial deposit", today, now, financeManager);
         account2.charge(Money.ofCzk(BigDecimal.valueOf(700)), "big charge", today, now, financeManager);
