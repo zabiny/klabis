@@ -329,7 +329,8 @@ class CampaignEndProcessingPortTest {
         @Test
         @DisplayName("should charge yearly fee even when it would push balance below overdraft limit")
         void shouldChargeYearlyFeeRegardlessOfOverdraftLimit() {
-            // Spec scenario: limit -500, balance -400, yearly fee 300 → charge recorded, balance -700
+            // Verifies routing: yearly fee is dispatched via the unlimited ChargePort.charge() path.
+            // Domain-level bypass of overdraft enforcement is covered in MemberAccountTest.
             FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
                     new FeeSelectionCampaignId(UUID.randomUUID()),
                     2026,

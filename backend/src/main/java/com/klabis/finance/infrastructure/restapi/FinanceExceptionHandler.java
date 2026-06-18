@@ -12,6 +12,8 @@ import java.net.URI;
 @RestControllerAdvice
 class FinanceExceptionHandler {
 
+    // Prepares HTTP 422 mapping for the registration-charge REST path (chargeForRegistration),
+    // which currently has no caller — pending the event-registration change that will introduce it.
     @ExceptionHandler(OverdraftLimitExceededException.class)
     ErrorResponse handleOverdraftLimitExceeded(OverdraftLimitExceededException ex) {
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())

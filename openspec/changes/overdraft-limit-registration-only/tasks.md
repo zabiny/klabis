@@ -20,6 +20,6 @@ The current `MemberAccount.charge(...)` already enforces the overdraft limit. Th
 
 ## 4. Verify and finalize
 
-- [ ] 4.1 Run the full finance + membershipfees test suites; confirm domain logic coverage (100% on the new method, charge, reverse paths)
-- [ ] 4.2 Run `openspec validate overdraft-limit-registration-only --strict` and confirm the change is valid
-- [ ] 4.3 Code review (code-reviewer agent) before commit
+- [x] 4.1 Run the full finance + membershipfees test suites; confirm domain logic coverage (100% on the new method, charge, reverse paths)
+- [x] 4.2 Run `openspec validate overdraft-limit-registration-only --strict` and confirm the change is valid
+- [x] 4.3 Code review (code-reviewer agent) before commit

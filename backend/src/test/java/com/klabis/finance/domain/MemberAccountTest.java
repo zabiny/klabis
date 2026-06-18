@@ -233,20 +233,12 @@ class MemberAccountTest {
     @Test
     @DisplayName("reverse bypasses overdraft limit and can push balance below the limit")
     void reverseBypassesOverdraftLimit() {
-        MemberAccount account = MemberAccount.openFor(memberId);
-        // Deposit 100, then charge 400 → balance = -300
-        account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
-        account.charge(Money.ofCzk(BigDecimal.valueOf(400)), "charge", today, now, financeManager);
-        // Real bypass test: balance exactly at limit, then reverse a deposit.
         MemberAccount account2 = MemberAccount.openFor(new com.klabis.members.MemberId(java.util.UUID.randomUUID()));
         // balance = -500 (exactly at limit). Now reverse a prior deposit of 200 → balance = -700 (below limit)
         account2.deposit(Money.ofCzk(BigDecimal.valueOf(200)), "initial deposit", today, now, financeManager);
         account2.charge(Money.ofCzk(BigDecimal.valueOf(700)), "big charge", today, now, financeManager);
-        // balance is -500. Use a -500 limit policy for reversal test.
-        // Find the deposit transaction (first one)
         Transaction depositTx = account2.getTransactions().get(0);
-        // Reversing the deposit would push balance from -500 to -700, below the -500 limit.
-        // Reverse must succeed because storno bypasses overdraft check.
+        // Reversing the deposit would push balance from -500 to -700 — reverse must succeed because storno bypasses overdraft check.
         Transaction bypassReversal = account2.reverse(depositTx.getId(), "bypass storno", today, now, financeManager);
 
         assertThat(bypassReversal).isNotNull();
