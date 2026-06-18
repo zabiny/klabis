@@ -10,6 +10,8 @@ import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.MemberRegistrationSanctionPort;
+
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
@@ -66,6 +68,9 @@ class EventControllerTest {
 
     @MockitoBean
     private AccommodationListCsvRenderer csvRenderer;
+
+    @Autowired
+    private MemberRegistrationSanctionPort memberRegistrationSanctionPort;
 
     @Nested
     @DisplayName("POST /api/events")
@@ -1978,6 +1983,145 @@ class EventControllerTest {
                                     .accept("text/csv")
                     )
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id} — blocked member registration affordance")
+    class BlockedMemberEventDetailAffordanceTests {
+
+        @Test
+        @DisplayName("blocked member does not receive registerForEvent affordance on event detail")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void blockedMemberDoesNotReceiveRegisterForEventAffordance() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+            when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(true);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist())
+                    .andExpect(jsonPath("$._links.newRegistration").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-blocked member receives registerForEvent affordance on event detail")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void nonBlockedMemberReceivesRegisterForEventAffordance() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+            when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(false);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("user without member profile receives registerForEvent affordance on ACTIVE event with open registration")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void userWithoutMemberProfileReceivesRegisterForEventAffordance() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+
+            // currentMemberId == null path must not call sanctionPort — no member to check
+            verify(memberRegistrationSanctionPort, never()).isMemberBlocked(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events — blocked member registration affordance on list items")
+    class BlockedMemberEventListAffordanceTests {
+
+        @Test
+        @DisplayName("blocked member does not receive registerForEvent affordance on list items")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void blockedMemberDoesNotReceiveRegisterForEventAffordanceOnListItems() throws Exception {
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
+            when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(true);
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.newRegistration").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-blocked member receives registerForEvent affordance on list items")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void nonBlockedMemberReceivesRegisterForEventAffordanceOnListItems() throws Exception {
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
+            when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(false);
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("all events in list receive registerForEvent affordance when member is not blocked")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void allEventsReceiveRegisterForEventAffordanceWhenMemberIsNotBlocked() throws Exception {
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event event1 = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();
+            Event event2 = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(60)).buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
+            when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(false);
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method").value("POST"))
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[1]._templates.registerForEvent.method").value("POST"));
         }
     }
 

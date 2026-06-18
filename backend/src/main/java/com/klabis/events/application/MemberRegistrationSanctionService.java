@@ -9,6 +9,8 @@ import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ class MemberRegistrationSanctionService implements MemberRegistrationSanctionPor
     }
 
     @Override
+    @CacheEvict(value = "memberRegistrationBlocks", key = "#memberId.value()")
     public void applyMissedSelectionSanction(MemberId memberId) {
         log.warn("Applying missed fee selection sanction for member {}", memberId);
 
@@ -40,12 +43,14 @@ class MemberRegistrationSanctionService implements MemberRegistrationSanctionPor
     }
 
     @Override
+    @Cacheable(value = "memberRegistrationBlocks", key = "#memberId.value()")
     @Transactional(readOnly = true)
     public boolean isMemberBlocked(MemberId memberId) {
         return blockRepository.isBlocked(memberId);
     }
 
     @Override
+    @CacheEvict(value = "memberRegistrationBlocks", key = "#memberId.value()")
     public void unblockMember(MemberId memberId) {
         log.info("Lifting registration sanction for member {}", memberId);
         blockRepository.unblock(memberId);

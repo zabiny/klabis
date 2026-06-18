@@ -12,6 +12,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
@@ -535,9 +536,11 @@ class EventAffordanceSupport {
 class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
 
     private final boolean orisIntegrationActive;
+    private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventDetailsPostprocessor(Optional<OrisEventImportPort> orisEventImportPort) {
+    EventDetailsPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
         this.orisIntegrationActive = orisEventImportPort.isPresent();
+        this.sanctionPort = sanctionPort;
     }
 
     @Override
@@ -556,7 +559,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
-                } else {
+                } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
                             Map.of("category", event.getCategories())
@@ -600,9 +603,11 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummaryDto, Event> {
 
     private final boolean orisIntegrationActive;
+    private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventSummaryPostprocessor(Optional<OrisEventImportPort> orisEventImportPort) {
+    EventSummaryPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
         this.orisIntegrationActive = orisEventImportPort.isPresent();
+        this.sanctionPort = sanctionPort;
     }
 
     @Override
@@ -621,7 +626,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
-                } else {
+                } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
                             Map.of("category", event.getCategories())

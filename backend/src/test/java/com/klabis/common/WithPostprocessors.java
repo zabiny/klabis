@@ -1,6 +1,7 @@
 package com.klabis.common;
 
 import com.klabis.common.users.UserService;
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
@@ -41,7 +42,8 @@ import java.lang.annotation.Target;
         UserService.class,
         UserDetailsService.class,
         RankingOptionsPort.class,
-        EventTypeOptionsPort.class
+        EventTypeOptionsPort.class,
+        MemberRegistrationSanctionPort.class
 })
 public @interface WithPostprocessors {
 }
