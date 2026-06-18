@@ -15,8 +15,8 @@ The current `MemberAccount.charge(...)` already enforces the overdraft limit. Th
 
 ## 3. Confirm automatic membership-fee charge is unlimited
 
-- [ ] 3.1 Add/adjust a test proving `CampaignProcessor.chargeYearlyFees(...)` records the yearly fee even when it pushes a member's balance below the overdraft limit
-- [ ] 3.2 Verify no membership-fee test still asserts overdraft rejection; run membershipfees module tests green
+- [x] 3.1 Add/adjust a test proving `CampaignProcessor.chargeYearlyFees(...)` records the yearly fee even when it pushes a member's balance below the overdraft limit
+- [x] 3.2 Verify no membership-fee test still asserts overdraft rejection; run membershipfees module tests green
 
 ## 4. Verify and finalize
 

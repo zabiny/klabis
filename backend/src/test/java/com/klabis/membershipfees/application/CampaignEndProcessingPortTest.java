@@ -321,4 +321,45 @@ class CampaignEndProcessingPortTest {
             verifyNoInteractions(chargePort);
         }
     }
+
+    @Nested
+    @DisplayName("yearly fee charging — no overdraft limit enforcement")
+    class YearlyFeeChargeUnlimited {
+
+        @Test
+        @DisplayName("should charge yearly fee even when it would push balance below overdraft limit")
+        void shouldChargeYearlyFeeRegardlessOfOverdraftLimit() {
+            // Spec scenario: limit -500, balance -400, yearly fee 300 → charge recorded, balance -700
+            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
+                    2026,
+                    DEADLINE,
+                    null,
+                    List.of());
+
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()),
+                    new MembershipFeeTierId(UUID.randomUUID()),
+                    "Youth",
+                    2026, DEADLINE,
+                    com.klabis.finance.domain.Money.ofCzk(BigDecimal.valueOf(300)),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
+                    null);
+
+            when(publicationRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
+                    .thenReturn(List.of(publication));
+            when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
+            when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
+            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+
+            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
+
+            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor = ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
+            verify(chargePort).charge(chargeCaptor.capture());
+            assertThat(chargeCaptor.getValue().memberId()).isEqualTo(MEMBER_WITH_CHOICE);
+            assertThat(chargeCaptor.getValue().amount()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        }
+    }
 }
