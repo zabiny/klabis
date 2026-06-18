@@ -29,6 +29,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -303,7 +305,7 @@ class AdminFeeAssignmentServiceTest {
             service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
 
-            verify(chargePort, never()).charge(any());
+            verify(chargePort, never()).chargeMembershipFee(any(), any(), anyInt());
             verify(markerRepository, never()).markCharged(any(), anyInt());
         }
 
@@ -322,15 +324,10 @@ class AdminFeeAssignmentServiceTest {
             service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
 
-            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor =
-                    ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
-            verify(chargePort).charge(chargeCaptor.capture());
-            ChargePort.ChargeCommand cmd = chargeCaptor.getValue();
-            assertThat(cmd.memberId()).isEqualTo(TARGET_MEMBER_ID);
-            assertThat(cmd.amount()).isEqualByComparingTo(FEE_AMOUNT);
-            assertThat(cmd.occurredAt()).isEqualTo(LocalDate.now());
-            assertThat(cmd.note()).isEqualTo("Roční členský příspěvek " + YEAR);
-
+            verify(chargePort).chargeMembershipFee(
+                    eq(TARGET_MEMBER_ID),
+                    argThat(amount -> amount.compareTo(FEE_AMOUNT) == 0),
+                    eq(YEAR));
             verify(markerRepository).markCharged(TARGET_MEMBER_ID, YEAR);
         }
 
@@ -349,7 +346,7 @@ class AdminFeeAssignmentServiceTest {
             service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
 
-            verify(chargePort).charge(any());
+            verify(chargePort).chargeMembershipFee(any(), any(), anyInt());
             verify(markerRepository).markCharged(TARGET_MEMBER_ID, YEAR);
         }
 
@@ -368,7 +365,7 @@ class AdminFeeAssignmentServiceTest {
             service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
                     ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
 
-            verify(chargePort, never()).charge(any());
+            verify(chargePort, never()).chargeMembershipFee(any(), any(), anyInt());
             verify(markerRepository, never()).markCharged(any(), anyInt());
         }
     }

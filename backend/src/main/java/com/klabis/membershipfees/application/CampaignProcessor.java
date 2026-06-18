@@ -1,6 +1,5 @@
 package com.klabis.membershipfees.application;
 
-import com.klabis.common.users.UserId;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
@@ -11,18 +10,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 class CampaignProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(CampaignProcessor.class);
-
-    static final UserId SYSTEM_USER_ID = new UserId(UUID.fromString("00000000-0000-0000-0000-000000000000"));
 
     private final MembershipFeeGroupRepository groupRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -77,9 +72,6 @@ class CampaignProcessor {
 
     private void chargeYearlyFees(FeeSelectionCampaign publication, List<MembershipFeeGroup> groups) {
         int year = publication.getYear();
-        LocalDate occurredAt = publication.getVotingDeadline().plusDays(1);
-        String note = "Roční členský příspěvek " + year;
-
         Set<MemberId> alreadyCharged = markerRepository.findChargedMemberIdsForYear(year);
 
         for (MembershipFeeGroup group : groups) {
@@ -89,12 +81,7 @@ class CampaignProcessor {
                     log.debug("Skipping yearly fee charge for member {} year {} — already charged", memberId, year);
                     continue;
                 }
-                chargePort.charge(new ChargePort.ChargeCommand(
-                        memberId,
-                        group.getYearlyFeeSnapshot().amount(),
-                        occurredAt,
-                        note,
-                        SYSTEM_USER_ID));
+                chargePort.chargeMembershipFee(memberId, group.getYearlyFeeSnapshot().amount(), year);
                 markerRepository.markCharged(memberId, year);
                 log.info("Charged yearly fee for member {} year {}", memberId, year);
             }

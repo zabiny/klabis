@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -200,14 +200,10 @@ class CampaignEndProcessingPortTest {
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
-            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor = ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
-            verify(chargePort, times(1)).charge(chargeCaptor.capture());
-
-            ChargePort.ChargeCommand command = chargeCaptor.getValue();
-            assertThat(command.memberId()).isEqualTo(MEMBER_WITH_CHOICE);
-            assertThat(command.amount()).isEqualByComparingTo(BigDecimal.valueOf(500));
-            assertThat(command.occurredAt()).isEqualTo(DAY_AFTER_DEADLINE);
-            assertThat(command.note()).contains("2026");
+            verify(chargePort, times(1)).chargeMembershipFee(
+                    eq(MEMBER_WITH_CHOICE),
+                    argThat(amount -> amount.compareTo(BigDecimal.valueOf(500)) == 0),
+                    eq(2026));
         }
 
         @Test
@@ -282,7 +278,7 @@ class CampaignEndProcessingPortTest {
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(eventPublisher);
-            verify(chargePort, times(1)).charge(any(ChargePort.ChargeCommand.class));
+            verify(chargePort, times(1)).chargeMembershipFee(any(), any(), anyInt());
             verify(publicationRepository).save(any(FeeSelectionCampaign.class));
         }
     }
@@ -330,7 +326,7 @@ class CampaignEndProcessingPortTest {
         @Test
         @DisplayName("should charge yearly fee even when it would push balance below overdraft limit")
         void shouldChargeYearlyFeeRegardlessOfOverdraftLimit() {
-            // Verifies routing: yearly fee is dispatched via the unlimited ChargePort.charge() path.
+            // Verifies routing: yearly fee is dispatched via the unlimited chargeMembershipFee() path.
             // Domain-level bypass of overdraft enforcement is covered in MemberAccountTest.
             FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
                     new FeeSelectionCampaignId(UUID.randomUUID()),
@@ -358,10 +354,10 @@ class CampaignEndProcessingPortTest {
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
-            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor = ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
-            verify(chargePort).charge(chargeCaptor.capture());
-            assertThat(chargeCaptor.getValue().memberId()).isEqualTo(MEMBER_WITH_CHOICE);
-            assertThat(chargeCaptor.getValue().amount()).isEqualByComparingTo(BigDecimal.valueOf(300));
+            verify(chargePort).chargeMembershipFee(
+                    eq(MEMBER_WITH_CHOICE),
+                    argThat(amount -> amount.compareTo(BigDecimal.valueOf(300)) == 0),
+                    eq(2026));
         }
     }
 }

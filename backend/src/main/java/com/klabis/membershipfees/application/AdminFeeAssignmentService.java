@@ -66,13 +66,10 @@ class AdminFeeAssignmentService implements AdminFeeAssignmentPort {
         if (markerRepository.existsByMemberIdAndYear(command.targetMemberId(), command.year())) {
             return;
         }
-        chargePort.charge(new ChargePort.ChargeCommand(
+        chargePort.chargeMembershipFee(
                 command.targetMemberId(),
                 targetGroup.getYearlyFeeSnapshot().amount(),
-                LocalDate.now(),
-                "Roční členský příspěvek " + command.year(),
-                CampaignProcessor.SYSTEM_USER_ID));
+                command.year());
         markerRepository.markCharged(command.targetMemberId(), command.year());
     }
 }
-

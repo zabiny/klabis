@@ -8,9 +8,12 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @PrimaryPort
 public interface ChargePort {
+
+    UserId SYSTEM_USER_ID = new UserId(UUID.fromString("00000000-0000-0000-0000-000000000000"));
 
     record ChargeCommand(MemberId memberId, BigDecimal amount, LocalDate occurredAt,
                          String note, UserId recordedBy) {
@@ -23,4 +26,6 @@ public interface ChargePort {
     }
 
     Transaction charge(ChargeCommand command);
+
+    Transaction chargeMembershipFee(MemberId memberId, BigDecimal amount, int year);
 }
