@@ -141,9 +141,8 @@ class MemberAccountTest {
     @DisplayName("charge with zero amount throws domain exception")
     void chargeWithZeroAmountThrows() {
         MemberAccount account = MemberAccount.openFor(memberId);
-        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
 
-        assertThatThrownBy(() -> account.charge(Money.zero(), "zero", today, now, financeManager, policy))
+        assertThatThrownBy(() -> account.charge(Money.zero(), "zero", today, now, financeManager))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -151,11 +150,26 @@ class MemberAccountTest {
     @DisplayName("charge with negative amount throws domain exception")
     void chargeWithNegativeAmountThrows() {
         MemberAccount account = MemberAccount.openFor(memberId);
-        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
         Money negative = Money.ofCzk(BigDecimal.valueOf(-50));
 
-        assertThatThrownBy(() -> account.charge(negative, "negative", today, now, financeManager, policy))
+        assertThatThrownBy(() -> account.charge(negative, "negative", today, now, financeManager))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("charge records transaction and reduces balance even when result falls below overdraft limit")
+    void chargeRecordsTransactionBelowOverdraftLimit() {
+        MemberAccount account = MemberAccount.openFor(memberId);
+        account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
+        // balance = 100; charge 500 → balance = -400, which is below a -500 overdraft limit
+        // finance-manager charge is unrestricted — should succeed
+
+        Transaction tx = account.charge(Money.ofCzk(BigDecimal.valueOf(500)), "manager charge", today, now, financeManager);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-400)));
+        assertThat(account.getTransactions()).hasSize(2);
+        assertThat(tx.getType()).isEqualTo(TransactionType.OTHER);
+        assertThat(tx.getAmount()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-500)));
     }
 
     @Test
@@ -178,10 +192,9 @@ class MemberAccountTest {
     @DisplayName("reverse of a charge appends a DEPOSIT transaction with positive amount referencing the original")
     void reverseOfChargeAppendsDepositTransaction() {
         MemberAccount account = MemberAccount.openFor(memberId);
-        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
         account.deposit(depositAmount, "initial", today, now, financeManager);
         Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(50));
-        Transaction charge = account.charge(chargeAmount, "charge", today, now, financeManager, policy);
+        Transaction charge = account.charge(chargeAmount, "charge", today, now, financeManager);
 
         Transaction reversal = account.reverse(charge.getId(), "storno", today, now, financeManager);
 
@@ -221,20 +234,14 @@ class MemberAccountTest {
     @DisplayName("reverse bypasses overdraft limit and can push balance below the limit")
     void reverseBypassesOverdraftLimit() {
         MemberAccount account = MemberAccount.openFor(memberId);
-        OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
-        // Deposit 100, then charge 400 → balance = -300 (within limit -500)
+        // Deposit 100, then charge 400 → balance = -300
         account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
-        Transaction charge = account.charge(Money.ofCzk(BigDecimal.valueOf(400)), "charge", today, now, financeManager, policy);
-        // balance is -300. Reversing the charge would add back +400, but here we test
-        // reversing the deposit (-100) which would push balance from -300 to -400 (still within limit).
-        // To test bypass: deposit 200 more (balance=200), charge 600 (rejected if policy -500), so instead:
-        // fresh account, deposit 100 → balance 100. Reverse deposit → balance 0 (trivial, above limit).
+        account.charge(Money.ofCzk(BigDecimal.valueOf(400)), "charge", today, now, financeManager);
         // Real bypass test: balance exactly at limit, then reverse a deposit.
         MemberAccount account2 = MemberAccount.openFor(new com.klabis.members.MemberId(java.util.UUID.randomUUID()));
         // balance = -500 (exactly at limit). Now reverse a prior deposit of 200 → balance = -700 (below limit)
         account2.deposit(Money.ofCzk(BigDecimal.valueOf(200)), "initial deposit", today, now, financeManager);
-        account2.charge(Money.ofCzk(BigDecimal.valueOf(700)), "big charge", today, now,
-                financeManager, new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-1000))));
+        account2.charge(Money.ofCzk(BigDecimal.valueOf(700)), "big charge", today, now, financeManager);
         // balance is -500. Use a -500 limit policy for reversal test.
         // Find the deposit transaction (first one)
         Transaction depositTx = account2.getTransactions().get(0);

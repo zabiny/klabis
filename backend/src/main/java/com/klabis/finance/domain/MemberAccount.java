@@ -47,11 +47,8 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
     }
 
     public Transaction charge(Money amount, String note, LocalDate occurredAt,
-                              Instant recordedAt, UserId recordedBy, OverdraftPolicy overdraftPolicy) {
+                              Instant recordedAt, UserId recordedBy) {
         Assert.isTrue(amount.isPositive(), "Charge amount must be positive");
-        if (!overdraftPolicy.allowsCharge(balance, amount)) {
-            throw new OverdraftLimitExceededException(balance, amount, overdraftPolicy.limit());
-        }
         return debit(amount, note, occurredAt, recordedAt, recordedBy);
     }
 

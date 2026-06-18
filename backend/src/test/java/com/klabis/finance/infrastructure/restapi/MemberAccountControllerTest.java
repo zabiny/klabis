@@ -11,7 +11,6 @@ import com.klabis.finance.application.TransactionQueryPort;
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
-import com.klabis.finance.domain.OverdraftLimitExceededException;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.finance.domain.TransactionId;
@@ -134,22 +133,6 @@ class MemberAccountControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             containsString("/api/members/" + MEMBER_UUID + "/account/transactions/" + TX_UUID)));
-        }
-
-        @Test
-        @DisplayName("returns 422 with OVERDRAFT_LIMIT_EXCEEDED code when charge would breach limit")
-        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
-        void shouldReturn422WhenChargeExceedsOverdraftLimit() throws Exception {
-            Money balance = Money.ofCzk(BigDecimal.valueOf(-400));
-            Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(200));
-            Money limit = Money.ofCzk(BigDecimal.valueOf(-500));
-            when(chargePort.charge(any())).thenThrow(new OverdraftLimitExceededException(balance, chargeAmount, limit));
-
-            mockMvc.perform(post("/api/members/{id}/account/transactions/charge", MEMBER_UUID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(validChargeBody()))
-                    .andExpect(status().is(422))
-                    .andExpect(jsonPath("$.type").value(containsString("OVERDRAFT_LIMIT_EXCEEDED")));
         }
 
         @Test

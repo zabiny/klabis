@@ -8,10 +8,10 @@ The current `MemberAccount.charge(...)` already enforces the overdraft limit. Th
 
 ## 2. Make the existing charge path unlimited
 
-- [ ] 2.1 Update `MemberAccountTest.charge(...)` tests: assert a finance-manager charge is recorded even when it pushes the balance below the overdraft limit (-400 → -700); remove the now-obsolete "charge breaches limit is rejected" assertions on `charge(...)` (their coverage now lives on `chargeForRegistration`)
-- [ ] 2.2 Remove the `OverdraftPolicy` parameter and the `allowsCharge` check from `MemberAccount.charge(...)`, leaving the positive-amount assert plus the shared debit helper
-- [ ] 2.3 Update `finance.application.ChargeService` to call the now-unlimited `charge(...)` (drop the `OverdraftPolicy` argument); keep `ChargePort`/`ChargeCommand` and the `POST .../transactions/charge` endpoint unchanged
-- [ ] 2.4 Run finance application + web-layer tests green
+- [x] 2.1 Update `MemberAccountTest.charge(...)` tests: assert a finance-manager charge is recorded even when it pushes the balance below the overdraft limit (-400 → -700); remove the now-obsolete "charge breaches limit is rejected" assertions on `charge(...)` (their coverage now lives on `chargeForRegistration`)
+- [x] 2.2 Remove the `OverdraftPolicy` parameter and the `allowsCharge` check from `MemberAccount.charge(...)`, leaving the positive-amount assert plus the shared debit helper
+- [x] 2.3 Update `finance.application.ChargeService` to call the now-unlimited `charge(...)` (drop the `OverdraftPolicy` argument); keep `ChargePort`/`ChargeCommand` and the `POST .../transactions/charge` endpoint unchanged
+- [x] 2.4 Run finance application + web-layer tests green
 
 ## 3. Confirm automatic membership-fee charge is unlimited
 
