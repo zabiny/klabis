@@ -114,7 +114,7 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
     }
 
     public boolean isClosed(LocalDate today) {
-        return today.isAfter(votingDeadline);
+        return isProcessed() || today.isAfter(votingDeadline);
     }
 
     public void changeDeadline(LocalDate newDeadline, LocalDate today) {

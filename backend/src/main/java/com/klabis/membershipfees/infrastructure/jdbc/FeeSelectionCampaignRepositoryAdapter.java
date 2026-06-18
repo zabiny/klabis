@@ -63,7 +63,9 @@ class FeeSelectionCampaignRepositoryAdapter implements FeeSelectionCampaignRepos
 
     @Override
     public Optional<FeeSelectionCampaign> findActive(LocalDate today) {
-        Query query = Query.query(Criteria.where("voting_deadline").greaterThanOrEquals(today)).limit(1);
+        Criteria criteria = Criteria.where("voting_deadline").greaterThanOrEquals(today)
+                .and(Criteria.where("deadline_processed_at").isNull());
+        Query query = Query.query(criteria).limit(1);
         return jdbcAggregateTemplate.findOne(query, FeeSelectionCampaignMemento.class)
                 .map(FeeSelectionCampaignMemento::toPublication);
     }

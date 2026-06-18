@@ -52,7 +52,11 @@ class FeeSelectionCampaignPersistenceTest {
     }
 
     private FeeSelectionCampaign publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {
-        var result = FeeSelectionCampaign.publish(year, DEADLINE, levels);
+        return publishAndSaveGroups(year, DEADLINE, levels);
+    }
+
+    private FeeSelectionCampaign publishAndSaveGroups(int year, LocalDate deadline, List<MembershipFeeTier> levels) {
+        var result = FeeSelectionCampaign.publish(year, deadline, levels);
         for (MembershipFeeGroup group : result.groups()) {
             groupRepository.save(group);
         }
@@ -113,6 +117,38 @@ class FeeSelectionCampaignPersistenceTest {
         void shouldReturnEmptyWhenNotFound() {
             Optional<FeeSelectionCampaign> found =
                     publicationRepository.findById(new FeeSelectionCampaignId(UUID.randomUUID()));
+
+            assertThat(found).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findActive()")
+    class FindActive {
+
+        @Test
+        @DisplayName("should return active campaign when deadline is in the future and not processed")
+        void shouldReturnActiveCampaignBeforeDeadline() {
+            MembershipFeeTier level = savedLevel("DospělýActive");
+            LocalDate futureDeadline = LocalDate.now().plusDays(30);
+            publicationRepository.save(publishAndSaveGroups(2028, futureDeadline, List.of(level)));
+
+            Optional<FeeSelectionCampaign> found = publicationRepository.findActive(LocalDate.now());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getYear()).isEqualTo(2028);
+        }
+
+        @Test
+        @DisplayName("should return empty when campaign is manually closed (processed) even if deadline is in future")
+        void shouldReturnEmptyWhenManuallyClosedWithFutureDeadline() {
+            MembershipFeeTier level = savedLevel("DospělýClosed");
+            LocalDate futureDeadline = LocalDate.now().plusDays(30);
+            FeeSelectionCampaign campaign = publishAndSaveGroups(2029, futureDeadline, List.of(level));
+            campaign.markProcessed(Instant.now());
+            publicationRepository.save(campaign);
+
+            Optional<FeeSelectionCampaign> found = publicationRepository.findActive(LocalDate.now());
 
             assertThat(found).isEmpty();
         }

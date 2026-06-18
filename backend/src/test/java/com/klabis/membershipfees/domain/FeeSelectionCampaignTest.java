@@ -108,6 +108,26 @@ class FeeSelectionCampaignTest {
 
             assertThat(publication.isClosed(dayBeforeDeadline)).isFalse();
         }
+
+        @Test
+        @DisplayName("should return true when manually closed (markProcessed) before deadline")
+        void shouldReturnTrueWhenManuallyClosedBeforeDeadline() {
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            LocalDate beforeDeadline = DEADLINE.minusDays(5);
+            publication.markProcessed(Instant.now());
+
+            assertThat(publication.isClosed(beforeDeadline)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return true when deadline passed but not yet processed by scheduler")
+        void shouldReturnTrueWhenDeadlinePassedButNotProcessed() {
+            var publication = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(buildLevel("Dospělý"))).publication();
+            LocalDate dayAfterDeadline = DEADLINE.plusDays(1);
+
+            assertThat(publication.isProcessed()).isFalse();
+            assertThat(publication.isClosed(dayAfterDeadline)).isTrue();
+        }
     }
 
     @Nested
