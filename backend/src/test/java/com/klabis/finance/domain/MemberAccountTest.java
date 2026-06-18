@@ -90,14 +90,14 @@ class MemberAccountTest {
     }
 
     @Test
-    @DisplayName("charge with positive amount decreases balance and stores OTHER (negative) transaction when within overdraft limit")
-    void chargeDecreasesBalanceAndStoresNegativeTransaction() {
+    @DisplayName("chargeForRegistration with positive amount decreases balance and stores OTHER (negative) transaction when within overdraft limit")
+    void chargeForRegistrationDecreasesBalanceAndStoresNegativeTransaction() {
         MemberAccount account = MemberAccount.openFor(memberId);
         account.deposit(Money.ofCzk(BigDecimal.valueOf(300)), "initial deposit", today, now, financeManager);
         Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(100));
         OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
 
-        Transaction tx = account.charge(chargeAmount, "test charge", today, now, financeManager, policy);
+        Transaction tx = account.chargeForRegistration(chargeAmount, "test charge", today, now, financeManager, policy);
 
         assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(200)));
         assertThat(account.getTransactions()).hasSize(2);
@@ -109,28 +109,28 @@ class MemberAccountTest {
     }
 
     @Test
-    @DisplayName("charge is allowed when resulting balance equals overdraft limit exactly")
-    void chargeIsAllowedWhenBalanceEqualsLimit() {
+    @DisplayName("chargeForRegistration is allowed when resulting balance equals overdraft limit exactly")
+    void chargeForRegistrationIsAllowedWhenBalanceEqualsLimit() {
         MemberAccount account = MemberAccount.openFor(memberId);
         OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
         // balance is 0, charge 500 → result is -500, which equals limit
 
-        Transaction tx = account.charge(Money.ofCzk(BigDecimal.valueOf(500)), "edge charge", today, now, financeManager, policy);
+        Transaction tx = account.chargeForRegistration(Money.ofCzk(BigDecimal.valueOf(500)), "edge charge", today, now, financeManager, policy);
 
         assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(-500)));
         assertThat(tx.getType()).isEqualTo(TransactionType.OTHER);
     }
 
     @Test
-    @DisplayName("charge is rejected when resulting balance would fall below overdraft limit")
-    void chargeRejectedWhenBalanceWouldFallBelowOverdraftLimit() {
+    @DisplayName("chargeForRegistration is rejected when resulting balance would fall below overdraft limit")
+    void chargeForRegistrationRejectedWhenBalanceWouldFallBelowOverdraftLimit() {
         MemberAccount account = MemberAccount.openFor(memberId);
         account.deposit(Money.ofCzk(BigDecimal.valueOf(100)), "initial", today, now, financeManager);
         // balance is 100, charge 700 → result -600, limit -500
         OverdraftPolicy policy = new OverdraftPolicy(Money.ofCzk(BigDecimal.valueOf(-500)));
         Money chargeAmount = Money.ofCzk(BigDecimal.valueOf(700));
 
-        assertThatThrownBy(() -> account.charge(chargeAmount, "too large", today, now, financeManager, policy))
+        assertThatThrownBy(() -> account.chargeForRegistration(chargeAmount, "too large", today, now, financeManager, policy))
                 .isInstanceOf(OverdraftLimitExceededException.class);
 
         assertThat(account.getBalance()).isEqualTo(Money.ofCzk(BigDecimal.valueOf(100)));

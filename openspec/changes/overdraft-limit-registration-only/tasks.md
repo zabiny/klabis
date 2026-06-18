@@ -2,9 +2,9 @@
 
 The current `MemberAccount.charge(...)` already enforces the overdraft limit. This work splits it in two — the limit check moves to a new `chargeForRegistration(...)`, and `charge(...)` keeps only the unconditional debit. No new business logic is written from scratch.
 
-- [ ] 1.1 Repoint the existing overdraft tests in `MemberAccountTest` (within-limit succeeds, exactly-on-limit succeeds, breach throws `OverdraftLimitExceededException` leaving history + balance unchanged) from `charge(...)` onto `chargeForRegistration(...)` — these assert the behavior being moved, not new behavior
-- [ ] 1.2 Add `MemberAccount.chargeForRegistration(amount, note, occurredAt, recordedAt, recordedBy, overdraftPolicy)` by copying the current `charge(...)` body (positive-amount assert + `allowsCharge` check + debit), preserving today's limit behavior on this path
-- [ ] 1.3 Extract the shared debit (create negative-amount `OTHER` transaction, append, subtract from balance) into a private helper used by both methods, so the policy check stays only on `chargeForRegistration` and the unlimited path never references `OverdraftPolicy`
+- [x] 1.1 Repoint the existing overdraft tests in `MemberAccountTest` (within-limit succeeds, exactly-on-limit succeeds, breach throws `OverdraftLimitExceededException` leaving history + balance unchanged) from `charge(...)` onto `chargeForRegistration(...)` — these assert the behavior being moved, not new behavior
+- [x] 1.2 Add `MemberAccount.chargeForRegistration(amount, note, occurredAt, recordedAt, recordedBy, overdraftPolicy)` by copying the current `charge(...)` body (positive-amount assert + `allowsCharge` check + debit), preserving today's limit behavior on this path
+- [x] 1.3 Extract the shared debit (create negative-amount `OTHER` transaction, append, subtract from balance) into a private helper used by both methods, so the policy check stays only on `chargeForRegistration` and the unlimited path never references `OverdraftPolicy`
 
 ## 2. Make the existing charge path unlimited
 
