@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.application;
 
+import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -47,12 +49,17 @@ class AdminFeeAssignmentServiceTest {
     private FeeSelectionCampaignRepository publicationRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private ChargePort chargePort;
+    @Mock
+    private YearlyFeeChargeMarkerRepository markerRepository;
 
     private AdminFeeAssignmentService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminFeeAssignmentService(groupRepository, publicationRepository, eventPublisher);
+        service = new AdminFeeAssignmentService(groupRepository, publicationRepository, eventPublisher,
+                chargePort, markerRepository);
     }
 
     private static final LocalDate VOTING_DEADLINE = LocalDate.of(YEAR, 3, 31);
@@ -86,9 +93,36 @@ class AdminFeeAssignmentServiceTest {
                 List.of());
     }
 
+    private FeeSelectionCampaign buildProcessedPublication() {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
+                YEAR,
+                LocalDate.now().plusDays(10),
+                Instant.now(),
+                List.of());
+    }
+
+    private FeeSelectionCampaign buildOpenPublication() {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()),
+                YEAR,
+                LocalDate.now().plusDays(30),
+                null,
+                List.of());
+    }
+
+    private static final BigDecimal FEE_AMOUNT = new BigDecimal("1200.00");
+
     @Nested
     @DisplayName("assignLevel() — admin assigns after deadline")
     class AssignLevel {
+
+        @BeforeEach
+        void suppressChargePath() {
+            // Tests in this class verify assignment behaviour, not charging.
+            // Returning true prevents chargeImmediately() from proceeding when a closed campaign is used.
+            lenient().when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(true);
+        }
 
         @Test
         @DisplayName("should assign member to FROZEN group bypassing deadline check")
@@ -221,6 +255,13 @@ class AdminFeeAssignmentServiceTest {
     @DisplayName("assignLevel() — sanction lifting")
     class SanctionLifting {
 
+        @BeforeEach
+        void suppressChargePath() {
+            // Tests in this class verify event publishing, not charging.
+            // Returning true prevents chargeImmediately() from proceeding when a closed campaign is used.
+            lenient().when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(true);
+        }
+
         @Test
         @DisplayName("should always publish MemberFeeSelectionResolvedEvent on admin assignment")
         void shouldPublishResolvedEventOnAdminAssignment() {
@@ -241,6 +282,94 @@ class AdminFeeAssignmentServiceTest {
             MemberFeeSelectionResolvedEvent event = (MemberFeeSelectionResolvedEvent) eventCaptor.getValue();
             assertThat(event.memberId()).isEqualTo(TARGET_MEMBER_ID);
             assertThat(event.year()).isEqualTo(YEAR);
+        }
+    }
+
+    @Nested
+    @DisplayName("assignLevel() — immediate fee charge after campaign closure")
+    class ImmediateFeeCharge {
+
+        @Test
+        @DisplayName("should NOT charge when campaign is still open (before deadline)")
+        void shouldNotChargeWhenCampaignIsOpen() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildOpenPublication()));
+            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                    ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
+
+            verify(chargePort, never()).charge(any());
+            verify(markerRepository, never()).markCharged(any(), anyInt());
+        }
+
+        @Test
+        @DisplayName("should charge immediately when campaign deadline has passed")
+        void shouldChargeImmediatelyWhenCampaignDeadlinePassed() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
+            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(false);
+
+            service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                    ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
+
+            ArgumentCaptor<ChargePort.ChargeCommand> chargeCaptor =
+                    ArgumentCaptor.forClass(ChargePort.ChargeCommand.class);
+            verify(chargePort).charge(chargeCaptor.capture());
+            ChargePort.ChargeCommand cmd = chargeCaptor.getValue();
+            assertThat(cmd.memberId()).isEqualTo(TARGET_MEMBER_ID);
+            assertThat(cmd.amount()).isEqualByComparingTo(FEE_AMOUNT);
+            assertThat(cmd.occurredAt()).isEqualTo(LocalDate.now());
+            assertThat(cmd.note()).isEqualTo("Roční členský příspěvek " + YEAR);
+
+            verify(markerRepository).markCharged(TARGET_MEMBER_ID, YEAR);
+        }
+
+        @Test
+        @DisplayName("should charge immediately when campaign is already processed")
+        void shouldChargeImmediatelyWhenCampaignIsProcessed() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildProcessedPublication()));
+            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(false);
+
+            service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                    ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
+
+            verify(chargePort).charge(any());
+            verify(markerRepository).markCharged(TARGET_MEMBER_ID, YEAR);
+        }
+
+        @Test
+        @DisplayName("should NOT charge when fee marker already exists (deduplication)")
+        void shouldNotChargeWhenMarkerAlreadyExists() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+            when(publicationRepository.findByYear(YEAR)).thenReturn(Optional.of(buildClosedPublication()));
+            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, YEAR)).thenReturn(true);
+
+            service.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+                    ADMIN_ID, TARGET_MEMBER_ID, groupId, YEAR));
+
+            verify(chargePort, never()).charge(any());
+            verify(markerRepository, never()).markCharged(any(), anyInt());
         }
     }
 }
