@@ -22,5 +22,7 @@ public interface TransactionQueryPort {
 
     Page<Transaction> findTransactions(TransactionQuery query);
 
+    Page<TransactionWithReversal> findTransactionsWithReversals(TransactionQuery query);
+
     Transaction findTransaction(MemberId memberId, TransactionId transactionId);
 }

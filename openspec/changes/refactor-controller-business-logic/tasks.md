@@ -7,12 +7,12 @@
 
 ## 2. TransactionQueryPort — reversal map included in page result
 
-- [ ] 2.1 Introduce `record TransactionWithReversal(Transaction transaction, Optional<TransactionId> reversedBy)` in the `finance.application` package
-- [ ] 2.2 Add `findTransactionsWithReversals(TransactionQuery): Page<TransactionWithReversal>` to `TransactionQueryPort` with a failing test
-- [ ] 2.3 Implement the method in `TransactionQueryService`: delegate to existing `findTransactions`, then call `memberAccountRepository.findReversalsOf()` to enrich results
-- [ ] 2.4 Replace the two-call sequence in `MemberAccountController.listTransactions()` with a single `findTransactionsWithReversals()` call
-- [ ] 2.5 Remove `MemberAccountRepository` injection from `MemberAccountController`; confirm compile passes
-- [ ] 2.6 Run `MemberAccountControllerTest` — confirm no behaviour change
+- [x] 2.1 Introduce `record TransactionWithReversal(Transaction transaction, Optional<TransactionId> reversedBy)` in the `finance.application` package
+- [x] 2.2 Add `findTransactionsWithReversals(TransactionQuery): Page<TransactionWithReversal>` to `TransactionQueryPort` with a failing test
+- [x] 2.3 Implement the method in `TransactionQueryService`: delegate to existing `findTransactions`, then call `memberAccountRepository.findReversalsOf()` to enrich results
+- [x] 2.4 Replace the two-call sequence in `MemberAccountController.listTransactions()` with a single `findTransactionsWithReversals()` call
+- [x] 2.5 Remove `MemberAccountRepository` injection from `MemberAccountController`; confirm compile passes (repository still needed for getAccount/getTransaction — injection kept)
+- [x] 2.6 Run `MemberAccountControllerTest` — confirm no behaviour change
 
 ## 3. FeeSelectionCampaignManagementPort — status-aware list
 

@@ -9,6 +9,7 @@ import com.klabis.finance.application.DepositPort;
 import com.klabis.finance.application.MemberAccountNotFoundException;
 import com.klabis.finance.application.ReversePort;
 import com.klabis.finance.application.TransactionQueryPort;
+import com.klabis.finance.application.TransactionWithReversal;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
@@ -40,8 +41,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,13 +60,13 @@ class MemberAccountController {
     private final ReversePort reversePort;
     private final MemberAccountRepository memberAccountRepository;
     private final TransactionQueryPort transactionQueryPort;
-    private final PagedResourcesAssembler<Transaction> pagedResourcesAssembler;
+    private final PagedResourcesAssembler<TransactionWithReversal> pagedResourcesAssembler;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
                             ReversePort reversePort,
                             MemberAccountRepository memberAccountRepository,
                             TransactionQueryPort transactionQueryPort,
-                            PagedResourcesAssembler<Transaction> pagedResourcesAssembler) {
+                            PagedResourcesAssembler<TransactionWithReversal> pagedResourcesAssembler) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
         this.reversePort = reversePort;
@@ -102,21 +101,18 @@ class MemberAccountController {
         MemberId id = new MemberId(memberId);
         checkAccountAccess(id, currentUser);
 
-        Page<Transaction> page = transactionQueryPort.findTransactions(
+        Page<TransactionWithReversal> page = transactionQueryPort.findTransactionsWithReversals(
                 new TransactionQueryPort.TransactionQuery(id, occurredAtFrom, occurredAtTo, type, pageable));
 
-        List<TransactionId> pageIds = page.getContent().stream().map(Transaction::getId).toList();
-        Map<TransactionId, TransactionId> reversalsByOriginal = memberAccountRepository.findReversalsOf(pageIds);
         boolean canReverse = currentUser.hasAuthority(Authority.FINANCE_MANAGE);
         Optional<Link> accountLink = FinanceLinks.accountLink(memberId);
 
         PagedModel<EntityModel<TransactionResource>> model = pagedResourcesAssembler.toModel(
                 page,
-                tx -> {
-                    EntityModel<TransactionResource> item = EntityModel.of(TransactionResource.from(tx));
-                    TransactionId reversalId = reversalsByOriginal.get(tx.getId());
-                    UUID reversedByTxId = reversalId != null ? reversalId.value() : null;
-                    addTransactionLinks(item, memberId, tx, reversedByTxId, canReverse, accountLink);
+                twr -> {
+                    EntityModel<TransactionResource> item = EntityModel.of(TransactionResource.from(twr.transaction()));
+                    UUID reversedByTxId = twr.reversedBy().map(TransactionId::value).orElse(null);
+                    addTransactionLinks(item, memberId, twr.transaction(), reversedByTxId, canReverse, accountLink);
                     return item;
                 });
         return ResponseEntity.ok(model);

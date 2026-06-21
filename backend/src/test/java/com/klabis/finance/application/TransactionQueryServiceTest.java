@@ -13,11 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,6 +76,39 @@ class TransactionQueryServiceTest {
 
         assertThatThrownBy(() -> service.findTransaction(MEMBER_ID, TX_ID))
                 .isInstanceOf(TransactionNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("findTransactionsWithReversals returns transactions enriched with reversal IDs")
+    void findTransactionsWithReversalsEnrichesResultsWithReversalIds() {
+        TransactionId reversalId = new TransactionId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+        Transaction tx = buildTransaction(TX_ID);
+        Page<Transaction> page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+        TransactionQueryPort.TransactionQuery query = new TransactionQueryPort.TransactionQuery(
+                MEMBER_ID, null, null, null, PageRequest.of(0, 20));
+        when(memberAccountRepository.findTransactions(MEMBER_ID, null, null, null, PageRequest.of(0, 20))).thenReturn(page);
+        when(memberAccountRepository.findReversalsOf(List.of(TX_ID))).thenReturn(Map.of(TX_ID, reversalId));
+
+        Page<TransactionWithReversal> result = service.findTransactionsWithReversals(query);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).transaction()).isSameAs(tx);
+        assertThat(result.getContent().get(0).reversedBy()).contains(reversalId);
+    }
+
+    @Test
+    @DisplayName("findTransactionsWithReversals returns empty reversedBy for unreversed transactions")
+    void findTransactionsWithReversalsReturnsEmptyReversedByWhenNoReversal() {
+        Transaction tx = buildTransaction(TX_ID);
+        Page<Transaction> page = new PageImpl<>(List.of(tx), PageRequest.of(0, 20), 1);
+        TransactionQueryPort.TransactionQuery query = new TransactionQueryPort.TransactionQuery(
+                MEMBER_ID, null, null, null, PageRequest.of(0, 20));
+        when(memberAccountRepository.findTransactions(MEMBER_ID, null, null, null, PageRequest.of(0, 20))).thenReturn(page);
+        when(memberAccountRepository.findReversalsOf(List.of(TX_ID))).thenReturn(Map.of());
+
+        Page<TransactionWithReversal> result = service.findTransactionsWithReversals(query);
+
+        assertThat(result.getContent().get(0).reversedBy()).isEmpty();
     }
 
     private Transaction buildTransaction(TransactionId id) {
