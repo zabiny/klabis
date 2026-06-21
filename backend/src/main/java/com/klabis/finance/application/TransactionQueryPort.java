@@ -1,6 +1,7 @@
 package com.klabis.finance.application;
 
 import com.klabis.finance.domain.Transaction;
+import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -20,4 +21,6 @@ public interface TransactionQueryPort {
     ) {}
 
     Page<Transaction> findTransactions(TransactionQuery query);
+
+    Transaction findTransaction(MemberId memberId, TransactionId transactionId);
 }

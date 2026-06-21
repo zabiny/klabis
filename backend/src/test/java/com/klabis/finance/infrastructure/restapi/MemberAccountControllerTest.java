@@ -466,8 +466,7 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
         void shouldExposeRecordedByLinkOnTransaction() throws Exception {
             Transaction tx = buildDepositTransaction();
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(tx));
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(tx);
             when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
@@ -484,8 +483,7 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
             when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
@@ -500,8 +498,7 @@ class MemberAccountControllerTest {
         void shouldExposeReversesLinkOnReversalTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(reversal));
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(reversalTxUuid))).thenReturn(reversal);
             when(memberAccountRepository.findReversalOf(new TransactionId(reversalTxUuid))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, reversalTxUuid)
@@ -515,8 +512,7 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldExposeReverseAffordanceForFinanceManagerOnUnreversedTransaction() throws Exception {
             Transaction original = buildDepositTransaction();
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
             when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
@@ -532,8 +528,7 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            MemberAccount account = MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(original));
-            when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
             when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)

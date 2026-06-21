@@ -1,9 +1,9 @@
 ## 1. TransactionQueryPort — single-transaction lookup
 
-- [ ] 1.1 Add `findTransaction(MemberId, TransactionId): Transaction` to `TransactionQueryPort` with a failing test in `TransactionQueryServiceTest`
-- [ ] 1.2 Implement `findTransaction` in `TransactionQueryService` (load account, filter by id, throw `TransactionNotFoundException` if absent)
-- [ ] 1.3 Replace `memberAccountRepository.findById()` + `stream().filter()` in `MemberAccountController.getTransaction()` with `transactionQueryPort.findTransaction()`
-- [ ] 1.4 Run `MemberAccountControllerTest` — confirm no behaviour change
+- [x] 1.1 Add `findTransaction(MemberId, TransactionId): Transaction` to `TransactionQueryPort` with a failing test in `TransactionQueryServiceTest`
+- [x] 1.2 Implement `findTransaction` in `TransactionQueryService` (load account, filter by id, throw `TransactionNotFoundException` if absent)
+- [x] 1.3 Replace `memberAccountRepository.findById()` + `stream().filter()` in `MemberAccountController.getTransaction()` with `transactionQueryPort.findTransaction()`
+- [x] 1.4 Run `MemberAccountControllerTest` — confirm no behaviour change
 
 ## 2. TransactionQueryPort — reversal map included in page result
 

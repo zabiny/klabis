@@ -8,9 +8,7 @@ import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
 import com.klabis.finance.application.MemberAccountNotFoundException;
 import com.klabis.finance.application.ReversePort;
-import com.klabis.finance.application.TransactionNotFoundException;
 import com.klabis.finance.application.TransactionQueryPort;
-import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
@@ -132,12 +130,7 @@ class MemberAccountController {
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
         checkAccountAccess(id, currentUser);
-        MemberAccount account = memberAccountRepository.findById(id)
-                .orElseThrow(() -> new MemberAccountNotFoundException(id));
-        Transaction tx = account.getTransactions().stream()
-                .filter(t -> t.getId().value().equals(txId))
-                .findFirst()
-                .orElseThrow(() -> new TransactionNotFoundException(txId));
+        Transaction tx = transactionQueryPort.findTransaction(id, new TransactionId(txId));
 
         Transaction reversal = memberAccountRepository.findReversalOf(tx.getId()).orElse(null);
         UUID reversedByTxId = reversal != null ? reversal.getId().value() : null;
