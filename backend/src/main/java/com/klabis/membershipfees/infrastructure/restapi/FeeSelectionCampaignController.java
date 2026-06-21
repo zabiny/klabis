@@ -69,7 +69,7 @@ class FeeSelectionCampaignController {
     @Operation(summary = "List fee year publications, optionally filtered by status")
     ResponseEntity<CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> listPublications(
             @Parameter(description = "Filter by status: 'closed' returns only past campaigns") @RequestParam(required = false) String status) {
-        CampaignStatusFilter filter = "closed".equals(status) ? CampaignStatusFilter.CLOSED : CampaignStatusFilter.ALL;
+        CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
         List<EntityModel<FeeSelectionCampaignResponse>> items = publications.stream()
                 .map(this::buildSummaryModel)

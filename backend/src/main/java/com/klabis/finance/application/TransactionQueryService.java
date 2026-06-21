@@ -55,7 +55,7 @@ class TransactionQueryService implements TransactionQueryPort {
     @Transactional(readOnly = true)
     public Transaction findTransaction(MemberId memberId, TransactionId transactionId) {
         MemberAccount account = memberAccountRepository.findById(memberId)
-                .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+                .orElseThrow(() -> new MemberAccountNotFoundException(memberId));
         return account.getTransactions().stream()
                 .filter(tx -> tx.getId().equals(transactionId))
                 .findFirst()

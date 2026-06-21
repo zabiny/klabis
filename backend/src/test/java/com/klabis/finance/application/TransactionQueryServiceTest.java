@@ -60,12 +60,12 @@ class TransactionQueryServiceTest {
     }
 
     @Test
-    @DisplayName("findTransaction throws TransactionNotFoundException when member account not found")
+    @DisplayName("findTransaction throws MemberAccountNotFoundException when member account not found")
     void findTransactionThrowsWhenMemberAccountNotFound() {
         when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.findTransaction(MEMBER_ID, TX_ID))
-                .isInstanceOf(TransactionNotFoundException.class);
+                .isInstanceOf(MemberAccountNotFoundException.class);
     }
 
     @Test
