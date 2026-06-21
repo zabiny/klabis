@@ -24,5 +24,5 @@
 
 ## 4. Cleanup
 
-- [ ] 4.1 Check remaining usages of `listClosedPublications()` and `listPublications()` (no-arg); deprecate or remove if unused outside the service
-- [ ] 4.2 Run full `finance` and `membershipfees` test suites — all green
+- [x] 4.1 Check remaining usages of `listClosedPublications()` and `listPublications()` (no-arg); deprecate or remove if unused outside the service (deprecated — only used as internal delegates in service)
+- [x] 4.2 Run full `finance` and `membershipfees` test suites — all green (3115/3115)

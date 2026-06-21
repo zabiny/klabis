@@ -43,10 +43,14 @@ public interface FeeSelectionCampaignManagementPort {
 
     FeeSelectionCampaign getPublication(FeeSelectionCampaignId id);
 
+    /** @deprecated Use {@link #listPublications(CampaignStatusFilter)} instead. */
+    @Deprecated
     List<FeeSelectionCampaign> listPublications();
 
     List<FeeSelectionCampaign> listPublications(CampaignStatusFilter filter);
 
+    /** @deprecated Use {@link #listPublications(CampaignStatusFilter)} with {@link CampaignStatusFilter#CLOSED} instead. */
+    @Deprecated
     List<FeeSelectionCampaign> listClosedPublications();
 
     Optional<FeeSelectionCampaign> findActiveCampaign();
