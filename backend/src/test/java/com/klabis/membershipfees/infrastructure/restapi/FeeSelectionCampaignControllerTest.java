@@ -12,6 +12,7 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
+import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.ManualCampaignClosePort;
@@ -170,7 +171,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return 200 with list of publications")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnListOfPublications() throws Exception {
-            when(managementPort.listPublications()).thenReturn(List.of(
+            when(managementPort.listPublications(CampaignStatusFilter.ALL)).thenReturn(List.of(
                     buildPublication(PUBLICATION_UUID, 2026),
                     buildPublication(UUID.randomUUID(), 2025)
             ));
@@ -188,7 +189,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should include publishYear affordance for MEMBERS:MANAGE user")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludePublishAffordance() throws Exception {
-            when(managementPort.listPublications()).thenReturn(List.of());
+            when(managementPort.listPublications(CampaignStatusFilter.ALL)).thenReturn(List.of());
 
             mockMvc.perform(
                             get("/api/fee-selection-campaigns")
@@ -201,7 +202,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return only closed campaigns when status=closed is provided")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnOnlyClosedCampaignsWhenStatusClosed() throws Exception {
-            when(managementPort.listClosedPublications()).thenReturn(List.of(
+            when(managementPort.listPublications(CampaignStatusFilter.CLOSED)).thenReturn(List.of(
                     buildClosedCampaign(PUBLICATION_UUID)
             ));
 
@@ -219,7 +220,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return all campaigns when no status parameter is provided")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnAllCampaignsWithoutStatusParam() throws Exception {
-            when(managementPort.listPublications()).thenReturn(List.of(
+            when(managementPort.listPublications(CampaignStatusFilter.ALL)).thenReturn(List.of(
                     buildActiveCampaign(UUID.randomUUID()),
                     buildClosedCampaign(PUBLICATION_UUID)
             ));
@@ -235,7 +236,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("each closed campaign in status=closed response should carry a self link")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void eachClosedCampaignShouldHaveSelfLink() throws Exception {
-            when(managementPort.listClosedPublications()).thenReturn(List.of(
+            when(managementPort.listPublications(CampaignStatusFilter.CLOSED)).thenReturn(List.of(
                     buildClosedCampaign(PUBLICATION_UUID)
             ));
 

@@ -121,6 +121,50 @@ class FeeSelectionCampaignManagementServiceTest {
     }
 
     @Nested
+    @DisplayName("listPublications(CampaignStatusFilter)")
+    class ListPublicationsWithFilter {
+
+        private FeeSelectionCampaign anActiveCampaign() {
+            LocalDate futureDeadline = TODAY.plusDays(30);
+            return FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
+                    YEAR, futureDeadline, null, List.of());
+        }
+
+        private FeeSelectionCampaign aClosedCampaign() {
+            return FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
+                    2020, LocalDate.of(2020, 3, 31),
+                    java.time.Instant.parse("2020-04-01T00:00:00Z"), List.of());
+        }
+
+        @Test
+        @DisplayName("should return all campaigns when filter is ALL")
+        void shouldReturnAllCampaignsWhenFilterIsAll() {
+            FeeSelectionCampaign active = anActiveCampaign();
+            FeeSelectionCampaign closed = aClosedCampaign();
+            when(publicationRepository.findAll()).thenReturn(List.of(active, closed));
+
+            List<FeeSelectionCampaign> result = service.listPublications(CampaignStatusFilter.ALL);
+
+            assertThat(result).containsExactly(active, closed);
+        }
+
+        @Test
+        @DisplayName("should return only closed campaigns when filter is CLOSED")
+        void shouldReturnOnlyClosedCampaignsWhenFilterIsClosed() {
+            FeeSelectionCampaign active = anActiveCampaign();
+            FeeSelectionCampaign closed = aClosedCampaign();
+            when(publicationRepository.findAll()).thenReturn(List.of(active, closed));
+
+            List<FeeSelectionCampaign> result = service.listPublications(CampaignStatusFilter.CLOSED);
+
+            assertThat(result).containsExactly(closed);
+            assertThat(result).doesNotContain(active);
+        }
+    }
+
+    @Nested
     @DisplayName("changeDeadline()")
     class ChangeDeadline {
 

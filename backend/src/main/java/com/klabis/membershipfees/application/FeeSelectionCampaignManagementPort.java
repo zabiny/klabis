@@ -45,6 +45,8 @@ public interface FeeSelectionCampaignManagementPort {
 
     List<FeeSelectionCampaign> listPublications();
 
+    List<FeeSelectionCampaign> listPublications(CampaignStatusFilter filter);
+
     List<FeeSelectionCampaign> listClosedPublications();
 
     Optional<FeeSelectionCampaign> findActiveCampaign();

@@ -16,11 +16,11 @@
 
 ## 3. FeeSelectionCampaignManagementPort — status-aware list
 
-- [ ] 3.1 Add enum `CampaignStatusFilter { ALL, CLOSED }` to `membershipfees.application`
-- [ ] 3.2 Add `listPublications(CampaignStatusFilter): List<FeeSelectionCampaign>` to `FeeSelectionCampaignManagementPort` with a failing test in `FeeSelectionCampaignManagementServiceTest`
-- [ ] 3.3 Implement in `FeeSelectionCampaignManagementService`: delegate to existing `listPublications()` / `listClosedPublications()` based on filter value
-- [ ] 3.4 Replace `"closed".equals(status) ? … : …` branch in `FeeSelectionCampaignController.listPublications()` with `managementPort.listPublications(filter)`
-- [ ] 3.5 Run `FeeSelectionCampaignControllerTest` — confirm no behaviour change
+- [x] 3.1 Add enum `CampaignStatusFilter { ALL, CLOSED }` to `membershipfees.application`
+- [x] 3.2 Add `listPublications(CampaignStatusFilter): List<FeeSelectionCampaign>` to `FeeSelectionCampaignManagementPort` with a failing test in `FeeSelectionCampaignManagementServiceTest`
+- [x] 3.3 Implement in `FeeSelectionCampaignManagementService`: delegate to existing `listPublications()` / `listClosedPublications()` based on filter value
+- [x] 3.4 Replace `"closed".equals(status) ? … : …` branch in `FeeSelectionCampaignController.listPublications()` with `managementPort.listPublications(filter)`
+- [x] 3.5 Run `FeeSelectionCampaignControllerTest` — confirm no behaviour change
 
 ## 4. Cleanup
 
