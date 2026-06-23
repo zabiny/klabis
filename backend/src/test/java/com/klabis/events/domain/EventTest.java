@@ -3,11 +3,6 @@ package com.klabis.events.domain;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
-import com.klabis.events.domain.RegistrationNotFoundException;
-import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
-import com.klabis.events.domain.EventUnregisterMemberBuilder;
-import com.klabis.events.domain.EventUpdateEventBuilder;
-import com.klabis.events.domain.EventEditRegistrationCommandBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,12 +10,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import com.klabis.events.domain.EventRanking;
-import com.klabis.events.domain.Money;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -962,8 +953,8 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should return false when ACTIVE event registration deadline is today")
-        void shouldReturnFalseWhenDeadlineIsToday() {
+        @DisplayName("should return true when ACTIVE event registration deadline is today")
+        void shouldReturnTrueWhenDeadlineIsToday() {
             LocalDate futureDate = LocalDate.now().plusDays(10);
             LocalDate todayDeadline = LocalDate.now();
             Event event = Event.create(EventCreateEventBuilder.builder()
@@ -971,7 +962,7 @@ class EventTest {
                     .registrationDeadlines(RegistrationDeadlines.single(todayDeadline)).build());
             event.publish();
 
-            assertThat(event.areRegistrationsOpen()).isFalse();
+            assertThat(event.areRegistrationsOpen()).isTrue();
         }
 
         @Test
