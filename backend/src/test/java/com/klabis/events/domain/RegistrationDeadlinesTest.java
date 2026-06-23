@@ -236,9 +236,9 @@ class RegistrationDeadlinesTest {
         }
 
         @Test
-        @DisplayName("single deadline on today → closed (today is NOT before deadline)")
-        void singleDeadlineOnTodayClosed() {
-            assertThat(RegistrationDeadlines.single(D1).registrationsOpen(D1)).isFalse();
+        @DisplayName("single deadline on today → still open (inclusive through the deadline day)")
+        void singleDeadlineOnTodayStillOpen() {
+            assertThat(RegistrationDeadlines.single(D1).registrationsOpen(D1)).isTrue();
         }
 
         @Test
@@ -256,11 +256,11 @@ class RegistrationDeadlinesTest {
         }
 
         @Test
-        @DisplayName("three deadlines — closed on last deadline")
-        void threeDeadlinesClosedOnLast() {
+        @DisplayName("three deadlines — still open on last deadline day (inclusive)")
+        void threeDeadlinesOpenOnLast() {
             RegistrationDeadlines rd = new RegistrationDeadlines(
                     Optional.of(D1), Optional.of(D2), Optional.of(D3));
-            assertThat(rd.registrationsOpen(D3)).isFalse();
+            assertThat(rd.registrationsOpen(D3)).isTrue();
         }
 
         @Test

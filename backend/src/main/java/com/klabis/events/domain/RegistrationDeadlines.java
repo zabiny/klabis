@@ -109,11 +109,12 @@ public record RegistrationDeadlines(
 
     /**
      * Returns true when registrations are still open as of {@code today}.
-     * Registrations are open while today is strictly before the last deadline.
+     * Registrations stay open through the entire last deadline day (inclusive) and only
+     * close once that day has passed.
      * When no deadlines are configured, registrations are considered open (no deadline = unlimited).
      */
     public boolean registrationsOpen(LocalDate today) {
-        return last().map(d -> today.isBefore(d)).orElse(true);
+        return last().map(d -> !today.isAfter(d)).orElse(true);
     }
 
     /**
