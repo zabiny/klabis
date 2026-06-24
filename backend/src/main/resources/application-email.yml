@@ -11,4 +11,6 @@ spring:
           starttls:
             enable: true
             required: true
+          ssl:
+            trust: ${KLABIS_SMTP_SSL_TRUST:}
 
