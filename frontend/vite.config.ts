@@ -10,7 +10,7 @@ export default defineConfig({
         react(),
         devtoolsJson(),
         VitePWA({
-            registerType: 'prompt',
+            registerType: 'autoUpdate',
             injectRegister: false,
             includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
             manifest: {
