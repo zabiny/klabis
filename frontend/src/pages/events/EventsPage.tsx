@@ -1,11 +1,11 @@
 import {type ReactElement, useState} from "react";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
-import type {EntityModel, HalFormsTemplate, Link} from "../../api";
+import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {toHref} from "../../api/hateoas.ts";
+import {asLinkArray, toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -59,12 +59,6 @@ const ROW_ACTION_BUTTONS = [
     {name: 'registerForEvent', icon: UserPlus, label: labels.templates.registerForEvent},
     {name: 'unregisterFromEvent', icon: UserMinus, label: labels.templates.unregisterFromEvent},
 ];
-
-const normalizeCoordinatorLinks = (coordinatorLink: unknown): Link[] => {
-    if (!coordinatorLink) return [];
-    if (Array.isArray(coordinatorLink)) return coordinatorLink as Link[];
-    return [coordinatorLink as Link];
-};
 
 interface CoordinatorCellProps {
     coordinatorLinks: Link[];
@@ -323,7 +317,7 @@ export const EventsPage = (): ReactElement => {
                 <TableCell column={"_links"}
                            dataRender={({item}) => {
                                const links = item._links as Record<string, unknown> | undefined;
-                               const coordinatorLinks = normalizeCoordinatorLinks(links?.coordinator);
+                               const coordinatorLinks = asLinkArray(links?.coordinator as HalResourceLinks | undefined);
                                if (coordinatorLinks.length === 0) return null;
                                return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>

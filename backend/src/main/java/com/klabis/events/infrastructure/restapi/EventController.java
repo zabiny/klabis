@@ -135,10 +135,7 @@ public class EventController {
         EventId eventId = new EventId(id);
         Event existingEvent = eventManagementService.getEvent(eventId, true);
 
-        MemberId actingMemberId = EventAffordanceSupport.resolveMemberId(auth);
-        boolean canManage = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
-        boolean isCoordinator = actingMemberId != null && existingEvent.isCoordinator(actingMemberId);
-        if (!canManage && !isCoordinator) {
+        if (!EventAffordanceSupport.isCoordinatorOrHasManageAuthority(auth, existingEvent)) {
             throw new AccessDeniedException("Access to event update requires EVENTS:MANAGE authority or being the event coordinator");
         }
 
@@ -489,10 +486,9 @@ class EventAffordanceSupport {
         UUID eventId = event.getId().value();
 
         boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
-        MemberId memberId = resolveMemberId(auth);
-        boolean isCoordinator = memberId != null && event.isCoordinator(memberId);
+        boolean canUpdate = isCoordinatorOrHasManageAuthority(auth, event);
 
-        if (!canManage && !isCoordinator) {
+        if (!canUpdate) {
             return selfLink;
         }
 
@@ -538,6 +534,14 @@ class EventAffordanceSupport {
 
     static boolean shouldOfferRegistration(Event event) {
         return event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen();
+    }
+
+    static boolean isCoordinatorOrHasManageAuthority(Authentication auth, Event event) {
+        if (hasAuthority(auth, Authority.EVENTS_MANAGE)) {
+            return true;
+        }
+        MemberId memberId = resolveMemberId(auth);
+        return memberId != null && event.isCoordinator(memberId);
     }
 
     static boolean isCoordinatorOrHasRegistrationsAuthority(Authentication auth, Event event) {

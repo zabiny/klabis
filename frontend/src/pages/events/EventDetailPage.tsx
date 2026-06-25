@@ -13,7 +13,7 @@ import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
 import type {EntityModel, Link as HalLink} from '../../api';
 import type {HalFormsTemplate, HalResponse} from '../../api';
-import {toHref} from '../../api/hateoas.ts';
+import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
@@ -71,12 +71,6 @@ const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warnin
     ACTIVE: 'success',
     FINISHED: 'info',
     CANCELLED: 'error',
-};
-
-const normalizeCoordinatorLinks = (coordinatorLink: unknown): HalLink[] => {
-    if (!coordinatorLink) return [];
-    if (Array.isArray(coordinatorLink)) return coordinatorLink as HalLink[];
-    return [coordinatorLink as HalLink];
 };
 
 const CoordinatorDisplay = (): ReactElement => {
@@ -336,7 +330,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         {!isEditing && resourceData._links?.coordinator && (
                             <DetailRow label={labels.fields.coordinators}>
                                 <div className="flex flex-col gap-1">
-                                    {normalizeCoordinatorLinks(resourceData._links.coordinator).map((link) => (
+                                    {asLinkArray(resourceData._links.coordinator).map((link) => (
                                         <HalRouteProvider key={toHref(link)} routeLink={link}>
                                             <CoordinatorDisplay/>
                                         </HalRouteProvider>

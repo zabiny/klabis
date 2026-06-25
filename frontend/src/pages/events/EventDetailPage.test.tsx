@@ -78,6 +78,10 @@ vi.mock('../../api/hateoas', () => ({
         if (Array.isArray(source)) return (source[0] as {href?: string})?.href ?? '';
         return (source as {href?: string})?.href ?? '';
     }),
+    asLinkArray: vi.fn((links: unknown) => {
+        if (!links) return [];
+        return Array.isArray(links) ? links : [links];
+    }),
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({

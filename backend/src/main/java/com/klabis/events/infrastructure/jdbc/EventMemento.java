@@ -240,7 +240,7 @@ class EventMemento implements Persistable<UUID> {
     Event toEvent() {
         EventId eventId = new EventId(this.id);
         WebsiteUrl websiteUrlObj = this.websiteUrl != null ? new WebsiteUrl(this.websiteUrl) : null;
-        // Reconstruct LinkedHashSet in position order — TreeMap sorted by key ensures correct order
+        // Reconstruct LinkedHashSet ordered by the position column (sort entries by key)
         LinkedHashSet<MemberId> coordinators = this.coordinators.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(e -> e.getValue().toMemberId())
