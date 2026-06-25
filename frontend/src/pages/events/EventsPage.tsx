@@ -60,17 +60,32 @@ const ROW_ACTION_BUTTONS = [
     {name: 'unregisterFromEvent', icon: UserMinus, label: labels.templates.unregisterFromEvent},
 ];
 
+const normalizeCoordinatorLinks = (coordinatorLink: unknown): Link[] => {
+    if (!coordinatorLink) return [];
+    if (Array.isArray(coordinatorLink)) return coordinatorLink as Link[];
+    return [coordinatorLink as Link];
+};
+
 interface CoordinatorCellProps {
-    coordinatorLink: Link;
+    coordinatorLinks: Link[];
 }
 
-const CoordinatorCellContent = ({coordinatorLink}: CoordinatorCellProps): ReactElement => {
+const CoordinatorCellContent = ({coordinatorLinks}: CoordinatorCellProps): ReactElement => {
     const {navigateToResource} = useHalRoute();
+    const firstLink = coordinatorLinks[0];
+    const extraCount = coordinatorLinks.length - 1;
 
     return (
-        <HalRouteProvider routeLink={coordinatorLink}>
-            <CoordinatorName onNavigate={() => navigateToResource(coordinatorLink)}/>
-        </HalRouteProvider>
+        <span className="inline-flex items-center gap-1.5">
+            <HalRouteProvider routeLink={firstLink}>
+                <CoordinatorName onNavigate={() => navigateToResource(firstLink)}/>
+            </HalRouteProvider>
+            {extraCount > 0 && (
+                <span className="inline-flex items-center justify-center px-1.5 h-5 rounded-full bg-primary text-white text-xs font-medium whitespace-nowrap">
+                    +{extraCount}
+                </span>
+            )}
+        </span>
     );
 };
 
@@ -95,7 +110,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 };
 
 const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
-const CREATE_FORM_COORDINATION_FIELDS = ['eventCoordinatorId', 'eventTypeId'];
+const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
 
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
@@ -199,9 +214,9 @@ export const EventsPage = (): ReactElement => {
                                         <div className="flex flex-col gap-6">
                                             {hasFields(CREATE_FORM_COORDINATION_FIELDS) && (
                                                 <Section title={labels.sections.eventCoordination}>
-                                                    {hasField('eventCoordinatorId') && (
-                                                        <DetailRow label={labels.fields.eventCoordinatorId}>
-                                                            {renderInput('eventCoordinatorId')}
+                                                    {hasField('coordinators') && (
+                                                        <DetailRow label={labels.fields.coordinators}>
+                                                            {renderInput('coordinators')}
                                                         </DetailRow>
                                                     )}
                                                     {hasField('eventTypeId') && (
@@ -307,10 +322,10 @@ export const EventsPage = (): ReactElement => {
                            }}>{labels.tables.registrationDeadline}</TableCell>
                 <TableCell column={"_links"}
                            dataRender={({item}) => {
-                               const links = item._links as Record<string, Link> | undefined;
-                               const coordinatorLink = links?.coordinator;
-                               if (!coordinatorLink) return null;
-                               return <CoordinatorCellContent coordinatorLink={coordinatorLink}/>;
+                               const links = item._links as Record<string, unknown> | undefined;
+                               const coordinatorLinks = normalizeCoordinatorLinks(links?.coordinator);
+                               if (coordinatorLinks.length === 0) return null;
+                               return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            dataRender={({value, item}) => {

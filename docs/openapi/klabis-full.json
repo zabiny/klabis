@@ -4055,8 +4055,19 @@
         "tags": [
           "FeeSelectionCampaigns"
         ],
-        "summary": "List all fee year publications",
+        "summary": "List fee year publications, optionally filtered by status",
         "operationId": "listPublications",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status: \u0027closed\u0027 returns only past campaigns",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "401": {
             "description": "Unauthorized - authentication required",
@@ -4153,6 +4164,99 @@
           },
           "required": true
         },
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - concurrent update (optimistic locking failure)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "MEMBERS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/fee-selection-campaigns/{id}/close": {
+      "post": {
+        "tags": [
+          "FeeSelectionCampaigns"
+        ],
+        "summary": "Manually close a campaign — processes it immediately regardless of deadline (requires MEMBERS:MANAGE)",
+        "operationId": "closeCampaign",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Campaign UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "401": {
             "description": "Unauthorized - authentication required",
@@ -7606,7 +7710,7 @@
             "content": {
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMembershipFeeGroupResponse"
+                  "$ref": "#/components/schemas/RepresentationModelObject"
                 }
               }
             }
@@ -9125,6 +9229,106 @@
           {
             "KlabisAuth": [
               "EVENTS"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/membership-fee-groups/{id}/rules": {
+      "get": {
+        "tags": [
+          "MembershipFeeGroups"
+        ],
+        "summary": "List payment rules snapshot for a membership fee group",
+        "operationId": "listGroupRules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Group UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized - authentication required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid argument",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - concurrent update (optimistic locking failure)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable entity - cannot remove the last owner of a group",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelEntityModelPaymentRuleResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "KlabisAuth": [
+              "MEMBERS"
             ]
           }
         ]
@@ -12377,8 +12581,11 @@
           "websiteUrl": {
             "type": "string"
           },
-          "eventCoordinatorId": {
-            "$ref": "#/components/schemas/MemberId"
+          "coordinators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberId"
+            }
           },
           "eventTypeId": {
             "$ref": "#/components/schemas/EventTypeId"
@@ -13078,7 +13285,7 @@
           }
         }
       },
-      "PatchFieldListLocalDate": {
+      "PatchFieldLinkedHashSetMemberId": {
         "type": "object",
         "properties": {
           "provided": {
@@ -13086,7 +13293,7 @@
           }
         }
       },
-      "PatchFieldMemberId": {
+      "PatchFieldListLocalDate": {
         "type": "object",
         "properties": {
           "provided": {
@@ -13121,8 +13328,8 @@
           "websiteUrl": {
             "$ref": "#/components/schemas/PatchFieldString"
           },
-          "eventCoordinatorId": {
-            "$ref": "#/components/schemas/PatchFieldMemberId"
+          "coordinators": {
+            "$ref": "#/components/schemas/PatchFieldLinkedHashSetMemberId"
           },
           "eventTypeId": {
             "$ref": "#/components/schemas/PatchFieldEventTypeId"
@@ -13466,43 +13673,9 @@
           }
         }
       },
-      "EntityModelMembershipFeeGroupResponse": {
+      "RepresentationModelObject": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "sourceLevelId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "year": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "yearlyFeeAmount": {
-            "type": "number"
-          },
-          "yearlyFeeCurrency": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "memberCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "rulesSnapshot": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PaymentRuleResponse"
-            }
-          },
           "_links": {
             "$ref": "#/components/schemas/Links"
           }
@@ -14172,6 +14345,48 @@
           }
         }
       },
+      "EntityModelMembershipFeeGroupResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceLevelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yearlyFeeAmount": {
+            "type": "number"
+          },
+          "yearlyFeeCurrency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rulesSnapshot": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRuleResponse"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
       "CollectionModelEntityModelFamilyGroupSummaryResponse": {
         "type": "object",
         "properties": {
@@ -14294,6 +14509,13 @@
           "websiteUrl": {
             "type": "string"
           },
+          "coordinators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberId"
+            },
+            "uniqueItems": true
+          },
           "eventTypeId": {
             "$ref": "#/components/schemas/EventTypeId"
           },
@@ -14346,14 +14568,6 @@
           },
           "page": {
             "$ref": "#/components/schemas/PageMetadata"
-          }
-        }
-      },
-      "RepresentationModelObject": {
-        "type": "object",
-        "properties": {
-          "_links": {
-            "$ref": "#/components/schemas/Links"
           }
         }
       },

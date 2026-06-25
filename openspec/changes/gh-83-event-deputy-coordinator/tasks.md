@@ -56,11 +56,11 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 7. Frontend: coordinators in detail, list, and edit form
 
-- [ ] 7.1 Grep frontend for `eventCoordinatorId`; replace all references with the `coordinators` collection
-- [ ] 7.2 Event detail page: render the full coordinator list, each name linking to the member detail page, under the "Vedoucí" heading
-- [ ] 7.3 Events list table: show the first coordinator name as a link plus a "+N" badge when more coordinators exist; empty when none
-- [ ] 7.4 Create/update form: render the "Vedoucí" field as a multi-value member dropdown
-- [ ] 7.5 Manual QA via Playwright: create an event with two coordinators, verify list badge, detail list, and coordinator-without-EVENTS:MANAGE edit access
+- [x] 7.1 Grep frontend for `eventCoordinatorId`; replace all references with the `coordinators` collection
+- [x] 7.2 Event detail page: render the full coordinator list, each name linking to the member detail page, under the "Vedoucí" heading
+- [x] 7.3 Events list table: show the first coordinator name as a link plus a "+N" badge when more coordinators exist; empty when none
+- [x] 7.4 Create/update form: render the "Vedoucí" field as a multi-value member dropdown
+- [ ] 7.5 Manual QA via Playwright: create an event with two coordinators, verify list badge, detail list, and coordinator-without-EVENTS:MANAGE edit access — SKIPPED (per user decision; deferred to manual QA, requires backend restart with gh-83 code)
 
 ## 8. Finalize
 
