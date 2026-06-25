@@ -1,14 +1,35 @@
 ## Why
 
-GitHub issue #83 ("Chci definovat vedoucího akce (a jeho zástupce)", milestone `core`, labels `Events`, `organizátor akce`, `přihlašovatel`, `question`) asks for the ability to define a deputy ("zástupce") event coordinator in addition to the primary coordinator.
+GitHub issue #83 ("Chci definovat vedoucího akce (a jeho zástupce)", milestone `core`, labels `Events`, `organizátor akce`, `přihlašovatel`) asks for the ability to assign multiple coordinators to an event.
 
-Today the `events` spec supports exactly one coordinator per event (`Create Event`: *"coordinator (přiřaditelný člen klubu)"*, `Event Detail Page`, `Events Table Display`: *"coordinator shown as clickable link"*, filtered-by-coordinator in `List Events`). A single coordinator is a bottleneck:
+Today the `events` spec supports exactly one coordinator per event. A single coordinator is a bottleneck:
 
-- If the primary coordinator becomes unavailable (injury, last-minute schedule clash), there is no co-owner on the event. Other managers still need `EVENTS:MANAGE` to step in.
+- If the coordinator becomes unavailable, there is no co-owner on the event — other managers still need `EVENTS:MANAGE` to step in.
 - Members wanting to reach the coordinator have a single point of contact — if they do not answer, the next escalation path is unclear.
 - For bigger events it is common for two people to share coordinator duties (registrations vs. logistics, for example).
 
-The issue is tagged `question` because the exact shape (single deputy? multiple deputies? full co-coordinator with equal privileges?) is not decided.
+## Decisions
+
+The following decisions were made before creating specs and design:
+
+1. **Collection of coordinators, symmetric roles.** The single `coordinator` field is replaced by a collection of coordinators (`coordinators: MemberId[]`). All members in the collection have identical rights — there is no "primary" vs. "deputy" distinction at the data level. The issue wording "vedoucí a zástupce" maps naturally to a two-element collection.
+
+2. **Implicit edit rights for all coordinators.** Being in the `coordinators` collection grants implicit edit rights for that event, regardless of `EVENTS:MANAGE` — identical to the current single-coordinator behaviour.
+
+3. **Filter "by coordinator" matches any position in the collection.** The `List Events` coordinator filter returns events where the given member appears anywhere in the coordinators collection.
+
+4. **Persistence: new join table `event_coordinators`.** The existing `coordinator` column is removed and replaced by an `event_coordinators(event_id, member_id)` join table. No production migration concern (H2 in-memory).
+
+5. **UI scope of this proposal.** This proposal changes the data model from a single field to a collection and updates UI accordingly:
+   - Read-only: list of coordinator names.
+   - Edit form: multi-value field where each entry is a member dropdown.
+   - Issue gh-67 will later enrich the read-only display with contact information.
+
+6. **ORIS import does not populate coordinators.** Coordinators are a Klabis-internal concept — ORIS has no equivalent field. After ORIS import the coordinators collection is empty.
+
+7. **Duplicates rejected.** A member may appear in the coordinators collection at most once. Attempting to add a duplicate is rejected at the domain level.
+
+8. **List table display: first coordinator + "+N more".** The events list table shows the first coordinator name and a "+N" badge when more coordinators exist. Full list is shown on the event detail page.
 
 ## Capabilities
 
@@ -18,45 +39,19 @@ The issue is tagged `question` because the exact shape (single deputy? multiple 
 
 ### Modified Capabilities
 
-- `events`: extend `Create Event`, `Update Event`, `Event Detail Page`, `Events Table Display`, and `List Events` (filtering) to cover a deputy coordinator field.
+- `events`: replace single `coordinator` field with a `coordinators` collection across `Create Event`, `Update Event`, `Event Detail Page`, `Events Table Display`, and `List Events` (filtering).
 
 ## Impact
 
 **Affected specs:**
-- `openspec/specs/events/spec.md` — new scenarios on the five requirements listed above covering: optional deputy on create, editable deputy on update, deputy displayed on detail and list pages, filter by deputy (or "any coordinator"), and any permission/authority granted by being a deputy.
+- `openspec/specs/events/spec.md` — updated scenarios covering: collection on create/update, list display (first + badge), detail display (full list), filter by coordinator (any position), implicit edit authority for all coordinators, duplicate rejection, ORIS import ignores field.
 
-**Affected code (backend, events module):** the `Event` aggregate and its commands (`CreateEvent`, `UpdateEvent`, ORIS-variants) gain a deputy coordinator field (nullable member reference). The HAL representation gains a deputy link and the list query may gain a deputy-aware filter. Coordinator authority checks (if they exist anywhere — TBD during design) need to include the deputy.
+**Affected code (backend, events module):** `Event` aggregate replaces single coordinator with a coordinators collection. `CreateEvent`/`UpdateEvent` commands accept `Set<MemberId>`. HAL representation exposes coordinator links as a collection. Authority check includes any member from the collection. `event_coordinators` join table replaces the `coordinator` column.
 
-**Affected code (frontend):** event create/edit form, detail page, and list table render the deputy alongside the primary coordinator.
+**Affected code (frontend):** event create/edit form uses a multi-value member dropdown; detail page renders the full coordinator list; list table shows first + badge.
 
-**APIs (REST):** additive — new optional field in the event DTO on create/update/get.
+**APIs (REST):** `coordinator` field in the event DTO is replaced by `coordinators` array. Breaking change — no external consumers known.
 
-**Dependencies:** none.
+**Dependencies:** gh-67 (coordinator contact display) will extend the read-only coordinator list with contact info once this proposal is implemented.
 
-**Data:** new nullable column on the events table.
-
-## Open Questions
-
-All questions below MUST be answered before the next OpenSpec artifacts (specs, design, tasks) are created for this change.
-
-1. **Single deputy vs. list of deputies.**
-   - Option A: exactly one deputy (`deputyCoordinator: MemberId?`). Simplest, matches the issue wording ("zástupce" singular).
-   - Option B: a list of deputies with no upper bound. Allows multi-person coordination (logistics person + registration person + course setter).
-   - Option C: a list of coordinators where the first is designated "primary" and the rest are "deputies", all stored in one collection.
-
-2. **Does the deputy have any implicit permissions, or is it purely informational?**
-   - Option A: informational only. Deputy is a member reference displayed on the event; no event management permissions implied. Managers with `EVENTS:MANAGE` still do all edits.
-   - Option B: deputy gets implicit edit rights for that event (regardless of `EVENTS:MANAGE`). Requires a new authority check plumbed through the `events` module.
-   - Option C: deputy gets a subset — can edit the event coordinator-level fields (registrations list access, contact) but not core fields (date, status transitions).
-
-3. **Does the deputy show up in "Moje akce" views or in filters?** The `List Events` requirement today supports *"filter by coordinator"* — should the same filter match events where I am the primary OR deputy coordinator? Recommend: yes, merge behaviors into "any coordinator role".
-
-4. **How does the existing `coordinator` column behave when migrating?** Not a production concern (H2 in-memory per project policy), so a simple schema addition is enough. Confirm.
-
-5. **Interaction with `add-event-coordinator-contact` (issue #67/#37).** If deputies exist, the "contact coordinator" affordance should probably list all coordinators (primary + deputies). Should this proposal just add the field, or should it also extend the contact scenarios introduced by the other proposal? Recommend: add the field here; the contact proposal references deputies once they exist.
-
-6. **ORIS import:** ORIS events have an event organizer contact. Does the ORIS import populate deputy fields in any way? Recommend: no, ORIS import ignores deputies (they are a klabis-internal concept). Confirm.
-
-7. **Can the same member be both primary coordinator and deputy?** Clearly should be rejected. Confirm the expected error wording.
-
-8. **Visual treatment on the events list table.** Does the deputy show as a second name in the coordinator column (comma-separated), as a tooltip, or only on detail? Recommend: detail-only to keep the list compact. Confirm.
+**Data:** new `event_coordinators(event_id, member_id)` join table; `coordinator` column removed.
