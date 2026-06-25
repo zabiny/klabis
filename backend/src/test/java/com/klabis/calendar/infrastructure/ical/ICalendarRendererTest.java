@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +39,8 @@ class ICalendarRendererTest {
     private Event buildEvent(UUID id, String name, LocalDate date, String location,
                               String organizer, String websiteUrl, MemberId coordinatorId,
                               EventStatus status) {
+        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+        if (coordinatorId != null) coordinators.add(coordinatorId);
         return Event.reconstruct(
                 new EventId(id),
                 name,
@@ -45,7 +48,7 @@ class ICalendarRendererTest {
                 location,
                 organizer,
                 websiteUrl != null ? WebsiteUrl.of(websiteUrl) : null,
-                coordinatorId,
+                coordinators,
                 null,
                 null,
                 status,

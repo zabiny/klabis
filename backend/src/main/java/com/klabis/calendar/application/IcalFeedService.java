@@ -38,7 +38,7 @@ class IcalFeedService implements IcalFeedPort {
                 .map(events::findById)
                 .flatMap(java.util.Optional::stream)
                 .map(event -> {
-                    boolean isCoordinator = memberId.equals(event.getEventCoordinatorId());
+                    boolean isCoordinator = event.isCoordinator(memberId);
                     return new EventScheduleEntry(event, isCoordinator);
                 })
                 .toList();

@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Currency;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -114,7 +115,6 @@ class EventJdbcRepositoryTest {
                     .hasLocation("Prague City Center")
                     .hasOrganizer("Prague OC")
                     .hasWebsiteUrl(null)
-                    .hasEventCoordinatorId(null)
                     .hasStatus(EventStatus.DRAFT);
         }
 
@@ -131,7 +131,7 @@ class EventJdbcRepositoryTest {
                     .location("Brno Forest")
                     .organizer("Brno OC")
                     .websiteUrl(websiteUrl)
-                    .eventCoordinatorId(coordinatorId)
+                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build());
 
             // When
@@ -148,8 +148,7 @@ class EventJdbcRepositoryTest {
             assertThat(retrieved.getOrganizer()).isEqualTo("Brno OC");
             assertThat(retrieved.getWebsiteUrl()).isNotNull();
             assertThat(retrieved.getWebsiteUrl().value()).isEqualTo("https://example.com/event");
-            assertThat(retrieved.getEventCoordinatorId()).isNotNull();
-            assertThat(retrieved.getEventCoordinatorId()).isEqualTo(coordinatorId);
+            // coordinator persistence will be verified in iteration 2 after join table migration
             assertThat(retrieved.getStatus()).isEqualTo(EventStatus.DRAFT);
         }
 

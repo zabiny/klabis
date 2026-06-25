@@ -12,7 +12,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -66,7 +68,7 @@ class EventTest {
                     .location(location)
                     .organizer(organizer)
                     .websiteUrl(websiteUrl)
-                    .eventCoordinatorId(coordinatorId)
+                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build());
 
             // Assert
@@ -77,8 +79,8 @@ class EventTest {
                     .hasLocation(location)
                     .hasOrganizer(organizer)
                     .hasWebsiteUrl(WebsiteUrl.of(websiteUrl))
-                    .hasEventCoordinatorId(coordinatorId)
                     .hasStatus(EventStatus.DRAFT);
+            assertThat(event.getCoordinators()).containsExactly(coordinatorId);
         }
 
         @Test
@@ -105,8 +107,8 @@ class EventTest {
                     .hasLocation(location)
                     .hasOrganizer(organizer)
                     .hasWebsiteUrl(null)
-                    .hasEventCoordinatorId(null)
                     .hasStatus(EventStatus.DRAFT);
+            assertThat(event.getCoordinators()).isEmpty();
         }
 
         @Test
@@ -418,7 +420,7 @@ class EventTest {
             event.update(EventUpdateEventBuilder.builder()
                     .name(newName).eventDate(newDate).location(newLocation)
                     .organizer(newOrganizer).websiteUrl(newWebsiteUrl)
-                    .eventCoordinatorId(newCoordinatorId).build());
+                    .coordinators(new LinkedHashSet<>(List.of(newCoordinatorId))).build());
 
             EventAssert.assertThat(event)
                     .hasName(newName)
@@ -426,8 +428,8 @@ class EventTest {
                     .hasLocation(newLocation)
                     .hasOrganizer(newOrganizer)
                     .hasWebsiteUrl(WebsiteUrl.of(newWebsiteUrl))
-                    .hasEventCoordinatorId(newCoordinatorId)
                     .hasStatus(EventStatus.DRAFT);
+            assertThat(event.getCoordinators()).containsExactly(newCoordinatorId);
         }
 
         @Test
@@ -1037,7 +1039,7 @@ class EventTest {
                     .location("Test Location")
                     .organizer("Test Organizer")
                     .websiteUrl("https://test.com")
-                    .eventCoordinatorId(coordinatorId)
+                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build());
 
             List<Object> domainEvents = event.getDomainEvents();
@@ -1241,7 +1243,7 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should not set eventCoordinatorId (imported events have no coordinator)")
+        @DisplayName("should not set coordinators (imported events have no coordinator)")
         void shouldNotSetEventCoordinatorId() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(5555)
@@ -1252,7 +1254,7 @@ class EventTest {
                     .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555"))
                     .build());
 
-            assertThat(event.getEventCoordinatorId()).isNull();
+            assertThat(event.getCoordinators()).isEmpty();
         }
 
         @Test
@@ -1825,6 +1827,204 @@ class EventTest {
                     .build());
 
             assertThat(event.findRegistration(memberId).get().category()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Coordinators collection")
+    class CoordinatorsCollection {
+
+        @Test
+        @DisplayName("should store coordinators in insertion order when creating event")
+        void shouldStoreCoordinatorsInInsertionOrder() {
+            MemberId first = new MemberId(UUID.randomUUID());
+            MemberId second = new MemberId(UUID.randomUUID());
+            MemberId third = new MemberId(UUID.randomUUID());
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(first, second, third));
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Coordinator Test Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build());
+
+            assertThat(event.getCoordinators()).containsExactly(first, second, third);
+        }
+
+        @Test
+        @DisplayName("should store empty coordinators when none provided on create")
+        void shouldStoreEmptyCoordinatorsWhenNoneProvided() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Coordinator Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            assertThat(event.getCoordinators()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should deduplicate coordinator IDs — LinkedHashSet enforces uniqueness")
+        void shouldDeduplicateCoordinatorsOnCreate() {
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            LinkedHashSet<MemberId> coords = new LinkedHashSet<>(List.of(coordinator, coordinator));
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Name")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(coords)
+                    .build());
+
+            assertThat(event.getCoordinators()).hasSize(1)
+                    .containsExactly(coordinator);
+        }
+
+        @Test
+        @DisplayName("should deduplicate coordinator IDs on update — LinkedHashSet enforces uniqueness")
+        void shouldDeduplicateCoordinatorsOnUpdate() {
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Name")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            LinkedHashSet<MemberId> withDuplicate = new LinkedHashSet<>(List.of(coordinator, coordinator));
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Name")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(withDuplicate)
+                    .build());
+
+            assertThat(event.getCoordinators()).hasSize(1).containsExactly(coordinator);
+        }
+
+        @Test
+        @DisplayName("isCoordinator() returns true for a member in the coordinators collection")
+        void isCoordinatorReturnsTrueForMemberInCollection() {
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            MemberId other = new MemberId(UUID.randomUUID());
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(coordinator, other));
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build());
+
+            assertThat(event.isCoordinator(coordinator)).isTrue();
+        }
+
+        @Test
+        @DisplayName("isCoordinator() returns false for a member not in the coordinators collection")
+        void isCoordinatorReturnsFalseForMemberNotInCollection() {
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            MemberId nonCoordinator = new MemberId(UUID.randomUUID());
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(coordinator)))
+                    .build());
+
+            assertThat(event.isCoordinator(nonCoordinator)).isFalse();
+        }
+
+        @Test
+        @DisplayName("isCoordinator() returns false when coordinators collection is empty")
+        void isCoordinatorReturnsFalseWhenCollectionEmpty() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            assertThat(event.isCoordinator(new MemberId(UUID.randomUUID()))).isFalse();
+        }
+
+        @Test
+        @DisplayName("createFromOris() should initialize empty coordinators")
+        void createFromOrisShouldInitializeEmptyCoordinators() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(42)
+                    .name("ORIS Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            assertThat(event.getCoordinators()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("syncFromOris() should not change coordinators")
+        void syncFromOrisShouldNotChangeCoordinators() {
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(42)
+                    .name("ORIS Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("ORIS Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(coordinator)))
+                    .build());
+            event.clearDomainEvents();
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Synced Name")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("SYN")
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getCoordinators()).containsExactly(coordinator);
+        }
+
+        @Test
+        @DisplayName("update() should replace coordinators with the new collection in insertion order")
+        void updateShouldReplaceCoordinators() {
+            MemberId first = new MemberId(UUID.randomUUID());
+            MemberId second = new MemberId(UUID.randomUUID());
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(first)))
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Location")
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(second, first)))
+                    .build());
+
+            assertThat(event.getCoordinators()).containsExactly(second, first);
         }
     }
 }

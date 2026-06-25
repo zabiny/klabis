@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,7 +64,7 @@ class EventManagementServiceTest {
                     .location("Forest Park")
                     .organizer("OOB")
                     .websiteUrl("https://example.com/spring-cup")
-                    .eventCoordinatorId(coordinatorId)
+                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build();
 
             Event event = Event.create(command);
@@ -319,7 +320,7 @@ class EventManagementServiceTest {
                     .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
                     .location("Forest Park").organizer("OOB")
                     .websiteUrl("https://example.com")
-                    .eventCoordinatorId(new MemberId(UUID.randomUUID()))
+                    .coordinators(new LinkedHashSet<>(List.of(new MemberId(UUID.randomUUID()))))
                     .build());
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));

@@ -12,6 +12,7 @@ import com.klabis.events.EventTypeId;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,7 +23,7 @@ public class EventTestDataBuilder {
     private String location = "Test Location";
     private String organizer = "Test Organizer";
     private WebsiteUrl websiteUrl = null;
-    private MemberId coordinatorId = null;
+    private LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
     private RegistrationDeadlines registrationDeadlines = RegistrationDeadlines.none();
     private EventId eventId = new EventId(UUID.randomUUID());
     private Integer orisId = null;
@@ -82,7 +83,15 @@ public class EventTestDataBuilder {
     }
 
     public EventTestDataBuilder withCoordinator(MemberId coordinatorId) {
-        this.coordinatorId = coordinatorId;
+        this.coordinators = new LinkedHashSet<>();
+        if (coordinatorId != null) {
+            this.coordinators.add(coordinatorId);
+        }
+        return this;
+    }
+
+    public EventTestDataBuilder withCoordinators(LinkedHashSet<MemberId> coordinators) {
+        this.coordinators = coordinators != null ? coordinators : new LinkedHashSet<>();
         return this;
     }
 
@@ -130,7 +139,7 @@ public class EventTestDataBuilder {
                 location,
                 organizer,
                 websiteUrl,
-                coordinatorId,
+                coordinators,
                 eventTypeId,
                 registrationDeadlines,
                 EventStatus.DRAFT,

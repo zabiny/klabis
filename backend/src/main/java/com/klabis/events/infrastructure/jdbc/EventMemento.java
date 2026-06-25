@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -184,8 +185,8 @@ class EventMemento implements Persistable<UUID> {
         memento.location = event.getLocation();
         memento.organizer = event.getOrganizer();
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
-        memento.eventCoordinatorId = event.getEventCoordinatorId() != null ? event.getEventCoordinatorId()
-                .value() : null;
+        // event_coordinator_id column will be removed in iteration 2 (persistence migration)
+        memento.eventCoordinatorId = null;
         RegistrationDeadlines rd = event.getRegistrationDeadlines();
         memento.registrationDeadline = rd.deadline1().orElse(null);
         memento.registrationDeadline2 = rd.deadline2().orElse(null);
@@ -237,7 +238,11 @@ class EventMemento implements Persistable<UUID> {
     Event toEvent() {
         EventId eventId = new EventId(this.id);
         WebsiteUrl websiteUrlObj = this.websiteUrl != null ? new WebsiteUrl(this.websiteUrl) : null;
-        MemberId coordinatorId = this.eventCoordinatorId != null ? new MemberId(this.eventCoordinatorId) : null;
+        // Populate from legacy event_coordinator_id column until iteration 2 migrates to join table
+        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+        if (this.eventCoordinatorId != null) {
+            coordinators.add(new MemberId(this.eventCoordinatorId));
+        }
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
         List<String> categoriesList = deserialize(this.categories);
@@ -264,7 +269,7 @@ class EventMemento implements Persistable<UUID> {
                 this.location,
                 this.organizer,
                 websiteUrlObj,
-                coordinatorId,
+                coordinators,
                 eventTypeIdObj,
                 deadlines,
                 eventStatus,

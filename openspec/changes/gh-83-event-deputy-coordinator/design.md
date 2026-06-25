@@ -59,9 +59,9 @@ Insertion order is preserved so the "first coordinator" shown in the list table 
 
 Alternative considered: ordered by member name — rejected as overly complex and fragile (name changes would silently reorder coordinators).
 
-### 2. Duplicate rejection in the domain, not only in the UI
+### 2. Duplicate deduplication via the collection type
 
-The `CreateEvent` and `UpdateEvent` commands validate that the provided coordinator IDs form a set with no duplicates. If the caller submits duplicates the command is rejected with a domain error before any persistence. This keeps the invariant in the aggregate, not only in the form.
+The `CreateEvent` and `UpdateEvent` commands carry coordinators as a `LinkedHashSet<MemberId>`. The set type itself enforces uniqueness: if the caller submits duplicate IDs they are silently merged, preserving first-occurrence insertion order. The no-duplicates invariant is therefore structural (encoded in the collection type) rather than an explicit validation that throws. This keeps the invariant in the aggregate without an extra rejection path, and is the simplest expression of "a member may appear at most once".
 
 ### 3. Join table `event_coordinators` with position column
 

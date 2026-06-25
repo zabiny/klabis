@@ -109,7 +109,7 @@ public class EventController {
                 request.location(),
                 request.organizer(),
                 request.websiteUrl(),
-                request.eventCoordinatorId(),
+                request.coordinators(),
                 request.eventTypeId(),
                 request.toRegistrationDeadlines(),
                 request.categories()
@@ -524,11 +524,8 @@ class EventAffordanceSupport {
         if (hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
             return true;
         }
-        MemberId coordinatorId = event.getEventCoordinatorId();
-        if (coordinatorId == null) {
-            return false;
-        }
-        return coordinatorId.equals(resolveMemberId(auth));
+        MemberId memberId = resolveMemberId(auth);
+        return memberId != null && event.isCoordinator(memberId);
     }
 }
 
@@ -582,10 +579,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
-        if (event.getEventCoordinatorId() != null) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
-        }
+        event.getCoordinators().forEach(coordinatorId ->
+                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
@@ -641,10 +637,9 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
             dtoModel.add(selfLink);
         });
 
-        if (event.getEventCoordinatorId() != null) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
-        }
+        event.getCoordinators().forEach(coordinatorId ->
+                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))

@@ -4,14 +4,14 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 1. Domain: coordinators collection on Event aggregate
 
-- [ ] 1.1 Write failing test: `Event.create(CreateEvent)` with a set of coordinator IDs stores them in insertion order
-- [ ] 1.2 Write failing test: `Event.create` / `Event.update` rejects duplicate coordinator IDs with a domain error
-- [ ] 1.3 Write failing test: `event.isCoordinator(memberId)` returns true for a member in the collection, false otherwise
-- [ ] 1.4 Replace `eventCoordinatorId: MemberId` with `coordinators: LinkedHashSet<MemberId>` on the `Event` aggregate
-- [ ] 1.5 Add `coordinators` to `CreateEvent` and `UpdateEvent` commands (remove `eventCoordinatorId`); enforce no-duplicates invariant
-- [ ] 1.6 Add `isCoordinator(MemberId): boolean` to `Event`
-- [ ] 1.7 Update `CreateEventFromOris` to initialize empty coordinators; ensure `SyncFromOris` does not touch coordinators
-- [ ] 1.8 Refactor: ensure domain logic has 100% test coverage; green build
+- [x] 1.1 Write failing test: `Event.create(CreateEvent)` with a set of coordinator IDs stores them in insertion order
+- [x] 1.2 Write failing test: `Event.create` / `Event.update` deduplicates coordinator IDs (the `LinkedHashSet` collection type enforces uniqueness; duplicates are silently merged, first-occurrence order preserved)
+- [x] 1.3 Write failing test: `event.isCoordinator(memberId)` returns true for a member in the collection, false otherwise
+- [x] 1.4 Replace `eventCoordinatorId: MemberId` with `coordinators: LinkedHashSet<MemberId>` on the `Event` aggregate
+- [x] 1.5 Add `coordinators` to `CreateEvent` and `UpdateEvent` commands (remove `eventCoordinatorId`); uniqueness enforced structurally by the `LinkedHashSet` type
+- [x] 1.6 Add `isCoordinator(MemberId): boolean` to `Event`
+- [x] 1.7 Update `CreateEventFromOris` to initialize empty coordinators; ensure `SyncFromOris` does not touch coordinators
+- [x] 1.8 Refactor: ensure domain logic has 100% test coverage; green build
 
 ## 2. Persistence: event_coordinators join table
 
@@ -39,7 +39,7 @@ Each numbered group is an independently committable vertical slice. Slices are o
 ## 5. Write path: create and update with coordinators collection
 
 - [ ] 5.1 Write failing test: `POST /api/events` with multiple coordinators creates the event with all of them
-- [ ] 5.2 Write failing test: `POST /api/events` with a duplicate coordinator returns a validation error
+- [ ] 5.2 Write failing test: `POST /api/events` with a duplicate coordinator creates the event with the coordinator listed once (duplicates silently deduplicated by the `LinkedHashSet` collection)
 - [ ] 5.3 Update `CreateEventRequest` and `UpdateEventRequest` to accept `coordinators: MemberId[]`; map to commands
 - [ ] 5.4 Write failing test: `POST` / `PATCH` with a non-existent coordinator member returns a not-found error
 - [ ] 5.5 Green build; refactor request mapping

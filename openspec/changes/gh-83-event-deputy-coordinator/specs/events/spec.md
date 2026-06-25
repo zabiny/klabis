@@ -144,10 +144,10 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 - **WHEN** user references a coordinator member that does not exist
 - **THEN** the form shows an error that the coordinator was not found
 
-#### Scenario: Duplicate coordinator in collection shows error
+#### Scenario: Duplicate coordinator in collection is deduplicated
 
-- **WHEN** user adds the same member to the coordinators field more than once
-- **THEN** the form shows an error that each coordinator may appear only once
+- **WHEN** user adds the same member to the coordinators field more than once and submits
+- **THEN** the event is created with that member listed once
 
 #### Scenario: Registration deadline after event date shows error
 
@@ -195,10 +195,10 @@ The system SHALL allow users with EVENTS:MANAGE permission OR any member in the 
 - **AND** the user is not listed as a coordinator of that event
 - **THEN** no edit action is available
 
-#### Scenario: Duplicate coordinator in update shows error
+#### Scenario: Duplicate coordinator in update is deduplicated
 
-- **WHEN** user adds the same member twice to the coordinators field during update
-- **THEN** the form shows an error that each coordinator may appear only once
+- **WHEN** user adds the same member twice to the coordinators field during update and submits
+- **THEN** the event is updated with that member listed once
 
 ### Requirement: List Events
 

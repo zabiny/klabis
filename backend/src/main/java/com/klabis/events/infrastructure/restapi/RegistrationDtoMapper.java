@@ -17,12 +17,13 @@ class RegistrationDtoMapper {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
+        MemberId firstCoordinator = event.getCoordinators().stream().findFirst().orElse(null);
         return new RegistrationSummaryDto(
                 member.firstName(),
                 member.lastName(),
                 registration.category(),
                 registration.registeredAt(),
-                event.getEventCoordinatorId(),
+                firstCoordinator,
                 registration.memberId()
         );
     }

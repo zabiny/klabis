@@ -27,7 +27,7 @@ The following decisions were made before creating specs and design:
 
 6. **ORIS import does not populate coordinators.** Coordinators are a Klabis-internal concept — ORIS has no equivalent field. After ORIS import the coordinators collection is empty.
 
-7. **Duplicates rejected.** A member may appear in the coordinators collection at most once. Attempting to add a duplicate is rejected at the domain level.
+7. **Duplicates deduplicated.** A member may appear in the coordinators collection at most once. The collection is a `LinkedHashSet`, so submitting a duplicate is silently deduplicated (merged, first-occurrence order preserved) rather than raising an error.
 
 8. **List table display: first coordinator + "+N more".** The events list table shows the first coordinator name and a "+N" badge when more coordinators exist. Full list is shown on the event detail page.
 

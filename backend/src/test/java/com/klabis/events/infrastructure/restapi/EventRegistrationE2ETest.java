@@ -491,7 +491,7 @@ class EventRegistrationE2ETest {
         event.put("location", "Test Location");
         event.put("organizer", "TEST");
         event.put("websiteUrl", null);
-        event.put("eventCoordinatorId", null);
+        event.put("coordinators", null);
         if (!categories.isEmpty()) {
             event.put("categories", categories);
         }

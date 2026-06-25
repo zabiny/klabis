@@ -10,6 +10,7 @@ import com.klabis.members.MemberId;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * DTO for event details response.
@@ -22,7 +23,7 @@ import java.util.List;
  * @param location           event location
  * @param organizer          event organizer
  * @param websiteUrl         event website URL (optional)
- * @param eventCoordinatorId event coordinator user ID (optional)
+ * @param coordinators       event coordinator member IDs (may be empty)
  * @param eventTypeId        event type ID (optional); HAL link to /api/event-types/{id} added by postprocessor
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
  * @param deadlines          registration deadlines in chronological order (max 3)
@@ -37,7 +38,7 @@ record EventDto(
         String location,
         String organizer,
         String websiteUrl,
-        MemberId eventCoordinatorId,
+        Set<MemberId> coordinators,
         EventTypeId eventTypeId,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
         List<String> categories,
