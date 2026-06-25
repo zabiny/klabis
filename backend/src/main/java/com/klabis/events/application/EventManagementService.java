@@ -2,25 +2,33 @@ package com.klabis.events.application;
 
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
+import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EventManagementService implements EventManagementPort {
 
     private final EventRepository eventRepository;
+    private final Members members;
 
-    EventManagementService(EventRepository eventRepository) {
+    EventManagementService(EventRepository eventRepository, Members members) {
         this.eventRepository = eventRepository;
+        this.members = members;
     }
 
     @Transactional
     @Override
     public Event createEvent(Event.CreateEvent command) {
+        validateCoordinatorsExist(command.coordinators());
         Event event = Event.create(command);
         return eventRepository.save(event);
     }
@@ -31,9 +39,23 @@ public class EventManagementService implements EventManagementPort {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
+        validateCoordinatorsExist(command.coordinators());
         event.update(command);
 
         eventRepository.save(event);
+    }
+
+    private void validateCoordinatorsExist(Collection<MemberId> coordinatorIds) {
+        if (coordinatorIds == null || coordinatorIds.isEmpty()) {
+            return;
+        }
+        Map<MemberId, ?> found = members.findByIds(coordinatorIds);
+        List<MemberId> missing = coordinatorIds.stream()
+                .filter(id -> !found.containsKey(id))
+                .toList();
+        if (!missing.isEmpty()) {
+            throw new CoordinatorNotFoundException(missing);
+        }
     }
 
     @Transactional

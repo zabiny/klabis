@@ -38,11 +38,11 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 5. Write path: create and update with coordinators collection
 
-- [ ] 5.1 Write failing test: `POST /api/events` with multiple coordinators creates the event with all of them
-- [ ] 5.2 Write failing test: `POST /api/events` with a duplicate coordinator creates the event with the coordinator listed once (duplicates silently deduplicated by the `LinkedHashSet` collection)
-- [ ] 5.3 Update `CreateEventRequest` and `UpdateEventRequest` to accept `coordinators: MemberId[]`; map to commands
-- [ ] 5.4 Write failing test: `POST` / `PATCH` with a non-existent coordinator member returns a not-found error
-- [ ] 5.5 Green build; refactor request mapping
+- [x] 5.1 Write failing test: `POST /api/events` with multiple coordinators creates the event with all of them
+- [x] 5.2 Write failing test: `POST /api/events` with a duplicate coordinator creates the event with the coordinator listed once (duplicates silently deduplicated by the `LinkedHashSet` collection)
+- [x] 5.3 Update `CreateEventRequest` and `UpdateEventRequest` to accept `coordinators: MemberId[]`; map to commands
+- [x] 5.4 Write failing test: `POST` / `PATCH` with a non-existent coordinator member returns a not-found error
+- [x] 5.5 Green build; refactor request mapping
 
 ## 6. Authority: coordinators can edit their event
 

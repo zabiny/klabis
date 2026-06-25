@@ -3,7 +3,9 @@ package com.klabis.events.application;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
+import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,8 +19,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,11 +46,14 @@ class EventManagementServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private Members members;
+
     private EventManagementPort service;
 
     @BeforeEach
     void setUp() {
-        service = new EventManagementService(eventRepository);
+        service = new EventManagementService(eventRepository, members);
     }
 
     @Nested
@@ -67,6 +74,7 @@ class EventManagementServiceTest {
                     .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build();
 
+            when(members.findByIds(any(Collection.class))).thenReturn(Map.of(coordinatorId, aCoordinatorDto(coordinatorId)));
             Event event = Event.create(command);
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
@@ -98,6 +106,65 @@ class EventManagementServiceTest {
             // Then
             assertThat(result).isEqualTo(event);
             verify(eventRepository).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should create event with multiple coordinators — all preserved")
+        void shouldCreateEventWithMultipleCoordinators() {
+            // Given
+            MemberId coordinator1 = new MemberId(UUID.randomUUID());
+            MemberId coordinator2 = new MemberId(UUID.randomUUID());
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(coordinator1, coordinator2));
+
+            Event.CreateEvent command = EventCreateEventBuilder.builder()
+                    .name("Multi-Coord Cup 2026")
+                    .eventDate(LocalDate.of(2026, 4, 20))
+                    .location("Ridge Trail")
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build();
+
+            when(members.findByIds(any(Collection.class))).thenReturn(Map.of(
+                    coordinator1, aCoordinatorDto(coordinator1),
+                    coordinator2, aCoordinatorDto(coordinator2)
+            ));
+            Event event = Event.create(command);
+            when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+            // When
+            Event result = service.createEvent(command);
+
+            // Then
+            assertThat(result.getCoordinators()).containsExactlyInAnyOrder(coordinator1, coordinator2);
+        }
+
+        @Test
+        @DisplayName("should deduplicate coordinator — same MemberId appears only once on created event")
+        void shouldDeduplicateDuplicateCoordinator() {
+            // Given
+            MemberId coordinator = new MemberId(UUID.randomUUID());
+            // LinkedHashSet deduplicates at command construction time
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(coordinator, coordinator));
+
+            Event.CreateEvent command = EventCreateEventBuilder.builder()
+                    .name("Dedup Race 2026")
+                    .eventDate(LocalDate.of(2026, 5, 10))
+                    .location("Town Square")
+                    .organizer("PRG")
+                    .coordinators(coordinators)
+                    .build();
+
+            when(members.findByIds(any(Collection.class))).thenReturn(Map.of(coordinator, aCoordinatorDto(coordinator)));
+            Event event = Event.create(command);
+            when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+            // When
+            Event result = service.createEvent(command);
+
+            // Then
+            assertThat(result.getCoordinators())
+                    .containsExactly(coordinator)
+                    .hasSize(1);
         }
     }
 
@@ -535,6 +602,83 @@ class EventManagementServiceTest {
             // Then
             verify(eventRepository, never()).save(any(Event.class));
         }
+    }
+
+    @Nested
+    @DisplayName("coordinator existence validation")
+    class CoordinatorValidationMethod {
+
+        @Test
+        @DisplayName("should throw CoordinatorNotFoundException when coordinator does not exist on create")
+        void shouldThrowWhenCoordinatorNotFoundOnCreate() {
+            // Given
+            MemberId missingCoordinator = new MemberId(UUID.randomUUID());
+            Event.CreateEvent command = EventCreateEventBuilder.builder()
+                    .name("Mystery Race 2026")
+                    .eventDate(LocalDate.of(2026, 9, 5))
+                    .location("Unknown Trail")
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(missingCoordinator)))
+                    .build();
+
+            when(members.findByIds(any(Collection.class))).thenReturn(Map.of());
+
+            // When & Then
+            assertThatThrownBy(() -> service.createEvent(command))
+                    .isInstanceOf(CoordinatorNotFoundException.class);
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should throw CoordinatorNotFoundException when coordinator does not exist on update")
+        void shouldThrowWhenCoordinatorNotFoundOnUpdate() {
+            // Given
+            EventId eventId = EventId.generate();
+            MemberId missingCoordinator = new MemberId(UUID.randomUUID());
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Existing Event").eventDate(LocalDate.of(2026, 7, 1))
+                    .location("Location").organizer("OOB").build());
+
+            Event.UpdateEvent command = EventUpdateEventBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2026, 7, 15))
+                    .location("New Location").organizer("PRG")
+                    .coordinators(new LinkedHashSet<>(List.of(missingCoordinator)))
+                    .build();
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(members.findByIds(any(Collection.class))).thenReturn(Map.of());
+
+            // When & Then
+            assertThatThrownBy(() -> service.updateEvent(eventId, command))
+                    .isInstanceOf(CoordinatorNotFoundException.class);
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should not validate coordinators when coordinator list is empty on create")
+        void shouldSkipValidationWhenNoCoordinatorsOnCreate() {
+            // Given
+            Event.CreateEvent command = EventCreateEventBuilder.builder()
+                    .name("Simple Race 2026")
+                    .eventDate(LocalDate.of(2026, 11, 1))
+                    .location("City Center")
+                    .organizer("PRG")
+                    .build();
+
+            Event event = Event.create(command);
+            when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+            // When — no exception expected, members.findByIds should not be called
+            service.createEvent(command);
+
+            // Then
+            verify(members, never()).findByIds(any());
+            verify(eventRepository).save(any(Event.class));
+        }
+    }
+
+    private MemberDto aCoordinatorDto(MemberId memberId) {
+        return new MemberDto(memberId.value(), "Test", "Coordinator", "coordinator@example.com");
     }
 
 }
