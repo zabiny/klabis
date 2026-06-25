@@ -46,13 +46,13 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 6. Authority: coordinators can edit their event
 
-- [ ] 6.1 Write failing test: a member listed as coordinator can `PATCH /api/events/{id}` without EVENTS:MANAGE
-- [ ] 6.2 Write failing test: a coordinator of event A cannot edit event B; a non-coordinator without EVENTS:MANAGE is denied
-- [ ] 6.3 Move the edit endpoint authorization from `@HasAuthority(EVENTS_MANAGE)` to an in-method guard allowing EVENTS:MANAGE OR `event.isCoordinator(actingMemberId)`
-- [ ] 6.4 Update `EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority` to use `event.isCoordinator(...)`
-- [ ] 6.5 Verify `@OwnerId` on `RegistrationSummaryDto` works against the coordinators collection; implement a custom resolver if the annotation does not support collections
-- [ ] 6.6 Write failing test: edit affordance link is present on the event detail for a coordinator, absent for an unrelated member
-- [ ] 6.7 Green build; refactor authority checks
+- [x] 6.1 Write failing test: a member listed as coordinator can `PATCH /api/events/{id}` without EVENTS:MANAGE
+- [x] 6.2 Write failing test: a coordinator of event A cannot edit event B; a non-coordinator without EVENTS:MANAGE is denied
+- [x] 6.3 Move the edit endpoint authorization from `@HasAuthority(EVENTS_MANAGE)` to an in-method guard allowing EVENTS:MANAGE OR `event.isCoordinator(actingMemberId)`
+- [x] 6.4 Update `EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority` to use `event.isCoordinator(...)`
+- [x] 6.5 Verify `@OwnerId` on `RegistrationSummaryDto` works against the coordinators collection; implement a custom resolver if the annotation does not support collections (DefaultOwnershipResolver extended additively to support Collection owner values)
+- [x] 6.6 Write failing test: edit affordance link is present on the event detail for a coordinator, absent for an unrelated member
+- [x] 6.7 Green build; refactor authority checks
 
 ## 7. Frontend: coordinators in detail, list, and edit form
 

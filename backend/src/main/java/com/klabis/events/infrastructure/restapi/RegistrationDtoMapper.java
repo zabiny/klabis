@@ -8,6 +8,7 @@ import com.klabis.members.Members;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 class RegistrationDtoMapper {
 
@@ -17,13 +18,13 @@ class RegistrationDtoMapper {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        MemberId firstCoordinator = event.getCoordinators().stream().findFirst().orElse(null);
+        Set<MemberId> coordinators = event.getCoordinators();
         return new RegistrationSummaryDto(
                 member.firstName(),
                 member.lastName(),
                 registration.category(),
                 registration.registeredAt(),
-                firstCoordinator,
+                coordinators,
                 registration.memberId()
         );
     }

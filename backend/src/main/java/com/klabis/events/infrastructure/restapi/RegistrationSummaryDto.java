@@ -12,6 +12,7 @@ import org.springframework.hateoas.server.core.Relation;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
 import java.time.Instant;
+import java.util.Set;
 
 @Relation(collectionRelation = "registrationDtoList")
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -23,7 +24,7 @@ public record RegistrationSummaryDto(
         @OwnerVisible
         @HasAuthority(Authority.EVENTS_REGISTRATIONS)
         Instant registrationTime,
-        @JsonIgnore @OwnerId MemberId eventCoordinatorId,
+        @JsonIgnore @OwnerId Set<MemberId> coordinators,
         @JsonIgnore MemberId registeredMemberId
 ) {
 }
