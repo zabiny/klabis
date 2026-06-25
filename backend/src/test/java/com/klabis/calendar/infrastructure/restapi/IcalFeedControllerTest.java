@@ -155,8 +155,10 @@ class IcalFeedControllerTest {
             jdbcTemplate.execute("DELETE FROM events.event_registrations WHERE member_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'");
             jdbcTemplate.execute("DELETE FROM events.events WHERE id IN ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'dddddddd-dddd-dddd-dddd-dddddddddddd')");
             // Coordinator event (2 months from now, within the 12-month future window)
-            jdbcTemplate.execute("INSERT INTO events.events (id, name, event_date, location, organizer, status, event_coordinator_id, created_at, created_by, modified_at, modified_by, version) " +
-                    "VALUES ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'Koordinovaná akce', DATEADD(MONTH, 2, CURRENT_DATE), 'Praha', 'ZBM', 'ACTIVE', 'cccccccc-cccc-cccc-cccc-cccccccccccc', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP, 'system', 0)");
+            jdbcTemplate.execute("INSERT INTO events.events (id, name, event_date, location, organizer, status, created_at, created_by, modified_at, modified_by, version) " +
+                    "VALUES ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'Koordinovaná akce', DATEADD(MONTH, 2, CURRENT_DATE), 'Praha', 'ZBM', 'ACTIVE', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP, 'system', 0)");
+            jdbcTemplate.execute("INSERT INTO events.event_coordinators (event_id, member_id, position) " +
+                    "VALUES ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 0)");
             // Cancelled event with registration (3 months from now, within the 12-month future window)
             jdbcTemplate.execute("INSERT INTO events.events (id, name, event_date, location, organizer, status, created_at, created_by, modified_at, modified_by, version) " +
                     "VALUES ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'Zrušená akce', DATEADD(MONTH, 3, CURRENT_DATE), 'Brno', 'ZBM', 'CANCELLED', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP, 'system', 0)");

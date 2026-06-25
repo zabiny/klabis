@@ -15,11 +15,11 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 2. Persistence: event_coordinators join table
 
-- [ ] 2.1 Add `events.event_coordinators(event_id, member_id, position)` table to the schema; remove `event_coordinator_id` column from `events.events`
-- [ ] 2.2 Write failing repository test: save an event with multiple coordinators and reload it preserving order
-- [ ] 2.3 Update the Event memento / JDBC mapping to persist and load the coordinators collection
-- [ ] 2.4 Add index on `event_coordinators(member_id)` for the coordinator filter
-- [ ] 2.5 Verify round-trip test green; refactor mapping
+- [x] 2.1 Add `events.event_coordinators(event_id, member_id, position)` table to the schema; remove `event_coordinator_id` column from `events.events`
+- [x] 2.2 Write failing repository test: save an event with multiple coordinators and reload it preserving order
+- [x] 2.3 Update the Event memento / JDBC mapping to persist and load the coordinators collection
+- [x] 2.4 Add index on `event_coordinators(member_id)` for the coordinator filter
+- [x] 2.5 Verify round-trip test green; refactor mapping
 
 ## 3. Read path: event detail exposes coordinators
 

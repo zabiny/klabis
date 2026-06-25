@@ -22,8 +22,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -67,8 +69,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("website_url")
     private String websiteUrl;
 
-    @Column("event_coordinator_id")
-    private UUID eventCoordinatorId;
+    // Coordinators as ordered Map: key=position (insertion order), value=coordinator row
+    @MappedCollection(idColumn = "event_id", keyColumn = "position")
+    private Map<Integer, EventCoordinatorMemento> coordinators = new LinkedHashMap<>();
 
     @Column("status")
     private String status;
@@ -185,8 +188,7 @@ class EventMemento implements Persistable<UUID> {
         memento.location = event.getLocation();
         memento.organizer = event.getOrganizer();
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
-        // event_coordinator_id column will be removed in iteration 2 (persistence migration)
-        memento.eventCoordinatorId = null;
+        memento.coordinators = toCoordinatorMap(event.getCoordinators());
         RegistrationDeadlines rd = event.getRegistrationDeadlines();
         memento.registrationDeadline = rd.deadline1().orElse(null);
         memento.registrationDeadline2 = rd.deadline2().orElse(null);
@@ -238,11 +240,11 @@ class EventMemento implements Persistable<UUID> {
     Event toEvent() {
         EventId eventId = new EventId(this.id);
         WebsiteUrl websiteUrlObj = this.websiteUrl != null ? new WebsiteUrl(this.websiteUrl) : null;
-        // Populate from legacy event_coordinator_id column until iteration 2 migrates to join table
-        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
-        if (this.eventCoordinatorId != null) {
-            coordinators.add(new MemberId(this.eventCoordinatorId));
-        }
+        // Reconstruct LinkedHashSet in position order — TreeMap sorted by key ensures correct order
+        LinkedHashSet<MemberId> coordinators = this.coordinators.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getValue().toMemberId())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
         List<String> categoriesList = deserialize(this.categories);
@@ -308,6 +310,19 @@ class EventMemento implements Persistable<UUID> {
         if (event != null) {
             event.clearDomainEvents();
         }
+    }
+
+    /**
+     * Converts the ordered coordinator collection to a position-keyed map for persistence.
+     * Position is zero-based and reflects the LinkedHashSet iteration (insertion) order.
+     */
+    private static Map<Integer, EventCoordinatorMemento> toCoordinatorMap(java.util.Collection<MemberId> coordinators) {
+        Map<Integer, EventCoordinatorMemento> map = new LinkedHashMap<>();
+        int position = 0;
+        for (MemberId memberId : coordinators) {
+            map.put(position++, EventCoordinatorMemento.of(memberId));
+        }
+        return map;
     }
 
     // Persistable<UUID> methods
