@@ -23,10 +23,10 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 3. Read path: event detail exposes coordinators
 
-- [ ] 3.1 Write failing controller test: `GET /api/events/{id}` returns `coordinators: MemberId[]` and one `coordinator` HAL link per coordinator
-- [ ] 3.2 Replace `eventCoordinatorId` with `coordinators` in `EventDto` and the detail mapper
-- [ ] 3.3 Add one `coordinator` HAL link per coordinator in the event detail postprocessor; configure that rel to always render as an array
-- [ ] 3.4 Green build; refactor mapper
+- [x] 3.1 Write failing controller test: `GET /api/events/{id}` returns `coordinators: MemberId[]` and one `coordinator` HAL link per coordinator
+- [x] 3.2 Replace `eventCoordinatorId` with `coordinators` in `EventDto` and the detail mapper
+- [x] 3.3 Add one `coordinator` HAL link per coordinator in the event detail postprocessor (default Spring HATEOAS rendering: object for a single coordinator, array for multiple — see design decision)
+- [x] 3.4 Green build; refactor mapper
 
 ## 4. Read path: list display and coordinator filter
 

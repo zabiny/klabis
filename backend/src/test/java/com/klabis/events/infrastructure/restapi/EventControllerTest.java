@@ -32,11 +32,13 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -868,6 +870,35 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.coordinator.href").value(
                             containsString("/api/members/" + coordinatorId.value())));
+        }
+
+        @Test
+        @DisplayName("should include coordinator links as array when event has multiple coordinators")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorLinksAsArrayWhenMultipleCoordinatorsAreSet() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordA = new MemberId(UUID.randomUUID());
+            MemberId coordB = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinators(new LinkedHashSet<>(List.of(coordA, coordB)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.coordinators").isArray())
+                    .andExpect(jsonPath("$.coordinators", hasSize(2)))
+                    .andExpect(jsonPath("$._links.coordinator").isArray())
+                    .andExpect(jsonPath("$._links.coordinator", hasSize(2)))
+                    .andExpect(jsonPath("$._links.coordinator[0].href").value(
+                            containsString("/api/members/" + coordA.value())))
+                    .andExpect(jsonPath("$._links.coordinator[1].href").value(
+                            containsString("/api/members/" + coordB.value())));
         }
 
         @Test
