@@ -30,11 +30,11 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 4. Read path: list display and coordinator filter
 
-- [ ] 4.1 Write failing test: `GET /api/events` summary includes `coordinators: MemberId[]`
-- [ ] 4.2 Replace `eventCoordinatorId` with `coordinators` in `EventSummaryDto` and the list mapper
-- [ ] 4.3 Write failing test: coordinator filter matches an event where the member is at any position in the collection
-- [ ] 4.4 Update the list filter (`EventFilter` + query) to JOIN `event_coordinators` and match any coordinator
-- [ ] 4.5 Green build; refactor query
+- [x] 4.1 Write failing test: `GET /api/events` summary includes `coordinators: MemberId[]`
+- [x] 4.2 Replace `eventCoordinatorId` with `coordinators` in `EventSummaryDto` and the list mapper
+- [x] 4.3 Write failing test: coordinator filter matches an event where the member is at any position in the collection
+- [x] 4.4 Update the list filter (`EventFilter` + query) to JOIN `event_coordinators` and match any coordinator
+- [x] 4.5 Green build; refactor query
 
 ## 5. Write path: create and update with coordinators collection
 

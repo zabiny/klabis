@@ -1355,6 +1355,30 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("list item includes coordinators array with all coordinator UUIDs")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorsArrayInListItem() throws Exception {
+            MemberId coordA = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+            MemberId coordB = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinators(new LinkedHashSet<>(List.of(coordA, coordB)))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].coordinators",
+                            org.hamcrest.Matchers.containsInAnyOrder(
+                                    coordA.value().toString(),
+                                    coordB.value().toString()
+                            )));
+        }
+
+        @Test
         @DisplayName("list item does not include coordinator link when event has no coordinator")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldNotIncludeCoordinatorLinkWhenNoCoordinator() throws Exception {

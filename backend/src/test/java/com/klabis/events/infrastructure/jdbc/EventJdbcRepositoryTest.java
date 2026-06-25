@@ -1857,5 +1857,34 @@ class EventJdbcRepositoryTest {
             Event updated = eventRepository.findById(saved.getId()).orElseThrow();
             assertThat(updated.getCoordinators()).containsExactly(second, first);
         }
+
+        @Test
+        @DisplayName("coordinator filter matches event when member is not in first coordinator position")
+        void shouldMatchEventWhenCoordinatorIsNotInFirstPosition() {
+            MemberId coordA = new MemberId(TEST_MEMBER_1_ID);
+            MemberId coordB = new MemberId(TEST_MEMBER_2_ID);
+
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+            coordinators.add(coordA);
+            coordinators.add(coordB);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Two Coordinator Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withCoordinator(coordB),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent())
+                    .extracting(Event::getId)
+                    .containsExactly(saved.getId());
+        }
     }
 }

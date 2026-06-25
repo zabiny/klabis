@@ -36,6 +36,7 @@ class EventDtoMapper {
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
+                event.getCoordinators(),
                 event.getEventTypeId().orElse(null),
                 event.getStatus(),
                 event.getCategories(),
