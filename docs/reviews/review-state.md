@@ -7,7 +7,7 @@
 ## Phase checklist
 
 - [x] 0. Inventory & plan
-- [ ] 1. Architecture review (whole system: Spring Modulith boundaries, dependency direction, API surface, frontend data flow)
+- [x] 1. Architecture review (whole system: Spring Modulith boundaries, dependency direction, API surface, frontend data flow) — 6 findings (1 HIGH, 3 MEDIUM, 2 LOW)
 - [ ] 2. Common module — security-critical cross-cutting: `common/security`, `common/users`, `common/encryption`, `common/ratelimit`, `common/email`, `authorizationserver`
 - [ ] 3. Common module — framework infrastructure: `common/hateoas`, `common/mvc`, `common/patch`, `common/jdbc`, `common/pagination`, `common/validation`, `common/templating`, `common/ui`, `common/observability`, `common/logging`, `common/bootstrap`, `common/domain`, `common/exceptions`
 - [ ] 4. Members module (domain, application, infrastructure) — registration numbers, GDPR data, member lifecycle
@@ -31,7 +31,13 @@
 
 ## Watch list (spots later phases must examine)
 
-*(populated by Phase 1)*
+- **Phase 2:** `authorizationserver/KlabisUserDetailsService` imports `common.users.domain.User`/`UserPermissions` directly (lines 6-7) — check whether these are return types of the `UserService` primary port (acceptable) or deeper coupling; ADR-001 said "consume primary ports only". Also: `spring-boot-h2console` as `runtimeOnly` in prod builds.
+- **Phase 3:** `common` is an OPEN Modulith module (finding A1 context) — while reviewing common infrastructure, note any types that only exist to serve one business module (candidates to move out). `CustomMetricsTrackingAspect` uses `KlabisApplication.class.getPackage()` as event filter — verify it filters what the javadoc claims.
+- **Phase 5 (events/oris/calendar):** `events.domain.Money.parseCurrency` silently falls back to CZK on null/blank/invalid currency codes — data-correctness risk for imported ORIS events with foreign/malformed currencies. `events.Money` and `finance.Money` are divergent implementations (finance has arithmetic + invariant asserts; events has parsing + fallback). Calendar has direct read access to the `events.domain` named interface (Event aggregate) — verify it never mutates. `EventsExceptionHandler` maps `DuplicateRegistrationException` with empty detail (`""`) — check the SPA shows something sensible on double-registration.
+- **Phase 6 (finance/membershipfees):** `membershipfees` imports `events.domain.EventType` (cross-module entity exposure via named interface) and `events.infrastructure.bootstrap.EventTypeDataBootstrap` constants (infra→infra coupling in `MembershipFeeTiersDataBootstrap`). `YearlyFeeChargeMarkerRepository` in `CampaignProcessor` looks like the double-charge guard — verify idempotency (invariant #6).
+- **Phase 8:** stale/missing ADRs (root CLAUDE.md references decisions not present in docs/design-decisions.md — only ADR-001 exists). Committed frontend bundles (finding A6). Snapshot dependency `oris-client:0db715d9-SNAPSHOT`. Check `.github/workflows` assumptions about committed static assets.
+- **Phase 9:** `HalNavigator2` + HAL hooks are the frontend's complexity concentration (69 consumer files) — deep-dive there. `api/setup.ts` typed openapi-fetch client is nearly unused (2 files) — check if it's a second idiom worth keeping. `AdminModeContext` doc comment references SandplacePage (finding A5).
+- **Phase 10:** `HomePage.tsx:129` maps `rel === 'admin'` card to `/sandplace` (finding A5) — find intended admin target when reviewing pages.
 
 ## Carry-over notes
 
