@@ -309,6 +309,61 @@ Doplňkové služby se nastavují v create/update afordancích eventu (rozšíř
 - HAL-FORMS afordance `register` / `editRegistration` rozšířena o pole `selectedServiceIds` (inline options z `event.supplementaryServices` — `value` = id, `prompt` = název s cenou).
 - Celý blok `price` se počítá při čtení; nic z něj se neukládá.
 
+## Dopad na frontend
+
+Na rozdíl od `event-category-identity` je tato změna pro frontend **čistě aditivní** — žádný existující tvar dat se nemění. Přibývají dvě věci: správa doplňkových služeb (pro pořadatele) a zobrazení ceny (pro člena).
+
+> **Předpoklad:** Frontend už prošel úpravami z `event-category-identity` — kategorie jsou objekty s `id` a volitelnou `fee`. Cena kategorie se tedy ve formuláři i na detailu **už zobrazuje**; tento change na ni jen navazuje výpočtem.
+
+### Doplňkové služby ve formuláři eventu
+
+Nové pole `supplementaryServices` v create/edit formuláři eventu, tvarem **identické s kategoriemi** po předchozím changi — seznam řádků `{ id?, name, price }`:
+
+- skryté `id` u existující služby, chybějící u nově přidané (stejná PUT sémantika jako u kategorií),
+- `name` povinný a unikátní v rámci eventu,
+- `price` povinná (na rozdíl od kategorie, kde je volitelná).
+
+Protože jde o tentýž vzor, řádkový editor zavedený v `eventFormFieldsFactory.tsx` pro kategorie by měl být **znovupoužitý** (parametrizovaný), ne zkopírovaný. Rozdíly: povinná cena a jiné předvyplnění.
+
+**Předvyplněné názvy:** tlačítka pro tři obvyklé služby (ubytování, doprava, půjčení čipu) — analogicky k `CategoryPresetPickerButton`, ale **bez backendu**: jde o konstanty ve frontendu (D3), ne o načtený katalog. Klik doplní řádek s předvyplněným názvem a prázdnou cenou.
+
+**Odebrání služby s existujícími výběry:** UI před uložením upozorní, kolika registrací se změna dotkne — stejný vzor jako u odebrání kategorie.
+
+### Výběr služeb při registraci
+
+HAL-FORMS afordance `register` / `editRegistration` se rozšiřuje o `selectedServiceIds` s inline options (`value` = id, `prompt` = název s cenou). Výběr je vícenásobný a binární (bez množství), takže se hodí **skupina checkboxů**, ne multiselect — položek jsou jednotky a člen potřebuje vidět ceny.
+
+Zda to zvládne stávající rendering HalForms pro pole s `options` a `maxItems > 1`, nebo bude potřeba custom field, se rozhodne při implementaci — model to nijak neomezuje.
+
+Nemá-li event žádné služby, pole se ve formuláři nezobrazuje vůbec.
+
+### Zobrazení ceny
+
+Cena přichází v odpovědi registrace jako blok `price` (`entryFee` / `services` / `total`). Zobrazuje se:
+
+- **v „Moje přihláška"** jako rozpad — vstupné po příspěvku dle členské úrovně, součet služeb, celkem. Nejdůležitější místo: člen tu vidí, kolik bude platit.
+- **v tabulce registrací** (detail eventu) jako sloupec s `total` — pořadatel vidí sumu za každého přihlášeného.
+- **v edit formuláři registrace** by se cena měla přepočítat po změně výběru služeb. Nejjednodušší varianta bez nového endpointu: dopočet na klientu z cen v inline options (`price` každé služby je ve formuláři k dispozici). Autoritativní hodnota je vždy ta ze serveru po uložení.
+
+**Informativnost ceny musí být v UI vidět** (D7) — částka není závazná a nikam se neukládá. Vhodné doprovodit formulací typu „orientační cena", aby ji člen nezaměňoval za předpis platby.
+
+Formátování `Money` řeší existující zobrazení `baseEntryFee` na detailu eventu — použije se stejný pomocník, ne nový.
+
+### Dotčená místa
+
+| Soubor | Změna |
+|--------|-------|
+| `src/api/klabisApi.d.ts` | Regenerovat — `SupplementaryServiceDto`, `selectedServiceIds`, blok `price` na registraci |
+| `src/components/events/eventFormFieldsFactory.tsx` | Pole `supplementaryServices` — znovupoužití řádkového editoru z `event-category-identity` |
+| `src/components/events/` (nový) | Tlačítko/komponenta pro předvyplnění obvyklých názvů služeb (frontend konstanty) |
+| `src/pages/events/EventDetailPage.tsx` | Sekce se službami eventu (read + edit); sloupec `total` v tabulce registrací |
+| „Moje přihláška" | Výběr služeb v registračním formuláři + rozpad ceny |
+| `src/localization/labels.ts` | Popisky: doplňkové služby, vstupné, služby celkem, cena celkem, „orientační cena" |
+
+### Testy
+
+Nové: render rozpadu ceny, registrace bez služeb (blok se nezobrazí), přidání/odebrání služby ve formuláři eventu, předvyplnění názvu, klientský dopočet ceny při změně výběru. Stávající testy detailu eventu se rozšiřují o službami obohacené fixtures — jejich dosavadní tvar zůstává platný, protože změna je aditivní.
+
 ## Glosář nových doménových pojmů
 
 | Pojem | Význam |

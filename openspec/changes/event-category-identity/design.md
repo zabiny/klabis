@@ -223,6 +223,58 @@ classDiagram
 - HAL+FORMS afordance `register` / `editRegistration`: pole `categoryId` s inline options z `event.categories` (`value` = id, `prompt` = název).
 - Řazení registrací podle kategorie (`RegistrationSortApplier`) nadále řadí podle **názvu** dohledaného z ID, ne podle ID.
 
+## Dopad na frontend
+
+Kategorie dnes putují frontendem jako **pole řetězců** (`event.categories?: string[]`, registrace `category?: string`). Po této změně jde o **pole objektů** `{ id, name, fee? }` a registrace odkazuje `categoryId`. Jde o breaking change tvaru dat — všechna místa níže se musí upravit současně s backendem.
+
+### Dotčená místa
+
+| Soubor | Dnešní stav | Cílový stav |
+|--------|-------------|-------------|
+| `src/api/klabisApi.d.ts` | generováno z OpenAPI | Regenerovat (`npm run openapi`) po změně backendu — nové schéma `EventCategoryDto`, `categoryId` na registraci |
+| `src/pages/events/EventDetailPage.tsx` | `categories?: string[]`, render `event.categories?.map(c => <Badge key={c}>{c}</Badge>)` | `categories?: EventCategoryDto[]`, klíč `c.id`, popisek `c.name` (+ cena, viz níže) |
+| `src/pages/events/EventDetailPage.tsx` | `RegistrationData.category?: string` | `category?: { id, name } \| null` — u osiřelé registrace `null` |
+| `src/components/events/eventFormFieldsFactory.tsx` | pole `categories` renderuje výchozí klabisFieldsFactory jako seznam textů | Vlastní field renderující řádky objektů (název + volitelná cena) se zachováním skrytého `id` |
+| `src/components/events/CategoryPresetPickerButton.tsx` | vkládá do formuláře řetězce z presetu | Vkládá objekty `{ name }` **bez `id`** (nová kategorie) — preset zůstává name-based (D5) |
+| `src/localization/labels.ts` | `fields.categories`, `fields.category` | Doplnit popisek pro cenu kategorie a hodnotu „nezařazeno" pro osiřelou registraci |
+| `src/pages/events/EventsPage.tsx` | zobrazuje kategorie v seznamu/filtru | Přejít na `name` z objektu |
+
+### Formulář kategorií (create/edit eventu)
+
+Klíčová změna: pole `categories` přestává být seznam textů a stává se **seznamem řádků**. Každý řádek nese:
+
+- **skryté `id`** — přítomné u existující kategorie, chybějící u nově přidané. Toto je nosič celé změny: frontend musí `id` zachovat při editaci, jinak backend kategorii smaže a znovu založí a rozváže registrace (viz sémantika PUT v REST sekci).
+- **název** — povinný, unikátní v rámci eventu (validace na klientu i serveru),
+- **cena** — volitelná (`Money`), prázdná znamená „použij základní vstupné eventu".
+
+Chování při **odebrání řádku**, který má registrace: UI před uložením upozorní, kolika registrací se to dotkne (počet je dostupný z detailu eventu). Potvrzením se registrace zachovají bez kategorie.
+
+`CategoryPresetPickerButton` nadále přidává kategorie podle názvu z presetu; vždy jako **nové** položky bez `id`.
+
+### Inline editace na detailu eventu
+
+Detail eventu používá vzor inline editace (`ri('categories')` uvnitř `DetailRow`). Po změně:
+
+- **Read mód:** kategorie jako `Badge` s `key={c.id}` a textem `c.name`; má-li kategorie vlastní cenu, zobrazí se v badge za názvem (např. „H21 · 200 Kč").
+- **Edit mód:** stejný řádkový editor jako v create formuláři.
+- Podmínka „nezobrazovat řádek, když nejsou kategorie" zůstává beze změny.
+
+### Výběr kategorie při registraci
+
+HAL-FORMS afordance `register` / `editRegistration` nabídne pole `categoryId` s inline options (`value` = id, `prompt` = název). Standardní HalForms rendering tedy zvládne select bez custom fieldu — **není potřeba nový komponent**, jen se změní název pole a hodnoty.
+
+### Osiřelá registrace v UI
+
+Registrace, jejíž kategorie byla z eventu odebrána, přijde s `category: null`. UI:
+
+- v tabulce registrací i v „Moje přihláška" zobrazí prázdnou / neutrální hodnotu (ne `undefined` ani chybu),
+- při řazení podle kategorie je backend sdruží k sobě — frontend nic navíc neřeší,
+- v edit formuláři je `categoryId` prázdné a člen si může vybrat některou z aktuálních kategorií.
+
+### Testy
+
+Existující testy `EventDetailPage.test.tsx`, `eventFormFieldsFactory.test.tsx`, `CategoryPresetPickerButton.test.tsx` a `EventsPage.test.tsx` používají řetězcové kategorie ve fixtures — všechny je nutné přepsat na objektový tvar. Nové scénáře k pokrytí: zachování `id` při editaci, přidání kategorie bez `id`, render osiřelé registrace, zobrazení ceny kategorie.
+
 ## Glosář nových doménových pojmů
 
 | Pojem | Význam |
