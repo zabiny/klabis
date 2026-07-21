@@ -56,12 +56,10 @@ State this contract explicitly in the spawn prompt.
 
 Spawn teammates sized to the domains, with disjoint file ownership:
 
-- **backend teammate** — agent type `backend-developer`. Owns `backend/`.
-  Instruct it to follow the `backend-patterns` skill.
+- **backend teammate** — agent type `backend-developer`. Owns `backend/`. 
 - **frontend teammate** — agent type `frontend-developer`. Owns `frontend/`.
-  Instruct it to follow the `hal-navigator-patterns` skill.
 
-In each teammate's prompt include: the relevant task groups from `tasks.md`, the
+In each teammate's prompt include: the relevant task groups from `tasks.md`, instruction to read `proposal.md`, `specs.md` and `design.md` from current proposal, the
 shared contract, its file-ownership boundary, and the rule that it must **not**
 run Gradle/build/tests itself (the lead serializes all testing — see §5).
 
