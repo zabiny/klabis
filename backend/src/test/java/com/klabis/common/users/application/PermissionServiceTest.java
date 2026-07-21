@@ -198,6 +198,18 @@ class PermissionServiceTest {
         }
 
         @Test
+        @DisplayName("should throw IllegalArgumentException for null authorities")
+        void shouldThrowExceptionForNullAuthorities() {
+            // When & Then - validation happens before database lookup
+            assertThatThrownBy(() -> service.updateUserPermissions(USER_ID, null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Authorities required");
+
+            verify(permissionsRepository, never()).findById(any(UserId.class));
+            verify(permissionsRepository, never()).save(any(UserPermissions.class));
+        }
+
+        @Test
         @DisplayName("should not check admin count when not removing MEMBERS:PERMISSIONS")
         void shouldNotCheckAdminCountWhenNotRemovingPermissionsAuthority() {
             // Given

@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -240,10 +241,12 @@ class PermissionControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 for invalid request body")
+        @DisplayName("should pass null authorities through to service when field is missing from request body")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldReturn400ForInvalidRequestBody() throws Exception {
-            // Given - missing authorities field deserializes to null, rejected by AuthorityValidator downstream
+        void shouldPassNullAuthoritiesThroughWhenFieldMissing() throws Exception {
+            // Given - missing authorities field deserializes to null; the real null-check
+            // lives in AuthorityValidator/PermissionServiceImpl (see PermissionServiceTest),
+            // not in this controller slice where PermissionService is mocked.
             when(permissionService.updateUserPermissions(any(UserId.class), any()))
                     .thenThrow(new IllegalArgumentException("Authorities required"));
 
@@ -253,6 +256,8 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isBadRequest());
+
+            verify(permissionService).updateUserPermissions(any(UserId.class), isNull());
         }
 
         @Test
