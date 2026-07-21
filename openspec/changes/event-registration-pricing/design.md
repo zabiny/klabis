@@ -1,13 +1,15 @@
 ## Context
 
-Event v současnosti nese jedno paušální vstupné (`baseEntryFee: Money`) a kategorie jako prostý `List<String>`. Registrace (`EventRegistration`) drží jen vybranou kategorii (název), SI číslo čipu a čas registrace — žádnou cenu. Modul membership-fees už zná koncept členské úrovně (`MembershipFeeTier`) s pravidly `MembershipPaymentRule`, která určují, kolik člen dané úrovně přispívá na vstupné podle kombinace event type + ranking (procentem nebo pevnou částkou). Tato pravidla se zatím nikde nepoužívají pro výpočet ceny registrace.
+Event nese jedno paušální vstupné (`baseEntryFee: Money`). Registrace (`EventRegistration`) drží vybranou kategorii, SI číslo čipu a čas registrace — žádnou cenu. Modul membership-fees už zná koncept členské úrovně (`MembershipFeeTier`) s pravidly `MembershipPaymentRule`, která určují, kolik člen dané úrovně přispívá na vstupné podle kombinace event type + ranking (procentem nebo pevnou částkou). Tato pravidla se zatím nikde nepoužívají pro výpočet ceny registrace.
+
+> **Předpoklad:** Tento design staví na changi **`event-category-identity`**, který se implementuje **před** ním. Ten mění kategorie z `List<String>` na `EventCategory` (stabilní `EventCategoryId`, volitelný `orisId`, název a **volitelná `fee`**) a registraci přepíná na `categoryId`. Kategorie s cenou tedy v okamžiku implementace tohoto changu **už existují** — pricing je pouze konzumuje.
 
 Cílem je umožnit spočítat orientační cenu registrace, aby na ni mohla navázat budoucí rezervace a vyúčtování plateb. Cena má vzniknout ze tří zdrojů: základní vstupné (případně přepsané cenou kategorie), příspěvek dle členské úrovně a součet zvolených doplňkových služeb.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Kategorie eventu může mít vlastní cenu, která přepisuje `baseEntryFee`.
+- Cena kategorie (zavedená v `event-category-identity`) se promítne do ceny registrace jako override `baseEntryFee`.
 - Event může nabídnout doplňkové služby s cenou; člen si je při registraci volitelně vybírá.
 - Cena za vstupné se modifikuje příspěvkem dle členské úrovně, kterou má člen v době konání eventu.
 - Cena registrace je odvoditelná (počítá se při čtení) a zobrazitelná v rozpadu.
@@ -18,6 +20,7 @@ Cílem je umožnit spočítat orientační cenu registrace, aby na ni mohla nav�
 - Ukládání ceny (snapshotu) na registraci — viz D7.
 - Množství u služeb (vícekrát ubytování apod.) — výběr je binární ano/ne.
 - Modifikace ceny služeb dle členské úrovně — tier zatím ovlivňuje jen vstupné.
+- Změna tvaru `EventCategory` a `EventRegistration.categoryId` — vlastní je change `event-category-identity`.
 - Kategorizace/typologie služeb pro reporting — viz D3.
 - Import doplňkových služeb z ORIS (`EventDetails.services()`) — model je připraven přes `orisId`, ale import zůstává na pozdější změnu (D4).
 - Kapacita služby (`qtyAvailable`/`qtyRemaining`) a deadline objednání (`lastBookingDateTime`), které ORIS zná.
@@ -25,19 +28,23 @@ Cílem je umožnit spočítat orientační cenu registrace, aby na ni mohla nav�
 
 ## Decisions
 
-### D1: Cena kategorie přepisuje baseEntryFee (override, ne příplatek)
+### D1: Cena kategorie přepisuje `baseEntryFee` (override, ne příplatek)
 
-`baseEntryFee` zůstává výchozí cenou eventu. Kategorie může mít volitelnou vlastní cenu, která **nahrazuje** `baseEntryFee` pro registrace v té kategorii. Event bez kategorií i kategorie bez vlastní ceny používají `baseEntryFee`.
+`baseEntryFee` zůstává výchozí cenou eventu. `EventCategory.fee` (definovaná v `event-category-identity`) ji **nahrazuje** pro registrace v dané kategorii. Event bez kategorií i kategorie bez vlastní ceny používají `baseEntryFee`.
 
-- **Proč:** Některé eventy budou bez kategorií — override je zpětně kompatibilní a nejflexibilnější. ORIS dodává cenu typicky jako jednu základní hodnotu.
+Struktura kategorie ani její persistence se v tomto changi nemění — pouze se její `fee` poprvé konzumuje pro výpočet ceny.
+
+- **Proč override, a ne příplatek:** Některé eventy jsou bez kategorií — override je zpětně kompatibilní a nejflexibilnější. ORIS dodává cenu typicky jako jednu základní hodnotu.
 - **Alternativy:** Příplatek (`base + categoryFee`) — zamítnuto, méně přirozené pro klubové závody. Povinná cena per kategorie bez `baseEntryFee` — zamítnuto, rozbíjí eventy bez kategorií.
 
-### D2: Registrace drží jen název kategorie, cena se dopočítává (ne snapshot)
+### D2: Cena kategorie se dohledává přes `categoryId`, neukládá se snapshot
 
-`EventRegistration` ukládá název kategorie (jako dnes). Cena kategorie se dopočítá lookupem do `Event.categories` podle názvu — žádný cenový snapshot na registraci.
+Base cena registrace vzniká lookupem `Event.categories` podle `registration.categoryId`. Žádný cenový ani jmenný snapshot na registraci.
 
-- **Proč:** Cena registrace je informativní; závazná cena vzniká až při vyúčtování eventu. Snapshot není potřeba.
-- **Alternativy:** Snapshot ceny při registraci — zamítnuto, zbytečné u informativní ceny, přidává invalidaci.
+- **Proč bez snapshotu:** Cena registrace je informativní; závazná cena vzniká až při vyúčtování eventu (D7). Snapshot by zavedl druhý zdroj pravdy a nutnost invalidace.
+- **Osiřelý `categoryId`** (kategorie byla z eventu odebrána): base cena spadne zpět na `baseEntryFee`, výpočet nespadne. Tento stav i jeho prezentaci definuje `event-category-identity`.
+- **Symetrie se službami:** Po `event-category-identity` jsou kategorie i služby odkazované stabilním ID, takže přejmenování ani úprava ceny nerozváže existující registrace. Dřívější asymetrie (kategorie name-based, služby ID-based) tím zaniká.
+- **Alternativy:** Snapshot ceny při registraci — zamítnuto, zbytečné u informativní ceny.
 
 ### D3: Doplňkové služby žijí na eventu, bez typologie
 
@@ -59,11 +66,11 @@ record SupplementaryService(
 ) {}
 ```
 
-- **Proč ID, a ne název:** ORIS služby **mají stabilní `id`** (viz „Podklad z ORIS API" níže) a název (`nameCZ`) pořadatelé mezi syncy běžně mění. Name-based párování by při každém syncu rozvázalo výběr existujících registrací — přesně ten problém, který u kategorií už dnes hlídá `warnIfSyncRemovesCategoriesWithRegistrations` v `OrisEventImportService`. Služby jsou navíc diskrétní placené položky, u nichž tichá ztráta výběru znamená chybu ve vyúčtování.
+- **Proč ID, a ne název:** ORIS služby **mají stabilní `id`** (viz „Podklad z ORIS API" níže) a název (`nameCZ`) pořadatelé mezi syncy běžně mění. Name-based párování by při každém syncu rozvázalo výběr existujících registrací. Služby jsou navíc diskrétní placené položky, u nichž tichá ztráta výběru znamená chybu ve vyúčtování. Stejný závěr vedl k identitě kategorií v `event-category-identity` — obě položky registrace tedy sdílí jeden vzor.
 - **Proč zvlášť `orisId`, a ne použít ORIS id jako primární:** Služby vznikají i ručně u eventů bez ORIS napojení, kde žádné externí ID neexistuje. Lokální UUID je tedy vždy přítomné; `orisId` je jen nullable párovací atribut. Zabraňuje to i kolizi, kdyby ORIS ID nebyla napříč eventy unikátní.
 - **Sémantika `PUT /api/events/{id}`:** Seznam služeb se posílá jako celek. Položka **bez `id` = nová** (server přidělí UUID), **s `id` = update existující**, **chybějící = smazaná**. Smazání služby, kterou má někdo vybranou, je popsáno v REST sekci.
-- **Vědomá asymetrie vůči kategoriím (D2):** Kategorie zůstávají name-based (zpětná kompatibilita, dnešní chování), služby jsou ID-based. Asymetrie je zaplacená tím, že u služeb existuje externí stabilní identifikátor a vyšší cena chyby.
-- **Alternativy:** Name-based reference symetrická s kategoriemi — zamítnuto po zjištění, že ORIS `Service.id` existuje a názvy jsou nestabilní. Použít ORIS `id` přímo jako primární klíč — zamítnuto, nefunguje pro ručně založené služby.
+- **Konzistence s kategoriemi:** Po `event-category-identity` mají kategorie tentýž tvar (lokální ID + volitelný `orisId` + název + volitelná cena). Registrace tak odkazuje obě své volitelné položky stabilním ID a model je symetrický.
+- **Alternativy:** Name-based reference — zamítnuto po zjištění, že ORIS `Service.id` existuje a názvy jsou nestabilní. Použít ORIS `id` přímo jako primární klíč — zamítnuto, nefunguje pro ručně založené služby.
 
 #### Podklad z ORIS API
 
@@ -118,7 +125,7 @@ Příspěvek dle členské úrovně se aplikuje na **base cenu registrace** = ce
 `EventRegistration` **nenese** žádné cenové pole. Cenu počítá application service `RegistrationPricingService` v events při čtení registrace a vrací ji rovnou v rozpadu (`entryFee` / `services` / `total`).
 
 ```
-base              = event.categories[registration.category].fee ?? event.baseEntryFee
+base              = event.categories[registration.categoryId].fee ?? event.baseEntryFee
 entryContribution = MemberFeePricingPort.entryContribution(
                         memberId, event.eventDate, eventTypeId, ranking.shortName, base)
 servicesTotal     = Σ price služeb, jejichž id je v registration.selectedServiceIds
@@ -169,9 +176,10 @@ classDiagram
     }
 
     class EventCategory {
-        <<ValueObject>>
+        <<Entity>>
+        +EventCategoryId id
         +String name
-        +Optional~Money~ fee
+        +Money fee
     }
 
     class SupplementaryService {
@@ -187,7 +195,7 @@ classDiagram
         +UUID id
         +MemberId memberId
         +SiCardNumber siCardNumber
-        +String category
+        +EventCategoryId categoryId
         +List~SupplementaryServiceId~ selectedServiceIds
     }
 
@@ -214,6 +222,7 @@ classDiagram
     EventCategory "1" o-- "0..1" Money : fee (override)
     SupplementaryService "1" *-- "1" Money : price
     EventRegistration ..> SupplementaryService : selects by id
+    EventRegistration ..> EventCategory : selects by id
     RegistrationPricingService ..> Event : reads prices
     RegistrationPricingService ..> MemberFeePricingPort : asks contribution
     RegistrationPricingService ..> RegistrationPrice : produces
@@ -221,13 +230,13 @@ classDiagram
 
 | Prvek | Typ | Změna | Popis |
 |-------|-----|-------|-------|
-| `EventCategory` | Value object | **Přidáno** | Nahrazuje `String` v `Event.categories`. Název + volitelná cena (override `baseEntryFee`). |
+| `EventCategory` | Entity | Beze změny | Zavedena v `event-category-identity` (id, orisId, název, volitelná cena). Tento change její `fee` pouze konzumuje. |
 | `SupplementaryService` | Entity | **Přidáno** | Doplňková služba na eventu: lokální ID, volitelný `orisId`, název, cena. |
 | `SupplementaryServiceId` | Value object | **Přidáno** | UUID identita služby pro stabilní odkaz z registrace. |
 | `RegistrationPricingService` | Application service | **Přidáno** | Počítá cenu registrace ze základu/kategorie, příspěvku tier a služeb. Nic neukládá. |
 | `RegistrationPrice` | Value object | **Přidáno** | Rozpad ceny pro UI: `entryFee` / `services` / `total`. |
 | `MemberFeePricingPort` | Port (do membership-fees) | **Přidáno** | `entryContribution(...)` — vrací částku za vstupné dle členské úrovně. |
-| `Event.categories` | Pole agregátu | **Změněno** | `List<String>` → `List<EventCategory>`. **BREAKING.** |
+| `Event.categories` | Pole agregátu | Beze změny | Tvar `List<EventCategory>` zavádí `event-category-identity`. |
 | `Event.supplementaryServices` | Pole agregátu | **Přidáno** | Seznam nabízených služeb. |
 | `Event` (validace) | Agregát | **Změněno** | Vynucena shodná měna napříč cenami eventu; unikátní názvy kategorií i služeb. |
 | `EventRegistration.selectedServiceIds` | Pole entity | **Přidáno** | Členem zvolené služby podle ID (0..N). |
@@ -238,9 +247,9 @@ classDiagram
 
 ## REST API
 
-### Správa eventu — služby a ceny kategorií
+### Správa eventu — doplňkové služby
 
-Doplňkové služby a ceny kategorií se nastavují v create/update afordancích eventu (rozšíření existujících HAL-FORMS šablon).
+Doplňkové služby se nastavují v create/update afordancích eventu (rozšíření existujících HAL-FORMS šablon). Ceny kategorií se přes totéž API nastavují už po changi `event-category-identity` a tento change je nemění.
 
 **`POST /api/events`** a **`PUT /api/events/{eventId}`** — request body rozšířen:
 
@@ -248,10 +257,7 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 {
   "name": "...",
   "baseEntryFee": { "amount": 150, "currency": "CZK" },
-  "categories": [
-    { "name": "H21", "fee": { "amount": 200, "currency": "CZK" } },
-    { "name": "D21" }                          // bez fee → použije baseEntryFee
-  ],
+  // categories beze změny — tvar zavádí event-category-identity
   "supplementaryServices": [
     // s id → update existující služby (výběr v registracích zůstane zachován)
     { "id": "a3f1…", "name": "Ubytování pá-ne", "price": { "amount": 300, "currency": "CZK" } },
@@ -266,8 +272,8 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 - `orisId` se přes toto API **nenastavuje** — je vyhrazené budoucímu ORIS importu (D4).
 - Response vrací služby včetně přidělených `id`.
 - Frontend nabízí tlačítka pro předvyplnění obvyklých názvů (ubytování, doprava, půjčení čipu); jde o konstanty ve frontendu, backend je nezná.
-- HAL-FORMS afordance: existující `createEvent` / `updateEvent` se rozšiřují o pole `supplementaryServices` a strukturované `categories`.
-- Validace: všechny ceny stejná měna; unikátní názvy kategorií i služeb v rámci eventu; `id` v seznamu musí patřit tomuto eventu.
+- HAL-FORMS afordance: existující `createEvent` / `updateEvent` se rozšiřují o pole `supplementaryServices`. Pole `categories` už strukturované je (`event-category-identity`).
+- Validace: všechny ceny stejná měna (včetně cen kategorií); unikátní názvy služeb v rámci eventu; `id` v seznamu musí patřit tomuto eventu.
 
 ### Registrace — výběr služeb a cena
 
@@ -276,7 +282,7 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 ```jsonc
 {
   "siCardNumber": "12345",
-  "category": "H21",
+  "categoryId": "3f9a…",
   "selectedServiceIds": ["a3f1…", "b7c2…"]
 }
 ```
@@ -286,7 +292,7 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 ```jsonc
 {
   "memberId": "...",
-  "category": "H21",
+  "category": { "id": "3f9a…", "name": "H21" },
   "siCardNumber": "12345",
   "selectedServices": [
     { "id": "a3f1…", "name": "Ubytování pá-ne", "price": { "amount": 300, "currency": "CZK" } }
@@ -307,7 +313,7 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 
 | Pojem | Význam |
 |-------|--------|
-| **EventCategory** | Kategorie eventu s názvem a volitelnou cenou, která přepisuje základní vstupné. |
+| **EventCategory** | Kategorie eventu (zavedená v `event-category-identity`); její volitelná cena přepisuje základní vstupné. |
 | **SupplementaryService** | Doplňková služba nabízená eventem (název + cena, se stabilním ID), volitelně vybíraná při registraci. |
 | **orisId** | Identifikátor služby v ORIS (`Service.id`), sloužící k párování při budoucím importu. U ručně založených služeb `null`. |
 | **RegistrationPrice** | Vypočtený rozpad ceny registrace: příspěvek za vstupné, součet služeb, celkem. Informativní, neukládá se. |
@@ -316,25 +322,25 @@ Doplňkové služby a ceny kategorií se nastavují v create/update afordancích
 
 ## Risks / Trade-offs
 
-- **[Migrace `categories` string → struktura]** → Migrační skript převede existující názvy na `EventCategory` bez ceny (fee = empty). Žádná data se neztratí; ceny se doplní ručně.
+- **[Závislost na `event-category-identity`]** → Tento change předpokládá, že kategorie už mají strukturu s `fee` a registrace odkazuje `categoryId`. Musí se implementovat až po něm. Zmírnění: závislost je jednosměrná a explicitní; pokud by se pořadí obrátilo, pricing by musel dočasně převzít migraci kategorií.
 - **[Cena se počítá při každém čtení]** → Výpis registrací volá port per registrace. Zmírněno cachováním tieru a pravidel v rámci požadavku; u běžné velikosti eventu (desítky registrací) zanedbatelné. Pokud by to nestačilo, lze přidat batch variantu portu — bez dopadu na doménový model.
 - **[Cross-module závislost events → membership-fees]** → Úzký port `entryContribution(...)` minimalizuje vazbu; events nezná strukturu pravidel. Respektuje Spring Modulith hranice.
-- **[Name-based reference kategorií]** → Přejmenování kategorie na eventu rozváže cenu existujících registrací. Akceptováno, konzistentní s dnešním chováním; neznámý název spadne zpět na `baseEntryFee`. Služby jsou proti tomu chráněné stabilním ID (D4).
+- **[Osiřelý `categoryId` na registraci]** → Pokud byla kategorie z eventu odebrána, base cena spadne zpět na `baseEntryFee`. Výpočet nespadne a data se neztrácejí; prezentaci tohoto stavu definuje `event-category-identity`.
 - **[Smazání služby s existujícími výběry]** → Odkaz se tiše zahodí a cena se přepočítá bez ní. Zmírněno tím, že UI před uložením ukáže dopad. Riziko je nižší než u name-based varianty, kde totéž nastávalo i při pouhém přejmenování.
 - **[Sjednocení `Money` do `common.domain`]** → Nejširší mechanický zásah této změny: ~50 souborů napříč `finance`, `membershipfees` a `events` (main i test), včetně mement a REST mapování. Jde ale čistě o náhradu importů — chování ani SQL schéma se nemění, takže regrese odhalí stávající testy. Zmírněno tím, že jde o samostatný krok 1 migračního plánu s vlastním commitem a plným testovacím během **před** jakoukoli funkční změnou. Doporučeno provést IDE refaktoringem (move class), ne ručně.
 
 ## Migration Plan
 
 1. Sjednotit `Money` do `common.domain.Money` — sloučit obě dosavadní implementace (základ z `finance`, doplnit `parseCurrency`), přesměrovat `finance`, `membershipfees` i `events`, odstranit `events.domain.Money` a `finance.domain.Money` (D10). Samostatný commit, plný test run před krokem 2; aktualizovat skill `backend-patterns`.
-2. Rozšířit doménový model (`EventCategory`, `SupplementaryService`) a persistenci (memento) — backward-compatible čtení starých `categories`.
-3. Datová migrace: existující `categories` (seznam stringů) → `EventCategory` bez ceny.
+2. **Předpoklad:** dokončený change `event-category-identity` (kategorie s `fee`, registrace s `categoryId`).
+3. Přidat `SupplementaryService` + `SupplementaryServiceId` do domény a persistence (memento); validace jednotné měny na `Event`.
 4. Přidat `MemberFeePricingPort` v membership-fees + adaptér konzumující `MembershipPaymentRule` (včetně fallbacku na `basePrice`).
 5. Implementovat `RegistrationPricingService` a napojit na čtení registrací; rozšířit `EventRegistration` o `selectedServiceIds`.
-6. Rozšířit REST API a HAL-FORMS afordance.
+6. Rozšířit REST API a HAL-FORMS afordance (služby na eventu, výběr při registraci, rozpad ceny).
 7. Frontend: správa služeb, výběr při registraci, zobrazení rozpadu ceny.
 
-**Rollback:** Změna je aditivní kromě tvaru `categories`. Migrace je dopředná; rollback by vyžadoval zploštění `EventCategory` zpět na názvy (ztráta cen kategorií). Protože se žádná cena neukládá na registrace, rollback nezanechává osiřelá cenová data.
+**Rollback:** Změna je čistě aditivní — nemění tvar žádné existující struktury (kategorie vlastní předchozí change) a žádnou cenu neukládá. Rollback tedy nevyžaduje datovou migraci ani nezanechává osiřelá cenová data; odpadnou jen doplňkové služby a zobrazený rozpad ceny.
 
 ## Open Questions
 
-- K dořešení až ve fázi tasks/implementace: přesný formát datové migrace `categories` a zda zachovat dočasně oba formáty v persistenci.
+- Žádné otevřené otázky. (Dřívější otázka k migraci `categories` odpadla — tvar kategorií i jejich migraci vlastní change `event-category-identity`.)
