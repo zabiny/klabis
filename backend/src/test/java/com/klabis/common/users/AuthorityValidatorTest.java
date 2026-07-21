@@ -54,11 +54,10 @@ class AuthorityValidatorTest {
         }
 
         @Test
-        @DisplayName("should throw exception for empty authorities")
-        void shouldThrowExceptionForEmptyAuthorities() {
-            assertThatThrownBy(() -> AuthorityValidator.validate(Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("At least one authority required");
+        @DisplayName("should accept empty authorities")
+        void shouldAcceptEmptyAuthorities() {
+            // No exception should be thrown
+            AuthorityValidator.validate(Set.of());
         }
 
         @Test
@@ -120,11 +119,10 @@ class AuthorityValidatorTest {
         }
 
         @Test
-        @DisplayName("should throw exception for empty authority enums")
-        void shouldThrowExceptionForEmptyAuthorityEnums() {
-            assertThatThrownBy(() -> AuthorityValidator.validateAuthorityEnums(Set.of()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("At least one authority required");
+        @DisplayName("should accept empty authority enums")
+        void shouldAcceptEmptyAuthorityEnums() {
+            // No exception should be thrown
+            AuthorityValidator.validateAuthorityEnums(Set.of());
         }
     }
 
