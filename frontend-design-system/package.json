@@ -10,10 +10,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./tailwind-preset": "./tailwind-preset.ts",
+    "./styles.css": "./src/styles.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "tailwind-preset.ts",
+    "src/styles.css"
   ],
   "scripts": {
     "build": "tsc -b && vite build",
@@ -23,14 +27,22 @@
   },
   "peerDependencies": {
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^3.3.0"
   },
   "dependencies": {
     "clsx": "^2.0.0",
     "lucide-react": "^0.577.0",
     "tailwind-merge": "^3.5.0"
   },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": false
+    }
+  },
   "devDependencies": {
+    "@tailwindcss/forms": "^0.5.4",
+    "@tailwindcss/typography": "^0.5.9",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -41,6 +53,7 @@
     "jsdom": "^25.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "tailwindcss": "^3.3.0",
     "typescript": "~5.8.3",
     "vite": "^7.1.2",
     "vite-plugin-dts": "^4.5.0",
