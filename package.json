@@ -1,0 +1,8 @@
+{
+  "name": "klabis",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "frontend-design-system"
+  ]
+}
