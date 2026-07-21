@@ -64,7 +64,7 @@ Each numbered group is an independently committable vertical slice. Slices are o
 
 ## 8. Finalize
 
-- [ ] 8.1 Run full backend and frontend test suites; confirm green
-- [ ] 8.2 Code review (code-reviewer agent) before commit
-- [ ] 8.3 Add label `BackendCompleted` to GitHub issue #83
-- [ ] 8.4 Assign the `review-3` milestone to GitHub issue #83
+- [x] 8.1 Run full backend and frontend test suites; confirm green
+- [x] 8.2 Code review (code-reviewer agent) before commit
+- [x] 8.3 Add label `BackendCompleted` to GitHub issue #83
+- [x] 8.4 Assign the `review-3` milestone to GitHub issue #83

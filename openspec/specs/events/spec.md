@@ -258,14 +258,19 @@ The system SHALL display the events list as a table with key columns and a filte
 - **WHEN** an event in the table has no registration deadline
 - **THEN** the deadline column is empty for that row
 
-#### Scenario: Coordinator shown as clickable link
+#### Scenario: Single coordinator shown as clickable link
 
-- **WHEN** an event in the table has a coordinator assigned
-- **THEN** the coordinator column shows the coordinator's full name as a link to their member detail page
+- **WHEN** an event in the table has exactly one coordinator assigned
+- **THEN** the coordinator column shows that coordinator's full name as a link to their member detail page
 
-#### Scenario: Coordinator column empty when not assigned
+#### Scenario: Multiple coordinators shown as first name plus badge
 
-- **WHEN** an event in the table has no coordinator assigned
+- **WHEN** an event in the table has more than one coordinator assigned
+- **THEN** the coordinator column shows the first coordinator's full name as a link to their member detail page, followed by a "+N" badge indicating the count of additional coordinators
+
+#### Scenario: Coordinator column empty when no coordinators assigned
+
+- **WHEN** an event in the table has no coordinators assigned
 - **THEN** the coordinator column is empty for that row
 
 #### Scenario: Register button shown for open unregistered event
@@ -391,7 +396,7 @@ The application SHALL display the event detail page with location and registrati
 
 ### Requirement: Create Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, organizer code. Optional: location, website URL, coordinator, registration deadline, categories.
+The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, organizer code. Optional: location, website URL, coordinators, registration deadline, categories.
 
 #### Scenario: Manager creates an event with all required fields
 
@@ -401,7 +406,7 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 
 #### Scenario: Manager creates an event with optional fields
 
-- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (location, website URL, coordinator, registration deadline, categories) and submits
+- **WHEN** user with EVENTS:MANAGE permission fills in optional fields (location, website URL, coordinators, registration deadline, categories) and submits
 - **THEN** the event is created with all provided data
 
 #### Scenario: Manager creates an event without a location
@@ -429,14 +434,24 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 - **WHEN** user references a coordinator member that does not exist
 - **THEN** the form shows an error that the coordinator was not found
 
+#### Scenario: Duplicate coordinator in collection is deduplicated
+
+- **WHEN** user adds the same member to the coordinators field more than once and submits
+- **THEN** the event is created with that member listed once
+
 #### Scenario: Registration deadline after event date shows error
 
 - **WHEN** user sets a registration deadline after the event date
 - **THEN** the form shows an error that the deadline must be on or before the event date
 
+#### Scenario: Manager creates event with multiple coordinators
+
+- **WHEN** user with EVENTS:MANAGE permission adds two distinct members to the coordinators field and submits
+- **THEN** the event is created with both members as coordinators
+
 ### Requirement: Update Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to update events in DRAFT or ACTIVE status. Editable fields include categories.
+The system SHALL allow users with EVENTS:MANAGE permission OR any member in the event's coordinators collection to update events in DRAFT or ACTIVE status. Editable fields include categories and the coordinators collection.
 
 #### Scenario: Manager updates a DRAFT event
 
@@ -448,6 +463,12 @@ The system SHALL allow users with EVENTS:MANAGE permission to update events in D
 - **WHEN** user with EVENTS:MANAGE permission edits and saves an ACTIVE event
 - **THEN** the event is updated with the new values
 
+#### Scenario: Coordinator edits the event without EVENTS:MANAGE
+
+- **WHEN** a member who is listed as a coordinator of a DRAFT or ACTIVE event edits and saves that event
+- **THEN** the event is updated with the new values
+- **AND** no EVENTS:MANAGE permission is required
+
 #### Scenario: Finished event cannot be edited
 
 - **WHEN** user attempts to edit a FINISHED event
@@ -458,10 +479,16 @@ The system SHALL allow users with EVENTS:MANAGE permission to update events in D
 - **WHEN** user attempts to edit a CANCELLED event
 - **THEN** the system shows an error that cancelled events cannot be modified
 
-#### Scenario: Update action not shown without permission
+#### Scenario: Update action not shown without permission or coordinator role
 
 - **WHEN** user without EVENTS:MANAGE permission views an event
+- **AND** the user is not listed as a coordinator of that event
 - **THEN** no edit action is available
+
+#### Scenario: Duplicate coordinator in update is deduplicated
+
+- **WHEN** user adds the same member twice to the coordinators field during update and submits
+- **THEN** the event is updated with that member listed once
 
 ### Requirement: Event Status Lifecycle
 
@@ -556,7 +583,7 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 #### Scenario: User can filter events by coordinator
 
 - **WHEN** user filters the event list by a coordinator member
-- **THEN** only events where that member is coordinator are shown
+- **THEN** only events where that member appears anywhere in the coordinators collection are shown
 
 #### Scenario: Event status visible only to manager in list
 
@@ -664,7 +691,13 @@ The system SHALL display complete event detail including categories. DRAFT event
 #### Scenario: User views event detail
 
 - **WHEN** authenticated user navigates to an event detail page
-- **THEN** all available event information is displayed (name, date, location when set, organizer, website, coordinator, registration deadline, categories)
+- **THEN** all available event information is displayed (name, date, location when set, organizer, website, coordinators list, registration deadline, categories)
+
+#### Scenario: Event detail shows all coordinators
+
+- **WHEN** authenticated user navigates to an event detail page
+- **AND** the event has multiple coordinators
+- **THEN** all coordinators are listed by full name, each as a link to their member detail page
 
 #### Scenario: Regular user cannot access DRAFT event detail
 
@@ -954,27 +987,27 @@ When a non-current year is later replaced by "no year" or the current year, the 
 
 ### Requirement: Event Coordinator Label Reads as "Vedoucí"
 
-In every part of the user interface that exposes the event coordinator (table column header, filter label, detail section heading, form field label), the label SHALL read "Vedoucí" (or "Vedoucí akce" where context demands the longer form), not "Koordinátor". This is a localization preference; the underlying data field name in the API and the domain remains unchanged (the field continues to be referred to as the event coordinator in API contracts, OpenAPI documentation, and developer documentation).
+In every part of the user interface that exposes the event coordinators (table column header, filter label, detail section heading, form field label), the label SHALL read "Vedoucí" (or "Vedoucí akce" where context demands the longer form), not "Koordinátor". This is a localization preference; the underlying data field name in the API and the domain remains unchanged.
 
 #### Scenario: Events table header
 
 - **WHEN** a user views the events list
-- **THEN** the column that shows the event coordinator is headed "Vedoucí" (not "Koordinátor")
+- **THEN** the column that shows the event coordinators is headed "Vedoucí" (not "Koordinátor")
 
 #### Scenario: Filter bar label
 
 - **WHEN** a user opens the events list filter bar
-- **THEN** the filter that targets the coordinator is labelled "Vedoucí" (not "Koordinátor")
+- **THEN** the filter that targets coordinators is labelled "Vedoucí" (not "Koordinátor")
 
 #### Scenario: Event detail section
 
 - **WHEN** a user views an event detail
-- **THEN** the section displaying the coordinator's name reads "Vedoucí" (not "Koordinátor")
+- **THEN** the section displaying the coordinator list reads "Vedoucí" (not "Koordinátor")
 
 #### Scenario: Event create / update form field
 
 - **WHEN** an event manager opens the create or update form for an event
-- **THEN** the field for assigning a coordinator is labelled "Vedoucí" (not "Koordinátor")
+- **THEN** the field for assigning coordinators is labelled "Vedoucí" (not "Koordinátor")
 
 ### Requirement: Event Ranking (Series)
 
@@ -1047,4 +1080,29 @@ An event manager SHALL be able to set or change an event's ranking and base entr
 
 - **WHEN** an event manager edits an imported event and changes its base entry fee
 - **THEN** the event detail shows the corrected base entry fee
+
+### Requirement: Coordinator Implicit Edit Authority
+
+Any member listed in an event's coordinators collection SHALL have the same implicit edit authority over that event as a user with EVENTS:MANAGE permission, limited to updating the event and viewing registrations. This authority is event-scoped: it does not extend to other events.
+
+#### Scenario: Coordinator sees edit action on their event
+
+- **WHEN** a member who is a coordinator of an event views that event's detail page
+- **THEN** the edit action is available even without EVENTS:MANAGE permission
+
+#### Scenario: Coordinator of one event cannot edit another
+
+- **WHEN** a member is a coordinator of event A but not event B
+- **THEN** the edit action is NOT available on event B (unless the member also has EVENTS:MANAGE)
+
+#### Scenario: ORIS import does not assign coordinators on initial import
+
+- **WHEN** a new event is imported from ORIS for the first time
+- **THEN** the coordinators collection is empty after import
+- **AND** no coordinator is derived from ORIS organizer data
+
+#### Scenario: ORIS sync does not overwrite coordinators
+
+- **WHEN** an already-imported event is updated by syncing from ORIS
+- **THEN** the coordinators collection is left unchanged
 
