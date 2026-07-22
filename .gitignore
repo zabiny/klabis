@@ -35,3 +35,11 @@ backend/local.env
 # screenshots dropped in the repo root by browser automation
 /*.png
 /*.jpg
+
+# design-sync (Claude Design) working state
+.design-sync/sb-reference/
+.design-sync/learnings/
+.design-sync/.cache/
+.design-sync/node_modules
+.ds-sync/
+ds-bundle/
