@@ -10,8 +10,7 @@ import type {HalCollectionResponse, SortDirection} from '../../api'
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch'
 import {usePersistedState} from '../../hooks/usePersistedState'
 import {useTableSort, type SortState} from '../../hooks/useTableSort'
-import {KlabisTable} from './KlabisTable'
-import type {TablePageData} from './types'
+import {KlabisTable, type TablePageData} from '@klabis/design-system'
 
 /**
  * HAL Link object from API responses

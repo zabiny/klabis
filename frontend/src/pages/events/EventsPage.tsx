@@ -2,7 +2,7 @@ import {type ReactElement, useState} from "react";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {asLinkArray, toHref} from "../../api/hateoas.ts";

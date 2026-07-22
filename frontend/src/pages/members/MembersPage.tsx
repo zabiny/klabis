@@ -13,7 +13,7 @@ import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {Banknote, Pencil, Shield, UserCheck, UserX} from "lucide-react";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {labels} from "../../localization";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";

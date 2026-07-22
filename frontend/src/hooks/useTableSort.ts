@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import type { SortState } from '@klabis/design-system';
 
-export type SortState = { by: string; direction: 'asc' | 'desc' };
+export type { SortState };
 
 function storageKey(tableId: string): string {
     return `klabis.table.${tableId}.sort`;

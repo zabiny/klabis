@@ -21,7 +21,7 @@ import {useEventTypes} from '../../hooks/useEventTypes.ts';
 import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
-import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {FinanceTransactionDialog} from '../../components/finance/FinanceTransactionDialog.tsx';
 
 interface RankingInfo {

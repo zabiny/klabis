@@ -1,10 +1,10 @@
 import type {ReactElement, ReactNode} from 'react'
 import React, {isValidElement, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import type {ColumnDef, KlabisTableProps, TableCellProps, TableCellRenderProps} from './types'
+import type {ColumnDef, KlabisTableProps, SortDirection, TableCellProps, TableCellRenderProps} from './types'
 import {Pagination} from './Pagination'
 import {CardView} from './CardView'
-import type {SortDirection} from '../../api'
-import {ErrorDisplay, useMediaQuery} from '@klabis/design-system'
+import {ErrorDisplay} from '../ErrorDisplay'
+import {useMediaQuery} from '../../hooks/useMediaQuery'
 import {RotateCcw} from 'lucide-react'
 
 // Extract column definitions from children (TableCell components)

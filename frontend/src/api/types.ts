@@ -1,4 +1,5 @@
 import type {components} from "./klabisApi";
+import type {SortDirection} from "@klabis/design-system";
 
 export type Link = components["schemas"]["Link"];
 
@@ -8,7 +9,7 @@ export type PageMetadata = {
     totalPages: number,
     number: number
 };
-export type SortDirection = 'asc' | 'desc';
+export type {SortDirection};
 
 export type KlabisActionName = string;
 export type KlabisAction = KlabisActionName | Link;

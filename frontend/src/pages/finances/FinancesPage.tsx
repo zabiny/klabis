@@ -8,7 +8,7 @@ import {usePersistedState} from "../../hooks/usePersistedState.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {Button} from '@klabis/design-system';
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";

@@ -1,7 +1,8 @@
 import React from "react";
-import {type SortDirection} from "../../api";
-import {type SortState} from "../../hooks/useTableSort";
-export type {SortState};
+
+export type SortDirection = 'asc' | 'desc';
+
+export type SortState = { by: string; direction: SortDirection };
 
 // Cell rendering props
 export interface TableCellRenderProps {

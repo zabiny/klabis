@@ -9,7 +9,7 @@ import {toHref} from "../../api/hateoas.ts";
 import {labels} from "../../localization";
 import {Badge, Button, Modal} from '@klabis/design-system';
 import {Pencil, Trash2} from "lucide-react";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 
 type CategoryPresetListItem = EntityModel<{
     id: string;

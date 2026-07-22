@@ -58,6 +58,20 @@ export {
 
 export {useMediaQuery} from './hooks/useMediaQuery'
 
+export {KlabisTable} from './components/table/KlabisTable'
+export {TableCell} from './components/table/TableCell'
+export {CardView} from './components/table/CardView'
+export {Pagination} from './components/table/Pagination'
+export type {
+    SortDirection,
+    SortState,
+    TableCellRenderProps,
+    TableCellProps,
+    TablePageData,
+    ColumnDef,
+    KlabisTableProps,
+} from './components/table/types'
+
 export {
     containerStyles,
     textStyles,
