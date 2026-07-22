@@ -1,5 +1,5 @@
 import type {FallbackProps} from 'react-error-boundary'
-import {Button} from './UI'
+import {Button} from '@klabis/design-system'
 
 /**
  * ErrorFallback component

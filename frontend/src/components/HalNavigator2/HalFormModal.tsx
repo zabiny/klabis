@@ -1,5 +1,5 @@
 import type {ReactElement} from 'react';
-import {Modal} from '../UI';
+import {Modal} from '@klabis/design-system';
 import {HalFormDisplay, type HalFormDisplayProps} from './HalFormDisplay.tsx';
 
 export interface HalFormModalProps extends HalFormDisplayProps {

@@ -1,7 +1,7 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
 import type {EntityModel, HalCollectionResponse, HalFormsTemplate} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
-import {Card, Spinner} from "../../components/UI";
+import {Card, Spinner} from '@klabis/design-system';
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {usePersistedState} from "../../hooks/usePersistedState.ts";
@@ -9,7 +9,7 @@ import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
-import {Button} from "../../components/UI";
+import {Button} from '@klabis/design-system';
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";

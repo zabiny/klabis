@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react';
 import {Field} from 'formik';
 import type {FieldProps} from 'formik';
-import {SelectField} from '../UI/forms';
+import {SelectField} from '@klabis/design-system';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms/types.ts';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
 import {labels} from '../../localization/labels.ts';

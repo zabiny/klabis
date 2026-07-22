@@ -13,7 +13,7 @@
  * of the action on the user's data, not on its label.
  */
 
-import type {ButtonVariant} from '../components/UI/Button';
+import type {ButtonVariant} from '@klabis/design-system';
 
 const ACTION_VARIANT_MAP: Record<string, ButtonVariant> = {
     registerForEvent: 'primary-ghost',

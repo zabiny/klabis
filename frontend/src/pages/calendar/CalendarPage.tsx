@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert, Button, Spinner} from '../../components/UI';
+import {Alert, Button, Spinner} from '@klabis/design-system';
 import {hasCalendarItems} from '../../api';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';

@@ -9,7 +9,7 @@ import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {HalFormButton} from './HalFormButton.tsx';
-import {formsSectionStyles} from '../../theme/designTokens';
+import {formsSectionStyles} from '@klabis/design-system';
 
 /**
  * Props for HalFormsSection component

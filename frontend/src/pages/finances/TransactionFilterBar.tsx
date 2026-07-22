@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {labels} from '../../localization';
-import {PillGroup} from '../../components/UI';
+import {PillGroup} from '@klabis/design-system';
 
 export type TransactionTypeFilter = 'DEPOSIT' | 'OTHER' | '';
 

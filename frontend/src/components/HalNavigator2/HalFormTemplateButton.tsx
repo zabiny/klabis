@@ -5,7 +5,7 @@
 
 import type {ReactElement, ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
-import {Button} from '../UI';
+import {Button} from '@klabis/design-system';
 import {getTemplateLabel} from '../../localization';
 
 export interface HalFormTemplateButtonProps {

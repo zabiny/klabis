@@ -7,7 +7,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Button, DetailRow, Modal} from "../../components/UI";
+import {Button, DetailRow, Modal} from '@klabis/design-system';
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";

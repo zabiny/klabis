@@ -7,7 +7,7 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {toHref} from "../../api/hateoas.ts";
 import {labels} from "../../localization";
-import {Badge, Button, Modal} from "../../components/UI";
+import {Badge, Button, Modal} from '@klabis/design-system';
 import {Pencil, Trash2} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 

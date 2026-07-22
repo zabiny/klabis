@@ -4,8 +4,7 @@ import type {ColumnDef, KlabisTableProps, TableCellProps, TableCellRenderProps} 
 import {Pagination} from './Pagination'
 import {CardView} from './CardView'
 import type {SortDirection} from '../../api'
-import {ErrorDisplay} from '../UI'
-import {useMediaQuery} from '../../hooks/useMediaQuery'
+import {ErrorDisplay, useMediaQuery} from '@klabis/design-system'
 import {RotateCcw} from 'lucide-react'
 
 // Extract column definitions from children (TableCell components)

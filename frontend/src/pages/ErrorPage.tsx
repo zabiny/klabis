@@ -1,5 +1,5 @@
 import {type ReactElement} from 'react';
-import {Card} from '../components/UI';
+import {Card} from '@klabis/design-system';
 import NotFoundPage from './NotFoundPage';
 import ForbiddenPage from './ForbiddenPage';
 

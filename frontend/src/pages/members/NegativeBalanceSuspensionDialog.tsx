@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Button, Modal} from '../../components/UI';
+import {Button, Modal} from '@klabis/design-system';
 import {labels} from '../../localization';
 import {formatCurrency} from '../finances/financeFormatters';
 import {extractNavigationPath} from '../../utils/navigationPath';

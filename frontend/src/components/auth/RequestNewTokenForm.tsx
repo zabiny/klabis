@@ -1,6 +1,5 @@
 import {type ChangeEvent, type FormEvent, useState} from 'react';
-import {Alert, Button, Card} from '../UI';
-import {TextField} from '../UI/forms/TextField';
+import {Alert, Button, Card, TextField} from '@klabis/design-system';
 import {labels} from '../../localization';
 
 interface RequestNewTokenFormProps {

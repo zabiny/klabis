@@ -1,7 +1,7 @@
 import {type ReactElement, useCallback, useState} from "react";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useTransactionFilters} from "./useTransactionFilters.ts";
-import {Button, Skeleton} from "../../components/UI";
+import {Button, Skeleton} from '@klabis/design-system';
 import {labels} from "../../localization";
 import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
 import {TransactionsTable, type TransactionReverseRequest, BalanceCard} from "./FinancesPage.tsx";

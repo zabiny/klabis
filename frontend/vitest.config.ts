@@ -27,6 +27,7 @@ export default defineConfig({
         alias: {
             '~': resolve(__dirname, './src'),
             '@': resolve(__dirname, './src'),
+            '@klabis/design-system': resolve(__dirname, '../frontend-design-system/src/index.ts'),
         },
     },
 });

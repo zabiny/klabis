@@ -1,7 +1,7 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Skeleton} from '../../components/UI';
+import {Alert, Skeleton} from '@klabis/design-system';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import type {FeeSelectionCampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import {labels} from '../../localization';

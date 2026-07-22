@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react'
 import type {FieldProps} from 'formik'
 import {Field} from 'formik'
-import {TextField} from '../../../UI/forms'
+import {TextField} from '@klabis/design-system'
 import type {HalFormsInputProps} from '../types.ts'
 
 /**

@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import {Link, useNavigate, useParams} from 'react-router-dom';
-import {Alert, Button, Skeleton} from '../../components/UI';
+import {Alert, Button, Skeleton} from '@klabis/design-system';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import type {HalFormsTemplate} from '../../api';

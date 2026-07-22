@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert, Button, Spinner} from '../components/UI';
+import {Alert, Button, Spinner} from '@klabis/design-system';
 import {PasswordSetupForm} from '../components/auth/PasswordSetupForm';
 import {TokenValidationError, validateToken} from '../api/passwordSetup';
 import {usePasswordSetup} from '../hooks/usePasswordSetup';

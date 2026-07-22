@@ -17,7 +17,7 @@ import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
-import {Button, DetailRow, Modal, Tooltip} from "../../components/UI";
+import {Button, DetailRow, Modal, Tooltip} from '@klabis/design-system';
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";

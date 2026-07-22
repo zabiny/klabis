@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react'
 import {useField} from 'formik'
 import {useRef} from 'react'
-import {Button} from '../../../UI'
+import {Button} from '@klabis/design-system'
 import {type HalFormsInputProps, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from '../types.ts'
 import {getFieldLabel, labels} from '../../../../localization/labels.ts'
 

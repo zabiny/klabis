@@ -11,8 +11,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {HAL_LINK_RELS} from '../../constants/hal.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {extractNavigationPath} from '../../utils/navigationPath';
-import {linkSectionStyles} from '../../theme/designTokens';
-import {Button} from '../UI';
+import {linkSectionStyles, Button} from '@klabis/design-system';
 
 interface HalLinksSectionProps {
     /** Links object from HAL resource. If not provided, uses resourceData._links */

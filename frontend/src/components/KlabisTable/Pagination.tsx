@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react'
-import {Button} from '../UI'
+import {Button} from '@klabis/design-system'
 
 interface PaginationProps {
     count: number

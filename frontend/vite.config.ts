@@ -83,9 +83,15 @@ export default defineConfig({
         }),
     ],
     resolve: {
-        alias: {
-            '@': resolve(import.meta.dirname, 'src'),
-        },
+        alias: [
+            {find: '@', replacement: resolve(import.meta.dirname, 'src')},
+            // Dev-time only: resolve straight to design-system sources so Vite HMR
+            // picks up component edits without a package rebuild. Production builds
+            // still consume the published dist/ via node_modules resolution.
+            // Exact match only (regex-anchored) so subpaths like
+            // '@klabis/design-system/styles.css' still resolve via node_modules exports.
+            {find: /^@klabis\/design-system$/, replacement: resolve(import.meta.dirname, '../frontend-design-system/src/index.ts')},
+        ],
     },
     base: '/',
     server: {

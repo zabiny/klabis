@@ -64,17 +64,21 @@ vi.mock('../../api/hateoas', () => ({
     toFormValidationError: vi.fn((error) => error),
 }));
 
-vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
-        isOpen ? (
-            <div data-testid="modal-overlay" role="dialog">
-                {title && <h4>{title}</h4>}
-                {children}
-                <button onClick={onClose}>Close</button>
-            </div>
-        ) : null
-    ),
-}));
+vi.mock('@klabis/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@klabis/design-system')>();
+    return {
+        ...actual,
+        Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
+            isOpen ? (
+                <div data-testid="modal-overlay" role="dialog">
+                    {title && <h4>{title}</h4>}
+                    {children}
+                    <button onClick={onClose}>Close</button>
+                </div>
+            ) : null
+        ),
+    };
+});
 
 const adminEditTemplate: HalFormsTemplate = {
     method: 'PUT',

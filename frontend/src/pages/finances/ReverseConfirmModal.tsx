@@ -1,5 +1,5 @@
 import {type ReactElement, useState} from 'react';
-import {Button, Modal} from '../../components/UI';
+import {Button, Modal} from '@klabis/design-system';
 import {labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';

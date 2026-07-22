@@ -2,26 +2,16 @@ import {render, screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {ErrorDisplay} from './ErrorDisplay'
 import {vi} from 'vitest'
-import {FetchError} from '../../api/authorizedFetch'
-import type {FormValidationError} from '../../api/hateoas'
 
 describe('ErrorDisplay Component', () => {
-    const mockFetchError = new FetchError(
-        'Failed to fetch data',
-        500,
-        'Internal Server Error',
-        new Headers()
-    )
+    const mockFetchError = new Error('Failed to fetch data')
 
-    const mockValidationError: FormValidationError = {
-        name: 'FormValidationError',
-        message: 'Validation failed',
+    const mockValidationError = Object.assign(new Error('Validation failed'), {
         validationErrors: {
             name: 'Name is required',
             email: 'Invalid email format',
         },
-        formData: {},
-    } as FormValidationError
+    })
 
     describe('Rendering', () => {
         it('should not render when error is null', () => {
@@ -85,9 +75,14 @@ describe('ErrorDisplay Component', () => {
 
     describe('Validation Errors', () => {
         it('should display validation field errors', () => {
-            const {container} = render(<ErrorDisplay error={mockValidationError}/>)
+            const {container} = render(<ErrorDisplay error={mockValidationError} isValidationError/>)
             expect(container.textContent).toContain('Name is required')
             expect(container.textContent).toContain('Invalid email format')
+        })
+
+        it('should not display validation errors when isValidationError is not set', () => {
+            const {container} = render(<ErrorDisplay error={mockValidationError}/>)
+            expect(container.textContent).not.toContain('Name is required')
         })
 
         it('should not display validation errors for non-validation errors', () => {
@@ -96,7 +91,7 @@ describe('ErrorDisplay Component', () => {
         })
 
         it('should display message before validation errors', () => {
-            const {container} = render(<ErrorDisplay error={mockValidationError}/>)
+            const {container} = render(<ErrorDisplay error={mockValidationError} isValidationError/>)
             const message = screen.getByText('Validation failed')
             const ul = container.querySelector('ul')
             if (ul) {
@@ -210,6 +205,7 @@ describe('ErrorDisplay Component', () => {
                     subtitle="Check your input fields"
                     onRetry={mockOnRetry}
                     onCancel={mockOnCancel}
+                    isValidationError
                 />
             )
             expect(screen.getByText('Form Submission Error')).toBeInTheDocument()
@@ -226,6 +222,7 @@ describe('ErrorDisplay Component', () => {
                     error={mockValidationError}
                     title="Form Error"
                     customMessage="Please fix the validation errors below"
+                    isValidationError
                 />
             )
             expect(screen.getByText('Please fix the validation errors below')).toBeInTheDocument()

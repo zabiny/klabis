@@ -1,7 +1,7 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Skeleton} from '@klabis/design-system';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResourceLinks} from '../../api';

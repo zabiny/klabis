@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Skeleton} from '../../components/UI';
+import {Alert, Skeleton} from '@klabis/design-system';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import {TierCatalogSection} from '../../components/membership-fees/TierCatalogSection.tsx';

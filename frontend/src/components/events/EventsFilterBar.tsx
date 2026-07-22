@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {labels} from '../../localization';
-import {FulltextSearchInput, PillGroup} from '../UI';
+import {FulltextSearchInput, PillGroup} from '@klabis/design-system';
 import {getYearRange, isCurrentYear, type TimeWindow} from './eventsFilterUtils';
 import type {EventTypeCatalogItem} from '../../hooks/useEventTypes';
 

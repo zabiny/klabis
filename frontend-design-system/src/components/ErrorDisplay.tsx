@@ -1,15 +1,14 @@
 import type {ReactElement} from 'react'
 import {Alert} from './Alert'
 import {Button} from './Button'
-import {isFormValidationError} from '../../api/hateoas'
-import {errorStyles, layoutStyles} from '../../theme/designTokens'
+import {errorStyles, layoutStyles} from '../theme/designTokens'
 
 /**
  * Props for ErrorDisplay component
  */
 export interface ErrorDisplayProps {
     /** Error object (FetchError, FormValidationError, or any Error) */
-    error: Error | null | undefined
+    error: (Error & {validationErrors?: Record<string, string>}) | null | undefined
     /** Custom title for the error alert */
     title?: string
     /** Custom message to display instead of error.message */
@@ -26,6 +25,8 @@ export interface ErrorDisplayProps {
     subtitle?: string
     /** CSS class name for additional styling */
     className?: string
+    /** Whether the error carries field-level validation errors to render (caller determines this via app-specific error typing) */
+    isValidationError?: boolean
 }
 
 /**
@@ -66,13 +67,14 @@ export function ErrorDisplay({
                                  cancelText = 'Cancel',
                                  subtitle,
                                  className,
+                                 isValidationError = false,
                              }: ErrorDisplayProps): ReactElement | null {
     if (!error) {
         return null
     }
 
     const errorMessage = customMessage || error.message
-    const showValidationErrors = isFormValidationError(error)
+    const showValidationErrors = isValidationError && !!error.validationErrors
 
     return (
         <Alert severity="error" className={className}>
@@ -90,7 +92,7 @@ export function ErrorDisplay({
                 {/* Display validation field errors if applicable */}
                 {showValidationErrors && (
                     <ul className={errorStyles.listItem}>
-                        {Object.entries(error.validationErrors).map(([field, fieldError]) => (
+                        {Object.entries(error.validationErrors!).map(([field, fieldError]) => (
                             <li key={field}>
                                 {field}: {fieldError}
                             </li>

@@ -18,7 +18,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
-import {Modal} from '../UI';
+import {Modal} from '@klabis/design-system';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;

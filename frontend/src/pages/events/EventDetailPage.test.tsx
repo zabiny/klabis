@@ -84,17 +84,21 @@ vi.mock('../../api/hateoas', () => ({
     }),
 }));
 
-vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
-        isOpen ? (
-            <div data-testid="modal-overlay" role="dialog">
-                {title && <h4>{title}</h4>}
-                {children}
-                <button onClick={onClose}>Close</button>
-            </div>
-        ) : null
-    ),
-}));
+vi.mock('@klabis/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@klabis/design-system')>();
+    return {
+        ...actual,
+        Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
+            isOpen ? (
+                <div data-testid="modal-overlay" role="dialog">
+                    {title && <h4>{title}</h4>}
+                    {children}
+                    <button onClick={onClose}>Close</button>
+                </div>
+            ) : null
+        ),
+    };
+});
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
