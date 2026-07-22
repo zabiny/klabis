@@ -31,3 +31,7 @@ backend/local.env
 
 # mailpit TLS certificates (generate locally, never commit private key)
 /tools/mailpit/certs/
+
+# screenshots dropped in the repo root by browser automation
+/*.png
+/*.jpg

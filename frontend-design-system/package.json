@@ -20,10 +20,13 @@
     "src/styles.css"
   ],
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc -b tsconfig.build.json && vite build",
     "dev": "vite build --watch",
     "lint": "eslint .",
-    "test": "vitest run"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "peerDependencies": {
     "react": "^19.1.1",
@@ -42,6 +45,10 @@
     }
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.5.3",
+    "@storybook/addon-docs": "^10.5.3",
+    "@storybook/addon-themes": "^10.5.3",
+    "@storybook/react-vite": "^10.5.3",
     "@tailwindcss/forms": "^0.5.4",
     "@tailwindcss/typography": "^0.5.9",
     "@testing-library/jest-dom": "^6.8.0",
@@ -50,14 +57,23 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.5.4",
     "eslint": "^9.33.0",
+    "eslint-plugin-storybook": "^10.5.3",
     "jsdom": "^25.0.1",
+    "postcss": "^8.5.22",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "storybook": "^10.5.3",
     "tailwindcss": "^3.3.0",
     "typescript": "~5.8.3",
     "vite": "^7.1.2",
     "vite-plugin-dts": "^4.5.0",
     "vitest": "^2.1.8"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
   }
 }
