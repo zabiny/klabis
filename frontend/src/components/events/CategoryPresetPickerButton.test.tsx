@@ -30,7 +30,7 @@ const PRESETS = [
 ];
 
 interface FormValues {
-    categories: string[];
+    categories: {name: string}[];
 }
 
 const CaptureValues = ({onValues}: {onValues: (values: FormValues) => void}) => {
@@ -41,7 +41,7 @@ const CaptureValues = ({onValues}: {onValues: (values: FormValues) => void}) => 
 
 const renderButton = (onValues?: (values: FormValues) => void) => {
     return render(
-        <Formik initialValues={{categories: [] as string[]}} onSubmit={vi.fn()}>
+        <Formik initialValues={{categories: [] as {name: string}[]}} onSubmit={vi.fn()}>
             <Form>
                 <CategoryPresetPickerButton/>
                 {onValues && <CaptureValues onValues={onValues}/>}
@@ -157,7 +157,28 @@ describe('CategoryPresetPickerButton', () => {
             await user.click(screen.getByRole('button', {name: /vybrat ze šablon/i}));
             await user.click(screen.getByText('Šablona A'));
 
-            expect(capturedValues.categories).toEqual(['H21', 'D21']);
+            expect(capturedValues.categories).toEqual([{name: 'H21'}, {name: 'D21'}]);
+        });
+
+        it('populates categories without id when preset is selected (new categories)', async () => {
+            const user = userEvent.setup();
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: {_embedded: {categoryPresetDtoList: PRESETS}},
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+
+            let capturedValues: FormValues = {categories: []};
+            renderButton((values) => {
+                capturedValues = values;
+            });
+
+            await user.click(screen.getByRole('button', {name: /vybrat ze šablon/i}));
+            await user.click(screen.getByText('Šablona A'));
+
+            capturedValues.categories.forEach(category => {
+                expect(category).not.toHaveProperty('id');
+            });
         });
 
         it('populates categories from second preset when second is selected', async () => {
@@ -176,7 +197,7 @@ describe('CategoryPresetPickerButton', () => {
             await user.click(screen.getByRole('button', {name: /vybrat ze šablon/i}));
             await user.click(screen.getByText('Šablona B'));
 
-            expect(capturedValues.categories).toEqual(['H35', 'D35', 'H45']);
+            expect(capturedValues.categories).toEqual([{name: 'H35'}, {name: 'D35'}, {name: 'H45'}]);
         });
     });
 });

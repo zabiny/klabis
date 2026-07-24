@@ -198,7 +198,9 @@ class OrisEventImportServiceTest {
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
                     .organizer("OOB")
-                    .categories(java.util.List.of("M21", "W21"))
+                    .categories(java.util.List.of(
+                            com.klabis.events.domain.EventCategory.create("M21"),
+                            com.klabis.events.domain.EventCategory.create("W21")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());

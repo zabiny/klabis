@@ -112,7 +112,7 @@ public class EventController {
                 request.coordinators(),
                 request.eventTypeId(),
                 request.toRegistrationDeadlines(),
-                request.categories()
+                request.toCategories()
         );
         Event created = eventManagementService.createEvent(command);
 
@@ -583,7 +583,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                            Map.of("category", event.getCategories())
+                            Map.of("category", event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList())
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
@@ -648,7 +648,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                            Map.of("category", event.getCategories())
+                            Map.of("category", event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList())
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))

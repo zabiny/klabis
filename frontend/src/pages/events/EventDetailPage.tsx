@@ -34,6 +34,12 @@ interface MoneyAmount {
     currency: string;
 }
 
+interface EventCategory {
+    id: string;
+    name: string;
+    fee?: MoneyAmount | null;
+}
+
 interface EventDetail {
     name: string;
     eventDate: string;
@@ -45,7 +51,7 @@ interface EventDetail {
     coordinators?: {value: string}[];
     eventTypeId?: string | null;
     status?: string;
-    categories?: string[];
+    categories?: EventCategory[];
     ranking?: RankingInfo | null;
     baseEntryFee?: MoneyAmount | null;
     [key: string]: unknown;
@@ -311,7 +317,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {ri('categories') ?? (
                                     <div className="flex flex-wrap gap-1.5">
                                         {event.categories?.map(category => (
-                                            <Badge key={category} variant="info" size="sm">{category}</Badge>
+                                            <Badge key={category.id} variant="info" size="sm">{category.name}</Badge>
                                         ))}
                                     </div>
                                 )}

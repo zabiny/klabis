@@ -188,7 +188,7 @@ class EventRegistrationServiceTest {
             Event eventWithCategories = Event.create(EventCreateEventBuilder.builder()
                     .name("Category Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             eventWithCategories.publish();
 
@@ -213,7 +213,7 @@ class EventRegistrationServiceTest {
             Event eventWithCategories = Event.create(EventCreateEventBuilder.builder()
                     .name("Category Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             eventWithCategories.publish();
 

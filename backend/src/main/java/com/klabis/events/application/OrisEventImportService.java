@@ -59,7 +59,7 @@ class OrisEventImportService implements OrisEventImportPort {
         String organizer = resolveOrganizer(details);
         WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
         RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<String> categories = extractCategories(details);
+        List<EventCategory> categories = extractCategories(details);
         EventRanking ranking = resolveRanking(details.level());
         Money baseEntryFee = deriveBaseEntryFee(details);
 
@@ -98,7 +98,7 @@ class OrisEventImportService implements OrisEventImportPort {
         String organizer = resolveOrganizer(details);
         WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
         RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<String> categories = extractCategories(details);
+        List<EventCategory> categories = extractCategories(details);
         EventRanking ranking = resolveRanking(details.level());
         Money baseEntryFee = deriveBaseEntryFee(details);
 
@@ -145,13 +145,13 @@ class OrisEventImportService implements OrisEventImportPort {
         return UNKNOWN_ORGANIZER;
     }
 
-    private List<String> extractCategories(EventDetails details) {
+    private List<EventCategory> extractCategories(EventDetails details) {
         if (details.classes() == null || details.classes().isEmpty()) {
             return List.of();
         }
         return details.classes().values().stream()
                 .filter(c -> c.name() != null && !c.name().isBlank())
-                .map(EventClass::name)
+                .map(c -> EventCategory.create(c.name()))
                 .toList();
     }
 
@@ -193,11 +193,11 @@ class OrisEventImportService implements OrisEventImportPort {
                 .orElse(null);
     }
 
-    private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<String> incomingCategories) {
+    private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
         if (event.getRegistrations().isEmpty()) {
             return;
         }
-        Set<String> incoming = Set.copyOf(incomingCategories);
+        Set<String> incoming = incomingCategories.stream().map(EventCategory::name).collect(Collectors.toSet());
         Map<String, Long> affectedCounts = event.getRegistrations().stream()
                 .filter(r -> r.category() != null && !incoming.contains(r.category()))
                 .collect(Collectors.groupingBy(EventRegistration::category, Collectors.counting()));

@@ -493,7 +493,9 @@ class EventRegistrationE2ETest {
         event.put("websiteUrl", null);
         event.put("coordinators", null);
         if (!categories.isEmpty()) {
-            event.put("categories", categories);
+            event.put("categories", categories.stream()
+                    .map(name2 -> Map.of("name", name2))
+                    .toList());
         }
 
         MvcResult result = mockMvc.perform(

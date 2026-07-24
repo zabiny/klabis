@@ -6,17 +6,17 @@
 
 Vertikální řez: doména → persistence → API → frontend, aby kategorie měla ID a šla vytvořit/editovat. Registrace zatím zůstává name-based.
 
-- [ ] 1.1 Test: `EventCategoryId` generuje a rovná se podle hodnoty; `EventCategory` vyžaduje název a přijímá `orisId`/`fee` jako volitelné
-- [ ] 1.2 Implementovat `EventCategoryId` (value object) a `EventCategory` (entity: id, orisId, name, fee)
-- [ ] 1.3 Test: `Event` odmítne dvě kategorie se stejným názvem a dvě se stejným `orisId`
-- [ ] 1.4 Změnit `Event.categories` na `List<EventCategory>` včetně validací; upravit `Event.update()` a factory metody
-- [ ] 1.5 Test: `EventMemento` uloží a načte kategorie včetně `orisId` a `fee` (round-trip)
-- [ ] 1.6 Rozšířit `EventMemento` + DDL pro kategorie (úprava V001 dle konvence projektu)
-- [ ] 1.7 Test: `POST`/`PUT /api/events` přijme kategorie s `id` (update), bez `id` (nová) a odebrání chybějících
-- [ ] 1.8 Upravit `CreateEventRequest`, `UpdateEventRequest`, `UpdateEventRequestMapper`, `EventDto`, `EventSummaryDto` na strukturované kategorie
-- [ ] 1.9 Aktualizovat HAL-FORMS afordance `createEvent` / `updateEvent` (pole `categories` jako pole objektů)
-- [ ] 1.10 Frontend: formulář vytvoření/editace eventu pracuje s objekty kategorií (id, name, fee) místo řetězců
-- [ ] 1.11 Frontend: detail eventu zobrazuje kategorie včetně případné ceny
+- [x] 1.1 Test: `EventCategoryId` generuje a rovná se podle hodnoty; `EventCategory` vyžaduje název a přijímá `orisId`/`fee` jako volitelné
+- [x] 1.2 Implementovat `EventCategoryId` (value object) a `EventCategory` (entity: id, orisId, name, fee)
+- [x] 1.3 Test: `Event` odmítne dvě kategorie se stejným názvem a dvě se stejným `orisId`
+- [x] 1.4 Změnit `Event.categories` na `List<EventCategory>` včetně validací; upravit `Event.update()` a factory metody
+- [x] 1.5 Test: `EventMemento` uloží a načte kategorie včetně `orisId` a `fee` (round-trip)
+- [x] 1.6 Rozšířit `EventMemento` + DDL pro kategorie (úprava V001 dle konvence projektu)
+- [x] 1.7 Test: `POST`/`PUT /api/events` přijme kategorie s `id` (update), bez `id` (nová) a odebrání chybějících
+- [x] 1.8 Upravit `CreateEventRequest`, `UpdateEventRequest`, `UpdateEventRequestMapper`, `EventDto`, `EventSummaryDto` na strukturované kategorie
+- [x] 1.9 Aktualizovat HAL-FORMS afordance `createEvent` / `updateEvent` (pole `categories` jako pole objektů)
+- [x] 1.10 Frontend: formulář vytvoření/editace eventu pracuje s objekty kategorií (id, name, fee) místo řetězců
+- [x] 1.11 Frontend: detail eventu zobrazuje kategorie včetně případné ceny
 - [ ] 1.12 Ověřit scénáře: „Renaming a category keeps existing registrations attached", „Category name must be unique within an event", „Event manager sets a fee on a category"
 
 ## 2. Registrace odkazuje kategorii přes ID (end-to-end)

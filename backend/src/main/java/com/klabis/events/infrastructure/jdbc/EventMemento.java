@@ -6,6 +6,7 @@ import com.klabis.events.EventTypeId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCategory;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Money;
@@ -28,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import static com.klabis.events.infrastructure.jdbc.CsvListConverter.deserialize;
-import static com.klabis.events.infrastructure.jdbc.CsvListConverter.serialize;
 
 /**
  * Memento pattern implementation for Event aggregate persistence.
@@ -88,8 +86,10 @@ class EventMemento implements Persistable<UUID> {
     @Column("oris_id")
     private Integer orisId;
 
-    @Column("categories")
-    private String categories;
+    // Race categories are part of the aggregate; category id is the primary key, so renaming
+    // a category (or leaving its id unchanged across an update) preserves its identity.
+    @MappedCollection(idColumn = "event_id")
+    private Set<EventCategoryMemento> categories = new HashSet<>();
 
     @Column("cancellation_reason")
     private String cancellationReason;
@@ -195,7 +195,9 @@ class EventMemento implements Persistable<UUID> {
         memento.registrationDeadline3 = rd.deadline3().orElse(null);
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
-        memento.categories = serialize(event.getCategories());
+        memento.categories = event.getCategories().stream()
+                .map(EventCategoryMemento::from)
+                .collect(java.util.stream.Collectors.toSet());
         memento.cancellationReason = event.getCancellationReason().orElse(null);
         memento.eventTypeId = event.getEventTypeId().map(EventTypeId::value).orElse(null);
 
@@ -247,7 +249,9 @@ class EventMemento implements Persistable<UUID> {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
-        List<String> categoriesList = deserialize(this.categories);
+        List<EventCategory> categoriesList = this.categories.stream()
+                .map(EventCategoryMemento::toEventCategory)
+                .toList();
 
         RegistrationDeadlines deadlines = RegistrationDeadlines.of(
                 this.registrationDeadline,

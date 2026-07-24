@@ -1,14 +1,19 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.events.EventTypeId;
+import com.klabis.events.domain.EventCategory;
+import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.URL;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -42,8 +47,38 @@ record CreateEventRequest(
         @Size(max = 3, message = "At most 3 deadlines are allowed")
         List<LocalDate> deadlines,
 
-        List<String> categories
+        List<CategoryRequest> categories
 ) {
+
+    /**
+     * Category as submitted on event creation. {@code id} is always absent here — every category
+     * on a brand-new event is new — so the server assigns a fresh {@link EventCategoryId}.
+     */
+    record CategoryRequest(
+            @NotBlank(message = "Category name is required")
+            @Size(max = 50, message = "Category name must not exceed 50 characters")
+            String name,
+
+            EntryFeeRequest fee
+    ) {
+        EventCategory toDomain() {
+            return new EventCategory(EventCategoryId.generate(), null, name, fee != null ? fee.toMoney() : null);
+        }
+    }
+
+    record EntryFeeRequest(
+            @NotNull(message = "Entry fee amount is required")
+            @DecimalMin(value = "0", message = "Entry fee amount must be non-negative")
+            BigDecimal amount,
+
+            @NotBlank(message = "Entry fee currency is required")
+            @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters")
+            String currency
+    ) {
+        Money toMoney() {
+            return Money.of(amount, Money.parseCurrency(currency));
+        }
+    }
 
     @AssertTrue(message = "Deadlines must be in non-decreasing order")
     boolean isDeadlinesOrdered() {
@@ -67,5 +102,12 @@ record CreateEventRequest(
                 deadlines.size() > 1 ? deadlines.get(1) : null,
                 deadlines.size() > 2 ? deadlines.get(2) : null
         );
+    }
+
+    List<EventCategory> toCategories() {
+        if (categories == null) {
+            return List.of();
+        }
+        return categories.stream().map(CategoryRequest::toDomain).toList();
     }
 }

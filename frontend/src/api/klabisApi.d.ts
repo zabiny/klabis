@@ -1578,7 +1578,7 @@ export interface components {
             };
         };
         UpdatePermissionsRequest: {
-            authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE")[];
+            authorities?: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE")[];
         };
         EditRegistrationRequest: {
             siCardNumber: string;
@@ -1799,6 +1799,10 @@ export interface components {
             /** Format: uuid */
             parent: string;
         };
+        CategoryRequest: {
+            name: string;
+            fee?: components["schemas"]["EntryFeeRequest"];
+        };
         /** @description Event creation data */
         CreateEventRequest: {
             name: string;
@@ -1810,7 +1814,11 @@ export interface components {
             coordinators?: components["schemas"]["MemberId"][];
             eventTypeId?: components["schemas"]["EventTypeId"];
             deadlines?: string[];
-            categories?: string[];
+            categories?: components["schemas"]["CategoryRequest"][];
+        };
+        EntryFeeRequest: {
+            amount: number;
+            currency: string;
         };
         EventTypeId: {
             /** Format: uuid */
@@ -2070,6 +2078,9 @@ export interface components {
         PatchFieldLinkedHashSetMemberId: {
             provided?: boolean;
         };
+        PatchFieldListCategoryRequest: {
+            provided?: boolean;
+        };
         PatchFieldListLocalDate: {
             provided?: boolean;
         };
@@ -2086,7 +2097,7 @@ export interface components {
             coordinators?: components["schemas"]["PatchFieldLinkedHashSetMemberId"];
             eventTypeId?: components["schemas"]["PatchFieldEventTypeId"];
             deadlines?: components["schemas"]["PatchFieldListLocalDate"];
-            categories?: components["schemas"]["PatchFieldListString"];
+            categories?: components["schemas"]["PatchFieldListCategoryRequest"];
             ranking?: components["schemas"]["PatchFieldRankingRequest"];
             baseEntryFee?: components["schemas"]["PatchFieldEntryFeeRequest"];
         };
@@ -2535,10 +2546,23 @@ export interface components {
             eventTypeId?: components["schemas"]["EventTypeId"];
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-            categories?: string[];
+            categories?: components["schemas"]["EventCategoryDto"][];
             cancellationReason?: string;
             deadlines?: string[];
             _links?: components["schemas"]["Links"];
+        };
+        EntryFeeDto: {
+            amount?: number;
+            currency?: string;
+        };
+        EventCategoryDto: {
+            id?: components["schemas"]["EventCategoryId"];
+            name?: string;
+            fee?: components["schemas"]["EntryFeeDto"];
+        };
+        EventCategoryId: {
+            /** Format: uuid */
+            value?: string;
         };
         PagedModelEntityModelEventSummaryDto: {
             _embedded?: {

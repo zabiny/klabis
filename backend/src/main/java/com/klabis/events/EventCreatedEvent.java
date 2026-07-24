@@ -64,7 +64,7 @@ public record EventCreatedEvent(
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
                 event.getCoordinators(),
-                event.getCategories(),
+                event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList(),
                 event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now()
         );
     }

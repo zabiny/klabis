@@ -1,7 +1,10 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCategory;
+import com.klabis.events.domain.EventCategoryId;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
@@ -10,6 +13,8 @@ import com.klabis.members.MemberId;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 class UpdateEventRequestMapper {
 
@@ -32,13 +37,43 @@ class UpdateEventRequestMapper {
         RegistrationDeadlines registrationDeadlines = request.deadlines().isProvided()
                 ? toRegistrationDeadlines(request.deadlines().throwIfNotProvided())
                 : existingEvent.getRegistrationDeadlines();
-        List<String> categories = request.categories().patchValue(existingEvent.getCategories());
+        List<EventCategory> categories = request.categories().isProvided()
+                ? toCategories(request.categories().throwIfNotProvided(), existingEvent)
+                : existingEvent.getCategories();
 
         EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).patchValue(existingEvent.getRanking());
         Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
                 coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
+    }
+
+    /**
+     * Applies the id / no-id / missing-id semantics from the design: a request category carrying
+     * an {@code id} must reference one already on this event (updates name/fee, id and any
+     * registration links are preserved); a request category without an {@code id} is new and gets
+     * a freshly generated one; any existing category id absent from the request is dropped.
+     */
+    private static List<EventCategory> toCategories(List<UpdateEventRequest.CategoryRequest> requested, Event existingEvent) {
+        if (requested == null) {
+            return List.of();
+        }
+        Map<EventCategoryId, EventCategory> existingById = existingEvent.getCategories().stream()
+                .collect(Collectors.toMap(EventCategory::id, c -> c));
+
+        return requested.stream()
+                .map(request -> {
+                    if (request.id() == null) {
+                        return new EventCategory(EventCategoryId.generate(), null, request.name(), toMoney(request.fee()));
+                    }
+                    EventCategory existing = existingById.get(request.id());
+                    if (existing == null) {
+                        throw new BusinessRuleViolationException(
+                                "Category id '" + request.id() + "' does not belong to this event") {};
+                    }
+                    return new EventCategory(existing.id(), existing.orisId(), request.name(), toMoney(request.fee()));
+                })
+                .toList();
     }
 
     private static EventRanking toRanking(UpdateEventRequest.RankingRequest rankingRequest) {

@@ -208,6 +208,35 @@ class EventControllerTest {
                     )
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("should create categories with generated ids and optional fee")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldCreateEventWithStructuredCategories() throws Exception {
+            Event createdEvent = EventTestDataBuilder.anEvent().withName("Category Event").build();
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name":"Category Event","eventDate":"2026-08-20","organizer":"OOB",
+                                             "categories":[
+                                               {"name":"M21","fee":{"amount":200,"currency":"CZK"}},
+                                               {"name":"W21"}
+                                             ]}
+                                            """)
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    cmd.categories().size() == 2
+                    && cmd.categories().stream().allMatch(c -> c.id() != null && c.orisId() == null)
+                    && cmd.categories().stream().anyMatch(c -> c.name().equals("M21") && c.fee().isPresent())
+                    && cmd.categories().stream().anyMatch(c -> c.name().equals("W21") && c.fee().isEmpty())
+            ));
+        }
     }
 
     @Nested
@@ -445,6 +474,95 @@ class EventControllerTest {
                                     .content("{\"name\":\"Should Be Rejected\"}")
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("category with id updates the existing category, preserving its id")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void categoryWithIdUpdatesExisting() throws Exception {
+            EventCategory existingCategory = EventCategory.create("M21");
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .withCategories(List.of(existingCategory))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+            UUID eventId = defaultExistingEvent.getId().value();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name":"Existing Event","eventDate":"2026-05-01","organizer":"OOB",
+                                             "categories":[{"id":"%s","name":"M21-renamed"}]}
+                                            """.formatted(existingCategory.id().value()))
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.categories().size() == 1
+                    && cmd.categories().get(0).id().equals(existingCategory.id())
+                    && cmd.categories().get(0).name().equals("M21-renamed")
+            ));
+        }
+
+        @Test
+        @DisplayName("category without id is created as new; category missing from list is removed")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void categoryWithoutIdIsNewAndMissingIsRemoved() throws Exception {
+            EventCategory toBeRemoved = EventCategory.create("M21");
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .withCategories(List.of(toBeRemoved))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+            UUID eventId = defaultExistingEvent.getId().value();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name":"Existing Event","eventDate":"2026-05-01","organizer":"OOB",
+                                             "categories":[{"name":"W21"}]}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.categories().size() == 1
+                    && cmd.categories().get(0).name().equals("W21")
+                    && !cmd.categories().get(0).id().equals(toBeRemoved.id())
+            ));
+        }
+
+        @Test
+        @DisplayName("category id that does not belong to this event is rejected with 400")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void categoryIdNotBelongingToEventIsRejected() throws Exception {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+            UUID eventId = defaultExistingEvent.getId().value();
+            UUID foreignCategoryId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name":"Existing Event","eventDate":"2026-05-01","organizer":"OOB",
+                                             "categories":[{"id":"%s","name":"M21"}]}
+                                            """.formatted(foreignCategoryId))
+                    )
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -1111,7 +1229,7 @@ class EventControllerTest {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
-                    .withCategories(List.of("M21", "W21", "M35"))
+                    .withCategoryNames("M21", "W21", "M35")
                     .buildPublished();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);

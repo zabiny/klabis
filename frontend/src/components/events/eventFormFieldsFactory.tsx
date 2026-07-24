@@ -1,14 +1,79 @@
 import {type ReactElement} from 'react';
+import {useField} from 'formik';
 import {type HalFormFieldFactory, type HalFormsInputProps} from '../HalNavigator2/halforms';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {CategoryPresetPickerButton} from './CategoryPresetPickerButton.tsx';
 import {EventTypeSelectField} from './EventTypeSelectField.tsx';
+import {TextField} from '../UI/forms';
+import {labels} from '../../localization';
+
+interface MoneyAmount {
+    amount: number | string;
+    currency: string;
+}
+
+interface CategoryRowValue {
+    id?: string;
+    name?: string;
+    fee?: MoneyAmount | null;
+}
+
+/**
+ * Renders one row of the "categories" collection field: name + optional fee.
+ * The category's `id` is carried in Formik state but never surfaced as an input —
+ * it must round-trip unchanged so the backend keeps updating the same category
+ * (matching by id) instead of deleting and recreating it, which would unlink registrations.
+ */
+const CategoryRowField = ({prop}: HalFormsInputProps): ReactElement => {
+    const [field, , helpers] = useField<CategoryRowValue>(prop.name);
+    const value = field.value ?? {};
+
+    const handleNameChange = (name: string) => {
+        helpers.setValue({...value, name});
+    };
+
+    const handleFeeAmountChange = (amount: string) => {
+        if (amount === '') {
+            helpers.setValue({...value, fee: null});
+            return;
+        }
+        helpers.setValue({...value, fee: {amount, currency: value.fee?.currency || 'CZK'}});
+    };
+
+    return (
+        <div className="flex items-start gap-2">
+            <div className="flex-1">
+                <TextField
+                    name={`${prop.name}.name`}
+                    value={value.name ?? ''}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    label={labels.fields.categories}
+                    required
+                    className="w-full"
+                />
+            </div>
+            <div className="flex-1">
+                <TextField
+                    name={`${prop.name}.fee.amount`}
+                    type="number"
+                    value={value.fee?.amount ?? ''}
+                    onChange={(e) => handleFeeAmountChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    label={labels.fields.categoryFee}
+                    className="w-full"
+                />
+            </div>
+        </div>
+    );
+};
 
 /**
  * Field factory for event create/edit forms.
  * Extends klabisFieldsFactory (which handles range, MemberId, etc.) by adding:
  * - "Select from templates" button next to the categories field
  * - Event type dropdown loaded from the /api/event-types catalog
+ * - Row rendering for each category item (name + optional fee, hidden id preserved)
  */
 export const eventFormFieldsFactory: HalFormFieldFactory = (
     fieldType: string,
@@ -16,6 +81,10 @@ export const eventFormFieldsFactory: HalFormFieldFactory = (
 ): ReactElement | null => {
     if (conf.prop.name === 'eventTypeId') {
         return <EventTypeSelectField {...conf}/>;
+    }
+
+    if (fieldType === 'CategoryRequest') {
+        return <CategoryRowField {...conf}/>;
     }
 
     const defaultField = klabisFieldsFactory(fieldType, conf);

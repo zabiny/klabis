@@ -786,7 +786,7 @@ class EventTest {
         void shouldRegisterMemberWithCategoryWhenEventHasCategories() {
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -802,7 +802,7 @@ class EventTest {
         void shouldThrowWhenCategoryMissingForEventWithCategories() {
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -817,7 +817,7 @@ class EventTest {
         void shouldThrowWhenCategoryNotInEventCategoryList() {
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -1286,7 +1286,7 @@ class EventTest {
                     .organizer("SYN")
                     .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"))
                     .registrationDeadlines(RegistrationDeadlines.none())
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build();
         }
 
@@ -1308,7 +1308,7 @@ class EventTest {
             assertThat(event.getLocation()).isEqualTo("Synced Location");
             assertThat(event.getOrganizer()).isEqualTo("SYN");
             assertThat(event.getWebsiteUrl()).isEqualTo(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"));
-            assertThat(event.getCategories()).containsExactlyInAnyOrder("M21", "W35");
+            assertThat(event.getCategories()).extracting(EventCategory::name).containsExactlyInAnyOrder("M21", "W35");
             assertThat(event.getDomainEvents()).hasSize(2); // create + sync
             assertThat(event.getDomainEvents())
                     .anyMatch(e -> e instanceof com.klabis.events.EventUpdatedEvent);
@@ -1737,7 +1737,7 @@ class EventTest {
     @DisplayName("editRegistration() – Skupina 2: kategorie")
     class EditRegistrationCategory {
 
-        private static final List<String> CATEGORIES = List.of("M21", "W35");
+        private static final List<EventCategory> CATEGORIES = List.of(EventCategory.create("M21"), EventCategory.create("W35"));
 
         private Event activeEventWithCategories() {
             return EventTestDataBuilder.anEvent()
@@ -2025,6 +2025,69 @@ class EventTest {
                     .build());
 
             assertThat(event.getCoordinators()).containsExactly(second, first);
+        }
+    }
+
+    @Nested
+    @DisplayName("category uniqueness validation")
+    class CategoryUniquenessValidation {
+
+        @Test
+        @DisplayName("create() should reject two categories with the same name")
+        void createShouldRejectDuplicateCategoryName() {
+            EventCategory first = EventCategory.create("M21");
+            EventCategory duplicate = new EventCategory(EventCategoryId.generate(), null, "M21", null);
+
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of(first, duplicate))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("name");
+        }
+
+        @Test
+        @DisplayName("create() should reject two categories with the same orisId")
+        void createShouldRejectDuplicateOrisId() {
+            EventCategory first = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            EventCategory duplicate = new EventCategory(EventCategoryId.generate(), "42", "W21", null);
+
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of(first, duplicate))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("orisId");
+        }
+
+        @Test
+        @DisplayName("update() should reject two categories with the same name")
+        void updateShouldRejectDuplicateCategoryName() {
+            Event event = Event.create(defaultCreateEvent());
+            EventCategory first = EventCategory.create("M21");
+            EventCategory duplicate = new EventCategory(EventCategoryId.generate(), null, "M21", null);
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of(first, duplicate))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("name");
+        }
+
+        @Test
+        @DisplayName("update() should allow categories with no orisId set (multiple nulls)")
+        void updateShouldAllowMultipleNullOrisIds() {
+            Event event = Event.create(defaultCreateEvent());
+            EventCategory first = EventCategory.create("M21");
+            EventCategory second = EventCategory.create("W21");
+
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .categories(List.of(first, second))
+                    .build());
+
+            assertThat(event.getCategories()).extracting(EventCategory::name).containsExactly("M21", "W21");
         }
     }
 }

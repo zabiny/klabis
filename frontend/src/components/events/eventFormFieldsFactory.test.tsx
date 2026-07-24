@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
 import {eventFormFieldsFactory} from './eventFormFieldsFactory.tsx';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms/types.ts';
@@ -60,6 +61,42 @@ describe('eventFormFieldsFactory', () => {
             const result = eventFormFieldsFactory('text', createConf('categories'));
             render(<div>{result}</div>);
             expect(screen.getByTestId('category-preset-picker')).toBeInTheDocument();
+        });
+    });
+
+    describe('category row (CategoryRequest field type)', () => {
+        const renderCategoryRow = (initialValue: Record<string, unknown>) => {
+            const conf = createConf('categories.0', 'CategoryRequest');
+            return render(
+                <Formik initialValues={{'categories': [initialValue]}} onSubmit={vi.fn()}>
+                    <Form>
+                        {eventFormFieldsFactory('CategoryRequest', {...conf, prop: {...conf.prop, name: 'categories.0'}})}
+                    </Form>
+                </Formik>
+            );
+        };
+
+        it('renders name and fee inputs for a category row', () => {
+            renderCategoryRow({id: 'cat-1', name: 'H21', fee: null});
+            expect(screen.getByDisplayValue('H21')).toBeInTheDocument();
+        });
+
+        it('does not render a visible input for the category id', () => {
+            const {container} = renderCategoryRow({id: 'cat-1', name: 'H21', fee: null});
+            // id is not rendered as a visible input — it is carried in Formik state only,
+            // and must round-trip unchanged on submit so the backend updates in place
+            expect(container.querySelector('input[name="categories.0.id"]')).not.toBeInTheDocument();
+        });
+
+        it('renders a category row without id for a newly added category', () => {
+            const {container} = renderCategoryRow({name: ''});
+            expect(container.querySelector('input[name="categories.0.name"]')).toBeInTheDocument();
+            expect(container.querySelector('input[name="categories.0.id"]')).not.toBeInTheDocument();
+        });
+
+        it('renders fee amount input when category has a fee', () => {
+            renderCategoryRow({id: 'cat-1', name: 'H21', fee: {amount: 200, currency: 'CZK'}});
+            expect(screen.getByDisplayValue('200')).toBeInTheDocument();
         });
     });
 

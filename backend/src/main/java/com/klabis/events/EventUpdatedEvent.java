@@ -59,7 +59,7 @@ public record EventUpdatedEvent(
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
-                event.getCategories(),
+                event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList(),
                 Instant.now()
         );
     }
