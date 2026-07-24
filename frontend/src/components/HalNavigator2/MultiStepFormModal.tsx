@@ -34,7 +34,7 @@
 import {useContext, useEffect, useRef, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {HalFormsFormContext} from './halforms';
-import {Button} from '../UI';
+import {Button} from '@klabis/design-system';
 
 /**
  * Definition for a single step in the multi-step form

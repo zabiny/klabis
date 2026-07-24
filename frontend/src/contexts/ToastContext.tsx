@@ -1,5 +1,5 @@
 import {type ReactElement, type ReactNode, useCallback, useState} from 'react';
-import type {ToastMessage} from '../components/UI/Toast';
+import type {ToastMessage} from '@klabis/design-system';
 import {ToastContext} from './toastContext';
 
 export function ToastProvider({children}: { children: ReactNode }): ReactElement {

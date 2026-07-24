@@ -1,7 +1,7 @@
 import {type ReactElement, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {Calendar, UserPlus} from 'lucide-react';
-import {Button, Card, Modal} from '../UI';
+import {Button, Card, Modal} from '@klabis/design-system';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import {useUpcomingDeadlines} from '../../hooks/useUpcomingDeadlines';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';

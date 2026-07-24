@@ -2,7 +2,7 @@ import {type ReactElement, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {authorizedFetch} from '../../api/authorizedFetch.ts';
-import {Button, Skeleton} from '../../components/UI';
+import {Button, Skeleton} from '@klabis/design-system';
 import {ErrorPage} from '../ErrorPage.tsx';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';

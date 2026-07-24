@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react';
-import { TextField } from '../UI/forms/TextField';
+import { TextField } from '@klabis/design-system';
 
 interface PasswordFieldProps {
     name: string;

@@ -1,6 +1,6 @@
 import {Link as RouterLink} from 'react-router-dom'
 import {Activity, Calendar, ChevronRight, Layers, User, Users} from 'lucide-react'
-import {Card} from '../components/UI'
+import {Card} from '@klabis/design-system'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {useIsAdmin} from "../hooks/useIsAdmin";
 import {useAuth} from "../contexts/authContext";

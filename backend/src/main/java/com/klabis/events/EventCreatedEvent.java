@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -37,7 +38,7 @@ public record EventCreatedEvent(
         String location,
         String organizer,
         WebsiteUrl websiteUrl,
-        MemberId eventCoordinatorId,
+        Set<MemberId> coordinators,
         List<String> categories,
         Instant occurredAt
 ) {
@@ -49,6 +50,7 @@ public record EventCreatedEvent(
         Objects.requireNonNull(eventDate, "Event date is required");
         Objects.requireNonNull(organizer, "Event organizer is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        coordinators = coordinators != null ? Set.copyOf(coordinators) : Set.of();
         categories = categories != null ? List.copyOf(categories) : List.of();
     }
 
@@ -61,7 +63,7 @@ public record EventCreatedEvent(
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
-                event.getEventCoordinatorId(),
+                event.getCoordinators(),
                 event.getCategories(),
                 event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now()
         );
@@ -69,9 +71,5 @@ public record EventCreatedEvent(
 
     public Optional<WebsiteUrl> getWebsiteUrl() {
         return Optional.ofNullable(websiteUrl());
-    }
-
-    public Optional<MemberId> getEventCoordinatorId() {
-        return Optional.ofNullable(eventCoordinatorId());
     }
 }

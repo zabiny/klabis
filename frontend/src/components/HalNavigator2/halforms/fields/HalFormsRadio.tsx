@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react'
 import type {FieldProps} from 'formik'
 import {Field} from 'formik'
-import {RadioGroup} from '../../../UI/forms'
+import {RadioGroup} from '@klabis/design-system'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 

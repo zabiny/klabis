@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import {Calendar, Copy, Check} from 'lucide-react';
-import {Button, Modal} from '../../components/UI';
+import {Button, Modal} from '@klabis/design-system';
 import {Section} from './MemberSection';
 import {labels} from '../../localization';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';

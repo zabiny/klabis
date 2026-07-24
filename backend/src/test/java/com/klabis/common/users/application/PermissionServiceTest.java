@@ -173,12 +173,37 @@ class PermissionServiceTest {
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException for empty authorities")
-        void shouldThrowExceptionForEmptyAuthorities() {
+        @DisplayName("should allow updating to empty authorities")
+        void shouldAllowEmptyAuthorities() {
+            // Given
+            UserPermissions existingPermissions = UserPermissions.create(
+                    USER_ID,
+                    Set.of(Authority.MEMBERS_READ)
+            );
+
+            when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(existingPermissions));
+            when(permissionsRepository.save(any(UserPermissions.class))).thenAnswer(invocation -> invocation.getArgument(
+                    0));
+
+            // When
+            UserPermissions updatedPermissions = service.updateUserPermissions(USER_ID, Set.of());
+
+            // Then - standard authorities are always persisted, even for an otherwise-empty request
+            assertThat(updatedPermissions.getDirectAuthorities())
+                    .containsExactlyInAnyOrder(Authority.MEMBERS_READ, Authority.EVENTS_READ);
+            verify(permissionsRepository).save(argThat(perms ->
+                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)) &&
+                    perms.getUserId().equals(USER_ID)
+            ));
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for null authorities")
+        void shouldThrowExceptionForNullAuthorities() {
             // When & Then - validation happens before database lookup
-            assertThatThrownBy(() -> service.updateUserPermissions(USER_ID, Set.of()))
+            assertThatThrownBy(() -> service.updateUserPermissions(USER_ID, null))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("At least one authority required");
+                    .hasMessageContaining("Authorities required");
 
             verify(permissionsRepository, never()).findById(any(UserId.class));
             verify(permissionsRepository, never()).save(any(UserPermissions.class));

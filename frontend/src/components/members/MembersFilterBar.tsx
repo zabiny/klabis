@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 import { labels } from '../../localization';
-import { FulltextSearchInput, PillGroup } from '../UI';
+import { FulltextSearchInput, PillGroup } from '@klabis/design-system';
 
 export type MemberStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
 

@@ -1,7 +1,5 @@
 import {useEffect, type ReactElement} from 'react';
-import {Modal} from '../UI/Modal';
-import {Button} from '../UI/Button';
-import {Spinner} from '../UI/Spinner';
+import {Button, Modal, Spinner} from '@klabis/design-system';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {labels} from '../../localization';

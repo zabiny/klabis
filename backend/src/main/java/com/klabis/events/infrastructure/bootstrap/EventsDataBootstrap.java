@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Component
@@ -76,7 +77,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "Čeřínek",
                 "OOB",
                 null,
-                coordinator,
+                asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(38)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50")
@@ -100,7 +101,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "Jihlava centrum",
                 "OOB",
                 "https://www.oob.cz/zavody/nocni-sprint",
-                coordinator,
+                asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(25)),
                 List.of("M21", "W21", "M40", "W40")
@@ -124,7 +125,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 "Třebíč",
                 "OOB",
                 null,
-                coordinator,
+                asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(48)),
                 List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65")
@@ -139,7 +140,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Praha – Šárecké údolí",
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50001",
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(55)),
                         List.of("M21", "W21")
@@ -150,7 +151,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Čeřínek",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(45)),
                         List.of("M21", "W21", "M35", "W35")
@@ -172,7 +173,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Černava",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(25)),
                         List.of()
@@ -194,7 +195,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Brno – Bystrc",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(10)),
                         List.of("M21", "W21", "M35", "W35", "M50")
@@ -216,7 +217,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Jihlava",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(8)),
                         List.of()
@@ -238,7 +239,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Čeřínek",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(18)),
                         List.of("M18", "W18", "M21", "W21")
@@ -260,7 +261,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Jihlava",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(28)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50")
@@ -282,7 +283,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Brno – Soběšice",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(41)),
                         List.of("M21", "W21")
@@ -304,7 +305,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(55)),
                         List.of()
@@ -326,7 +327,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Brno – Komín",
                         "OOB",
                         null,
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(20)),
                         List.of("M21", "W21", "M35")
@@ -348,7 +349,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Brno",
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50007",
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(31)),
                         List.of("M21", "W21", "M35", "W35", "M40", "W40")
@@ -370,7 +371,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         "Žďár nad Sázavou",
                         "OOB",
                         "https://oris.orientacnisporty.cz/Zavod?id=50008",
-                        coordinator,
+                        asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(50)),
                         List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65", "W65")
@@ -427,5 +428,13 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
         Event event = Event.create(command);
         event.publish();
         return event;
+    }
+
+    private static LinkedHashSet<MemberId> asCoordinators(MemberId coordinator) {
+        LinkedHashSet<MemberId> set = new LinkedHashSet<>();
+        if (coordinator != null) {
+            set.add(coordinator);
+        }
+        return set;
     }
 }

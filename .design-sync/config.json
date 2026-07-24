@@ -1,0 +1,28 @@
+{
+  "projectId": "96c2694c-041b-4edd-abc8-9dc619721134",
+  "shape": "storybook",
+  "pkg": "@klabis/design-system",
+  "storybookConfigDir": "frontend-design-system/.storybook",
+  "storybookStatic": ".design-sync/sb-reference",
+  "buildCmd": "npm run build --workspace=frontend-design-system",
+  "readmeHeader": ".design-sync/conventions.md",
+  "titleMap": {
+    "Icons": null
+  },
+  "overrides": {
+    "Button": {"cardMode": "column"},
+    "Card": {"cardMode": "column"},
+    "DetailRow": {"cardMode": "column"},
+    "FulltextSearchInput": {"cardMode": "column"},
+    "Skeleton": {"cardMode": "column"},
+    "CheckboxGroup": {"cardMode": "column"},
+    "FormControl": {"cardMode": "column"},
+    "TextField": {"cardMode": "column"},
+    "AppBar": {"cardMode": "column"},
+    "Box": {"cardMode": "column"},
+    "Grid": {"cardMode": "column"},
+    "Pagination": {"cardMode": "column"},
+    "Modal": {"cardMode": "single", "primaryStory": "Default"},
+    "Toast": {"cardMode": "single", "primaryStory": "Default"}
+  }
+}

@@ -3,7 +3,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {Alert, Button, Card, Skeleton} from '../../components/UI';
+import {Alert, Button, Card, Skeleton} from '@klabis/design-system';
 import type {EntityModel, HalResponse} from '../../api';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';

@@ -2,7 +2,7 @@ import {expandHalFormsFieldFactory, type HalFormFieldFactory, type HalFormsInput
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
-import {DetailRow} from "./UI";
+import {DetailRow} from '@klabis/design-system';
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
 import {useEventTypes} from "../hooks/useEventTypes";

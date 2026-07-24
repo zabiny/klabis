@@ -1,7 +1,4 @@
-import {Modal} from '../UI/Modal';
-import {Button} from '../UI/Button';
-import {Spinner} from '../UI/Spinner';
-import {RadioGroup} from '../UI/forms';
+import {Button, Modal, RadioGroup, Spinner} from '@klabis/design-system';
 import {labels} from '../../localization';
 import {type OrisEvent, ORIS_REGION_KEYS, type BulkImportResult} from '../../api/orisEvents';
 import type {OrisImportFetchState} from '../../hooks/useOrisEventImport';

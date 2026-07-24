@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 import {ArrowRight} from 'lucide-react';
 import {getEnumLabel} from '../../localization';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
-import {Badge} from '../UI/Badge.tsx';
+import {Badge} from '@klabis/design-system';
 
 export interface FeeGroupSummary {
     id: string;

@@ -5,6 +5,7 @@ import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.security.core.Authentication;
 
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -32,6 +33,13 @@ class DefaultOwnershipResolver implements OwnershipResolver {
 
         return token.getMemberIdUuid()
                 .map(memberUuid -> {
+                    if (ownerIdValue instanceof Collection<?> ownerIds) {
+                        return ownerIds.stream()
+                                .anyMatch(element -> {
+                                    UUID elementUuid = toUuid(element);
+                                    return elementUuid != null && elementUuid.equals(memberUuid);
+                                });
+                    }
                     UUID ownerUuid = toUuid(ownerIdValue);
                     return ownerUuid != null && ownerUuid.equals(memberUuid);
                 })

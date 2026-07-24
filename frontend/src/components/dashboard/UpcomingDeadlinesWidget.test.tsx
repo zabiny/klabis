@@ -31,8 +31,8 @@ vi.mock('../../components/HalNavigator2/HalFormDisplay', () => ({
     HalFormDisplay: () => React.createElement('div', {'data-testid': 'hal-form-display'}, 'Form'),
 }));
 
-vi.mock('../../components/UI', async () => {
-    const actual = await vi.importActual('../../components/UI');
+vi.mock('@klabis/design-system', async () => {
+    const actual = await vi.importActual('@klabis/design-system');
     return {
         ...actual,
         Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string; onClose: () => void}) =>

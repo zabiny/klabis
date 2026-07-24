@@ -1,5 +1,5 @@
 import { useState, useMemo, type FormEvent } from 'react';
-import { Button, Card, Alert } from '../UI';
+import { Button, Card, Alert } from '@klabis/design-system';
 import { PasswordField } from './PasswordField';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import {labels} from '../../localization';

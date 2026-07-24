@@ -3,7 +3,7 @@ import type {HalFormFieldFactory, RenderFormCallback, FormRenderHelpers} from '.
 import type {HalResponse} from '../../api';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from './HalFormDisplay';
-import {Alert, Spinner} from '../UI';
+import {Alert, Spinner} from '@klabis/design-system';
 import {labels} from '../../localization';
 
 export interface HalFormPanelRenderHelpers extends FormRenderHelpers {

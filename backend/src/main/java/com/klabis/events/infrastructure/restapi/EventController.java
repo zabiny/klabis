@@ -109,7 +109,7 @@ public class EventController {
                 request.location(),
                 request.organizer(),
                 request.websiteUrl(),
-                request.eventCoordinatorId(),
+                request.coordinators(),
                 request.eventTypeId(),
                 request.toRegistrationDeadlines(),
                 request.categories()
@@ -122,7 +122,6 @@ public class EventController {
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Update an event",
             description = "Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields may be provided; absent fields are left unchanged."
@@ -132,8 +131,14 @@ public class EventController {
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventRequest request) {
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventId eventId = new EventId(id);
         Event existingEvent = eventManagementService.getEvent(eventId, true);
+
+        if (!EventAffordanceSupport.isCoordinatorOrHasManageAuthority(auth, existingEvent)) {
+            throw new AccessDeniedException("Access to event update requires EVENTS:MANAGE authority or being the event coordinator");
+        }
+
         Event.UpdateEvent command = UpdateEventRequestMapper.toCommand(request, existingEvent);
         eventManagementService.updateEvent(eventId, command);
         return ResponseEntity.noContent().build();
@@ -477,14 +482,23 @@ class EventAffordanceSupport {
         return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
-    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive) {
+    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, Authentication auth) {
         UUID eventId = event.getId().value();
+
+        boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
+        boolean canUpdate = isCoordinatorOrHasManageAuthority(auth, event);
+
+        if (!canUpdate) {
+            return selfLink;
+        }
 
         switch (event.getStatus()) {
             case DRAFT:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                if (canManage) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                }
                 if (orisIntegrationActive && event.getOrisId() != null) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
                 }
@@ -492,7 +506,9 @@ class EventAffordanceSupport {
 
             case ACTIVE:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                if (canManage) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                }
                 if (orisIntegrationActive && event.getOrisId() != null) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
                 }
@@ -520,15 +536,20 @@ class EventAffordanceSupport {
         return event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen();
     }
 
+    static boolean isCoordinatorOrHasManageAuthority(Authentication auth, Event event) {
+        if (hasAuthority(auth, Authority.EVENTS_MANAGE)) {
+            return true;
+        }
+        MemberId memberId = resolveMemberId(auth);
+        return memberId != null && event.isCoordinator(memberId);
+    }
+
     static boolean isCoordinatorOrHasRegistrationsAuthority(Authentication auth, Event event) {
         if (hasAuthority(auth, Authority.EVENTS_REGISTRATIONS)) {
             return true;
         }
-        MemberId coordinatorId = event.getEventCoordinatorId();
-        if (coordinatorId == null) {
-            return false;
-        }
-        return coordinatorId.equals(resolveMemberId(auth));
+        MemberId memberId = resolveMemberId(auth);
+        return memberId != null && event.isCoordinator(memberId);
     }
 }
 
@@ -547,11 +568,11 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
     public void process(EntityModel<EventDto> dtoModel, Event event) {
         UUID eventId = event.getId().value();
 
-        MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(
-                SecurityContextHolder.getContext().getAuthentication());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -582,16 +603,14 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
-        if (event.getEventCoordinatorId() != null) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
-        }
+        event.getCoordinators().forEach(coordinatorId ->
+                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             klabisLinkTo(methodOn(EventController.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
@@ -614,11 +633,11 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
     public void process(EntityModel<EventSummaryDto> dtoModel, Event event) {
         UUID eventId = event.getId().value();
 
-        MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(
-                SecurityContextHolder.getContext().getAuthentication());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -641,10 +660,9 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
             dtoModel.add(selfLink);
         });
 
-        if (event.getEventCoordinatorId() != null) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
-                    .ifPresent(link -> dtoModel.add(link.withRel("coordinator")));
-        }
+        event.getCoordinators().forEach(coordinatorId ->
+                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))

@@ -6,8 +6,7 @@
 import {type ReactElement} from 'react'
 import {useHalPageData} from '../../hooks/useHalPageData'
 import {KlabisTableWithQuery} from '../KlabisTable'
-import {ErrorDisplay, Spinner} from '../UI'
-import {containerStyles} from '../../theme/designTokens'
+import {ErrorDisplay, Spinner, containerStyles} from '@klabis/design-system'
 import {type SortDirection} from '../../api'
 
 /**

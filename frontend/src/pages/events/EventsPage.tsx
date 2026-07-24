@@ -1,11 +1,11 @@
 import {type ReactElement, useState} from "react";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
-import type {EntityModel, HalFormsTemplate, Link} from "../../api";
+import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {toHref} from "../../api/hateoas.ts";
+import {asLinkArray, toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -17,7 +17,7 @@ import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
-import {Button, DetailRow, Modal, Tooltip} from "../../components/UI";
+import {Button, DetailRow, Modal, Tooltip} from '@klabis/design-system';
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
@@ -61,16 +61,25 @@ const ROW_ACTION_BUTTONS = [
 ];
 
 interface CoordinatorCellProps {
-    coordinatorLink: Link;
+    coordinatorLinks: Link[];
 }
 
-const CoordinatorCellContent = ({coordinatorLink}: CoordinatorCellProps): ReactElement => {
+const CoordinatorCellContent = ({coordinatorLinks}: CoordinatorCellProps): ReactElement => {
     const {navigateToResource} = useHalRoute();
+    const firstLink = coordinatorLinks[0];
+    const extraCount = coordinatorLinks.length - 1;
 
     return (
-        <HalRouteProvider routeLink={coordinatorLink}>
-            <CoordinatorName onNavigate={() => navigateToResource(coordinatorLink)}/>
-        </HalRouteProvider>
+        <span className="inline-flex items-center gap-1.5">
+            <HalRouteProvider routeLink={firstLink}>
+                <CoordinatorName onNavigate={() => navigateToResource(firstLink)}/>
+            </HalRouteProvider>
+            {extraCount > 0 && (
+                <span className="inline-flex items-center justify-center px-1.5 h-5 rounded-full bg-primary text-white text-xs font-medium whitespace-nowrap">
+                    +{extraCount}
+                </span>
+            )}
+        </span>
     );
 };
 
@@ -95,7 +104,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 };
 
 const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
-const CREATE_FORM_COORDINATION_FIELDS = ['eventCoordinatorId', 'eventTypeId'];
+const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
 
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
@@ -199,9 +208,9 @@ export const EventsPage = (): ReactElement => {
                                         <div className="flex flex-col gap-6">
                                             {hasFields(CREATE_FORM_COORDINATION_FIELDS) && (
                                                 <Section title={labels.sections.eventCoordination}>
-                                                    {hasField('eventCoordinatorId') && (
-                                                        <DetailRow label={labels.fields.eventCoordinatorId}>
-                                                            {renderInput('eventCoordinatorId')}
+                                                    {hasField('coordinators') && (
+                                                        <DetailRow label={labels.fields.coordinators}>
+                                                            {renderInput('coordinators')}
                                                         </DetailRow>
                                                     )}
                                                     {hasField('eventTypeId') && (
@@ -307,10 +316,10 @@ export const EventsPage = (): ReactElement => {
                            }}>{labels.tables.registrationDeadline}</TableCell>
                 <TableCell column={"_links"}
                            dataRender={({item}) => {
-                               const links = item._links as Record<string, Link> | undefined;
-                               const coordinatorLink = links?.coordinator;
-                               if (!coordinatorLink) return null;
-                               return <CoordinatorCellContent coordinatorLink={coordinatorLink}/>;
+                               const links = item._links as Record<string, unknown> | undefined;
+                               const coordinatorLinks = asLinkArray(links?.coordinator as HalResourceLinks | undefined);
+                               if (coordinatorLinks.length === 0) return null;
+                               return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            dataRender={({value, item}) => {

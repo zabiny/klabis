@@ -1,7 +1,6 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.Event;
-import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import org.assertj.core.api.AbstractAssert;
@@ -84,25 +83,6 @@ public class EventAssert extends AbstractAssert<EventAssert, Event> {
                 failWithMessage("Expected website url to be <%s> but was null", expected);
             } else if (!actual.getWebsiteUrl().equals(expected)) {
                 failWithMessage("Expected website url to be <%s> but was <%s>", expected, actual.getWebsiteUrl());
-            }
-        }
-        return this;
-    }
-
-    public EventAssert hasEventCoordinatorId(MemberId expected) {
-        isNotNull();
-        if (expected == null) {
-            if (actual.getEventCoordinatorId() != null) {
-                failWithMessage("Expected event coordinator id to be null but was <%s>",
-                        actual.getEventCoordinatorId());
-            }
-        } else {
-            if (actual.getEventCoordinatorId() == null) {
-                failWithMessage("Expected event coordinator id to be <%s> but was null", expected);
-            } else if (!actual.getEventCoordinatorId().equals(expected)) {
-                failWithMessage("Expected event coordinator id to be <%s> but was <%s>",
-                        expected,
-                        actual.getEventCoordinatorId());
             }
         }
         return this;

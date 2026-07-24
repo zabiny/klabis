@@ -19,7 +19,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 // Mock child components
-vi.mock('../../components/UI', () => ({
+vi.mock('@klabis/design-system', () => ({
     Alert: ({severity, children}: {severity: string; children: React.ReactNode}) => (
         <div data-testid={`alert-${severity}`} role="alert">
             {children}

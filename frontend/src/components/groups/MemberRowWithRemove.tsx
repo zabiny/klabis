@@ -1,5 +1,5 @@
 import type {ReactElement} from 'react';
-import {Button, DetailRow} from '../UI';
+import {Button, DetailRow} from '@klabis/design-system';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../members/MemberNameWithRegNumber.tsx';
 import {UserMinus} from 'lucide-react';

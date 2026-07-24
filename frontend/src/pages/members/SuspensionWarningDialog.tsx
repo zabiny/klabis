@@ -1,5 +1,5 @@
 import {type ReactElement} from 'react';
-import {Button, Modal} from '../../components/UI';
+import {Button, Modal} from '@klabis/design-system';
 import {labels} from '../../localization';
 
 export interface AffectedGroup {

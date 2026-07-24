@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,6 +54,8 @@ class IcalFeedServiceTest {
     }
 
     private Event eventWithCoordinator(EventId id, MemberId coordinatorId) {
+        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+        if (coordinatorId != null) coordinators.add(coordinatorId);
         return Event.reconstruct(
                 id,
                 "Test Event",
@@ -60,7 +63,7 @@ class IcalFeedServiceTest {
                 "Praha",
                 "ORG",
                 null,
-                coordinatorId,
+                coordinators,
                 null,
                 null,
                 EventStatus.ACTIVE,

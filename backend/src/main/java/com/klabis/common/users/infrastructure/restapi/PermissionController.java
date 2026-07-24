@@ -12,7 +12,6 @@ import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -161,7 +160,6 @@ public class PermissionController {
      * Request DTO for updating permissions.
      */
     public record UpdatePermissionsRequest(
-            @NotEmpty
             Set<Authority> authorities
     ) {
     }

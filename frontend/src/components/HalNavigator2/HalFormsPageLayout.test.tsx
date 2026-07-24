@@ -42,17 +42,21 @@ vi.mock('./HalFormPanel.tsx', () => ({
     },
 }));
 
-vi.mock('../UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
-        isOpen ? (
-            <div data-testid="modal-overlay" role="dialog">
-                {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
-                {children}
-                <button onClick={onClose} data-testid="modal-close-button">Close Modal</button>
-            </div>
-        ) : null
-    ),
-}));
+vi.mock('@klabis/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@klabis/design-system')>();
+    return {
+        ...actual,
+        Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
+            isOpen ? (
+                <div data-testid="modal-overlay" role="dialog">
+                    {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
+                    {children}
+                    <button onClick={onClose} data-testid="modal-close-button">Close Modal</button>
+                </div>
+            ) : null
+        ),
+    };
+});
 
 describe('HalFormsPageLayout', () => {
     let queryClient: QueryClient;

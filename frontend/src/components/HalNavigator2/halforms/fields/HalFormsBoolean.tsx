@@ -1,6 +1,6 @@
 import type {ReactElement} from 'react'
 import {useField} from 'formik'
-import {SwitchField} from '../../../UI/forms'
+import {SwitchField} from '@klabis/design-system'
 import type {HalFormsInputProps} from '../types.ts'
 
 /**

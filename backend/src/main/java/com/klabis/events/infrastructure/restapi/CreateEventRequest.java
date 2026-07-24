@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.URL;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -34,7 +35,7 @@ record CreateEventRequest(
         @URL(message = "Website URL must be valid")
         String websiteUrl,
 
-        MemberId eventCoordinatorId,
+        LinkedHashSet<MemberId> coordinators,
 
         EventTypeId eventTypeId,
 

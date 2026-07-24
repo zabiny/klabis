@@ -1,7 +1,7 @@
 import {type ReactElement, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {Button, Modal} from '../UI';
+import {Button, Modal} from '@klabis/design-system';
 import {BookTemplate} from 'lucide-react';
 import {labels} from '../../localization';
 

@@ -7,13 +7,13 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Button, DetailRow, Modal} from "../../components/UI";
+import {Button, DetailRow, Modal} from '@klabis/design-system';
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {Banknote, Pencil, Shield, UserCheck, UserX} from "lucide-react";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import type {TableCellRenderProps} from '@klabis/design-system';
 import {labels} from "../../localization";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";

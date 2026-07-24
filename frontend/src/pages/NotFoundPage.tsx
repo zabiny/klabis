@@ -1,4 +1,4 @@
-import {Button, Card} from '../components/UI';
+import {Button, Card} from '@klabis/design-system';
 import {Link as RouterLink} from 'react-router-dom';
 
 const NotFoundPage = () => {

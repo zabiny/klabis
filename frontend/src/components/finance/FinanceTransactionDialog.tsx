@@ -2,7 +2,7 @@ import {type ReactElement, useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Banknote, Check, CircleArrowDown, CircleArrowUp} from 'lucide-react';
 import {labels} from '../../localization';
-import {Alert, Button, Modal, Skeleton} from '../UI';
+import {Alert, Button, Modal, Skeleton} from '@klabis/design-system';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';

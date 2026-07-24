@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import {MemoryRouter} from 'react-router-dom'
 import {KlabisTableWithQuery} from './KlabisTableWithQuery'
-import {TableCell} from './TableCell'
+import {TableCell} from '@klabis/design-system'
 import {createMockResponse} from '../../__mocks__/mockFetch'
 import {type Mock, vi} from 'vitest';
 

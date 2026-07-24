@@ -1,5 +1,5 @@
 import {createContext, useContext} from 'react';
-import type {ToastMessage} from '../components/UI/Toast';
+import type {ToastMessage} from '@klabis/design-system';
 
 interface ToastContextValue {
     toasts: ToastMessage[];

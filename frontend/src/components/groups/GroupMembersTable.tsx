@@ -1,5 +1,5 @@
 import type {ReactElement} from 'react';
-import {Button, Card} from '../UI';
+import {Button, Card} from '@klabis/design-system';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../members/MemberNameWithRegNumber.tsx';
 import {formatDate} from '../../utils/dateUtils.ts';

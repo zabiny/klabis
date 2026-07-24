@@ -9,16 +9,20 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
 }));
 
-vi.mock('../UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title: string}) =>
-        isOpen ? (
-            <div role="dialog" aria-label={title}>
-                <h4>{title}</h4>
-                {children}
-                <button onClick={onClose}>Zavřít</button>
-            </div>
-        ) : null,
-}));
+vi.mock('@klabis/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@klabis/design-system')>();
+    return {
+        ...actual,
+        Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title: string}) =>
+            isOpen ? (
+                <div role="dialog" aria-label={title}>
+                    <h4>{title}</h4>
+                    {children}
+                    <button onClick={onClose}>Zavřít</button>
+                </div>
+            ) : null,
+    };
+});
 
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 

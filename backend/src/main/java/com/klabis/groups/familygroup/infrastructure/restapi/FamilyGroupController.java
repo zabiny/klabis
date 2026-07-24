@@ -2,15 +2,14 @@ package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.common.ui.ModelWithDomainPostprocessor;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
-import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -24,6 +23,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,9 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -101,7 +99,7 @@ class FamilyGroupController {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
         }
 
-        FamilyGroupResponse response = toFamilyGroupResponse(group, id, hasMembersManage);
+        FamilyGroupResponse response = toFamilyGroupResponse(group, hasMembersManage);
         var model = entityModelWithDomain(response, group);
 
         if (hasMembersManage) {
@@ -182,7 +180,8 @@ class FamilyGroupController {
         return model;
     }
 
-    private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, UUID groupUuid, boolean hasMembersManage) {
+    private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, boolean hasMembersManage) {
+        UUID groupUuid = group.getId().uuid();
         Set<MemberId> parentIds = group.getParents();
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {

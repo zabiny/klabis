@@ -1,7 +1,7 @@
 import {type ReactElement, type ReactNode, useMemo} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {ErrorDisplay, Spinner} from '../UI';
+import {ErrorDisplay, Spinner, containerStyles} from '@klabis/design-system';
 import {HalFormsForm, type HalFormFieldFactory, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
@@ -9,7 +9,6 @@ import {klabisFieldsFactory, createMemberFilteredFactory} from '../KlabisFieldsF
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
-import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -168,6 +167,7 @@ export const HalFormDisplay = ({
             {submitError && (
                 <ErrorDisplay
                     error={submitError}
+                    isValidationError={isFormValidationError(submitError)}
                 />
             )}
 

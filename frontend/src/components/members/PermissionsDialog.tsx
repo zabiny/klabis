@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Alert, Button, Modal, Spinner} from '../UI';
+import {Alert, Button, Modal, Spinner} from '@klabis/design-system';
 import {labels} from '../../localization';
 import {resolvePermissionErrorMessage} from '../../hooks/usePermissionsEditor';
 

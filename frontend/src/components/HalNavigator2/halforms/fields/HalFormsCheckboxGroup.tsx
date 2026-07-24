@@ -1,6 +1,6 @@
 import {type ReactElement, useEffect} from 'react'
 import {Field, useFormikContext} from 'formik'
-import {CheckboxGroup} from '../../../UI/forms'
+import {CheckboxGroup} from '@klabis/design-system'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'

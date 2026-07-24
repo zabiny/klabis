@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import type {HalCollectionResponse, HalResponse, Link} from '../api';
-import {Alert, Modal, Spinner} from '../components/UI';
+import {Alert, Modal, Spinner} from '@klabis/design-system';
 import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection.tsx';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection.tsx';

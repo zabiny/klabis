@@ -1,6 +1,6 @@
 import {type ReactElement, type ReactNode, useEffect} from 'react';
 import {useFormikContext} from 'formik';
-import {DetailRow} from '../../components/UI';
+import {DetailRow} from '@klabis/design-system';
 import {isCzNationality} from './isCzNationality';
 
 interface BirthNumberConditionalFieldProps {

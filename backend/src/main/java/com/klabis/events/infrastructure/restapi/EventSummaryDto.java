@@ -8,10 +8,12 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.members.MemberId;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * DTO for event summary in list responses.
@@ -25,6 +27,7 @@ import java.util.List;
  * @param location    event location
  * @param organizer   event organizer
  * @param websiteUrl  event website URL (optional)
+ * @param coordinators event coordinator member IDs (may be empty)
  * @param eventTypeId event type ID (optional)
  * @param status      event status — only visible to EVENTS:MANAGE holders
  * @param deadlines   registration deadlines in chronological order (max 3)
@@ -38,6 +41,7 @@ record EventSummaryDto(
         String location,
         String organizer,
         String websiteUrl,
+        Set<MemberId> coordinators,
         EventTypeId eventTypeId,
         @HasAuthority(Authority.EVENTS_MANAGE)
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
