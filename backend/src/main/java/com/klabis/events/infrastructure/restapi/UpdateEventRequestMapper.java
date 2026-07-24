@@ -8,6 +8,7 @@ import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 class UpdateEventRequestMapper {
@@ -26,7 +27,7 @@ class UpdateEventRequestMapper {
         String organizer = request.organizer().patchValue(existingEvent.getOrganizer());
         String websiteUrl = request.websiteUrl().patchValue(
                 existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
-        MemberId eventCoordinatorId = request.eventCoordinatorId().patchValue(existingEvent.getEventCoordinatorId());
+        LinkedHashSet<MemberId> coordinators = request.coordinators().patchValue(new LinkedHashSet<>(existingEvent.getCoordinators()));
         EventTypeId eventTypeId = request.eventTypeId().patchValue(existingEvent.getEventTypeId().orElse(null));
         RegistrationDeadlines registrationDeadlines = request.deadlines().isProvided()
                 ? toRegistrationDeadlines(request.deadlines().throwIfNotProvided())
@@ -37,7 +38,7 @@ class UpdateEventRequestMapper {
         Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
-                eventCoordinatorId, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
+                coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
     }
 
     private static EventRanking toRanking(UpdateEventRequest.RankingRequest rankingRequest) {

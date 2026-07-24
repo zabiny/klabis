@@ -78,6 +78,10 @@ vi.mock('../../api/hateoas', () => ({
         if (Array.isArray(source)) return (source[0] as {href?: string})?.href ?? '';
         return (source as {href?: string})?.href ?? '';
     }),
+    asLinkArray: vi.fn((links: unknown) => {
+        if (!links) return [];
+        return Array.isArray(links) ? links : [links];
+    }),
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
@@ -95,6 +99,9 @@ vi.mock('../../components/UI/Modal.tsx', () => ({
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
         <div data-testid={`subresource-${subresourceLinkName}`}>{children}</div>
+    ),
+    HalRouteProvider: ({children}: {children: React.ReactNode}) => (
+        <div data-testid="hal-route-provider">{children}</div>
     ),
 }));
 
@@ -123,7 +130,7 @@ const mockEventDetailData = (overrides?: Partial<HalResponse>): HalResponse => (
     location: 'Brno - Bystrc',
     organizer: 'OB Brno',
     websiteUrl: 'https://obbrno.cz/zavody/jaro2025',
-    eventCoordinatorId: {value: '42'},
+    coordinators: [{value: '42'}],
     status: 'ACTIVE',
     _links: {
         self: {href: 'http://localhost:8443/api/events/1'},
@@ -233,11 +240,11 @@ describe('EventDetailPage', () => {
             },
         })));
         expect(screen.getByText('Jan Novák')).toBeInTheDocument();
-        expect(screen.getByTestId('subresource-coordinator')).toBeInTheDocument();
+        expect(screen.getByTestId('hal-route-provider')).toBeInTheDocument();
     });
 
     it('does not render coordinator when coordinator link is absent', () => {
-        renderPage(createMockPageData(mockEventDetailData({eventCoordinatorId: undefined})));
+        renderPage(createMockPageData(mockEventDetailData({coordinators: undefined})));
         expect(screen.queryByTestId('subresource-coordinator')).not.toBeInTheDocument();
     });
 
@@ -334,7 +341,7 @@ describe('EventDetailPage', () => {
                 {name: 'location', prompt: 'Místo', type: 'text', value: 'Brno - Bystrc'},
                 {name: 'organizer', prompt: 'Pořadatel', type: 'text', value: 'OB Brno'},
                 {name: 'websiteUrl', prompt: 'Webová stránka', type: 'url', value: 'https://obbrno.cz/zavody/jaro2025'},
-                {name: 'eventCoordinatorId', prompt: 'Vedoucí', type: 'text', value: '42'},
+                {name: 'coordinators', prompt: 'Vedoucí', type: 'UUID', multiple: true, options: {inline: []}},
             ],
         });
 

@@ -299,7 +299,6 @@ CREATE TABLE events.events
     location             VARCHAR(200) NULL,
     organizer            VARCHAR(10)  NOT NULL,
     website_url          VARCHAR(500) NULL,
-    event_coordinator_id UUID         NULL REFERENCES members.members (id) ON DELETE SET NULL,
     status               VARCHAR(20)  NOT NULL,
 
     -- Registration deadlines: up to 3 sequential deadlines (d2 requires d1, d3 requires d2; all non-decreasing)
@@ -349,7 +348,6 @@ COMMENT ON COLUMN events.events.event_date IS 'Date when the event takes place';
 COMMENT ON COLUMN events.events.location IS 'Location description (city, venue, etc.) — nullable, not all events have a known location';
 COMMENT ON COLUMN events.events.organizer IS 'Organizer code (e.g., OOB for OOB Zdar nad Sazavou)';
 COMMENT ON COLUMN events.events.website_url IS 'Optional URL to event website or ORIS';
-COMMENT ON COLUMN events.events.event_coordinator_id IS 'Optional reference to club member coordinating the event';
 COMMENT ON COLUMN events.events.registration_deadline IS 'First (earliest) registration deadline; null means no deadlines configured';
 COMMENT ON COLUMN events.events.registration_deadline_2 IS 'Second registration deadline; requires registration_deadline to be set';
 COMMENT ON COLUMN events.events.registration_deadline_3 IS 'Third (latest) registration deadline; requires registration_deadline_2 to be set';
@@ -389,6 +387,29 @@ COMMENT ON COLUMN events.event_registrations.member_id IS 'Reference to the regi
 COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
 COMMENT ON COLUMN events.event_registrations.category IS 'Selected race category (nullable: null when event has no categories)';
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
+
+-- ============================================================================
+-- 6b. EVENT_COORDINATORS TABLE
+-- Join table for the ordered collection of member coordinators per event.
+-- position preserves insertion order, enabling LinkedHashSet reconstruction on load.
+-- ============================================================================
+
+CREATE TABLE events.event_coordinators
+(
+    event_id  UUID     NOT NULL REFERENCES events.events (id) ON DELETE CASCADE,
+    member_id UUID     NOT NULL REFERENCES members.members (id) ON DELETE CASCADE,
+    position  SMALLINT NOT NULL,
+    PRIMARY KEY (event_id, member_id)
+);
+
+-- Index for coordinator-based event filtering (used in iterace 4)
+CREATE INDEX idx_event_coordinators_member_id ON events.event_coordinators (member_id);
+
+-- Comments for event_coordinators
+COMMENT ON TABLE events.event_coordinators IS 'Ordered list of member coordinators per event; position preserves insertion order';
+COMMENT ON COLUMN events.event_coordinators.event_id IS 'Reference to the event';
+COMMENT ON COLUMN events.event_coordinators.member_id IS 'Reference to the coordinating member';
+COMMENT ON COLUMN events.event_coordinators.position IS 'Zero-based insertion order; used to restore LinkedHashSet ordering on load';
 
 -- ============================================================================
 -- 8. CALENDAR_ITEMS TABLE

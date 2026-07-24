@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Currency;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -114,7 +115,6 @@ class EventJdbcRepositoryTest {
                     .hasLocation("Prague City Center")
                     .hasOrganizer("Prague OC")
                     .hasWebsiteUrl(null)
-                    .hasEventCoordinatorId(null)
                     .hasStatus(EventStatus.DRAFT);
         }
 
@@ -131,7 +131,7 @@ class EventJdbcRepositoryTest {
                     .location("Brno Forest")
                     .organizer("Brno OC")
                     .websiteUrl(websiteUrl)
-                    .eventCoordinatorId(coordinatorId)
+                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
                     .build());
 
             // When
@@ -148,8 +148,7 @@ class EventJdbcRepositoryTest {
             assertThat(retrieved.getOrganizer()).isEqualTo("Brno OC");
             assertThat(retrieved.getWebsiteUrl()).isNotNull();
             assertThat(retrieved.getWebsiteUrl().value()).isEqualTo("https://example.com/event");
-            assertThat(retrieved.getEventCoordinatorId()).isNotNull();
-            assertThat(retrieved.getEventCoordinatorId()).isEqualTo(coordinatorId);
+            assertThat(retrieved.getCoordinators()).containsExactly(coordinatorId);
             assertThat(retrieved.getStatus()).isEqualTo(EventStatus.DRAFT);
         }
 
@@ -1764,6 +1763,128 @@ class EventJdbcRepositoryTest {
             );
 
             assertThat(result.getContent()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Coordinators persistence — join table round-trip")
+    class CoordinatorsPersistence {
+
+        @Test
+        @DisplayName("should persist and reload single coordinator via join table")
+        void shouldPersistAndReloadSingleCoordinator() {
+            MemberId coordinator = new MemberId(TEST_MEMBER_1_ID);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Single Coordinator Event")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(coordinator)))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getCoordinators()).containsExactly(coordinator);
+        }
+
+        @Test
+        @DisplayName("should persist and reload multiple coordinators preserving insertion order")
+        void shouldPersistAndReloadMultipleCoordinatorsInInsertionOrder() {
+            MemberId first = new MemberId(TEST_MEMBER_1_ID);
+            MemberId second = new MemberId(TEST_MEMBER_2_ID);
+            MemberId third = new MemberId(TEST_MEMBER_3_ID);
+
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+            coordinators.add(first);
+            coordinators.add(second);
+            coordinators.add(third);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Multi Coordinator Event")
+                    .eventDate(LocalDate.of(2026, 8, 2))
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            // LinkedHashSet preserves insertion order — first, second, third
+            assertThat(reloaded.getCoordinators())
+                    .containsExactly(first, second, third);
+        }
+
+        @Test
+        @DisplayName("should persist and reload event with no coordinators")
+        void shouldPersistAndReloadEventWithNoCoordinators() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Coordinator Event")
+                    .eventDate(LocalDate.of(2026, 8, 3))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getCoordinators()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should update coordinators collection on re-save")
+        void shouldUpdateCoordinatorsOnReSave() {
+            MemberId first = new MemberId(TEST_MEMBER_1_ID);
+            MemberId second = new MemberId(TEST_MEMBER_2_ID);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Coordinator Update Event")
+                    .eventDate(LocalDate.of(2026, 8, 4))
+                    .organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(first)))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+            LinkedHashSet<MemberId> updatedCoordinators = new LinkedHashSet<>();
+            updatedCoordinators.add(second);
+            updatedCoordinators.add(first);
+            reloaded.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(reloaded))
+                    .coordinators(updatedCoordinators)
+                    .build());
+            eventRepository.save(reloaded);
+
+            Event updated = eventRepository.findById(saved.getId()).orElseThrow();
+            assertThat(updated.getCoordinators()).containsExactly(second, first);
+        }
+
+        @Test
+        @DisplayName("coordinator filter matches event when member is not in first coordinator position")
+        void shouldMatchEventWhenCoordinatorIsNotInFirstPosition() {
+            MemberId coordA = new MemberId(TEST_MEMBER_1_ID);
+            MemberId coordB = new MemberId(TEST_MEMBER_2_ID);
+
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
+            coordinators.add(coordA);
+            coordinators.add(coordB);
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Two Coordinator Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .organizer("OOB")
+                    .coordinators(coordinators)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withCoordinator(coordB),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent())
+                    .extracting(Event::getId)
+                    .containsExactly(saved.getId());
         }
     }
 }

@@ -145,7 +145,7 @@ export const labels = {
     },
 
     fields: {
-        eventCoordinatorId: 'Vedoucí',
+        coordinators: 'Vedoucí',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
         deadlines: 'Uzávěrky přihlášek',

@@ -138,11 +138,16 @@ class EventRepositoryAdapter implements EventRepository {
                 ? findIdsByNotRegisteredMember(filter.notRegisteredBy())
                 : null;
 
+        List<UUID> coordinatorIds = filter.coordinator() != null
+                ? findIdsByCoordinator(filter.coordinator())
+                : null;
+
         List<List<UUID>> activeSets = new ArrayList<>();
         if (fulltextIds != null) activeSets.add(fulltextIds);
         if (registeredByIds != null) activeSets.add(registeredByIds);
         if (deadlineWithinIds != null) activeSets.add(deadlineWithinIds);
         if (notRegisteredByIds != null) activeSets.add(notRegisteredByIds);
+        if (coordinatorIds != null) activeSets.add(coordinatorIds);
 
         if (activeSets.isEmpty()) {
             return null;
@@ -250,10 +255,6 @@ class EventRepositoryAdapter implements EventRepository {
             conditions.add(Criteria.where("event_date").lessThanOrEquals(filter.dateTo()));
         }
 
-        if (filter.coordinator() != null) {
-            conditions.add(Criteria.where("event_coordinator_id").is(filter.coordinator().uuid()));
-        }
-
         if (!filter.eventTypeIds().isEmpty()) {
             List<UUID> typeIdValues = filter.eventTypeIds().stream()
                     .map(EventTypeId::value)
@@ -340,6 +341,23 @@ class EventRepositoryAdapter implements EventRepository {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("today", today)
                 .addValue("deadlineUntil", deadlineUntil);
+        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
+    }
+
+    /**
+     * Returns IDs of events where the given member is listed as a coordinator.
+     * Uses the event_coordinators join table — coordinator membership is an ordered
+     * collection so we use EXISTS against the join table, not a column comparison.
+     */
+    private List<UUID> findIdsByCoordinator(MemberId memberId) {
+        String sql = """
+                SELECT id FROM events.events e
+                WHERE EXISTS (
+                    SELECT 1 FROM events.event_coordinators c
+                    WHERE c.event_id = e.id AND c.member_id = :memberId
+                )
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
         return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 

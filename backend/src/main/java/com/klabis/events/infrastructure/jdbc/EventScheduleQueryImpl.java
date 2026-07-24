@@ -30,7 +30,10 @@ class EventScheduleQueryImpl implements EventScheduleQuery {
                 WHERE e.event_date >= :from
                   AND e.event_date <= :to
                   AND (
-                      e.event_coordinator_id = :memberId
+                      EXISTS (
+                          SELECT 1 FROM events.event_coordinators c
+                          WHERE c.event_id = e.id AND c.member_id = :memberId
+                      )
                       OR EXISTS (
                           SELECT 1 FROM events.event_registrations r
                           WHERE r.event_id = e.id AND r.member_id = :memberId

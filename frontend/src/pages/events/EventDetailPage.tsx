@@ -7,13 +7,13 @@ import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
-import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
+import {HalRouteProvider, HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {useHalRoute} from '../../contexts/halRouteContext.ts';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
 import type {EntityModel, Link as HalLink} from '../../api';
 import type {HalFormsTemplate, HalResponse} from '../../api';
-import {toHref} from '../../api/hateoas.ts';
+import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
@@ -42,7 +42,7 @@ interface EventDetail {
     websiteUrl?: string;
     deadlines?: string[];
     cancellationReason?: string;
-    eventCoordinatorId?: {value: string};
+    coordinators?: {value: string}[];
     eventTypeId?: string | null;
     status?: string;
     categories?: string[];
@@ -323,15 +323,19 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             </DetailRow>
                         )}
                         {isEditing && (
-                            <DetailRow label={labels.fields.eventCoordinatorId}>
-                                {ri('eventCoordinatorId')}
+                            <DetailRow label={labels.fields.coordinators}>
+                                {ri('coordinators')}
                             </DetailRow>
                         )}
                         {!isEditing && resourceData._links?.coordinator && (
-                            <DetailRow label={labels.fields.eventCoordinatorId}>
-                                <HalSubresourceProvider subresourceLinkName="coordinator">
-                                    <CoordinatorDisplay/>
-                                </HalSubresourceProvider>
+                            <DetailRow label={labels.fields.coordinators}>
+                                <div className="flex flex-col gap-1">
+                                    {asLinkArray(resourceData._links.coordinator).map((link) => (
+                                        <HalRouteProvider key={toHref(link)} routeLink={link}>
+                                            <CoordinatorDisplay/>
+                                        </HalRouteProvider>
+                                    ))}
+                                </div>
                             </DetailRow>
                         )}
                     </dl>

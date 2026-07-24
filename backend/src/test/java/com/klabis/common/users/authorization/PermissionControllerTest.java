@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -220,34 +221,43 @@ class PermissionControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 for empty authorities")
+        @DisplayName("should return 204 No Content for empty authorities")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldReturn400ForEmptyAuthorities() throws Exception {
+        void shouldReturn204ForEmptyAuthorities() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
                     new PermissionController.UpdatePermissionsRequest(Set.of());
+
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of()));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.fieldErrors.authorities").value("must not be empty"));
+                    .andExpect(status().isNoContent())
+                    .andExpect(content().string(""));
         }
 
         @Test
-        @DisplayName("should return 400 for invalid request body")
+        @DisplayName("should pass null authorities through to service when field is missing from request body")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldReturn400ForInvalidRequestBody() throws Exception {
-            // When & Then - Missing authorities field
+        void shouldPassNullAuthoritiesThroughWhenFieldMissing() throws Exception {
+            // Given - missing authorities field deserializes to null; the real null-check
+            // lives in AuthorityValidator/PermissionServiceImpl (see PermissionServiceTest),
+            // not in this controller slice where PermissionService is mocked.
+            when(permissionService.updateUserPermissions(any(UserId.class), any()))
+                    .thenThrow(new IllegalArgumentException("Authorities required"));
+
+            // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isBadRequest());
+
+            verify(permissionService).updateUserPermissions(any(UserId.class), isNull());
         }
 
         @Test

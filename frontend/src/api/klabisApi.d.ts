@@ -484,11 +484,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all fee year publications */
+        /** List fee year publications, optionally filtered by status */
         get: operations["listPublications"];
         put?: never;
         /** Publish fee levels for a calendar year (requires MEMBERS:MANAGE) */
         post: operations["publishYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fee-selection-campaigns/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually close a campaign — processes it immediately regardless of deadline (requires MEMBERS:MANAGE) */
+        post: operations["closeCampaign"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1087,6 +1104,23 @@ export interface paths {
          * @description Returns events from ORIS available for import. Accepts multiple region parameters (OrisRegion enum names) to combine results.
          */
         get: operations["listOrisEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/membership-fee-groups/{id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List payment rules snapshot for a membership fee group */
+        get: operations["listGroupRules"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1773,7 +1807,7 @@ export interface components {
             location?: string;
             organizer: string;
             websiteUrl?: string;
-            eventCoordinatorId?: components["schemas"]["MemberId"];
+            coordinators?: components["schemas"]["MemberId"][];
             eventTypeId?: components["schemas"]["EventTypeId"];
             deadlines?: string[];
             categories?: string[];
@@ -2033,10 +2067,10 @@ export interface components {
         PatchFieldEventTypeId: {
             provided?: boolean;
         };
-        PatchFieldListLocalDate: {
+        PatchFieldLinkedHashSetMemberId: {
             provided?: boolean;
         };
-        PatchFieldMemberId: {
+        PatchFieldListLocalDate: {
             provided?: boolean;
         };
         PatchFieldRankingRequest: {
@@ -2049,7 +2083,7 @@ export interface components {
             location?: components["schemas"]["PatchFieldString"];
             organizer: components["schemas"]["PatchFieldString"];
             websiteUrl?: components["schemas"]["PatchFieldString"];
-            eventCoordinatorId?: components["schemas"]["PatchFieldMemberId"];
+            coordinators?: components["schemas"]["PatchFieldLinkedHashSetMemberId"];
             eventTypeId?: components["schemas"]["PatchFieldEventTypeId"];
             deadlines?: components["schemas"]["PatchFieldListLocalDate"];
             categories?: components["schemas"]["PatchFieldListString"];
@@ -2174,20 +2208,7 @@ export interface components {
             fixedAmount?: number;
             fixedCurrency?: string;
         };
-        EntityModelMembershipFeeGroupResponse: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            sourceLevelId?: string;
-            name?: string;
-            /** Format: int32 */
-            year?: number;
-            yearlyFeeAmount?: number;
-            yearlyFeeCurrency?: string;
-            status?: string;
-            /** Format: int32 */
-            memberCount?: number;
-            rulesSnapshot?: components["schemas"]["PaymentRuleResponse"][];
+        RepresentationModelObject: {
             _links?: components["schemas"]["Links"];
         };
         EntityModelMemberSummaryResponse: {
@@ -2450,6 +2471,22 @@ export interface components {
             };
             _links?: components["schemas"]["Links"];
         };
+        EntityModelMembershipFeeGroupResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            sourceLevelId?: string;
+            name?: string;
+            /** Format: int32 */
+            year?: number;
+            yearlyFeeAmount?: number;
+            yearlyFeeCurrency?: string;
+            status?: string;
+            /** Format: int32 */
+            memberCount?: number;
+            rulesSnapshot?: components["schemas"]["PaymentRuleResponse"][];
+            _links?: components["schemas"]["Links"];
+        };
         CollectionModelEntityModelFamilyGroupSummaryResponse: {
             _embedded?: {
                 familyGroupSummaryResponseList?: components["schemas"]["EntityModelFamilyGroupSummaryResponse"][];
@@ -2494,6 +2531,7 @@ export interface components {
             location?: string;
             organizer?: string;
             websiteUrl?: string;
+            coordinators?: components["schemas"]["MemberId"][];
             eventTypeId?: components["schemas"]["EventTypeId"];
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
@@ -2508,9 +2546,6 @@ export interface components {
             };
             _links?: components["schemas"]["Links"];
             page?: components["schemas"]["PageMetadata"];
-        };
-        RepresentationModelObject: {
-            _links?: components["schemas"]["Links"];
         };
         CollectionModelEntityModelRegistrationSummaryDto: {
             _embedded?: {
@@ -5647,7 +5682,10 @@ export interface operations {
     };
     listPublications: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by status: 'closed' returns only past campaigns */
+                status?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5731,6 +5769,81 @@ export interface operations {
                 "application/json": components["schemas"]["PublishYearRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    closeCampaign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Campaign UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -8327,7 +8440,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipFeeGroupResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelObject"];
                 };
             };
             /** @description Bad request - invalid argument */
@@ -9489,6 +9602,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrisEventSummary"][];
+                };
+            };
+            /** @description Bad request - invalid argument */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unprocessable entity - cannot remove the last owner of a group */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listGroupRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Group UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPaymentRuleResponse"];
                 };
             };
             /** @description Bad request - invalid argument */

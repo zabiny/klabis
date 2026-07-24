@@ -32,11 +32,13 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -386,6 +388,63 @@ class EventControllerTest {
                     && LocalDate.of(2026, 5, 1).equals(cmd.eventDate())
                     && "OOB".equals(cmd.organizer())
             ));
+        }
+
+        @Test
+        @DisplayName("coordinator of the event can update it without EVENTS:MANAGE — returns 204")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        void coordinatorCanUpdateEventWithoutEventsManage() throws Exception {
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event coordinatorEvent = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Updated By Coordinator\"}")
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("coordinator of event A cannot update event B — returns 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        void coordinatorOfOtherEventIsRejected() throws Exception {
+            MemberId otherCoordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
+            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent()
+                    .withCoordinator(otherCoordinatorId)
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventWithDifferentCoordinator);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventWithDifferentCoordinator.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Should Be Rejected\"}")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("member without EVENTS:MANAGE who is not a coordinator is rejected — returns 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void nonCoordinatorMemberWithoutManageIsRejected() throws Exception {
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventWithDifferentCoordinator);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventWithDifferentCoordinator.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Should Be Rejected\"}")
+                    )
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -871,6 +930,35 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should include coordinator links as array when event has multiple coordinators")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorLinksAsArrayWhenMultipleCoordinatorsAreSet() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordA = new MemberId(UUID.randomUUID());
+            MemberId coordB = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinators(new LinkedHashSet<>(List.of(coordA, coordB)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.coordinators").isArray())
+                    .andExpect(jsonPath("$.coordinators", hasSize(2)))
+                    .andExpect(jsonPath("$._links.coordinator").isArray())
+                    .andExpect(jsonPath("$._links.coordinator", hasSize(2)))
+                    .andExpect(jsonPath("$._links.coordinator[0].href").value(
+                            containsString("/api/members/" + coordA.value())))
+                    .andExpect(jsonPath("$._links.coordinator[1].href").value(
+                            containsString("/api/members/" + coordB.value())));
+        }
+
+        @Test
         @DisplayName("should not include coordinator link when event has no coordinator")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldNotIncludeCoordinatorLinkWhenCoordinatorIsNotSet() throws Exception {
@@ -1163,6 +1251,80 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].multi").value(true))
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='deadlines')].max").value(3));
         }
+
+        @Test
+        @DisplayName("update affordance present in DRAFT event detail for event coordinator without EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        void updateAffordancePresentForCoordinator() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event draftEvent = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"));
+        }
+
+        @Test
+        @DisplayName("update affordance absent in DRAFT event detail for unrelated member without EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void updateAffordanceAbsentForNonCoordinator() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event draftEvent = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("registrationTime visible for the second coordinator in the coordinators collection")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
+        void registrationTimeVisibleForSecondCoordinator() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId firstCoordinator = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+            MemberId secondCoordinator = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+            MemberId registeredMember = new MemberId(UUID.randomUUID());
+            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(firstCoordinator, secondCoordinator));
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withCoordinators(coordinators)
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(registeredMember)
+                            .siCardNumber(new SiCardNumber("99001"))
+                            .build());
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
+            when(members.findByIds(any())).thenReturn(Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null)));
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").exists());
+        }
     }
 
     @Nested
@@ -1321,6 +1483,30 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.coordinator.href")
                             .value(containsString("/api/members/" + coordinatorId.value())));
+        }
+
+        @Test
+        @DisplayName("list item includes coordinators array with all coordinator UUIDs")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorsArrayInListItem() throws Exception {
+            MemberId coordA = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+            MemberId coordB = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinators(new LinkedHashSet<>(List.of(coordA, coordB)))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].coordinators",
+                            org.hamcrest.Matchers.containsInAnyOrder(
+                                    coordA.value().toString(),
+                                    coordB.value().toString()
+                            )));
         }
 
         @Test

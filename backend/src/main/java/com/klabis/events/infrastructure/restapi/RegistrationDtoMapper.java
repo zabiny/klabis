@@ -22,7 +22,7 @@ class RegistrationDtoMapper {
                 member.lastName(),
                 registration.category(),
                 registration.registeredAt(),
-                event.getEventCoordinatorId(),
+                event.getCoordinators(),
                 registration.memberId()
         );
     }

@@ -9,6 +9,7 @@ import org.hibernate.validator.constraints.URL;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -34,7 +35,7 @@ record UpdateEventRequest(
         @URL(message = "Website URL must be valid")
         PatchField<String> websiteUrl,
 
-        PatchField<MemberId> eventCoordinatorId,
+        PatchField<LinkedHashSet<MemberId>> coordinators,
 
         PatchField<EventTypeId> eventTypeId,
 

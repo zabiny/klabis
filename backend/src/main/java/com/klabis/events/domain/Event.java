@@ -18,8 +18,10 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 /**
  * Event aggregate root.
  * <p>
@@ -54,7 +56,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private String organizer;
     private WebsiteUrl websiteUrl;
     @Association
-    private MemberId eventCoordinatorId;
+    private LinkedHashSet<MemberId> coordinators;
     @Association
     private EventTypeId eventTypeId;
     private RegistrationDeadlines registrationDeadlines;
@@ -88,7 +90,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @URL(message = "Website URL must be valid")
             String websiteUrl,
 
-            MemberId eventCoordinatorId,
+            LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
             RegistrationDeadlines registrationDeadlines,
             List<String> categories
@@ -100,7 +102,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.location,
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
-                    event.eventCoordinatorId,
+                    new LinkedHashSet<>(event.coordinators),
                     event.eventTypeId,
                     event.registrationDeadlines,
                     event.categories
@@ -127,7 +129,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @URL(message = "Website URL must be valid")
             String websiteUrl,
 
-            MemberId eventCoordinatorId,
+            LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
 
             RegistrationDeadlines registrationDeadlines,
@@ -142,7 +144,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.location,
                     event.organizer,
                     event.websiteUrl != null ? event.websiteUrl.value() : null,
-                    event.eventCoordinatorId,
+                    new LinkedHashSet<>(event.coordinators),
                     event.eventTypeId,
                     event.registrationDeadlines,
                     event.categories,
@@ -278,7 +280,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId,
+            LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
             RegistrationDeadlines registrationDeadlines,
             EventStatus status,
@@ -295,7 +297,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.location = location;
         this.organizer = organizer;
         this.websiteUrl = websiteUrl;
-        this.eventCoordinatorId = eventCoordinatorId;
+        this.coordinators = coordinators != null ? new LinkedHashSet<>(coordinators) : new LinkedHashSet<>();
         this.eventTypeId = eventTypeId;
         this.registrationDeadlines = registrationDeadlines != null ? registrationDeadlines : RegistrationDeadlines.none();
         this.status = status;
@@ -320,7 +322,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @param location           event location
      * @param organizer          event organizer
      * @param websiteUrl         event website URL (may be null)
-     * @param eventCoordinatorId event coordinator ID (may be null)
+     * @param coordinators       event coordinators (may be empty)
      * @param status             event status
      * @return reconstructed Event instance
      */
@@ -331,7 +333,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId,
+            LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
             RegistrationDeadlines registrationDeadlines,
             EventStatus status,
@@ -350,7 +352,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 location,
                 organizer,
                 websiteUrl,
-                eventCoordinatorId,
+                coordinators,
                 eventTypeId,
                 registrationDeadlines,
                 status,
@@ -390,7 +392,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId(),
+                command.coordinators(),
                 command.eventTypeId(),
                 deadlines,
                 EventStatus.DRAFT,
@@ -431,7 +433,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl(),
-                null,
+                new LinkedHashSet<>(),
                 null,
                 deadlines,
                 EventStatus.DRAFT,
@@ -506,8 +508,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return websiteUrl;
     }
 
-    public MemberId getEventCoordinatorId() {
-        return eventCoordinatorId;
+    public Set<MemberId> getCoordinators() {
+        return Collections.unmodifiableSet(coordinators);
+    }
+
+    public boolean isCoordinator(MemberId memberId) {
+        return coordinators.contains(memberId);
     }
 
     public Optional<EventTypeId> getEventTypeId() {
@@ -631,7 +637,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.location = command.location();
         this.organizer = command.organizer();
         this.websiteUrl = command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null;
-        this.eventCoordinatorId = command.eventCoordinatorId();
+        this.coordinators = command.coordinators() != null ? new LinkedHashSet<>(command.coordinators()) : new LinkedHashSet<>();
         this.eventTypeId = command.eventTypeId();
         this.registrationDeadlines = deadlines;
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();

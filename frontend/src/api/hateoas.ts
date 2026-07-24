@@ -78,6 +78,11 @@ export function toHref(source: HalResourceLinks): string {
     }
 }
 
+export function asLinkArray(links: HalResourceLinks | undefined | null): Link[] {
+    if (!links) return [];
+    return Array.isArray(links) ? links : [links];
+}
+
 /**
  * Converts relative URL to absolute using current window.location's hostname. Absolute URL is left unchanged
  * @param input
