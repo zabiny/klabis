@@ -232,7 +232,7 @@ Kategorie dnes putují frontendem jako **pole řetězců** (`event.categories?: 
 | Soubor | Dnešní stav | Cílový stav |
 |--------|-------------|-------------|
 | `src/api/klabisApi.d.ts` | generováno z OpenAPI | Regenerovat (`npm run openapi`) po změně backendu — nové schéma `EventCategoryDto`, `categoryId` na registraci |
-| `src/pages/events/EventDetailPage.tsx` | `categories?: string[]`, render `event.categories?.map(c => <Badge key={c}>{c}</Badge>)` | `categories?: EventCategoryDto[]`, klíč `c.id`, popisek `c.name` (+ cena, viz níže) |
+| `src/pages/events/EventDetailPage.tsx` | `categories?: string[]`, render `event.categories?.map(c => <Badge key={c}>{c}</Badge>)` | `categories?: EventCategoryDto[]`, klíč `c.id`, popisek `c.name` (cena v read módu se nezobrazuje) |
 | `src/pages/events/EventDetailPage.tsx` | `RegistrationData.category?: string` | `category?: { id, name } \| null` — u osiřelé registrace `null` |
 | `src/components/events/eventFormFieldsFactory.tsx` | pole `categories` renderuje výchozí klabisFieldsFactory jako seznam textů | Vlastní field renderující řádky objektů (název + volitelná cena) se zachováním skrytého `id` |
 | `src/components/events/CategoryPresetPickerButton.tsx` | vkládá do formuláře řetězce z presetu | Vkládá objekty `{ name }` **bez `id`** (nová kategorie) — preset zůstává name-based (D5) |
@@ -255,7 +255,7 @@ Chování při **odebrání řádku**, který má registrace: UI před uložení
 
 Detail eventu používá vzor inline editace (`ri('categories')` uvnitř `DetailRow`). Po změně:
 
-- **Read mód:** kategorie jako `Badge` s `key={c.id}` a textem `c.name`; má-li kategorie vlastní cenu, zobrazí se v badge za názvem (např. „H21 · 200 Kč").
+- **Read mód:** kategorie jako `Badge` s `key={c.id}` a textem `c.name` — beze změny oproti dnešku, cena kategorie se **nezobrazuje**.
 - **Edit mód:** stejný řádkový editor jako v create formuláři.
 - Podmínka „nezobrazovat řádek, když nejsou kategorie" zůstává beze změny.
 
