@@ -427,7 +427,16 @@ CREATE TABLE events.event_categories
 
     -- Optional category-specific fee overriding the event's base_entry_fee
     fee_amount   DECIMAL(10, 2) NULL,
-    fee_currency CHAR(3)        NULL
+    fee_currency CHAR(3)        NULL,
+
+    CONSTRAINT uq_event_categories_event_id_name UNIQUE (event_id, name),
+
+    -- Defense-in-depth for Event.validateCategories(): mirrors the aggregate invariant that
+    -- oris_id must be unique per event when present. A plain UNIQUE constraint (rather than a
+    -- partial/filtered index) is used because H2 and PostgreSQL both already treat NULL as
+    -- distinct-from-NULL under standard UNIQUE semantics, so multiple manually-added categories
+    -- (oris_id = NULL) never conflict with each other.
+    CONSTRAINT uq_event_categories_event_id_oris_id UNIQUE (event_id, oris_id)
 );
 
 -- Index for event-scoped category lookups

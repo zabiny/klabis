@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventCategoryId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.Association;

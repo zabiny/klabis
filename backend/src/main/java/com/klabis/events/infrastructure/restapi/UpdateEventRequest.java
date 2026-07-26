@@ -2,7 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.patch.PatchField;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategoryId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.*;

@@ -1,6 +1,8 @@
 package com.klabis.events.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.*;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.ui.HalForms;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberId;
 

@@ -7,6 +7,8 @@ import {EventTypeSelectField} from './EventTypeSelectField.tsx';
 import {TextField} from '../UI/forms';
 import {labels} from '../../localization';
 
+const DEFAULT_CURRENCY = 'CZK';
+
 interface MoneyAmount {
     amount: number | string;
     currency: string;
@@ -37,7 +39,7 @@ const CategoryRowField = ({prop}: HalFormsInputProps): ReactElement => {
             helpers.setValue({...value, fee: null});
             return;
         }
-        helpers.setValue({...value, fee: {amount, currency: value.fee?.currency || 'CZK'}});
+        helpers.setValue({...value, fee: {amount, currency: value.fee?.currency || DEFAULT_CURRENCY}});
     };
 
     return (

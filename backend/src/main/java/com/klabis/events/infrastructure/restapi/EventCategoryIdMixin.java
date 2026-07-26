@@ -2,7 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategoryId;
 import org.springframework.boot.jackson.JacksonMixin;
 
 import java.util.UUID;

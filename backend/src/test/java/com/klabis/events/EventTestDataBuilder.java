@@ -2,7 +2,6 @@ package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCategory;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.Money;
 import com.klabis.members.MemberId;

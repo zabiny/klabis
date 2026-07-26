@@ -1,8 +1,8 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.EventCategory;
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;

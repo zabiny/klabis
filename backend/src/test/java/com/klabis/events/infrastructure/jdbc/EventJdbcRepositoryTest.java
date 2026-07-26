@@ -2,6 +2,8 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.events.EventAssert;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;

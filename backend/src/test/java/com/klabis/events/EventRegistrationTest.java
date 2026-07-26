@@ -1,6 +1,5 @@
 package com.klabis.events;
 
-import com.klabis.events.domain.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.SiCardNumber;

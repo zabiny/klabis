@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategoryId;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 

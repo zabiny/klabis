@@ -7,6 +7,8 @@ import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;

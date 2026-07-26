@@ -1,7 +1,6 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCategory;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
 

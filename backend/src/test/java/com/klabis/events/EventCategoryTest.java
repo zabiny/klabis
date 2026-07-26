@@ -1,5 +1,6 @@
-package com.klabis.events.domain;
+package com.klabis.events;
 
+import com.klabis.events.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

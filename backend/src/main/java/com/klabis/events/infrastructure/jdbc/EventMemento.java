@@ -6,7 +6,7 @@ import com.klabis.events.EventTypeId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCategory;
+import com.klabis.events.EventCategory;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Money;

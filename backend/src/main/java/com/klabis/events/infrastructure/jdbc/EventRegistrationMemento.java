@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.jdbc;
 
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.SiCardNumber;

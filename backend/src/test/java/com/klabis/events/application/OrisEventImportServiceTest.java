@@ -5,6 +5,8 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.dpolach.api.orisclient.dto.Organizer;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
@@ -212,10 +214,10 @@ class OrisEventImportServiceTest {
         void shouldLogWarningWhenSyncRemovesCategoriesWithRegistrations() {
             EventId eventId = EventId.generate();
             int orisId = 9876;
-            com.klabis.events.domain.EventCategory m21 = new com.klabis.events.domain.EventCategory(
-                    com.klabis.events.domain.EventCategoryId.generate(), "M21", "M21", null);
-            com.klabis.events.domain.EventCategory w21 = new com.klabis.events.domain.EventCategory(
-                    com.klabis.events.domain.EventCategoryId.generate(), "W21", "W21", null);
+            EventCategory m21 = new EventCategory(
+                    EventCategoryId.generate(), "M21", "M21", null);
+            EventCategory w21 = new EventCategory(
+                    EventCategoryId.generate(), "W21", "W21", null);
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(orisId)
                     .name("Race")
@@ -241,7 +243,7 @@ class OrisEventImportServiceTest {
             service.syncEventFromOris(eventId);
 
             verify(eventRepository).save(event);
-            assertThat(event.getCategories()).extracting(com.klabis.events.domain.EventCategory::name)
+            assertThat(event.getCategories()).extracting(EventCategory::name)
                     .containsExactly("W21");
         }
 

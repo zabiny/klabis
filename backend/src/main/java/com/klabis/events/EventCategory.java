@@ -1,5 +1,6 @@
-package com.klabis.events.domain;
+package com.klabis.events;
 
+import com.klabis.events.domain.Money;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -10,7 +11,7 @@ import java.util.Optional;
  * A race category offered at an event (e.g. "M21", "W35").
  * <p>
  * Identity is a local {@link EventCategoryId}, stable across renames — this is what lets
- * {@link EventRegistration} keep pointing at the same category even after the event manager
+ * {@code EventRegistration} keep pointing at the same category even after the event manager
  * (or an ORIS sync) changes its display name.
  * <p>
  * {@code orisId} pairs this category with an ORIS {@code EventClass} for sync matching; it is

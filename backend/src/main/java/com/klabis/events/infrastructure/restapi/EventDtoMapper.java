@@ -1,7 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCategory;
+import com.klabis.events.EventCategory;
 import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.events.infrastructure.restapi.EventDto.EntryFeeDto;

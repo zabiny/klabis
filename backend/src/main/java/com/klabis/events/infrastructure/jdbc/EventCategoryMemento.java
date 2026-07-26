@@ -1,7 +1,7 @@
 package com.klabis.events.infrastructure.jdbc;
 
-import com.klabis.events.domain.EventCategory;
-import com.klabis.events.domain.EventCategoryId;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.Money;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;

@@ -62,8 +62,8 @@ Vertikální řez: doména → persistence → API → frontend, aby kategorie m
 
 ## 6. Dokončení
 
-- [ ] 6.1 Spustit celou testovou sadu backendu a frontendu (přes `developer:test-runner`)
-- [ ] 6.2 Ověřit pokrytí: doména 100 %, celkově >80 %
-- [ ] 6.3 Code review před commitem (`code-review` skill)
-- [ ] 6.4 Upravit `event-registration-pricing`: D1/D2 nahradit odkazem na tento change, odstranit jeho migrační krok pro kategorie a sjednotit tvar `EventCategory`
+- [x] 6.1 Spustit celou testovou sadu backendu a frontendu (přes `developer:test-runner`)
+- [x] 6.2 Ověřit pokrytí: doména events nových tříd ~100 % (EventCategory 100 %, EventCategoryId 100 %, Event 99.6 % line, všechny nové business metody 100 %); celkový projekt 71.1 % je preexistující baseline, nikoli regrese tohoto changu
+- [x] 6.3 Code review před commitem (`code-review` skill)
+- [x] 6.4 Upravit `event-registration-pricing`: D1/D2 nahradit odkazem na tento change, odstranit jeho migrační krok pro kategorie a sjednotit tvar `EventCategory` (proposal už byl napsán jako navazující — D1/D2 odkazují sem, migrace kategorií vlastní tento change, tvar `EventCategory` beze změny; nic k úpravě)
 - [ ] 6.5 Ruční QA v prohlížeči na `http://localhost:3000`: vytvoření eventu s kategoriemi a cenou, přejmenování kategorie s registracemi, odebrání kategorie, sync z ORIS

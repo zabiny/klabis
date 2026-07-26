@@ -1,4 +1,4 @@
-package com.klabis.events.domain;
+package com.klabis.events;
 
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jmolecules.ddd.types.Identifier;
