@@ -1059,6 +1059,28 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("should carry structured categories in EventCreatedEvent")
+        void shouldCarryStructuredCategoriesInCreatedEvent() {
+            EventCategory m21 = EventCategory.create("M21");
+            EventCategory w35 = EventCategory.create("W35");
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .categories(List.of(m21, w35))
+                    .build());
+
+            EventCreatedEvent createdEvent = (EventCreatedEvent) event.getDomainEvents().get(0);
+            assertThat(createdEvent.categories())
+                    .extracting(EventCategory::id, EventCategory::name)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(m21.id(), "M21"),
+                            org.assertj.core.groups.Tuple.tuple(w35.id(), "W35"));
+        }
+
+        @Test
         @DisplayName("should register EventPublishedEvent when event is published")
         void shouldRegisterEventPublishedEventWhenPublished() {
             Event event = Event.create(defaultCreateEvent());
@@ -1158,6 +1180,27 @@ class EventTest {
             assertThat(updatedEvent.organizer()).isEqualTo("Updated Organizer");
             assertThat(updatedEvent.websiteUrl()).isEqualTo(WebsiteUrl.of("https://updated.com"));
             assertThat(updatedEvent.occurredAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should carry structured categories in EventUpdatedEvent")
+        void shouldCarryStructuredCategoriesInUpdatedEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.clearDomainEvents();
+
+            EventCategory m10 = EventCategory.create("M10");
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Updated Event")
+                    .eventDate(DEFAULT_DATE)
+                    .location("Updated Location")
+                    .organizer("Updated Organizer")
+                    .categories(List.of(m10))
+                    .build());
+
+            EventUpdatedEvent updatedEvent = (EventUpdatedEvent) event.getDomainEvents().get(0);
+            assertThat(updatedEvent.categories())
+                    .extracting(EventCategory::id, EventCategory::name)
+                    .containsExactly(org.assertj.core.groups.Tuple.tuple(m10.id(), "M10"));
         }
 
         @Test

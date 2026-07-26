@@ -55,10 +55,10 @@ Vertikální řez: doména → persistence → API → frontend, aby kategorie m
 
 ## 5. Domain eventy
 
-- [ ] 5.1 Test: `EventCreatedEvent` a `EventUpdatedEvent` nesou strukturované kategorie
-- [ ] 5.2 Upravit `EventCreatedEvent`, `EventUpdatedEvent` (`List<String>` → strukturované položky)
-- [ ] 5.3 Upravit `RegistrationEditedEvent` na `categoryId`
-- [ ] 5.4 Zkontrolovat a upravit konzumenty těchto událostí napříč moduly (kalendář, notifikace)
+- [x] 5.1 Test: `EventCreatedEvent` a `EventUpdatedEvent` nesou strukturované kategorie
+- [x] 5.2 Upravit `EventCreatedEvent`, `EventUpdatedEvent` (`List<String>` → strukturované položky)
+- [x] 5.3 Upravit `RegistrationEditedEvent` na `categoryId` (splněno v iteraci 2)
+- [x] 5.4 Zkontrolovat a upravit konzumenty těchto událostí napříč moduly (kalendář, notifikace)
 
 ## 6. Dokončení
 

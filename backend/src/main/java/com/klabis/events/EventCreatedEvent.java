@@ -1,6 +1,7 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCategory;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
@@ -39,7 +40,7 @@ public record EventCreatedEvent(
         String organizer,
         WebsiteUrl websiteUrl,
         Set<MemberId> coordinators,
-        List<String> categories,
+        List<EventCategory> categories,
         Instant occurredAt
 ) {
 
@@ -64,7 +65,7 @@ public record EventCreatedEvent(
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
                 event.getCoordinators(),
-                event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList(),
+                event.getCategories(),
                 event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now()
         );
     }
