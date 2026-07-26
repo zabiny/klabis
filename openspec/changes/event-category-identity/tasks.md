@@ -35,21 +35,23 @@ Vertikální řez: doména → persistence → API → frontend, aby kategorie m
 
 ## 3. Datová migrace
 
-- [ ] 3.1 Test: migrace přidělí ID existujícím názvům a napáruje registrace podle názvu
-- [ ] 3.2 Test: registrace s názvem, který na eventu neexistuje, dostane `categoryId = null` a je zalogována
-- [ ] 3.3 Implementovat migraci (kategorie → ID + `orisId = null`, registrace → `categoryId`) včetně přehledu dotčených registrací
-- [ ] 3.4 Rozhodnout otevřenou otázku z designu: dohledat `orisId` z ORIS API, nebo jen zalogovat doporučení sync spustit
-- [ ] 3.5 Ověřit migraci na kopii reálných dat (počty kategorií a registrací před/po sedí)
+> **N/A pro tento projekt.** Backend běží na H2 in-memory (reset při restartu), nemá produkci ani perzistentní data a konvence projektu je „nepřidávat migrační skripty, upravit V001". Iterace 1 a 2 přepsaly V001 rovnou na cílový tvar (kategorie s ID, registrace přes `category_id`) — staré sloupce `categories VARCHAR` / `category VARCHAR` v DDL už neexistují, takže není žádná stará data k migraci. Skupina se přeskakuje (potvrzeno s uživatelem 2026-07-26). Otevřená otázka z 3.4 (dohledání `orisId` při migraci) tím odpadá; `orisId` se u ORIS eventů naplní prvním syncem po zavedení iterace 4.
+
+- [~] 3.1 N/A — žádná stará data k migraci (H2 in-memory, konsolidovaná V001)
+- [~] 3.2 N/A — viz výše
+- [~] 3.3 N/A — viz výše
+- [~] 3.4 N/A — otevřená otázka odpadá bez migrace; `orisId` naplní první sync (iterace 4)
+- [~] 3.5 N/A — nejsou reálná data k ověření
 
 ## 4. ORIS import a sync párovaný podle `orisId`
 
-- [ ] 4.1 Test: import z ORIS naplní `orisId` z `EventClass.id`
-- [ ] 4.2 Upravit `OrisEventImportService.extractCategories()` — zachovat `EventClass.id`, nejen `name()`
-- [ ] 4.3 Test: sync kategorie přejmenované v ORIS aktualizuje název a zachová registrace
-- [ ] 4.4 Test: sync nemaže kategorie s `orisId = null` (ručně přidané na ORIS eventu)
-- [ ] 4.5 Implementovat párování podle `orisId` v syncu (shoda → update, bez shody → nová, chybějící → odebrat)
-- [ ] 4.6 Přepsat `warnIfSyncRemovesCategoriesWithRegistrations()` na ID-based porovnání
-- [ ] 4.7 Ověřit scénáře: „Sync renames a category that has registrations", „Sync keeps manually added categories", „Sync removes a category that has registrations"
+- [x] 4.1 Test: import z ORIS naplní `orisId` z `EventClass.id`
+- [x] 4.2 Upravit `OrisEventImportService.extractCategories()` — zachovat `EventClass.id`, nejen `name()`
+- [x] 4.3 Test: sync kategorie přejmenované v ORIS aktualizuje název a zachová registrace
+- [x] 4.4 Test: sync nemaže kategorie s `orisId = null` (ručně přidané na ORIS eventu)
+- [x] 4.5 Implementovat párování podle `orisId` v syncu (shoda → update, bez shody → nová, chybějící → odebrat)
+- [x] 4.6 Přepsat `warnIfSyncRemovesCategoriesWithRegistrations()` na ID-based porovnání
+- [x] 4.7 Ověřit scénáře: „Sync renames a category that has registrations", „Sync keeps manually added categories", „Sync removes a category that has registrations"
 
 ## 5. Domain eventy
 

@@ -151,7 +151,7 @@ class OrisEventImportService implements OrisEventImportPort {
         }
         return details.classes().values().stream()
                 .filter(c -> c.name() != null && !c.name().isBlank())
-                .map(c -> EventCategory.create(c.name()))
+                .map(c -> EventCategory.createFromOris(c.id(), c.name()))
                 .toList();
     }
 
@@ -197,12 +197,15 @@ class OrisEventImportService implements OrisEventImportPort {
         if (event.getRegistrations().isEmpty()) {
             return;
         }
-        Set<String> incoming = incomingCategories.stream().map(EventCategory::name).collect(Collectors.toSet());
+        Set<String> incomingOrisIds = incomingCategories.stream()
+                .map(EventCategory::orisId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         Map<String, Long> affectedCounts = event.getRegistrations().stream()
                 .filter(r -> r.categoryId() != null)
-                .map(r -> event.findCategory(r.categoryId()).map(EventCategory::name).orElse(null))
-                .filter(name -> name != null && !incoming.contains(name))
-                .collect(Collectors.groupingBy(name -> name, Collectors.counting()));
+                .map(r -> event.findCategory(r.categoryId()).orElse(null))
+                .filter(category -> category != null && category.orisId() != null && !incomingOrisIds.contains(category.orisId()))
+                .collect(Collectors.groupingBy(EventCategory::name, Collectors.counting()));
         if (!affectedCounts.isEmpty()) {
             log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
                     event.getId(), affectedCounts);

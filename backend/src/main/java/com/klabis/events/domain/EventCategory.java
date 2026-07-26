@@ -33,6 +33,10 @@ public record EventCategory(
         return new EventCategory(EventCategoryId.generate(), null, name, null);
     }
 
+    public static EventCategory createFromOris(String orisId, String name) {
+        return new EventCategory(EventCategoryId.generate(), orisId, name, null);
+    }
+
     public Optional<Money> fee() {
         return Optional.ofNullable(feeOverride);
     }

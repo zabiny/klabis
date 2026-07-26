@@ -2057,6 +2057,130 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("syncFromOris() category merge by orisId")
+    class SyncFromOrisCategoryMerge {
+
+        @Test
+        @DisplayName("renames a category matched by orisId and keeps its id and registrations")
+        void renamesCategoryMatchedByOrisIdAndKeepsRegistrations() {
+            EventCategory m21 = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(List.of(m21))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id());
+
+            EventCategory renamed = new EventCategory(EventCategoryId.generate(), "42", "M21 Elite", null);
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.none())
+                    .categories(List.of(renamed))
+                    .build());
+
+            assertThat(event.getCategories()).hasSize(1);
+            EventCategory updated = event.getCategories().get(0);
+            assertThat(updated.id()).isEqualTo(m21.id());
+            assertThat(updated.name()).isEqualTo("M21 Elite");
+            assertThat(event.getRegistrations()).extracting(EventRegistration::categoryId)
+                    .containsExactly(m21.id());
+        }
+
+        @Test
+        @DisplayName("keeps a manually added category (orisId = null) that is absent from ORIS data")
+        void keepsManuallyAddedCategoryWithNullOrisId() {
+            EventCategory orisCategory = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            EventCategory manualCategory = EventCategory.create("Volunteers");
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(List.of(orisCategory, manualCategory))
+                    .build());
+            event.publish();
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.none())
+                    .categories(List.of(orisCategory))
+                    .build());
+
+            assertThat(event.getCategories()).extracting(EventCategory::name)
+                    .containsExactlyInAnyOrder("M21", "Volunteers");
+        }
+
+        @Test
+        @DisplayName("removes a category with orisId missing from incoming data and preserves registrations without category")
+        void removesCategoryMissingFromIncomingDataAndPreservesRegistrations() {
+            EventCategory m21 = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(List.of(m21))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id());
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.none())
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getCategories()).isEmpty();
+            assertThat(event.getRegistrations()).hasSize(1);
+            EventRegistration registration = event.getRegistrations().get(0);
+            assertThat(event.findCategory(registration.categoryId())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("adds a new category with no orisId match among existing categories")
+        void addsNewCategoryWithNoMatch() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(100)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(List.of())
+                    .build());
+            event.publish();
+
+            EventCategory brandNew = new EventCategory(EventCategoryId.generate(), "77", "W21", null);
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .registrationDeadlines(RegistrationDeadlines.none())
+                    .categories(List.of(brandNew))
+                    .build());
+
+            assertThat(event.getCategories()).extracting(EventCategory::name).containsExactly("W21");
+        }
+    }
+
+    @Nested
     @DisplayName("category uniqueness validation")
     class CategoryUniquenessValidation {
 

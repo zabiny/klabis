@@ -21,8 +21,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 /**
  * Event aggregate root.
  * <p>
@@ -699,11 +701,42 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.websiteUrl = command.websiteUrl();
         this.registrationDeadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
-        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.categories = mergeCategoriesFromOris(command.categories());
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
+    }
+
+    /**
+     * Merges incoming ORIS categories with the event's current categories, matching by {@code orisId}.
+     * <p>
+     * A match keeps the existing category's local id (so registrations stay attached) and adopts the
+     * incoming name. Categories with {@code orisId == null} were added manually and are never touched by
+     * a sync — they are not part of the ORIS source, so ORIS cannot decide to remove them. Existing
+     * ORIS-origin categories whose {@code orisId} is absent from the incoming data are dropped.
+     */
+    private List<EventCategory> mergeCategoriesFromOris(List<EventCategory> incomingCategories) {
+        List<EventCategory> incoming = incomingCategories != null ? incomingCategories : List.of();
+        Map<String, EventCategory> existingByOrisId = this.categories.stream()
+                .filter(c -> c.orisId() != null)
+                .collect(Collectors.toMap(EventCategory::orisId, c -> c));
+
+        List<EventCategory> merged = new ArrayList<>();
+        for (EventCategory incomingCategory : incoming) {
+            EventCategory existing = existingByOrisId.get(incomingCategory.orisId());
+            if (existing != null) {
+                merged.add(new EventCategory(existing.id(), existing.orisId(), incomingCategory.name(), existing.feeOverride()));
+            } else {
+                merged.add(incomingCategory);
+            }
+        }
+
+        this.categories.stream()
+                .filter(c -> c.orisId() == null)
+                .forEach(merged::add);
+
+        return merged;
     }
 
     /**
