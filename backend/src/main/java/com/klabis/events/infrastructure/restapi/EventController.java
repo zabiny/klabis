@@ -4,6 +4,7 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalForms;
+import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
@@ -551,6 +552,12 @@ class EventAffordanceSupport {
         MemberId memberId = resolveMemberId(auth);
         return memberId != null && event.isCoordinator(memberId);
     }
+
+    static List<HalFormsInlineOption> categoryInlineOptions(Event event) {
+        return event.getCategories().stream()
+                .map(category -> new HalFormsInlineOption(category.id().toString(), category.name()))
+                .toList();
+    }
 }
 
 @MvcComponent
@@ -579,11 +586,14 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
+                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                            methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null),
+                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                    ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                            Map.of("category", event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList())
+                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
@@ -644,11 +654,14 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null)));
+                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                            methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null),
+                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                    ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
-                            Map.of("category", event.getCategories().stream().map(com.klabis.events.domain.EventCategory::name).toList())
+                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))

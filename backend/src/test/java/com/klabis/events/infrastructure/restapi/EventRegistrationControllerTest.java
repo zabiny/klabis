@@ -298,8 +298,40 @@ class EventRegistrationControllerTest {
         void shouldIncludeCategoryInRegistrationList() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.randomUUID());
+            EventCategory m21 = EventCategory.create("M21");
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), "M21", Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), m21.id(), Instant.now())
+            );
+            Event closedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .withCategories(List.of(m21))
+                    .addRegistrations(registrations)
+                    .build();
+            closedEvent.publish();
+            closedEvent.finish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category.name").value("M21"));
+        }
+
+        @Test
+        @DisplayName("should return category as null when registration's categoryId no longer exists on the event (orphaned)")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturnNullCategoryWhenOrphaned() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventCategoryId removedCategoryId = EventCategoryId.generate();
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), removedCategoryId, Instant.now())
             );
             Event closedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
@@ -318,7 +350,7 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("M21"));
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value(nullValue()));
         }
     }
 
@@ -475,7 +507,7 @@ class EventRegistrationControllerTest {
         void shouldEditRegistrationAndReturn204WhenActingUserIsOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"123456","category":null}
+                    {"siCardNumber":"123456","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -495,7 +527,7 @@ class EventRegistrationControllerTest {
         void shouldReturn403WhenActingUserIsNotOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"123456","category":null}
+                    {"siCardNumber":"123456","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -513,7 +545,7 @@ class EventRegistrationControllerTest {
         void shouldReturn400WithFieldFeedbackForInvalidSiCardNumber() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"abc","category":null}
+                    {"siCardNumber":"abc","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -530,11 +562,12 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn400WhenCategoryIsNotInEventList() throws Exception {
             UUID eventId = UUID.randomUUID();
+            String unknownCategoryId = UUID.randomUUID().toString();
             String body = """
-                    {"siCardNumber":"123456","category":"INVALID_CATEGORY"}
-                    """;
+                    {"siCardNumber":"123456","categoryId":"%s"}
+                    """.formatted(unknownCategoryId);
 
-            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Category 'INVALID_CATEGORY' is not available for this event") {})
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Category '" + unknownCategoryId + "' is not available for this event") {})
                     .when(registrationServiceMock)
                     .editRegistration(any(), any(), any());
 
@@ -553,7 +586,7 @@ class EventRegistrationControllerTest {
         void shouldAllowEditByEventsRegistrationsAuthorityForNonOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"999888","category":null}
+                    {"siCardNumber":"999888","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -576,7 +609,7 @@ class EventRegistrationControllerTest {
         void shouldReturn403ForNonOwnerWithoutEventsRegistrations() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"999888","category":null}
+                    {"siCardNumber":"999888","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -594,7 +627,7 @@ class EventRegistrationControllerTest {
         void shouldAllowOwnerToEditOwnRegistrationWithoutSpecialAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
-                    {"siCardNumber":"111222","category":null}
+                    {"siCardNumber":"111222","categoryId":null}
                     """;
 
             mockMvc.perform(
@@ -620,9 +653,14 @@ class EventRegistrationControllerTest {
         private static final String REGULAR_MEMBER_ID = "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
         private Event buildEventWithRegistrations(MemberId coordinatorId, List<EventRegistration> registrations) {
+            return buildEventWithRegistrations(coordinatorId, registrations, List.of());
+        }
+
+        private Event buildEventWithRegistrations(MemberId coordinatorId, List<EventRegistration> registrations, List<EventCategory> categories) {
             Event event = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
                     .withCoordinator(coordinatorId)
+                    .withCategories(categories)
                     .addRegistrations(registrations)
                     .build();
             event.publish();
@@ -728,12 +766,14 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId member1Id = new MemberId(UUID.randomUUID());
             MemberId member2Id = new MemberId(UUID.randomUUID());
+            EventCategory w21 = EventCategory.create("W21");
+            EventCategory m21 = EventCategory.create("M21");
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), "W21", Instant.now().minus(5, ChronoUnit.MINUTES)),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), "M21", Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), w21.id(), Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), m21.id(), Instant.now())
             );
-            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
+            Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations, List.of(w21, m21));
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
@@ -747,8 +787,8 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("M21"))
-                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].category").value("W21"));
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].category.name").value("M21"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].category.name").value("W21"));
         }
 
         @Test

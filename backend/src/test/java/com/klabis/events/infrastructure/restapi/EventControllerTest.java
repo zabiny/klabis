@@ -1223,7 +1223,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("registerForEvent template should include category property with inline options when event has categories")
+        @DisplayName("registerForEvent template should include categoryId property with inline value/prompt options when event has categories")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void shouldIncludeCategoryPropertyWithInlineOptionsInRegisterForEventTemplate() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -1231,6 +1231,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .withCategoryNames("M21", "W21", "M35")
                     .buildPublished();
+            List<EventCategory> categories = activeEvent.getCategories();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
@@ -1240,11 +1241,12 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')]").exists())
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[0]").value("M21"))
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[1]").value("W21"))
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options.inline[2]").value("M35"));
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')]").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[0].value").value(categories.get(0).id().toString()))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[0].prompt").value("M21"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[1].prompt").value("W21"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[2].prompt").value("M35"));
         }
 
         @Test
@@ -1264,7 +1266,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='category')].options").doesNotExist());
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[0]").doesNotExist());
         }
 
         @Test

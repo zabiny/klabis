@@ -366,7 +366,7 @@ CREATE TABLE events.event_registrations
     event_id       UUID       NOT NULL REFERENCES events.events (id) ON DELETE CASCADE,
     member_id      UUID       NOT NULL REFERENCES members.members (id) ON DELETE CASCADE,
     si_card_number VARCHAR(8) NOT NULL,
-    category       VARCHAR(50) NULL,
+    category_id    UUID NULL,
     registered_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Unique constraint: one registration per member per event
@@ -382,7 +382,7 @@ COMMENT ON COLUMN events.event_registrations.id IS 'Unique registration identifi
 COMMENT ON COLUMN events.event_registrations.event_id IS 'Reference to the event';
 COMMENT ON COLUMN events.event_registrations.member_id IS 'Reference to the registered member';
 COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
-COMMENT ON COLUMN events.event_registrations.category IS 'Selected race category (nullable: null when event has no categories)';
+COMMENT ON COLUMN events.event_registrations.category_id IS 'Reference to events.event_categories.id (nullable: null when event has no categories, or orphaned when the category was later removed from the event — no FK constraint so the row is preserved either way)';
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
 
 -- ============================================================================
@@ -435,7 +435,7 @@ CREATE INDEX idx_event_categories_event_id ON events.event_categories (event_id)
 
 -- Comments for event_categories
 COMMENT ON TABLE events.event_categories IS 'Race categories offered at an event; stable identity independent of display name';
-COMMENT ON COLUMN events.event_categories.id IS 'Category identifier (UUID), referenced by event_registrations.category_id once registrations become id-based';
+COMMENT ON COLUMN events.event_categories.id IS 'Category identifier (UUID), referenced by event_registrations.category_id';
 COMMENT ON COLUMN events.event_categories.event_id IS 'Reference to the owning event';
 COMMENT ON COLUMN events.event_categories.oris_id IS 'ORIS EventClass.id pairing key for sync matching; null for categories added manually';
 COMMENT ON COLUMN events.event_categories.name IS 'Display name of the category (e.g. M21, W35, D10)';

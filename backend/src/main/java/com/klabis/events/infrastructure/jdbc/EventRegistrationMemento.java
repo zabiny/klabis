@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.jdbc;
 
+import com.klabis.events.domain.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.SiCardNumber;
@@ -32,8 +33,8 @@ class EventRegistrationMemento {
     @Column("si_card_number")
     private String siCardNumber;
 
-    @Column("category")
-    private String category;
+    @Column("category_id")
+    private UUID categoryId;
 
     @Column("registered_at")
     private Instant registeredAt;
@@ -57,7 +58,7 @@ class EventRegistrationMemento {
         memento.id = registration.id();
         memento.memberId = registration.memberId().uuid();
         memento.siCardNumber = registration.siCardNumber().value();
-        memento.category = registration.category();
+        memento.categoryId = registration.categoryId() != null ? registration.categoryId().value() : null;
         memento.registeredAt = registration.registeredAt();
 
         return memento;
@@ -73,7 +74,7 @@ class EventRegistrationMemento {
                 this.id,
                 new MemberId(this.memberId),
                 new SiCardNumber(this.siCardNumber),
-                this.category,
+                this.categoryId != null ? new EventCategoryId(this.categoryId) : null,
                 this.registeredAt
         );
     }
@@ -91,8 +92,8 @@ class EventRegistrationMemento {
         return siCardNumber;
     }
 
-    String getCategory() {
-        return category;
+    UUID getCategoryId() {
+        return categoryId;
     }
 
     Instant getRegisteredAt() {

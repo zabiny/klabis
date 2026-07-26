@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -118,7 +119,7 @@ class EventRegistrationController {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
                 SiCardNumber.of(request.siCardNumber()),
-                request.category()
+                request.categoryId()
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
@@ -149,7 +150,7 @@ class EventRegistrationController {
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream().map(EventRegistration::memberId).toList());
 
         boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event);
-        List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations, memberIndex, sort, callerCanSortByRegistrationTime);
+        List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations, memberIndex, event, sort, callerCanSortByRegistrationTime);
 
         List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(sorted, memberIndex, event, eventId);
 
@@ -178,8 +179,9 @@ class EventRegistrationController {
                     .ifPresent(selfLinkBuilder -> {
                         if (event.areRegistrationsOpen()) {
                             item.add(selfLinkBuilder.withSelfRel()
-                                    .andAffordances(klabisAfford(methodOn(EventRegistrationController.class)
-                                            .editRegistration(eventId, rowMemberId, null))));
+                                    .andAffordances(klabisAffordWithPromptedOptions(
+                                            methodOn(EventRegistrationController.class).editRegistration(eventId, rowMemberId, null),
+                                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event)))));
                         } else {
                             item.add(selfLinkBuilder.withSelfRel());
                         }
@@ -235,7 +237,7 @@ class EventRegistrationController {
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
-        EntityModel<RegistrationDto> entityModel = EntityModel.of(toRegistrationDto(registration));
+        EntityModel<RegistrationDto> entityModel = EntityModel.of(toRegistrationDto(registration, event));
         addLinksForRegistration(entityModel, eventId, event, targetMember, auth);
 
         return ResponseEntity.ok(entityModel);
@@ -247,7 +249,9 @@ class EventRegistrationController {
             var selfLink = selfLinkBuilder.withSelfRel();
             if (event.areRegistrationsOpen()) {
                 selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null)));
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null),
+                                Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
                 if (memberId.equals(actingMember)) {
                     selfLink = selfLink
                             .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
@@ -258,10 +262,11 @@ class EventRegistrationController {
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 
-    private RegistrationDto toRegistrationDto(EventRegistration registration) {
+    private RegistrationDto toRegistrationDto(EventRegistration registration, Event event) {
         MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.category(), registration.registeredAt());
+        return new RegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(),
+                RegistrationDtoMapper.toCategoryDto(registration, event), registration.registeredAt());
     }
 
 

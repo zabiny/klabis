@@ -61,7 +61,7 @@ interface RegistrationData extends EntityModel<{
     firstName: string;
     lastName: string;
     registrationTime?: string;
-    category?: string;
+    category?: EventCategory | null;
     [key: string]: unknown;
 }> {
     _templates?: Record<string, HalFormsTemplate>;
@@ -171,7 +171,14 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
             <TableCell column="lastName" sortable>{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
-                <TableCell column="category" sortable>{labels.fields.categories}</TableCell>
+                <TableCell
+                    column="category"
+                    sortable
+                    dataRender={({value}) => {
+                        const category = value as EventCategory | null | undefined;
+                        return category?.name ?? labels.ui.notProvided;
+                    }}
+                >{labels.fields.categories}</TableCell>
             )}
             <TableCell column="registrationTime" sortable dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
             <TableCell column="_actions" dataRender={renderActionsCell} alwaysVisible>{labels.tables.actions}</TableCell>

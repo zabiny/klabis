@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.events.domain.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.SiCardNumber;
@@ -113,16 +114,18 @@ class EventRegistrationTest {
             UUID originalId = UUID.randomUUID();
             SiCardNumber originalSiCard = SiCardNumber.of("123456");
             Instant originalRegisteredAt = Instant.now().minusSeconds(60);
-            EventRegistration original = EventRegistration.reconstruct(originalId, memberId, originalSiCard, "M21", originalRegisteredAt);
+            EventCategoryId originalCategoryId = EventCategoryId.generate();
+            EventRegistration original = EventRegistration.reconstruct(originalId, memberId, originalSiCard, originalCategoryId, originalRegisteredAt);
 
             SiCardNumber newSiCard = SiCardNumber.of("654321");
-            EventRegistration updated = original.withChanges(newSiCard, "W35");
+            EventCategoryId newCategoryId = EventCategoryId.generate();
+            EventRegistration updated = original.withChanges(newSiCard, newCategoryId);
 
             assertThat(updated.id()).isEqualTo(originalId);
             assertThat(updated.registeredAt()).isEqualTo(originalRegisteredAt);
             assertThat(updated.memberId()).isEqualTo(memberId);
             assertThat(updated.siCardNumber()).isEqualTo(newSiCard);
-            assertThat(updated.category()).isEqualTo("W35");
+            assertThat(updated.categoryId()).isEqualTo(newCategoryId);
         }
 
         @Test

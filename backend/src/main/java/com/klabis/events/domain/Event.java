@@ -189,7 +189,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
             String siCardNumber,
-            String category
+            EventCategoryId categoryId
     ) {
         public static RegisterCommand from(Event event) {
             return new RegisterCommand(null, null);
@@ -265,7 +265,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     @RecordBuilder
     public record EditRegistrationCommand(
             SiCardNumber siCardNumber,
-            String category
+            EventCategoryId categoryId
     ) {}
 
     /**
@@ -737,39 +737,39 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      *
      * @param memberId     member's user ID (required)
      * @param siCardNumber SI card number (required)
-     * @param category     selected race category (required when event has categories, ignored otherwise)
+     * @param categoryId   selected race category id (required when event has categories, ignored otherwise)
      * @throws BusinessRuleViolationException    if registrations are not open or category validation fails
      * @throws DuplicateRegistrationException    if member is already registered
      */
-    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, String category) {
+    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId) {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
-        String resolvedCategory = resolveCategory(category);
+        EventCategoryId resolvedCategoryId = resolveCategoryId(categoryId);
 
         EventRegistration registration = EventRegistration.create(
-                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategory));
+                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategoryId));
         registrations.add(registration);
 
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
     }
 
-    private String resolveCategory(String category) {
+    private EventCategoryId resolveCategoryId(EventCategoryId categoryId) {
         if (categories.isEmpty()) {
             return null;
         }
-        if (category == null || category.isBlank()) {
+        if (categoryId == null) {
             throw new BusinessRuleViolationException("Category is required for this event") {};
         }
-        boolean isKnownCategory = categories.stream().anyMatch(c -> c.name().equals(category));
+        boolean isKnownCategory = categories.stream().anyMatch(c -> c.id().equals(categoryId));
         if (!isKnownCategory) {
             throw new BusinessRuleViolationException(
-                    "Category '" + category + "' is not available for this event") {};
+                    "Category '" + categoryId + "' is not available for this event") {};
         }
-        return category;
+        return categoryId;
     }
 
     /**
@@ -798,8 +798,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         EventRegistration current = findRegistration(memberId)
                 .orElseThrow(() -> new RegistrationNotFoundException(memberId, this.id));
 
-        String resolvedCategory = resolveCategory(command.category());
-        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategory);
+        EventCategoryId resolvedCategoryId = resolveCategoryId(command.categoryId());
+        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId);
 
         registrations.remove(current);
         registrations.add(updated);
@@ -846,6 +846,22 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     public List<EventRegistration> getRegistrations() {
         return Collections.unmodifiableList(registrations);
+    }
+
+    /**
+     * Look up a category by id among this event's current categories.
+     * <p>
+     * Returns empty when {@code categoryId} is null or no longer present on the event — this is the
+     * orphaned-registration case: the id stays on the registration, but the category was removed.
+     *
+     * @param categoryId category id to resolve, may be null
+     * @return the matching category, or empty if not found
+     */
+    public Optional<EventCategory> findCategory(EventCategoryId categoryId) {
+        if (categoryId == null) {
+            return Optional.empty();
+        }
+        return categories.stream().filter(c -> c.id().equals(categoryId)).findFirst();
     }
 
     @Override

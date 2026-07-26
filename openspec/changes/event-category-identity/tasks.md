@@ -17,21 +17,21 @@ Vertikální řez: doména → persistence → API → frontend, aby kategorie m
 - [x] 1.9 Aktualizovat HAL-FORMS afordance `createEvent` / `updateEvent` (pole `categories` jako pole objektů)
 - [x] 1.10 Frontend: formulář vytvoření/editace eventu pracuje s objekty kategorií (id, name, fee) místo řetězců
 - [x] 1.11 Frontend: detail eventu zobrazuje kategorie včetně případné ceny
-- [ ] 1.12 Ověřit scénáře: „Renaming a category keeps existing registrations attached", „Category name must be unique within an event", „Event manager sets a fee on a category"
+- [x] 1.12 Ověřit scénáře: „Renaming a category keeps existing registrations attached", „Category name must be unique within an event", „Event manager sets a fee on a category"
 
 ## 2. Registrace odkazuje kategorii přes ID (end-to-end)
 
-- [ ] 2.1 Test: registrace se vytvoří s `categoryId`; přejmenování kategorie na eventu vazbu zachová
-- [ ] 2.2 Změnit `EventRegistration.category` na `categoryId: EventCategoryId`; upravit `Event.registerMember()` a `editRegistration()`
-- [ ] 2.3 Test: registrace s `categoryId`, které na eventu neexistuje, se přečte s prázdnou kategorií (osiřelá)
-- [ ] 2.4 Rozšířit `EventRegistrationMemento` + DDL pro odkaz na kategorii
-- [ ] 2.5 Test: `POST`/`PUT` registrace přijímá `categoryId` a odmítne ID, které eventu nepatří
-- [ ] 2.6 Upravit `EditRegistrationRequest`, `RegistrationDto`, `RegistrationSummaryDto`, `RegistrationDtoMapper` (response nese `id` + dohledaný `name`, u osiřelé `null`)
-- [ ] 2.7 Upravit `RegistrationSortApplier` — řazení podle názvu dohledaného z ID, osiřelé seskupené
-- [ ] 2.8 Aktualizovat HAL-FORMS afordance `register` / `editRegistration` (`categoryId` s inline options: value = id, prompt = název)
-- [ ] 2.9 Frontend: výběr kategorie při registraci a editaci posílá `categoryId`
-- [ ] 2.10 Frontend: seznam registrací a „Moje přihláška" zobrazují název kategorie, u osiřelé prázdnou hodnotu
-- [ ] 2.11 Ověřit scénáře z `event-registrations`: přejmenování, odebrání kategorie, re-výběr členem, řazení s osiřelými
+- [x] 2.1 Test: registrace se vytvoří s `categoryId`; přejmenování kategorie na eventu vazbu zachová
+- [x] 2.2 Změnit `EventRegistration.category` na `categoryId: EventCategoryId`; upravit `Event.registerMember()` a `editRegistration()`
+- [x] 2.3 Test: registrace s `categoryId`, které na eventu neexistuje, se přečte s prázdnou kategorií (osiřelá)
+- [x] 2.4 Rozšířit `EventRegistrationMemento` + DDL pro odkaz na kategorii
+- [x] 2.5 Test: `POST`/`PUT` registrace přijímá `categoryId` a odmítne ID, které eventu nepatří
+- [x] 2.6 Upravit `EditRegistrationRequest`, `RegistrationDto`, `RegistrationSummaryDto`, `RegistrationDtoMapper` (response nese `id` + dohledaný `name`, u osiřelé `null`)
+- [x] 2.7 Upravit `RegistrationSortApplier` — řazení podle názvu dohledaného z ID, osiřelé seskupené
+- [x] 2.8 Aktualizovat HAL-FORMS afordance `register` / `editRegistration` (`categoryId` s inline options: value = id, prompt = název)
+- [x] 2.9 Frontend: výběr kategorie při registraci a editaci posílá `categoryId`
+- [x] 2.10 Frontend: seznam registrací a „Moje přihláška" zobrazují název kategorie, u osiřelé prázdnou hodnotu
+- [x] 2.11 Ověřit scénáře z `event-registrations`: přejmenování, odebrání kategorie, re-výběr členem, řazení s osiřelými
 
 ## 3. Datová migrace
 

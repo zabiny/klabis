@@ -784,17 +784,18 @@ class EventTest {
         @Test
         @DisplayName("should register member with category when event has categories")
         void shouldRegisterMemberWithCategoryWhenEventHasCategories() {
+            EventCategory m21 = EventCategory.create("M21");
             Event event = Event.create(EventCreateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
+                    .categories(List.of(m21, EventCategory.create("W35")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), "M21");
+            event.registerMember(memberId, SiCardNumber.of("123456"), m21.id());
 
             assertThat(event.findRegistration(memberId)).isPresent();
-            assertThat(event.findRegistration(memberId).get().category()).isEqualTo("M21");
+            assertThat(event.findRegistration(memberId).get().categoryId()).isEqualTo(m21.id());
         }
 
         @Test
@@ -821,8 +822,9 @@ class EventTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
+            EventCategoryId unknownCategoryId = EventCategoryId.generate();
 
-            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), "H55"))
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), unknownCategoryId))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("not available");
         }
@@ -839,7 +841,7 @@ class EventTest {
             event.registerMember(memberId, SiCardNumber.of("123456"), null);
 
             assertThat(event.findRegistration(memberId)).isPresent();
-            assertThat(event.findRegistration(memberId).get().category()).isNull();
+            assertThat(event.findRegistration(memberId).get().categoryId()).isNull();
         }
 
         @Test
@@ -851,10 +853,10 @@ class EventTest {
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), "M21");
+            event.registerMember(memberId, SiCardNumber.of("123456"), EventCategoryId.generate());
 
             assertThat(event.findRegistration(memberId)).isPresent();
-            assertThat(event.findRegistration(memberId).get().category()).isNull();
+            assertThat(event.findRegistration(memberId).get().categoryId()).isNull();
         }
     }
 
@@ -1569,8 +1571,8 @@ class EventTest {
             assertThat(emitted.memberId()).isEqualTo(memberId);
             assertThat(emitted.oldSiCardNumber()).isEqualTo(originalSiCard);
             assertThat(emitted.newSiCardNumber()).isEqualTo(newSiCard);
-            assertThat(emitted.oldCategory()).isNull();
-            assertThat(emitted.newCategory()).isNull();
+            assertThat(emitted.oldCategoryId()).isNull();
+            assertThat(emitted.newCategoryId()).isNull();
         }
     }
 
@@ -1737,7 +1739,9 @@ class EventTest {
     @DisplayName("editRegistration() – Skupina 2: kategorie")
     class EditRegistrationCategory {
 
-        private static final List<EventCategory> CATEGORIES = List.of(EventCategory.create("M21"), EventCategory.create("W35"));
+        private static final EventCategory M21 = EventCategory.create("M21");
+        private static final EventCategory W35 = EventCategory.create("W35");
+        private static final List<EventCategory> CATEGORIES = List.of(M21, W35);
 
         private Event activeEventWithCategories() {
             return EventTestDataBuilder.anEvent()
@@ -1746,10 +1750,10 @@ class EventTest {
                     .buildPublished();
         }
 
-        private Event activeEventWithCategoryAndRegisteredMember(MemberId memberId, String category) {
+        private Event activeEventWithCategoryAndRegisteredMember(MemberId memberId, EventCategoryId categoryId) {
             Event event = activeEventWithCategories();
             event.clearDomainEvents();
-            event.registerMember(memberId, SiCardNumber.of("123456"), category);
+            event.registerMember(memberId, SiCardNumber.of("123456"), categoryId);
             event.clearDomainEvents();
             return event;
         }
@@ -1758,39 +1762,25 @@ class EventTest {
         @DisplayName("should update category for event with categories")
         void shouldUpdateCategoryForEventWithCategories() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, M21.id());
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("123456"))
-                    .category("W35")
+                    .categoryId(W35.id())
                     .build());
 
-            assertThat(event.findRegistration(memberId).get().category()).isEqualTo("W35");
+            assertThat(event.findRegistration(memberId).get().categoryId()).isEqualTo(W35.id());
         }
 
         @Test
         @DisplayName("should throw when category is null for event with categories")
         void shouldThrowWhenCategoryNullForEventWithCategories() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, M21.id());
 
             assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("123456"))
-                    .category(null)
-                    .build()))
-                    .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Category is required");
-        }
-
-        @Test
-        @DisplayName("should throw when category is blank for event with categories")
-        void shouldThrowWhenCategoryBlankForEventWithCategories() {
-            MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
-
-            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
-                    .siCardNumber(SiCardNumber.of("123456"))
-                    .category("   ")
+                    .categoryId(null)
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Category is required");
@@ -1800,11 +1790,11 @@ class EventTest {
         @DisplayName("should throw when category is not in the event's category list")
         void shouldThrowWhenCategoryNotInEventList() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = activeEventWithCategoryAndRegisteredMember(memberId, "M21");
+            Event event = activeEventWithCategoryAndRegisteredMember(memberId, M21.id());
 
             assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("123456"))
-                    .category("H55")
+                    .categoryId(EventCategoryId.generate())
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("not available");
@@ -1823,10 +1813,48 @@ class EventTest {
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("654321"))
-                    .category("M21")
+                    .categoryId(EventCategoryId.generate())
                     .build());
 
-            assertThat(event.findRegistration(memberId).get().category()).isNull();
+            assertThat(event.findRegistration(memberId).get().categoryId()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("findCategory() — orphaned registration lookup")
+    class FindCategoryLookup {
+
+        @Test
+        @DisplayName("should return the category when categoryId exists on the event")
+        void shouldReturnCategoryWhenPresent() {
+            EventCategory m21 = EventCategory.create("M21");
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .withCategories(List.of(m21))
+                    .build();
+
+            assertThat(event.findCategory(m21.id())).contains(m21);
+        }
+
+        @Test
+        @DisplayName("should return empty when categoryId no longer exists on the event (orphaned)")
+        void shouldReturnEmptyWhenCategoryRemoved() {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .withCategories(List.of(EventCategory.create("M21")))
+                    .build();
+
+            assertThat(event.findCategory(EventCategoryId.generate())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return empty when categoryId is null")
+        void shouldReturnEmptyWhenCategoryIdIsNull() {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(10))
+                    .build();
+
+            assertThat(event.findCategory(null)).isEmpty();
         }
     }
 

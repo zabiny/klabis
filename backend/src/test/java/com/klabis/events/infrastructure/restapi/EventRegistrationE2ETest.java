@@ -377,17 +377,33 @@ class EventRegistrationE2ETest {
     void shouldUpdateCategoryAndShowInRegistrationList() throws Exception {
         String eventId = createPublishedEvent("Category edit test", LocalDate.now().plusDays(10), List.of("M21", "W35"));
 
+        String eventJson = mockMvc.perform(
+                        get("/api/events/{id}", eventId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .with(klabisAuthentication(
+                                        JwtParams.jwtTokenParams(ADMIN_USERNAME, UserId.fromString("14ad69f4-8fd0-4314-9cf2-d57e9e6f64a6"))
+                                                .withAuthorities(Authority.EVENTS_READ)
+                                ))
+                )
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        var categories = objectMapper.readTree(eventJson).get("categories");
+        String m21Id = categories.get(0).get("name").asText().equals("M21")
+                ? categories.get(0).get("id").asText() : categories.get(1).get("id").asText();
+        String w35Id = categories.get(0).get("name").asText().equals("W35")
+                ? categories.get(0).get("id").asText() : categories.get(1).get("id").asText();
+
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "category", "M21")))
+                        .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "categoryId", m21Id)))
                         .with(klabisAuthentication(member(TEST_MEMBER_ID)))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "category", "W35")))
+                                .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "categoryId", w35Id)))
                                 .with(klabisAuthentication(member(TEST_MEMBER_ID)))
                 )
                 .andExpect(status().isNoContent());
@@ -399,7 +415,7 @@ class EventRegistrationE2ETest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.registrationDtoList[0].category").value("W35"));
+                .andExpect(jsonPath("$._embedded.registrationDtoList[0].category.name").value("W35"));
     }
 
     @Test

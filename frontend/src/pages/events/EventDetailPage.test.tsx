@@ -567,7 +567,7 @@ describe('EventDetailPage', () => {
             });
 
             it('category column header is sortable when event has categories', () => {
-                const rowWithCategory = buildRegistrationRow('member-1', {category: 'H21'});
+                const rowWithCategory = buildRegistrationRow('member-1', {category: {id: 'cat-1', name: 'H21'}});
                 renderPageWithRegistrationRows([rowWithCategory], {
                     categories: [{id: 'cat-1', name: 'H21'}, {id: 'cat-2', name: 'D21'}],
                 });
@@ -615,6 +615,33 @@ describe('EventDetailPage', () => {
 
                 const lastCall = vi.mocked(useAuthorizedQuery).mock.calls.at(-1);
                 expect(lastCall?.[0]).toContain('sort=firstName%2Casc');
+            });
+        });
+
+        describe('category cell display (event-category-identity)', () => {
+            it('shows category name in the category cell', () => {
+                const row = buildRegistrationRow('member-1', {category: {id: 'cat-1', name: 'H21'}});
+                renderPageWithRegistrationRows([row], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('cell', {name: 'H21'})).toBeInTheDocument();
+            });
+
+            it('shows neutral placeholder for orphaned registration (category is null)', () => {
+                const orphanedRow = buildRegistrationRow('member-1', {category: null});
+                const rowWithCategory = buildRegistrationRow('member-2', {category: {id: 'cat-1', name: 'H21'}});
+                renderPageWithRegistrationRows([orphanedRow, rowWithCategory], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('cell', {name: 'neuvedeno'})).toBeInTheDocument();
+            });
+
+            it('does not crash when category field is absent from the row', () => {
+                const row = buildRegistrationRow('member-1');
+                renderPageWithRegistrationRows([row], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('table')).toBeInTheDocument();
             });
         });
 

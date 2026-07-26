@@ -1582,7 +1582,11 @@ export interface components {
         };
         EditRegistrationRequest: {
             siCardNumber: string;
-            category?: string;
+            categoryId?: components["schemas"]["EventCategoryId"];
+        };
+        EventCategoryId: {
+            /** Format: uuid */
+            value?: string;
         };
         /** @description Event type update data */
         UpdateEventType: {
@@ -1835,7 +1839,7 @@ export interface components {
         /** @description Registration data */
         RegisterCommand: {
             siCardNumber: string;
-            category?: string;
+            categoryId?: components["schemas"]["EventCategoryId"];
         };
         EntityModelBulkSyncResult: {
             /** Format: int32 */
@@ -2560,10 +2564,6 @@ export interface components {
             name?: string;
             fee?: components["schemas"]["EntryFeeDto"];
         };
-        EventCategoryId: {
-            /** Format: uuid */
-            value?: string;
-        };
         PagedModelEntityModelEventSummaryDto: {
             _embedded?: {
                 eventSummaryDtoList?: components["schemas"]["EntityModelEventSummaryDto"][];
@@ -2580,7 +2580,7 @@ export interface components {
         EntityModelRegistrationSummaryDto: {
             firstName?: string;
             lastName?: string;
-            category?: string;
+            category?: components["schemas"]["EventCategoryDto"];
             /** Format: date-time */
             registrationTime?: string;
             _links?: components["schemas"]["Links"];
@@ -2589,7 +2589,7 @@ export interface components {
             firstName?: string;
             lastName?: string;
             siCardNumber?: string;
-            category?: string;
+            category?: components["schemas"]["EventCategoryDto"];
             /** Format: date-time */
             registeredAt?: string;
             _links?: components["schemas"]["Links"];

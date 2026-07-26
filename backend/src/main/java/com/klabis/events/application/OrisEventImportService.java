@@ -199,8 +199,10 @@ class OrisEventImportService implements OrisEventImportPort {
         }
         Set<String> incoming = incomingCategories.stream().map(EventCategory::name).collect(Collectors.toSet());
         Map<String, Long> affectedCounts = event.getRegistrations().stream()
-                .filter(r -> r.category() != null && !incoming.contains(r.category()))
-                .collect(Collectors.groupingBy(EventRegistration::category, Collectors.counting()));
+                .filter(r -> r.categoryId() != null)
+                .map(r -> event.findCategory(r.categoryId()).map(EventCategory::name).orElse(null))
+                .filter(name -> name != null && !incoming.contains(name))
+                .collect(Collectors.groupingBy(name -> name, Collectors.counting()));
         if (!affectedCounts.isEmpty()) {
             log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
                     event.getId(), affectedCounts);

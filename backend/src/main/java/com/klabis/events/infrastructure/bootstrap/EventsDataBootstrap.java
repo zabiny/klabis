@@ -412,8 +412,8 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
         }
     }
 
-    private String resolveFirstCategory(Event event) {
-        return event.getCategories().isEmpty() ? null : event.getCategories().get(0).name();
+    private EventCategoryId resolveFirstCategory(Event event) {
+        return event.getCategories().isEmpty() ? null : event.getCategories().get(0).id();
     }
 
     private static EventTypeId findTypeIdByName(List<EventType> types, String name) {

@@ -192,6 +192,7 @@ class OrisEventImportServiceTest {
         void shouldLogWarningWhenSyncRemovesCategoriesWithRegistrations() {
             EventId eventId = EventId.generate();
             int orisId = 9876;
+            com.klabis.events.domain.EventCategory m21 = com.klabis.events.domain.EventCategory.create("M21");
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(orisId)
                     .name("Race")
@@ -199,12 +200,12 @@ class OrisEventImportServiceTest {
                     .location("Forest")
                     .organizer("OOB")
                     .categories(java.util.List.of(
-                            com.klabis.events.domain.EventCategory.create("M21"),
+                            m21,
                             com.klabis.events.domain.EventCategory.create("W21")))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, new SiCardNumber("12345"), "M21");
+            event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
 
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
             EventDetails details = buildEventDetailsWithClasses(orisId, "Race Updated", LocalDate.of(2026, 8, 15), "Forest",

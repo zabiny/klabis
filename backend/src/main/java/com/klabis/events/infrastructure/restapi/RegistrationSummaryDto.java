@@ -20,7 +20,8 @@ import java.util.Set;
 public record RegistrationSummaryDto(
         String firstName,
         String lastName,
-        String category,
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        EventDto.EventCategoryDto category,
         @OwnerVisible
         @HasAuthority(Authority.EVENTS_REGISTRATIONS)
         Instant registrationTime,
