@@ -1,6 +1,7 @@
 import {type ReactElement} from 'react';
 import {useField} from 'formik';
 import {type HalFormFieldFactory, type HalFormsInputProps} from '../HalNavigator2/halforms';
+import {isMultipleProperty} from '../HalNavigator2/halforms/utils.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {CategoryPresetPickerButton} from './CategoryPresetPickerButton.tsx';
 import {EventTypeSelectField} from './EventTypeSelectField.tsx';
@@ -85,7 +86,11 @@ export const eventFormFieldsFactory: HalFormFieldFactory = (
         return <EventTypeSelectField {...conf}/>;
     }
 
-    if (fieldType === 'CategoryRequest') {
+    // `categories` itself is a multi-valued CategoryRequest property (fieldType is the
+    // element type, not "array"). Only intercept a single indexed item here — the
+    // array/collection field must fall through to klabisFieldsFactory/HalFormsCollectionField,
+    // which iterates the array and calls back into this factory per row (multiple: false).
+    if (fieldType === 'CategoryRequest' && !isMultipleProperty(conf.prop)) {
         return <CategoryRowField {...conf}/>;
     }
 
