@@ -24,6 +24,6 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `tsc --noEmit`; fix any signature/type fallout at call-sites (`HalFormsForm`, consumers)
-- [ ] 5.2 Run full frontend test suite; confirm no behavior change — especially the category collection regression test and `eventFormFieldsFactory.test.tsx`
-- [ ] 5.3 Browser sanity check on `http://localhost:3000`: create/edit event categories (add/remove rows, fee, preserved id) still work
+- [x] 5.1 Run `tsc --noEmit`; fix any signature/type fallout at call-sites (`HalFormsForm`, consumers)
+- [x] 5.2 Run full frontend test suite; confirm no behavior change — especially the category collection regression test and `eventFormFieldsFactory.test.tsx`
+- [x] 5.3 Browser sanity check on `http://localhost:3000`: create/edit event categories (add/remove rows, fee, preserved id) still work
