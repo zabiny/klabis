@@ -200,7 +200,40 @@ Maps HAL-FORMS property types to React components:
 | boolean | HalFormsBoolean |
 | datetime | HalFormsDateTime |
 
-Extend with `expandHalFormsFieldFactory(customFactory)` to add custom field types.
+**Signature:** `halFormsFieldsFactory(fieldType: string, conf: HalFormsInputProps, customFactory?: CustomFieldFactory): ReactElement | null`
+
+Dispatch order for every call:
+1. **`multi` always wins first** — if `conf.prop` is multi-valued (and has no `options`/`suggest`), the property routes to `HalFormsCollectionField` unconditionally, before `customFactory` ever runs. `HalFormsCollectionField` then recurses per row (`multiple: false`) back through the same custom-aware factory.
+2. **`customFactory`** is consulted next — a custom type wins over any built-in default.
+3. **Built-in `switch`** on `fieldType` (the table above) as the final fallback.
+
+Because of step 1, a `CustomFieldFactory` only ever receives a **single-row** call for a multi-valued property — it never sees the array itself and does not need to special-case `isMultipleProperty` to avoid being called at the array level.
+
+**Important:** a custom type must never try to render its own multi-value UI by checking `isMultipleProperty` inside the `CustomFieldFactory` — step 1 already claimed the array before the factory runs, so that check will only ever see single-row calls and is dead code for the array case. If a custom type needs different behavior for the multi-valued case (e.g. `MemberId`/`UUID`, which used to render one combined checkbox-group for a multi-select), re-express it as a plain single-field component and let the standard `multi` → `HalFormsCollectionField` mechanism iterate it instead: the base `multi` branch routes the array to `HalFormsCollectionField`, which recurses per row (`multiple: false`) back into the same custom factory, landing on the same single-field component once per item — with add/remove handled generically. This trades one combined widget for N per-row rows, but requires no special exemption in the framework.
+
+**Extending with custom field types:** use `expandHalFormsFieldFactory(customFactory: CustomFieldFactory): HalFormFieldFactory`, which is exactly `fullFactory(customFactory)` — it binds your custom logic into `halFormsFieldsFactory`'s 3rd parameter and returns a normal `HalFormFieldFactory` (the shape `HalFormButton`/`HalFormDisplay`/`HalFormsForm` consumers expect, so call-sites don't change).
+
+```ts
+type CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
+
+const myCustomFactory: CustomFieldFactory = (fieldType, conf) => {
+    if (fieldType === 'MyCustomType') return <MyCustomField {...conf} />;
+    return null; // falls through to the next factory / built-ins
+};
+
+export const myFieldsFactory = expandHalFormsFieldFactory(myCustomFactory);
+```
+
+To compose several custom factories (e.g. a base factory plus feature-specific extras), chain them by falling through to the previous one instead of nesting `expandHalFormsFieldFactory` calls:
+
+```ts
+const combinedCustomFactory: CustomFieldFactory = (fieldType, conf) =>
+    myExtraCaseOrNull(fieldType, conf) ?? baseCustomFactory(fieldType, conf);
+
+export const combinedFieldsFactory = expandHalFormsFieldFactory(combinedCustomFactory);
+```
+
+`fullFactory(customFactory?)` is the lower-level helper `expandHalFormsFieldFactory` is built on — use it directly only if you need the resulting `HalFormFieldFactory` without going through `expandHalFormsFieldFactory`'s naming (they're equivalent).
 
 ## HATEOAS Utility Functions
 

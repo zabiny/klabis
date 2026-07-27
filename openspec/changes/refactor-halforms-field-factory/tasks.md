@@ -20,7 +20,7 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Update the `hal-navigator-patterns` skill (`references/component-api.md`) to document the new `halFormsFieldsFactory(fieldType, conf, customFactory?)` signature and the `fullFactory` helper, replacing the old `expandHalFormsFieldFactory(customFactory)` wrapper guidance; explain that `multi` fields route to the collection field first and the custom factory only handles per-row (single) types
+- [x] 4.1 Update the `hal-navigator-patterns` skill (`references/component-api.md`) to document the new `halFormsFieldsFactory(fieldType, conf, customFactory?)` signature and the `fullFactory` helper, replacing the old `expandHalFormsFieldFactory(customFactory)` wrapper guidance; explain that `multi` fields route to the collection field first and the custom factory only handles per-row (single) types
 
 ## 5. Verification
 
