@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+/**
+ * Bundles docs/openapi/spec/ into a single OpenAPI document.
+ *
+ * Usage: node bundle.mjs [--out <file>] [--check]
+ *   --out    destination (default: docs/openapi/klabis-full.json)
+ *   --check  validate and bundle, but do not write
+ *
+ * During the migration the default output is NOT wired into the Gradle build — springdoc still
+ * produces klabis-full.json. See docs/openapi/spec/README or the migration plan.
+ */
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {dirname, resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+import {bundleSpec, countOperations} from './lib/bundle.mjs';
+import {loadAuthorities, validateSpec} from './lib/validate.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, '../..');
+
+const SPEC_ROOT = resolve(repoRoot, 'docs/openapi/spec/klabis.yaml');
+const AUTHORITY_JAVA = resolve(repoRoot, 'backend/src/main/java/com/klabis/common/users/Authority.java');
+const DEFAULT_OUT = resolve(repoRoot, 'docs/openapi/klabis-full.json');
+
+function parseArgs(argv) {
+    const args = {out: DEFAULT_OUT, check: false};
+    for (let i = 0; i < argv.length; i++) {
+        if (argv[i] === '--out') args.out = resolve(repoRoot, argv[++i]);
+        else if (argv[i] === '--check') args.check = true;
+    }
+    return args;
+}
+
+function main() {
+    const args = parseArgs(process.argv.slice(2));
+
+    if (!existsSync(SPEC_ROOT)) {
+        console.error(`Spec root not found: ${SPEC_ROOT}`);
+        process.exit(1);
+    }
+
+    const {document, conflicts} = bundleSpec(SPEC_ROOT);
+
+    if (conflicts.length > 0) {
+        console.error('Conflicting component definitions (same name, different shape):');
+        for (const c of conflicts) console.error(`  components.${c.bucket}.${c.name}  (${c.source})`);
+        process.exit(1);
+    }
+
+    const authorities = loadAuthorities(AUTHORITY_JAVA);
+    const errors = validateSpec(document, {authorities});
+
+    if (errors.length > 0) {
+        console.error(`Spec validation failed (${errors.length} error(s)):`);
+        for (const e of errors) console.error(`  ${e.path || '<root>'}: ${e.message}`);
+        process.exit(1);
+    }
+
+    const operationCount = countOperations(document);
+
+    if (args.check) {
+        console.log(`Spec valid: ${operationCount} operation(s), ${Object.keys(document.components?.schemas ?? {}).length} schema(s). Not written (--check).`);
+        return;
+    }
+
+    const serialized = `${JSON.stringify(document, null, 1)}\n`;
+
+    // Only write on change — this file is committed and rewriting it churns 400+ KB of diff.
+    if (existsSync(args.out) && readFileSync(args.out, 'utf8') === serialized) {
+        console.log(`Unchanged: ${args.out} (${operationCount} operations)`);
+        return;
+    }
+
+    mkdirSync(dirname(args.out), {recursive: true});
+    writeFileSync(args.out, serialized);
+    console.log(`Written: ${args.out} (${operationCount} operations)`);
+}
+
+main();

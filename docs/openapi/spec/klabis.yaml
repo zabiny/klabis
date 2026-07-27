@@ -1,0 +1,48 @@
+openapi: 3.1.0
+
+info:
+  title: Klabis Orienteering Club Management API
+  description: |
+    RESTful API for managing orienteering club operations.
+
+    ## Features
+    - Member registration and management
+    - HATEOAS-compliant with HAL+FORMS media type
+    - OAuth2 authentication and authorization
+    - RFC 7807 Problem Details for errors
+
+    ## Authentication
+    Most endpoints require OAuth2 authentication. Use the 'Authorize' button to authenticate.
+  contact:
+    name: Klabis Development Team
+    email: davca7@gmail.com
+  license:
+    name: Proprietary
+    url: https://github.com/zabiny/klabis/blob/main/LICENCE
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+# Module specs are $ref'd in here as they are migrated. Empty until phase 1.
+paths: {}
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  schemas: {}
