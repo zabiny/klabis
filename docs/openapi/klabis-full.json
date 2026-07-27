@@ -11977,21 +11977,13 @@
             "pattern": "\\d{6,7}"
           },
           "categoryId": {
-            "$ref": "#/components/schemas/EventCategoryId"
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
           "siCardNumber"
         ]
-      },
-      "EventCategoryId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
       },
       "UpdateEventType": {
         "type": "object",
@@ -12605,11 +12597,13 @@
           "coordinators": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MemberId"
+              "type": "string",
+              "format": "uuid"
             }
           },
           "eventTypeId": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "deadlines": {
             "type": "array",
@@ -12651,24 +12645,6 @@
           "currency"
         ]
       },
-      "EventTypeId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "MemberId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "CancelEventRequest": {
         "type": "object",
         "description": "Optional cancellation details",
@@ -12690,7 +12666,8 @@
             "pattern": "\\d{6,7}"
           },
           "categoryId": {
-            "$ref": "#/components/schemas/EventCategoryId"
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -12723,20 +12700,12 @@
           }
         }
       },
-      "EventId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "EventSyncEntry": {
         "type": "object",
         "properties": {
           "eventId": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -13468,7 +13437,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/TrainingGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -13487,15 +13457,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "TrainingGroupId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -13544,7 +13505,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/TrainingGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -13740,7 +13702,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/MemberId",
+            "type": "string",
+            "format": "uuid",
             "description": "Unique member identifier (UUID)",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
@@ -14031,7 +13994,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/MemberId"
+            "type": "string",
+            "format": "uuid"
           },
           "registrationNumber": {
             "type": "string"
@@ -14234,13 +14198,15 @@
         "type": "object",
         "properties": {
           "groupId": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "groupName": {
             "type": "string"
           },
           "invitationId": {
-            "$ref": "#/components/schemas/InvitationId"
+            "type": "string",
+            "format": "uuid"
           },
           "invitedBy": {
             "type": "string",
@@ -14248,24 +14214,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "FreeGroupId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "InvitationId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14292,7 +14240,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14322,7 +14271,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14465,7 +14415,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FamilyGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14476,15 +14427,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "FamilyGroupId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14508,7 +14450,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FamilyGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14546,7 +14489,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14567,12 +14511,14 @@
           "coordinators": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MemberId"
+              "type": "string",
+              "format": "uuid"
             },
             "uniqueItems": true
           },
           "eventTypeId": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "status": {
             "type": "string",
@@ -14619,7 +14565,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/EventCategoryId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14738,7 +14685,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14771,15 +14719,6 @@
           }
         }
       },
-      "CategoryPresetId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "CollectionModelEntityModelCategoryPresetDto": {
         "type": "object",
         "properties": {
@@ -14803,7 +14742,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/CategoryPresetId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14816,15 +14756,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "CalendarItemId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14851,7 +14782,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/CalendarItemId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14868,7 +14800,8 @@
             "format": "date"
           },
           "eventId": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
