@@ -22,11 +22,15 @@ export interface TrainingGroupTrainer {
     _templates?: { [name: string]: HalFormsTemplate };
 }
 
+export interface TrainingGroupAgeRange {
+    minAge: number | null;
+    maxAge: number | null;
+}
+
 export interface TrainingGroupDetail extends HalResponse {
     id: string;
     name: string;
-    minAge: number;
-    maxAge: number;
+    ageRange: TrainingGroupAgeRange | null;
     trainers?: TrainingGroupTrainer[];
     members?: TrainingGroupMember[];
 }

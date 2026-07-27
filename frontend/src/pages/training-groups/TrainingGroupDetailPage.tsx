@@ -61,9 +61,11 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-text-primary">{resourceData.name}</h1>
-                    <p className="text-sm text-text-secondary mt-1">
-                        {labels.fields.ageRange}: {resourceData.minAge}–{resourceData.maxAge}
-                    </p>
+                    {resourceData.ageRange && (
+                        <p className="text-sm text-text-secondary mt-1">
+                            {labels.fields.ageRange}: {resourceData.ageRange.minAge}–{resourceData.ageRange.maxAge}
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex flex-wrap gap-3 sm:flex-shrink-0">

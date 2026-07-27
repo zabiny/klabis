@@ -2140,6 +2140,12 @@ export interface components {
             /** Format: uuid */
             value?: string;
         };
+        AgeRangeResponse: {
+            /** Format: int32 */
+            minAge?: number;
+            /** Format: int32 */
+            maxAge?: number;
+        };
         EntityModelGroupMembershipResponse: {
             /** Format: uuid */
             memberId?: string;
@@ -2155,10 +2161,7 @@ export interface components {
         EntityModelTrainingGroupResponse: {
             id?: components["schemas"]["TrainingGroupId"];
             name?: string;
-            /** Format: int32 */
-            minAge?: number;
-            /** Format: int32 */
-            maxAge?: number;
+            ageRange?: components["schemas"]["AgeRangeResponse"];
             trainers?: components["schemas"]["EntityModelTrainerResponse"][];
             members?: components["schemas"]["EntityModelGroupMembershipResponse"][];
             _links?: components["schemas"]["Links"];

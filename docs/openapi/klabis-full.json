@@ -13499,6 +13499,19 @@
           }
         }
       },
+      "AgeRangeResponse": {
+        "type": "object",
+        "properties": {
+          "minAge": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxAge": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "EntityModelGroupMembershipResponse": {
         "type": "object",
         "properties": {
@@ -13536,13 +13549,8 @@
           "name": {
             "type": "string"
           },
-          "minAge": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxAge": {
-            "type": "integer",
-            "format": "int32"
+          "ageRange": {
+            "$ref": "#/components/schemas/AgeRangeResponse"
           },
           "trainers": {
             "type": "array",

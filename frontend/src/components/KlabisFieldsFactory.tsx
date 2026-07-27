@@ -1,4 +1,9 @@
-import {expandHalFormsFieldFactory, type CustomFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
+import {
+    type CustomFieldFactory,
+    expandHalFormsFieldFactory,
+    type HalFormFieldFactory,
+    type HalFormsInputProps
+} from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
@@ -51,6 +56,11 @@ const GUARDIAN_FIELDS: SubField[] = [
     {key: "relationship", attr: "relationship", prompt: "Vztah"},
     {key: "email", attr: "email", prompt: "E-mail", type: "email"},
     {key: "phone", attr: "phone", prompt: "Telefon", type: "tel"},
+];
+
+const AGE_RANGE_FIELDS: SubField[] = [
+    {key: "minAge", attr: "minAge", prompt: "Min. věk", type: "number"},
+    {key: "maxAge", attr: "maxAge", prompt: "Max. věk", type: "number"},
 ];
 
 const MEDICAL_COURSE_FIELDS: SubField[] = [
@@ -256,6 +266,8 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
             ]);
         case "AddressRequest":
             return renderCompositeField(conf, ADDRESS_FIELDS);
+        case "AgeRangeRequest":
+            return renderCompositeField(conf, AGE_RANGE_FIELDS);
         case "GuardianDTO":
             return renderCompositeField(conf, GUARDIAN_FIELDS);
         case "IdentityCardDto":

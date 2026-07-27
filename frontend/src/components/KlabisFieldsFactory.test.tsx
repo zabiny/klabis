@@ -162,6 +162,23 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
+    describe('AgeRangeRequest field type', () => {
+
+        it('should call subElementProps with "minAge" and "maxAge" as number fields', () => {
+            const mockSubElementProps = createMockSubElementProps();
+            const mockConf = createMockConf({
+                prop: {name: 'ageRange', prompt: 'Věkové rozmezí', type: 'AgeRangeRequest'},
+                subElementProps: mockSubElementProps,
+            });
+
+            const fieldElement = klabisFieldsFactory('AgeRangeRequest', mockConf);
+            render(fieldElement!);
+
+            expect(mockSubElementProps).toHaveBeenCalledWith('minAge', {prompt: 'Min. věk', type: 'number'});
+            expect(mockSubElementProps).toHaveBeenCalledWith('maxAge', {prompt: 'Max. věk', type: 'number'});
+        });
+    });
+
     describe('IdentityCardDto field type', () => {
 
         it('should be registered under "IdentityCardDto" type name', () => {

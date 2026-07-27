@@ -4,16 +4,16 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.common.users.Authority;
-import com.klabis.members.MemberId;
+import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -191,8 +191,8 @@ class TrainingGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Juniors"))
                     .andExpect(jsonPath("$.id").exists())
-                    .andExpect(jsonPath("$.minAge").value(10))
-                    .andExpect(jsonPath("$.maxAge").value(18))
+                    .andExpect(jsonPath("$.ageRange.minAge").value(10))
+                    .andExpect(jsonPath("$.ageRange.maxAge").value(18))
                     .andExpect(jsonPath("$.trainers").isArray())
                     .andExpect(jsonPath("$.members").isArray())
                     .andExpect(jsonPath("$.owners").doesNotExist());
