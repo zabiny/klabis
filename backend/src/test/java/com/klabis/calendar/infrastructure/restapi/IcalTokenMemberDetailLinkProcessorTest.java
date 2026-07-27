@@ -3,7 +3,8 @@ package com.klabis.calendar.infrastructure.restapi;
 import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.security.JwtParams;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberResource;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,8 +44,10 @@ class IcalTokenMemberDetailLinkProcessorTest {
         SecurityContextHolder.getContext().setAuthentication(token);
     }
 
-    private EntityModel<MemberResource> modelForMember(UUID memberId) {
-        MemberResource resource = () -> new MemberId(memberId);
+    private EntityModel<MemberDetailsResponse> modelForMember(UUID memberId) {
+        MemberDetailsResponse resource = MemberDetailsResponseBuilder.builder()
+                .id(new MemberId(memberId))
+                .build();
         return EntityModel.of(resource);
     }
 
@@ -60,7 +63,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
         @Test
         @DisplayName("ical-token link is added")
         void icalTokenLinkIsAdded() {
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -70,7 +73,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
         @Test
         @DisplayName("ical-token link points to GET /api/me/ical-token")
         void icalTokenLinkPointsToCorrectEndpoint() {
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -90,7 +93,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
         @Test
         @DisplayName("ical-token link is NOT added")
         void icalTokenLinkIsNotAdded() {
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -110,7 +113,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
         @Test
         @DisplayName("ical-token link is NOT added")
         void icalTokenLinkIsNotAdded() {
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -126,7 +129,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
         @DisplayName("ical-token link is NOT added")
         void icalTokenLinkIsNotAdded() {
             SecurityContextHolder.clearContext();
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 

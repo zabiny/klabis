@@ -4,7 +4,7 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberResource;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
@@ -12,7 +12,7 @@ import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @MvcComponent
-public class MemberTrainingGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberResource>> {
+public class MemberTrainingGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
     private final TrainingGroupRepository trainingGroupRepository;
 
@@ -21,8 +21,8 @@ public class MemberTrainingGroupLinkProcessor implements RepresentationModelProc
     }
 
     @Override
-    public EntityModel<MemberResource> process(EntityModel<MemberResource> model) {
-        MemberId memberId = model.getContent().memberId();
+    public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
+        MemberId memberId = model.getContent().id();
         trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
                 .ifPresent(group -> klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("trainingGroup"))

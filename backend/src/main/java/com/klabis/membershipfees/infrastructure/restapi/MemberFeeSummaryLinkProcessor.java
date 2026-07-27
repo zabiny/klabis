@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
-import com.klabis.members.MemberResource;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -25,7 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * {@code getFeeSummary} enforces self-access and would return 403 for others.
  */
 @MvcComponent
-public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberResource>> {
+public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
     private final Optional<FeeSelectionCampaignManagementPort> campaignManagementPort;
     private final Clock clock;
@@ -36,17 +36,17 @@ public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcess
     }
 
     @Override
-    public EntityModel<MemberResource> process(EntityModel<MemberResource> model) {
+    public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         if (campaignManagementPort.isEmpty()) {
             return model;
         }
 
-        MemberResource content = model.getContent();
-        if (content == null || content.memberId() == null) {
+        MemberDetailsResponse content = model.getContent();
+        if (content == null || content.id() == null) {
             return model;
         }
 
-        UUID resourceMemberId = content.memberId().uuid();
+        UUID resourceMemberId = content.id().uuid();
         if (resourceMemberId == null) {
             return model;
         }

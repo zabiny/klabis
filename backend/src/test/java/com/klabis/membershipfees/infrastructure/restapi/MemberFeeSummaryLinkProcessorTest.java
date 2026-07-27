@@ -3,7 +3,8 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberResource;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +49,10 @@ class MemberFeeSummaryLinkProcessorTest {
         SecurityContextHolder.getContext().setAuthentication(token);
     }
 
-    private EntityModel<MemberResource> modelForMember(UUID memberId) {
-        MemberResource resource = () -> new MemberId(memberId);
+    private EntityModel<MemberDetailsResponse> modelForMember(UUID memberId) {
+        MemberDetailsResponse resource = MemberDetailsResponseBuilder.builder()
+                .id(new MemberId(memberId))
+                .build();
         return EntityModel.of(resource);
     }
 
@@ -66,7 +69,7 @@ class MemberFeeSummaryLinkProcessorTest {
         @DisplayName("feeSummary link is added pointing to campaign year when viewing own profile")
         void feeSummaryLinkAddedWithCampaignYear() {
             authenticateAsMember(MEMBER_UUID);
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -79,7 +82,7 @@ class MemberFeeSummaryLinkProcessorTest {
         @DisplayName("feeSummary link is NOT added when viewing another member's profile")
         void feeSummaryLinkNotAddedForOtherMember() {
             authenticateAsMember(OTHER_MEMBER_UUID);
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -100,7 +103,7 @@ class MemberFeeSummaryLinkProcessorTest {
         @DisplayName("feeSummary link is added pointing to current year")
         void feeSummaryLinkAddedWithCurrentYear() {
             authenticateAsMember(MEMBER_UUID);
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -125,7 +128,7 @@ class MemberFeeSummaryLinkProcessorTest {
         @Test
         @DisplayName("feeSummary link is NOT added")
         void feeSummaryLinkNotAdded() {
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
@@ -141,7 +144,7 @@ class MemberFeeSummaryLinkProcessorTest {
         @DisplayName("feeSummary link is NOT added")
         void feeSummaryLinkNotAdded() {
             SecurityContextHolder.clearContext();
-            EntityModel<MemberResource> model = modelForMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
 
             processor.process(model);
 
