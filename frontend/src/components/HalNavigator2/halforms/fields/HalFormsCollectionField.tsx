@@ -18,7 +18,7 @@ function newKey(): number {
     return nextId++
 }
 
-interface HalFormsCollectionFieldProps extends HalFormsInputProps {
+export interface HalFormsCollectionFieldProps extends HalFormsInputProps {
     fieldFactory: HalFormFieldFactory,
 }
 

@@ -1,10 +1,11 @@
 import type {ReactElement} from 'react'
 import type {FieldProps} from 'formik'
 import {Field, useField} from 'formik'
-import {FieldWrapper, SelectField} from '../../../UI/forms'
+import {SelectField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
+import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
 
 interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** Member IDs to exclude from the picker options */
@@ -38,10 +39,7 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
         const selectedLabel = fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
             ? (options.find(opt => opt.value === String(fieldValue))?.label ?? (isLoading ? 'Načítání...' : '—'))
             : '—';
-        const display = <span className="text-text-primary">{selectedLabel}</span>;
-        return renderMode === 'field'
-            ? <FieldWrapper label={prop.prompt || getFieldLabel(prop.name)}>{display}</FieldWrapper>
-            : display;
+        return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={selectedLabel} renderMode={renderMode} />;
     }
 
     return (
@@ -69,14 +67,14 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                             value={selectValue}
                             label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
-                            disabled={prop.readOnly || isLoading || false}
+                            disabled={isLoading}
                             required={prop.required}
                             error={errorText}
                             options={options}
                             className="w-full"
                         />
                         {/* Clear button - only visible when value is selected */}
-                        {hasValue && !prop.readOnly && (
+                        {hasValue && (
                             <button
                                 type="button"
                                 onClick={handleClear}

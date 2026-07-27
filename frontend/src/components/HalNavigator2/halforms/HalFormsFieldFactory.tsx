@@ -16,10 +16,10 @@ import {type ReactElement} from 'react'
 export type CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
 
 /**
- * fullFactory - binds a custom factory into a HalFormFieldFactory that also
+ * boundFactory - binds a custom factory into a HalFormFieldFactory that also
  * knows the built-in types, for HalFormsCollectionField to recurse per-row.
  */
-export const fullFactory = (customFactory?: CustomFieldFactory): HalFormFieldFactory =>
+const boundFactory = (customFactory?: CustomFieldFactory): HalFormFieldFactory =>
     (fieldType, conf) => halFormsFieldsFactory(fieldType, conf, customFactory)
 
 /**
@@ -34,7 +34,7 @@ export const halFormsFieldsFactory = (
     customFactory?: CustomFieldFactory
 ): ReactElement | null => {
     if (isMultipleProperty(conf.prop) && !conf.prop.options && !conf.prop.suggest) {
-        return <HalFormsCollectionField {...conf} fieldFactory={fullFactory(customFactory)} />
+        return <HalFormsCollectionField {...conf} fieldFactory={boundFactory(customFactory)} />
     }
 
     const custom = customFactory?.(fieldType, conf)
@@ -88,4 +88,4 @@ export const halFormsFieldsFactory = (
  */
 export const expandHalFormsFieldFactory = (
     additionalFactory: CustomFieldFactory
-): HalFormFieldFactory => fullFactory(additionalFactory)
+): HalFormFieldFactory => boundFactory(additionalFactory)

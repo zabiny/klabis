@@ -211,9 +211,9 @@ Because of step 1, a `CustomFieldFactory` only ever receives a **single-row** ca
 
 **Important:** a custom type must never try to render its own multi-value UI by checking `isMultipleProperty` inside the `CustomFieldFactory` — step 1 already claimed the array before the factory runs, so that check will only ever see single-row calls and is dead code for the array case. If a custom type needs different behavior for the multi-valued case (e.g. `MemberId`/`UUID`, which used to render one combined checkbox-group for a multi-select), re-express it as a plain single-field component and let the standard `multi` → `HalFormsCollectionField` mechanism iterate it instead: the base `multi` branch routes the array to `HalFormsCollectionField`, which recurses per row (`multiple: false`) back into the same custom factory, landing on the same single-field component once per item — with add/remove handled generically. This trades one combined widget for N per-row rows, but requires no special exemption in the framework.
 
-**`fieldFactory` is not part of `HalFormsInputProps`.** It used to be threaded through `conf.fieldFactory` solely so `HalFormsCollectionField` could recurse into it; it is now an explicit component prop on `HalFormsCollectionField` (`<HalFormsCollectionField {...conf} fieldFactory={fullFactory(customFactory)} />`), set only in the `multi` branch above. Don't read or set `fieldFactory` off `HalFormsInputProps`/`conf` anywhere else — `HalFormsForm`'s `subElementProps` no longer carries it either.
+**`fieldFactory` is not part of `HalFormsInputProps`.** It used to be threaded through `conf.fieldFactory` solely so `HalFormsCollectionField` could recurse into it; it is now an explicit component prop on `HalFormsCollectionField` (`<HalFormsCollectionField {...conf} fieldFactory={boundFactory(customFactory)} />`, an internal helper in `HalFormsFieldFactory.tsx`), set only in the `multi` branch above. Don't read or set `fieldFactory` off `HalFormsInputProps`/`conf` anywhere else — `HalFormsForm`'s `subElementProps` no longer carries it either.
 
-**Extending with custom field types:** use `expandHalFormsFieldFactory(customFactory: CustomFieldFactory): HalFormFieldFactory`, which is exactly `fullFactory(customFactory)` — it binds your custom logic into `halFormsFieldsFactory`'s 3rd parameter and returns a normal `HalFormFieldFactory` (the shape `HalFormButton`/`HalFormDisplay`/`HalFormsForm` consumers expect, so call-sites don't change).
+**Extending with custom field types:** use `expandHalFormsFieldFactory(customFactory: CustomFieldFactory): HalFormFieldFactory` — it binds your custom logic into `halFormsFieldsFactory`'s 3rd parameter and returns a normal `HalFormFieldFactory` (the shape `HalFormButton`/`HalFormDisplay`/`HalFormsForm` consumers expect, so call-sites don't change).
 
 ```ts
 type CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
@@ -234,8 +234,6 @@ const combinedCustomFactory: CustomFieldFactory = (fieldType, conf) =>
 
 export const combinedFieldsFactory = expandHalFormsFieldFactory(combinedCustomFactory);
 ```
-
-`fullFactory(customFactory?)` is the lower-level helper `expandHalFormsFieldFactory` is built on — use it directly only if you need the resulting `HalFormFieldFactory` without going through `expandHalFormsFieldFactory`'s naming (they're equivalent).
 
 ## HATEOAS Utility Functions
 
