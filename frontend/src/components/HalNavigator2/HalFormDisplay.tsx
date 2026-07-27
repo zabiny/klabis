@@ -2,10 +2,10 @@ import {type ReactElement, type ReactNode, useMemo} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
-import {HalFormsForm, type HalFormFieldFactory, type RenderFormCallback} from './halforms';
+import {type HalFormFieldFactory, HalFormsForm, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
-import {klabisFieldsFactory, createMemberFilteredFactory} from '../KlabisFieldsFactory.tsx';
+import {createMemberFilteredFactory, klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
@@ -44,8 +44,10 @@ export interface HalFormDisplayProps {
     submitButtonLabel?: string;
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
+    // TODO: remove - this has no place in HAL "framework" class
     /** Member IDs to exclude from member-picker fields (already in group) */
     excludeMemberIds?: string[];
+    // TODO: remove - this has no place in HAL "framework" class
     /** When provided, member-picker fields show ONLY these member IDs (used for promote-to-owner) */
     includeOnlyMemberIds?: string[];
     /**
