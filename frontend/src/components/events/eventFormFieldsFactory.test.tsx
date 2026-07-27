@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import {Form, Formik, useFormikContext} from 'formik';
 import {vi} from 'vitest';
 import {eventFormFieldsFactory} from './eventFormFieldsFactory.tsx';
-import {fullFactory} from '../HalNavigator2/halforms/HalFormsFieldFactory.tsx';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms/types.ts';
 
 vi.mock('./EventTypeSelectField.tsx', () => ({
@@ -79,9 +78,10 @@ describe('eventFormFieldsFactory', () => {
         //
         // conf here mirrors the real live HAL-FORMS template returned by the backend
         // for the `categories` property: {"multi": true, "name": "categories", "type": "CategoryRequest"}
-        // Row recursion now goes through halFormsFieldsFactory's 3rd `customFactory`
-        // param (see HalFormsFieldFactory.tsx D1-D3) instead of a `fieldFactory` smuggled
-        // through conf — eventFormFieldsFactory itself is bound in as that customFactory.
+        // Row recursion goes through halFormsFieldsFactory's 3rd `customFactory` param
+        // (see HalFormsFieldFactory.tsx D1-D3): eventFormFieldsFactory is a plain
+        // HalFormFieldFactory that composes its row logic via expandHalFormsFieldFactory,
+        // so calling it directly at the top level exercises the real production wiring.
         const categoriesConf = (): HalFormsInputProps => ({
             prop: {name: 'categories', type: 'CategoryRequest', multi: true, prompt: 'Kategorie'},
             errorText: undefined,
@@ -98,7 +98,7 @@ describe('eventFormFieldsFactory', () => {
             return render(
                 <Formik initialValues={{categories: initialCategories}} onSubmit={vi.fn()}>
                     <Form>
-                        {fullFactory(eventFormFieldsFactory)('CategoryRequest', categoriesConf())}
+                        {eventFormFieldsFactory('CategoryRequest', categoriesConf())}
                         {onValues && <CapturedValues onValues={onValues}/>}
                     </Form>
                 </Formik>

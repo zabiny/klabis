@@ -14,9 +14,9 @@
 
 ## 3. Custom factories migrated to the new mechanism
 
-- [ ] 3.1 Rework `expandHalFormsFieldFactory` to compose custom logic via the 3rd parameter instead of an outer wrapper (D4)
-- [ ] 3.2 Migrate `klabisFieldsFactory` and the member-filtered variant in `KlabisFieldsFactory.tsx` to the new mechanism; keep the public `HalFormFieldFactory` shape for consumers
-- [ ] 3.3 Rework `eventFormFieldsFactory` onto the new mechanism and remove the `isMultipleProperty` guard
+- [x] 3.1 Rework `expandHalFormsFieldFactory` to compose custom logic via the 3rd parameter instead of an outer wrapper (D4)
+- [x] 3.2 Migrate `klabisFieldsFactory` and the member-filtered variant in `KlabisFieldsFactory.tsx` to the new mechanism; keep the public `HalFormFieldFactory` shape for consumers
+- [x] 3.3 Rework `eventFormFieldsFactory` onto the new mechanism and remove the `isMultipleProperty` guard
 
 ## 4. Documentation
 

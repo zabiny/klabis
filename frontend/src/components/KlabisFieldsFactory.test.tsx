@@ -1,7 +1,8 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
-import {klabisFieldsFactory} from './KlabisFieldsFactory';
+import {createMemberFilteredFactory, klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalNavigator2/halforms';
 import type {HalFormsOptionValue, HalFormsProperty, OptionItem} from '../api/types';
 
@@ -339,26 +340,34 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getByTestId('select-href')).toHaveTextContent('/members/options');
         });
 
-        it('should render HalFormsCheckboxGroup for multi UUID field (multiple: true)', () => {
+        it('should render one HalFormsMemberId row per item for multi UUID field (multiple: true), via HalFormsCollectionField', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
+            render(
+                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
 
-            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
         });
 
-        it('should configure remote options pointing to /members/options for multi UUID field', () => {
+        it('should configure remote options pointing to /members/options for each row of a multi UUID field', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
+            render(
+                <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
 
-            expect(screen.getByTestId('checkboxgroup-href')).toHaveTextContent('/members/options');
+            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('/members/options');
         });
 
         it('should preserve the original prompt for single UUID field', () => {
@@ -372,37 +381,49 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getByTestId('select-prompt')).toHaveTextContent('Správce skupiny');
         });
 
-        it('should preserve the original prompt for multi UUID field', () => {
+        it('should preserve the original prompt as the collection header for multi UUID field', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Členové rodiny', type: 'UUID', multiple: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
+            render(
+                <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
 
-            expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Členové rodiny');
+            expect(screen.getByText('Členové rodiny')).toBeInTheDocument();
         });
 
-        it('should render HalFormsCheckboxGroup for UUID field with backend multi:true shorthand', () => {
+        it('should render one HalFormsMemberId row per item for UUID field with backend multi:true shorthand', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
+            render(
+                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
 
-            expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
+            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
         });
 
-        it('should configure remote options for UUID field with backend multi:true shorthand', () => {
+        it('should configure remote options for each row of a UUID field with backend multi:true shorthand', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
+            render(
+                <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
 
-            expect(screen.getByTestId('checkboxgroup-href')).toHaveTextContent('/members/options');
+            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('/members/options');
         });
     });
 
@@ -568,6 +589,40 @@ describe('KlabisFieldsFactory', () => {
 
             const result = klabisFieldsFactory('unknownType', mockConf);
             expect(result).toBeNull();
+        });
+    });
+
+    describe('createMemberFilteredFactory', () => {
+        it('returns klabisFieldsFactory itself when no filter is provided', () => {
+            expect(createMemberFilteredFactory()).toBe(klabisFieldsFactory);
+        });
+
+        it('applies excludeIds to a single MemberId field', () => {
+            const factory = createMemberFilteredFactory(['1']);
+            const mockConf = createMockConf({
+                prop: {name: 'memberId', prompt: 'Vedoucí', type: 'MemberId'},
+            });
+
+            const result = factory('MemberId', mockConf);
+            render(result!);
+
+            expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+        });
+
+        it('applies excludeIds per row when the property is multi, via HalFormsCollectionField', () => {
+            const factory = createMemberFilteredFactory(['1']);
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Členové', type: 'MemberId', multiple: true},
+            });
+
+            const result = factory('MemberId', mockConf);
+            render(
+                <Formik initialValues={{memberIds: ['2', '3']}} onSubmit={vi.fn()}>
+                    <Form>{result}</Form>
+                </Formik>
+            );
+
+            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
         });
     });
 });

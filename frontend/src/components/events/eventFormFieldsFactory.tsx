@@ -1,8 +1,7 @@
 import {type ReactElement} from 'react';
 import {useField} from 'formik';
-import {type HalFormFieldFactory, type HalFormsInputProps} from '../HalNavigator2/halforms';
-import {isMultipleProperty} from '../HalNavigator2/halforms/utils.ts';
-import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
+import {expandHalFormsFieldFactory, type CustomFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from '../HalNavigator2/halforms';
+import {klabisCustomFieldFactory} from '../KlabisFieldsFactory.tsx';
 import {CategoryPresetPickerButton} from './CategoryPresetPickerButton.tsx';
 import {EventTypeSelectField} from './EventTypeSelectField.tsx';
 import {TextField} from '../UI/forms';
@@ -72,6 +71,27 @@ const CategoryRowField = ({prop}: HalFormsInputProps): ReactElement => {
 };
 
 /**
+ * Custom field logic for event create/edit forms, composed with klabisCustomFieldFactory
+ * via expandHalFormsFieldFactory: event type dropdown, and category row rendering
+ * (name + optional fee, hidden id preserved). The `multi` branch in halFormsFieldsFactory
+ * always routes the "categories" array to HalFormsCollectionField before this runs, so
+ * this only ever sees a single row (multiple:false) for CategoryRequest — no guard needed.
+ */
+const eventCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
+    if (conf.prop.name === 'eventTypeId') {
+        return <EventTypeSelectField {...conf}/>;
+    }
+
+    if (fieldType === 'CategoryRequest') {
+        return <CategoryRowField {...conf}/>;
+    }
+
+    return klabisCustomFieldFactory(fieldType, conf);
+};
+
+const eventFieldsFactory = expandHalFormsFieldFactory(eventCustomFieldFactory);
+
+/**
  * Field factory for event create/edit forms.
  * Extends klabisFieldsFactory (which handles range, MemberId, etc.) by adding:
  * - "Select from templates" button next to the categories field
@@ -82,19 +102,7 @@ export const eventFormFieldsFactory: HalFormFieldFactory = (
     fieldType: string,
     conf: HalFormsInputProps
 ): ReactElement | null => {
-    if (conf.prop.name === 'eventTypeId') {
-        return <EventTypeSelectField {...conf}/>;
-    }
-
-    // `categories` itself is a multi-valued CategoryRequest property (fieldType is the
-    // element type, not "array"). Only intercept a single indexed item here — the
-    // array/collection field must fall through to klabisFieldsFactory/HalFormsCollectionField,
-    // which iterates the array and calls back into this factory per row (multiple: false).
-    if (fieldType === 'CategoryRequest' && !isMultipleProperty(conf.prop)) {
-        return <CategoryRowField {...conf}/>;
-    }
-
-    const defaultField = klabisFieldsFactory(fieldType, conf);
+    const defaultField = eventFieldsFactory(fieldType, conf);
 
     if (conf.prop.name === 'categories' && defaultField !== null) {
         return (

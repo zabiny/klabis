@@ -1,4 +1,4 @@
-import {expandHalFormsFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
+import {expandHalFormsFieldFactory, type CustomFieldFactory, type HalFormFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import {type ReactElement} from "react";
 import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
@@ -160,12 +160,16 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
     } as HalFormsInputProps;
 }
 
+/**
+ * Renders a single MemberId/UUID field — read/write dropdown or, when readOnly,
+ * the resolved member name. Used both for a standalone field and as the per-row
+ * renderer when the property is multi: the base factory's `multi` branch always
+ * routes the array to HalFormsCollectionField first (D2), which recurses back here
+ * per row with multiple:false — so this never needs to special-case collections itself.
+ */
 const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
     // If backend already provides inline options, respect them instead of defaulting to members list
     if (conf.prop.options?.inline) {
-        if (isMultipleProperty(conf.prop)) {
-            return <HalFormsCheckboxGroup {...conf} />;
-        }
         return <HalFormsSelect {...conf} />;
     }
     const propWithMemberOptions = {
@@ -176,13 +180,10 @@ const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeId
             }
         }
     };
-    if (isMultipleProperty(conf.prop)) {
-        return <HalFormsCheckboxGroup {...conf} prop={propWithMemberOptions}/>;
-    }
     return <HalFormsMemberId {...conf} prop={propWithMemberOptions} {...extraProps}/>;
 };
 
-export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
+export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
         case "List": {
@@ -279,7 +280,9 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
         default:
             return null;
     }
-});
+};
+
+export const klabisFieldsFactory = expandHalFormsFieldFactory(klabisCustomFieldFactory);
 
 /**
  * Creates a variant of klabisFieldsFactory that applies member-ID filtering.
