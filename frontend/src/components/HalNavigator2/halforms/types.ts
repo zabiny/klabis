@@ -13,7 +13,6 @@ interface HalFormsInputProps {
     errorText?: string,
     renderMode?: RenderMode,
     subElementProps: (attrName: string, configuration?: SubElementConfiguration) => HalFormsInputProps,
-    fieldFactory?: HalFormFieldFactory,
 }
 
 type HalFormFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;

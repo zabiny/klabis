@@ -2,7 +2,7 @@ import type {ReactElement} from 'react'
 import {useField} from 'formik'
 import {useRef} from 'react'
 import {Button} from '../../../UI'
-import {type HalFormsInputProps, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from '../types.ts'
+import {type HalFormFieldFactory, type HalFormsInputProps, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from '../types.ts'
 import {getFieldLabel, labels} from '../../../../localization/labels.ts'
 
 function emptyValueForType(type: string): unknown {
@@ -18,11 +18,15 @@ function newKey(): number {
     return nextId++
 }
 
+interface HalFormsCollectionFieldProps extends HalFormsInputProps {
+    fieldFactory: HalFormFieldFactory,
+}
+
 export const HalFormsCollectionField = ({
     prop,
     renderMode = 'field',
     fieldFactory,
-}: HalFormsInputProps): ReactElement => {
+}: HalFormsCollectionFieldProps): ReactElement => {
     const [field, , helpers] = useField<unknown[]>(prop.name)
     const items: unknown[] = Array.isArray(field.value) ? field.value : []
 
@@ -47,8 +51,6 @@ export const HalFormsCollectionField = ({
     }
 
     const renderItem = (index: number): ReactElement | null => {
-        if (!fieldFactory) return null
-
         const indexedProp = {
             ...prop,
             name: `${prop.name}.${index}`,
@@ -72,7 +74,6 @@ export const HalFormsCollectionField = ({
                 prop: subProp,
                 renderMode,
                 subElementProps: indexedSubElementProps,
-                fieldFactory,
             }
         }
 
@@ -81,7 +82,6 @@ export const HalFormsCollectionField = ({
             // Primitive items use 'input' mode — no per-item label (the collection label serves as the heading)
             renderMode: composite ? renderMode : 'input',
             subElementProps: indexedSubElementProps,
-            fieldFactory,
         }
 
         return fieldFactory(prop.type, indexedInputProps)

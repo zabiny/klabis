@@ -99,7 +99,6 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
         errorText: undefined,
         renderMode: parentProps.renderMode,
         subElementProps: parentProps.subElementProps,
-        fieldFactory: parentProps.fieldFactory,
     };
 }
 
@@ -159,7 +158,6 @@ function renderFieldInternal(
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
         },
-        fieldFactory,
     };
 
     const result = fieldFactory && fieldFactory(prop.type, fieldProps);

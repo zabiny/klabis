@@ -18,10 +18,12 @@ const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty
     ...overrides,
 });
 
+type CollectionFieldProps = HalFormsInputProps & {fieldFactory: HalFormFieldFactory};
+
 const createProps = (
     prop: HalFormsProperty,
     fieldFactory: HalFormFieldFactory = vi.fn().mockReturnValue(null)
-): HalFormsInputProps => ({
+): CollectionFieldProps => ({
     prop,
     errorText: undefined,
     subElementProps: vi.fn(),
@@ -29,7 +31,7 @@ const createProps = (
 });
 
 const renderWithFormik = (
-    props: HalFormsInputProps,
+    props: CollectionFieldProps,
     initialValue: unknown[] = []
 ) => {
     return render(

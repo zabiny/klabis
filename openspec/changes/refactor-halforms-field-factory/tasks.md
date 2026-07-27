@@ -8,9 +8,9 @@
 
 ## 2. Collection field: explicit factory prop
 
-- [ ] 2.1 Add explicit factory prop to `HalFormsCollectionField`; recurse per-row via 3-arg `halFormsFieldsFactory(prop.type, indexedInputProps, fieldFactory)` (D3)
-- [ ] 2.2 Remove `fieldFactory` from `HalFormsInputProps` (`types.ts`), from `subElementProps`, and from `HalFormsForm` threading (D3)
-- [ ] 2.3 Update `HalFormsCollectionField.test.tsx` to pass the factory via the explicit prop; confirm add/remove and per-row custom rendering
+- [x] 2.1 Add explicit factory prop to `HalFormsCollectionField`; recurse per-row via 3-arg `halFormsFieldsFactory(prop.type, indexedInputProps, fieldFactory)` (D3)
+- [x] 2.2 Remove `fieldFactory` from `HalFormsInputProps` (`types.ts`), from `subElementProps`, and from `HalFormsForm` threading (D3)
+- [x] 2.3 Update `HalFormsCollectionField.test.tsx` to pass the factory via the explicit prop; confirm add/remove and per-row custom rendering
 
 ## 3. Custom factories migrated to the new mechanism
 
