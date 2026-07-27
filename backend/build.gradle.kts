@@ -193,12 +193,69 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 // SpringDoc OpenAPI Gradle Plugin configuration
+//
+// Output goes to docs/openapi/generated/ (gitignored), not straight to klabis-full.json.
+// During the spec-first migration this is only an input for `openapiDriftCheck`; the committed
+// klabis-full.json is produced by `copyGeneratedOpenApiSpec` below and will be taken over by
+// `openapiBundle` once every module is migrated.
 openApi {
     apiDocsUrl.set("http://localhost:8080/v3/api-docs")
-    outputDir.set(file("../docs/openapi"))
-    outputFileName.set("klabis-full.json")
+    outputDir.set(file("../docs/openapi/generated"))
+    outputFileName.set("klabis-codefirst.json")
     waitTimeInSeconds.set(30)
     customBootRun {
         args.set(listOf("--server.ssl.enabled=false", "--server.port=8080", "--jasypt.encryptor.password=something"))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Spec-first migration tooling (tools/openapi-bundle)
+//
+// None of these tasks are wired into `build` yet — the API is still code-first and
+// klabis-full.json still originates from springdoc. See the migration plan.
+// ---------------------------------------------------------------------------
+
+val openapiToolDir = layout.projectDirectory.dir("../tools/openapi-bundle")
+val codeFirstSpec = layout.projectDirectory.file("../docs/openapi/generated/klabis-codefirst.json")
+val bundledSpec = layout.projectDirectory.file("../docs/openapi/klabis-full.json")
+
+/**
+ * Preserves today's behaviour: springdoc output becomes the committed klabis-full.json.
+ *
+ * generateOpenApiDocs used to write klabis-full.json directly; now that it writes to generated/,
+ * this task restores the end result so the existing manual workflow ("regenerate the spec, then
+ * run npm run openapi") keeps working. It is finalizedBy generateOpenApiDocs so that developers
+ * and scripts calling the old task name still get the file they expect.
+ *
+ * Removed in the final migration phase, when openapiBundle takes over klabis-full.json.
+ */
+val copyGeneratedOpenApiSpec by tasks.registering(Copy::class) {
+    group = "openapi"
+    description = "Copies the springdoc output to docs/openapi/klabis-full.json (code-first, transitional)"
+    from(codeFirstSpec)
+    into(bundledSpec.asFile.parentFile)
+    rename { "klabis-full.json" }
+}
+
+tasks.named("generateOpenApiDocs") {
+    finalizedBy(copyGeneratedOpenApiSpec)
+}
+
+/** Validates docs/openapi/spec/ and bundles it into a single document. */
+val openapiBundle by tasks.registering(Exec::class) {
+    group = "openapi"
+    description = "Bundles the hand-written OpenAPI spec into a single document"
+    workingDir = openapiToolDir.asFile
+    commandLine("node", "bundle.mjs", *(project.findProperty("openapiOut")
+        ?.let { arrayOf("--out", it.toString()) } ?: arrayOf("--check")))
+}
+
+/** Reports which operations are not migrated to the hand-written spec yet. */
+val openapiDriftCheck by tasks.registering(Exec::class) {
+    group = "openapi"
+    description = "Compares the springdoc output against the hand-written spec (migration aid)"
+    dependsOn(tasks.named("generateOpenApiDocs"))
+    workingDir = openapiToolDir.asFile
+    commandLine("node", "drift.mjs", *(project.findProperty("openapiModule")
+        ?.let { arrayOf("--module", it.toString()) } ?: emptyArray()))
 }
