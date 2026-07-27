@@ -2,9 +2,9 @@
 
 ## 1. Base factory: 3rd custom-factory parameter
 
-- [ ] 1.1 Add optional `customFactory` (3rd param) to `halFormsFieldsFactory`; keep the `multi` branch first, then consult `customFactory` before the built-in `switch`, returning its element when non-null (D1, D2)
-- [ ] 1.2 Add the `fullFactory(customFactory)` helper and pass it to `HalFormsCollectionField` from the `multi` branch (D3)
-- [ ] 1.3 Update/extend `HalFormsFieldFactory.test.tsx`: `multi` routes to collection even for a custom element type, custom single field wins over defaults, `null` falls through, a collection of built-in element type still works
+- [x] 1.1 Add optional `customFactory` (3rd param) to `halFormsFieldsFactory`; keep the `multi` branch first, then consult `customFactory` before the built-in `switch`, returning its element when non-null (D1, D2)
+- [x] 1.2 Add the `fullFactory(customFactory)` helper and pass it to `HalFormsCollectionField` from the `multi` branch (D3)
+- [x] 1.3 Update/extend `HalFormsFieldFactory.test.tsx`: `multi` routes to collection even for a custom element type, custom single field wins over defaults, `null` falls through, a collection of built-in element type still works
 
 ## 2. Collection field: explicit factory prop
 

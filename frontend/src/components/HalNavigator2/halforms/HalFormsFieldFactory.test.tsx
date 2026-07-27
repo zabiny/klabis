@@ -130,4 +130,64 @@ describe('halFormsFieldsFactory', () => {
             expect(screen.getByRole('combobox')).toBeInTheDocument();
         });
     });
+
+    describe('customFactory parameter', () => {
+        it('routes multi field to collection even for a custom element type', () => {
+            const prop: HalFormsProperty = {
+                name: 'categories',
+                type: 'CategoryRequest',
+                multi: true,
+            };
+            const customFactory = vi.fn(() => <div data-testid="custom-row" />);
+            const element = halFormsFieldsFactory('CategoryRequest', makeProps(prop), customFactory);
+            render(
+                <Formik initialValues={{categories: []}} onSubmit={vi.fn()}>
+                    <Form>{element}</Form>
+                </Formik>
+            );
+            // multi routes to HalFormsCollectionField, not directly to the custom factory
+            expect(customFactory).not.toHaveBeenCalled();
+            expect(screen.getByText(/přidat/i)).toBeInTheDocument();
+        });
+
+        it('lets a custom single field win over the built-in default', () => {
+            const prop: HalFormsProperty = {
+                name: 'category',
+                type: 'CategoryRequest',
+            };
+            const customFactory = vi.fn(() => <div data-testid="custom-field" />);
+            const element = halFormsFieldsFactory('CategoryRequest', makeProps(prop), customFactory);
+            render(<>{element}</>);
+            expect(customFactory).toHaveBeenCalledWith('CategoryRequest', expect.objectContaining({prop}));
+            expect(screen.getByTestId('custom-field')).toBeInTheDocument();
+        });
+
+        it('falls through to the built-in switch when customFactory returns null', () => {
+            const prop: HalFormsProperty = {
+                name: 'testField',
+                type: 'text',
+            };
+            const customFactory = vi.fn(() => null);
+            const element = halFormsFieldsFactory('text', makeProps(prop), customFactory);
+            renderInFormik(element);
+            expect(customFactory).toHaveBeenCalled();
+            expect(screen.getByRole('textbox')).toBeInTheDocument();
+        });
+
+        it('still renders a collection of a built-in element type when customFactory is provided', () => {
+            const prop: HalFormsProperty = {
+                name: 'tags',
+                type: 'text',
+                multi: true,
+            };
+            const customFactory = vi.fn(() => null);
+            const element = halFormsFieldsFactory('text', makeProps(prop), customFactory);
+            render(
+                <Formik initialValues={{tags: ['x']}} onSubmit={vi.fn()}>
+                    <Form>{element}</Form>
+                </Formik>
+            );
+            expect(screen.getByRole('textbox')).toBeInTheDocument();
+        });
+    });
 });

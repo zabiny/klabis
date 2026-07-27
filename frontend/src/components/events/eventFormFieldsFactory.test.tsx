@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {Form, Formik, useFormikContext} from 'formik';
 import {vi} from 'vitest';
 import {eventFormFieldsFactory} from './eventFormFieldsFactory.tsx';
+import {fullFactory} from '../HalNavigator2/halforms/HalFormsFieldFactory.tsx';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms/types.ts';
 
 vi.mock('./EventTypeSelectField.tsx', () => ({
@@ -78,15 +79,13 @@ describe('eventFormFieldsFactory', () => {
         //
         // conf here mirrors the real live HAL-FORMS template returned by the backend
         // for the `categories` property: {"multi": true, "name": "categories", "type": "CategoryRequest"}
-        // fieldFactory must be set here because in the real app HalFormsForm's
-        // renderFieldInternal sets it on the top-level conf before the factory is
-        // ever called — HalFormsCollectionField relies on it being present to recurse
-        // into eventFormFieldsFactory for each row (see HalFormsCollectionField.renderItem).
+        // Row recursion now goes through halFormsFieldsFactory's 3rd `customFactory`
+        // param (see HalFormsFieldFactory.tsx D1-D3) instead of a `fieldFactory` smuggled
+        // through conf — eventFormFieldsFactory itself is bound in as that customFactory.
         const categoriesConf = (): HalFormsInputProps => ({
             prop: {name: 'categories', type: 'CategoryRequest', multi: true, prompt: 'Kategorie'},
             errorText: undefined,
             subElementProps: vi.fn() as unknown as HalFormsInputProps['subElementProps'],
-            fieldFactory: eventFormFieldsFactory,
         });
 
         const CapturedValues = ({onValues}: {onValues: (values: {categories: unknown[]}) => void}) => {
@@ -99,7 +98,7 @@ describe('eventFormFieldsFactory', () => {
             return render(
                 <Formik initialValues={{categories: initialCategories}} onSubmit={vi.fn()}>
                     <Form>
-                        {eventFormFieldsFactory('CategoryRequest', categoriesConf())}
+                        {fullFactory(eventFormFieldsFactory)('CategoryRequest', categoriesConf())}
                         {onValues && <CapturedValues onValues={onValues}/>}
                     </Form>
                 </Formik>

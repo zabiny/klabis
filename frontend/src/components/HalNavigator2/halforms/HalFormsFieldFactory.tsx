@@ -13,6 +13,15 @@ import {type HalFormFieldFactory, type HalFormsInputProps} from './types.ts'
 import {isMultipleProperty} from './utils.ts'
 import {type ReactElement} from 'react'
 
+type CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
+
+/**
+ * fullFactory - binds a custom factory into a HalFormFieldFactory that also
+ * knows the built-in types, for HalFormsCollectionField to recurse per-row.
+ */
+export const fullFactory = (customFactory?: CustomFieldFactory): HalFormFieldFactory =>
+    (fieldType, conf) => halFormsFieldsFactory(fieldType, conf, customFactory)
+
 /**
  * halFormsFieldsFactory - Factory function for creating HAL+Forms field components
  * Maps HAL+Forms field types to custom FormFields-based components
@@ -21,10 +30,16 @@ import {type ReactElement} from 'react'
  */
 export const halFormsFieldsFactory = (
     fieldType: string,
-    conf: HalFormsInputProps
+    conf: HalFormsInputProps,
+    customFactory?: CustomFieldFactory
 ): ReactElement | null => {
     if (isMultipleProperty(conf.prop) && !conf.prop.options && !conf.prop.suggest) {
-        return <HalFormsCollectionField {...conf} />
+        return <HalFormsCollectionField {...conf} fieldFactory={fullFactory(customFactory)} />
+    }
+
+    const custom = customFactory?.(fieldType, conf)
+    if (custom) {
+        return custom
     }
 
     if (conf.prop.options?.inline !== undefined && conf.prop.options.inline.length === 0) {
