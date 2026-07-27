@@ -186,17 +186,6 @@ const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeId
 export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
-        case "List": {
-            const propWithMemberOptions = {
-                ...conf.prop,
-                options: {
-                    link: {
-                        href: "/members/options"
-                    }
-                }
-            };
-            return <HalFormsCheckboxGroup {...conf} prop={propWithMemberOptions}/>;
-        }
         case "MemberId":
         case "UUID": {
             return memberIdFieldRenderer(conf);

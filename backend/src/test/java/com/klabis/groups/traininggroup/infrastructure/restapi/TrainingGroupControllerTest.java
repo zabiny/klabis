@@ -283,6 +283,58 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 204 and pass trainer MemberIds to command when trainers list is provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn204WhenUpdatingTrainersList() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"trainers": ["%s"]}
+                                            """.formatted(TRAINER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
+        }
+
+        @Test
+        @DisplayName("should deduplicate repeated trainer ids instead of failing")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldDeduplicateRepeatedTrainerIds() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"trainers": ["%s", "%s"]}
+                                            """.formatted(TRAINER_ID, TRAINER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
+        }
+
+        @Test
         @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingTrainingAuthority() throws Exception {

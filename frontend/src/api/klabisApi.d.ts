@@ -1968,7 +1968,7 @@ export interface components {
         PatchFieldAgeRangeRequest: {
             provided?: boolean;
         };
-        PatchFieldListString: {
+        PatchFieldListMemberId: {
             provided?: boolean;
         };
         PatchFieldString: {
@@ -1977,7 +1977,7 @@ export interface components {
         UpdateTrainingGroupRequest: {
             name?: components["schemas"]["PatchFieldString"];
             ageRange?: components["schemas"]["PatchFieldAgeRangeRequest"];
-            trainers?: components["schemas"]["PatchFieldListString"];
+            trainers?: components["schemas"]["PatchFieldListMemberId"];
         };
         EditMembershipFeeTierRequest: {
             name?: string;

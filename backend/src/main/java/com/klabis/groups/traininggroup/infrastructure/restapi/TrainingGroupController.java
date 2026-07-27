@@ -30,10 +30,10 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -145,9 +145,7 @@ class TrainingGroupController {
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                 request.name(),
                 request.ageRangeDomain(),
-                request.trainerUuids().map(uuids -> uuids.stream()
-                        .map(MemberId::new)
-                        .collect(Collectors.toSet()))
+                request.trainers().map(trainers -> trainers == null ? null : new HashSet<>(trainers))
         );
         trainingGroupManagementService.updateTrainingGroup(groupId, command);
         return ResponseEntity.noContent().build();

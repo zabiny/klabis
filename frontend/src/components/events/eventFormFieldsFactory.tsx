@@ -26,6 +26,7 @@ interface CategoryRowValue {
  * it must round-trip unchanged so the backend keeps updating the same category
  * (matching by id) instead of deleting and recreating it, which would unlink registrations.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 const CategoryRowField = ({prop}: HalFormsInputProps): ReactElement => {
     const [field, , helpers] = useField<CategoryRowValue>(prop.name);
     const value = field.value ?? {};
