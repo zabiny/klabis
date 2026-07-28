@@ -92,14 +92,14 @@ one.
 
 On schema properties. Each maps to exactly one existing Java annotation.
 
-(`x-klabis-authority` also works one level up, on an operation — see
+(`x-klabis-authority` and `x-klabis-owner-visible` also work one level up, on an operation — see
 [endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below. The
-other three are property-only and the bundler rejects them on an operation.)
+remaining two are property-only and the bundler rejects them on an operation.)
 
 | extension | value | generates | semantics |
 |---|---|---|---|
 | `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field holding the owner's ID, used to evaluate `x-klabis-owner-visible`. Without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` | `@OwnerVisible` | Visible to the owner even without the authority (OR semantics with `x-klabis-authority`). |
+| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
 | `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
 | `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
 
@@ -146,9 +146,38 @@ This relies on `MethodSecurityAnnotations`, which resolves security annotations 
 boundary — Java does not inherit method annotations from an interface, so without it the generated
 annotation would compile and silently enforce nothing.
 
-**`@OwnerVisible` has no operation-level extension** and stays hand-written on the controller
-(see `MemberController.updateMember`). Adding one is a spec change that goes through design first —
-do not invent `x-klabis-owner-visible` on an operation.
+### `x-klabis-owner-visible` on an operation — ownership authorization
+
+`@OwnerVisible` and `@OwnerId` are a pair: `HasAuthorityMethodInterceptor.checkOwnership()` scans the
+method's parameters for the one carrying `@OwnerId` to know whose ownership to check.
+`@OwnerVisible` on a method without a matching `@OwnerId` parameter silently enforces nothing — so
+the spec extension is deliberately structured so it is **impossible to declare one half without the
+other**. On an operation, the *value* is the name of the parameter that carries the owner ID, not
+`true`:
+
+```yaml
+paths:
+  /api/members/{id}:
+    patch:
+      operationId: updateMember
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: id   # -> @OwnerVisible on the method, @OwnerId on parameter "id"
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+```
+
+The bundler resolves `id` against the operation's own `parameters` (following a local `$ref` such as
+the shared `MemberIdParam`), inlines that one parameter, and stamps `x-field-extra-annotation` on it
+(`@OwnerId`) while adding `@OwnerVisible` to the operation's `x-operation-extra-annotation`. A name
+that does not match any parameter on that operation — typo, or a `$ref` shared with an endpoint that
+never opted in — fails the bundle rather than emitting half the pair. Because parameters are commonly
+shared by `$ref` across several operations (`MemberIdParam` is used by `getMember`, `updateMember`,
+`suspendMember`, `resumeMember`), only the operation that declares `x-klabis-owner-visible` gets its
+copy of the parameter inlined and annotated — sibling operations keep the plain shared `$ref`.
+
+Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
+codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
+`MemberControllerApiTest` for the enforcement tests.
 
 **Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
 a method without `@HasAuthority` and no check reports it; the endpoint still requires

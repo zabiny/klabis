@@ -239,6 +239,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: id
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:

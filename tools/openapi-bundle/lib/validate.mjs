@@ -39,6 +39,18 @@ export function loadAuthorities(authorityJavaPath) {
     return parseAuthorities(readFileSync(authorityJavaPath, 'utf8'));
 }
 
+/**
+ * Resolves a parameter object, following a local `#/components/parameters/X` $ref one level
+ * (operation parameter lists never nest $refs further than that in this codebase).
+ */
+function resolveParameter(document, param) {
+    if (!isPlainObject(param)) return param;
+    if (typeof param.$ref !== 'string') return param;
+    const match = param.$ref.match(/^#\/components\/parameters\/(.+)$/);
+    if (!match) return param;
+    return document.components?.parameters?.[match[1]];
+}
+
 /** Collects every operationId present in the document. */
 function collectOperationIds(document) {
     const ids = new Set();
@@ -95,10 +107,11 @@ export function validateSpec(document, {authorities}) {
                 continue;
             }
 
-            // Only x-klabis-authority makes sense directly on an operation (-> method-level
-            // @HasAuthority). The others describe field-level access on a schema property and
-            // have no meaning without a property to attach to.
-            if (context === 'operation' && key !== 'x-klabis-authority') {
+            // x-klabis-authority (-> method-level @HasAuthority) and x-klabis-owner-visible
+            // (-> paired @OwnerVisible/@OwnerId, see below) make sense directly on an operation.
+            // The others describe field-level access on a schema property and have no meaning
+            // without a property to attach to.
+            if (context === 'operation' && key !== 'x-klabis-authority' && key !== 'x-klabis-owner-visible') {
                 errors.push({
                     path: `${path}/${key}`,
                     message: `"${key}" is not valid on an operation — it is a schema-property extension`,
@@ -124,7 +137,38 @@ export function validateSpec(document, {authorities}) {
                 });
             }
 
-            if ((key === 'x-klabis-owner-id' || key === 'x-klabis-owner-visible') && value !== true) {
+            if (key === 'x-klabis-owner-id' && value !== true) {
+                errors.push({path: `${path}/${key}`, message: 'must be true when present'});
+            }
+
+            if (key === 'x-klabis-owner-visible' && context === 'operation') {
+                // On an operation the value names the parameter that carries the owner ID — this
+                // is what lets the bundler generate @OwnerVisible and @OwnerId as an inseparable
+                // pair (see applyOperationOwnerVisibleAnnotations in bundle.mjs). On a schema
+                // property (context undefined) it stays the boolean field-level flag, handled below.
+                //
+                // The parameter-exists check below is defence in depth: validateSpec runs on an
+                // already-bundled document, and applyOperationOwnerVisibleAnnotations throws on the
+                // same mistake first, so the CLI reports that throw rather than this error. It stays
+                // for callers that validate a document without bundling it.
+                if (typeof value !== 'string' || value.length === 0) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'must be the name of a parameter declared on this operation',
+                    });
+                } else {
+                    const params = Array.isArray(node.parameters) ? node.parameters : [];
+                    const names = params
+                        .map((p) => resolveParameter(document, p)?.name)
+                        .filter((name) => name !== undefined);
+                    if (!names.includes(value)) {
+                        errors.push({
+                            path: `${path}/${key}`,
+                            message: `"${value}" does not match any parameter declared on this operation`,
+                        });
+                    }
+                }
+            } else if (key === 'x-klabis-owner-visible' && value !== true) {
                 errors.push({path: `${path}/${key}`, message: 'must be true when present'});
             }
         }

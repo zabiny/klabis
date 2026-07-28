@@ -1,7 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {parse} from 'yaml';
 
-import {applyOperationAuthorityAnnotations, bundleSpec, sortKeysDeep} from '../lib/bundle.mjs';
+import {
+    applyOperationAuthorityAnnotations,
+    applyOperationOwnerVisibleAnnotations,
+    bundleSpec,
+    sortKeysDeep,
+} from '../lib/bundle.mjs';
 
 /** Builds a readYaml stub backed by an in-memory {absolutePath: yamlSource} map. */
 function fakeReader(files) {
@@ -347,6 +352,184 @@ describe('applyOperationAuthorityAnnotations', () => {
     });
 });
 
+describe('applyOperationOwnerVisibleAnnotations', () => {
+    // x-klabis-owner-visible on an operation names the parameter holding the owner ID. The
+    // bundler inlines that one parameter (breaking any shared $ref) and stamps
+    // x-field-extra-annotation: @OwnerId onto it, while adding @OwnerVisible to the operation via
+    // x-operation-extra-annotation — same mechanism x-klabis-authority already uses. This is what
+    // makes the pair impossible to split: there is a single spec key, and if the named parameter
+    // cannot be found the bundle throws instead of emitting half the pair.
+    const OWNER_VISIBLE_FQN = '@com.klabis.common.security.fieldsecurity.OwnerVisible';
+    const OWNER_ID_FQN = '@com.klabis.common.security.fieldsecurity.OwnerId';
+
+    it('annotates the named parameter with @OwnerId and the operation with @OwnerVisible', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-owner-visible': 'id',
+                        parameters: [{name: 'id', in: 'path', required: true, schema: {type: 'string'}}],
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        applyOperationOwnerVisibleAnnotations(document);
+
+        const operation = document.paths['/api/members/{id}'].patch;
+        expect(operation['x-operation-extra-annotation']).toBe(OWNER_VISIBLE_FQN);
+        expect(operation.parameters[0]['x-field-extra-annotation']).toBe(OWNER_ID_FQN);
+    });
+
+    it('leaves operations without x-klabis-owner-visible untouched', () => {
+        const document = {
+            paths: {
+                '/api/members': {
+                    get: {operationId: 'listMembers', responses: {}},
+                },
+            },
+        };
+
+        applyOperationOwnerVisibleAnnotations(document);
+
+        expect(document.paths['/api/members'].get['x-operation-extra-annotation']).toBeUndefined();
+    });
+
+    it('appends to an existing x-operation-extra-annotation rather than overwriting it', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-owner-visible': 'id',
+                        'x-operation-extra-annotation':
+                            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)',
+                        parameters: [{name: 'id', in: 'path', required: true, schema: {type: 'string'}}],
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        applyOperationOwnerVisibleAnnotations(document);
+
+        expect(document.paths['/api/members/{id}'].patch['x-operation-extra-annotation']).toBe(
+            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)\n' +
+            OWNER_VISIBLE_FQN,
+        );
+    });
+
+    it('resolves a local $ref parameter, inlining only that operation\'s copy', () => {
+        const memberIdParam = {name: 'id', in: 'path', required: true, schema: {type: 'string'}};
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    get: {
+                        operationId: 'getMember',
+                        parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                        responses: {},
+                    },
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-owner-visible': 'id',
+                        parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                        responses: {},
+                    },
+                },
+            },
+            components: {parameters: {MemberIdParam: memberIdParam}},
+        };
+
+        applyOperationOwnerVisibleAnnotations(document);
+
+        const patchParam = document.paths['/api/members/{id}'].patch.parameters[0];
+        expect(patchParam.$ref).toBeUndefined();
+        expect(patchParam.name).toBe('id');
+        expect(patchParam['x-field-extra-annotation']).toBe(OWNER_ID_FQN);
+
+        // The sibling operation still references the shared parameter unmodified — no leakage.
+        const getParam = document.paths['/api/members/{id}'].get.parameters[0];
+        expect(getParam.$ref).toBe('#/components/parameters/MemberIdParam');
+        expect(document.components.parameters.MemberIdParam['x-field-extra-annotation']).toBeUndefined();
+    });
+
+    it('throws when the named parameter does not exist on the operation', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-owner-visible': 'memberId',
+                        parameters: [{name: 'id', in: 'path', required: true, schema: {type: 'string'}}],
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        expect(() => applyOperationOwnerVisibleAnnotations(document)).toThrow(/memberId/);
+    });
+
+    it('throws when the operation has x-klabis-owner-visible but no parameters', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-owner-visible': 'id',
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        expect(() => applyOperationOwnerVisibleAnnotations(document)).toThrow(/updateMember/);
+    });
+
+    // The parameter is declared, so the generic "not declared on that operation" check passes —
+    // but x-spring-paginated replaces page/size/sort with a Pageable argument, so @OwnerId would
+    // land on a parameter the generator drops, leaving @OwnerVisible unpaired.
+    it('throws when the named parameter is one x-spring-paginated folds into Pageable', () => {
+        const document = {
+            paths: {
+                '/api/members': {
+                    get: {
+                        operationId: 'listMembers',
+                        'x-spring-paginated': true,
+                        'x-klabis-owner-visible': 'page',
+                        parameters: [{name: 'page', in: 'query', schema: {type: 'integer'}}],
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        expect(() => applyOperationOwnerVisibleAnnotations(document)).toThrow(/Pageable/);
+    });
+
+    it('allows a parameter named page when the operation is not paginated', () => {
+        const document = {
+            paths: {
+                '/api/pages/{page}': {
+                    get: {
+                        operationId: 'getPage',
+                        'x-klabis-owner-visible': 'page',
+                        parameters: [{name: 'page', in: 'path', schema: {type: 'string'}}],
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        applyOperationOwnerVisibleAnnotations(document);
+
+        const operation = document.paths['/api/pages/{page}'].get;
+        expect(operation.parameters[0]['x-field-extra-annotation']).toContain('OwnerId');
+    });
+});
+
 describe('bundleSpec — x-klabis-authority on operations end to end', () => {
     it('rewrites x-klabis-authority into x-operation-extra-annotation on the bundled document', () => {
         const readYaml = fakeReader({
@@ -367,6 +550,86 @@ paths:
 
         expect(document.paths['/api/members/{id}/resume'].post['x-operation-extra-annotation'])
             .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)');
+    });
+});
+
+describe('bundleSpec — x-klabis-owner-visible on operations end to end', () => {
+    it('rewrites x-klabis-owner-visible into paired @OwnerVisible/@OwnerId annotations, MANAGE-or-owner semantics preserved', () => {
+        const readYaml = fakeReader({
+            'klabis.yaml': `
+openapi: 3.1.0
+paths:
+  /api/members/{id}:
+    get:
+      operationId: getMember
+      x-klabis-authority: MEMBERS_READ
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '200':
+          description: ok
+    patch:
+      operationId: updateMember
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: id
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '204':
+          description: ok
+components:
+  parameters:
+    MemberIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas: {}
+`,
+        });
+
+        const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
+
+        const patch = document.paths['/api/members/{id}'].patch;
+        expect(patch['x-operation-extra-annotation']).toBe(
+            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)\n' +
+            '@com.klabis.common.security.fieldsecurity.OwnerVisible',
+        );
+        expect(patch.parameters[0]['x-field-extra-annotation'])
+            .toBe('@com.klabis.common.security.fieldsecurity.OwnerId');
+
+        // getMember shares the same $ref'd parameter but never opted into ownership — it must
+        // stay a plain MANAGE-only check with no @OwnerId leaking onto its parameter.
+        const get = document.paths['/api/members/{id}'].get;
+        expect(get['x-operation-extra-annotation'])
+            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_READ)');
+        expect(get.parameters[0].$ref).toBe('#/components/parameters/MemberIdParam');
+    });
+
+    it('throws when x-klabis-owner-visible names a parameter absent from the operation', () => {
+        const readYaml = fakeReader({
+            'klabis.yaml': `
+openapi: 3.1.0
+paths:
+  /api/members/{id}:
+    patch:
+      operationId: updateMember
+      x-klabis-owner-visible: memberId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ok
+`,
+        });
+
+        expect(() => bundleSpec('/spec/klabis.yaml', {readYaml})).toThrow(/memberId/);
     });
 });
 

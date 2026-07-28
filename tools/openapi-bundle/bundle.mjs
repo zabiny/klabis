@@ -40,7 +40,18 @@ function main() {
         process.exit(1);
     }
 
-    const {document, conflicts} = bundleSpec(SPEC_ROOT);
+    // The x-klabis-* rewrites inside bundleSpec throw on a spec they cannot translate — an
+    // incomplete @OwnerVisible/@OwnerId pair, say. validateSpec reports the same mistakes with a
+    // path, but it only runs on an already-bundled document, so those throws surface first.
+    // Reported here in the same shape rather than as a stack trace.
+    let bundled;
+    try {
+        bundled = bundleSpec(SPEC_ROOT);
+    } catch (e) {
+        console.error(`Spec bundling failed: ${e.message}`);
+        process.exit(1);
+    }
+    const {document, conflicts} = bundled;
 
     if (conflicts.length > 0) {
         console.error('Conflicting component definitions (same name, different shape):');

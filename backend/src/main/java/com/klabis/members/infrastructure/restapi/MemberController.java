@@ -1,8 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.OwnerId;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -68,7 +66,6 @@ public class MemberController implements MembersApi {
         this.memberMapper = memberMapper;
     }
 
-    @OwnerVisible
     @Operation(
             summary = "Update member information (partial update)",
             description = "Updates member information with PATCH semantics (partial update). " +
@@ -79,7 +76,7 @@ public class MemberController implements MembersApi {
     @ApiResponse(responseCode = "204", description = "Member updated successfully")
     @Override
     public ResponseEntity<Void> updateMember(
-            @Parameter(description = "Member UUID") @OwnerId @NotNull @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
             @ActingUser CurrentUserData currentUser) {
