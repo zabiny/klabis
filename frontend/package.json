@@ -14,7 +14,7 @@
     "test:ui": "vitest --ui",
     "refresh-backend-server-resources": "npm run lint && npm run test && npm run build && rm -rf ../backend/src/main/resources/static/index.html && rm -rf ../backend/src/main/resources/static/assets/* && cp -r dist/* ../backend/src/main/resources/static && git add ../backend/src/main/resources/static/assets/*",
     "publish-frontend-resources": "npm run lint && npm run test && npm run build && rm -rf ../backend/src/main/resources/static/index.html && rm -rf ../backend/src/main/resources/static/assets/* && cp -r dist/* ../backend/src/main/resources/static && git add ../backend/src/main/resources/static/assets/*",
-    "openapi": "npx openapi-typescript ../docs/openapi/klabis-full.json -o ./src/api/klabisApi.d.ts"
+    "openapi": "npx openapi-typescript ../docs/openapi/klabis-full.json -o ./src/api/klabisApi.d.ts && node ../tools/openapi-bundle/haltypes.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
