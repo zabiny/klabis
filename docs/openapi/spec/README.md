@@ -39,6 +39,10 @@ Run from `backend/`:
 
 Or directly from `tools/openapi-bundle/`: `node bundle.mjs --check`, `node drift.mjs`.
 
+From `frontend/`, `npm run openapi` regenerates both `src/api/klabisApi.d.ts` (schemas, via
+openapi-typescript) and `src/api/halTypes.ts` (link/template relations, via
+`tools/openapi-bundle/haltypes.mjs`).
+
 ## Klabis extensions
 
 Field-level authorization, on schema properties:

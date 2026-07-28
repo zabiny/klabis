@@ -113,6 +113,30 @@ responses:
 Reference operations by `operation: <operationId>` — never `operationRef` with escaped slashes.
 The bundler validates that the target exists.
 
+### What the frontend gets from them
+
+`npm run openapi` generates `frontend/src/api/halTypes.ts` from these declarations — per operation a
+`*Rels` constant, a `*Hal` interface and a `*Resource` type intersecting the payload schema:
+
+```ts
+import {GetMemberRels} from '@/api/halTypes';
+GetMemberRels.links[0]        // 'account' — typed, not a bare string literal
+```
+
+Use those constants instead of string literals so renaming a relation in the spec breaks the build
+rather than silently breaking at runtime.
+
+**Consume the generated values, don't retype them.** A local map of the same string literals typed
+as `Record<..., GetMemberLinkRel>` looks safe but is not: it only asserts that each value is *some*
+valid rel, so renaming one in the spec still type-checks. Index into `GetMemberRels.links` (an
+`as const` tuple) or type the response with `GetMemberHal`.
+
+Worth verifying whenever you wire up a new page: rename a rel in `halTypes.ts` by hand, confirm
+`npx tsc --noEmit -p tsconfig.app.json` fails, then regenerate.
+
+`frontend/src/api/types.ts` stays hand-written: it describes the HAL-FORMS **media type**
+(`Link`, `HalResponse`, `HalFormsTemplate`, …), which is defined by the standard, not by Klabis.
+
 ### These describe the MAXIMAL variant
 
 `klabisLinkTo` returns `Optional` and `klabisAfford` returns an empty list when the caller lacks
@@ -154,10 +178,16 @@ whatever no longer compiles.
    `RepresentationModelProcessor` implementations — springdoc cannot see them, so the drift check
    will not catch a missing one
 5. Re-run the drift check until the module reports `mismatched: 0`
+6. `cd frontend && npm run openapi` — regenerates the schema types and the HAL relations
 
-Expect the springdoc output to be wrong in places (it does not know about `@JsonValue` mixins, for
-one). Where it disagrees with the actual wire format, the spec follows the **wire**, and the
-mismatch is documented rather than mirrored.
+**The drift check compares schemas by name, not by content.** Two schemas called
+`RegisterMemberRequest` match even when their properties differ wildly. After the check goes green,
+diff the module's schemas property-by-property against `klabis-codefirst.json` — that is where
+transcription mistakes actually surface.
+
+Expect the springdoc output to be wrong in places (it does not know about `@JsonValue` mixins or the
+`PatchField` deserializer). Where it disagrees with the actual wire format, the spec follows the
+**wire**, and the discrepancy is documented in the spec rather than mirrored.
 
 ## Anti-patterns
 
