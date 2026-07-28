@@ -14,14 +14,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * REST controller for Member resources.
@@ -31,19 +32,16 @@ import java.util.List;
  */
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Members", description = "Member registration and management API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-class RegistrationController {
+class RegistrationController implements RegistrationApi {
 
     private final RegistrationPort registrationService;
-    private final EntityLinks entityLinks;
     private final MemberMapper memberMapper;
 
-    public RegistrationController(RegistrationPort registrationService, EntityLinks entityLinks,
-                                  MemberMapper memberMapper) {
+    public RegistrationController(RegistrationPort registrationService, MemberMapper memberMapper) {
         this.registrationService = registrationService;
-        this.entityLinks = entityLinks;
         this.memberMapper = memberMapper;
     }
 
@@ -56,7 +54,6 @@ class RegistrationController {
      * @param currentUserId the authenticated user performing the registration
      * @return 201 Created with Location header and member resource
      */
-    @PostMapping(consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Register a new member",
@@ -64,6 +61,7 @@ class RegistrationController {
                           "Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence)."
     )
     @ApiResponse(responseCode = "201", description = "Member successfully registered")
+    @Override
     public ResponseEntity<Void> registerMember(
             @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
             @Valid @RequestBody RegisterMemberRequest request,
@@ -73,7 +71,7 @@ class RegistrationController {
         Member member = registrationService.registerMember(serviceCommand);
 
         ResponseEntity.BodyBuilder response = ResponseEntity
-                .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri());
+                .created(linkTo(methodOn(MemberController.class).getMember(member.getId().uuid(), null)).toUri());
 
         List<String> warnings = member.birthNumberConsistencyWarnings();
         if (!warnings.isEmpty()) {

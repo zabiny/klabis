@@ -295,6 +295,7 @@ openApiGenerate {
     outputDir.set(generatedOpenApiModelsDir.map { it.asFile.absolutePath })
     templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
     modelPackage.set("com.klabis.members.infrastructure.restapi")
+    apiPackage.set("com.klabis.members.infrastructure.restapi")
     skipValidateSpec.set(true)
 
     globalProperties.set(
@@ -308,10 +309,13 @@ openApiGenerate {
                 "TrainerLicenseDto",
                 "RefereeLicenseDto"
             ).joinToString(","),
-            "apis" to "false",
+            // Empty string, NOT "true" — the generator silently generates nothing for "apis"="true".
+            "apis" to "",
             "supportingFiles" to "false",
             "modelDocs" to "false",
-            "modelTests" to "false"
+            "modelTests" to "false",
+            "apiDocs" to "false",
+            "apiTests" to "false"
         )
     )
 
@@ -327,10 +331,15 @@ openApiGenerate {
     configOptions.set(
         mapOf(
             "interfaceOnly" to "true",
+            // Plain abstract interface methods only — the stock default-method body returns 501 via
+            // a non-existent ApiUtil helper and is never used since MemberController/RegistrationController
+            // always provide a real @Override.
+            "skipDefaultInterface" to "true",
             "useSpringBoot3" to "true",
             "useJakartaEe" to "true",
             "documentationProvider" to "none",
             "openApiNullable" to "false",
+            "useTags" to "true",
             "additionalModelTypeAnnotations" to
                 "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"
         )
@@ -344,13 +353,24 @@ openApiGenerate {
         )
     )
 
+    // Envelope schemas (EntityModel*/PagedModel*) and hand-written request DTOs are redirected to
+    // the existing Java types rather than regenerated — see klabis-api-spec skill: "Payload and
+    // envelope are separate schemas". The API interface signature must match what
+    // HalResponseBodyAdvice expects (plain payload DTO / Page<T>, see ADR-002 in design-decisions.md).
     schemaMappings.set(
         mapOf(
             "Gender" to "com.klabis.members.domain.Gender",
             "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
             "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
             "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
-            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel"
+            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
+            "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
+            "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+            "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
+            "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
+            "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
+            "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest",
+            "ProblemDetail" to "org.springframework.http.ProblemDetail"
         )
     )
 
@@ -361,7 +381,14 @@ openApiGenerate {
             "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
             "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
             "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
-            "Instant" to "java.time.Instant"
+            "Instant" to "java.time.Instant",
+            "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
+            "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page",
+            "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
+            "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
+            "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
+            "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest",
+            "ProblemDetail" to "org.springframework.http.ProblemDetail"
         )
     )
 }

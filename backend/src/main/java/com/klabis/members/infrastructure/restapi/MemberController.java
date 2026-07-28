@@ -33,7 +33,6 @@ import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,11 +50,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-public class MemberController {
+public class MemberController implements MembersApi {
 
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
@@ -70,7 +69,6 @@ public class MemberController {
         this.memberMapper = memberMapper;
     }
 
-    @PatchMapping(value = "/{id}", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @OwnerVisible
     @Operation(
@@ -81,8 +79,9 @@ public class MemberController {
                           "Only provided fields are updated; null/missing fields keep existing values."
     )
     @ApiResponse(responseCode = "204", description = "Member updated successfully")
+    @Override
     public ResponseEntity<Void> updateMember(
-            @Parameter(description = "Member UUID") @OwnerId @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @OwnerId @NotNull @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
             @ActingUser CurrentUserData currentUser) {
@@ -100,7 +99,6 @@ public class MemberController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/resume")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Resume suspended member membership",
@@ -112,18 +110,18 @@ public class MemberController {
     @ApiResponse(responseCode = "400", description = "Invalid resume request (e.g., member is already active)")
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
+    @Override
     public ResponseEntity<Void> resumeMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
             @ActingUser UserId currentUserId) {
 
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
-    @PostMapping(value = "/{id}/suspend", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Suspend member membership",
@@ -136,10 +134,11 @@ public class MemberController {
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
     @ApiResponse(responseCode = "409", description = "Member is the sole owner of one or more groups — designate a successor before suspension")
+    @Override
     public ResponseEntity<Void> suspendMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
             @Parameter(description = "Suspension request")
-            @Valid @RequestBody @NotNull SuspendMembershipRequest request,
+            @Valid @RequestBody SuspendMembershipRequest request,
             @ActingUser UserId currentUserId) {
 
         var command = new Member.SuspendMembership(
@@ -150,13 +149,13 @@ public class MemberController {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
-    @GetMapping(value = "/options", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
+    @Override
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
         List<MemberOptionResponse> options = memberRepository.findAll(MemberFilter.activeOnly()).stream()
                 .map(member -> new MemberOptionResponse(
@@ -167,7 +166,6 @@ public class MemberController {
         return ResponseEntity.ok(options);
     }
 
-    @GetMapping
     @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
@@ -182,13 +180,14 @@ public class MemberController {
     @ApiResponse(responseCode = "200", description = "Paginated list of members retrieved successfully")
     @ApiResponse(responseCode = "400", description = "Invalid filter parameter value")
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
+    @Override
     public ResponseEntity<Page<MemberSummaryResponse>> listMembers(
+            @Parameter(description = "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)")
+            @Valid @RequestParam(required = false) String q,
+            @Parameter(description = "Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.")
+            @Valid @RequestParam(required = false) String status,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = {"lastName", "firstName"}, direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
-            @Parameter(description = "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)")
-            @RequestParam(required = false) String q,
-            @Parameter(description = "Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.")
-            @RequestParam(required = false) String status,
             @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
@@ -245,7 +244,6 @@ public class MemberController {
         }
     }
 
-    @GetMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "Get member by ID",
@@ -253,8 +251,9 @@ public class MemberController {
                           "contact details, and guardian information if applicable. Returns HATEOAS links for navigation."
     )
     @ApiResponse(responseCode = "200", description = "Member found")
+    @Override
     public ResponseEntity<MemberDetailsResponse> getMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
@@ -274,7 +273,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -331,7 +330,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }
