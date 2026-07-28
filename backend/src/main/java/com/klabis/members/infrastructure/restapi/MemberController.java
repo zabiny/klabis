@@ -272,18 +272,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        UUID memberId = member.getId().uuid();
-
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
-            var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
-            if (member.isActive()) {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
-            } else {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
-            }
-            return (Link) self;
-        }).ifPresent(dtoModel::add);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -295,6 +284,21 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
 
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+    }
+}
+
+/**
+ * Self link + status-dependent affordances (suspend/resume) are identical for the member detail
+ * and summary DTOs — the logic only touches {@code Member} and {@code RepresentationModel.add},
+ * neither of which depends on the DTO's generic type.
+ */
+final class MemberSelfLinkSupport {
+
+    private MemberSelfLinkSupport() {
+    }
+
+    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
