@@ -17,6 +17,47 @@ const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArr
 /** OpenAPI path-item keys that denote an operation. */
 export const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
+/**
+ * Fully-qualified name of the type-safe method-security annotation that x-klabis-authority
+ * generates on an operation. See backend-patterns skill: "@HasAuthority Method/Class-Level
+ * Authorization".
+ */
+const HAS_AUTHORITY_FQN = 'com.klabis.common.users.HasAuthority';
+const AUTHORITY_FQN = 'com.klabis.common.users.Authority';
+
+/**
+ * Translates `x-klabis-authority` on an operation into `x-operation-extra-annotation`, which the
+ * (stock) api.mustache template emits verbatim above the generated interface method. This is how
+ * the spec drives method-level @HasAuthority instead of it being hand-written on the controller —
+ * see klabis-api-spec skill and ADR for x-klabis-authority-on-operations.
+ *
+ * Only operations carry this rewrite; x-klabis-authority on a schema property (field-level
+ * security) is untouched — that one is consumed directly by FieldSecurityBeanSerializerModifier,
+ * not by codegen.
+ */
+export function applyOperationAuthorityAnnotations(document) {
+    const paths = document.paths;
+    if (!isPlainObject(paths)) return document;
+
+    for (const pathItem of Object.values(paths)) {
+        if (!isPlainObject(pathItem)) continue;
+        for (const [method, operation] of Object.entries(pathItem)) {
+            if (!HTTP_METHODS.includes(method) || !isPlainObject(operation)) continue;
+
+            const authority = operation['x-klabis-authority'];
+            if (typeof authority !== 'string') continue;
+
+            const annotation = `@${HAS_AUTHORITY_FQN}(${AUTHORITY_FQN}.${authority})`;
+            const existing = operation['x-operation-extra-annotation'];
+            operation['x-operation-extra-annotation'] = existing
+                ? `${existing}\n${annotation}`
+                : annotation;
+        }
+    }
+
+    return document;
+}
+
 /** Counts operations across all paths — used for reporting. */
 export function countOperations(document) {
     return Object.values(document?.paths ?? {})
@@ -161,6 +202,8 @@ export function bundleSpec(rootFile, options = {}) {
     if (Object.keys(components).length > 0) {
         document.components = components;
     }
+
+    applyOperationAuthorityAnnotations(document);
 
     return {document: sortKeysDeep(document), conflicts};
 }

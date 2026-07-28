@@ -7,7 +7,6 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
@@ -69,7 +68,6 @@ public class MemberController implements MembersApi {
         this.memberMapper = memberMapper;
     }
 
-    @HasAuthority(Authority.MEMBERS_MANAGE)
     @OwnerVisible
     @Operation(
             summary = "Update member information (partial update)",
@@ -99,7 +97,6 @@ public class MemberController implements MembersApi {
         return ResponseEntity.noContent().build();
     }
 
-    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Resume suspended member membership",
             description = "Resumes a suspended member's membership. " +
@@ -122,7 +119,6 @@ public class MemberController implements MembersApi {
                 .build();
     }
 
-    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Suspend member membership",
             description = "Suspends a member's membership with a specified reason. " +
@@ -154,7 +150,6 @@ public class MemberController implements MembersApi {
     }
 
     @Transactional(readOnly = true)
-    @HasAuthority(Authority.MEMBERS_READ)
     @Override
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
         List<MemberOptionResponse> options = memberRepository.findAll(MemberFilter.activeOnly()).stream()
@@ -167,7 +162,6 @@ public class MemberController implements MembersApi {
     }
 
     @Transactional(readOnly = true)
-    @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "List members with pagination and sorting",
             description = "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). " +
@@ -244,7 +238,6 @@ public class MemberController implements MembersApi {
         }
     }
 
-    @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "Get member by ID",
             description = "Retrieves detailed member information by ID including personal information, " +

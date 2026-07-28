@@ -120,3 +120,73 @@ describe('validateSpec', () => {
         })).toEqual([]);
     });
 });
+
+describe('validateSpec — x-klabis-authority on operations', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    const docWithOperation = (operationExtra) => ({
+        paths: {
+            '/api/members': {
+                post: {
+                    operationId: 'registerMember',
+                    responses: {},
+                    ...operationExtra,
+                },
+            },
+        },
+    });
+
+    it('accepts a known authority directly on an operation', () => {
+        expect(validate(docWithOperation({'x-klabis-authority': 'MEMBERS_MANAGE'}))).toEqual([]);
+    });
+
+    it('rejects an unknown authority on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-authority': 'NOPE'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not a constant of Authority.java');
+    });
+
+    it('rejects x-klabis-owner-id on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-owner-id': true}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+
+    it('rejects x-klabis-owner-visible on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-owner-visible': true}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+
+    it('rejects x-klabis-halforms-access on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-halforms-access': 'READ_ONLY'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+
+    it('still accepts x-klabis-authority on a schema property alongside an operation-level one', () => {
+        const doc = {
+            paths: {
+                '/api/members': {
+                    post: {
+                        operationId: 'registerMember',
+                        responses: {},
+                        'x-klabis-authority': 'MEMBERS_MANAGE',
+                    },
+                },
+            },
+            components: {
+                schemas: {
+                    Thing: {
+                        type: 'object',
+                        properties: {
+                            dateOfBirth: {type: 'string', 'x-klabis-authority': 'MEMBERS_MANAGE'},
+                        },
+                    },
+                },
+            },
+        };
+        expect(validate(doc)).toEqual([]);
+    });
+});

@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {parse} from 'yaml';
 
-import {bundleSpec, sortKeysDeep} from '../lib/bundle.mjs';
+import {applyOperationAuthorityAnnotations, bundleSpec, sortKeysDeep} from '../lib/bundle.mjs';
 
 /** Builds a readYaml stub backed by an in-memory {absolutePath: yamlSource} map. */
 function fakeReader(files) {
@@ -267,6 +267,106 @@ paths: {}
         });
 
         expect(() => bundleSpec('/spec/klabis.yaml', {readYaml})).toThrow(/Unresolvable/);
+    });
+});
+
+describe('applyOperationAuthorityAnnotations', () => {
+    it('translates x-klabis-authority on an operation into x-operation-extra-annotation', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}/suspend': {
+                    post: {
+                        operationId: 'suspendMember',
+                        'x-klabis-authority': 'MEMBERS_MANAGE',
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        applyOperationAuthorityAnnotations(document);
+
+        expect(document.paths['/api/members/{id}/suspend'].post['x-operation-extra-annotation'])
+            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)');
+    });
+
+    it('leaves operations without x-klabis-authority untouched', () => {
+        const document = {
+            paths: {
+                '/api/members': {
+                    get: {operationId: 'listMembers', responses: {}},
+                },
+            },
+        };
+
+        applyOperationAuthorityAnnotations(document);
+
+        expect(document.paths['/api/members'].get['x-operation-extra-annotation']).toBeUndefined();
+    });
+
+    it('appends to an existing x-operation-extra-annotation rather than overwriting it', () => {
+        const document = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        'x-klabis-authority': 'MEMBERS_MANAGE',
+                        'x-operation-extra-annotation': '@com.klabis.common.security.fieldsecurity.OwnerVisible',
+                        responses: {},
+                    },
+                },
+            },
+        };
+
+        applyOperationAuthorityAnnotations(document);
+
+        expect(document.paths['/api/members/{id}'].patch['x-operation-extra-annotation']).toBe(
+            '@com.klabis.common.security.fieldsecurity.OwnerVisible\n' +
+            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)',
+        );
+    });
+
+    it('does not touch x-klabis-authority on a schema property', () => {
+        const document = {
+            paths: {},
+            components: {
+                schemas: {
+                    Thing: {
+                        properties: {
+                            dateOfBirth: {type: 'string', 'x-klabis-authority': 'MEMBERS_MANAGE'},
+                        },
+                    },
+                },
+            },
+        };
+
+        applyOperationAuthorityAnnotations(document);
+
+        expect(document.components.schemas.Thing.properties.dateOfBirth['x-operation-extra-annotation'])
+            .toBeUndefined();
+    });
+});
+
+describe('bundleSpec — x-klabis-authority on operations end to end', () => {
+    it('rewrites x-klabis-authority into x-operation-extra-annotation on the bundled document', () => {
+        const readYaml = fakeReader({
+            'klabis.yaml': `
+openapi: 3.1.0
+paths:
+  /api/members/{id}/resume:
+    post:
+      operationId: resumeMember
+      x-klabis-authority: MEMBERS_MANAGE
+      responses:
+        '204':
+          description: ok
+`,
+        });
+
+        const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
+
+        expect(document.paths['/api/members/{id}/resume'].post['x-operation-extra-annotation'])
+            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)');
     });
 });
 

@@ -1,7 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingUser;
 import com.klabis.members.application.RegistrationPort;
@@ -54,7 +53,6 @@ class RegistrationController implements RegistrationApi {
      * @param currentUserId the authenticated user performing the registration
      * @return 201 Created with Location header and member resource
      */
-    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Register a new member",
             description = "Creates a new member with personal information, contact details, and optional guardian information for minors. " +

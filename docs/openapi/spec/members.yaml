@@ -17,6 +17,7 @@ paths:
         the admin-only fields (email, active) are omitted from the response.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
       x-spring-paginated: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
@@ -88,6 +89,7 @@ paths:
         — the member is still created.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       requestBody:
@@ -135,6 +137,7 @@ paths:
       description: Lightweight value/prompt pairs for member picker components.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
       responses:
         '200':
           description: Member options retrieved successfully
@@ -173,6 +176,7 @@ paths:
         MEMBERS:MANAGE or is the member themselves.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -234,6 +238,7 @@ paths:
         Fields the caller is not authorized to change are rejected.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -273,6 +278,7 @@ paths:
         finance account.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
@@ -309,6 +315,7 @@ paths:
       summary: Resume a suspended membership
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
