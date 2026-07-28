@@ -2,6 +2,8 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.events.EventAssert;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
@@ -1885,6 +1887,82 @@ class EventJdbcRepositoryTest {
             assertThat(result.getContent())
                     .extracting(Event::getId)
                     .containsExactly(saved.getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Categories persistence — round-trip including orisId and fee")
+    class CategoriesPersistence {
+
+        @Test
+        @DisplayName("should persist and reload categories with orisId and fee")
+        void shouldPersistAndReloadCategoriesWithOrisIdAndFee() {
+            EventCategory withFeeAndOrisId = new EventCategory(
+                    EventCategoryId.generate(), "42", "M21", Money.ofCzk(BigDecimal.valueOf(200)));
+            EventCategory nameOnly = EventCategory.create("W21");
+
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Category Event")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .categories(List.of(withFeeAndOrisId, nameOnly))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getCategories()).hasSize(2);
+            EventCategory reloadedWithFee = reloaded.getCategories().stream()
+                    .filter(c -> c.name().equals("M21")).findFirst().orElseThrow();
+            assertThat(reloadedWithFee.id()).isEqualTo(withFeeAndOrisId.id());
+            assertThat(reloadedWithFee.orisId()).isEqualTo("42");
+            assertThat(reloadedWithFee.fee()).contains(Money.ofCzk(BigDecimal.valueOf(200)));
+
+            EventCategory reloadedNameOnly = reloaded.getCategories().stream()
+                    .filter(c -> c.name().equals("W21")).findFirst().orElseThrow();
+            assertThat(reloadedNameOnly.id()).isEqualTo(nameOnly.id());
+            assertThat(reloadedNameOnly.orisId()).isNull();
+            assertThat(reloadedNameOnly.fee()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should persist event with no categories as empty list")
+        void shouldPersistEventWithNoCategories() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("No Category Event")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getCategories()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should replace categories on update, keeping id stable when unchanged")
+        void shouldReplaceCategoriesOnUpdate() {
+            EventCategory original = EventCategory.create("M21");
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Category Update Event")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .organizer("OOB")
+                    .categories(List.of(original))
+                    .build());
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            EventCategory renamed = new EventCategory(original.id(), null, "M21-renamed", null);
+            reloaded.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(reloaded))
+                    .categories(List.of(renamed))
+                    .build());
+            eventRepository.save(reloaded);
+
+            Event afterUpdate = eventRepository.findById(saved.getId()).orElseThrow();
+            assertThat(afterUpdate.getCategories()).hasSize(1);
+            assertThat(afterUpdate.getCategories().get(0).id()).isEqualTo(original.id());
+            assertThat(afterUpdate.getCategories().get(0).name()).isEqualTo("M21-renamed");
         }
     }
 }

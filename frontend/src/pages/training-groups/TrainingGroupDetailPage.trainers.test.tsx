@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -87,8 +87,7 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
 const buildTrainingGroupDetail = (overrides?: Record<string, unknown>): HalResponse => ({
     id: 'tg-1',
     name: 'Tréninková skupina U10',
-    minAge: 8,
-    maxAge: 10,
+    ageRange: {minAge: 8, maxAge: 10},
     trainers: [],
     members: [],
     _links: {self: {href: '/api/groups/tg-1'}},

@@ -1,7 +1,11 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.events.domain.Event;
+import com.klabis.events.EventCategory;
+import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
+import com.klabis.events.infrastructure.restapi.EventDto.EntryFeeDto;
+import com.klabis.events.infrastructure.restapi.EventDto.EventCategoryDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,7 +24,7 @@ class EventDtoMapper {
                 event.getCoordinators(),
                 event.getEventTypeId().orElse(null),
                 event.getStatus(),
-                event.getCategories(),
+                toCategoryDtos(event),
                 event.getCancellationReason().orElse(null),
                 toDeadlineList(event.getRegistrationDeadlines()),
                 toRankingDto(event),
@@ -39,10 +43,24 @@ class EventDtoMapper {
                 event.getCoordinators(),
                 event.getEventTypeId().orElse(null),
                 event.getStatus(),
-                event.getCategories(),
+                toCategoryDtos(event),
                 event.getCancellationReason().orElse(null),
                 toDeadlineList(event.getRegistrationDeadlines())
         );
+    }
+
+    private static List<EventCategoryDto> toCategoryDtos(Event event) {
+        return event.getCategories().stream()
+                .map(EventDtoMapper::toCategoryDto)
+                .toList();
+    }
+
+    private static EventCategoryDto toCategoryDto(EventCategory category) {
+        return new EventCategoryDto(category.id(), category.name(), category.fee().map(EventDtoMapper::toEntryFeeDto).orElse(null));
+    }
+
+    private static EntryFeeDto toEntryFeeDto(Money fee) {
+        return new EntryFeeDto(fee.amount(), fee.currency().getCurrencyCode());
     }
 
     private static EventDto.RankingDto toRankingDto(Event event) {

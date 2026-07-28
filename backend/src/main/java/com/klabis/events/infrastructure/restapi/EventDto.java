@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.ui.HalForms;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberId;
 
@@ -41,7 +42,7 @@ record EventDto(
         Set<MemberId> coordinators,
         EventTypeId eventTypeId,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories,
+        List<EventCategoryDto> categories,
         @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason,
         @HalForms(access = HalForms.Access.READ_ONLY) List<LocalDate> deadlines,
         RankingDto ranking,
@@ -53,4 +54,7 @@ record EventDto(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record EntryFeeDto(BigDecimal amount, String currency) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record EventCategoryDto(EventCategoryId id, String name, EntryFeeDto fee) {}
 }

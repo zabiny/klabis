@@ -2,6 +2,8 @@ package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
@@ -185,15 +187,16 @@ class EventRegistrationServiceTest {
         @DisplayName("should register member with valid category when event has categories")
         void shouldRegisterMemberWithValidCategory() {
             // Given
+            EventCategory m21 = EventCategory.create("M21");
             Event eventWithCategories = Event.create(EventCreateEventBuilder.builder()
                     .name("Category Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(m21, EventCategory.create("W35")))
                     .build());
             eventWithCategories.publish();
 
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder()
-                    .siCardNumber("123456").category("M21").build();
+                    .siCardNumber("123456").categoryId(m21.id()).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithCategories));
             when(eventRepository.save(any(Event.class))).thenReturn(eventWithCategories);
 
@@ -203,7 +206,7 @@ class EventRegistrationServiceTest {
             // Then
             verify(eventRepository).save(any(Event.class));
             assertThat(eventWithCategories.findRegistration(TEST_MEMBER_ID)).isPresent();
-            assertThat(eventWithCategories.findRegistration(TEST_MEMBER_ID).get().category()).isEqualTo("M21");
+            assertThat(eventWithCategories.findRegistration(TEST_MEMBER_ID).get().categoryId()).isEqualTo(m21.id());
         }
 
         @Test
@@ -213,7 +216,7 @@ class EventRegistrationServiceTest {
             Event eventWithCategories = Event.create(EventCreateEventBuilder.builder()
                     .name("Category Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB")
-                    .categories(List.of("M21", "W35"))
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("W35")))
                     .build());
             eventWithCategories.publish();
 

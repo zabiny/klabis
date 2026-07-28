@@ -1,6 +1,8 @@
 package com.klabis.events.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.*;
@@ -80,7 +82,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(38)),
-                List.of("M21", "W21", "M35", "W35", "M50", "W50")
+                categoriesOf("M21", "W21", "M35", "W35", "M50", "W50")
         )));
 
         eventRepository.save(Event.create(new Event.CreateEvent(
@@ -104,7 +106,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(25)),
-                List.of("M21", "W21", "M40", "W40")
+                categoriesOf("M21", "W21", "M40", "W40")
         )));
 
         eventRepository.save(Event.create(new Event.CreateEvent(
@@ -128,7 +130,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                 asCoordinators(coordinator),
                 raceType,
                 RegistrationDeadlines.single(today.plusDays(48)),
-                List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65")
+                categoriesOf("M21", "W21", "M35", "W35", "M50", "W50", "M65")
         )));
     }
 
@@ -143,7 +145,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(55)),
-                        List.of("M21", "W21")
+                        categoriesOf("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Jarní pohár Vysočiny",
@@ -154,7 +156,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(45)),
-                        List.of("M21", "W21", "M35", "W35")
+                        categoriesOf("M21", "W21", "M35", "W35")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Mistrovství ČR – sprint",
@@ -165,7 +167,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(37)),
-                        List.of("M21", "W21", "M35", "W35", "M40", "W40")
+                        categoriesOf("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Černavský sprint",
@@ -187,7 +189,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         null,
-                        List.of("M21", "W21")
+                        categoriesOf("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Oblastní závod Jihomoravský kraj",
@@ -198,7 +200,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(10)),
-                        List.of("M21", "W21", "M35", "W35", "M50")
+                        categoriesOf("M21", "W21", "M35", "W35", "M50")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Žďárský pohár",
@@ -209,7 +211,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(2)),
-                        List.of("M21", "W21", "M35", "W35")
+                        categoriesOf("M21", "W21", "M35", "W35")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Jihlavský noční sprint",
@@ -231,7 +233,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(14)),
-                        List.of("M21", "W21", "M40", "W40", "M55")
+                        categoriesOf("M21", "W21", "M40", "W40", "M55")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Juniorský přebor Vysočiny",
@@ -242,7 +244,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(18)),
-                        List.of("M18", "W18", "M21", "W21")
+                        categoriesOf("M18", "W18", "M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Krajský přebor – long",
@@ -253,7 +255,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(22)),
-                        List.of("M21", "W21")
+                        categoriesOf("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Přebor kraje Vysočina",
@@ -264,7 +266,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(28)),
-                        List.of("M21", "W21", "M35", "W35", "M50", "W50")
+                        categoriesOf("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Celorepublikový pohár – 1. kolo",
@@ -275,7 +277,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(35)),
-                        List.of("M21", "W21", "M35", "W35", "M40", "W40", "M50")
+                        categoriesOf("M21", "W21", "M35", "W35", "M40", "W40", "M50")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Mistrovství ČR – middle",
@@ -286,7 +288,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(41)),
-                        List.of("M21", "W21")
+                        categoriesOf("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Vysočina open",
@@ -297,7 +299,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(48)),
-                        List.of("M21", "W21", "M35", "W35", "M50", "W50")
+                        categoriesOf("M21", "W21", "M35", "W35", "M50", "W50")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Noční závod v Brně",
@@ -319,7 +321,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(7)),
-                        List.of("M18", "W18")
+                        categoriesOf("M18", "W18")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Pohár Jihomoravského kraje – kolo 1",
@@ -330,7 +332,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(20)),
-                        List.of("M21", "W21", "M35")
+                        categoriesOf("M21", "W21", "M35")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Trénink – terén Černava",
@@ -352,7 +354,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(31)),
-                        List.of("M21", "W21", "M35", "W35", "M40", "W40")
+                        categoriesOf("M21", "W21", "M35", "W35", "M40", "W40")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Vysočina cup – závěrečné kolo",
@@ -363,7 +365,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         null,
                         raceType,
                         RegistrationDeadlines.single(today.minusDays(7)),
-                        List.of("M21", "W21")
+                        categoriesOf("M21", "W21")
                 )),
                 publishedEvent(new Event.CreateEvent(
                         "Ždárský pohár – finále sezóny",
@@ -374,7 +376,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
                         asCoordinators(coordinator),
                         raceType,
                         RegistrationDeadlines.single(today.plusDays(50)),
-                        List.of("M21", "W21", "M35", "W35", "M50", "W50", "M65", "W65")
+                        categoriesOf("M21", "W21", "M35", "W35", "M50", "W50", "M65", "W65")
                 ))
         );
 
@@ -412,8 +414,8 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
         }
     }
 
-    private String resolveFirstCategory(Event event) {
-        return event.getCategories().isEmpty() ? null : event.getCategories().get(0);
+    private EventCategoryId resolveFirstCategory(Event event) {
+        return event.getCategories().isEmpty() ? null : event.getCategories().get(0).id();
     }
 
     private static EventTypeId findTypeIdByName(List<EventType> types, String name) {
@@ -436,5 +438,9 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
             set.add(coordinator);
         }
         return set;
+    }
+
+    private static List<EventCategory> categoriesOf(String... names) {
+        return java.util.Arrays.stream(names).map(EventCategory::create).toList();
     }
 }

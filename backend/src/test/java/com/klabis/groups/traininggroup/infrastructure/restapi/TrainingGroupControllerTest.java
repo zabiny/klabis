@@ -4,16 +4,16 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.common.users.Authority;
-import com.klabis.members.MemberId;
+import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -191,8 +191,8 @@ class TrainingGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Juniors"))
                     .andExpect(jsonPath("$.id").exists())
-                    .andExpect(jsonPath("$.minAge").value(10))
-                    .andExpect(jsonPath("$.maxAge").value(18))
+                    .andExpect(jsonPath("$.ageRange.minAge").value(10))
+                    .andExpect(jsonPath("$.ageRange.maxAge").value(18))
                     .andExpect(jsonPath("$.trainers").isArray())
                     .andExpect(jsonPath("$.members").isArray())
                     .andExpect(jsonPath("$.owners").doesNotExist());
@@ -280,6 +280,58 @@ class TrainingGroupControllerTest {
                                             """)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("should return 204 and pass trainer MemberIds to command when trainers list is provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn204WhenUpdatingTrainersList() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"trainers": ["%s"]}
+                                            """.formatted(TRAINER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
+        }
+
+        @Test
+        @DisplayName("should deduplicate repeated trainer ids instead of failing")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldDeduplicateRepeatedTrainerIds() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"trainers": ["%s", "%s"]}
+                                            """.formatted(TRAINER_ID, TRAINER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
         @Test

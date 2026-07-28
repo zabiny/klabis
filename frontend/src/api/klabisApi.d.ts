@@ -1578,11 +1578,12 @@ export interface components {
             };
         };
         UpdatePermissionsRequest: {
-            authorities: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE")[];
+            authorities?: ("CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE")[];
         };
         EditRegistrationRequest: {
             siCardNumber: string;
-            category?: string;
+            /** Format: uuid */
+            categoryId?: string;
         };
         /** @description Event type update data */
         UpdateEventType: {
@@ -1799,6 +1800,10 @@ export interface components {
             /** Format: uuid */
             parent: string;
         };
+        CategoryRequest: {
+            name: string;
+            fee?: components["schemas"]["EntryFeeRequest"];
+        };
         /** @description Event creation data */
         CreateEventRequest: {
             name: string;
@@ -1807,18 +1812,15 @@ export interface components {
             location?: string;
             organizer: string;
             websiteUrl?: string;
-            coordinators?: components["schemas"]["MemberId"][];
-            eventTypeId?: components["schemas"]["EventTypeId"];
+            coordinators?: string[];
+            /** Format: uuid */
+            eventTypeId?: string;
             deadlines?: string[];
-            categories?: string[];
+            categories?: components["schemas"]["CategoryRequest"][];
         };
-        EventTypeId: {
-            /** Format: uuid */
-            value?: string;
-        };
-        MemberId: {
-            /** Format: uuid */
-            value?: string;
+        EntryFeeRequest: {
+            amount: number;
+            currency: string;
         };
         /** @description Optional cancellation details */
         CancelEventRequest: {
@@ -1827,7 +1829,8 @@ export interface components {
         /** @description Registration data */
         RegisterCommand: {
             siCardNumber: string;
-            category?: string;
+            /** Format: uuid */
+            categoryId?: string;
         };
         EntityModelBulkSyncResult: {
             /** Format: int32 */
@@ -1839,12 +1842,9 @@ export interface components {
             results?: components["schemas"]["EventSyncEntry"][];
             _links?: components["schemas"]["Links"];
         };
-        EventId: {
-            /** Format: uuid */
-            value?: string;
-        };
         EventSyncEntry: {
-            eventId?: components["schemas"]["EventId"];
+            /** Format: uuid */
+            eventId?: string;
             name?: string;
             /** @enum {string} */
             status?: "SYNCED" | "FAILED";
@@ -1956,7 +1956,7 @@ export interface components {
         PatchFieldAgeRangeRequest: {
             provided?: boolean;
         };
-        PatchFieldListString: {
+        PatchFieldListMemberId: {
             provided?: boolean;
         };
         PatchFieldString: {
@@ -1965,7 +1965,7 @@ export interface components {
         UpdateTrainingGroupRequest: {
             name?: components["schemas"]["PatchFieldString"];
             ageRange?: components["schemas"]["PatchFieldAgeRangeRequest"];
-            trainers?: components["schemas"]["PatchFieldListString"];
+            trainers?: components["schemas"]["PatchFieldListMemberId"];
         };
         EditMembershipFeeTierRequest: {
             name?: string;
@@ -2070,6 +2070,9 @@ export interface components {
         PatchFieldLinkedHashSetMemberId: {
             provided?: boolean;
         };
+        PatchFieldListCategoryRequest: {
+            provided?: boolean;
+        };
         PatchFieldListLocalDate: {
             provided?: boolean;
         };
@@ -2086,7 +2089,7 @@ export interface components {
             coordinators?: components["schemas"]["PatchFieldLinkedHashSetMemberId"];
             eventTypeId?: components["schemas"]["PatchFieldEventTypeId"];
             deadlines?: components["schemas"]["PatchFieldListLocalDate"];
-            categories?: components["schemas"]["PatchFieldListString"];
+            categories?: components["schemas"]["PatchFieldListCategoryRequest"];
             ranking?: components["schemas"]["PatchFieldRankingRequest"];
             baseEntryFee?: components["schemas"]["PatchFieldEntryFeeRequest"];
         };
@@ -2111,7 +2114,8 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelTrainingGroupSummaryResponse: {
-            id?: components["schemas"]["TrainingGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             /** Format: int32 */
             minAge?: number;
@@ -2121,9 +2125,11 @@ export interface components {
             memberCount?: number;
             _links?: components["schemas"]["Links"];
         };
-        TrainingGroupId: {
-            /** Format: uuid */
-            value?: string;
+        AgeRangeResponse: {
+            /** Format: int32 */
+            minAge?: number;
+            /** Format: int32 */
+            maxAge?: number;
         };
         EntityModelGroupMembershipResponse: {
             /** Format: uuid */
@@ -2138,12 +2144,10 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelTrainingGroupResponse: {
-            id?: components["schemas"]["TrainingGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
-            /** Format: int32 */
-            minAge?: number;
-            /** Format: int32 */
-            maxAge?: number;
+            ageRange?: components["schemas"]["AgeRangeResponse"];
             trainers?: components["schemas"]["EntityModelTrainerResponse"][];
             members?: components["schemas"]["EntityModelGroupMembershipResponse"][];
             _links?: components["schemas"]["Links"];
@@ -2213,10 +2217,11 @@ export interface components {
         };
         EntityModelMemberSummaryResponse: {
             /**
+             * Format: uuid
              * @description Unique member identifier (UUID)
              * @example 123e4567-e89b-12d3-a456-426614174000
              */
-            id?: components["schemas"]["MemberId"];
+            id?: string;
             /**
              * @description Member's first name
              * @example Jan
@@ -2338,7 +2343,8 @@ export interface components {
             country?: string;
         };
         EntityModelMemberDetailsResponse: {
-            id?: components["schemas"]["MemberId"];
+            /** Format: uuid */
+            id?: string;
             registrationNumber?: string;
             firstName?: string;
             lastName?: string;
@@ -2413,20 +2419,14 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelPendingInvitationResponse: {
-            groupId?: components["schemas"]["FreeGroupId"];
+            /** Format: uuid */
+            groupId?: string;
             groupName?: string;
-            invitationId?: components["schemas"]["InvitationId"];
+            /** Format: uuid */
+            invitationId?: string;
             /** Format: uuid */
             invitedBy?: string;
             _links?: components["schemas"]["Links"];
-        };
-        FreeGroupId: {
-            /** Format: uuid */
-            value?: string;
-        };
-        InvitationId: {
-            /** Format: uuid */
-            value?: string;
         };
         CollectionModelEntityModelGroupSummaryResponse: {
             _embedded?: {
@@ -2435,7 +2435,8 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelGroupSummaryResponse: {
-            id?: components["schemas"]["FreeGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             _links?: components["schemas"]["Links"];
         };
@@ -2447,7 +2448,8 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelGroupResponse: {
-            id?: components["schemas"]["FreeGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             owners?: components["schemas"]["EntityModelOwnerResponse"][];
             members?: components["schemas"]["EntityModelFreeGroupMembershipResponse"][];
@@ -2494,15 +2496,12 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelFamilyGroupSummaryResponse: {
-            id?: components["schemas"]["FamilyGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             /** Format: int32 */
             memberCount?: number;
             _links?: components["schemas"]["Links"];
-        };
-        FamilyGroupId: {
-            /** Format: uuid */
-            value?: string;
         };
         EntityModelFamilyGroupMembershipResponse: {
             /** Format: uuid */
@@ -2512,7 +2511,8 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelFamilyGroupResponse: {
-            id?: components["schemas"]["FamilyGroupId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             parents?: components["schemas"]["EntityModelParentResponse"][];
             members?: components["schemas"]["EntityModelFamilyGroupMembershipResponse"][];
@@ -2524,21 +2524,33 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelEventSummaryDto: {
-            id?: components["schemas"]["EventId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             /** Format: date */
             eventDate?: string;
             location?: string;
             organizer?: string;
             websiteUrl?: string;
-            coordinators?: components["schemas"]["MemberId"][];
-            eventTypeId?: components["schemas"]["EventTypeId"];
+            coordinators?: string[];
+            /** Format: uuid */
+            eventTypeId?: string;
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-            categories?: string[];
+            categories?: components["schemas"]["EventCategoryDto"][];
             cancellationReason?: string;
             deadlines?: string[];
             _links?: components["schemas"]["Links"];
+        };
+        EntryFeeDto: {
+            amount?: number;
+            currency?: string;
+        };
+        EventCategoryDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            fee?: components["schemas"]["EntryFeeDto"];
         };
         PagedModelEntityModelEventSummaryDto: {
             _embedded?: {
@@ -2556,7 +2568,7 @@ export interface components {
         EntityModelRegistrationSummaryDto: {
             firstName?: string;
             lastName?: string;
-            category?: string;
+            category?: components["schemas"]["EventCategoryDto"];
             /** Format: date-time */
             registrationTime?: string;
             _links?: components["schemas"]["Links"];
@@ -2565,7 +2577,7 @@ export interface components {
             firstName?: string;
             lastName?: string;
             siCardNumber?: string;
-            category?: string;
+            category?: components["schemas"]["EventCategoryDto"];
             /** Format: date-time */
             registeredAt?: string;
             _links?: components["schemas"]["Links"];
@@ -2577,7 +2589,8 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelEventTypeDto: {
-            id?: components["schemas"]["EventTypeId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             color?: string;
             /** Format: int32 */
@@ -2588,10 +2601,6 @@ export interface components {
         EntityModelDashboardModel: {
             _links?: components["schemas"]["Links"];
         };
-        CategoryPresetId: {
-            /** Format: uuid */
-            value?: string;
-        };
         CollectionModelEntityModelCategoryPresetDto: {
             _embedded?: {
                 categoryPresetDtoList?: components["schemas"]["EntityModelCategoryPresetDto"][];
@@ -2599,14 +2608,11 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelCategoryPresetDto: {
-            id?: components["schemas"]["CategoryPresetId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             categories?: string[];
             _links?: components["schemas"]["Links"];
-        };
-        CalendarItemId: {
-            /** Format: uuid */
-            value?: string;
         };
         CollectionModelEntityModelCalendarItemDto: {
             _embedded?: {
@@ -2615,14 +2621,16 @@ export interface components {
             _links?: components["schemas"]["Links"];
         };
         EntityModelCalendarItemDto: {
-            id?: components["schemas"]["CalendarItemId"];
+            /** Format: uuid */
+            id?: string;
             name?: string;
             description?: string;
             /** Format: date */
             startDate?: string;
             /** Format: date */
             endDate?: string;
-            eventId?: components["schemas"]["EventId"];
+            /** Format: uuid */
+            eventId?: string;
             _links?: components["schemas"]["Links"];
         };
         /** @description Response for token validation */

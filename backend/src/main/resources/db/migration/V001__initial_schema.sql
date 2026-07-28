@@ -309,9 +309,6 @@ CREATE TABLE events.events
     -- ORIS integration: source identifier for imported events (null for manually created events)
     oris_id              INTEGER      NULL UNIQUE,
 
-    -- Race categories available at this event (comma-separated, e.g. "M21,W35,D10"; null means no categories defined)
-    categories           VARCHAR(2000) NULL,
-
     -- Optional free-text reason provided when the event is cancelled (null when not cancelled or no reason given)
     cancellation_reason  VARCHAR(500)  NULL,
 
@@ -369,7 +366,7 @@ CREATE TABLE events.event_registrations
     event_id       UUID       NOT NULL REFERENCES events.events (id) ON DELETE CASCADE,
     member_id      UUID       NOT NULL REFERENCES members.members (id) ON DELETE CASCADE,
     si_card_number VARCHAR(8) NOT NULL,
-    category       VARCHAR(50) NULL,
+    category_id    UUID NULL,
     registered_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Unique constraint: one registration per member per event
@@ -385,7 +382,7 @@ COMMENT ON COLUMN events.event_registrations.id IS 'Unique registration identifi
 COMMENT ON COLUMN events.event_registrations.event_id IS 'Reference to the event';
 COMMENT ON COLUMN events.event_registrations.member_id IS 'Reference to the registered member';
 COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
-COMMENT ON COLUMN events.event_registrations.category IS 'Selected race category (nullable: null when event has no categories)';
+COMMENT ON COLUMN events.event_registrations.category_id IS 'Reference to events.event_categories.id (nullable: null when event has no categories, or orphaned when the category was later removed from the event — no FK constraint so the row is preserved either way)';
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
 
 -- ============================================================================
@@ -410,6 +407,49 @@ COMMENT ON TABLE events.event_coordinators IS 'Ordered list of member coordinato
 COMMENT ON COLUMN events.event_coordinators.event_id IS 'Reference to the event';
 COMMENT ON COLUMN events.event_coordinators.member_id IS 'Reference to the coordinating member';
 COMMENT ON COLUMN events.event_coordinators.position IS 'Zero-based insertion order; used to restore LinkedHashSet ordering on load';
+
+-- ============================================================================
+-- 6c. EVENT_CATEGORIES TABLE
+-- Race categories available at an event. Category id is the primary key (not a
+-- synthetic position/sequence) so that renaming a category preserves its identity
+-- and every event_registrations row that already points at it by category id.
+-- ============================================================================
+
+CREATE TABLE events.event_categories
+(
+    id           UUID          PRIMARY KEY,
+    event_id     UUID          NOT NULL REFERENCES events.events (id) ON DELETE CASCADE,
+
+    -- ORIS EventClass.id pairing key for sync matching; null for manually added categories
+    oris_id      VARCHAR(50)   NULL,
+
+    name         VARCHAR(50)   NOT NULL,
+
+    -- Optional category-specific fee overriding the event's base_entry_fee
+    fee_amount   DECIMAL(10, 2) NULL,
+    fee_currency CHAR(3)        NULL,
+
+    CONSTRAINT uq_event_categories_event_id_name UNIQUE (event_id, name),
+
+    -- Defense-in-depth for Event.validateCategories(): mirrors the aggregate invariant that
+    -- oris_id must be unique per event when present. A plain UNIQUE constraint (rather than a
+    -- partial/filtered index) is used because H2 and PostgreSQL both already treat NULL as
+    -- distinct-from-NULL under standard UNIQUE semantics, so multiple manually-added categories
+    -- (oris_id = NULL) never conflict with each other.
+    CONSTRAINT uq_event_categories_event_id_oris_id UNIQUE (event_id, oris_id)
+);
+
+-- Index for event-scoped category lookups
+CREATE INDEX idx_event_categories_event_id ON events.event_categories (event_id);
+
+-- Comments for event_categories
+COMMENT ON TABLE events.event_categories IS 'Race categories offered at an event; stable identity independent of display name';
+COMMENT ON COLUMN events.event_categories.id IS 'Category identifier (UUID), referenced by event_registrations.category_id';
+COMMENT ON COLUMN events.event_categories.event_id IS 'Reference to the owning event';
+COMMENT ON COLUMN events.event_categories.oris_id IS 'ORIS EventClass.id pairing key for sync matching; null for categories added manually';
+COMMENT ON COLUMN events.event_categories.name IS 'Display name of the category (e.g. M21, W35, D10)';
+COMMENT ON COLUMN events.event_categories.fee_amount IS 'Category-specific entry fee amount; null means the event base_entry_fee applies';
+COMMENT ON COLUMN events.event_categories.fee_currency IS 'Category-specific entry fee currency (ISO 4217); null when fee_amount is null';
 
 -- ============================================================================
 -- 8. CALENDAR_ITEMS TABLE

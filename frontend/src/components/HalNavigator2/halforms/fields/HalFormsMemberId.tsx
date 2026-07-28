@@ -1,10 +1,11 @@
 import type {ReactElement} from 'react'
 import type {FieldProps} from 'formik'
-import {Field} from 'formik'
+import {Field, useField} from 'formik'
 import {SelectField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
+import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
 
 interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** Member IDs to exclude from the picker options */
@@ -18,9 +19,13 @@ interface HalFormsMemberIdProps extends HalFormsInputProps {
  *
  * Displays a select dropdown for member selection with a clear button (X icon)
  * that appears only when a value is selected. Clicking the X clears the selection.
+ * When readOnly, resolves the selected id to its display label from the same
+ * options list (loaded via useHalFormOptions) and shows plain text instead of a
+ * disabled dropdown.
  */
 export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', excludeIds, includeIds}: HalFormsMemberIdProps): ReactElement => {
     const {options: rawOptions, isLoading} = useHalFormOptions(prop.options)
+    const [field] = useField<unknown>(prop.name)
 
     const options = rawOptions.filter(opt => {
         const id = String(opt.value);
@@ -28,6 +33,14 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
         if (excludeIds !== undefined) return !excludeIds.includes(id);
         return true;
     });
+
+    if (prop.readOnly) {
+        const fieldValue = field.value as string | number | undefined;
+        const selectedLabel = fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
+            ? (options.find(opt => opt.value === String(fieldValue))?.label ?? (isLoading ? 'Načítání...' : '—'))
+            : '—';
+        return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={selectedLabel} renderMode={renderMode} />;
+    }
 
     return (
         <Field name={prop.name} validate={() => undefined}>
@@ -54,14 +67,14 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                             value={selectValue}
                             label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
-                            disabled={prop.readOnly || isLoading || false}
+                            disabled={isLoading}
                             required={prop.required}
                             error={errorText}
                             options={options}
                             className="w-full"
                         />
                         {/* Clear button - only visible when value is selected */}
-                        {hasValue && !prop.readOnly && (
+                        {hasValue && (
                             <button
                                 type="button"
                                 onClick={handleClear}

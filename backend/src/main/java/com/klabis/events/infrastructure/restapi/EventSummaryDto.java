@@ -8,6 +8,7 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.infrastructure.restapi.EventDto.EventCategoryDto;
 import com.klabis.members.MemberId;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
@@ -45,7 +46,7 @@ record EventSummaryDto(
         EventTypeId eventTypeId,
         @HasAuthority(Authority.EVENTS_MANAGE)
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status,
-        List<String> categories,
+        List<EventCategoryDto> categories,
         @HalForms(access = HalForms.Access.READ_ONLY) String cancellationReason,
         @HalForms(access = HalForms.Access.READ_ONLY) List<LocalDate> deadlines
 ) {

@@ -34,6 +34,12 @@ interface MoneyAmount {
     currency: string;
 }
 
+interface EventCategory {
+    id: string;
+    name: string;
+    fee?: MoneyAmount | null;
+}
+
 interface EventDetail {
     name: string;
     eventDate: string;
@@ -45,7 +51,7 @@ interface EventDetail {
     coordinators?: {value: string}[];
     eventTypeId?: string | null;
     status?: string;
-    categories?: string[];
+    categories?: EventCategory[];
     ranking?: RankingInfo | null;
     baseEntryFee?: MoneyAmount | null;
     [key: string]: unknown;
@@ -55,7 +61,7 @@ interface RegistrationData extends EntityModel<{
     firstName: string;
     lastName: string;
     registrationTime?: string;
-    category?: string;
+    category?: EventCategory | null;
     [key: string]: unknown;
 }> {
     _templates?: Record<string, HalFormsTemplate>;
@@ -165,7 +171,14 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
             <TableCell column="lastName" sortable>{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
-                <TableCell column="category" sortable>{labels.fields.categories}</TableCell>
+                <TableCell
+                    column="category"
+                    sortable
+                    dataRender={({value}) => {
+                        const category = value as EventCategory | null | undefined;
+                        return category?.name ?? labels.ui.notProvided;
+                    }}
+                >{labels.fields.categories}</TableCell>
             )}
             <TableCell column="registrationTime" sortable dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
             <TableCell column="_actions" dataRender={renderActionsCell} alwaysVisible>{labels.tables.actions}</TableCell>
@@ -311,7 +324,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {ri('categories') ?? (
                                     <div className="flex flex-wrap gap-1.5">
                                         {event.categories?.map(category => (
-                                            <Badge key={category} variant="info" size="sm">{category}</Badge>
+                                            <Badge key={category.id} variant="info" size="sm">{category.name}</Badge>
                                         ))}
                                     </div>
                                 )}

@@ -4,15 +4,14 @@ import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
-import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -26,18 +25,17 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -131,7 +129,7 @@ class TrainingGroupController {
                 .toList();
 
         return new TrainingGroupResponse(
-                group.getId(), group.getName(), null, null, trainerModels, null);
+                group.getId(), group.getName(), null, trainerModels, null);
     }
 
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -145,9 +143,7 @@ class TrainingGroupController {
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                 request.name(),
                 request.ageRangeDomain(),
-                request.trainerUuids().map(uuids -> uuids.stream()
-                        .map(MemberId::new)
-                        .collect(Collectors.toSet()))
+                request.trainers().map(trainers -> trainers == null ? null : new HashSet<>(trainers))
         );
         trainingGroupManagementService.updateTrainingGroup(groupId, command);
         return ResponseEntity.noContent().build();
@@ -250,7 +246,7 @@ class TrainingGroupController {
 
         return new TrainingGroupResponse(
                 group.getId(), group.getName(),
-                group.getAgeRange().minAge(), group.getAgeRange().maxAge(),
+                new AgeRangeResponse(group.getAgeRange().minAge(), group.getAgeRange().maxAge()),
                 trainerModels, memberModels);
     }
 

@@ -5,6 +5,8 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.dpolach.api.orisclient.dto.Organizer;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
@@ -141,6 +143,26 @@ class OrisEventImportServiceTest {
 
             assertThat(result.getOrganizer()).isEqualTo("---");
         }
+
+        @Test
+        @DisplayName("should populate category orisId from ORIS EventClass.id() on import")
+        void shouldPopulateCategoryOrisIdOnImport() {
+            int orisId = 2222;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetailsWithClasses(orisId, "Race", LocalDate.of(2026, 8, 15), "Forest",
+                    org1, null, Map.of("100", mockClass("100", "M21")));
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            assertThat(result.getCategories()).hasSize(1);
+            assertThat(result.getCategories().get(0).orisId()).isEqualTo("100");
+            assertThat(result.getCategories().get(0).name()).isEqualTo("M21");
+        }
     }
 
     @Nested
@@ -192,17 +214,21 @@ class OrisEventImportServiceTest {
         void shouldLogWarningWhenSyncRemovesCategoriesWithRegistrations() {
             EventId eventId = EventId.generate();
             int orisId = 9876;
+            EventCategory m21 = new EventCategory(
+                    EventCategoryId.generate(), "M21", "M21", null);
+            EventCategory w21 = new EventCategory(
+                    EventCategoryId.generate(), "W21", "W21", null);
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(orisId)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
                     .organizer("OOB")
-                    .categories(java.util.List.of("M21", "W21"))
+                    .categories(java.util.List.of(m21, w21))
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, new SiCardNumber("12345"), "M21");
+            event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
 
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
             EventDetails details = buildEventDetailsWithClasses(orisId, "Race Updated", LocalDate.of(2026, 8, 15), "Forest",
@@ -217,6 +243,40 @@ class OrisEventImportServiceTest {
             service.syncEventFromOris(eventId);
 
             verify(eventRepository).save(event);
+            assertThat(event.getCategories()).extracting(EventCategory::name)
+                    .containsExactly("W21");
+        }
+
+        @Test
+        @DisplayName("should populate category orisId from ORIS EventClass.id() on sync")
+        void shouldPopulateCategoryOrisIdOnSync() {
+            EventId eventId = EventId.generate();
+            int orisId = 4242;
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId)
+                    .name("Race")
+                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(java.util.List.of())
+                    .build());
+            event.publish();
+
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetailsWithClasses(orisId, "Race", LocalDate.of(2026, 8, 1), "Forest",
+                    org1, null, Map.of("100", mockClass("100", "M21")));
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            service.syncEventFromOris(eventId);
+
+            assertThat(event.getCategories()).hasSize(1);
+            assertThat(event.getCategories().get(0).orisId()).isEqualTo("100");
+            assertThat(event.getCategories().get(0).name()).isEqualTo("M21");
         }
     }
 
@@ -614,13 +674,19 @@ class OrisEventImportServiceTest {
     }
 
     private com.dpolach.api.orisclient.dto.EventClass mockClass(String name) {
+        return mockClass(name, name);
+    }
+
+    private com.dpolach.api.orisclient.dto.EventClass mockClass(String orisClassId, String name) {
         com.dpolach.api.orisclient.dto.EventClass cls = Mockito.mock(com.dpolach.api.orisclient.dto.EventClass.class);
+        Mockito.lenient().when(cls.id()).thenReturn(orisClassId);
         Mockito.when(cls.name()).thenReturn(name);
         return cls;
     }
 
     private com.dpolach.api.orisclient.dto.EventClass mockClassWithFee(String name, String fee) {
         com.dpolach.api.orisclient.dto.EventClass cls = Mockito.mock(com.dpolach.api.orisclient.dto.EventClass.class);
+        Mockito.lenient().when(cls.id()).thenReturn(name);
         Mockito.when(cls.name()).thenReturn(name);
         Mockito.when(cls.fee()).thenReturn(fee);
         return cls;

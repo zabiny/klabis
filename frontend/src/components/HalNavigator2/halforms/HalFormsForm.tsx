@@ -99,7 +99,6 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
         errorText: undefined,
         renderMode: parentProps.renderMode,
         subElementProps: parentProps.subElementProps,
-        fieldFactory: parentProps.fieldFactory,
     };
 }
 
@@ -118,20 +117,34 @@ function formatReadOnlyValue(rawValue: unknown): string {
     }
 }
 
+// Shared wrapper/dash/renderMode shell for read-only field display \u2014 value
+// resolution differs per field type (e.g. HalFormsMemberId resolves an id to a
+// name instead of stringifying the raw form value), so only the shell is shared.
+export const ReadOnlyDisplay: React.FC<{ label?: string, value: ReactNode, renderMode?: RenderMode }> = ({
+    label,
+    value,
+    renderMode = 'field',
+}) => {
+    if (renderMode === 'field') {
+        return (
+            <FieldWrapper label={label}>
+                <span className="py-2.5 text-text-primary">{value}</span>
+            </FieldWrapper>
+        );
+    }
+    return <span className="text-text-primary">{value}</span>;
+};
+
 const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-    return (
-        <FieldWrapper label={prop.prompt || prop.name}>
-            <span className="py-2.5 text-text-primary">{formatReadOnlyValue(rawValue)}</span>
-        </FieldWrapper>
-    );
+    return <ReadOnlyDisplay label={prop.prompt || prop.name} value={formatReadOnlyValue(rawValue)} renderMode="field" />;
 };
 
 const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-    return <span className="text-text-primary">{formatReadOnlyValue(rawValue)}</span>;
+    return <ReadOnlyDisplay value={formatReadOnlyValue(rawValue)} renderMode="input" />;
 };
 
 // --- Render funkce pro pole ---
@@ -159,7 +172,6 @@ function renderFieldInternal(
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
         },
-        fieldFactory,
     };
 
     const result = fieldFactory && fieldFactory(prop.type, fieldProps);

@@ -31,7 +31,8 @@ export const CategoryPresetPickerButton = (): ReactElement | null => {
     }
 
     const handleSelect = (preset: CategoryPreset) => {
-        setFieldValue('categories', preset.categories ?? []);
+        const categories = (preset.categories ?? []).map(name => ({name}));
+        setFieldValue('categories', categories);
         setIsOpen(false);
     };
 

@@ -36,7 +36,7 @@ public record EventUpdatedEvent(
         String location,
         String organizer,
         WebsiteUrl websiteUrl,
-        List<String> categories,
+        List<EventCategory> categories,
         Instant occurredAt
 ) {
 

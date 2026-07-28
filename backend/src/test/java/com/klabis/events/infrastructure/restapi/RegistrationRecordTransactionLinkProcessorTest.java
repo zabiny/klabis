@@ -98,7 +98,7 @@ class RegistrationRecordTransactionLinkProcessorTest {
 
     private EntityModel<RegistrationSummaryDto> modelFor(UUID memberUuid) {
         RegistrationSummaryDto dto = new RegistrationSummaryDto(
-                "Jan", "Novák", "M21", Instant.now(), Set.of(), new MemberId(memberUuid)
+                "Jan", "Novák", new EventDto.EventCategoryDto(null, "M21", null), Instant.now(), Set.of(), new MemberId(memberUuid)
         );
         return EntityModel.of(dto);
     }

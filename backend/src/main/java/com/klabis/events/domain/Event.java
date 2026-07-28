@@ -18,10 +18,13 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 /**
  * Event aggregate root.
  * <p>
@@ -62,7 +65,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private RegistrationDeadlines registrationDeadlines;
     private EventStatus status;
     private String cancellationReason;
-    private List<String> categories = new ArrayList<>();
+    private List<EventCategory> categories = new ArrayList<>();
     private EventRanking ranking;
     private Money baseEntryFee;
 
@@ -93,7 +96,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories
+            List<EventCategory> categories
     ) {
         public static CreateEvent from(Event event) {
             return new CreateEvent(
@@ -133,7 +136,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventTypeId eventTypeId,
 
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories,
+            List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee
     ) {
@@ -163,7 +166,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories,
+            List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee
     ) {
@@ -188,7 +191,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
             String siCardNumber,
-            String category
+            EventCategoryId categoryId
     ) {
         public static RegisterCommand from(Event event) {
             return new RegisterCommand(null, null);
@@ -222,7 +225,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             RegistrationDeadlines registrationDeadlines,
-            List<String> categories,
+            List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee
     ) {
@@ -264,7 +267,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     @RecordBuilder
     public record EditRegistrationCommand(
             SiCardNumber siCardNumber,
-            String category
+            EventCategoryId categoryId
     ) {}
 
     /**
@@ -286,7 +289,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventStatus status,
             String cancellationReason,
             Integer orisId,
-            List<String> categories,
+            List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
             AuditMetadata auditMetadata) {
@@ -339,7 +342,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventStatus status,
             String cancellationReason,
             Integer orisId,
-            List<String> categories,
+            List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
             List<EventRegistration> registrations,
@@ -384,6 +387,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         RegistrationDeadlines deadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
+        validateCategories(command.categories());
 
         Event event = new Event(
                 EventId.generate(),
@@ -425,6 +429,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         RegistrationDeadlines deadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
+        validateCategories(command.categories());
 
         Event event = new Event(
                 EventId.generate(),
@@ -467,6 +472,24 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private static void validateOrganizer(String organizer) {
         if (organizer == null || organizer.trim().isBlank()) {
             throw new IllegalArgumentException("Event organizer is required");
+        }
+    }
+
+    private static void validateCategories(List<EventCategory> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return;
+        }
+        Set<String> seenNames = new HashSet<>();
+        Set<String> seenOrisIds = new HashSet<>();
+        for (EventCategory category : categories) {
+            if (!seenNames.add(category.name())) {
+                throw new BusinessRuleViolationException(
+                        "Category name '" + category.name() + "' is used more than once") {};
+            }
+            if (category.orisId() != null && !seenOrisIds.add(category.orisId())) {
+                throw new BusinessRuleViolationException(
+                        "Category orisId '" + category.orisId() + "' is used more than once") {};
+            }
         }
     }
 
@@ -532,7 +555,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return orisId;
     }
 
-    public List<String> getCategories() {
+    public List<EventCategory> getCategories() {
         return Collections.unmodifiableList(categories);
     }
 
@@ -631,6 +654,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         RegistrationDeadlines deadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
+        validateCategories(command.categories());
 
         this.name = command.name();
         this.eventDate = command.eventDate();
@@ -668,6 +692,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         if (status == EventStatus.CANCELLED) {
             throw new IllegalStateException("Cannot sync from ORIS: event is in CANCELLED status");
         }
+        validateCategories(command.categories());
 
         this.name = command.name();
         this.eventDate = command.eventDate();
@@ -676,11 +701,42 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.websiteUrl = command.websiteUrl();
         this.registrationDeadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
-        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.categories = mergeCategoriesFromOris(command.categories());
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
+    }
+
+    /**
+     * Merges incoming ORIS categories with the event's current categories, matching by {@code orisId}.
+     * <p>
+     * A match keeps the existing category's local id (so registrations stay attached) and adopts the
+     * incoming name. Categories with {@code orisId == null} were added manually and are never touched by
+     * a sync — they are not part of the ORIS source, so ORIS cannot decide to remove them. Existing
+     * ORIS-origin categories whose {@code orisId} is absent from the incoming data are dropped.
+     */
+    private List<EventCategory> mergeCategoriesFromOris(List<EventCategory> incomingCategories) {
+        List<EventCategory> incoming = incomingCategories != null ? incomingCategories : List.of();
+        Map<String, EventCategory> existingByOrisId = this.categories.stream()
+                .filter(c -> c.orisId() != null)
+                .collect(Collectors.toMap(EventCategory::orisId, c -> c));
+
+        List<EventCategory> merged = new ArrayList<>();
+        for (EventCategory incomingCategory : incoming) {
+            EventCategory existing = existingByOrisId.get(incomingCategory.orisId());
+            if (existing != null) {
+                merged.add(new EventCategory(existing.id(), existing.orisId(), incomingCategory.name(), existing.feeOverride()));
+            } else {
+                merged.add(incomingCategory);
+            }
+        }
+
+        this.categories.stream()
+                .filter(c -> c.orisId() == null)
+                .forEach(merged::add);
+
+        return merged;
     }
 
     /**
@@ -714,38 +770,39 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      *
      * @param memberId     member's user ID (required)
      * @param siCardNumber SI card number (required)
-     * @param category     selected race category (required when event has categories, ignored otherwise)
+     * @param categoryId   selected race category id (required when event has categories, ignored otherwise)
      * @throws BusinessRuleViolationException    if registrations are not open or category validation fails
      * @throws DuplicateRegistrationException    if member is already registered
      */
-    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, String category) {
+    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId) {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
-        String resolvedCategory = resolveCategory(category);
+        EventCategoryId resolvedCategoryId = resolveCategoryId(categoryId);
 
         EventRegistration registration = EventRegistration.create(
-                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategory));
+                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategoryId));
         registrations.add(registration);
 
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
     }
 
-    private String resolveCategory(String category) {
+    private EventCategoryId resolveCategoryId(EventCategoryId categoryId) {
         if (categories.isEmpty()) {
             return null;
         }
-        if (category == null || category.isBlank()) {
+        if (categoryId == null) {
             throw new BusinessRuleViolationException("Category is required for this event") {};
         }
-        if (!categories.contains(category)) {
+        boolean isKnownCategory = categories.stream().anyMatch(c -> c.id().equals(categoryId));
+        if (!isKnownCategory) {
             throw new BusinessRuleViolationException(
-                    "Category '" + category + "' is not available for this event") {};
+                    "Category '" + categoryId + "' is not available for this event") {};
         }
-        return category;
+        return categoryId;
     }
 
     /**
@@ -774,8 +831,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         EventRegistration current = findRegistration(memberId)
                 .orElseThrow(() -> new RegistrationNotFoundException(memberId, this.id));
 
-        String resolvedCategory = resolveCategory(command.category());
-        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategory);
+        EventCategoryId resolvedCategoryId = resolveCategoryId(command.categoryId());
+        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId);
 
         registrations.remove(current);
         registrations.add(updated);
@@ -822,6 +879,22 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     public List<EventRegistration> getRegistrations() {
         return Collections.unmodifiableList(registrations);
+    }
+
+    /**
+     * Look up a category by id among this event's current categories.
+     * <p>
+     * Returns empty when {@code categoryId} is null or no longer present on the event — this is the
+     * orphaned-registration case: the id stays on the registration, but the category was removed.
+     *
+     * @param categoryId category id to resolve, may be null
+     * @return the matching category, or empty if not found
+     */
+    public Optional<EventCategory> findCategory(EventCategoryId categoryId) {
+        if (categoryId == null) {
+            return Optional.empty();
+        }
+        return categories.stream().filter(c -> c.id().equals(categoryId)).findFirst();
     }
 
     @Override

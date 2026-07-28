@@ -7,7 +7,7 @@ import org.springframework.hateoas.EntityModel;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-record TrainingGroupResponse(TrainingGroupId id, String name, Integer minAge, Integer maxAge,
+record TrainingGroupResponse(TrainingGroupId id, String name, AgeRangeResponse ageRange,
                              List<EntityModel<TrainerResponse>> trainers,
                              List<EntityModel<GroupMembershipResponse>> members) {
 }

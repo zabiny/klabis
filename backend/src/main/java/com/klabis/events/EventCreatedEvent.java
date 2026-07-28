@@ -39,7 +39,7 @@ public record EventCreatedEvent(
         String organizer,
         WebsiteUrl websiteUrl,
         Set<MemberId> coordinators,
-        List<String> categories,
+        List<EventCategory> categories,
         Instant occurredAt
 ) {
 

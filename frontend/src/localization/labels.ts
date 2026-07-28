@@ -152,6 +152,7 @@ export const labels = {
         cancellationReason: 'Důvod zrušení (volitelné)',
         category: 'Kategorie',
         categories: 'Kategorie',
+        categoryFee: 'Startovné kategorie (volitelné)',
         location: 'Místo',
         name: 'Název',
         organizer: 'Pořadatel',

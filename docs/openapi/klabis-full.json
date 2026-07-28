@@ -11964,13 +11964,9 @@
                 "FINANCE:MANAGE"
               ]
             },
-            "minItems": 1,
             "uniqueItems": true
           }
-        },
-        "required": [
-          "authorities"
-        ]
+        }
       },
       "EditRegistrationRequest": {
         "type": "object",
@@ -11980,8 +11976,9 @@
             "minLength": 1,
             "pattern": "\\d{6,7}"
           },
-          "category": {
-            "type": "string"
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -12555,6 +12552,22 @@
           "parent"
         ]
       },
+      "CategoryRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "fee": {
+            "$ref": "#/components/schemas/EntryFeeRequest"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "CreateEventRequest": {
         "type": "object",
         "description": "Event creation data",
@@ -12584,11 +12597,13 @@
           "coordinators": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MemberId"
+              "type": "string",
+              "format": "uuid"
             }
           },
           "eventTypeId": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "deadlines": {
             "type": "array",
@@ -12602,7 +12617,7 @@
           "categories": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/CategoryRequest"
             }
           }
         },
@@ -12612,23 +12627,23 @@
           "organizer"
         ]
       },
-      "EventTypeId": {
+      "EntryFeeRequest": {
         "type": "object",
         "properties": {
-          "value": {
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
             "type": "string",
-            "format": "uuid"
+            "maxLength": 3,
+            "minLength": 3
           }
-        }
-      },
-      "MemberId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ]
       },
       "CancelEventRequest": {
         "type": "object",
@@ -12650,8 +12665,9 @@
             "minLength": 1,
             "pattern": "\\d{6,7}"
           },
-          "category": {
-            "type": "string"
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
@@ -12684,20 +12700,12 @@
           }
         }
       },
-      "EventId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "EventSyncEntry": {
         "type": "object",
         "properties": {
           "eventId": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -12960,7 +12968,7 @@
           }
         }
       },
-      "PatchFieldListString": {
+      "PatchFieldListMemberId": {
         "type": "object",
         "properties": {
           "provided": {
@@ -12986,7 +12994,7 @@
             "$ref": "#/components/schemas/PatchFieldAgeRangeRequest"
           },
           "trainers": {
-            "$ref": "#/components/schemas/PatchFieldListString"
+            "$ref": "#/components/schemas/PatchFieldListMemberId"
           }
         }
       },
@@ -13293,6 +13301,14 @@
           }
         }
       },
+      "PatchFieldListCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "provided": {
+            "type": "boolean"
+          }
+        }
+      },
       "PatchFieldListLocalDate": {
         "type": "object",
         "properties": {
@@ -13338,7 +13354,7 @@
             "$ref": "#/components/schemas/PatchFieldListLocalDate"
           },
           "categories": {
-            "$ref": "#/components/schemas/PatchFieldListString"
+            "$ref": "#/components/schemas/PatchFieldListCategoryRequest"
           },
           "ranking": {
             "$ref": "#/components/schemas/PatchFieldRankingRequest"
@@ -13421,7 +13437,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/TrainingGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -13443,12 +13460,16 @@
           }
         }
       },
-      "TrainingGroupId": {
+      "AgeRangeResponse": {
         "type": "object",
         "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
+          "minAge": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxAge": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -13484,18 +13505,14 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/TrainingGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
           },
-          "minAge": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxAge": {
-            "type": "integer",
-            "format": "int32"
+          "ageRange": {
+            "$ref": "#/components/schemas/AgeRangeResponse"
           },
           "trainers": {
             "type": "array",
@@ -13685,7 +13702,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/MemberId",
+            "type": "string",
+            "format": "uuid",
             "description": "Unique member identifier (UUID)",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
@@ -13976,7 +13994,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/MemberId"
+            "type": "string",
+            "format": "uuid"
           },
           "registrationNumber": {
             "type": "string"
@@ -14179,13 +14198,15 @@
         "type": "object",
         "properties": {
           "groupId": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "groupName": {
             "type": "string"
           },
           "invitationId": {
-            "$ref": "#/components/schemas/InvitationId"
+            "type": "string",
+            "format": "uuid"
           },
           "invitedBy": {
             "type": "string",
@@ -14193,24 +14214,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "FreeGroupId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "InvitationId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14237,7 +14240,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14267,7 +14271,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FreeGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14410,7 +14415,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FamilyGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14421,15 +14427,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "FamilyGroupId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14453,7 +14450,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/FamilyGroupId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14491,7 +14489,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14512,12 +14511,14 @@
           "coordinators": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MemberId"
+              "type": "string",
+              "format": "uuid"
             },
             "uniqueItems": true
           },
           "eventTypeId": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "status": {
             "type": "string",
@@ -14531,7 +14532,7 @@
           "categories": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EventCategoryDto"
             }
           },
           "cancellationReason": {
@@ -14546,6 +14547,32 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
+          }
+        }
+      },
+      "EntryFeeDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "EventCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/EntryFeeDto"
           }
         }
       },
@@ -14600,7 +14627,7 @@
             "type": "string"
           },
           "category": {
-            "type": "string"
+            "$ref": "#/components/schemas/EventCategoryDto"
           },
           "registrationTime": {
             "type": "string",
@@ -14624,7 +14651,7 @@
             "type": "string"
           },
           "category": {
-            "type": "string"
+            "$ref": "#/components/schemas/EventCategoryDto"
           },
           "registeredAt": {
             "type": "string",
@@ -14658,7 +14685,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/EventTypeId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14691,15 +14719,6 @@
           }
         }
       },
-      "CategoryPresetId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "CollectionModelEntityModelCategoryPresetDto": {
         "type": "object",
         "properties": {
@@ -14723,7 +14742,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/CategoryPresetId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14736,15 +14756,6 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
-          }
-        }
-      },
-      "CalendarItemId": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -14771,7 +14782,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/CalendarItemId"
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
@@ -14788,7 +14800,8 @@
             "format": "date"
           },
           "eventId": {
-            "$ref": "#/components/schemas/EventId"
+            "type": "string",
+            "format": "uuid"
           },
           "_links": {
             "$ref": "#/components/schemas/Links"

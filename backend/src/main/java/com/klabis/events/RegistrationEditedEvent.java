@@ -18,9 +18,9 @@ public record RegistrationEditedEvent(
         EventId eventId,
         MemberId memberId,
         SiCardNumber oldSiCardNumber,
-        String oldCategory,
+        EventCategoryId oldCategoryId,
         SiCardNumber newSiCardNumber,
-        String newCategory,
+        EventCategoryId newCategoryId,
         Instant occurredAt
 ) {
 
@@ -39,9 +39,9 @@ public record RegistrationEditedEvent(
                 event.getId(),
                 memberId,
                 oldRegistration.siCardNumber(),
-                oldRegistration.category(),
+                oldRegistration.categoryId(),
                 newRegistration.siCardNumber(),
-                newRegistration.category(),
+                newRegistration.categoryId(),
                 Instant.now()
         );
     }

@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -32,6 +33,7 @@ class RegistrationSortApplier {
      *
      * @param registrations               the registrations to sort
      * @param memberIndex                 member data indexed by member ID (for name-based sorting)
+     * @param event                       the event, used to resolve category names by id
      * @param sort                        the raw sort parameter value (e.g. "lastName" or "lastName,desc"), may be null
      * @param callerCanSortByRegistrationTime whether the caller is authorized to use registrationTime sort
      * @return sorted copy of the registrations list
@@ -39,6 +41,7 @@ class RegistrationSortApplier {
     static List<EventRegistration> sort(
             List<EventRegistration> registrations,
             Map<MemberId, MemberDto> memberIndex,
+            Event event,
             @Nullable String sort,
             boolean callerCanSortByRegistrationTime) {
 
@@ -58,7 +61,7 @@ class RegistrationSortApplier {
             return sortByRegistrationTimeAsc(registrations);
         }
 
-        Comparator<EventRegistration> comparator = buildComparator(field, memberIndex);
+        Comparator<EventRegistration> comparator = buildComparator(field, memberIndex, event);
         if (descending) {
             comparator = comparator.reversed();
         }
@@ -71,7 +74,7 @@ class RegistrationSortApplier {
                 .toList();
     }
 
-    private static Comparator<EventRegistration> buildComparator(String field, Map<MemberId, MemberDto> memberIndex) {
+    private static Comparator<EventRegistration> buildComparator(String field, Map<MemberId, MemberDto> memberIndex, Event event) {
         return switch (field) {
             case "firstName" -> Comparator.comparing(
                     r -> memberName(r, memberIndex, true),
@@ -82,11 +85,18 @@ class RegistrationSortApplier {
                     Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
             );
             case "category" -> Comparator.comparing(
-                    EventRegistration::category,
+                    r -> categoryName(r, event),
                     Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
             );
             default -> Comparator.comparing(EventRegistration::registeredAt);
         };
+    }
+
+    @Nullable
+    private static String categoryName(EventRegistration registration, Event event) {
+        return event.findCategory(registration.categoryId())
+                .map(category -> category.name())
+                .orElse(null);
     }
 
     @Nullable

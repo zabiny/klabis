@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventCategoryId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.Association;
@@ -28,14 +29,14 @@ public class EventRegistration {
     public record CreateEventRegistration(
             MemberId memberId,
             SiCardNumber siCardNumber,
-            String category
+            EventCategoryId categoryId
     ) {}
 
     private final UUID id;
     @Association
     private final MemberId memberId;
     private final SiCardNumber siCardNumber;
-    private final String category;
+    private final EventCategoryId categoryId;
     private final Instant registeredAt;
 
     /**
@@ -44,14 +45,15 @@ public class EventRegistration {
      * @param id           unique registration identifier
      * @param memberId     member's user ID
      * @param siCardNumber SI card number for this registration
-     * @param category     selected race category (may be null when event has no categories)
+     * @param categoryId   selected race category id (may be null when event has no categories, or orphaned
+     *                     when the category was later removed from the event)
      * @param registeredAt timestamp when registration was created
      */
-    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, String category, Instant registeredAt) {
+    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId, Instant registeredAt) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
-        this.category = category;
+        this.categoryId = categoryId;
         this.registeredAt = registeredAt;
     }
 
@@ -76,7 +78,7 @@ public class EventRegistration {
                 UUID.randomUUID(),
                 command.memberId(),
                 command.siCardNumber(),
-                command.category(),
+                command.categoryId(),
                 Instant.now()
         );
     }
@@ -92,12 +94,12 @@ public class EventRegistration {
      * @param registeredAt registration timestamp
      * @return reconstructed EventRegistration instance
      */
-    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, String category, Instant registeredAt) {
-        return new EventRegistration(id, memberId, siCardNumber, category, registeredAt);
+    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId, Instant registeredAt) {
+        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt);
     }
 
-    public EventRegistration withChanges(SiCardNumber newSiCard, String newCategory) {
-        return new EventRegistration(this.id, this.memberId, newSiCard, newCategory, this.registeredAt);
+    public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId) {
+        return new EventRegistration(this.id, this.memberId, newSiCard, newCategoryId, this.registeredAt);
     }
 
     // ========== Getters ==========
@@ -114,8 +116,8 @@ public class EventRegistration {
         return siCardNumber;
     }
 
-    public String category() {
-        return category;
+    public EventCategoryId categoryId() {
+        return categoryId;
     }
 
     public Instant registeredAt() {
@@ -143,7 +145,7 @@ public class EventRegistration {
                "id=" + id +
                ", memberId=" + memberId +
                ", siCardNumber=" + siCardNumber +
-               ", category='" + category + '\'' +
+               ", categoryId=" + categoryId +
                ", registeredAt=" + registeredAt +
                '}';
     }

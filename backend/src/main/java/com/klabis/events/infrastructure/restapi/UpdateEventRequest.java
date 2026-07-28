@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.patch.PatchField;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.EventCategoryId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.*;
@@ -42,12 +43,26 @@ record UpdateEventRequest(
         @Size(max = 3, message = "At most 3 deadlines are allowed")
         PatchField<List<LocalDate>> deadlines,
 
-        PatchField<List<String>> categories,
+        PatchField<List<CategoryRequest>> categories,
 
         PatchField<RankingRequest> ranking,
 
         PatchField<EntryFeeRequest> baseEntryFee
 ) {
+
+    /**
+     * Category as submitted on event update. {@code id} present = update an existing category
+     * (must belong to this event); {@code id} absent = a new category, server assigns a fresh id.
+     */
+    record CategoryRequest(
+            EventCategoryId id,
+
+            @NotBlank(message = "Category name is required")
+            @Size(max = 50, message = "Category name must not exceed 50 characters")
+            String name,
+
+            EntryFeeRequest fee
+    ) {}
 
     record RankingRequest(
             @Positive(message = "Ranking levelId must be positive")

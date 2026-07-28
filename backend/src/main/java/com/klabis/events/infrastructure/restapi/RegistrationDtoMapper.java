@@ -20,11 +20,17 @@ class RegistrationDtoMapper {
         return new RegistrationSummaryDto(
                 member.firstName(),
                 member.lastName(),
-                registration.category(),
+                toCategoryDto(registration, event),
                 registration.registeredAt(),
                 event.getCoordinators(),
                 registration.memberId()
         );
+    }
+
+    static EventDto.EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
+        return event.findCategory(registration.categoryId())
+                .map(category -> new EventDto.EventCategoryDto(category.id(), category.name(), null))
+                .orElse(null);
     }
 
     static List<RegistrationSummaryDto> toDtoList(List<EventRegistration> registrations, Members members, Event event) {

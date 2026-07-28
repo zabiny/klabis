@@ -13,6 +13,15 @@ import {type HalFormFieldFactory, type HalFormsInputProps} from './types.ts'
 import {isMultipleProperty} from './utils.ts'
 import {type ReactElement} from 'react'
 
+export type CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
+
+/**
+ * boundFactory - binds a custom factory into a HalFormFieldFactory that also
+ * knows the built-in types, for HalFormsCollectionField to recurse per-row.
+ */
+const boundFactory = (customFactory?: CustomFieldFactory): HalFormFieldFactory =>
+    (fieldType, conf) => halFormsFieldsFactory(fieldType, conf, customFactory)
+
 /**
  * halFormsFieldsFactory - Factory function for creating HAL+Forms field components
  * Maps HAL+Forms field types to custom FormFields-based components
@@ -21,10 +30,16 @@ import {type ReactElement} from 'react'
  */
 export const halFormsFieldsFactory = (
     fieldType: string,
-    conf: HalFormsInputProps
+    conf: HalFormsInputProps,
+    customFactory?: CustomFieldFactory
 ): ReactElement | null => {
     if (isMultipleProperty(conf.prop) && !conf.prop.options && !conf.prop.suggest) {
-        return <HalFormsCollectionField {...conf} />
+        return <HalFormsCollectionField {...conf} fieldFactory={boundFactory(customFactory)} />
+    }
+
+    const custom = customFactory?.(fieldType, conf)
+    if (custom) {
+        return custom
     }
 
     if (conf.prop.options?.inline !== undefined && conf.prop.options.inline.length === 0) {
@@ -66,18 +81,11 @@ export const halFormsFieldsFactory = (
 }
 
 /**
- * expandHalFormsFieldFactory - Allows extending the field factory with custom field types
- * Returns a new factory that tries the additional factory first, then falls back to the default
+ * expandHalFormsFieldFactory - Allows extending the field factory with custom field types.
+ * Composes the custom logic via halFormsFieldsFactory's 3rd `customFactory` parameter
+ * (see design.md D4), so custom types resolve inside collections through the same
+ * full factory HalFormsCollectionField recurses with — no wrapper-induced recursion gap.
  */
 export const expandHalFormsFieldFactory = (
-    additionalFactory: HalFormFieldFactory
-): HalFormFieldFactory => {
-    return (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
-        const result = additionalFactory(fieldType, conf)
-        if (result) {
-            return result
-        }
-
-        return halFormsFieldsFactory(fieldType, conf)
-    }
-}
+    additionalFactory: CustomFieldFactory
+): HalFormFieldFactory => boundFactory(additionalFactory)

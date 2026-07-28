@@ -130,6 +130,54 @@ describe('HalFormsMemberId', () => {
         expect(clearButton).not.toBeInTheDocument();
     });
 
+    describe('read-only display', () => {
+        const renderReadOnly = (initialValue: string, extraProp: Partial<HalFormsInputProps['prop']> = {}) => {
+            const queryClient = new QueryClient({
+                defaultOptions: {queries: {retry: false, gcTime: 0}},
+            });
+            return render(
+                <QueryClientProvider client={queryClient}>
+                    <Formik initialValues={{coordinator: initialValue}} onSubmit={vi.fn()}>
+                        {() => (
+                            <Form>
+                                <HalFormsMemberId
+                                    prop={{name: 'coordinator', prompt: 'Vedoucí', type: 'MemberId', readOnly: true, ...extraProp}}
+                                    errorText={undefined}
+                                    subElementProps={vi.fn()}
+                                />
+                            </Form>
+                        )}
+                    </Formik>
+                </QueryClientProvider>
+            );
+        };
+
+        it('shows the resolved member name instead of a dropdown', () => {
+            renderReadOnly('1');
+
+            expect(screen.getByText('John Smith (ZBM9000)')).toBeInTheDocument();
+            expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+        });
+
+        it('shows a dash when no member is selected', () => {
+            renderReadOnly('');
+
+            expect(screen.getByText('—')).toBeInTheDocument();
+        });
+
+        it('shows a dash when the selected id is not found in the loaded options', () => {
+            renderReadOnly('unknown-id');
+
+            expect(screen.getByText('—')).toBeInTheDocument();
+        });
+
+        it('renders the field label in field render mode', () => {
+            renderReadOnly('1');
+
+            expect(screen.getByText('Vedoucí')).toBeInTheDocument();
+        });
+    });
+
     it('should filter out excluded member ids from options', () => {
         const queryClient = new QueryClient({
             defaultOptions: {queries: {retry: false, gcTime: 0}},

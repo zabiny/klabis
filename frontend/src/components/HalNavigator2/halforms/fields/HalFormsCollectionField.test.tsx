@@ -3,7 +3,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
-import {HalFormsCollectionField} from './HalFormsCollectionField.tsx';
+import {HalFormsCollectionField, type HalFormsCollectionFieldProps} from './HalFormsCollectionField.tsx';
 import {halFormsFieldsFactory} from '../HalFormsFieldFactory.tsx';
 import type {HalFormFieldFactory, HalFormsInputProps} from '../types.ts';
 import type {HalFormsProperty} from '../../../../api';
@@ -21,7 +21,7 @@ const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty
 const createProps = (
     prop: HalFormsProperty,
     fieldFactory: HalFormFieldFactory = vi.fn().mockReturnValue(null)
-): HalFormsInputProps => ({
+): HalFormsCollectionFieldProps => ({
     prop,
     errorText: undefined,
     subElementProps: vi.fn(),
@@ -29,7 +29,7 @@ const createProps = (
 });
 
 const renderWithFormik = (
-    props: HalFormsInputProps,
+    props: HalFormsCollectionFieldProps,
     initialValue: unknown[] = []
 ) => {
     return render(

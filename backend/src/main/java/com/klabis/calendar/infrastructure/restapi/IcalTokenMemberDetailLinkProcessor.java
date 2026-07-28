@@ -2,7 +2,7 @@ package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
-import com.klabis.members.MemberResource;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.security.core.Authentication;
@@ -22,10 +22,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Admins and other members viewing someone else's profile must not see this link.
  */
 @MvcComponent
-public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberResource>> {
+public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
     @Override
-    public EntityModel<MemberResource> process(EntityModel<MemberResource> model) {
+    public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         if (!isSelfDetail(model)) {
             return model;
         }
@@ -37,12 +37,12 @@ public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelPr
         return model;
     }
 
-    private boolean isSelfDetail(EntityModel<MemberResource> model) {
-        MemberResource content = model.getContent();
-        if (content == null || content.memberId() == null) {
+    private boolean isSelfDetail(EntityModel<MemberDetailsResponse> model) {
+        MemberDetailsResponse content = model.getContent();
+        if (content == null || content.id() == null) {
             return false;
         }
-        UUID resourceMemberId = content.memberId().uuid();
+        UUID resourceMemberId = content.id().uuid();
         if (resourceMemberId == null) {
             return false;
         }

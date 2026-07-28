@@ -545,7 +545,13 @@ describe('EventDetailPage', () => {
         });
 
         it('shows category column when event has categories', () => {
-            renderPage(createMockPageData(mockEventWithRegistrationsLink({categories: ['H21', 'D21', 'H35']})));
+            renderPage(createMockPageData(mockEventWithRegistrationsLink({
+                categories: [
+                    {id: 'cat-1', name: 'H21'},
+                    {id: 'cat-2', name: 'D21'},
+                    {id: 'cat-3', name: 'H35'},
+                ],
+            })));
             expect(screen.getByRole('columnheader', {name: /kategorie/i})).toBeInTheDocument();
         });
 
@@ -561,8 +567,10 @@ describe('EventDetailPage', () => {
             });
 
             it('category column header is sortable when event has categories', () => {
-                const rowWithCategory = buildRegistrationRow('member-1', {category: 'H21'});
-                renderPageWithRegistrationRows([rowWithCategory], {categories: ['H21', 'D21']});
+                const rowWithCategory = buildRegistrationRow('member-1', {category: {id: 'cat-1', name: 'H21'}});
+                renderPageWithRegistrationRows([rowWithCategory], {
+                    categories: [{id: 'cat-1', name: 'H21'}, {id: 'cat-2', name: 'D21'}],
+                });
                 expect(screen.getByRole('button', {name: /sort by kategorie/i})).toBeInTheDocument();
             });
 
@@ -607,6 +615,33 @@ describe('EventDetailPage', () => {
 
                 const lastCall = vi.mocked(useAuthorizedQuery).mock.calls.at(-1);
                 expect(lastCall?.[0]).toContain('sort=firstName%2Casc');
+            });
+        });
+
+        describe('category cell display (event-category-identity)', () => {
+            it('shows category name in the category cell', () => {
+                const row = buildRegistrationRow('member-1', {category: {id: 'cat-1', name: 'H21'}});
+                renderPageWithRegistrationRows([row], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('cell', {name: 'H21'})).toBeInTheDocument();
+            });
+
+            it('shows neutral placeholder for orphaned registration (category is null)', () => {
+                const orphanedRow = buildRegistrationRow('member-1', {category: null});
+                const rowWithCategory = buildRegistrationRow('member-2', {category: {id: 'cat-1', name: 'H21'}});
+                renderPageWithRegistrationRows([orphanedRow, rowWithCategory], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('cell', {name: 'neuvedeno'})).toBeInTheDocument();
+            });
+
+            it('does not crash when category field is absent from the row', () => {
+                const row = buildRegistrationRow('member-1');
+                renderPageWithRegistrationRows([row], {
+                    categories: [{id: 'cat-1', name: 'H21'}],
+                });
+                expect(screen.getByRole('table')).toBeInTheDocument();
             });
         });
 
@@ -1136,6 +1171,32 @@ describe('EventDetailPage', () => {
         it('does not show entry fee row when baseEntryFee is absent', () => {
             renderPage(createMockPageData(mockEventDetailData()));
             expect(screen.queryByText('Startovné')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('categories display (event-category-identity)', () => {
+        it('shows a badge per category using its name', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                categories: [
+                    {id: 'cat-1', name: 'H21'},
+                    {id: 'cat-2', name: 'D21'},
+                ],
+            })));
+            expect(screen.getByText('H21')).toBeInTheDocument();
+            expect(screen.getByText('D21')).toBeInTheDocument();
+        });
+
+        it('does not show categories row when event has no categories', () => {
+            renderPage(createMockPageData(mockEventDetailData({categories: []})));
+            expect(screen.queryByText('Kategorie')).not.toBeInTheDocument();
+        });
+
+        it('does not display category fee in read mode even when category has a fee', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                categories: [{id: 'cat-1', name: 'H21', fee: {amount: 200, currency: 'CZK'}}],
+            })));
+            expect(screen.getByText('H21')).toBeInTheDocument();
+            expect(screen.queryByText('200 CZK')).not.toBeInTheDocument();
         });
     });
 });
