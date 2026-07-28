@@ -220,16 +220,9 @@ val openapiToolDir = layout.projectDirectory.dir("../tools/openapi-bundle")
 
 // IDE-launched Gradle daemons (e.g. IntelliJ) don't inherit the interactive shell's PATH, so a
 // bare "node" fails with "A problem occurred starting process 'command 'node''" when Node is
-// installed via nvm. Resolve an absolute path once instead: nodeExecutable property/NODE_EXECUTABLE
-// env override, then a PATH scan.
-val nodeExecutable: String = (project.findProperty("nodeExecutable") as String?)
-    ?: System.getenv("NODE_EXECUTABLE")
-    ?: System.getenv("PATH")
-        ?.split(File.pathSeparator)
-        ?.map { File(it, "node") }
-        ?.firstOrNull { it.canExecute() }
-        ?.absolutePath
-    ?: "node"
+// only available via nvm. run-node.sh sources nvm itself (nvm use 24) before exec'ing node, so
+// it works no matter what environment launched Gradle.
+val runNodeScript = openapiToolDir.file("run-node.sh").asFile.absolutePath
 
 val codeFirstSpec = layout.projectDirectory.file("../docs/openapi/generated/klabis-codefirst.json")
 val bundledSpec = layout.projectDirectory.file("../docs/openapi/klabis-full.json")
@@ -261,7 +254,7 @@ val openapiBundle by tasks.registering(Exec::class) {
     group = "openapi"
     description = "Bundles the hand-written OpenAPI spec into a single document"
     workingDir = openapiToolDir.asFile
-    commandLine(nodeExecutable, "bundle.mjs", *(project.findProperty("openapiOut")
+    commandLine(runNodeScript, "bundle.mjs", *(project.findProperty("openapiOut")
         ?.let { arrayOf("--out", it.toString()) } ?: arrayOf("--check")))
 }
 
@@ -271,7 +264,7 @@ val openapiDriftCheck by tasks.registering(Exec::class) {
     description = "Compares the springdoc output against the hand-written spec (migration aid)"
     dependsOn(tasks.named("generateOpenApiDocs"))
     workingDir = openapiToolDir.asFile
-    commandLine(nodeExecutable, "drift.mjs", *(project.findProperty("openapiModule")
+    commandLine(runNodeScript, "drift.mjs", *(project.findProperty("openapiModule")
         ?.let { arrayOf("--module", it.toString()) } ?: emptyArray()))
 }
 
@@ -293,7 +286,7 @@ val bundleSpecForCodegen by tasks.registering(Exec::class) {
     workingDir = openapiToolDir.asFile
     val out = layout.buildDirectory.file("generated/openapi/bundled.json").get().asFile
     doFirst { out.parentFile.mkdirs() }
-    commandLine(nodeExecutable, "bundle.mjs", "--out", out.absolutePath)
+    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath)
 }
 
 openApiGenerate {
