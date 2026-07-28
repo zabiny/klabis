@@ -55,6 +55,8 @@ dependencyManagement {
     }
 }
 
+val mockitoAgent: Configuration by configurations.creating
+
 dependencies {
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
@@ -147,6 +149,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
     testImplementation("org.springframework.boot:spring-boot-restclient-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 byteBuddy {
@@ -159,7 +162,10 @@ tasks.test {
     useJUnitPlatform()
     systemProperty("spring.modulith.test.file-modification-detector", "default")
     systemProperty("spring.test.context.cache.maxSize", "60")
-    jvmArgs("-Xmx2g")
+    val testTmpDir = layout.buildDirectory.dir("tmp/test").get().asFile
+    doFirst { testTmpDir.mkdirs() }
+    systemProperty("java.io.tmpdir", testTmpDir.absolutePath)
+    jvmArgs("-Xmx2g", "-javaagent:${mockitoAgent.asPath}")
     finalizedBy(tasks.jacocoTestReport)
 }
 

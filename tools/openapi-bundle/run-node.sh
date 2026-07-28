@@ -12,9 +12,7 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   \. "$NVM_DIR/nvm.sh"
   # nvm's internal functions can return non-zero on success (PATH-manipulation quirk),
   # so this isn't guarded by `set -e` — only the final `exec node` failing should abort.
-  nvm use 24 >/dev/null || true
+  nvm use 22 >/dev/null || true
 fi
-
-exec npm install
 
 exec node "$@"
