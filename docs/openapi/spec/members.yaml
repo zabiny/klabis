@@ -394,7 +394,21 @@ components:
 
     # --- Responses ---------------------------------------------------------
 
+    # `_links` is NOT part of the payload record — Spring HATEOAS adds it when the controller wraps
+    # the DTO in an EntityModel. The payload schema is what gets generated into a Java record; the
+    # EntityModel* schema exists only so the response contract (and openapi-typescript) sees the
+    # envelope. Keep them split, or the generated record grows a bogus `links` component.
+
     EntityModelMemberDetailsResponse:
+      description: MemberDetailsResponse as served, wrapped in a HAL EntityModel.
+      allOf:
+        - $ref: '#/components/schemas/MemberDetailsResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MemberDetailsResponse:
       type: object
       description: |
         Detailed member representation. Fields carrying x-klabis-authority are omitted for callers
@@ -485,10 +499,17 @@ components:
         suspensionNote:
           type: string
           x-klabis-authority: MEMBERS_MANAGE
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     EntityModelMemberSummaryResponse:
+      description: MemberSummaryResponse as served, wrapped in a HAL EntityModel.
+      allOf:
+        - $ref: '#/components/schemas/MemberSummaryResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MemberSummaryResponse:
       type: object
       properties:
         id:
@@ -514,8 +535,6 @@ components:
         active:
           type: boolean
           description: Whether the member is active (visible to admins only)
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     PagedModelEntityModelMemberSummaryResponse:
       type: object
@@ -554,11 +573,13 @@ components:
       properties:
         firstName:
           type: string
+          minLength: 1
           description: Member's first name
           example: Jan
           maxLength: 100
         lastName:
           type: string
+          minLength: 1
           description: Member's last name
           example: Novák
           maxLength: 100
@@ -583,6 +604,7 @@ components:
           maxLength: 255
         phone:
           type: string
+          minLength: 1
           description: Phone number in E.164 format
           example: '+420777123456'
           pattern: '^\+[0-9\s]{7,20}$'
@@ -675,37 +697,45 @@ components:
       properties:
         street:
           type: string
+          minLength: 1
           maxLength: 200
         city:
           type: string
+          minLength: 1
           maxLength: 100
         postalCode:
           type: string
+          minLength: 1
           description: Alphanumeric, hyphens and spaces allowed
           maxLength: 20
         country:
           type: string
+          minLength: 1
           description: ISO 3166-1 alpha-2 code
-
     GuardianDTO:
       type: object
       description: Guardian information for minors
       required: [firstName, lastName, relationship, email, phone]
       properties:
+        # minLength: 1 is what makes these reject an empty string. `required` only means the key
+        # must be present, so it generates @NotNull — which happily accepts "".
         firstName:
           type: string
           description: Guardian's first name
           example: Pavel
+          minLength: 1
           maxLength: 100
         lastName:
           type: string
           description: Guardian's last name
           example: Novák
+          minLength: 1
           maxLength: 100
         relationship:
           type: string
           description: Relationship to member (e.g., PARENT, LEGAL_GUARDIAN)
           example: PARENT
+          minLength: 1
           maxLength: 50
         email:
           type: string

@@ -1,0 +1,32 @@
+{{!
+  Klabis customization: emits a Java record instead of the default generator's mutable class.
+
+  Rationale: hand-written Klabis response/request DTOs are records (see backend-patterns skill —
+  MemberDetailsResponse, AddressResponse, GuardianDTO, ...). MapStruct maps into these records by
+  calling the canonical constructor with named-argument resolution against record components, and
+  @RecordBuilder (io.soabase.recordbuilder) needs a genuine record to generate a builder.
+  The stock JavaSpring pojo.mustache only emits classes with getters/setters, so this file replaces
+  it wholesale rather than patching it.
+
+  additionalModelTypeAnnotations (configOptions) carries @RecordBuilder / @JsonInclude /
+  @HandleAuthorizationDenied uniformly - see build.gradle.kts. They are harmless no-ops on models
+  that don't need them.
+}}
+/**
+ * {{description}}{{^description}}{{classname}}{{/description}}
+ */
+{{>additionalModelTypeAnnotations}}
+{{>generatedAnnotation}}
+public record {{classname}}(
+    {{! Field-level security: x-klabis-* extensions on the spec property map 1:1 onto the
+        annotations documented in the klabis-api-spec skill. They render as parameter annotations,
+        same position as on the hand-written records (see backend-patterns: @OwnerId MemberId id).
+
+        Bean Validation constraints (@NotBlank, @Email, @Size, @Pattern, ...) come from the stock
+        JavaSpring beanValidation partial so request-side schemas (e.g. GuardianDTO, shared between
+        RegisterMemberRequest and MemberDetailsResponse) keep the same runtime validation the
+        hand-written DTOs had. }}
+    {{#vars}}{{^-first}},
+    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{{datatypeWithEnum}}} {{name}}{{/vars}}
+) {
+}

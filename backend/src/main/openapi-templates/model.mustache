@@ -1,0 +1,18 @@
+package {{package}};
+
+{{#imports}}import {{import}};
+{{/imports}}
+{{#useBeanValidation}}
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+{{/useBeanValidation}}
+import java.util.*;
+import jakarta.annotation.Generated;
+
+{{#models}}
+{{#model}}
+{{^isEnum}}
+{{>pojo}}
+{{/isEnum}}
+{{/model}}
+{{/models}}

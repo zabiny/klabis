@@ -4,7 +4,6 @@ import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.ui.EntityModelWithDomain;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
-import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,7 +111,7 @@ class MemberPermissionsLinkProcessorTest {
     @SuppressWarnings("unchecked")
     private EntityModelWithDomain<MemberDetailsResponse, Member> modelFor(UUID memberUuid, boolean active) {
         MemberDetailsResponse response = MemberDetailsResponseBuilder.builder()
-                .id(new MemberId(memberUuid))
+                .id(memberUuid)
                 .registrationNumber("ZBM0101")
                 .firstName("Jan")
                 .lastName("Novák")

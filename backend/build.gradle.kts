@@ -14,6 +14,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.4"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
+    id("org.openapi.generator") version "7.18.0"
     jacoco
 }
 
@@ -258,4 +259,116 @@ val openapiDriftCheck by tasks.registering(Exec::class) {
     workingDir = openapiToolDir.asFile
     commandLine("node", "drift.mjs", *(project.findProperty("openapiModule")
         ?.let { arrayOf("--module", it.toString()) } ?: emptyArray()))
+}
+
+// ---------------------------------------------------------------------------
+// Java DTO codegen from docs/openapi/spec/ (migration phase 3, members module only)
+//
+// Generates MemberDetailsResponse and its nested response DTOs into
+// com.klabis.members.infrastructure.restapi (same package as the hand-written controller/mapper —
+// several cross-module link processors depend on that package via the "members.rest" named
+// interface). Domain enums (Gender, DeactivationReason, DrivingLicenseGroup, TrainerLevel,
+// RefereeLevel) are reused as-is via schemaMappings/importMappings rather than regenerated.
+// ---------------------------------------------------------------------------
+
+val generatedOpenApiModelsDir = layout.buildDirectory.dir("generated/openapi/members")
+
+val bundleSpecForCodegen by tasks.registering(Exec::class) {
+    group = "openapi"
+    description = "Bundles docs/openapi/spec/ into a single document for the model generator"
+    workingDir = openapiToolDir.asFile
+    val out = layout.buildDirectory.file("generated/openapi/bundled.json").get().asFile
+    doFirst { out.parentFile.mkdirs() }
+    commandLine("node", "bundle.mjs", "--out", out.absolutePath)
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set(layout.buildDirectory.file("generated/openapi/bundled.json").map { it.asFile.absolutePath })
+    outputDir.set(generatedOpenApiModelsDir.map { it.asFile.absolutePath })
+    templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
+    modelPackage.set("com.klabis.members.infrastructure.restapi")
+    skipValidateSpec.set(true)
+
+    globalProperties.set(
+        mapOf(
+            "models" to listOf(
+                "MemberDetailsResponse",
+                "AddressResponse",
+                "GuardianDTO",
+                "IdentityCardDto",
+                "MedicalCourseDto",
+                "TrainerLicenseDto",
+                "RefereeLicenseDto"
+            ).joinToString(","),
+            "apis" to "false",
+            "supportingFiles" to "false",
+            "modelDocs" to "false",
+            "modelTests" to "false"
+        )
+    )
+
+    // Promotes inline enum properties (TrainerLicenseDto.level, RefereeLicenseDto.level) to real,
+    // named schemas (TrainerLicenseDto_level, RefereeLicenseDto_level) so schemaMappings below can
+    // redirect them to the existing domain enums instead of generating a synthesized inner enum.
+    inlineSchemaOptions.set(
+        mapOf(
+            "RESOLVE_INLINE_ENUMS" to "true"
+        )
+    )
+
+    configOptions.set(
+        mapOf(
+            "interfaceOnly" to "true",
+            "useSpringBoot3" to "true",
+            "useJakartaEe" to "true",
+            "documentationProvider" to "none",
+            "openApiNullable" to "false",
+            "additionalModelTypeAnnotations" to
+                "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"
+        )
+    )
+
+    // date-time wire format maps to Instant (not the generator's default OffsetDateTime) to match
+    // the rest of the codebase (see backend-patterns: ZonedDateTime/Instant in domain, LocalDate in API).
+    typeMappings.set(
+        mapOf(
+            "DateTime" to "Instant"
+        )
+    )
+
+    schemaMappings.set(
+        mapOf(
+            "Gender" to "com.klabis.members.domain.Gender",
+            "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
+            "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
+            "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
+            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel"
+        )
+    )
+
+    importMappings.set(
+        mapOf(
+            "Gender" to "com.klabis.members.domain.Gender",
+            "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
+            "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
+            "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
+            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
+            "Instant" to "java.time.Instant"
+        )
+    )
+}
+
+tasks.named("openApiGenerate") {
+    dependsOn(bundleSpecForCodegen)
+}
+
+// Part of the main sourceSet (not a separate one) so Lombok -> MapStruct -> RecordBuilder
+// annotation processors run over the generated records exactly as they do for hand-written code.
+sourceSets.main {
+    java.srcDir(generatedOpenApiModelsDir.map { it.dir("src/main/java") })
+}
+
+tasks.named("compileJava") {
+    dependsOn("openApiGenerate")
 }

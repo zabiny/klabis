@@ -1,7 +1,6 @@
 package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -28,11 +27,7 @@ class AccountMemberDetailLinkProcessor implements RepresentationModelProcessor<E
         if (response == null) {
             return model;
         }
-        MemberId memberId = response.id();
-        if (memberId == null) {
-            return model;
-        }
-        UUID memberUuid = memberId.uuid();
+        UUID memberUuid = response.id();
         if (memberUuid == null) {
             return model;
         }

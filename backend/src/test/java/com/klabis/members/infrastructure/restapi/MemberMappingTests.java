@@ -94,7 +94,7 @@ class MemberMappingTests {
 
             assertThat(dto).isNotNull();
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).hasValue(LocalDate.of(2026, 6, 15));
+            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 6, 15));
         }
 
         @Test
@@ -112,7 +112,7 @@ class MemberMappingTests {
             MedicalCourseDto dto = testedSubject.medicalCourseToDto(course);
 
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).isEmpty();
+            assertThat(dto.validityDate()).isNull();
         }
 
         @Test
@@ -260,7 +260,7 @@ class MemberMappingTests {
             MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(new MemberId(memberId));
+            assertThat(dto.id()).isEqualTo(memberId);
             assertThat(dto.firstName()).isEqualTo("Jan");
             assertThat(dto.lastName()).isEqualTo("Novák");
             assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
