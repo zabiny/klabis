@@ -15,4 +15,9 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   nvm use 22 >/dev/null || true
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -d "$script_dir/node_modules" ]; then
+  npm --prefix "$script_dir" install
+fi
+
 exec node "$@"
