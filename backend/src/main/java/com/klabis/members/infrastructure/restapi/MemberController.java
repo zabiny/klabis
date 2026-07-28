@@ -3,6 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
@@ -28,7 +29,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -60,17 +59,14 @@ public class MemberController {
 
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
-    private final PagedResourcesAssembler<Member> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
-            PagedResourcesAssembler<Member> pagedResourcesAssembler,
             MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
-        this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
     }
 
@@ -186,7 +182,7 @@ public class MemberController {
     @ApiResponse(responseCode = "200", description = "Paginated list of members retrieved successfully")
     @ApiResponse(responseCode = "400", description = "Invalid filter parameter value")
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
-    public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
+    public ResponseEntity<Page<MemberSummaryResponse>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = {"lastName", "firstName"}, direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
             @Parameter(description = "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)")
@@ -201,21 +197,9 @@ public class MemberController {
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
-        PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
-                memberPage,
-                member -> entityModelWithDomain(memberMapper.toSummaryResponse(member), member)
-        );
+        HalResponseContext.setDomainList(memberPage.getContent());
 
-        String qForLink = (q == null) ? "" : q;
-        String statusForLink = (status == null) ? "" : status;
-        klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, qForLink, statusForLink, null)).ifPresent(selfLinkBuilder -> {
-            Link selfLink = selfLinkBuilder.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                    .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)));
-            pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> selfLink);
-        });
-
-        return ResponseEntity.ok(pagedModel);
+        return ResponseEntity.ok(memberPage.map(memberMapper::toSummaryResponse));
     }
 
     private MemberFilter buildFilter(String q, String status, CurrentUserData currentUser) {
@@ -269,7 +253,7 @@ public class MemberController {
                           "contact details, and guardian information if applicable. Returns HATEOAS links for navigation."
     )
     @ApiResponse(responseCode = "200", description = "Member found")
-    public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
+    public ResponseEntity<MemberDetailsResponse> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
@@ -277,7 +261,8 @@ public class MemberController {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        return ResponseEntity.ok(entityModelWithDomain(memberMapper.toDetailsResponse(member), member));
+        HalResponseContext.setDomain(member);
+        return ResponseEntity.ok(memberMapper.toDetailsResponse(member));
     }
 
 }
@@ -287,18 +272,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        UUID memberId = member.getId().uuid();
-
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
-            var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
-            if (member.isActive()) {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
-            } else {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
-            }
-            return (Link) self;
-        }).ifPresent(dtoModel::add);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -310,6 +284,21 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
 
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+    }
+}
+
+/**
+ * Self link + status-dependent affordances (suspend/resume) are identical for the member detail
+ * and summary DTOs — the logic only touches {@code Member} and {@code RepresentationModel.add},
+ * neither of which depends on the DTO's generic type.
+ */
+final class MemberSelfLinkSupport {
+
+    private MemberSelfLinkSupport() {
+    }
+
+    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
@@ -322,6 +311,18 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
+    }
+}
+
+@MvcComponent
+class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<MemberSummaryResponse>>> {
+
+    @Override
+    public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
+        pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
+                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null))));
+        return pagedModel;
     }
 }
 
