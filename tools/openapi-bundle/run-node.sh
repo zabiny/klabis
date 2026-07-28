@@ -15,4 +15,6 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
   nvm use 24 >/dev/null || true
 fi
 
+exec npm install
+
 exec node "$@"
