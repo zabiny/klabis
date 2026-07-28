@@ -92,6 +92,10 @@ one.
 
 On schema properties. Each maps to exactly one existing Java annotation.
 
+(`x-klabis-authority` also works one level up, on an operation — see
+[endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below. The
+other three are property-only and the bundler rejects them on an operation.)
+
 | extension | value | generates | semantics |
 |---|---|---|---|
 | `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field holding the owner's ID, used to evaluate `x-klabis-owner-visible`. Without it, the single UUID-convertible field is used. |
@@ -117,6 +121,39 @@ MemberDetailsResponse:
 Enforcement lives in `FieldSecurityBeanSerializerModifier`, which works **only on records** and reads
 annotations off the accessor method. A denied field is omitted or masked per
 `@HandleAuthorizationDenied`.
+
+## `x-klabis-authority` on an operation — endpoint authorization
+
+The authority an endpoint requires belongs in the spec, not on the controller. On an operation it
+generates `@HasAuthority` on the **generated interface method**:
+
+```yaml
+paths:
+  /api/members/{id}:
+    get:
+      operationId: getMember
+      x-klabis-authority: MEMBERS_READ    # -> @HasAuthority(Authority.MEMBERS_READ) on MembersApi.getMember
+```
+
+The bundler rewrites it into `x-operation-extra-annotation`, which the generator emits verbatim
+above the method. **Do not write that extension by hand** for authorization — it is the transport,
+not the interface.
+
+Do not also annotate the controller. The authority is stated once, in the spec; a second copy in
+Java is what this replaces.
+
+This relies on `MethodSecurityAnnotations`, which resolves security annotations across the interface
+boundary — Java does not inherit method annotations from an interface, so without it the generated
+annotation would compile and silently enforce nothing.
+
+**`@OwnerVisible` has no operation-level extension** and stays hand-written on the controller
+(see `MemberController.updateMember`). Adding one is a spec change that goes through design first —
+do not invent `x-klabis-owner-visible` on an operation.
+
+**Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
+a method without `@HasAuthority` and no check reports it; the endpoint still requires
+authentication (`/api/**` is `.authenticated()`), but loses its authority check. When adding an
+operation, state the authority deliberately.
 
 ## Payload and envelope are separate schemas
 
@@ -228,8 +265,12 @@ whatever no longer compiles.
 4. Add `x-hal-links` / `x-hal-templates` by reading the controller's postprocessors and
    `RepresentationModelProcessor` implementations — springdoc cannot see them, so the drift check
    will not catch a missing one
-5. Re-run the drift check until the module reports `mismatched: 0`
-6. `cd frontend && npm run openapi` — regenerates the schema types and the HAL relations
+5. Transcribe each `@HasAuthority` off the controller into `x-klabis-authority` on the matching
+   operation, then delete it from the controller. Compare the generated `*Api` interface against the
+   controller as it was — an authority that silently changes or disappears here is not something the
+   tests will necessarily catch
+6. Re-run the drift check until the module reports `mismatched: 0`
+7. `cd frontend && npm run openapi` — regenerates the schema types and the HAL relations
 
 **The drift check compares schemas by name, not by content.** Two schemas called
 `RegisterMemberRequest` match even when their properties differ wildly. After the check goes green,
@@ -247,5 +288,9 @@ Expect the springdoc output to be wrong in places (it does not know about `@Json
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
+- Writing `@HasAuthority` on a controller method whose operation is spec-first — the authority
+  belongs in `x-klabis-authority`, stated once
+- Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
+  output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
   emit. Propose it, don't add it ad hoc — the bundler rejects unknown ones.
