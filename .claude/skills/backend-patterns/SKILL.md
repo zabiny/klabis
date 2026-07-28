@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.5.1
+version: 0.6.0
 ---
 
 # Klabis Backend Patterns
@@ -242,23 +242,43 @@ ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id,
 
 Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `PatchField<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
 
-### HATEOAS — EntityModelWithDomain + Postprocessor Pattern
+### HATEOAS — Controllers Return Plain DTOs; HalResponseBodyAdvice Wraps Them
 
-**Primary choice for creating `EntityModel` instances in controllers that load a domain aggregate.** Controllers focus on returning data; all link/affordance customization lives in a dedicated postprocessor that receives BOTH the DTO-shaped `EntityModel<T>` and the domain aggregate `D`.
+**Canonical pattern for all new/migrated controllers.** Since the migration to spec-first OpenAPI generation, controller methods must return the plain JSON-payload type from the generated API interface (`ResponseEntity<SomeResponse>` / `ResponseEntity<Page<SomeResponse>>`) — the generator does not produce `EntityModel`/`PagedModel` return types. Hypermedia wrapping happens **after** the controller returns, via `HalResponseBodyAdvice` (a `ResponseBodyAdvice` in `com.klabis.common.ui`), driven by a request-scoped `HalResponseContext` that the controller populates with the domain object(s) behind the DTO.
 
-**Controller — use `entityModelWithDomain(dto, domain)` instead of `EntityModel.of(dto)`:**
+**Controller — return the plain DTO, stash the domain object(s) in `HalResponseContext` before returning:**
 
 ```java
 @GetMapping("/{id}")
-ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(@PathVariable UUID id) {
-    Member member = managementService.getMember(new MemberId(id));
-    return ResponseEntity.ok(entityModelWithDomain(memberMapper.toDetailsResponse(member), member));
+ResponseEntity<MemberDetailsResponse> getMember(@PathVariable UUID id, @ActingUser CurrentUserData currentUser) {
+    Member member = managementService.getMemberAndRecordView(new MemberId(id), currentUser.userId(), ...);
+
+    HalResponseContext.setDomain(member);          // must run after everything that can throw
+    return ResponseEntity.ok(memberMapper.toDetailsResponse(member));
 }
 ```
 
-The controller does NOT add links/affordances inline. It just wraps the DTO with the domain aggregate and returns. `EntityModelWithDomain<T, D>` is a subclass of `EntityModel<T>` that piggy-backs the domain object; the domain is `@JsonIgnore`-annotated so it never leaks into the response body.
+For a paginated collection, use `setDomainList` — same order as the DTO `Page` content, paired 1:1 by index:
 
-**Postprocessor — extend `ModelWithDomainPostprocessor<T, D>`:**
+```java
+@GetMapping
+ResponseEntity<Page<MemberSummaryResponse>> listMembers(@ParameterObject Pageable pageable, ...) {
+    Page<Member> memberPage = memberRepository.findAll(filter, pageable);
+
+    HalResponseContext.setDomainList(memberPage.getContent());
+    return ResponseEntity.ok(memberPage.map(memberMapper::toSummaryResponse));
+}
+```
+
+**Always call `HalResponseContext.set*` last, after any code that can throw.** If the controller throws afterwards, `MvcExceptionHandler` returns a `ProblemDetail`; `HalResponseBodyAdvice` detects that and clears the context instead of wrapping the error body, but only if nothing between `set*` and the exception can leave stale context data for a *different* concern.
+
+**What the advice does, automatically, with no controller involvement:**
+- Single DTO → wraps it in `EntityModelWithDomain<T, D>` and runs it through every `RepresentationModelProcessor` bean — including `ModelWithDomainPostprocessor<Dto, Aggregate>` postprocessors.
+- `Page<Dto>` → runs it through `PagedResourcesAssembler`, pairing each DTO with its domain object via `HalResponseContext`'s stashed list, then derives the **self link directly from the current request's path and query parameters** (no `klabisLinkTo` call needed for the self link — the controller method already ran and passed authorization for exactly this request).
+- Non-HAL content types (e.g. `MemberOptionResponse` served as plain `application/json`) are left untouched — the advice checks `selectedContentType` and only wraps `HAL_JSON`/`HAL_FORMS_JSON` responses.
+- A `ProblemDetail` error body is never wrapped, and the context is cleared so nothing leaks into a later request on the same thread pool.
+
+**Postprocessor — extend `ModelWithDomainPostprocessor<T, D>`, which receives the DTO-shaped `EntityModel<T>` and the domain aggregate `D`:**
 
 ```java
 @MvcComponent
@@ -266,7 +286,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        klabisLinkTo(methodOn(MemberController.class).getMember(member.getId().uuid()))
+        klabisLinkTo(methodOn(MemberController.class).getMember(member.getId().uuid(), null))
             .map(link -> {
                 var self = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(member.getId().uuid(), null, null)));
@@ -282,18 +302,27 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 }
 ```
 
-**Why this pattern:**
-- State-driven affordances read from the real aggregate (`member.isActive()`) — no reliance on whether the DTO field has already been filtered by Jackson field-level security.
-- Controllers stay small; all hypermedia shaping is externalized. Multiple postprocessors can compose for the same endpoint (e.g. cross-module concerns: a training-groups postprocessor adding a `trainingGroup` link to member details).
-- Cross-module postprocessors live in the consuming module — they declare their dependency on the DTO+domain pair explicitly via generics.
-- `domainItem` is `@JsonIgnore` — safe from serialization.
+**Collection-level affordances (not per item) go on the `PagedModel` itself**, in a plain `RepresentationModelProcessor<PagedModel<EntityModel<Dto>>>` — the self link already exists (built by the advice), this processor only adds affordances that point at *other* endpoints:
 
-**Fallback — plain `EntityModel.of(dto)`:** acceptable only when there is no domain aggregate in scope (e.g., pure DTO projections, synthetic summaries, `RootModel` navigation). For standard aggregate-backed endpoints use the postprocessor pattern.
-
-**Static import:**
 ```java
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
+@MvcComponent
+class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<MemberSummaryResponse>>> {
+
+    @Override
+    public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
+        pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
+                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null))));
+        return pagedModel;
+    }
+}
 ```
+
+**Why this pattern:**
+- Controllers return the exact type the OpenAPI-generated API interface requires — no `EntityModel`/`PagedModel` in the method signature, so the generated interface can be implemented directly once that migration lands for a module.
+- State-driven affordances still read from the real aggregate (`member.isActive()`) — the postprocessor pipeline is unchanged, only how it gets invoked (advice vs. HATEOAS's own `HandlerMethodReturnValueHandler`, which only fires for return values that are already a `RepresentationModel`).
+- The self link for a collection no longer needs a `klabisLinkTo(methodOn(...).listMembers(pageable, q, status, null))` call re-deriving the current request in the controller — it's built once, generically, by the advice for every paginated endpoint.
+- Non-aggregate-backed responses (pure projections like `MemberOptionResponse`, served as plain JSON) are naturally skipped — no `HalResponseContext` entry means the advice passes the body through unchanged.
 
 ### HATEOAS Rules (NON-NEGOTIABLE)
 
@@ -326,7 +355,8 @@ Same HATEOAS rules apply — no affordances to POST endpoints.
 
 | Situation | Use |
 |---|---|
-| Controller loads an aggregate and returns its detail/summary | `ModelWithDomainPostprocessor<Dto, Aggregate>` — controller returns `entityModelWithDomain(dto, aggregate)` |
+| Controller loads an aggregate and returns its detail/summary | `ModelWithDomainPostprocessor<Dto, Aggregate>` — controller calls `HalResponseContext.setDomain(aggregate)` before returning the plain DTO |
+| Collection-level affordances to other endpoints | Plain `RepresentationModelProcessor<PagedModel<EntityModel<Dto>>>` — the self link itself is built by `HalResponseBodyAdvice`; this processor only adds affordances |
 | Root navigation (`RootModel`) | Plain `RepresentationModelProcessor<EntityModel<RootModel>>` — no domain involved |
 | Cross-module link enrichment where consuming module knows only the DTO's marker interface and the publishing controller does not expose the aggregate | Plain `RepresentationModelProcessor<EntityModel<MarkerInterface>>` |
 
@@ -512,15 +542,14 @@ record MemberDetailResponse(
 ) {}
 ```
 
-Controller returns a plain record — no proxy call needed:
+Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see the HATEOAS section above):
 
 ```java
 @GetMapping("/{id}")
-EntityModel<MemberDetailResponse> getMember(@PathVariable UUID id) {
-    MemberDetailResponse response = memberMapper.toDetailResponse(member);
-    return EntityModel.of(response)
-        .add(klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null))));
+ResponseEntity<MemberDetailResponse> getMember(@PathVariable UUID id) {
+    Member member = managementService.getMember(new MemberId(id));
+    HalResponseContext.setDomain(member);
+    return ResponseEntity.ok(memberMapper.toDetailResponse(member));
 }
 ```
 
