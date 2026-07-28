@@ -90,7 +90,7 @@ class UpdateMemberRequestMapper {
         }
         MedicalCourseDto dto = medicalCourse.throwIfNotProvided();
         if (dto == null) return null;
-        return MedicalCourse.of(dto.completionDate(), dto.validityDate());
+        return MedicalCourse.of(dto.completionDate(), java.util.Optional.ofNullable(dto.validityDate()));
     }
 
     private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {

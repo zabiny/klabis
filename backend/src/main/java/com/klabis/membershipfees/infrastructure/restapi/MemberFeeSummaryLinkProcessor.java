@@ -46,10 +46,7 @@ public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcess
             return model;
         }
 
-        UUID resourceMemberId = content.id().uuid();
-        if (resourceMemberId == null) {
-            return model;
-        }
+        UUID resourceMemberId = content.id();
 
         if (!isViewingOwnProfile(resourceMemberId)) {
             return model;

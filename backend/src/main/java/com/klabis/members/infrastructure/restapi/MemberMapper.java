@@ -21,6 +21,7 @@ interface MemberMapper {
     @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
     MemberSummaryResponse toSummaryResponse(Member member);
 
+    @Mapping(target = "id", expression = "java(member.getId().value())")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
     @Mapping(target = "guardian", source = "guardian")
@@ -33,12 +34,22 @@ interface MemberMapper {
 
     AddressResponse addressToResponse(Address address);
 
-    default GuardianDTO guardianToResponse(GuardianInformation guardianInformation) {
-        return GuardianDTO.from(guardianInformation);
+    default GuardianDTO guardianToResponse(GuardianInformation guardian) {
+        if (guardian == null) {
+            return null;
+        }
+        return new GuardianDTO(
+                guardian.getEmail().value(),
+                guardian.getFirstName(),
+                guardian.getLastName(),
+                guardian.getPhone().value(),
+                guardian.getRelationship()
+        );
     }
 
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
 
+    @Mapping(target = "validityDate", expression = "java(medicalCourse.validityDate() != null ? medicalCourse.validityDate().orElse(null) : null)")
     MedicalCourseDto medicalCourseToDto(MedicalCourse medicalCourse);
 
     TrainerLicenseDto trainerLicenseToDto(TrainerLicense trainerLicense);

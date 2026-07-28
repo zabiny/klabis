@@ -22,7 +22,7 @@ public class MemberFamilyGroupLinkProcessor implements RepresentationModelProces
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
-        MemberId memberId = model.getContent().id();
+        MemberId memberId = new MemberId(model.getContent().id());
         familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
                 .ifPresent(group -> klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("familyGroup"))

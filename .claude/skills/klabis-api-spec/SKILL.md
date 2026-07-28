@@ -53,6 +53,33 @@ serves it, not by the URL prefix.
 Reusable parameters and error responses go in the module's own `components`; only genuinely
 cross-module building blocks belong in `_shared/`.
 
+## Validation lives in the spec too
+
+Bean-validation constraints are generated from standard OpenAPI keywords, so they belong in the spec
+alongside the types:
+
+| spec | generates |
+|---|---|
+| `required: [firstName, …]` | `@NotNull` / `@NotBlank` |
+| `maxLength` / `minLength` | `@Size(max=…, min=…)` |
+| `pattern` | `@Pattern(regexp=…)` |
+| `format: email` | `@Email` |
+| `minimum` / `maximum` | `@Min` / `@Max` |
+
+A schema that omits them produces a DTO that accepts anything — the failure shows up as a controller
+test expecting `400` and getting `200`, or as missing entries under `fieldErrors`. When migrating a
+module, transcribe the Jakarta annotations off the hand-written record; springdoc reports most of
+them in `klabis-codefirst.json` already.
+
+**`required` is not `@NotBlank`.** In OpenAPI `required` only means the key must be present, so it
+generates `@NotNull` — which accepts `""`. To reject an empty string, add `minLength: 1`. Every
+required string that mattered as `@NotBlank` needs both.
+
+**Validation messages become the Bean Validation defaults** (`"size must be between 1 and 100"`).
+OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
+migration. Update the assertions to the default text rather than contriving a way to keep the old
+one — the constraint still fires, only the wording changes.
+
 ## Core rule: DTOs carry wire types
 
 API DTOs are transport records mirroring the JSON payload. `string`/`format: uuid`, never a
@@ -90,6 +117,30 @@ MemberDetailsResponse:
 Enforcement lives in `FieldSecurityBeanSerializerModifier`, which works **only on records** and reads
 annotations off the accessor method. A denied field is omitted or masked per
 `@HandleAuthorizationDenied`.
+
+## Payload and envelope are separate schemas
+
+`_links` is not part of a DTO — Spring HATEOAS adds it when the controller wraps the payload in an
+`EntityModel`. Model that split, or the generated Java record grows a bogus `links` component:
+
+```yaml
+EntityModelMemberDetailsResponse:      # envelope; never generated into Java
+  allOf:
+    - $ref: '#/components/schemas/MemberDetailsResponse'
+    - type: object
+      properties:
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+MemberDetailsResponse:                 # payload; this is what becomes a record
+  type: object
+  properties: …
+```
+
+Responses reference the `EntityModel*` / `PagedModel*` envelope so the wire contract stays accurate;
+the backend generator only emits the payload schemas.
+
+Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*`, not to the item.
 
 ## `x-hal-*` — hypermedia
 

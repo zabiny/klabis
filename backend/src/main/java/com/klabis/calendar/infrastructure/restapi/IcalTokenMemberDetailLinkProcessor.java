@@ -42,10 +42,7 @@ public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelPr
         if (content == null || content.id() == null) {
             return false;
         }
-        UUID resourceMemberId = content.id().uuid();
-        if (resourceMemberId == null) {
-            return false;
-        }
+        UUID resourceMemberId = content.id();
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof KlabisJwtAuthenticationToken token)) {

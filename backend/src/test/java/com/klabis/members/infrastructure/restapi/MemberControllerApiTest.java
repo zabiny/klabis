@@ -1014,7 +1014,11 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("Guardian first name is required"));
+                    // GuardianDTO is generated from docs/openapi/spec/members.yaml, so its constraints
+                    // come from `required` + `minLength`/`maxLength` and carry Bean Validation's default
+                    // messages. The hand-written record used @NotBlank with a custom message; OpenAPI has
+                    // no way to express that, so the expectation follows the default text.
+                    .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("size must be between 1 and 100"));
         }
 
         @Test
