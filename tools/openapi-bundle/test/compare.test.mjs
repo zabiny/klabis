@@ -90,6 +90,71 @@ describe('compareDocuments', () => {
     });
 });
 
+describe('component references', () => {
+    // A hand-written spec factors shared parameters and error responses into components; the
+    // springdoc output inlines everything. Without dereferencing, every migrated operation would
+    // look mismatched.
+    const inlined = {
+        paths: {
+            '/api/members/{id}': {
+                get: {
+                    operationId: 'getMember',
+                    parameters: [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+                    responses: {
+                        '404': {
+                            description: 'Resource not found',
+                            content: {'application/problem+json': {schema: {$ref: '#/components/schemas/ProblemDetail'}}},
+                        },
+                    },
+                },
+            },
+        },
+    };
+
+    const referenced = {
+        paths: {
+            '/api/members/{id}': {
+                get: {
+                    operationId: 'getMember',
+                    parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                    responses: {'404': {$ref: '#/components/responses/NotFound'}},
+                },
+            },
+        },
+        components: {
+            parameters: {
+                MemberIdParam: {name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}},
+            },
+            responses: {
+                NotFound: {
+                    description: 'Resource not found',
+                    content: {'application/problem+json': {schema: {$ref: '#/components/schemas/ProblemDetail'}}},
+                },
+            },
+        },
+    };
+
+    it('resolves referenced parameters and responses before comparing', () => {
+        const result = compareDocuments(inlined, referenced);
+        expect(result.mismatched).toEqual([]);
+        expect(result.matched).toBe(1);
+    });
+
+    it('still detects a genuine difference behind a reference', () => {
+        const changed = structuredClone(referenced);
+        changed.components.parameters.MemberIdParam.schema = {type: 'integer'};
+
+        expect(compareDocuments(inlined, changed).mismatched).toHaveLength(1);
+    });
+
+    it('does not hang on a self-referencing component', () => {
+        const cyclic = structuredClone(referenced);
+        cyclic.components.parameters.MemberIdParam = {$ref: '#/components/parameters/MemberIdParam'};
+
+        expect(() => compareDocuments(inlined, cyclic)).not.toThrow();
+    });
+});
+
 describe('normalizeOperations', () => {
     it('merges path-level parameters into each operation', () => {
         const operations = normalizeOperations({

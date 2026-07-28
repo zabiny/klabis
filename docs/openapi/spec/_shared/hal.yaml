@@ -5,7 +5,11 @@
 # (http://rwcbook.com/hal-forms/). Keep them aligned with the standard, not with
 # whatever a particular endpoint happens to return.
 #
-# The frontend counterpart lives in frontend/src/api/halRuntime.ts.
+# The frontend counterpart lives in frontend/src/api/types.ts (to be split into halRuntime.ts).
+#
+# `required` is stricter here than in the springdoc output, which marks nothing as required because
+# it only sees nullable Java fields. HAL itself requires `href` on a link, and Spring HATEOAS always
+# emits the full page metadata, so the stricter version is the accurate one.
 
 components:
   schemas:
