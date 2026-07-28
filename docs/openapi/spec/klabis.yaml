@@ -27,8 +27,18 @@ servers:
   - url: https://api.klabis.com
     description: Production server
 
-# Module specs are $ref'd in here as they are migrated. Empty until phase 1.
-paths: {}
+# Module specs are $ref'd in here as they are migrated.
+paths:
+  /api/members:
+    $ref: './members.yaml#/paths/~1api~1members'
+  /api/members/options:
+    $ref: './members.yaml#/paths/~1api~1members~1options'
+  /api/members/{id}:
+    $ref: './members.yaml#/paths/~1api~1members~1{id}'
+  /api/members/{id}/suspend:
+    $ref: './members.yaml#/paths/~1api~1members~1{id}~1suspend'
+  /api/members/{id}/resume:
+    $ref: './members.yaml#/paths/~1api~1members~1{id}~1resume'
 
 components:
   securitySchemes:
