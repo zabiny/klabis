@@ -197,15 +197,7 @@ public class MemberController {
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
-        String qForLink = (q == null) ? "" : q;
-        String statusForLink = (status == null) ? "" : status;
-
         HalResponseContext.setDomainList(memberPage.getContent());
-        HalResponseContext.setSelfLinkSupplier(() ->
-                klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, qForLink, statusForLink, null))
-                        .map(selfLinkBuilder -> (Link) selfLinkBuilder.withSelfRel()
-                                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))));
 
         return ResponseEntity.ok(memberPage.map(memberMapper::toSummaryResponse));
     }
@@ -315,6 +307,18 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
+    }
+}
+
+@MvcComponent
+class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<MemberSummaryResponse>>> {
+
+    @Override
+    public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
+        pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
+                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null))));
+        return pagedModel;
     }
 }
 

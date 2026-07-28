@@ -1,12 +1,9 @@
 package com.klabis.common.ui;
 
-import org.springframework.hateoas.Link;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 /**
  * Carries the domain object(s) behind a plain payload DTO returned by a controller method,
@@ -21,7 +18,6 @@ public final class HalResponseContext {
 
     private static final String SINGLE_DOMAIN_ATTR = HalResponseContext.class.getName() + ".singleDomain";
     private static final String DOMAIN_LIST_ATTR = HalResponseContext.class.getName() + ".domainList";
-    private static final String SELF_LINK_SUPPLIER_ATTR = HalResponseContext.class.getName() + ".selfLinkSupplier";
 
     private HalResponseContext() {
     }
@@ -51,29 +47,9 @@ public final class HalResponseContext {
         return (List<D>) takeAttribute(DOMAIN_LIST_ATTR);
     }
 
-    /**
-     * Registers a supplier for the collection-level self link (e.g. one that re-encodes the
-     * request's query/pagination parameters via {@code klabisLinkTo(methodOn(...))}), applied by
-     * the advice once the {@code PagedModel} exists.
-     * <p>
-     * {@code klabisLinkTo} returns {@link Optional#empty()} when the caller isn't authorized for
-     * the linked method — the supplier must propagate that as {@code Optional.empty()}, not
-     * {@code null}, so the advice can leave the assembler-provided self link untouched instead of
-     * overwriting it with a link built from a null-producing mapper.
-     */
-    public static void setSelfLinkSupplier(Supplier<Optional<Link>> selfLinkSupplier) {
-        setAttribute(SELF_LINK_SUPPLIER_ATTR, selfLinkSupplier);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Supplier<Optional<Link>> takeSelfLinkSupplier() {
-        return (Supplier<Optional<Link>>) takeAttribute(SELF_LINK_SUPPLIER_ATTR);
-    }
-
     static void clear() {
         takeAttribute(SINGLE_DOMAIN_ATTR);
         takeAttribute(DOMAIN_LIST_ATTR);
-        takeAttribute(SELF_LINK_SUPPLIER_ATTR);
     }
 
     private static void setAttribute(String name, Object value) {
