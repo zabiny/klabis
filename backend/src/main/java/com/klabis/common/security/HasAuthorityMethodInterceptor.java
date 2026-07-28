@@ -8,9 +8,9 @@ import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.ClassFilter;
+import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
-import org.springframework.aop.support.ComposablePointcut;
-import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.method.AuthorizationAdvisor;
@@ -24,7 +24,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 
 /**
  * Spring Security {@link AuthorizationAdvisor} that enforces {@link HasAuthority} annotations.
@@ -47,16 +46,48 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
 
     private static final AuthorizationResult DENY = () -> false;
 
-    private static final Pointcut POINTCUT = new ComposablePointcut(
-            AnnotationMatchingPointcut.forClassAnnotation(HasAuthority.class))
-            .union(AnnotationMatchingPointcut.forMethodAnnotation(HasAuthority.class))
-            .union(AnnotationMatchingPointcut.forMethodAnnotation(OwnerVisible.class));
+    /**
+     * Matches methods annotated with {@link HasAuthority} or {@link OwnerVisible} on the class
+     * itself, OR on any interface it implements — {@link org.springframework.aop.support.annotation.AnnotationMatchingPointcut}
+     * only looks at the target class/method directly and misses annotations declared on a
+     * generated OpenAPI {@code *Api} interface that the controller implements.
+     */
+    private static final Pointcut POINTCUT = new Pointcut() {
+        @Override
+        public ClassFilter getClassFilter() {
+            return ClassFilter.TRUE;
+        }
+
+        @Override
+        public MethodMatcher getMethodMatcher() {
+            return new MethodMatcher() {
+                @Override
+                public boolean matches(Method method, Class<?> targetClass) {
+                    return MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class) != null
+                           || MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null
+                           || MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class) != null;
+                }
+
+                @Override
+                public boolean isRuntime() {
+                    return false;
+                }
+
+                @Override
+                public boolean matches(Method method, Class<?> targetClass, Object... args) {
+                    throw new UnsupportedOperationException("Runtime matching not supported");
+                }
+            };
+        }
+    };
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         Method method = invocation.getMethod();
-        Authority requiredAuthority = resolveAuthority(method, invocation.getThis());
-        boolean isOwnerVisible = method.isAnnotationPresent(OwnerVisible.class);
+        Object target = invocation.getThis();
+        Class<?> targetClass = target != null ? target.getClass() : method.getDeclaringClass();
+        Authority requiredAuthority = resolveAuthority(method, targetClass);
+        boolean isOwnerVisible = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null;
 
         if (requiredAuthority == null && !isOwnerVisible) {
             return invocation.proceed();
@@ -71,11 +102,11 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
             return invocation.proceed();
         }
 
-        if (isOwnerVisible && checkOwnership(method, invocation.getArguments(), authentication)) {
+        if (isOwnerVisible && checkOwnership(method, targetClass, invocation.getArguments(), authentication)) {
             return invocation.proceed();
         }
 
-        HandleAuthorizationDenied denied = resolveDeniedHandler(method);
+        HandleAuthorizationDenied denied = resolveDeniedHandler(method, targetClass);
         if (denied != null) {
             MethodAuthorizationDeniedHandler handler = resolveHandler(denied.handlerClass());
             return handler.handleDeniedInvocation(invocation, DENY);
@@ -87,18 +118,16 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         throw new AccessDeniedException(denyReason);
     }
 
-    private boolean checkOwnership(Method method, Object[] arguments, Authentication authentication) {
+    private boolean checkOwnership(Method method, Class<?> targetClass, Object[] arguments, Authentication authentication) {
         OwnershipResolver resolver = getOwnershipResolver();
         if (resolver == null) {
             return false;
         }
-        Parameter[] parameters = method.getParameters();
-        for (int i = 0; i < parameters.length; i++) {
-            if (parameters[i].isAnnotationPresent(OwnerId.class)) {
-                return resolver.isOwner(arguments[i], authentication);
-            }
+        int ownerIdIndex = MethodSecurityAnnotations.findAnnotatedParameterIndex(method, targetClass, OwnerId.class);
+        if (ownerIdIndex < 0) {
+            return false;
         }
-        return false;
+        return resolver.isOwner(arguments[ownerIdIndex], authentication);
     }
 
     private OwnershipResolver getOwnershipResolver() {
@@ -128,30 +157,22 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
 
 
 
-    private Authority resolveAuthority(Method method, Object target) {
-        HasAuthority methodAnnotation = method.getAnnotation(HasAuthority.class);
+    private Authority resolveAuthority(Method method, Class<?> targetClass) {
+        HasAuthority methodAnnotation = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class);
         if (methodAnnotation != null) {
             return methodAnnotation.value();
         }
 
-        if (target != null) {
-            HasAuthority classAnnotation = target.getClass().getAnnotation(HasAuthority.class);
-            if (classAnnotation != null) {
-                return classAnnotation.value();
-            }
-        }
-
-        // Class-level on the declaring interface/class
-        HasAuthority declaringAnnotation = method.getDeclaringClass().getAnnotation(HasAuthority.class);
-        return declaringAnnotation != null ? declaringAnnotation.value() : null;
+        HasAuthority classAnnotation = MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class);
+        return classAnnotation != null ? classAnnotation.value() : null;
     }
 
-    private HandleAuthorizationDenied resolveDeniedHandler(Method method) {
-        HandleAuthorizationDenied methodLevel = method.getAnnotation(HandleAuthorizationDenied.class);
+    private HandleAuthorizationDenied resolveDeniedHandler(Method method, Class<?> targetClass) {
+        HandleAuthorizationDenied methodLevel = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HandleAuthorizationDenied.class);
         if (methodLevel != null) {
             return methodLevel;
         }
-        return method.getDeclaringClass().getAnnotation(HandleAuthorizationDenied.class);
+        return MethodSecurityAnnotations.findClassAnnotation(targetClass, HandleAuthorizationDenied.class);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.MethodParameter;
@@ -135,16 +136,23 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
     @Nullable
     private String findOwnerIdParameterName(Method handlerMethod) {
         Parameter[] parameters = handlerMethod.getParameters();
-        for (Parameter parameter : parameters) {
-            if (parameter.isAnnotationPresent(OwnerId.class) && parameter.isAnnotationPresent(PathVariable.class)) {
-                PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
-                String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
-                if (name.isEmpty()) {
-                    name = parameter.getName();
-                }
-                return name;
-            }
+        int ownerIdIndex = MethodSecurityAnnotations.findAnnotatedParameterIndex(
+                handlerMethod, handlerMethod.getDeclaringClass(), OwnerId.class);
+        if (ownerIdIndex < 0 || ownerIdIndex >= parameters.length) {
+            return null;
         }
-        return null;
+
+        Parameter parameter = parameters[ownerIdIndex];
+        // @PathVariable itself is a method parameter — not inherited from the interface either,
+        // so it must still be present directly on the concrete handler method's parameter.
+        if (!parameter.isAnnotationPresent(PathVariable.class)) {
+            return null;
+        }
+        PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
+        String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
+        if (name.isEmpty()) {
+            name = parameter.getName();
+        }
+        return name;
     }
 }
