@@ -9,11 +9,11 @@ class EventTypeDtoMapper {
 
     static EventTypeDto toDto(EventType eventType) {
         return new EventTypeDto(
-                eventType.getId(),
-                eventType.getName(),
                 eventType.getColor().orElse(null),
-                eventType.getSortOrder(),
-                eventType.getOrisDisciplineIds()
+                eventType.getId().value(),
+                eventType.getName(),
+                eventType.getOrisDisciplineIds(),
+                eventType.getSortOrder()
         );
     }
 }

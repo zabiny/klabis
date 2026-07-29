@@ -17,6 +17,10 @@ paths:
         the admin-only fields (email, active) are omitted from the response.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
+      x-spring-paginated: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/SizeParam'
@@ -73,7 +77,7 @@ paths:
 
     post:
       operationId: registerMember
-      tags: [Members]
+      tags: [Registration]
       summary: Register a new member
       description: |
         Creates a new member with personal information, contact details, and optional guardian
@@ -85,8 +89,12 @@ paths:
         — the member is still created.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       requestBody:
         required: true
+        x-codegen-request-body-name: request
         content:
           application/json:
             schema:
@@ -106,6 +114,8 @@ paths:
                 type: array
                 items:
                   type: string
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -127,6 +137,7 @@ paths:
       description: Lightweight value/prompt pairs for member picker components.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
       responses:
         '200':
           description: Member options retrieved successfully
@@ -165,6 +176,9 @@ paths:
         MEMBERS:MANAGE or is the member themselves.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       responses:
@@ -224,10 +238,15 @@ paths:
         Fields the caller is not authorized to change are rejected.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: id
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       requestBody:
         required: true
+        x-codegen-request-body-name: request
         content:
           application/json:
             schema:
@@ -235,6 +254,8 @@ paths:
       responses:
         '204':
           description: Member updated successfully
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -258,10 +279,14 @@ paths:
         finance account.
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       requestBody:
         required: true
+        x-codegen-request-body-name: request
         content:
           application/json:
             schema:
@@ -269,6 +294,8 @@ paths:
       responses:
         '204':
           description: Membership suspended
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -289,11 +316,16 @@ paths:
       summary: Resume a suspended membership
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       responses:
         '204':
           description: Membership resumed
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

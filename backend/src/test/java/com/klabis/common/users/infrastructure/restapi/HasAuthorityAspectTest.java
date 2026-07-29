@@ -148,6 +148,57 @@ class HasAuthorityAspectTest {
         }
     }
 
+    @Nested
+    @DisplayName("Interface-level authorization checks")
+    class InterfaceLevelAuthorization {
+
+        @Autowired
+        private InterfaceImplementingService interfaceImplementingService;
+
+        @Test
+        @DisplayName("should deny access when @HasAuthority is declared only on the implemented interface method")
+        void shouldDenyAccessWhenInterfaceMethodAuthorityMissing() {
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_READ.getValue());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            assertThatThrownBy(interfaceImplementingService::interfaceMethodWithAuthority)
+                    .isInstanceOf(AccessDeniedException.class)
+                    .hasMessageContaining(Authority.MEMBERS_MANAGE.getValue());
+        }
+
+        @Test
+        @DisplayName("should allow access when user has the authority declared on the implemented interface method")
+        void shouldAllowAccessWhenInterfaceMethodAuthorityPresent() {
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            String result = interfaceImplementingService.interfaceMethodWithAuthority();
+            assertThat(result).isEqualTo("success");
+        }
+
+        @Test
+        @DisplayName("concrete class method annotation still takes priority over interface method annotation")
+        void shouldPreferConcreteClassAnnotationOverInterface() {
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            // interface requires MEMBERS_READ, concrete class overrides with MEMBERS_MANAGE
+            String result = interfaceImplementingService.methodOverridingInterfaceAuthority();
+            assertThat(result).isEqualTo("success");
+        }
+
+        @Test
+        @DisplayName("should deny access when @HasAuthority is declared on the implemented interface type (class-level)")
+        void shouldDenyAccessWhenInterfaceClassLevelAuthorityMissing() {
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            assertThatThrownBy(interfaceImplementingService::classLevelInterfaceMethod)
+                    .isInstanceOf(AccessDeniedException.class)
+                    .hasMessageContaining(Authority.MEMBERS_READ.getValue());
+        }
+    }
+
     private static Authentication createAuthentication(String username, String... authorities) {
         Collection<GrantedAuthority> grantedAuthorities = List.of(authorities).stream()
                 .map(SimpleGrantedAuthority::new)
@@ -179,6 +230,45 @@ class HasAuthorityAspectTest {
         }
     }
 
+    /**
+     * Mirrors a generated OpenAPI {@code *Api} interface: authorization annotations live on the
+     * interface method/type, and the concrete implementation carries none of its own (except where
+     * explicitly overridden).
+     */
+    public interface InterfaceWithAuthority {
+
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        String interfaceMethodWithAuthority();
+
+        @HasAuthority(Authority.MEMBERS_READ)
+        String methodOverridingInterfaceAuthority();
+    }
+
+    @HasAuthority(Authority.MEMBERS_READ)
+    public interface ClassLevelAuthorityInterface {
+        String classLevelInterfaceMethod();
+    }
+
+    @Service
+    public static class InterfaceImplementingService implements InterfaceWithAuthority, ClassLevelAuthorityInterface {
+
+        @Override
+        public String interfaceMethodWithAuthority() {
+            return "success";
+        }
+
+        @Override
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        public String methodOverridingInterfaceAuthority() {
+            return "success";
+        }
+
+        @Override
+        public String classLevelInterfaceMethod() {
+            return "success";
+        }
+    }
+
     @Configuration
     @EnableMethodSecurity
     static class HasAuthorityInterceptorTestConfiguration {
@@ -203,6 +293,11 @@ class HasAuthorityAspectTest {
         @Bean
         ClassLevelAuthorizedService classLevelAuthorizedService() {
             return new ClassLevelAuthorizedService();
+        }
+
+        @Bean
+        InterfaceImplementingService interfaceImplementingService() {
+            return new InterfaceImplementingService();
         }
     }
 }

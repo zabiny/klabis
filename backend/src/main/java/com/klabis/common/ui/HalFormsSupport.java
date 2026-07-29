@@ -1,6 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
@@ -190,22 +191,21 @@ public class HalFormsSupport {
         }
     }
 
+    /**
+     * Keyed by {@code Method} alone even though the cached value also depends on {@code targetClass}.
+     * That is only sound while every caller derives {@code targetClass} from the method itself
+     * (today: {@code method.getDeclaringClass()}). A second call site passing an unrelated class —
+     * a CGLIB proxy type, say — would silently receive the entry computed for the first caller.
+     */
     private static final ConcurrentHashMap<Method, MethodAuthMeta> METHOD_AUTH_CACHE = new ConcurrentHashMap<>();
 
-    private static MethodAuthMeta resolveMethodAuthMeta(Method method) {
+    private static MethodAuthMeta resolveMethodAuthMeta(Method method, Class<?> targetClass) {
         return METHOD_AUTH_CACHE.computeIfAbsent(method, m -> {
-            HasAuthority ha = m.getAnnotation(HasAuthority.class);
-            OwnerVisible ov = m.getAnnotation(OwnerVisible.class);
-            int ownerIdx = -1;
-            if (ov != null) {
-                Parameter[] params = m.getParameters();
-                for (int i = 0; i < params.length; i++) {
-                    if (params[i].isAnnotationPresent(OwnerId.class)) {
-                        ownerIdx = i;
-                        break;
-                    }
-                }
-            }
+            HasAuthority ha = MethodSecurityAnnotations.findMethodAnnotation(m, targetClass, HasAuthority.class);
+            OwnerVisible ov = MethodSecurityAnnotations.findMethodAnnotation(m, targetClass, OwnerVisible.class);
+            int ownerIdx = ov != null
+                    ? MethodSecurityAnnotations.findAnnotatedParameterIndex(m, targetClass, OwnerId.class)
+                    : -1;
             return new MethodAuthMeta(ha, ov, ownerIdx);
         });
     }
@@ -213,7 +213,8 @@ public class HalFormsSupport {
     private boolean isMethodAuthorized(LastInvocationAware invocation) {
         MethodInvocation methodInvocation = invocation.getLastInvocation();
         Method method = methodInvocation.getMethod();
-        MethodAuthMeta meta = resolveMethodAuthMeta(method);
+        Class<?> targetClass = method.getDeclaringClass();
+        MethodAuthMeta meta = resolveMethodAuthMeta(method, targetClass);
 
         if (!meta.hasSecurityAnnotations()) {
             return true;

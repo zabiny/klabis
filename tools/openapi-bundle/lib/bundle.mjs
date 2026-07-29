@@ -17,6 +17,135 @@ const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArr
 /** OpenAPI path-item keys that denote an operation. */
 export const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
+/**
+ * Fully-qualified name of the type-safe method-security annotation that x-klabis-authority
+ * generates on an operation. See backend-patterns skill: "@HasAuthority Method/Class-Level
+ * Authorization".
+ */
+const HAS_AUTHORITY_FQN = 'com.klabis.common.users.HasAuthority';
+const AUTHORITY_FQN = 'com.klabis.common.users.Authority';
+
+/**
+ * Translates `x-klabis-authority` on an operation into `x-operation-extra-annotation`, which the
+ * (stock) api.mustache template emits verbatim above the generated interface method. This is how
+ * the spec drives method-level @HasAuthority instead of it being hand-written on the controller —
+ * see klabis-api-spec skill and ADR for x-klabis-authority-on-operations.
+ *
+ * Only operations carry this rewrite; x-klabis-authority on a schema property (field-level
+ * security) is untouched — that one is consumed directly by FieldSecurityBeanSerializerModifier,
+ * not by codegen.
+ */
+export function applyOperationAuthorityAnnotations(document) {
+    const paths = document.paths;
+    if (!isPlainObject(paths)) return document;
+
+    for (const pathItem of Object.values(paths)) {
+        if (!isPlainObject(pathItem)) continue;
+        for (const [method, operation] of Object.entries(pathItem)) {
+            if (!HTTP_METHODS.includes(method) || !isPlainObject(operation)) continue;
+
+            const authority = operation['x-klabis-authority'];
+            if (typeof authority !== 'string') continue;
+
+            const annotation = `@${HAS_AUTHORITY_FQN}(${AUTHORITY_FQN}.${authority})`;
+            const existing = operation['x-operation-extra-annotation'];
+            operation['x-operation-extra-annotation'] = existing
+                ? `${existing}\n${annotation}`
+                : annotation;
+        }
+    }
+
+    return document;
+}
+
+const OWNER_VISIBLE_FQN = 'com.klabis.common.security.fieldsecurity.OwnerVisible';
+const OWNER_ID_FQN = 'com.klabis.common.security.fieldsecurity.OwnerId';
+
+/** Resolves a local `#/components/parameters/X` $ref; returns the object unchanged otherwise. */
+function resolveParameterRef(document, param) {
+    if (!isPlainObject(param) || typeof param.$ref !== 'string') return param;
+    const match = param.$ref.match(/^#\/components\/parameters\/(.+)$/);
+    if (!match) return param;
+    const resolved = document.components?.parameters?.[match[1]];
+    if (resolved === undefined) {
+        throw new Error(`x-klabis-owner-visible: unresolvable parameter ref "${param.$ref}"`);
+    }
+    return resolved;
+}
+
+/**
+ * Translates `x-klabis-owner-visible` on an operation into the paired
+ * @OwnerVisible (operation) / @OwnerId (parameter) annotations.
+ *
+ * The value names the parameter that carries the owner ID. This is deliberately the *only* way
+ * to declare either annotation: with one spec key driving both halves, it is structurally
+ * impossible to emit @OwnerVisible without @OwnerId (or vice versa) — a name that does not match
+ * any parameter on the operation is a hard bundle failure, not a silently incomplete pair. See
+ * klabis-api-spec skill and HasAuthorityMethodInterceptor.checkOwnership(), which requires both
+ * annotations to actually enforce ownership.
+ *
+ * The named parameter is inlined (its $ref, if any, is broken) so the @OwnerId annotation lands
+ * only on this operation's copy — parameters are commonly shared via $ref across operations
+ * (e.g. MemberIdParam used by getMember/updateMember/suspendMember/resumeMember), and only the
+ * operation that opted in may carry @OwnerId.
+ */
+/** Query parameters x-spring-paginated replaces with a single Pageable argument. */
+const PAGEABLE_PARAMS = ['page', 'size', 'sort'];
+
+export function applyOperationOwnerVisibleAnnotations(document) {
+    const paths = document.paths;
+    if (!isPlainObject(paths)) return document;
+
+    for (const pathItem of Object.values(paths)) {
+        if (!isPlainObject(pathItem)) continue;
+        for (const [method, operation] of Object.entries(pathItem)) {
+            if (!HTTP_METHODS.includes(method) || !isPlainObject(operation)) continue;
+
+            const ownerParamName = operation['x-klabis-owner-visible'];
+            if (typeof ownerParamName !== 'string') continue;
+
+            // x-spring-paginated folds these into a single Pageable argument, so a parameter named
+            // here would carry @OwnerId on a parameter the generator then drops — leaving
+            // @OwnerVisible with nothing to resolve ownership against. checkOwnership() denies in
+            // that case rather than granting, but the annotation would still claim a protection
+            // the method does not have.
+            if (operation['x-spring-paginated'] === true && PAGEABLE_PARAMS.includes(ownerParamName)) {
+                throw new Error(
+                    `x-klabis-owner-visible on operation "${operation.operationId ?? '?'}" names ` +
+                    `parameter "${ownerParamName}", which x-spring-paginated folds into Pageable — ` +
+                    `@OwnerId cannot be placed on it`,
+                );
+            }
+
+            const params = Array.isArray(operation.parameters) ? operation.parameters : [];
+            const index = params.findIndex(
+                (p) => resolveParameterRef(document, p)?.name === ownerParamName,
+            );
+            if (index === -1) {
+                throw new Error(
+                    `x-klabis-owner-visible on operation "${operation.operationId ?? '?'}" names ` +
+                    `parameter "${ownerParamName}", which is not declared on that operation`,
+                );
+            }
+
+            const resolvedParam = resolveParameterRef(document, params[index]);
+            operation.parameters = [
+                ...params.slice(0, index),
+                {...resolvedParam, 'x-field-extra-annotation': `@${OWNER_ID_FQN}`},
+                ...params.slice(index + 1),
+            ];
+
+            const annotation = `@${OWNER_VISIBLE_FQN}`;
+            const existing = operation['x-operation-extra-annotation'];
+            operation['x-operation-extra-annotation'] = existing
+                ? `${existing}\n${annotation}`
+                : annotation;
+        }
+    }
+
+    return document;
+}
+
 /** Counts operations across all paths — used for reporting. */
 export function countOperations(document) {
     return Object.values(document?.paths ?? {})
@@ -161,6 +290,9 @@ export function bundleSpec(rootFile, options = {}) {
     if (Object.keys(components).length > 0) {
         document.components = components;
     }
+
+    applyOperationAuthorityAnnotations(document);
+    applyOperationOwnerVisibleAnnotations(document);
 
     return {document: sortKeysDeep(document), conflicts};
 }
