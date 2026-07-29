@@ -52,7 +52,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+// proxyTargetClass=true: controllers generated from an OpenAPI spec (members module) implement a
+// generated API interface (MembersApi/RegistrationApi) alongside @HasAuthority. The default JDK
+// dynamic proxy only exposes interface methods to Spring MVC's RequestMappingHandlerMapping, which
+// cannot see @RequestMapping annotations that live solely on the (different) generated interface —
+// every mapping silently 404s. CGLIB (class-based) proxying keeps the concrete controller type,
+// so the merged interface annotations resolve correctly. See Spring Framework reference,
+// "AOP Proxies" (web/webmvc/mvc-controller/ann.html).
+@EnableMethodSecurity(proxyTargetClass = true)
 @Import(ResourceServerSecurityConfiguration.class)
 public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
 

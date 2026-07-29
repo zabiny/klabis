@@ -10,6 +10,36 @@
 import type {HalFormsTemplate, HalResourceLinks} from './types';
 import type {components} from './klabisApi';
 
+// --- GET /api/event-types/{id} (200) ---
+
+export interface GetEventTypeHal {
+  _links?: {
+    /** Back to the event type list */
+    'collection'?: HalResourceLinks;
+    /** This event type */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
+populated at runtime with the available ORIS discipline options.
+ */
+    'default'?: HalFormsTemplate;
+    /** Present only for callers with EVENTS:MANAGE */
+    'deleteEventType'?: HalFormsTemplate;
+  };
+}
+
+export type GetEventTypeResource =
+  components['schemas']['EntityModelEventTypeDto'] & GetEventTypeHal;
+
+export const GetEventTypeRels = {
+  links: ['collection', 'self'] as const,
+  templates: ['default', 'deleteEventType'] as const,
+} as const;
+
+export type GetEventTypeLinkRel = typeof GetEventTypeRels.links[number];
+export type GetEventTypeTemplateRel = typeof GetEventTypeRels.templates[number];
+
 // --- GET /api/members/{id} (200) ---
 
 export interface GetMemberHal {
@@ -50,6 +80,32 @@ export const GetMemberRels = {
 
 export type GetMemberLinkRel = typeof GetMemberRels.links[number];
 export type GetMemberTemplateRel = typeof GetMemberRels.templates[number];
+
+// --- GET /api/event-types (200) ---
+
+export interface ListEventTypesHal {
+  _links?: {
+    /** This collection */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
+populated at runtime with the available ORIS discipline options.
+ */
+    'createEventType'?: HalFormsTemplate;
+  };
+}
+
+export type ListEventTypesResource =
+  components['schemas']['CollectionModelEntityModelEventTypeDto'] & ListEventTypesHal;
+
+export const ListEventTypesRels = {
+  links: ['self'] as const,
+  templates: ['createEventType'] as const,
+} as const;
+
+export type ListEventTypesLinkRel = typeof ListEventTypesRels.links[number];
+export type ListEventTypesTemplateRel = typeof ListEventTypesRels.templates[number];
 
 // --- GET /api/members (200) ---
 

@@ -120,3 +120,168 @@ describe('validateSpec', () => {
         })).toEqual([]);
     });
 });
+
+describe('validateSpec — x-klabis-authority on operations', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    const docWithOperation = (operationExtra) => ({
+        paths: {
+            '/api/members': {
+                post: {
+                    operationId: 'registerMember',
+                    responses: {},
+                    ...operationExtra,
+                },
+            },
+        },
+    });
+
+    it('accepts a known authority directly on an operation', () => {
+        expect(validate(docWithOperation({'x-klabis-authority': 'MEMBERS_MANAGE'}))).toEqual([]);
+    });
+
+    it('rejects an unknown authority on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-authority': 'NOPE'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not a constant of Authority.java');
+    });
+
+    it('rejects x-klabis-owner-id on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-owner-id': true}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+
+    it('rejects x-klabis-halforms-access on an operation', () => {
+        const errors = validate(docWithOperation({'x-klabis-halforms-access': 'READ_ONLY'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+
+    it('still accepts x-klabis-authority on a schema property alongside an operation-level one', () => {
+        const doc = {
+            paths: {
+                '/api/members': {
+                    post: {
+                        operationId: 'registerMember',
+                        responses: {},
+                        'x-klabis-authority': 'MEMBERS_MANAGE',
+                    },
+                },
+            },
+            components: {
+                schemas: {
+                    Thing: {
+                        type: 'object',
+                        properties: {
+                            dateOfBirth: {type: 'string', 'x-klabis-authority': 'MEMBERS_MANAGE'},
+                        },
+                    },
+                },
+            },
+        };
+        expect(validate(doc)).toEqual([]);
+    });
+});
+
+describe('validateSpec — x-klabis-owner-visible on operations', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    // x-klabis-owner-visible on an operation names the parameter that carries the owner ID.
+    // This is the only shape that guarantees @OwnerVisible can never be generated without a
+    // matching @OwnerId — the bundler resolves the name against the operation's own parameters,
+    // so a typo or missing parameter is a validation/bundle error rather than a silently
+    // incomplete pair.
+    const docWithParams = (operationExtra, parameters) => ({
+        paths: {
+            '/api/members/{id}': {
+                patch: {
+                    operationId: 'updateMember',
+                    responses: {},
+                    parameters,
+                    ...operationExtra,
+                },
+            },
+        },
+    });
+
+    it('accepts x-klabis-owner-visible naming an existing path parameter', () => {
+        const errors = validate(docWithParams(
+            {'x-klabis-owner-visible': 'id'},
+            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+        ));
+        expect(errors).toEqual([]);
+    });
+
+    it('rejects x-klabis-owner-visible naming a parameter the operation does not declare', () => {
+        const errors = validate(docWithParams(
+            {'x-klabis-owner-visible': 'memberId'},
+            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('"memberId"');
+        expect(errors[0].message).toContain('does not match any parameter');
+    });
+
+    it('rejects x-klabis-owner-visible on an operation with no parameters at all', () => {
+        const errors = validate(docWithParams({'x-klabis-owner-visible': 'id'}, undefined));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('does not match any parameter');
+    });
+
+    it('rejects a non-string x-klabis-owner-visible value on an operation', () => {
+        const errors = validate(docWithParams(
+            {'x-klabis-owner-visible': true},
+            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be the name of a parameter');
+    });
+
+    it('resolves a $ref parameter to check the name', () => {
+        const doc = {
+            paths: {
+                '/api/members/{id}': {
+                    patch: {
+                        operationId: 'updateMember',
+                        responses: {},
+                        'x-klabis-owner-visible': 'id',
+                        parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                    },
+                },
+            },
+            components: {
+                parameters: {
+                    MemberIdParam: {name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}},
+                },
+            },
+        };
+        expect(validate(doc)).toEqual([]);
+    });
+
+    it('still requires x-klabis-owner-visible to be true on a schema property (field-level case unchanged)', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    Thing: {type: 'object', properties: {email: {type: 'string', 'x-klabis-owner-visible': true}}},
+                },
+            },
+        });
+        expect(errors).toEqual([]);
+    });
+
+    it('rejects x-klabis-owner-visible=false on a schema property', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    Thing: {type: 'object', properties: {email: {type: 'string', 'x-klabis-owner-visible': false}}},
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+    });
+});
