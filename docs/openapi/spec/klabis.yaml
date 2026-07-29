@@ -55,6 +55,15 @@ paths:
     $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions~1{txId}'
   /api/members/{memberId}/account/transactions/{txId}/reverse:
     $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions~1{txId}~1reverse'
+  /api/calendar-items:
+    $ref: './calendar.yaml#/paths/~1api~1calendar-items'
+  /api/calendar-items/{id}:
+    $ref: './calendar.yaml#/paths/~1api~1calendar-items~1{id}'
+  /api/me/ical-token:
+    $ref: './calendar.yaml#/paths/~1api~1me~1ical-token'
+  # Outside /api/ and not HAL: text/calendar feed authenticated by a ?token= query parameter.
+  /ical/my-schedule.ics:
+    $ref: './calendar.yaml#/paths/~1ical~1my-schedule.ics'
 
 components:
   securitySchemes:

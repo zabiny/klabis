@@ -464,3 +464,26 @@ openApiModule(
         "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page"
     )
 )
+openApiModule(
+    module = "calendar",
+    pkg = "com.klabis.calendar.infrastructure.restapi",
+    // "Calendar Feed" is deliberately absent: /ical/my-schedule.ics returns a raw RFC 5545 string
+    // rather than a DTO, sits outside /api/, and authenticates via a ?token= query parameter. An
+    // interface for it would generate nothing worth implementing against, so IcalFeedController
+    // stays hand-written. The spec still describes the endpoint.
+    apis = listOf("Calendar", "IcalToken"),
+    // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
+    models = listOf(
+        "CreateCalendarItemRequest",
+        "UpdateCalendarItemRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelCalendarItemDto" to "com.klabis.calendar.infrastructure.restapi.CalendarItemDto",
+        "EntityModelIcalTokenResponse" to "com.klabis.calendar.infrastructure.restapi.IcalTokenResponse",
+        // Collection, not List — see the event-types block above for why List is unusable here.
+        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection<com.klabis.calendar.infrastructure.restapi.CalendarItemDto>"
+    ),
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection"
+    )
+)
