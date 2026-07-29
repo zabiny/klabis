@@ -705,3 +705,46 @@ openApiModule(
         "EntityModelTrainingGroupResponse" to "org.springframework.hateoas.RepresentationModel"
     )
 )
+
+openApiModule(
+    module = "common",
+    pkg = "com.klabis.common.users.infrastructure.restapi",
+    // Root and Dashboard are deliberately absent from `apis`: rootNavigation and dashboard return
+    // EntityModel<RootModel>/EntityModel<DashboardModel> with no domain object at all — every link
+    // is added by per-module postprocessors — and each is the only operation on its tag, so
+    // RootController/DashboardController stay fully hand-written with no generated interface.
+    // See common.yaml header comment.
+    apis = listOf("MyProfile", "PasswordSetup", "Permissions"),
+    models = listOf(
+        "ChangePasswordRequest",
+        "ValidateTokenResponse",
+        "SetPasswordRequest",
+        "PasswordSetupResponse",
+        "TokenRequestRequest",
+        "TokenRequestResponse"
+    ),
+    mappings = mapOf(
+        "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
+        "UpdatePermissionsRequest" to "com.klabis.common.users.infrastructure.restapi.PermissionController.UpdatePermissionsRequest"
+    )
+)
+
+openApiModule(
+    module = "oris",
+    pkg = "com.klabis.oris",
+    // "OrisImport", not "ORIS": the generator's `apis` filter matches tags by substring, and
+    // events.yaml already owns "OrisEvents" — "ORIS" alone matches both tags and pulls
+    // OrisEventsApi's operations in here instead of/alongside this module's own. See oris.yaml
+    // header comment.
+    apis = listOf("OrisImport"),
+    // No real model to generate: OrisEventSummary is mapped below onto the hand-written record
+    // already on the controller. An empty `models` list is NOT safe here — like the `apis` global
+    // property, the generator's "models" property generates every schema in the bundled document
+    // when given an empty string, not none. A single nonexistent placeholder name keeps the
+    // "models" property non-empty (so the "generate everything" branch never triggers) while
+    // matching nothing, so only the interface (OrisImportApi) is produced.
+    models = listOf("_NoGeneratedModelsForOris"),
+    mappings = mapOf(
+        "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
+    )
+)

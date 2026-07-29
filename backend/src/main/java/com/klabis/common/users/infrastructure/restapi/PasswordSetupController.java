@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for password setup flow.
@@ -35,9 +36,9 @@ import org.springframework.web.bind.annotation.*;
  * </ul>
  */
 @RestController
-@Tag(name = "Password Setup", description = "Password setup and account activation API")
+@Tag(name = "PasswordSetup", description = "Password setup and account activation API")
 @PrimaryAdapter
-public class PasswordSetupController {
+public class PasswordSetupController implements PasswordSetupApi {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordSetupController.class);
 
@@ -56,15 +57,18 @@ public class PasswordSetupController {
      * @param token the plain text token from the email link
      * @return validation response with masked email and expiration time
      */
-    @GetMapping("/api/auth/password-setup/validate")
+    @Override
     @Operation(summary = "Validate password setup token", description = "Validates a token before showing the password setup form")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Token is valid", content = @Content(schema = @Schema(implementation = ValidateTokenResponse.class))),
     })
     @Parameter(name = "token", description = "The plain text token from the email link", required = true, example = "abc123def456")
-    public ResponseEntity<ValidateTokenResponse> validateToken(@RequestParam @NotBlank String token) {
+    public ResponseEntity<ValidateTokenResponse> validatePasswordSetupToken(String token) {
         PasswordSetupToken setupToken = passwordSetupService.validateToken(token);
-        return ResponseEntity.ok(new ValidateTokenResponse(true, setupToken.getExpiresAt()));
+        return ResponseEntity.ok(ValidateTokenResponseBuilder.builder()
+                .valid(true)
+                .expiresAt(setupToken.getExpiresAt())
+                .build());
     }
 
     /**
@@ -77,7 +81,7 @@ public class PasswordSetupController {
      * @param httpRequest the HTTP request (for IP address extraction)
      * @return success response with registration number
      */
-    @PostMapping("/api/auth/password-setup/complete")
+    @Override
     @Operation(summary = "Complete password setup", description = "Sets the user's password and activates the account")
     @ApiResponse(responseCode = "200", description = "Password set successfully")
     public ResponseEntity<PasswordSetupResponse> completePasswordSetup(
@@ -118,10 +122,10 @@ public class PasswordSetupController {
      * @param request the token request containing registration number and email
      * @return success message (generic response for security)
      */
-    @PostMapping("/api/auth/password-setup/request")
+    @Override
     @Operation(summary = "Request new password setup token", description = "Requests a new token if the previous one expired")
     @ApiResponse(responseCode = "200", description = "Request processed successfully")
-    public ResponseEntity<TokenRequestResponse> requestNewToken(@Valid @RequestBody TokenRequestRequest request) {
+    public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(@Valid @RequestBody TokenRequestRequest request) {
         passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
         return ResponseEntity.ok(new TokenRequestResponse(
                 "If your account is pending activation, you will receive an email with a new setup link."));

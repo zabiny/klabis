@@ -167,6 +167,22 @@ paths:
     $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers'
   /api/training-groups/{id}/trainers/{memberId}:
     $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers~1{memberId}'
+  /api:
+    $ref: './common.yaml#/paths/~1api'
+  /api/dashboard:
+    $ref: './common.yaml#/paths/~1api~1dashboard'
+  /api/me/password-change:
+    $ref: './common.yaml#/paths/~1api~1me~1password-change'
+  /api/auth/password-setup/validate:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1validate'
+  /api/auth/password-setup/complete:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1complete'
+  /api/auth/password-setup/request:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1request'
+  /api/users/{id}/permissions:
+    $ref: './common.yaml#/paths/~1api~1users~1{id}~1permissions'
+  /api/oris/events:
+    $ref: './oris.yaml#/paths/~1api~1oris~1events'
 
 components:
   securitySchemes:

@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+// Not implementing a generated *Api — same reason as RootController: EntityModel<DashboardModel>
+// carries no domain object. Documented in docs/openapi/spec/common.yaml but excluded from
+// openApiModule generation.
 @RestController
 @RequestMapping(value = "/api/dashboard", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
 @Tag(name = "Dashboard", description = "Dashboard widget link index")

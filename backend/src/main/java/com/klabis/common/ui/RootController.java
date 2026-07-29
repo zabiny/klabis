@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * API root resource for HAL+JSON navigation.
  */
+// Not implementing a generated *Api: rootNavigation returns EntityModel<RootModel> with no domain
+// object at all (RootModel is an empty marker record; every link is added externally by
+// per-module postprocessors), a shape HalResponseContext cannot route. Documented in
+// docs/openapi/spec/common.yaml but excluded from openApiModule generation. Keeps its own
+// @RequestMapping path since there is no generated interface to carry it.
 @RestController
 @RequestMapping(value = "/api", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
 @Tag(name = "Root", description = "API root navigation")
