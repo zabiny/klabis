@@ -148,6 +148,8 @@ paths:
       responses:
         '204':
           description: Event type updated
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -174,6 +176,8 @@ paths:
       responses:
         '204':
           description: Event type deleted
+          content:
+            application/prs.hal-forms+json: {}
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
