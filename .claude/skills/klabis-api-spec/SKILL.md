@@ -669,6 +669,17 @@ returns `true` unconditionally makes the test assert nothing.
 - Running `openapiDriftCheck` mid-migration: it boots the app and **rewrites** the
   `docs/openapi/klabis-full.json` it is supposed to only inspect, so a run leaves >1000 lines of
   regeneration noise staged. Verify with `md5sum`, and `git checkout` the file if it moved.
+- Choosing a tag that is a substring of another module's tag. The generator's `apis` filter matches
+  by substring, so registering `ORIS` also pulls in `OrisEvents`' operations from another module.
+  Pick tags that are not prefixes of one another (`OrisImport`, not `ORIS`).
+- Passing an empty `models` list to exclude all schemas. Like `apis`, an empty models property makes
+  the generator emit **every** schema in the bundled document, not none. Use a single nonexistent
+  placeholder name to keep the property non-empty while matching nothing.
+- Forgetting that a generated `*Api` interface is class-level `@Validated`. A constrained
+  `@RequestParam` is then rejected by AOP's `MethodValidationInterceptor` **before** MVC argument
+  resolution, throwing `ConstraintViolationException` rather than the
+  `HandlerMethodValidationException` the exception handler covers — a 500 where a 400 is intended.
+  No hand-written controller hits this, so it first appears when a module goes spec-first.
 - Assuming a generated record's constructor parameters follow the order you wrote them in the spec.
   The bundler **alphabetizes `properties` keys**, so a spec written `(minAge, maxAge)` generates
   `AgeRangeRequest(maxAge, minAge)`. Positional construction then silently swaps the values — it
