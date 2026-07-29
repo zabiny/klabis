@@ -44,11 +44,37 @@ directions. Consequences you have to work with:
   nothing about whether the spec is right.
 - Editing the spec does not change `klabis-full.json`, and vice versa. Neither is generated from the
   other.
+- **Controllers keep their springdoc annotations**, even for spec-first operations — see below.
+
+#### Why `@Operation` / `@ApiResponse` / `@Parameter` stay on the controller
+
+They duplicate `summary`, `description` and response descriptions that the spec already states, so
+they look like leftovers. They are not: springdoc reads annotations off the **concrete class**, and
+Java does not inherit method annotations from an interface. Deleting them compiles fine and silently
+guts `klabis-full.json` — `summary` and `description` become `null`, parameter descriptions vanish,
+and response descriptions degrade to a bare `"OK"`. Only `tags` and `operationId` survive, because
+those are derived from the class and method names.
+
+(This is the same inheritance gap `@HasAuthority` has. There we bridged it with
+`MethodSecurityAnnotations`; springdoc offers no equivalent hook and is not worth patching for a
+component being removed.)
+
+The generator's own `documentationProvider = "springdoc"` would emit these annotations onto the
+interface — richer than the hand-written ones, since it also carries the error-response descriptions.
+It does not work here: it renders `@Schema(implementation = …)` from `schemaMappings`, and our
+envelope mappings target *generic* types, producing `java.util.Collection<…EventTypeDto>.class` —
+not valid Java. Both migrated modules hit it (`Collection<T>` and `Page<T>` alike), so it is a direct
+conflict with how envelopes are mapped, not an edge case.
+
+So: leave them. They are the only thing keeping the published document usable, and they disappear
+with springdoc rather than before it.
 
 The end state is that `openapiBundle` takes over `klabis-full.json` and springdoc is removed. At that
 point the naming constraint disappears — schemas can be renamed freely (subject to the `_embedded`
-wire concern, which is a Spring HATEOAS property and outlives springdoc) — and `openapiDriftCheck`,
-whose whole job is comparing the two documents, becomes meaningless and goes away too.
+wire concern, which is a Spring HATEOAS property and outlives springdoc) — `openapiDriftCheck`, whose
+whole job is comparing the two documents, becomes meaningless and goes away, and the springdoc
+annotations come off the controllers in one mechanical pass, since the spec already carries every
+text they hold.
 
 ## Layout
 
@@ -485,6 +511,9 @@ Expect the springdoc output to be wrong in places (it does not know about `@Json
 - Mapping an envelope schema onto `java.util.List<...>`; the generator drops it silently
 - Writing `@HasAuthority` on a controller method — the authority belongs in `x-klabis-authority`,
   stated once
+- Stripping `@Operation` / `@ApiResponse` / `@Parameter` off a controller because "the spec already
+  says that" — springdoc cannot see them through the interface, and the published document loses its
+  summaries and descriptions
 - Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
