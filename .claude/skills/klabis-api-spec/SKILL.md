@@ -647,3 +647,25 @@ returns `true` unconditionally makes the test assert nothing.
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
   emit. Propose it, don't add it ad hoc — the bundler rejects unknown ones.
+- Naming a fresh top-level `enum:` schema and listing it in `models` — the generator writes a
+  well-formed Java file with no constants and no body, and every reference fails to compile. An
+  enum only works when `schemaMappings` points it at an existing domain enum. With no such enum,
+  use `type: string`; the domain's own `valueOf`/`switch` still rejects bad values.
+- Stripping `@RequestBody` off a generated-interface override because the interface already
+  declares it. `HalFormsSupport` looks for it on the *concrete* method resolved via
+  `methodOn(Controller.class)`, and Java does not inherit parameter annotations across an
+  interface boundary — unlike `@HasAuthority`, nothing bridges this. Binding and authorization
+  still work, so it compiles and passes; the inline options from `klabisAffordWith*Options`
+  silently vanish from `_templates` while `properties[]` and `target` stay correct.
+- Writing an ungated `RepresentationModelProcessor<CollectionModel<EntityModel<X>>>`. Unlike the
+  `EntityModel<T>` and `PagedModel<T>` variants, collection-level processors do **not** discriminate
+  by content type — they run for every `CollectionModel` response in the application and will
+  cross-contaminate unrelated endpoints' links. Gate on a request attribute or path variable; see
+  `EventRegistrationController.RegistrationListPostprocessor`.
+- Injecting a new port into an `@MvcComponent` postprocessor — the scan is global, not scoped to a
+  slice's `controllers=`, so every unrelated `@WebMvcTest` breaks unless `WithPostprocessors` also
+  mocks it. Compute port-derived data in the controller, which already holds the port, and pass it
+  through a request attribute.
+- Running `openapiDriftCheck` mid-migration: it boots the app and **rewrites** the
+  `docs/openapi/klabis-full.json` it is supposed to only inspect, so a run leaves >1000 lines of
+  regeneration noise staged. Verify with `md5sum`, and `git checkout` the file if it moved.
