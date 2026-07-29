@@ -558,3 +558,56 @@ openApiModule(
         "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection"
     )
 )
+
+openApiModule(
+    module = "membershipfees",
+    pkg = "com.klabis.membershipfees.infrastructure.restapi",
+    // getGroup (MembershipFeeGroups) is documented in membershipfees.yaml but deliberately absent
+    // from `models`/left unmapped, so MembershipFeeGroupsApi does not declare it and
+    // MembershipFeeGroupController keeps its hand-written method: it embeds a second,
+    // independently-shaped collection (group members) alongside the main payload via
+    // HalModelBuilder — HalResponseContext only supports a single domain object or a flat list.
+    // Same precedent as EventController's getEvent in the events module.
+    apis = listOf("MembershipFeeTiers", "FeeSelectionCampaigns", "MembershipFeeGroups", "MemberFeeChoice", "MemberFeeSummary"),
+    models = listOf(
+        "CreateMembershipFeeTierRequest",
+        "EditMembershipFeeTierRequest",
+        "PaymentRuleRequest",
+        "AddPaymentRuleRequest",
+        "EditPaymentRuleRequest",
+        "PublishYearRequest",
+        "ChangeDeadlineRequest",
+        "EditGroupSnapshotRequest",
+        "AdminAssignMemberRequest",
+        "ChooseFeeChoiceRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelMembershipFeeTierSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse",
+        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse>",
+        "EntityModelMembershipFeeTierResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse",
+        "EntityModelPaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
+        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse>",
+        "EntityModelFeeSelectionCampaignResponse" to "com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse",
+        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
+        "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
+        // getGroup is excluded from generation (see the note above `apis`), but it still rides the
+        // "MembershipFeeGroups" tag alongside operations that ARE generated, so the generator
+        // still emits a method for it on MembershipFeeGroupsApi and needs a return type. Mapped
+        // onto the exact hand-written return type so MembershipFeeGroupController's existing
+        // method satisfies the interface unchanged.
+        "EntityModelMembershipFeeGroupResponseWithMembers" to "org.springframework.hateoas.RepresentationModel<?>",
+        "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
+        "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
+        "EntityModelMemberFeeHistoryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeHistoryResponse"
+    ),
+    // The generic Collection<T>/RepresentationModel<?> mappings above carry type arguments that
+    // the import statement must not repeat.
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection",
+        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection",
+        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection",
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection",
+        "EntityModelMembershipFeeGroupResponseWithMembers" to "org.springframework.hateoas.RepresentationModel"
+    )
+)

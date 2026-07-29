@@ -90,6 +90,39 @@ paths:
   # Outside /api/ and not HAL: text/calendar feed authenticated by a ?token= query parameter.
   /ical/my-schedule.ics:
     $ref: './calendar.yaml#/paths/~1ical~1my-schedule.ics'
+  /api/membership-fee-tiers:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
+  /api/membership-fee-tiers/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}'
+  /api/membership-fee-tiers/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules'
+  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules~1{eventTypeId}~1{ranking}'
+  /api/fee-selection-campaigns:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns'
+  /api/fee-selection-campaigns/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}'
+  /api/fee-selection-campaigns/{id}/deadline:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1deadline'
+  /api/fee-selection-campaigns/{id}/close:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1close'
+  /api/fee-selection-campaigns/{year}/levels:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1levels'
+  /api/membership-fee-groups/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}'
+  /api/membership-fee-groups/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}~1rules'
+  /api/membership-fee-groups/{groupId}/members:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{groupId}~1members'
+  # /api/members/{memberId}/fee-choice* and /api/members/{memberId}/fee-summary,fee-history look
+  # like members paths but are served by the membershipfees module's controllers — registered
+  # here, not in members.yaml. See membershipfees.yaml header comment.
+  /api/members/{memberId}/fee-choice/{year}:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-choice~1{year}'
+  /api/members/{memberId}/fee-summary/{year}:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
+  /api/members/{memberId}/fee-history:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
 
 components:
   securitySchemes:
