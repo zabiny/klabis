@@ -1,6 +1,8 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.application.IcalTokenPort;
+import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,9 +13,8 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,10 +26,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/me/ical-token", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Calendar Feed Token", description = "iCalendar feed token management for the current user")
 @SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
-class IcalTokenController {
+class IcalTokenController implements IcalTokenApi {
 
     private final IcalTokenPort icalTokenPort;
     private final String baseUrl;
@@ -40,7 +41,6 @@ class IcalTokenController {
         this.baseUrl = baseUrl;
     }
 
-    @GetMapping
     @Operation(
             summary = "Get iCal feed token state",
             description = """
@@ -52,20 +52,15 @@ class IcalTokenController {
                     """
     )
     @ApiResponse(responseCode = "200", description = "Token state returned")
-    ResponseEntity<EntityModel<IcalTokenResponse>> getTokenState(@ActingUser UserId currentUserId) {
-        return icalTokenPort.getTokenState(currentUserId)
-                .map(state -> {
-                    String maskedUrl = buildMaskedSubscribeUrl(state.tokenLookup());
-                    IcalTokenResponse response = new IcalTokenResponse(maskedUrl, state.lastSetAt());
-                    return ResponseEntity.ok(buildModel(response));
-                })
-                .orElseGet(() -> {
-                    IcalTokenResponse response = new IcalTokenResponse(null, null);
-                    return ResponseEntity.ok(buildModel(response));
-                });
+    @Override
+    public ResponseEntity<IcalTokenResponse> getTokenState(@ActingUser UserId currentUserId) {
+        IcalTokenResponse response = icalTokenPort.getTokenState(currentUserId)
+                .map(state -> new IcalTokenResponse(buildMaskedSubscribeUrl(state.tokenLookup()), state.lastSetAt()))
+                .orElseGet(() -> new IcalTokenResponse(null, null));
+        HalResponseContext.setDomain(response);
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping
     @Operation(
             summary = "Generate or regenerate iCal feed token",
             description = """
@@ -76,21 +71,12 @@ class IcalTokenController {
                     """
     )
     @ApiResponse(responseCode = "200", description = "New token generated; full subscribe URL returned once")
-    ResponseEntity<EntityModel<IcalTokenResponse>> generateToken(@ActingUser UserId currentUserId) {
+    @Override
+    public ResponseEntity<IcalTokenResponse> generateToken(@ActingUser UserId currentUserId) {
         IcalTokenPort.GenerateResult result = icalTokenPort.generateOrRotate(currentUserId);
-        String fullUrl = buildSubscribeUrl(result.rawToken());
-        IcalTokenResponse response = new IcalTokenResponse(fullUrl, result.lastSetAt());
-        return ResponseEntity.ok(buildModel(response));
-    }
-
-    private EntityModel<IcalTokenResponse> buildModel(IcalTokenResponse response) {
-        EntityModel<IcalTokenResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
-                .ifPresent(link -> model.add(
-                        link.withSelfRel()
-                                .andAffordances(klabisAfford(methodOn(IcalTokenController.class).generateToken(null)))
-                ));
-        return model;
+        IcalTokenResponse response = new IcalTokenResponse(buildSubscribeUrl(result.rawToken()), result.lastSetAt());
+        HalResponseContext.setDomain(response);
+        return ResponseEntity.ok(response);
     }
 
     private String buildSubscribeUrl(String rawToken) {
@@ -106,3 +92,17 @@ class IcalTokenController {
 }
 
 record IcalTokenResponse(String url, Instant lastSetAt) {}
+
+@MvcComponent
+class IcalTokenResponsePostprocessor implements RepresentationModelProcessor<EntityModel<IcalTokenResponse>> {
+
+    @Override
+    public EntityModel<IcalTokenResponse> process(EntityModel<IcalTokenResponse> model) {
+        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
+                .ifPresent(link -> model.add(
+                        link.withSelfRel()
+                                .andAffordances(klabisAfford(methodOn(IcalTokenController.class).generateToken(null)))
+                ));
+        return model;
+    }
+}
