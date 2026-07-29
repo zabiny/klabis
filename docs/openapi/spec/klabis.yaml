@@ -43,6 +43,18 @@ paths:
     $ref: './event-types.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
     $ref: './event-types.yaml#/paths/~1api~1event-types~1{id}'
+  # /api/members/{memberId}/account* looks like a members path but is served by the finance
+  # module's controller — registered here, not in members.yaml. See finance.yaml header comment.
+  /api/members/{memberId}/account:
+    $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account'
+  /api/members/{memberId}/account/transactions:
+    $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions'
+  /api/members/{memberId}/account/transactions/charge:
+    $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions~1charge'
+  /api/members/{memberId}/account/transactions/{txId}:
+    $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions~1{txId}'
+  /api/members/{memberId}/account/transactions/{txId}/reverse:
+    $ref: './finance.yaml#/paths/~1api~1members~1{memberId}~1account~1transactions~1{txId}~1reverse'
 
 components:
   securitySchemes:

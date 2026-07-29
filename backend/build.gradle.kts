@@ -442,3 +442,25 @@ openApiModule(
         "CollectionModelEntityModelEventTypeDto" to "java.util.Collection"
     )
 )
+
+openApiModule(
+    module = "finance",
+    pkg = "com.klabis.finance.infrastructure.restapi",
+    apis = listOf("Finance"),
+    // MemberAccountResource/TransactionResource are hand-written (mapper logic onto Money/Transaction
+    // domain types) and stay that way — only the request DTOs are generated fresh.
+    models = listOf(
+        "DepositRequest",
+        "ChargeRequest",
+        "ReverseRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelMemberAccountResource" to "com.klabis.finance.infrastructure.restapi.MemberAccountResource",
+        "EntityModelTransactionResource" to "com.klabis.finance.infrastructure.restapi.TransactionResource",
+        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
+    ),
+    // The generic Page<T> mapping above carries type arguments that the import must not repeat.
+    extraImportMappings = mapOf(
+        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page"
+    )
+)
