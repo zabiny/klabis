@@ -43,6 +43,32 @@ paths:
     $ref: './event-types.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
     $ref: './event-types.yaml#/paths/~1api~1event-types~1{id}'
+  /api/events:
+    $ref: './events.yaml#/paths/~1api~1events'
+  /api/events/{id}:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}'
+  /api/events/{id}/publish:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1publish'
+  /api/events/{id}/cancel:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1cancel'
+  /api/events/{eventId}/accommodation-list:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1accommodation-list'
+  /api/events/import:
+    $ref: './events.yaml#/paths/~1api~1events~1import'
+  /api/events/{id}/sync-from-oris:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1sync-from-oris'
+  /api/events/sync-from-oris/all-upcoming:
+    $ref: './events.yaml#/paths/~1api~1events~1sync-from-oris~1all-upcoming'
+  /api/events/import-batch:
+    $ref: './events.yaml#/paths/~1api~1events~1import-batch'
+  /api/events/{eventId}/registrations:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1registrations'
+  /api/events/{eventId}/registrations/{memberId}:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1registrations~1{memberId}'
+  /api/category-presets:
+    $ref: './events.yaml#/paths/~1api~1category-presets'
+  /api/category-presets/{id}:
+    $ref: './events.yaml#/paths/~1api~1category-presets~1{id}'
   # /api/members/{memberId}/account* looks like a members path but is served by the finance
   # module's controller — registered here, not in members.yaml. See finance.yaml header comment.
   /api/members/{memberId}/account:

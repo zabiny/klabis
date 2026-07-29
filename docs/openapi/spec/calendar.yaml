@@ -158,9 +158,7 @@ paths:
                 This calendar item. Event-linked items carry no update/delete affordances since
                 they are read-only.
             event:
-              # No `operation:` yet — it points at getEvent in the events module, which is still
-              # code-first, so the bundler cannot resolve the operationId. Add
-              # `operation: getEvent` when events.yaml lands.
+              operation: getEvent
               description: Present only for event-linked items — the event this item is derived from
             collection:
               operation: listCalendarItems

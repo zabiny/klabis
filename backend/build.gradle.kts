@@ -465,6 +465,77 @@ openApiModule(
     )
 )
 openApiModule(
+    module = "events",
+    pkg = "com.klabis.events.infrastructure.restapi",
+    // OrisEvents is its own tag (not "Events") so it gets its own generated interface even though
+    // OrisEventController shares the /api/events URL prefix with EventController — see
+    // klabis-api-spec skill: "one *Api interface per tag" and events.yaml header comment.
+    // "EventRegistrations" replaces the original multi-word @Tag "Event Registrations", which the
+    // generator silently drops.
+    //
+    // getEvent (EventController) and getAccommodationList/getAccommodationListAsCsv are documented
+    // in events.yaml but deliberately absent from `models`/left unmapped, so EventsApi does not
+    // declare them and EventController keeps its hand-written methods for them:
+    //   - getEvent embeds a second, independently-shaped collection (registrations) alongside the
+    //     main payload via HalModelBuilder — HalResponseContext only supports a single domain
+    //     object or a flat list, so there is no envelope this generator setup can redirect onto the
+    //     existing response without changing runtime behaviour.
+    //   - the accommodation-list path answers with two produces variants (HAL JSON and text/csv) on
+    //     one operation; the generator emits ONE Java method (getAccommodationList) whose inherited
+    //     produces lists both content types. The hand-written getAccommodationList (JSON) DOES
+    //     implement that generated method — its own @GetMapping narrows produces down to the HAL
+    //     variant, because Spring refuses to dispatch when getAccommodationList and the separate
+    //     hand-written getAccommodationListAsCsv (text/csv) both claim to serve text/csv
+    //     ("Ambiguous handler methods"). getAccommodationListAsCsv itself has no interface
+    //     counterpart — see the comment on that method in EventController.
+    // Same precedent as IcalFeedController in the calendar module.
+    apis = listOf("Events", "OrisEvents", "EventRegistrations", "CategoryPresets"),
+    models = listOf(
+        "ImportCommand",
+        "ImportBatchRequest",
+        "RegisterEventRequest",
+        "EditRegistrationRequest",
+        "CreateCategoryPresetRequest",
+        "UpdateCategoryPresetRequest"
+    ),
+    mappings = mapOf(
+        // CreateEventRequest/UpdateEventRequest stay hand-written — see the comment above
+        // CreateEventRequest in events.yaml for why (cross-field @AssertTrue validation on create,
+        // PatchField<T> wrappers on update — neither is representable purely in OpenAPI).
+        "CreateEventRequest" to "com.klabis.events.infrastructure.restapi.CreateEventRequest",
+        "UpdateEventRequest" to "com.klabis.events.infrastructure.restapi.UpdateEventRequest",
+        "EventStatus" to "com.klabis.events.domain.EventStatus",
+        "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
+        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
+        // getEvent and getAccommodationList are excluded from generation (see events.yaml comments
+        // on those two operations and the note above `apis` here), but both still ride the "Events"
+        // tag alongside operations that ARE generated, so the generator still emits their methods
+        // on EventsApi and needs a return type for each. Mapped onto the exact hand-written return
+        // types so EventController's existing methods satisfy the interface unchanged.
+        "EntityModelEventDtoWithRegistrations" to "org.springframework.hateoas.RepresentationModel<?>",
+        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
+        "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
+        "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
+        "EntityModelRegistrationDto" to "com.klabis.events.infrastructure.restapi.RegistrationDto",
+        // Collection, not List: "List" is a reserved container name in the generator's type system,
+        // and a schemaMapping onto it is dropped silently — the method then generates as
+        // `ResponseEntity<>`, which fails to compile.
+        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.RegistrationSummaryDto>",
+        "EntityModelCategoryPresetDto" to "com.klabis.events.infrastructure.restapi.CategoryPresetDto",
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>"
+    ),
+    // The generic Page<T>/Collection<T>/CollectionModel<T> mappings above carry type arguments that
+    // the import statement must not repeat.
+    extraImportMappings = mapOf(
+        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
+        "EntityModelEventDtoWithRegistrations" to "org.springframework.hateoas.RepresentationModel",
+        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel",
+        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
+    )
+)
+
+openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
     // "Calendar Feed" is deliberately absent: /ical/my-schedule.ics returns a raw RFC 5545 string

@@ -5,6 +5,7 @@ import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalForms;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
@@ -61,17 +62,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * All mutation operations require EVENTS:MANAGE authority.
  */
 @RestController
-@RequestMapping(value = "/api/events", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Events", description = "Event management API")
 @PrimaryAdapter
 @ExposesResourceFor(Event.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
-public class EventController {
+public class EventController implements EventsApi {
 
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
-    private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
     private final boolean orisIntegrationActive;
     private final EventDetailsPostprocessor eventDetailsPostprocessor;
     private final AccommodationListCsvRenderer csvRenderer;
@@ -80,29 +80,26 @@ public class EventController {
             EventManagementPort eventManagementService,
             EventRegistrationPort eventRegistrationService,
             Members members,
-            PagedResourcesAssembler<Event> pagedResourcesAssembler,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             EventDetailsPostprocessor eventDetailsPostprocessor,
             AccommodationListCsvRenderer csvRenderer) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
-        this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.orisIntegrationActive = orisEventImportPort.isPresent();
         this.eventDetailsPostprocessor = eventDetailsPostprocessor;
         this.csvRenderer = csvRenderer;
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Create a new event",
             description = "Creates a new event in DRAFT status. Returns Location header pointing to the created resource."
     )
     @ApiResponse(responseCode = "201", description = "Event successfully created")
+    @Override
     public ResponseEntity<Void> createEvent(
             @Parameter(description = "Event creation data")
-            @Valid @RequestBody CreateEventRequest request) {
+            @RequestBody CreateEventRequest request) {
 
         Event.CreateEvent command = new Event.CreateEvent(
                 request.name(),
@@ -122,15 +119,15 @@ public class EventController {
                 .build();
     }
 
-    @PatchMapping(value = "/{id}", consumes = "application/json")
     @Operation(
             summary = "Update an event",
             description = "Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields may be provided; absent fields are left unchanged."
     )
     @ApiResponse(responseCode = "204", description = "Event successfully updated")
+    @Override
     public ResponseEntity<Void> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventRequest request) {
+            @Parameter(description = "Event update data") @RequestBody UpdateEventRequest request) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventId eventId = new EventId(id);
@@ -145,14 +142,13 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}")
-    @HasAuthority(Authority.EVENTS_READ)
     @Operation(
             summary = "Get event by ID",
             description = "Retrieves detailed event information by ID. " +
                           "Returns HATEOAS links based on event status and includes embedded registrations."
     )
     @ApiResponse(responseCode = "200", description = "Event found")
+    @Override
     public ResponseEntity<RepresentationModel<?>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
@@ -182,8 +178,6 @@ public class EventController {
         return RegistrationDtoMapper.toDtoList(registrations, members, event);
     }
 
-    @GetMapping
-    @HasAuthority(Authority.EVENTS_READ)
     @Operation(
             summary = "List events with pagination and filtering",
             description = """
@@ -194,62 +188,47 @@ public class EventController {
                     """
     )
     @ApiResponse(responseCode = "200", description = "Paginated list of events retrieved successfully")
-    public ResponseEntity<PagedModel<EntityModel<EventSummaryDto>>> listEvents(
+    @Override
+    public ResponseEntity<Page<EventSummaryDto>> listEvents(
             @Parameter(description = "Filter by event status (optional)")
-            @RequestParam(required = false) EventStatus status,
+            EventStatus status,
             @Parameter(description = "Fulltext search on event name and location (optional)")
-            @RequestParam(required = false) String q,
+            String q,
             @Parameter(description = "Filter by organizer code (optional)")
-            @RequestParam(required = false) String organizer,
+            String organizer,
             @Parameter(description = "Filter by coordinator member UUID (optional)")
-            @RequestParam(required = false) UUID coordinator,
+            UUID coordinator,
             @Parameter(description = "Filter by registration: only 'me' is currently accepted (optional)")
-            @RequestParam(required = false) String registeredBy,
+            String registeredBy,
             @Parameter(description = "Filter events from this date (inclusive, yyyy-MM-dd, optional)")
-            @RequestParam(required = false) LocalDate dateFrom,
+            LocalDate dateFrom,
             @Parameter(description = "Filter events up to this date (inclusive, yyyy-MM-dd, optional)")
-            @RequestParam(required = false) LocalDate dateTo,
+            LocalDate dateTo,
             @Parameter(description = "Return events whose nearest future registration deadline falls within [today, today+period] (ISO-8601 duration, e.g. P7D, optional)")
-            @RequestParam(required = false) Period deadlineWithin,
+            String deadlineWithin,
             @Parameter(description = "Exclude events where the given member is registered: only 'me' is currently accepted (optional)")
-            @RequestParam(required = false) String notRegisteredBy,
+            String notRegisteredBy,
             @Parameter(description = "Filter by event type UUID (multi-value: ?eventTypeId=x&eventTypeId=y, optional)")
-            @RequestParam(required = false) List<UUID> eventTypeId,
+            List<UUID> eventTypeId,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
+        Period deadlinePeriod = deadlineWithin != null ? Period.parse(deadlineWithin) : null;
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, eventTypeId, currentUser);
+        EventFilter filter = buildFilter(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlinePeriod, notRegisteredBy, eventTypeId, currentUser);
         if (filter == null) {
-            return ResponseEntity.ok(pagedResourcesAssembler.toModel(
-                    new PageImpl<>(List.of(), pageable, 0),
-                    event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
-            ));
+            Page<Event> empty = new PageImpl<>(List.of(), pageable, 0);
+            HalResponseContext.setDomainList(List.of());
+            return ResponseEntity.ok(empty.map(EventDtoMapper::toSummaryDto));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
-        PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
-                page,
-                event -> entityModelWithDomain(EventDtoMapper.toSummaryDto(event), event)
-        );
-
-        boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
-
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, q, organizer, coordinator, registeredBy, dateFrom, dateTo, deadlineWithin, notRegisteredBy, eventTypeId, pageable, null)).ifPresent(link -> {
-            Link selfLink = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
-            if (orisIntegrationActive && hasManageAuthority) {
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEventsBatch(null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
-            }
-            pagedModel.add(selfLink);
-        });
-
-        return ResponseEntity.ok(pagedModel);
+        HalResponseContext.setDomainList(page.getContent());
+        return ResponseEntity.ok(page.map(EventDtoMapper::toSummaryDto));
     }
 
     /**
@@ -350,13 +329,12 @@ public class EventController {
         }
     }
 
-    @PostMapping("/{id}/publish")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Publish an event",
             description = "Transitions event from DRAFT to ACTIVE status."
     )
     @ApiResponse(responseCode = "204", description = "Event published successfully")
+    @Override
     public ResponseEntity<Void> publishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
@@ -364,17 +342,16 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/cancel")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Cancel an event",
             description = "Transitions event to CANCELLED status. An optional cancellation reason may be provided."
     )
     @ApiResponse(responseCode = "204", description = "Event cancelled successfully")
+    @Override
     public ResponseEntity<Void> cancelEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @Parameter(description = "Optional cancellation details")
-            @Valid @RequestBody(required = false) CancelEventRequest request) {
+            @RequestBody(required = false) CancelEventRequest request) {
 
         Event.CancelEvent command = request != null
                 ? new Event.CancelEvent(request.cancellationReason())
@@ -383,7 +360,6 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{eventId}/accommodation-list")
     @Operation(
             summary = "Get accommodation list for an event",
             description = """
@@ -394,6 +370,13 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "Accommodation list retrieved successfully")
     @ApiResponse(responseCode = "403", description = "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS")
+    // Narrows the interface's inherited produces (which lists text/csv too, for documentation
+    // purposes — see events.yaml) down to the HAL variant only. Without this, Spring sees two
+    // handler methods both willing to serve text/csv (this one via the inherited mapping, plus
+    // getAccommodationListAsCsv below) and refuses to dispatch — IllegalStateException: Ambiguous
+    // handler methods.
+    @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
+    @Override
     public ResponseEntity<CollectionModel<AccommodationListItemDto>> getAccommodationList(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
@@ -408,7 +391,7 @@ public class EventController {
         return ResponseEntity.ok(collectionModel);
     }
 
-    @GetMapping(value = "/{eventId}/accommodation-list", produces = "text/csv")
+    @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
     @Operation(
             summary = "Download accommodation list for an event as CSV",
             description = """
@@ -680,6 +663,38 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+    }
+}
+
+/**
+ * Adds the collection-level affordances (create, and — when ORIS integration is active and the
+ * caller has EVENTS:MANAGE — the three ORIS import/sync operations). The self link itself is built
+ * by {@code HalResponseBodyAdvice} from the current request.
+ */
+@MvcComponent
+class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<EventSummaryDto>>> {
+
+    private final boolean orisIntegrationActive;
+
+    EventListPostprocessor(Optional<OrisEventImportPort> orisEventImportPort) {
+        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    }
+
+    @Override
+    public PagedModel<EntityModel<EventSummaryDto>> process(PagedModel<EntityModel<EventSummaryDto>> model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
+
+        model.mapLink(IanaLinkRelations.SELF, selfLink -> {
+            Link link = (Link) selfLink.andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
+            if (orisIntegrationActive && hasManageAuthority) {
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEventsBatch(null)));
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
+            }
+            return link;
+        });
+        return model;
     }
 }
 
