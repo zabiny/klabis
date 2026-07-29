@@ -123,6 +123,50 @@ paths:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
   /api/members/{memberId}/fee-history:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
+  /api/family-groups:
+    $ref: './groups.yaml#/paths/~1api~1family-groups'
+  /api/family-groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}'
+  /api/family-groups/{id}/parents:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents'
+  /api/family-groups/{id}/parents/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{memberId}'
+  /api/family-groups/{id}/children:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children'
+  /api/family-groups/{id}/children/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children~1{memberId}'
+  /api/groups:
+    $ref: './groups.yaml#/paths/~1api~1groups'
+  /api/groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}'
+  /api/groups/{id}/members/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1members~1{memberId}'
+  /api/groups/{id}/owners:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1owners'
+  /api/groups/{id}/owners/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1owners~1{memberId}'
+  /api/groups/{id}/invitations:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations'
+  /api/groups/{id}/invitations/{invitationId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}'
+  /api/groups/{id}/invitations/{invitationId}/accept:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}~1accept'
+  /api/groups/{id}/invitations/{invitationId}/reject:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}~1reject'
+  /api/invitations/pending:
+    $ref: './groups.yaml#/paths/~1api~1invitations~1pending'
+  /api/training-groups:
+    $ref: './groups.yaml#/paths/~1api~1training-groups'
+  /api/training-groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}'
+  /api/training-groups/{id}/members:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1members'
+  /api/training-groups/{id}/members/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1members~1{memberId}'
+  /api/training-groups/{id}/trainers:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers'
+  /api/training-groups/{id}/trainers/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers~1{memberId}'
 
 components:
   securitySchemes:

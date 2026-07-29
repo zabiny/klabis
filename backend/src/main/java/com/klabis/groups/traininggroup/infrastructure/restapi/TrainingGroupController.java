@@ -2,10 +2,10 @@ package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
@@ -16,20 +16,19 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberController;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,11 +40,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/training-groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "TrainingGroups", description = "Training group management API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
 @ExposesResourceFor(TrainingGroup.class)
-class TrainingGroupController {
+class TrainingGroupController implements TrainingGroupsApi {
 
     private final TrainingGroupManagementPort trainingGroupManagementService;
 
@@ -53,11 +52,8 @@ class TrainingGroupController {
         this.trainingGroupManagementService = trainingGroupManagementService;
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Create a training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> createTrainingGroup(
-            @Valid @RequestBody CreateTrainingGroupRequest request) {
+    @Override
+    public ResponseEntity<Void> createTrainingGroup(@RequestBody CreateTrainingGroupRequest request) {
 
         AgeRange ageRange = new AgeRange(request.minAge(), request.maxAge());
         TrainingGroup.CreateTrainingGroup command = new TrainingGroup.CreateTrainingGroup(
@@ -69,28 +65,22 @@ class TrainingGroupController {
         ).build();
     }
 
-    @GetMapping
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "List all training groups (requires GROUPS:TRAINING)")
-    ResponseEntity<CollectionModel<EntityModel<TrainingGroupSummaryResponse>>> listTrainingGroups() {
+    @Override
+    public ResponseEntity<Collection<TrainingGroupSummaryResponse>> listTrainingGroups() {
 
         List<TrainingGroup> groups = trainingGroupManagementService.listTrainingGroups();
-        List<EntityModel<TrainingGroupSummaryResponse>> items = groups.stream()
-                .map(this::buildTrainingGroupSummaryModel)
-                .toList();
 
-        CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).createTrainingGroup(null)))));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomainList(groups);
+        return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get training group details")
-    ResponseEntity<EntityModel<TrainingGroupResponse>> getTrainingGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
+    // Excluded from generation — see groups.yaml header comment and the comment on this operation
+    // there: the response embeds trainers/members as arrays of independently link-carrying items,
+    // a shape HalResponseContext cannot reproduce. Kept hand-written, same precedent as
+    // EventController.getEvent / MembershipFeeGroupController.getGroup.
+    @Override
+    public ResponseEntity<RepresentationModel<?>> getTrainingGroup(
+            UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
@@ -132,12 +122,8 @@ class TrainingGroupController {
                 group.getId(), group.getName(), null, trainerModels, null);
     }
 
-    @PatchMapping(value = "/{id}", consumes = "application/json")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Update a training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> updateTrainingGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody UpdateTrainingGroupRequest request) {
+    @Override
+    public ResponseEntity<Void> updateTrainingGroup(UUID id, @RequestBody UpdateTrainingGroupRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
@@ -149,35 +135,24 @@ class TrainingGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Delete a training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> deleteTrainingGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id) {
+    @Override
+    public ResponseEntity<Void> deleteTrainingGroup(UUID id) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.deleteTrainingGroup(groupId);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/members", consumes = "application/json")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Add a member to training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> addTrainingGroupMember(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request) {
+    @Override
+    public ResponseEntity<Void> addTrainingGroupMember(UUID id, @RequestBody TrainingGroupAddMemberRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
-        trainingGroupManagementService.addMemberToTrainingGroup(groupId, request.toMemberId());
+        trainingGroupManagementService.addMemberToTrainingGroup(groupId, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/members/{memberId}")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Remove a member from training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> removeTrainingGroupMember(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId) {
+    @Override
+    public ResponseEntity<Void> removeTrainingGroupMember(UUID id, UUID memberId) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         MemberId memberToRemove = new MemberId(memberId);
@@ -185,40 +160,27 @@ class TrainingGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/trainers", consumes = "application/json")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Add a trainer to training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> addTrainer(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddTrainerRequest request) {
+    @Override
+    public ResponseEntity<Void> addTrainer(UUID id, @RequestBody AddTrainerRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.addTrainer(groupId, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/trainers/{memberId}")
-    @HasAuthority(Authority.GROUPS_TRAINING)
-    @Operation(summary = "Remove a trainer from training group (requires GROUPS:TRAINING)")
-    ResponseEntity<Void> removeTrainer(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Trainer member UUID") @PathVariable UUID memberId) {
+    @Override
+    public ResponseEntity<Void> removeTrainer(UUID id, UUID memberId) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.removeTrainer(groupId, new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 
-    private EntityModel<TrainingGroupSummaryResponse> buildTrainingGroupSummaryModel(TrainingGroup group) {
-        UUID groupId = group.getId().uuid();
-        TrainingGroupSummaryResponse response = new TrainingGroupSummaryResponse(
+    private TrainingGroupSummaryResponse toSummaryResponse(TrainingGroup group) {
+        return new TrainingGroupSummaryResponse(
                 group.getId(), group.getName(),
                 group.getAgeRange().minAge(), group.getAgeRange().maxAge(),
                 group.getMembers().size());
-        EntityModel<TrainingGroupSummaryResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(groupId, null))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-        return model;
     }
 
     private TrainingGroupResponse toTrainingGroupResponse(TrainingGroup group, UUID groupUuid, boolean hasTrainingAuthority) {
@@ -296,6 +258,32 @@ class TrainingGroupsRootPostprocessor implements RepresentationModelProcessor<En
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
                 .ifPresent(link -> model.add(link.withRel("training-groups")));
+        return model;
+    }
+}
+
+@MvcComponent
+class TrainingGroupSummaryPostprocessor extends ModelWithDomainPostprocessor<TrainingGroupSummaryResponse, TrainingGroup> {
+
+    @Override
+    public void process(EntityModel<TrainingGroupSummaryResponse> dtoModel, TrainingGroup group) {
+        UUID id = group.getId().uuid();
+        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(id, null))
+                .ifPresent(link -> dtoModel.add(link.withSelfRel()));
+    }
+}
+
+// The self link itself is built by HalResponseBodyAdvice from the current request; this processor
+// only contributes the create affordance, which stays authorization-sensitive via klabisAfford.
+@MvcComponent
+class TrainingGroupListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<TrainingGroupSummaryResponse>>> {
+
+    @Override
+    public CollectionModel<EntityModel<TrainingGroupSummaryResponse>> process(
+            CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model) {
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
+                .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).createTrainingGroup(null))));
         return model;
     }
 }

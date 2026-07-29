@@ -669,3 +669,8 @@ returns `true` unconditionally makes the test assert nothing.
 - Running `openapiDriftCheck` mid-migration: it boots the app and **rewrites** the
   `docs/openapi/klabis-full.json` it is supposed to only inspect, so a run leaves >1000 lines of
   regeneration noise staged. Verify with `md5sum`, and `git checkout` the file if it moved.
+- Assuming a generated record's constructor parameters follow the order you wrote them in the spec.
+  The bundler **alphabetizes `properties` keys**, so a spec written `(minAge, maxAge)` generates
+  `AgeRangeRequest(maxAge, minAge)`. Positional construction then silently swaps the values — it
+  compiles and only fails on an assertion, if one happens to cover it. Construct generated records
+  via their `RecordBuilder`, never positionally.
