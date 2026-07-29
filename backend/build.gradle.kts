@@ -538,11 +538,7 @@ openApiModule(
 openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
-    // "Calendar Feed" is deliberately absent: /ical/my-schedule.ics returns a raw RFC 5545 string
-    // rather than a DTO, sits outside /api/, and authenticates via a ?token= query parameter. An
-    // interface for it would generate nothing worth implementing against, so IcalFeedController
-    // stays hand-written. The spec still describes the endpoint.
-    apis = listOf("Calendar", "IcalToken"),
+    apis = listOf("Calendar", "IcalToken", "IcalFeed"),
     // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
     models = listOf(
         "CreateCalendarItemRequest",
@@ -709,12 +705,7 @@ openApiModule(
 openApiModule(
     module = "common",
     pkg = "com.klabis.common.users.infrastructure.restapi",
-    // Root and Dashboard are deliberately absent from `apis`: rootNavigation and dashboard return
-    // EntityModel<RootModel>/EntityModel<DashboardModel> with no domain object at all — every link
-    // is added by per-module postprocessors — and each is the only operation on its tag, so
-    // RootController/DashboardController stay fully hand-written with no generated interface.
-    // See common.yaml header comment.
-    apis = listOf("MyProfile", "PasswordSetup", "Permissions"),
+    apis = listOf("MyProfile", "PasswordSetup", "Permissions", "Root", "Dashboard"),
     models = listOf(
         "ChangePasswordRequest",
         "ValidateTokenResponse",
@@ -725,7 +716,18 @@ openApiModule(
     ),
     mappings = mapOf(
         "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        "UpdatePermissionsRequest" to "com.klabis.common.users.infrastructure.restapi.PermissionController.UpdatePermissionsRequest"
+        "UpdatePermissionsRequest" to "com.klabis.common.users.infrastructure.restapi.PermissionController.UpdatePermissionsRequest",
+        // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
+        // other migrated module: the generated interface returns the plain RootModel/DashboardModel
+        // marker record, and the controller populates HalResponseContext.setDomain(...) with a
+        // non-null placeholder so HalResponseBodyAdvice.wrapSingle() wraps it into
+        // EntityModelWithDomain<RootModel, String> (which extends EntityModel<RootModel>) and runs it
+        // through the postprocessor pipeline. The nine RepresentationModelProcessor<EntityModel<RootModel>>
+        // beans (plus the DashboardModel one) are typed on the CONTENT (EntityModel<RootModel>), not
+        // on the domain type parameter, so they still bind correctly. See RootController/
+        // DashboardController for the actual setDomain(...) call and value chosen.
+        "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
+        "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
     )
 )
 

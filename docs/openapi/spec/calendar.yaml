@@ -336,29 +336,22 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
-  # getMySchedule is documented here for completeness but NOT wired into openApiModule/codegen — see
-  # klabis-api-spec skill's "Registering a module for codegen" and IcalFeedController itself.
-  #
-  # Reasons this endpoint stays hand-written:
+  # getMySchedule IS wired into openApiModule/codegen (IcalFeedApi, tag IcalFeed) even though it
+  # returns a raw RFC 5545 string rather than a HAL envelope — a String/text/calendar response is
+  # no less legitimate a codegen target than a DTO one; ResponseEntity<String> is exactly what
+  # IcalFeedController already returns. What stays different from every other operation:
   #   - it lives outside /api/, which every other spec-first path assumes
-  #   - it returns a raw RFC 5545 string (`text/calendar`), never wrapped in HAL — there is no
-  #     EntityModel/CollectionModel envelope to reference, so the "response must reference the
-  #     envelope" rule this skill otherwise enforces does not apply here
-  #   - the generator's schemaMappings mechanism exists to redirect envelope schemas onto existing
-  #     Java types; a bare `type: string` response body has no envelope to redirect, and mapping a
-  #     *response* schema (rather than a request/model schema) is not a capability
-  #     openApiModule's models/mappings options provide
-  #   - authentication is a raw `?token=` PAT, not the bearer-token security scheme every other
-  #     operation declares — modeling it as `security` here would misrepresent how the codegen
-  #     interface actually enforces it (it doesn't; IcalFeedController resolves the principal itself
-  #     from SecurityContextHolder)
+  #   - no x-klabis-authority / security scheme: authentication is a raw `?token=` PAT checked by
+  #     IcalTokenAuthenticationFilter (see WebSecurityCommonConfiguration), not a bearer JWT — the
+  #     token parameter below stays a plain @RequestParam with no x-klabis-authority, since the
+  #     authorization decision is made from the token's value, not from a caller identity/role
   # Verified HalResponseBodyAdvice.isHalMediaType(selectedContentType) returns false for
   # "text/calendar", so the advice clears HalResponseContext and passes the ResponseEntity<String>
   # body through untouched — consistent with this endpoint never populating HalResponseContext at all.
   /ical/my-schedule.ics:
     get:
       operationId: getMySchedule
-      tags: [Calendar Feed]
+      tags: [IcalFeed]
       summary: Personal schedule iCalendar feed
       description: |
         Returns an iCalendar (RFC 5545) feed for the authenticated user's personal schedule.

@@ -1,12 +1,16 @@
 # Common module — RootController, DashboardController, PasswordChangeController,
 # PasswordSetupController, PermissionController.
 #
-# rootNavigation and dashboard are documented here but excluded from openApiModule generation:
-# both return EntityModel<RootModel>/EntityModel<DashboardModel> with NO domain aggregate at all —
-# RootModel/DashboardModel are empty marker records, and every link is added externally by
-# per-module postprocessors (klabisLinkTo(...).ifPresent(...)). HalResponseContext routes a
-# controller-supplied domain object into the envelope (setDomain/setDomainList); there is no
-# domain object here to route. See the comment on each operation below.
+# rootNavigation and dashboard generate RootApi/DashboardApi interfaces following the standard
+# "returning plain payloads" pattern (see klabis-api-spec skill): the envelope schemas
+# (EntityModelRootModel/EntityModelDashboardModel) are mapped (schemaMappings, build.gradle.kts)
+# onto the plain RootModel/DashboardModel payload records, not onto EntityModel<...>. Both types
+# are empty markers with NO domain aggregate — the controller populates HalResponseContext with a
+# non-null placeholder String anyway, since HalResponseBodyAdvice.wrapSingle() only wraps a payload
+# into EntityModelWithDomain when the stored domain is non-null. Every link (including what used to
+# be added inline in the controller) is added externally by per-module
+# RepresentationModelProcessor<EntityModel<RootModel>>/<EntityModel<DashboardModel>> beans — see
+# RootController/DashboardController for the in-module ones.
 #
 # PasswordSetupController's three operations, and OrisController's one operation in oris.yaml, are
 # plain JSON — not HAL+FORMS. PasswordChangeController returns no body at all. Content types below
@@ -30,11 +34,11 @@ paths:
       security:
         - KlabisAuth: [openid]
       # No x-klabis-authority: any authenticated (or anonymous, per WebSecurityCommonConfiguration
-      # /api/** .authenticated()) caller reaches this. The "admin" link added inline in the
-      # controller for a hardcoded username is link-level filtering, not endpoint authorization —
-      # it is not expressible as x-klabis-authority and stays in the controller as-is.
-      # Excluded from openApiModule generation: EntityModel<RootModel> carries no domain object,
-      # see module header comment.
+      # /api/** .authenticated()) caller reaches this. The "admin" link for a hardcoded username is
+      # link-level filtering, not endpoint authorization — it is not expressible as
+      # x-klabis-authority; it now lives in RootAdminLinkProcessor (moved out of the controller
+      # since rootNavigation() returns a plain RootModel with no EntityModel to attach a link to).
+      # EntityModelRootModel is mapped onto the plain RootModel payload, see module header comment.
       responses:
         '200':
           description: API root resource
@@ -72,8 +76,9 @@ paths:
       security:
         - KlabisAuth: [openid]
       # No x-klabis-authority: authenticated callers only (per /api/** .authenticated()); no
-      # per-caller authority check in the controller. Excluded from openApiModule generation —
-      # same reason as rootNavigation above.
+      # per-caller authority check in the controller. EntityModelDashboardModel is mapped onto the
+      # plain DashboardModel payload — same reason as rootNavigation above. The self link moved to
+      # DashboardSelfLinkProcessor for the same reason as RootAdminLinkProcessor.
       responses:
         '200':
           description: Dashboard link index
@@ -382,8 +387,8 @@ components:
   schemas:
 
     # RootModel/DashboardModel are empty marker records — no properties, all content comes from
-    # links added by per-module postprocessors. Not referenced by any schemaMappings entry: both
-    # operations are excluded from generation, see module header comment.
+    # links added by per-module postprocessors. Mapped (schemaMappings) onto the plain
+    # RootModel/DashboardModel payload records, see module header comment.
     EntityModelRootModel:
       type: object
       properties:
