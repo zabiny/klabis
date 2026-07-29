@@ -285,6 +285,24 @@ MemberDetailsResponse:                 # payload; this is what becomes a record
 Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*` /
 `CollectionModel*`, not to the item.
 
+### Bodyless success responses still need an empty HAL content block
+
+A `201` or `204` with no `content:` at all generates a method whose `produces` lists only
+`application/problem+json` (inherited from the error responses). A client that sends
+`Accept: application/prs.hal-forms+json` — as the frontend does on every request — then gets **406
+Not Acceptable** instead of the success status. Declare the media type with an empty schema:
+
+```yaml
+        '204':
+          description: Calendar item successfully updated
+          content:
+            application/prs.hal-forms+json: {}
+```
+
+No body is produced; this only pins the negotiated media type. Easy to miss because MockMvc tests
+that omit `.accept(...)` pass either way — the gap surfaces only against a real client, or a test that
+sets the header.
+
 ### The response must reference the envelope — always
 
 A response references the `EntityModel*` / `PagedModel*` / `CollectionModel*` schema, never the bare
@@ -429,7 +447,18 @@ Consequences:
   `description` and in the OpenSpec design.md prose.
 - Never write a spec implying a link is always present.
 
-## Workflow for an API change
+### Linking to an operation in a module that is not migrated yet
+
+`operation:` is validated against the bundled `operationId`s, so a link pointing into a module that
+is still code-first fails the bundle:
+
+```
+/paths/.../x-hal-links/event: operation "getEvent" does not match any operationId
+```
+
+`operation` is optional — a descriptor carrying only `description` validates. Document the link now,
+leave a note, and attach `operation:` when the target module lands. Do not delete the rel (the link
+exists at runtime and the frontend types should know about it), and do not relax the validator.
 
 The spec moves first.
 
@@ -478,6 +507,14 @@ tag when given an empty string, which would emit every other module's `*Api.java
 package. Forgetting a tag is safe by comparison: the interface is simply not generated and
 `implements XApi` fails to compile.
 
+**Tags must be single words.** A tag containing a space (`Calendar Feed Token`, `Event
+Registrations`, `My Profile`) is silently dropped: the build succeeds, no warning is printed, and the
+interface simply never appears. Watch for a trailing space too — `"Members "` is not `"Members"`.
+Existing controllers carry several multi-word `@Tag` names, so when migrating one, give the spec a
+single-word tag (`IcalToken`, not `Calendar Feed Token`) and use that same string in `apis`. The tag
+is spec-side only, so renaming it changes neither the wire nor `klabis-full.json`, which takes its
+tags from `@Tag` on the controller.
+
 **The generator never deletes.** It only writes, so a schema you rename or drop leaves its old record
 behind in `build/generated/openapi/<module>/`— and since that directory is on `sourceSets.main`, the
 ghost keeps compiling. Local builds stay green while a clean CI build fails. `openApiModule` handles
@@ -504,7 +541,12 @@ this with `doFirst { delete(outputDir) }`; keep it when touching that function.
    because an imperative check is invisible both to reflection and to the drift check.
 6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
 7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the
-   domain objects with `HalResponseContext` (below)
+   domain objects with `HalResponseContext` (below).
+   **Strip the path from the class-level `@RequestMapping`.** Generated interface methods carry the
+   full absolute path, so a controller that still declares `@RequestMapping(value = "/api/foo")`
+   makes Spring concatenate the two into `/api/foo/api/foo` and every endpoint 404s. Keep the
+   annotation for `produces` only: `@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)`,
+   as `MemberAccountController` and `EventTypeController` do.
 8. Re-run the drift check until the module reports `mismatched: 0`
 9. `cd frontend && npm run openapi`, then `npx tsc --noEmit -p tsconfig.app.json`
 
@@ -584,6 +626,12 @@ returns `true` unconditionally makes the test assert nothing.
   `@Relation(collectionRelation = ...)`, which overrides it
 - Reusing a generic component name (`MemberIdParam`) across module files — component names are one
   global namespace after bundling; prefix them per module
+- Leaving the path on a class-level `@RequestMapping` after the controller starts implementing a
+  generated `*Api` — the path doubles and every endpoint 404s
+- Writing a `201`/`204` with no `content:` block — the endpoint then answers 406 to any client that
+  sends `Accept: application/prs.hal-forms+json`
+- Giving an operation a multi-word `tags:` value — the generator drops it silently and the `*Api`
+  interface never appears
 - Mapping an envelope schema onto `java.util.List<...>`; the generator drops it silently
 - Concluding an endpoint needs no authority because the controller has no annotation — check the
   method body for an imperative `checkXxxAccess()` first
