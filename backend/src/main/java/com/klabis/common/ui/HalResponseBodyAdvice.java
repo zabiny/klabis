@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
@@ -26,6 +27,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,8 +38,9 @@ import java.util.TreeMap;
  * the existing HAL postprocessor pipeline.
  * <p>
  * A controller stores its domain object(s) in {@link HalResponseContext} before returning a plain
- * DTO (or a {@link Page} of DTOs). This advice picks the domain back up, wraps the payload in
- * {@link EntityModelWithDomain} (or a {@link PagedModel} of the same), and manually runs it through
+ * DTO (or a {@link Page} / {@link Collection} of DTOs). This advice picks the domain back up, wraps the
+ * payload in {@link EntityModelWithDomain} (or a {@link PagedModel} / {@link CollectionModel} of the
+ * same), and manually runs it through
  * a {@link RepresentationModelProcessorInvoker} built from all {@link RepresentationModelProcessor}
  * beans — the same postprocessors {@code ModelWithDomainPostprocessor} subclasses already implement.
  * <p>
@@ -82,6 +85,9 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         }
         if (body instanceof Page<?> page) {
             return wrapPage(page);
+        }
+        if (body instanceof Collection<?> collection) {
+            return wrapCollection(collection);
         }
         return wrapSingle(body);
     }
@@ -136,6 +142,36 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         });
 
         return new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(pagedModel);
+    }
+
+    private Object wrapCollection(Collection<?> dtoCollection) {
+        List<?> domainList = HalResponseContext.takeDomainList();
+        if (domainList == null) {
+            return dtoCollection;
+        }
+
+        if (dtoCollection.size() != domainList.size()) {
+            throw new IllegalStateException(
+                    "HAL response advice: DTO collection (%d items) and domain list (%d items) must pair 1:1"
+                            .formatted(dtoCollection.size(), domainList.size()));
+        }
+
+        var domainIterator = domainList.iterator();
+        // Plain entityModelWithDomain here, without invoking processors yet — invokeProcessorsFor(collectionModel)
+        // below already recurses into each item exactly once, same as in wrapPage.
+        List<EntityModel<Object>> items = dtoCollection.stream()
+                .map(dto -> HalFormsSupport.entityModelWithDomain(dto, domainIterator.next()))
+                .toList();
+
+        CollectionModel<EntityModel<Object>> collectionModel = CollectionModel.of(items);
+
+        // Unlike wrapPage, PagedResourcesAssembler is not involved and adds no self link, so it is
+        // built here from the current request — see buildSelfLinkUri for why no authorization check
+        // applies to the self link itself.
+        currentServletRequest().ifPresent(servletRequest ->
+                collectionModel.add(Link.of(buildSelfLinkUri(servletRequest), IanaLinkRelations.SELF)));
+
+        return new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(collectionModel);
     }
 
     /**

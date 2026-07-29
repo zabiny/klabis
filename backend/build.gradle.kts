@@ -269,16 +269,17 @@ val openapiDriftCheck by tasks.registering(Exec::class) {
 }
 
 // ---------------------------------------------------------------------------
-// Java DTO codegen from docs/openapi/spec/ (migration phase 3, members module only)
+// Java DTO + API interface codegen from docs/openapi/spec/
 //
-// Generates MemberDetailsResponse and its nested response DTOs into
-// com.klabis.members.infrastructure.restapi (same package as the hand-written controller/mapper —
-// several cross-module link processors depend on that package via the "members.rest" named
-// interface). Domain enums (Gender, DeactivationReason, DrivingLicenseGroup, TrainerLevel,
-// RefereeLevel) are reused as-is via schemaMappings/importMappings rather than regenerated.
+// One generate task PER MODULE, registered via openApiModule(...) below. A single shared task
+// cannot serve more than one module: modelPackage/apiPackage are scalars, and schemaMappings is
+// global per task — two modules each defining their own (say) AddressRequest would collide
+// irreconcilably. Per-module tasks keep each module's mappings in its own namespace, which is what
+// makes this scale past the two pilot modules.
+//
+// Each module generates into the same package as its hand-written controller/mapper, because
+// cross-module link processors depend on those packages via Modulith named interfaces.
 // ---------------------------------------------------------------------------
-
-val generatedOpenApiModelsDir = layout.buildDirectory.dir("generated/openapi/members")
 
 val bundleSpecForCodegen by tasks.registering(Exec::class) {
     group = "openapi"
@@ -289,120 +290,155 @@ val bundleSpecForCodegen by tasks.registering(Exec::class) {
     commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath)
 }
 
-openApiGenerate {
-    generatorName.set("spring")
-    inputSpec.set(layout.buildDirectory.file("generated/openapi/bundled.json").map { it.asFile.absolutePath })
-    outputDir.set(generatedOpenApiModelsDir.map { it.asFile.absolutePath })
-    templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
-    modelPackage.set("com.klabis.members.infrastructure.restapi")
-    apiPackage.set("com.klabis.members.infrastructure.restapi")
-    skipValidateSpec.set(true)
+/**
+ * Registers a spec-first codegen task for one module and wires its output into the main sourceSet.
+ *
+ * @param module   short module name; also the build/generated/openapi/<module> output directory
+ * @param pkg      target package for both models and APIs
+ * @param apis     OpenAPI tags to generate interfaces for. Must be listed explicitly: the "apis"
+ *                 global property generates EVERY tag when left empty, so without this filter each
+ *                 module's task would emit every other module's *Api.java into its own package.
+ * @param models   payload schemas to generate as Java records (envelopes stay spec-only)
+ * @param mappings schema name -> existing Java type, for types reused instead of regenerated
+ */
+fun openApiModule(
+    module: String,
+    pkg: String,
+    apis: List<String>,
+    models: List<String>,
+    mappings: Map<String, String>,
+    extraImportMappings: Map<String, String> = emptyMap()
+) {
+    val outputDir = layout.buildDirectory.dir("generated/openapi/$module")
 
-    globalProperties.set(
-        mapOf(
-            "models" to listOf(
-                "MemberDetailsResponse",
-                "AddressResponse",
-                "GuardianDTO",
-                "IdentityCardDto",
-                "MedicalCourseDto",
-                "TrainerLicenseDto",
-                "RefereeLicenseDto"
-            ).joinToString(","),
-            // Empty string, NOT "true" — the generator silently generates nothing for "apis"="true".
-            "apis" to "",
-            "supportingFiles" to "false",
-            "modelDocs" to "false",
-            "modelTests" to "false",
-            "apiDocs" to "false",
-            "apiTests" to "false"
-        )
-    )
+    val task = tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>(
+        "openApiGenerate${module.replaceFirstChar { it.uppercase() }}"
+    ) {
+        group = "openapi"
+        description = "Generates spec-first DTOs and API interfaces for the $module module"
+        dependsOn(bundleSpecForCodegen)
 
-    // Promotes inline enum properties (TrainerLicenseDto.level, RefereeLicenseDto.level) to real,
-    // named schemas (TrainerLicenseDto_level, RefereeLicenseDto_level) so schemaMappings below can
-    // redirect them to the existing domain enums instead of generating a synthesized inner enum.
-    inlineSchemaOptions.set(
-        mapOf(
-            "RESOLVE_INLINE_ENUMS" to "true"
-        )
-    )
+        // The generator only writes files; it never removes ones it no longer produces. Without
+        // this, a schema renamed or dropped in the spec leaves its old record behind in build/ —
+        // and since the directory is on the main sourceSet, that ghost still compiles. Local builds
+        // then keep working against a type the spec no longer defines, and only a clean CI build
+        // fails.
+        doFirst { delete(outputDir) }
 
-    configOptions.set(
-        mapOf(
-            "interfaceOnly" to "true",
-            // Plain abstract interface methods only — the stock default-method body returns 501 via
-            // a non-existent ApiUtil helper and is never used since MemberController/RegistrationController
-            // always provide a real @Override.
-            "skipDefaultInterface" to "true",
-            "useSpringBoot3" to "true",
-            "useJakartaEe" to "true",
-            "documentationProvider" to "none",
-            "openApiNullable" to "false",
-            "useTags" to "true",
-            "additionalModelTypeAnnotations" to
-                "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"
-        )
-    )
+        generatorName.set("spring")
+        inputSpec.set(layout.buildDirectory.file("generated/openapi/bundled.json").map { it.asFile.absolutePath })
+        this.outputDir.set(outputDir.map { it.asFile.absolutePath })
+        templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
+        modelPackage.set(pkg)
+        apiPackage.set(pkg)
+        skipValidateSpec.set(true)
 
-    // date-time wire format maps to Instant (not the generator's default OffsetDateTime) to match
-    // the rest of the codebase (see backend-patterns: ZonedDateTime/Instant in domain, LocalDate in API).
-    typeMappings.set(
-        mapOf(
-            "DateTime" to "Instant"
+        globalProperties.set(
+            mapOf(
+                "models" to models.joinToString(","),
+                // Tag names, NOT "true" — the generator silently generates nothing for "apis"="true",
+                // and every tag when given an empty string.
+                "apis" to apis.joinToString(","),
+                "supportingFiles" to "false",
+                "modelDocs" to "false",
+                "modelTests" to "false",
+                "apiDocs" to "false",
+                "apiTests" to "false"
+            )
         )
-    )
 
-    // Envelope schemas (EntityModel*/PagedModel*) and hand-written request DTOs are redirected to
-    // the existing Java types rather than regenerated — see klabis-api-spec skill: "Payload and
-    // envelope are separate schemas". The API interface signature must match what
-    // HalResponseBodyAdvice expects (plain payload DTO / Page<T>, see ADR-002 in design-decisions.md).
-    schemaMappings.set(
-        mapOf(
-            "Gender" to "com.klabis.members.domain.Gender",
-            "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
-            "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
-            "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
-            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
-            "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-            "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
-            "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
-            "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
-            "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
-            "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest",
-            "ProblemDetail" to "org.springframework.http.ProblemDetail"
-        )
-    )
+        // Promotes inline enum properties to real, named schemas (e.g. TrainerLicenseDto_level) so
+        // schemaMappings can redirect them to existing domain enums instead of generating a
+        // synthesized inner enum.
+        inlineSchemaOptions.set(mapOf("RESOLVE_INLINE_ENUMS" to "true"))
 
-    importMappings.set(
-        mapOf(
-            "Gender" to "com.klabis.members.domain.Gender",
-            "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
-            "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
-            "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
-            "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
-            "Instant" to "java.time.Instant",
-            "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-            "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page",
-            "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
-            "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
-            "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
-            "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest",
-            "ProblemDetail" to "org.springframework.http.ProblemDetail"
+        configOptions.set(
+            mapOf(
+                "interfaceOnly" to "true",
+                // Plain abstract interface methods only — the stock default-method body returns 501
+                // via a non-existent ApiUtil helper and is never used, since the controllers always
+                // provide a real @Override.
+                "skipDefaultInterface" to "true",
+                "useSpringBoot3" to "true",
+                "useJakartaEe" to "true",
+                "documentationProvider" to "none",
+                "openApiNullable" to "false",
+                "useTags" to "true",
+                "additionalModelTypeAnnotations" to
+                    "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"
+            )
         )
-    )
+
+        // date-time wire format maps to Instant (not the generator's default OffsetDateTime) to match
+        // the rest of the codebase (see backend-patterns: ZonedDateTime/Instant in domain, LocalDate in API).
+        typeMappings.set(mapOf("DateTime" to "Instant"))
+
+        // Envelope schemas (EntityModel*/PagedModel*/CollectionModel*) and hand-written request DTOs
+        // are redirected to existing Java types rather than regenerated — see klabis-api-spec skill:
+        // "Payload and envelope are separate schemas". The API interface signature must match what
+        // HalResponseBodyAdvice expects (plain payload DTO / Page<T> / List<T>, see ADR-002).
+        val commonMappings = mapOf("ProblemDetail" to "org.springframework.http.ProblemDetail")
+        schemaMappings.set(mappings + commonMappings)
+        importMappings.set(mappings + commonMappings + extraImportMappings + mapOf("Instant" to "java.time.Instant"))
+    }
+
+    // Part of the main sourceSet (not a separate one) so Lombok -> MapStruct -> RecordBuilder
+    // annotation processors run over the generated records exactly as they do for hand-written code.
+    sourceSets.main { java.srcDir(outputDir.map { it.dir("src/main/java") }) }
+    tasks.named("compileJava") { dependsOn(task) }
 }
 
-tasks.named("openApiGenerate") {
-    dependsOn(bundleSpecForCodegen)
-}
+openApiModule(
+    module = "members",
+    pkg = "com.klabis.members.infrastructure.restapi",
+    apis = listOf("Members", "Registration"),
+    models = listOf(
+        "MemberDetailsResponse",
+        "AddressResponse",
+        "GuardianDTO",
+        "IdentityCardDto",
+        "MedicalCourseDto",
+        "TrainerLicenseDto",
+        "RefereeLicenseDto"
+    ),
+    mappings = mapOf(
+        "Gender" to "com.klabis.members.domain.Gender",
+        "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
+        "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
+        "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
+        "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
+        "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
+        "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
+        "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
+        "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest"
+    ),
+    // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
+    extraImportMappings = mapOf(
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page"
+    )
+)
 
-// Part of the main sourceSet (not a separate one) so Lombok -> MapStruct -> RecordBuilder
-// annotation processors run over the generated records exactly as they do for hand-written code.
-sourceSets.main {
-    java.srcDir(generatedOpenApiModelsDir.map { it.dir("src/main/java") })
-}
-
-tasks.named("compileJava") {
-    dependsOn("openApiGenerate")
-}
+openApiModule(
+    module = "event-types",
+    pkg = "com.klabis.events.infrastructure.restapi",
+    apis = listOf("EventTypes"),
+    models = listOf(
+        "EventTypeDto",
+        "CreateEventTypeRequest",
+        "UpdateEventTypeRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelEventTypeDto" to "com.klabis.events.infrastructure.restapi.EventTypeDto",
+        // Collection, not List: "List" is a reserved container name in the generator's type system,
+        // and a schemaMapping onto it is dropped silently — the method then generates as
+        // `ResponseEntity<>`, which fails to compile. Collection carries the same meaning for
+        // HalResponseBodyAdvice, which only iterates the value.
+        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.EventTypeDto>"
+    ),
+    // The generic Collection<T> mapping above carries type arguments that the import must not repeat.
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection"
+    )
+)
