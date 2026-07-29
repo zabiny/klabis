@@ -2,30 +2,25 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Klabis API Spec
 
-`docs/openapi/spec/` is becoming **the** source of truth for the REST API: Java DTOs, API interfaces
-and frontend HAL types will all be generated from it.
+`docs/openapi/spec/` is **the** source of truth for the REST API: Java DTOs, API interfaces and
+frontend HAL types are all generated from it.
 
 Never edit generated output — `docs/openapi/klabis-full.json` (bundle artifact),
 `build/generated/**`, `frontend/src/api/klabisApi.d.ts`.
 
-## Migration status
-
-**The migration is in progress.** Only `members` is migrated so far; every other module is still
-code-first, and nothing is generated from the spec yet.
+The spec drives real codegen: payload DTOs, the `*Api` interfaces controllers implement, endpoint
+authorization, and the frontend HAL types. The Java signature is a consequence of the spec, never the
+driver.
 
 ```
-./gradlew openapiDriftCheck                      # from backend/ — what is still unmigrated
+./gradlew openapiDriftCheck                      # from backend/ — spec vs. implementation
 ./gradlew openapiDriftCheck -PopenapiModule=/api/members
 ```
-
-Until a module appears in `docs/openapi/spec/`, treat it as code-first: change the Java controller
-and use the `backend-patterns` skill. Do not hand-edit `klabis-full.json` for it either — regenerate
-with `./gradlew generateOpenApiDocs`.
 
 ## Layout
 
@@ -33,9 +28,10 @@ with `./gradlew generateOpenApiDocs`.
 docs/openapi/spec/
   klabis.yaml          root: info, servers, securitySchemes, $ref per path to module files
   _shared/
-    hal.yaml           Link, Links, PageMetadata, HalFormsTemplate, HalFormsProperty
+    hal.yaml           Link, Links, PageMetadata, HalFormsTemplate(s), HalFormsProperty, HalFormsOptions
     problem.yaml       RFC 7807 ProblemDetail
   members.yaml         one file per module
+  event-types.yaml
 ```
 
 `klabis.yaml` references each path individually, with JSON-pointer escaping (`/` is `~1`):
@@ -60,7 +56,7 @@ alongside the types:
 
 | spec | generates |
 |---|---|
-| `required: [firstName, …]` | `@NotNull` / `@NotBlank` |
+| `required: [firstName, …]` | `@NotNull` (never `@NotBlank` — see below) |
 | `maxLength` / `minLength` | `@Size(max=…, min=…)` |
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
@@ -71,9 +67,16 @@ test expecting `400` and getting `200`, or as missing entries under `fieldErrors
 module, transcribe the Jakarta annotations off the hand-written record; springdoc reports most of
 them in `klabis-codefirst.json` already.
 
-**`required` is not `@NotBlank`.** In OpenAPI `required` only means the key must be present, so it
-generates `@NotNull` — which accepts `""`. To reject an empty string, add `minLength: 1`. Every
-required string that mattered as `@NotBlank` needs both.
+**`required` is not `@NotBlank`, and there is no exact substitute.** In OpenAPI `required` only means
+the key must be present, so it generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets
+you `@Size(min = 1)`, which rejects `""` but still accepts `"   "`. OpenAPI has no keyword that means
+"not blank".
+
+So a `@NotBlank` field always loses something on migration. Before accepting that, check whether the
+domain guards the same rule (`Assert.hasText` in an aggregate's factory or `update`): if it does, a
+whitespace-only value is still rejected with the same status and only the error *body* degrades —
+a generic message instead of a `fieldErrors` entry naming the field. If it does not, this is a real
+validation hole; use `pattern: '^(?!\s*$).+'` rather than shipping the gap.
 
 **Validation messages become the Bean Validation defaults** (`"size must be between 1 and 100"`).
 OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
@@ -203,10 +206,72 @@ MemberDetailsResponse:                 # payload; this is what becomes a record
   properties: …
 ```
 
-Responses reference the `EntityModel*` / `PagedModel*` envelope so the wire contract stays accurate;
-the backend generator only emits the payload schemas.
+Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*` /
+`CollectionModel*`, not to the item.
 
-Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*`, not to the item.
+### The response must reference the envelope — always
+
+A response references the `EntityModel*` / `PagedModel*` / `CollectionModel*` schema, never the bare
+payload or a bare array. The envelope is what actually goes on the wire; the plain Java signature is
+arranged separately, by mapping the envelope schema onto an existing type in `build.gradle.kts`:
+
+| envelope schema | `schemaMappings` target | controller returns |
+|---|---|---|
+| `EntityModelFooResponse` | `…restapi.FooResponse` | `FooResponse` |
+| `PagedModelEntityModelFooResponse` | `org.springframework.data.domain.Page<…FooResponse>` | `Page<FooResponse>` |
+| `CollectionModelEntityModelFooDto` | `java.util.Collection<…FooDto>` | `Collection<FooDto>` |
+
+It is tempting to reference a plain `type: array` instead, because that yields a `List<T>` signature
+directly. Don't: the spec then advertises a bare JSON array while the endpoint actually returns a HAL
+object with `_embedded`. Nothing fails at build time — envelopes are never generated into Java — so
+the lie surfaces only as frontend types describing a response shape that never occurs.
+
+**`List` cannot be a `schemaMappings` target.** `List` is a reserved container name in the
+generator's type system: a mapping onto `java.util.List<...>` is dropped *silently*, and the method
+generates as `ResponseEntity<>` — a syntax error with no diagnostic pointing at the mapping. Use
+`java.util.Collection<...>`. Both the advice and the postprocessors only iterate the value, so
+nothing downstream cares.
+
+Generic mappings also need a matching `importMappings` entry carrying the raw type only
+(`java.util.Collection`, `org.springframework.data.domain.Page`) — the import statement must not
+repeat the type arguments.
+
+### A payload schema's name is wire contract
+
+Spring HATEOAS derives the `_embedded` key of a collection from the **payload class name** at
+runtime, and that class name comes from the schema name in the spec:
+
+```
+schema EventTypeDto  ->  record EventTypeDto  ->  "_embedded": { "eventTypeDtoList": [...] }
+```
+
+So renaming a payload schema renames a JSON key that clients read literally — a breaking change, not
+a rename. The envelope schema must spell the same key:
+
+```yaml
+CollectionModelEntityModelEventTypeDto:
+  type: object
+  properties:
+    _embedded:
+      type: object
+      properties:
+        eventTypeDtoList:          # <camelCase payload class name> + "List"
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityModelEventTypeDto'
+```
+
+Two guards, both worth knowing because each fails at a different moment:
+
+- **`halTypes.ts` indexes into `klabisApi.d.ts`** by schema name
+  (`components['schemas']['EntityModelEventTypeDto']`). A name that does not exist there is a `tsc`
+  error — loud, immediate.
+- **The `_embedded` key is not checked by anything.** Getting it wrong in the envelope produces
+  frontend types naming a property no response ever contains: `undefined` at runtime, an empty list
+  in the UI, no error anywhere.
+
+If a rename looks harmless because the tests stayed green, check whether a test was edited in the
+same change. Adjusting a `$._embedded.*List` JSON path *is* the breakage surfacing — not the fix.
 
 ## `x-hal-*` — hypermedia
 
@@ -270,27 +335,65 @@ Consequences:
 
 ## Workflow for an API change
 
-The spec moves first. The Java signature is a consequence, never the driver.
+The spec moves first.
 
 1. Edit `docs/openapi/spec/<module>.yaml`
-2. `./gradlew openapiBundle` — validates extensions and refs
-3. `./gradlew openapiDriftCheck -PopenapiModule=/api/<module>` — confirms spec and implementation agree
-4. Adjust the controller/DTO to match
-5. `cd frontend && npm run openapi`
+2. `./gradlew compileJava` — regenerates DTOs and `*Api`, then fails on whatever no longer matches.
+   This is the real check: the generator runs off `bundleSpecForCodegen`, not off `openapiBundle`.
+3. Fix the controller against the regenerated interface
+4. `cd frontend && npm run openapi`
+5. `npx tsc --noEmit -p tsconfig.app.json` — catches schema-name mismatches in `halTypes.ts`
 
-If step 4 shows the spec is wrong, go back to step 1. **Never adjust the spec to match existing Java
-just to silence the drift check** — that reintroduces code-first through the back door. The exception
-is a genuine spec bug, which is a spec change like any other.
+`./gradlew openapiBundle` validates extensions and refs without generating anything; useful for a
+fast syntax check, but passing it does not mean the code compiles.
 
-Once codegen lands (a later migration phase), steps 3–4 become `./gradlew compileJava` plus fixing
-whatever no longer compiles.
+If step 3 shows the spec is wrong, go back to step 1. **Never adjust the spec to match existing Java
+just to silence a mismatch** — that reintroduces code-first through the back door. The exception is a
+genuine spec bug, which is a spec change like any other.
+
+## Registering a module for codegen
+
+Writing the YAML generates nothing on its own. Each module gets its own codegen task, registered with
+`openApiModule(...)` in `backend/build.gradle.kts`:
+
+```kotlin
+openApiModule(
+    module = "event-types",                                  // -> build/generated/openapi/event-types
+    pkg = "com.klabis.events.infrastructure.restapi",         // same package as the controller
+    apis = listOf("EventTypes"),                              // OpenAPI tags
+    models = listOf("EventTypeDto", "CreateEventTypeRequest", "UpdateEventTypeRequest"),
+    mappings = mapOf(
+        "EntityModelEventTypeDto" to "com.klabis.events.infrastructure.restapi.EventTypeDto",
+        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<…EventTypeDto>"
+    ),
+    extraImportMappings = mapOf("CollectionModelEntityModelEventTypeDto" to "java.util.Collection")
+)
+```
+
+One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
+`schemaMappings` is global per task, so a single task could never let two modules each define their
+own `AddressRequest`.
+
+`pkg` must be the package the hand-written controller already lives in — cross-module link processors
+reach these types through Modulith named interfaces.
+
+**`apis` must list the tags explicitly.** The underlying `apis` global property generates *every*
+tag when given an empty string, which would emit every other module's `*Api.java` into this module's
+package. Forgetting a tag is safe by comparison: the interface is simply not generated and
+`implements XApi` fails to compile.
+
+**The generator never deletes.** It only writes, so a schema you rename or drop leaves its old record
+behind in `build/generated/openapi/<module>/`— and since that directory is on `sourceSets.main`, the
+ghost keeps compiling. Local builds stay green while a clean CI build fails. `openApiModule` handles
+this with `doFirst { delete(outputDir) }`; keep it when touching that function.
 
 ## Migrating a module
 
 1. `./gradlew openapiDriftCheck -PopenapiModule=/api/<module>` — the list of operations to write
 2. Read the module's operations out of `docs/openapi/generated/klabis-codefirst.json` — it is the
    ground truth for parameters, request bodies and status codes
-3. Write `<module>.yaml`; add one `$ref` per path to `klabis.yaml`
+3. Write `<module>.yaml`; add one `$ref` per path to `klabis.yaml`. Name payload schemas after the
+   existing Java DTO classes — see "A payload schema's name is wire contract"
 4. Add `x-hal-links` / `x-hal-templates` by reading the controller's postprocessors and
    `RepresentationModelProcessor` implementations — springdoc cannot see them, so the drift check
    will not catch a missing one
@@ -298,8 +401,38 @@ whatever no longer compiles.
    operation, then delete it from the controller. Compare the generated `*Api` interface against the
    controller as it was — an authority that silently changes or disappears here is not something the
    tests will necessarily catch
-6. Re-run the drift check until the module reports `mismatched: 0`
-7. `cd frontend && npm run openapi` — regenerates the schema types and the HAL relations
+6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
+7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the
+   domain objects with `HalResponseContext` (below)
+8. Re-run the drift check until the module reports `mismatched: 0`
+9. `cd frontend && npm run openapi`, then `npx tsc --noEmit -p tsconfig.app.json`
+
+### Returning plain payloads
+
+A generated interface method returns the payload, not a `RepresentationModel`. The controller stores
+the domain object(s) in `HalResponseContext`; `HalResponseBodyAdvice` picks them back up, builds the
+`EntityModel`/`PagedModel`/`CollectionModel`, and runs the existing postprocessors:
+
+```java
+HalResponseContext.setDomain(eventType);          // single
+HalResponseContext.setDomainList(eventTypes);     // collection or page — paired 1:1 by index
+```
+
+Links and affordances that belonged to the **collection itself** cannot be built in the method any
+more (there is no model to add them to). They move into a
+`RepresentationModelProcessor<CollectionModel<EntityModel<T>>>`; the advice contributes the self
+link, the processor contributes affordances via `klabisAfford*` so they stay authorization-sensitive.
+
+Controllers that still build their own models are untouched — without an entry in
+`HalResponseContext` the advice passes the body through unchanged.
+
+### Request bodies bound to domain types
+
+Some controllers deserialize straight into a domain command
+(`@RequestBody EventType.CreateEventType`). That violates "DTOs carry wire types" and cannot survive
+migration: generate a `CreateFooRequest` DTO from the spec and add a mapper to the domain command.
+Keep the domain record — the domain and its service still use it, it just stops being the
+deserialization target.
 
 **The drift check compares schemas by name, not by content.** Two schemas called
 `RegisterMemberRequest` match even when their properties differ wildly. After the check goes green,
@@ -317,8 +450,12 @@ Expect the springdoc output to be wrong in places (it does not know about `@Json
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
-- Writing `@HasAuthority` on a controller method whose operation is spec-first — the authority
-  belongs in `x-klabis-authority`, stated once
+- Pointing a response at a bare `type: array` or the raw payload instead of the `EntityModel*` /
+  `PagedModel*` / `CollectionModel*` envelope, to get a nicer Java signature
+- Renaming a payload schema for tidiness — it renames the `_embedded` key on the wire
+- Mapping an envelope schema onto `java.util.List<...>`; the generator drops it silently
+- Writing `@HasAuthority` on a controller method — the authority belongs in `x-klabis-authority`,
+  stated once
 - Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
