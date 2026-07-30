@@ -164,8 +164,9 @@ paths:
           schema:
             type: string
             # pattern, not just required: `required` alone only generates @NotNull, which accepts
-            # "" — the controller then calls the service with a blank token. See klabis-api-spec
-            # skill: "required is not @NotBlank".
+            # "" — the controller then calls the service with a blank token. Unlike schema
+            # properties, a parameter cannot use x-klabis-not-blank: only pojo.mustache is
+            # overridden, so the extension would be silently dropped on the stock api template.
             pattern: '^(?!\s*$).+'
           example: abc123def456
       responses:
@@ -407,10 +408,10 @@ components:
       properties:
         currentPassword:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         newPassword:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
 
     ValidateTokenResponse:
       type: object
@@ -428,14 +429,14 @@ components:
       properties:
         token:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         password:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
           description: Minimum 12 characters with uppercase, lowercase, number, and special character.
         passwordConfirmation:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
 
     PasswordSetupResponse:
       type: object
@@ -452,12 +453,12 @@ components:
       properties:
         registrationNumber:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
           description: 'Format: XXXYYDD'
         email:
           type: string
           format: email
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
 
     TokenRequestResponse:
       type: object

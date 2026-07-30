@@ -1277,7 +1277,7 @@ components:
       properties:
         name:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         yearlyFeeAmount:
           type: number
           exclusiveMinimum: 0
@@ -1311,13 +1311,14 @@ components:
           format: uuid
         rankingShortName:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         ruleType:
           # Plain string, not enum — see the CampaignStatusFilterParam comment above for why; same
           # generator limitation, and no existing domain RuleType enum to map onto (the domain uses
           # a sealed RuleValue interface, not an enum). The domain's switch expression already
           # rejects unknown values.
           type: string
+          x-klabis-not-blank: true
         percent:
           type: integer
           format: int32
@@ -1388,9 +1389,10 @@ components:
           format: uuid
         rankingShortName:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         ruleType:
           type: string
+          x-klabis-not-blank: true
         percentage:
           type: integer
           format: int32
@@ -1408,6 +1410,7 @@ components:
       properties:
         ruleType:
           type: string
+          x-klabis-not-blank: true
         percentage:
           type: integer
           format: int32

@@ -15,6 +15,7 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-owner-visible',
     'x-klabis-authority',
     'x-klabis-halforms-access',
+    'x-klabis-not-blank',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
@@ -139,6 +140,21 @@ export function validateSpec(document, {authorities}) {
 
             if (key === 'x-klabis-owner-id' && value !== true) {
                 errors.push({path: `${path}/${key}`, message: 'must be true when present'});
+            }
+
+            if (key === 'x-klabis-not-blank') {
+                if (value !== true) {
+                    errors.push({path: `${path}/${key}`, message: 'must be true when present'});
+                }
+                // Only pojo.mustache is overridden, so on a parameter's schema the generator would
+                // silently drop this and ship no validation at all. Flag it here rather than letting
+                // it pass as a no-op; use `pattern: '^(?!\s*$).+'` on parameters instead.
+                if (path.includes('/parameters')) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'is not honoured on a parameter — use pattern: \'^(?!\\s*$).+\' instead',
+                    });
+                }
             }
 
             if (key === 'x-klabis-owner-visible' && context === 'operation') {

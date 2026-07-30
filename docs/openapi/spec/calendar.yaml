@@ -489,11 +489,10 @@ components:
         name:
           type: string
           maxLength: 200
-          # required + pattern reproduces @NotBlank(message = "Calendar item name is required") —
-          # see klabis-api-spec skill: OpenAPI has no keyword meaning "not blank", and
-          # CalendarItem.validateName() (Assert.hasText) already rejects whitespace-only names with
-          # the same 400 status, so this closes the same gap the domain guard would otherwise leave.
-          pattern: '^(?!\s*$).+'
+          # Reproduces @NotBlank(message = "Calendar item name is required"); the custom message is
+          # lost, the constraint is not. CalendarItem.validateName() (Assert.hasText) guards the
+          # same rule in the domain.
+          x-klabis-not-blank: true
         description:
           type: string
           maxLength: 1000
@@ -512,7 +511,7 @@ components:
         name:
           type: string
           maxLength: 200
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         description:
           type: string
           maxLength: 1000

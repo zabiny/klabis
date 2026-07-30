@@ -132,7 +132,8 @@ alongside the types:
 
 | spec | generates |
 |---|---|
-| `required: [firstName, …]` | `@NotNull` (never `@NotBlank` — see below) |
+| `required: [firstName, …]` | `@NotNull` (not `@NotBlank` — see below) |
+| `x-klabis-not-blank: true` | `@NotBlank` (Klabis extension; schema properties only) |
 | `maxLength` / `minLength` | `@Size(max=…, min=…)` |
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
@@ -143,16 +144,28 @@ test expecting `400` and getting `200`, or as missing entries under `fieldErrors
 module, transcribe the Jakarta annotations off the hand-written record; springdoc reports most of
 them in `klabis-codefirst.json` already.
 
-**`required` is not `@NotBlank`, and there is no exact substitute.** In OpenAPI `required` only means
-the key must be present, so it generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets
-you `@Size(min = 1)`, which rejects `""` but still accepts `"   "`. OpenAPI has no keyword that means
-"not blank".
+**`required` is not `@NotBlank`.** In OpenAPI `required` only means the key must be present, so it
+generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets you `@Size(min = 1)`, which
+rejects `""` but still accepts `"   "`. OpenAPI has no standard keyword meaning "not blank".
 
-So a `@NotBlank` field always loses something on migration. Before accepting that, check whether the
-domain guards the same rule (`Assert.hasText` in an aggregate's factory or `update`): if it does, a
-whitespace-only value is still rejected with the same status and only the error *body* degrades —
-a generic message instead of a `fieldErrors` entry naming the field. If it does not, this is a real
-validation hole; use `pattern: '^(?!\s*$).+'` rather than shipping the gap.
+Klabis therefore has its own: **`x-klabis-not-blank: true`** on the property, emitted as `@NotBlank`
+by the overridden `pojo.mustache`. Use it wherever the hand-written record had `@NotBlank`; the field
+also keeps the redundant `@NotNull` from `required`, which is harmless.
+
+**Check the schema is actually generated before converting a `pattern` hack to it.** Not every
+schema in the spec has a generated counterpart — a request whose Java record is still hand-written
+(`CreateEventRequest`, `UpdateEventRequest` and their nested `*CategoryRequest` / `*RankingRequest` /
+`EntryFeeRequest`) is documented in the spec but excluded from `models`, so the extension emits
+nothing and the validation lives in the hand-written `@NotBlank`. Removing the `pattern` there is a
+pure regression. `find backend/build/generated/openapi -name '<Schema>.java'` settles it.
+
+Two limits:
+- **Schema properties only.** Only `pojo.mustache` is overridden, so the generator would drop the
+  extension on a `parameters` entry; `validate.mjs` rejects it there rather than letting it pass as
+  a silent no-op. For a constrained `@RequestParam` use `pattern: '^(?!\s*$).+'` instead — see the
+  `validatePasswordSetupToken` `token` parameter in `common.yaml`.
+- **The custom message is still lost.** `@NotBlank(message = "…")` texts do not survive; assertions
+  must expect the Bean Validation default (`"must not be blank"`).
 
 **Validation messages become the Bean Validation defaults** (`"size must be between 1 and 100"`).
 OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
@@ -660,7 +673,12 @@ returns `true` unconditionally makes the test assert nothing.
 - Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
-  emit. Propose it, don't add it ad hoc — the bundler rejects unknown ones.
+  emit. Propose it, don't add it ad hoc — `validate.mjs` rejects any `x-klabis-*` key missing from
+  `KNOWN_KLABIS_EXTENSIONS`, and emission needs a matching branch in `pojo.mustache`.
+- Reaching for a raw `x-field-extra-annotation` on a schema property to inject an annotation. The
+  generator only honours it on *parameters*; on a model property the overridden `pojo.mustache`
+  decides, and an unlisted extension is silently dropped — so the annotation never appears and any
+  standard keyword you removed to "replace" is lost too.
 - Naming a fresh top-level `enum:` schema and listing it in `models` — the generator writes a
   well-formed Java file with no constants and no body, and every reference fails to compile. An
   enum only works when `schemaMappings` points it at an existing domain enum. With no such enum,

@@ -1791,7 +1791,7 @@ components:
       properties:
         name:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         categories:
           type: array
           items:
@@ -1803,7 +1803,7 @@ components:
       properties:
         name:
           type: string
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         categories:
           type: array
           items:
