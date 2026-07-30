@@ -692,11 +692,12 @@ openApiModule(
         "SetPasswordRequest",
         "PasswordSetupResponse",
         "TokenRequestRequest",
-        "TokenRequestResponse"
+        "TokenRequestResponse",
+        "UpdatePermissionsRequest"
     ),
     mappings = mapOf(
         "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        "UpdatePermissionsRequest" to "com.klabis.common.users.infrastructure.restapi.PermissionController.UpdatePermissionsRequest",
+        "Authority" to "com.klabis.common.users.Authority",
         // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
         // other migrated module: the generated interface returns the plain RootModel/DashboardModel
         // marker record, and the controller populates HalResponseContext.setDomain(...) with a

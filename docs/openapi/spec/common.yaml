@@ -494,5 +494,21 @@ components:
       properties:
         authorities:
           type: array
+          uniqueItems: true
           items:
-            type: string
+            $ref: '#/components/schemas/Authority'
+
+    # Mapped onto com.klabis.common.users.Authority via schemaMappings. The enum values are the
+    # colon-separated wire format produced by Authority's @JsonValue, not the Java constant names.
+    Authority:
+      type: string
+      enum:
+        - CALENDAR:MANAGE
+        - MEMBERS:MANAGE
+        - MEMBERS:READ
+        - MEMBERS:PERMISSIONS
+        - EVENTS:READ
+        - EVENTS:MANAGE
+        - EVENTS:REGISTRATIONS
+        - GROUPS:TRAINING
+        - FINANCE:MANAGE

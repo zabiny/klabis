@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -157,13 +156,6 @@ public class PermissionController implements PermissionsApi {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
-    /**
-     * Request DTO for updating permissions.
-     */
-    public record UpdatePermissionsRequest(
-            Set<Authority> authorities
-    ) {
-    }
 }
 
 @MvcComponent
