@@ -2076,7 +2076,10 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("John"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].lastName").value("Doe"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardNumber").value("AB123456"))
-                    .andExpect(jsonPath("$._embedded.accommodationList[0].dateOfBirth").value("1985-05-15"));
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].dateOfBirth").value("1985-05-15"))
+                    .andExpect(jsonPath("$._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/accommodation-list")));
         }
 
         @Test

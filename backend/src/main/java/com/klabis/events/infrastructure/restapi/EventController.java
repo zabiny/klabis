@@ -45,6 +45,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -364,17 +367,14 @@ public class EventController implements EventsApi {
     // handler methods.
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
-    public ResponseEntity<CollectionModel<AccommodationListItemDto>> getAccommodationList(
+    public ResponseEntity<Collection<AccommodationListItemDto>> getAccommodationList(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
-        CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(items);
-        klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
-                .ifPresent(link -> collectionModel.add(link.withRel("event")));
-
-        return ResponseEntity.ok(collectionModel);
+        HalResponseContext.setDomainList(event.getRegistrations());
+        return ResponseEntity.ok(items);
     }
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
@@ -681,6 +681,40 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
             return link;
         });
         return model;
+    }
+}
+
+/**
+ * Contributes the {@code event} relation to the accommodation list. The eventId comes from the URI
+ * template rather than from an item, because an event with no registrations yields an empty
+ * collection with nothing to recover it from.
+ */
+@MvcComponent
+class AccommodationListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<AccommodationListItemDto>>> {
+
+    @Override
+    public CollectionModel<EntityModel<AccommodationListItemDto>> process(
+            CollectionModel<EntityModel<AccommodationListItemDto>> model) {
+        currentEventId().ifPresent(eventId ->
+                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
+                        .ifPresent(link -> model.add(link.withRel("event"))));
+        return model;
+    }
+
+    private static Optional<UUID> currentEventId() {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object variables = attrs.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
+                RequestAttributes.SCOPE_REQUEST);
+        if (!(variables instanceof Map<?, ?> pathVariables)) {
+            return Optional.empty();
+        }
+        Object eventId = pathVariables.get("eventId");
+        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
     }
 }
 
