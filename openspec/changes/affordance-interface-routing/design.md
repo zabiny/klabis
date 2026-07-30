@@ -55,10 +55,13 @@ The 16 plain `linkTo(methodOn(...))` calls split into two kinds:
   `GET` the target. They gain nothing from interface routing — no affordance, no payload metadata —
   but converting them keeps one rule instead of two, and the resolved URL is identical either way.
   **Convert them**, for consistency rather than correctness.
-- **1 builds a `Link`** (`EventController:375`, the `event` rel on the accommodation list) while
-  skipping `klabisLinkTo`'s authorization check. Converting the target type does not change that;
-  whether the bypass is correct is a separate question. **Convert, and flag it with a follow-up note**
-  rather than silently changing behavior here.
+- **1 builds a `Link`** (`EventController`, the `event` rel on the accommodation list) while
+  skipping `klabisLinkTo`'s authorization check.
+
+  *Resolved during implementation* — the bypass was a defect, not a deliberate choice. Reaching the
+  accommodation list requires `EVENTS:REGISTRATIONS` or being the event coordinator; reading the
+  event requires `EVENTS:READ`. Neither implies the other, so a coordinator without `EVENTS:READ`
+  was handed a link that answers 403. Switched to `klabisLinkTo`, which omits the link instead.
 
   *Corrected during implementation:* `MembershipFeeTierController:164` was counted here originally,
   but it builds a `Location` header (`.created(...).toUri()`), so it belongs to the first group.
@@ -149,5 +152,5 @@ restores the previous behavior exactly.
 
 ## Open Questions
 
-- The two authorization-bypassing plain `linkTo` calls (D1) — is the bypass intentional? Out of scope
-  here; this change preserves the behavior and records the question.
+None outstanding. The one authorization-bypassing `linkTo` call (D1) turned out to be a defect and
+was fixed rather than deferred.

@@ -370,10 +370,9 @@ public class EventController implements EventsApi {
         Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
-        CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(
-                items,
-                linkTo(methodOn(EventsApi.class).getEvent(eventId, null)).withRel("event")
-        );
+        CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(items);
+        klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
+                .ifPresent(link -> collectionModel.add(link.withRel("event")));
 
         return ResponseEntity.ok(collectionModel);
     }

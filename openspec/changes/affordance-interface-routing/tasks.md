@@ -62,12 +62,16 @@
       change, done for consistency. Completed as part of sections 2–3: the per-module conversion
       covered plain `linkTo` alongside `klabisLinkTo`. Zero `methodOn(XController.class)` call sites
       remain anywhere in `backend/src/main/java`.
-- [x] 4.2 Convert the ones that build a `Link` while bypassing `klabisLinkTo`'s authorization check,
-      preserving the bypass. **Correction to the earlier count:** only one of the two is a `Link` —
-      `EventController:375` builds `withRel("event")` on the accommodation list. The other,
+- [x] 4.2 **Correction to the earlier count:** only one of the two is a `Link` — `EventController`
+      builds `withRel("event")` on the accommodation list. The other,
       `MembershipFeeTierController:164`, turned out to be a `Location` header (`.created(...).toUri()`)
-      and therefore belongs to 4.1. The open question in design.md stands for the single remaining
-      site.
+      and therefore belongs to 4.1.
+- [x] 4.3 **Scope addition.** Rather than preserving the one remaining bypass and deferring the
+      question, it was fixed: that `event` rel now goes through `klabisLinkTo`. The bypass was a
+      defect — the accommodation list is reachable with `EVENTS:REGISTRATIONS` or as the coordinator,
+      while reading the event needs `EVENTS:READ`, and neither implies the other, so a coordinator
+      without `EVENTS:READ` was offered a link answering 403. Two tests added covering both sides;
+      verified red against the old `linkTo`. `EventControllerTest` 112 tests pass.
 
 ## 5. Guard against regression
 
@@ -99,8 +103,9 @@
 
 ## 7. Verification
 
-- [x] 7.1 Full suite: 3221 tests, 0 failures, 0 errors, 15 skipped, 837 result files. Baseline (1.2)
-      was 3214/835; the +7/+2 delta is exactly the tests this change adds.
+- [x] 7.1 Full suite: 3223 tests, 0 failures, 0 errors, 15 skipped, 837 result files. Baseline (1.2)
+      was 3214/835; the +9/+2 delta is exactly the tests this change adds (7 for the routing itself,
+      2 for the 4.3 authorization fix).
 - [x] 7.2 Both baselines byte-identical (`ca397906…`, `de7f2310…`) and untracked by git as modified.
 - [x] 7.3 Diffed per module. The only differences anywhere were vanished `readOnly: true` entries in
       `common`, `finance` and `calendar` — three modules, not the two the proposal predicted. The

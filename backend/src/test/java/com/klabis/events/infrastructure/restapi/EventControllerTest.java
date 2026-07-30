@@ -2080,6 +2080,59 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("event link is offered to a caller who may read the event")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void eventLinkPresentWhenCallerMayReadTheEvent() throws Exception {
+            UUID eventId = accommodationListFor(UUID.randomUUID());
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.event.href")
+                            .value(org.hamcrest.Matchers.containsString("/api/events/" + eventId)));
+        }
+
+        @Test
+        @DisplayName("event link is withheld from a coordinator who lacks EVENTS:READ")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void eventLinkAbsentWhenCallerMayNotReadTheEvent() throws Exception {
+            UUID eventId = accommodationListFor(UUID.randomUUID());
+
+            // Reaching this list needs EVENTS:REGISTRATIONS or being the coordinator; reading the
+            // event itself needs EVENTS:READ. The two do not imply each other, so a coordinator
+            // without EVENTS:READ would get 403 by following this link — hence it is not offered.
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList").exists())
+                    .andExpect(jsonPath("$._links.event").doesNotExist());
+        }
+
+        private UUID accommodationListFor(UUID eventId) {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(List.of(EventRegistration.reconstruct(
+                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
+            return eventId;
+        }
+
+        @Test
         @DisplayName("user with EVENTS:REGISTRATIONS authority gets 200")
         @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
         void eventsRegistrationsAuthorityGets200() throws Exception {
