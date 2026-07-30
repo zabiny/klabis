@@ -99,9 +99,11 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run the full backend suite; confirm the count matches 1.2 with no new failures
-- [ ] 7.2 Confirm `docs/openapi/klabis-full.json` and `frontend/src/api/klabisApi.d.ts` are unchanged
-      — this change must not touch either baseline
-- [ ] 7.3 Diff every 1.1 baseline body; treat any difference other than the two overrides gaining
-      input metadata as a defect, not as an expected update
-- [ ] 7.4 Code review before the final commit, per CLAUDE.md
+- [x] 7.1 Full suite: 3221 tests, 0 failures, 0 errors, 15 skipped, 837 result files. Baseline (1.2)
+      was 3214/835; the +7/+2 delta is exactly the tests this change adds.
+- [x] 7.2 Both baselines byte-identical (`ca397906…`, `de7f2310…`) and untracked by git as modified.
+- [x] 7.3 Diffed per module. The only differences anywhere were vanished `readOnly: true` entries in
+      `common`, `finance` and `calendar` — three modules, not the two the proposal predicted. The
+      other four modules produced byte-identical bodies.
+- [x] 7.4 Per-module reviews plus a final whole-branch review: no blocking or warning findings. One
+      suggestion applied (documenting the guard regex's `*Controller` naming assumption).

@@ -37,6 +37,12 @@ class AffordanceRoutingArchitectureTest {
 
     private static final Path MAIN_SOURCES = Path.of("src/main/java/com/klabis");
 
+    /**
+     * Matches on the {@code Controller} suffix, which all 20 REST controllers currently use. Nothing
+     * enforces that name, so a controller called something else would slip past this check. Resolving
+     * each class literal to test for {@code @RestController} instead would close the gap; it is not
+     * worth the complexity until a controller actually breaks the convention.
+     */
     private static final Pattern METHOD_ON_CONTROLLER =
             Pattern.compile("methodOn\\(\\s*(\\w*Controller)\\.class\\s*\\)");
 
