@@ -294,7 +294,6 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject request with blank token")
         void shouldRejectRequestWithBlankToken() throws Exception {
             // When/Then
-            // HandlerMethodValidationException wraps the validation error and returns 500
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", ""))
                     .andExpect(status().isBadRequest())
