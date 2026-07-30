@@ -671,11 +671,14 @@ returns `true` unconditionally makes the test assert nothing.
   interface boundary — unlike `@HasAuthority`, nothing bridges this. Binding and authorization
   still work, so it compiles and passes; the inline options from `klabisAffordWith*Options`
   silently vanish from `_templates` while `properties[]` and `target` stay correct.
-- Writing an ungated `RepresentationModelProcessor<CollectionModel<EntityModel<X>>>`. Unlike the
-  `EntityModel<T>` and `PagedModel<T>` variants, collection-level processors do **not** discriminate
-  by content type — they run for every `CollectionModel` response in the application and will
-  cross-contaminate unrelated endpoints' links. Gate on a request attribute or path variable; see
-  `EventRegistrationController.RegistrationListPostprocessor`.
+- Gating a `RepresentationModelProcessor<CollectionModel<EntityModel<X>>>` on a request attribute
+  *for fear of cross-contamination*. Spring HATEOAS's `RepresentationModelProcessorInvoker` resolves
+  the full generic signature, so a processor typed on `EntityModel<X>` does **not** run for another
+  endpoint's `CollectionModel<EntityModel<Y>>` — verified directly against the invoker. Most of the
+  collection processors here are correctly ungated. Gate only when the processor needs data the model
+  cannot carry: `EventRegistrationController.RegistrationListPostprocessor` reads `eventId` from a
+  request attribute because an *empty* registration list has no item to recover it from, which is a
+  different problem from type dispatch.
 - Injecting a new port into an `@MvcComponent` postprocessor — the scan is global, not scoped to a
   slice's `controllers=`, so every unrelated `@WebMvcTest` breaks unless `WithPostprocessors` also
   mocks it. Compute port-derived data in the controller, which already holds the port, and pass it

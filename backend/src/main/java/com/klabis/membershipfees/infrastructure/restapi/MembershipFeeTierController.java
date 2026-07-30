@@ -249,13 +249,14 @@ class MembershipFeeTierListPostprocessor
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model) {
-        // Spring HATEOAS's RepresentationModelProcessorInvoker matches CollectionModel processors
-        // by the outer CollectionModel type only — it does not discriminate by the EntityModel<T>
-        // content type — so EVERY registered CollectionModel processor in the app runs against
-        // EVERY CollectionModel response. The activeCampaign attribute is set only by listTiers(),
-        // so its absence here means this fired for some other endpoint's collection and must be a
-        // no-op. Same reasoning/guard pattern as MembershipFeeTierListRulesPostprocessor and
-        // EventRegistrationController.RegistrationListPostprocessor.
+        // The activeCampaign attribute is what carries listTiers()'s campaign state here; the model
+        // itself cannot.
+        //
+        // The early return is defensive, not a live path: listTiers() is the only producer of this
+        // collection type and always sets the attribute, and this is NOT a type-dispatch guard —
+        // RepresentationModelProcessorInvoker resolves the full generic signature, so this processor
+        // never sees another endpoint's CollectionModel<EntityModel<Y>>. It earns its keep only if a
+        // second producer of this type appears, or the processor runs outside a request.
         Optional<Optional<FeeSelectionCampaign>> activeCampaignAttr = currentActiveCampaignAttr();
         if (activeCampaignAttr.isEmpty()) {
             return model;
