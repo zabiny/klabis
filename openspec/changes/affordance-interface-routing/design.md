@@ -70,6 +70,28 @@ too. Removing it eliminates the drift that caused this whole problem.
 `klabis-full.json`'s parameter descriptions. This asymmetry is worth stating explicitly in the skill,
 since "remove the annotations the interface already has" is the intuitive but wrong generalization.
 
+**Removing `@RequestBody` is not optional where the override also carries a Bean Validation
+constraint.** Discovered while converting `members`: Hibernate Validator rejects an override that
+*redefines* the parameter constraint configuration of the method it overrides
+(`ConstraintDeclarationException: HV000151`), and it evaluates the parameter list as a whole. So an
+override declaring `@NotNull @PathVariable UUID id` plus `@Valid @RequestBody Xxx request` is
+consistent with the interface, but dropping only the `@RequestBody` half leaves a configuration that
+differs from the interface's and fails at request time — not at compile time, and not in every slice
+test. The rule is therefore all-or-nothing: an override declares **no** parameter constraints and
+inherits the whole set from the interface.
+
+The distinction that makes this tractable:
+
+| Annotation | Kind | Safe to repeat on an override? |
+|---|---|---|
+| `@NotNull`, `@Size`, `@Pattern` … | Bean Validation *constraint* | **No** — triggers HV000151 |
+| `@Valid` | cascade marker, not a constraint | Yes |
+| `@RequestBody`, `@RequestParam`, `@PathVariable` | Spring binding | Yes (no HV meaning) |
+| `@Parameter` | springdoc | Yes — and required, see above |
+
+`MemberController.listMembers` keeps `@Valid @RequestParam` on two parameters for exactly this
+reason: `@Valid` is exempt, so the override matches the interface without redefining anything.
+
 ### D3. Guard with a reflective test over all controllers, not per-endpoint assertions
 
 The failure mode is silent, so the guard must be structural. A single test enumerates the

@@ -2,7 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.common.users.infrastructure.restapi.PermissionsApi;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import org.springframework.hateoas.EntityModel;
@@ -25,7 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Member-User relationship) without adding redundant userId field to DTOs.
  *
  * @see MemberDetailsResponse
- * @see PermissionController
+ * @see PermissionsApi
  */
 @MvcComponent
 class MemberPermissionsLinkProcessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
@@ -85,7 +85,7 @@ final class MemberPermissionsLinkHelper {
             return;
         }
 
-        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(uuid))
+        klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(uuid))
                 .ifPresent(link -> model.add(link.withRel("permissions")));
     }
 }

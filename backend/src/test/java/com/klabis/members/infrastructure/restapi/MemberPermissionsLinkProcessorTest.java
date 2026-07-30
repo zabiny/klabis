@@ -3,7 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.ui.EntityModelWithDomain;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.common.users.infrastructure.restapi.PermissionsApi;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class MemberPermissionsLinkProcessorTest {
         Optional<Link> permissionsLink = model.getLink("permissions");
         assertThat(permissionsLink).isPresent();
 
-        String expectedHref = linkTo(methodOn(PermissionController.class)
+        String expectedHref = linkTo(methodOn(PermissionsApi.class)
                 .getUserPermissions(memberUuid))
                 .toUri()
                 .toString();

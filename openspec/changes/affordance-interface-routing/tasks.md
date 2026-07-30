@@ -33,7 +33,10 @@
       rendered every property `readOnly: true`, including the required `amount`. Two of the 12 sites
       are cross-module (`methodOn(MemberController.class)` → `MembersApi`, permitted by the
       `@NamedInterface("members.rest")` on the members restapi package).
-- [ ] 3.2 members (12)
+- [x] 3.2 members (13, incl. 2 cross-module refs to `PermissionsApi`). No latent defect here — these
+      overrides did carry `@RequestBody`, so the HAL bodies are byte-identical before and after.
+      Surfaced the HV000151 constraint-redefinition rule now recorded in design.md D2: removing only
+      `@RequestBody` while leaving `@NotNull` on a sibling parameter fails at request time.
 - [ ] 3.3 calendar (14)
 - [ ] 3.4 membershipfees (38)
 - [ ] 3.5 events + oris (52) — note `getAccommodationListAsCsv` has no interface counterpart but is
@@ -64,7 +67,9 @@
 - [ ] 6.1 Update `.claude/skills/backend-patterns/SKILL.md`: state the rule in "HATEOAS Rules
       (NON-NEGOTIABLE)" and correct the 8 `methodOn(XController.class)` occurrences in its examples
 - [ ] 6.2 State the `@RequestBody` (interface) vs `@Parameter` (controller) asymmetry explicitly —
-      "remove the annotations the interface already has" is the intuitive but wrong generalization
+      "remove the annotations the interface already has" is the intuitive but wrong generalization —
+      and the HV000151 rule from design.md D2 (an override declares either all of the interface's
+      parameter constraints or none of them; `@Valid` is exempt, `@NotNull` is not)
 - [ ] 6.3 Update `references/aggregate-checklist.md`, which tells implementers to add affordances
       without saying against which type
 - [ ] 6.4 Add an ADR to `docs/design-decisions.md` recording why affordances resolve against the
