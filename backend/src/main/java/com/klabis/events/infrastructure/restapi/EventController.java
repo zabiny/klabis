@@ -38,7 +38,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.*;
-import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -73,7 +72,6 @@ public class EventController implements EventsApi {
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
     private final boolean orisIntegrationActive;
-    private final EventDetailsPostprocessor eventDetailsPostprocessor;
     private final AccommodationListCsvRenderer csvRenderer;
 
     public EventController(
@@ -81,13 +79,11 @@ public class EventController implements EventsApi {
             EventRegistrationPort eventRegistrationService,
             Members members,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
-            EventDetailsPostprocessor eventDetailsPostprocessor,
             AccommodationListCsvRenderer csvRenderer) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.orisIntegrationActive = orisEventImportPort.isPresent();
-        this.eventDetailsPostprocessor = eventDetailsPostprocessor;
         this.csvRenderer = csvRenderer;
     }
 
@@ -149,28 +145,19 @@ public class EventController implements EventsApi {
     )
     @ApiResponse(responseCode = "200", description = "Event found")
     @Override
-    public ResponseEntity<RepresentationModel<?>> getEvent(
+    public ResponseEntity<EventDto> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
-        EventDto eventDto = EventDtoMapper.toDto(event);
-
-        List<RegistrationSummaryDto> registrationDtos = buildRegistrationDtos(event);
-
-        EntityModel<EventDto> entityModel = entityModelWithDomain(eventDto, event);
-        // Direct invocation is required because Spring HATEOAS RepresentationModelProcessor
-        // does not propagate recursively to EntityModels embedded via HalModelBuilder.
-        // The pipeline fires on the outer HalModel, not on the inner EntityModelWithDomain.
-        eventDetailsPostprocessor.process(entityModel, event);
-
-        RepresentationModel<?> model = HalModelBuilder.halModelOf(entityModel)
-                .embed(registrationDtos, RegistrationSummaryDto.class)
-                .build();
-
-        return ResponseEntity.ok(model);
+        // The registrations are declared here rather than in the postprocessor because building them
+        // needs the registration port and Members, which @MvcComponent beans should not inject —
+        // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
+        HalResponseContext.setDomain(event);
+        HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
+        return ResponseEntity.ok(EventDtoMapper.toDto(event));
     }
 
     private List<RegistrationSummaryDto> buildRegistrationDtos(Event event) {

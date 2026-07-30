@@ -667,15 +667,11 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
 
   /api/membership-fee-groups/{id}:
-    # getGroup is documented here but NOT wired into openApiModule generation (not listed under
-    # MembershipFeeGroups's models/apis in build.gradle.kts). Its controller method builds a custom
-    # HalModelBuilder response that embeds a *second*, independently-shaped collection (group
-    # members) alongside the main MembershipFeeGroupResponse payload, plus a manual
-    # groupDetailsPostprocessor.process(...) call — HalResponseContext only supports a single
-    # domain object or a flat domain list (see klabis-api-spec skill: "Returning plain payloads"),
-    # so there is no envelope schema this generator setup can redirect onto the existing
-    # hand-written response without changing runtime behaviour. Same precedent as events.yaml's
-    # getEvent. Note the _embedded key below is "members" per MembershipFeeGroupResponse's
+    # getGroup returns the plain MembershipFeeGroupResponse payload. The group-members collection is
+    # declared by the controller via HalResponseContext.embed(...) and rendered under _embedded
+    # by HalResponseBodyAdvice — the same deferred-assembly path as _links and _templates, so it
+    # stays out of the generated return type — same as events.yaml's getEvent.
+    # Note the _embedded key below is "members" per MembershipFeeGroupResponse's
     # @Relation(collectionRelation = "members") — NOT the class-name-derived default.
     get:
       operationId: getGroup
@@ -1513,11 +1509,11 @@ components:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
 
-    # EntityModelMembershipFeeGroupResponseWithMembers documents the actual wire shape returned by
-    # the hand-written getGroup — MembershipFeeGroupResponse's properties plus an
-    # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse) —
-    # but is not referenced by any schemaMappings entry: getGroup is excluded from generation (see
-    # the comment on that operation above).
+    # The full wire shape of getGroup: MembershipFeeGroupResponse's properties plus an
+    # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse).
+    # schemaMappings points at MembershipFeeGroupResponse, so the generated method returns the
+    # payload alone — the _embedded block is declared by the controller
+    # (HalResponseContext.embed) and assembled by HalResponseBodyAdvice, like _links and _templates.
     EntityModelMembershipFeeGroupResponseWithMembers:
       allOf:
         - $ref: '#/components/schemas/MembershipFeeGroupResponse'

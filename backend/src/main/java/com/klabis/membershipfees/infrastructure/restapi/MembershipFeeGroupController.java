@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.members.ActingMember;
@@ -20,8 +21,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,36 +47,28 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     private final FeeSelectionCampaignManagementPort managementPort;
     private final AdminFeeAssignmentPort adminFeeAssignmentPort;
     private final Members members;
-    private final MembershipFeeGroupDetailsPostprocessor groupDetailsPostprocessor;
 
     MembershipFeeGroupController(FeeSelectionCampaignManagementPort managementPort,
                                  AdminFeeAssignmentPort adminFeeAssignmentPort,
-                                 Members members,
-                                 MembershipFeeGroupDetailsPostprocessor groupDetailsPostprocessor) {
+                                 Members members) {
         this.managementPort = managementPort;
         this.adminFeeAssignmentPort = adminFeeAssignmentPort;
         this.members = members;
-        this.groupDetailsPostprocessor = groupDetailsPostprocessor;
     }
 
-    // Only the return type is hand-written; the method IS declared on MembershipFeeGroupsApi (hence
-    // @Override) and takes its path, produces, parameters and authorization from the spec. It embeds
-    // a second, independently-shaped collection (group members) as a true _embedded via
-    // HalModelBuilder, which HalResponseContext cannot represent — it carries a single domain object
-    // or a flat list, not a payload plus a differently-shaped sibling collection.
     @Override
     @Operation(summary = "Get membership fee group details with snapshot and member count")
-    public ResponseEntity<RepresentationModel<?>> getGroup(
+    public ResponseEntity<MembershipFeeGroupResponse> getGroup(
             @Parameter(description = "Group UUID") UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
-        EntityModel<MembershipFeeGroupResponse> entityModel = entityModelWithDomain(MembershipFeeGroupResponse.from(group), group);
-        groupDetailsPostprocessor.process(entityModel, group);
 
-        List<MembershipFeeGroupResponse.MemberInGroupResponse> groupMembers = buildGroupMembers(group);
-        RepresentationModel<?> model = HalModelBuilder.halModelOf(entityModel)
-                .embed(groupMembers, MembershipFeeGroupResponse.MemberInGroupResponse.class)
-                .build();
-        return ResponseEntity.ok(model);
+        // The members collection is declared here, not in the postprocessor: it needs the Members
+        // port, and MembershipFeeGroupDetailsPostprocessor is shared with
+        // FeeSelectionCampaignController.listGroupsForYear, whose items carry no such collection.
+        HalResponseContext.setDomain(group);
+        HalResponseContext.embed(buildGroupMembers(group),
+                MembershipFeeGroupResponse.MemberInGroupResponse.class);
+        return ResponseEntity.ok(MembershipFeeGroupResponse.from(group));
     }
 
     private List<MembershipFeeGroupResponse.MemberInGroupResponse> buildGroupMembers(MembershipFeeGroup group) {

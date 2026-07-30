@@ -473,14 +473,10 @@ openApiModule(
     // "EventRegistrations" replaces the original multi-word @Tag "Event Registrations", which the
     // generator silently drops.
     //
-    // EventsApi DOES declare getEvent and getAccommodationList — both are generated from events.yaml
-    // like every other operation and EventController @Overrides them. What differs is only the
-    // return type:
-    //   - getEvent embeds a second, independently-shaped collection (registrations) alongside the
-    //     main payload via HalModelBuilder — HalResponseContext only supports a single domain
-    //     object or a flat list, so there is no envelope this generator setup can redirect onto the
-    //     existing response without changing runtime behaviour. Its response schema stays
-    //     documentation-only and the return type is mapped to RepresentationModel<?> below.
+    // Two operations on this tag need a note:
+    //   - getEvent returns EventDto; its _embedded.registrationDtoList is contributed by
+    //     the controller via HalResponseContext.embed(...) and assembled by HalResponseBodyAdvice,
+    //     so the _embedded block never appears in the Java return type.
     //   - the accommodation-list path answers with two produces variants (HAL JSON and text/csv) on
     //     one operation; the generator emits ONE Java method (getAccommodationList) whose inherited
     //     produces lists both content types. The hand-written getAccommodationList (JSON) DOES
@@ -508,11 +504,10 @@ openApiModule(
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
-        // getEvent's and getAccommodationList's response schemas are documentation-only (see
-        // events.yaml and the note above `apis` here), but the operations themselves ARE generated
-        // onto EventsApi and need a return type each. Mapped onto the exact hand-written return
-        // types so EventController's existing methods satisfy the interface unchanged.
-        "EntityModelEventDtoWithRegistrations" to "org.springframework.hateoas.RepresentationModel<?>",
+        // getEvent returns the payload; the _embedded.registrationDtoList block in the
+        // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
+        // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
+        "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
         "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
         "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
@@ -528,7 +523,6 @@ openApiModule(
     // the import statement must not repeat.
     extraImportMappings = mapOf(
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
-        "EntityModelEventDtoWithRegistrations" to "org.springframework.hateoas.RepresentationModel",
         "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel",
         "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
         "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
@@ -587,23 +581,21 @@ openApiModule(
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
         "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
-        // getGroup's response schema is documentation-only (see the note above `apis`), but the
-        // operation IS generated onto MembershipFeeGroupsApi and needs a return type. Mapped onto
-        // the exact hand-written return type so MembershipFeeGroupController's existing method
-        // satisfies the interface unchanged.
-        "EntityModelMembershipFeeGroupResponseWithMembers" to "org.springframework.hateoas.RepresentationModel<?>",
+        // getGroup returns the payload; the _embedded.members block in the WithMembers schema is
+        // contributed by the controller via HalResponseContext.embed(...) and assembled by
+        // HalResponseBodyAdvice, so it does not belong in the Java return type.
+        "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
         "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
         "EntityModelMemberFeeHistoryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeHistoryResponse"
     ),
-    // The generic Collection<T>/RepresentationModel<?> mappings above carry type arguments that
-    // the import statement must not repeat.
+    // The generic Collection<T> mappings above carry type arguments that the import statement must
+    // not repeat.
     extraImportMappings = mapOf(
         "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection",
         "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection",
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection",
-        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection",
-        "EntityModelMembershipFeeGroupResponseWithMembers" to "org.springframework.hateoas.RepresentationModel"
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection"
     )
 )
 

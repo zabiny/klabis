@@ -192,14 +192,10 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
 
   /api/events/{id}:
-    # getEvent is documented here but NOT wired into openApiModule generation (not listed under
-    # EventsApi's models/apis in build.gradle.kts). Its controller method builds a custom
-    # HalModelBuilder response that embeds a *second*, independently-shaped collection
-    # (registrationDtoList) alongside the main EventDto payload — HalResponseContext only supports
-    # a single domain object or a flat domain list (see klabis-api-spec skill: "Returning plain
-    # payloads"), so there is no envelope schema this generator setup can redirect onto the existing
-    # hand-written response without changing runtime behaviour. Same precedent as IcalFeedController
-    # in the calendar module and the accommodation-list CSV variant below.
+    # getEvent returns the plain EventDto payload. The second, independently-shaped collection
+    # (registrationDtoList) is declared by the controller via HalResponseContext.embed(...) and
+    # rendered under _embedded by HalResponseBodyAdvice — the same deferred-assembly path as _links
+    # and _templates, so it stays out of the generated return type.
     get:
       operationId: getEvent
       tags: [Events]
@@ -1232,10 +1228,10 @@ components:
         currency:
           type: string
 
-    # EntityModelEventDtoWithRegistrations documents the actual wire shape returned by the
-    # hand-written getEvent — EventDto's properties plus an _embedded.registrationDtoList — but is
-    # not referenced by any schemaMappings entry: getEvent is excluded from generation (see the
-    # comment on that operation above).
+    # The full wire shape of getEvent: EventDto's properties plus an _embedded.registrationDtoList.
+    # schemaMappings points at EventDto, so the generated method returns the payload alone — the
+    # _embedded block is declared by the controller (HalResponseContext.embed) and assembled by
+    # HalResponseBodyAdvice, exactly like _links and _templates.
     EntityModelEventDtoWithRegistrations:
       allOf:
         - $ref: '#/components/schemas/EventDto'
