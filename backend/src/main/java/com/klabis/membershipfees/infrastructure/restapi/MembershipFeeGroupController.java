@@ -23,7 +23,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -87,7 +86,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     @Operation(summary = "Edit yearly fee and payment rules of a published level (requires MEMBERS:MANAGE, only while EDITABLE)")
     public ResponseEntity<Void> editSnapshot(
             @Parameter(description = "Group UUID") UUID id,
-            @RequestBody EditGroupSnapshotRequest request) {
+            EditGroupSnapshotRequest request) {
         managementPort.editGroupSnapshot(new MembershipFeeGroupId(id), MembershipFeesRequestMapper.toCommand(request));
         return ResponseEntity.noContent().build();
     }
@@ -107,7 +106,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> assignMember(
             @Parameter(description = "Fee group UUID") UUID groupId,
-            @RequestBody AdminAssignMemberRequest request,
+            AdminAssignMemberRequest request,
             @ActingMember MemberId actingAdmin) {
 
         adminFeeAssignmentPort.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
@@ -127,21 +126,21 @@ class MembershipFeeGroupDetailsPostprocessor
     @Override
     public void process(EntityModel<MembershipFeeGroupResponse> dtoModel, MembershipFeeGroup group) {
         UUID id = group.getId().value();
-        klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(id))
+        klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(id))
                 .map(link -> {
                     var self = link.withSelfRel()
                             .andAffordances(klabisAfford(
-                                    methodOn(MembershipFeeGroupController.class).assignMember(id, null, null)));
+                                    methodOn(MembershipFeeGroupsApi.class).assignMember(id, null, null)));
                     if (group.getStatus() == PublishedLevelStatus.EDITABLE) {
                         self = self.andAffordances(klabisAfford(
-                                methodOn(MembershipFeeGroupController.class).editSnapshot(id, null)));
+                                methodOn(MembershipFeeGroupsApi.class).editSnapshot(id, null)));
                     }
                     return self;
                 })
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeGroupController.class).listGroupRules(id))
+        klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).listGroupRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(group.getSourceLevelId().value()))
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(group.getSourceLevelId().value()))
                 .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
     }
 

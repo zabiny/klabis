@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -85,7 +83,7 @@ public class PasswordSetupController implements PasswordSetupApi {
     @Operation(summary = "Complete password setup", description = "Sets the user's password and activates the account")
     @ApiResponse(responseCode = "200", description = "Password set successfully")
     public ResponseEntity<PasswordSetupResponse> completePasswordSetup(
-            @Valid @RequestBody SetPasswordRequest request,
+            SetPasswordRequest request,
             HttpServletRequest httpRequest) {
 
         if (!request.password().equals(request.passwordConfirmation())) {
@@ -125,7 +123,7 @@ public class PasswordSetupController implements PasswordSetupApi {
     @Override
     @Operation(summary = "Request new password setup token", description = "Requests a new token if the previous one expired")
     @ApiResponse(responseCode = "200", description = "Request processed successfully")
-    public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(@Valid @RequestBody TokenRequestRequest request) {
+    public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(TokenRequestRequest request) {
         passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
         return ResponseEntity.ok(new TokenRequestResponse(
                 "If your account is pending activation, you will receive an email with a new setup link."));

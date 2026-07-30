@@ -19,7 +19,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -76,9 +75,9 @@ public class MemberController implements MembersApi {
     @ApiResponse(responseCode = "204", description = "Member updated successfully")
     @Override
     public ResponseEntity<Void> updateMember(
-            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
-            @Valid @RequestBody UpdateMemberRequest request,
+            UpdateMemberRequest request,
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
@@ -106,13 +105,13 @@ public class MemberController implements MembersApi {
     @ApiResponse(responseCode = "404", description = "Member not found")
     @Override
     public ResponseEntity<Void> resumeMember(
-            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
             @ActingUser UserId currentUserId) {
 
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -129,9 +128,9 @@ public class MemberController implements MembersApi {
     @ApiResponse(responseCode = "409", description = "Member is the sole owner of one or more groups — designate a successor before suspension")
     @Override
     public ResponseEntity<Void> suspendMember(
-            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Suspension request")
-            @Valid @RequestBody SuspendMembershipRequest request,
+            SuspendMembershipRequest request,
             @ActingUser UserId currentUserId) {
 
         var command = new Member.SuspendMembership(
@@ -142,7 +141,7 @@ public class MemberController implements MembersApi {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -243,7 +242,7 @@ public class MemberController implements MembersApi {
     @ApiResponse(responseCode = "200", description = "Member found")
     @Override
     public ResponseEntity<MemberDetailsResponse> getMember(
-            @Parameter(description = "Member UUID") @NotNull @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
@@ -263,7 +262,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
-        klabisLinkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -290,13 +289,13 @@ final class MemberSelfLinkSupport {
     static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
         UUID memberId = member.getId().uuid();
 
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(link -> {
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
             var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
+                    .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
             if (member.isActive()) {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
+                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).suspendMember(memberId, null, null)));
             } else {
-                self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
+                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(memberId, null)));
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
@@ -309,8 +308,8 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
     @Override
     public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
         pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null))));
+                .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(null, null, null)))
+                .andAffordances(klabisAfford(methodOn(RegistrationApi.class).registerMember(null, null))));
         return pagedModel;
     }
 }
@@ -320,7 +319,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }

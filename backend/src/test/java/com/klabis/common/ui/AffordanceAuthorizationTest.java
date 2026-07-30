@@ -158,6 +158,22 @@ class AffordanceAuthorizationTest {
             return ResponseEntity.noContent().build();
         }
 
+        @GetMapping(value = "/api/afford-test/iface-routed/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        @Override
+        public EntityModel<AffordanceTestResponse> getIfaceRouted(@PathVariable UUID id) {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceApi.class).getIfaceRouted(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceApi.class).updateIfaceRouted(id, null)))));
+            return model;
+        }
+
+        @PatchMapping("/api/afford-test/iface-routed/{id}")
+        @Override
+        public ResponseEntity<Void> updateIfaceRouted(@PathVariable UUID id, AffordanceTestRequest body) {
+            return ResponseEntity.noContent().build();
+        }
+
         @GetMapping(value = "/api/afford-test/iface-link-to-secured", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getIfaceLinkToSecured() {
             EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
@@ -188,6 +204,17 @@ class AffordanceAuthorizationTest {
 
         @HasAuthority(Authority.MEMBERS_MANAGE)
         EntityModel<AffordanceTestResponse> getIfaceSecuredEndpoint();
+
+        /**
+         * The @RequestBody lives here and nowhere else — the implementation deliberately omits it,
+         * reproducing the shape of a generated controller. An affordance recorded against the
+         * implementation would find no body annotation and lose its input metadata.
+         */
+        @RequestMapping(method = RequestMethod.PATCH, value = "/api/afford-test/iface-routed/{id}")
+        ResponseEntity<Void> updateIfaceRouted(@PathVariable UUID id, @RequestBody AffordanceTestRequest body);
+
+        @RequestMapping(method = RequestMethod.GET, value = "/api/afford-test/iface-routed/{id}")
+        EntityModel<AffordanceTestResponse> getIfaceRouted(@PathVariable UUID id);
     }
 
     @Nested
@@ -366,6 +393,29 @@ class AffordanceAuthorizationTest {
             mockMvc.perform(get("/api/afford-test/iface-link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.secured").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("affordance recorded against the interface, @RequestBody declared only there")
+    class InterfaceRoutedInputMetadata {
+
+        @Test
+        @WithKlabisMockUser(username = "anyUser")
+        @DisplayName("template carries writable input metadata even though the override omits @RequestBody")
+        void templateHasWritableInputMetadata() throws Exception {
+            UUID id = UUID.randomUUID();
+
+            // readOnly's absence is the regression under guard: when the affordance resolves against
+            // the implementation, HalFormsSupport finds no @RequestBody, skips
+            // HalFormsInputPayloadMetadata and every field comes back readOnly: true.
+            mockMvc.perform(get("/api/afford-test/iface-routed/{id}", id)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateIfaceRouted.properties[?(@.name=='value')]")
+                            .value(org.hamcrest.Matchers.hasSize(1)))
+                    .andExpect(jsonPath("$._templates.updateIfaceRouted.properties[?(@.name=='value')].readOnly")
+                            .doesNotExist());
         }
     }
 }

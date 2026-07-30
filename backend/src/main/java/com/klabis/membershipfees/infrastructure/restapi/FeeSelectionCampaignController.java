@@ -23,7 +23,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,10 +59,10 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
     @Override
     @Operation(summary = "Publish fee levels for a calendar year (requires MEMBERS:MANAGE)")
-    public ResponseEntity<Void> publishYear(@RequestBody PublishYearRequest request) {
+    public ResponseEntity<Void> publishYear(PublishYearRequest request) {
         FeeSelectionCampaignId id = managementPort.publishYear(MembershipFeesRequestMapper.toCommand(request));
         return ResponseEntity.created(
-                linkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id.value())).toUri()
+                linkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(id.value())).toUri()
         ).build();
     }
 
@@ -98,7 +97,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     @Override
     @Operation(summary = "Change voting deadline of an active campaign (requires MEMBERS:MANAGE)")
     public ResponseEntity<FeeSelectionCampaignResponse> changeDeadline(
-            UUID id, @RequestBody ChangeDeadlineRequest request) {
+            UUID id, ChangeDeadlineRequest request) {
         FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id),
                 MembershipFeesRequestMapper.toCommand(request));
         HalResponseContext.setDomain(updated);
@@ -140,23 +139,23 @@ class FeeSelectionCampaignDetailsPostprocessor
     public void process(EntityModel<FeeSelectionCampaignResponse> dtoModel, FeeSelectionCampaign publication) {
         UUID id = publication.getId().value();
         LocalDate today = LocalDate.now(clock);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id))
+        klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(id))
                 .map(link -> {
                     var self = link.withSelfRel();
                     if (!publication.isClosed(today)) {
                         self = self.andAffordances(klabisAfford(
-                                methodOn(FeeSelectionCampaignController.class).changeDeadline(id, null)));
+                                methodOn(FeeSelectionCampaignsApi.class).changeDeadline(id, null)));
                         if (!publication.isProcessed()) {
                             self = self.andAffordances(klabisAfford(
-                                    methodOn(FeeSelectionCampaignController.class).closeCampaign(id)));
+                                    methodOn(FeeSelectionCampaignsApi.class).closeCampaign(id)));
                         }
                     }
                     return self;
                 })
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
+        klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).listPublications(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listGroupsForYear(publication.getYear()))
+        klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).listGroupsForYear(publication.getYear()))
                 .ifPresent(link -> dtoModel.add(link.withRel("levels")));
     }
 }
@@ -193,7 +192,7 @@ class FeeSelectionCampaignListPostprocessor
         currentLevelOptions().ifPresent(levelOptions ->
                 model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                         .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(FeeSelectionCampaignController.class).publishYear(null),
+                                methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
                                 Map.of("levelIds", levelOptions)))));
         return model;
     }

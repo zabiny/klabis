@@ -24,7 +24,7 @@ public class MemberFamilyGroupLinkProcessor implements RepresentationModelProces
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = new MemberId(model.getContent().id());
         familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
-                .ifPresent(group -> klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(group.getId().uuid(), null))
+                .ifPresent(group -> klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("familyGroup"))
                         .ifPresent(model::add));
         return model;

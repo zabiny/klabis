@@ -8,7 +8,7 @@ import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -69,20 +69,20 @@ class PendingInvitationPostprocessor
         java.util.UUID invitationUuid = invitation.getId().value();
         java.util.UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
 
-        klabisLinkTo(methodOn(MemberController.class).getMember(invitedMemberUuid, null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(invitedMemberUuid, null))
                 .map(link -> link.withRel("invitedMember"))
                 .ifPresent(dtoModel::add);
         // TODO: "accept" and "reject" rels point to POST endpoints and should be pure affordances
         //   per backend-patterns skill. Kept as links because the frontend (GroupsPage.tsx) reads
         //   _links.accept / _links.reject directly to render action buttons — same as
         //   InvitationModelBuilder.build, which this postprocessor mirrors for this collection.
-        klabisLinkTo(methodOn(FreeGroupController.class).acceptInvitation(groupUuid, invitationUuid, null))
+        klabisLinkTo(methodOn(GroupsApi.class).acceptInvitation(groupUuid, invitationUuid, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("accept")
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class)
                                 .acceptInvitation(groupUuid, invitationUuid, null)))));
-        klabisLinkTo(methodOn(FreeGroupController.class).rejectInvitation(groupUuid, invitationUuid, null))
+        klabisLinkTo(methodOn(GroupsApi.class).rejectInvitation(groupUuid, invitationUuid, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("reject")
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class)
                                 .rejectInvitation(groupUuid, invitationUuid, null)))));
     }
 }

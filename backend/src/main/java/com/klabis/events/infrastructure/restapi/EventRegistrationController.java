@@ -34,7 +34,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -84,7 +83,7 @@ class EventRegistrationController implements EventRegistrationsApi {
     @Override
     public ResponseEntity<Void> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Registration data") @RequestBody RegisterEventRequest request,
+            @Parameter(description = "Registration data") RegisterEventRequest request,
             @ActingMember MemberId actingMember) {
 
         Event.RegisterCommand command = new Event.RegisterCommand(
@@ -93,7 +92,7 @@ class EventRegistrationController implements EventRegistrationsApi {
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(EventRegistrationController.class).getRegistration(actingMember.value(), eventId, false)).toUri()
+                linkTo(methodOn(EventRegistrationsApi.class).getRegistration(actingMember.value(), eventId, false)).toUri()
         ).build();
     }
 
@@ -126,7 +125,7 @@ class EventRegistrationController implements EventRegistrationsApi {
     public ResponseEntity<Void> editRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @RequestBody EditRegistrationRequest request) {
+            EditRegistrationRequest request) {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
                 SiCardNumber.of(request.siCardNumber()),
@@ -248,12 +247,12 @@ class RegistrationSummaryPostprocessor
         UUID eventId = event.getId().value();
         UUID rowMemberId = view.memberId().value();
 
-        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId, false))
+        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(rowMemberId, eventId, false))
                 .ifPresent(selfLinkBuilder -> {
                     if (event.areRegistrationsOpen()) {
                         dtoModel.add(selfLinkBuilder.withSelfRel()
                                 .andAffordances(klabisAffordWithPromptedOptions(
-                                        methodOn(EventRegistrationController.class).editRegistration(eventId, rowMemberId, null),
+                                        methodOn(EventRegistrationsApi.class).editRegistration(eventId, rowMemberId, null),
                                         Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event)))));
                     } else {
                         dtoModel.add(selfLinkBuilder.withSelfRel());
@@ -322,17 +321,17 @@ class RegistrationDetailsPostprocessor
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
 
-        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId, false))
+        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(memberId.value(), eventId, false))
                 .ifPresent(selfLinkBuilder -> {
                     var selfLink = selfLinkBuilder.withSelfRel();
                     if (event.areRegistrationsOpen()) {
                         selfLink = selfLink
                                 .andAffordances(klabisAffordWithPromptedOptions(
-                                        methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null),
+                                        methodOn(EventRegistrationsApi.class).editRegistration(eventId, memberId.value(), null),
                                         Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
                         if (memberId.equals(actingMember)) {
                             selfLink = selfLink
-                                    .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                                    .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
                         }
                     }
                     dtoModel.add(selfLink);

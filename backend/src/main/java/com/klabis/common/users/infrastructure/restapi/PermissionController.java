@@ -88,7 +88,7 @@ public class PermissionController implements PermissionsApi {
 
         permissionService.updateUserPermissions(new UserId(id), request.authorities());
 
-        URI location = klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id))
+        URI location = klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(id))
                 .map(link -> URI.create(link.toUri().toString()))
                 .orElseGet(() -> URI.create("/api/users/" + id + "/permissions"));
         return ResponseEntity.noContent().location(location).build();
@@ -163,9 +163,9 @@ class PermissionsDetailsPostprocessor extends ModelWithDomainPostprocessor<Permi
 
     @Override
     public void process(EntityModel<PermissionsResponse> dtoModel, UserPermissions permissions) {
-        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(permissions.getUserId().uuid()))
+        klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(permissions.getUserId().uuid()))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(PermissionController.class)
+                        .andAffordances(klabisAfford(methodOn(PermissionsApi.class)
                                 .updatePermissions(permissions.getUserId().uuid(), null))))
                 .ifPresent(dtoModel::add);
     }

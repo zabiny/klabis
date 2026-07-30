@@ -510,7 +510,7 @@ openApiModule(
         // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
         // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
         "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
-        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
+        "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
         "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
         "EntityModelRegistrationDto" to "com.klabis.events.infrastructure.restapi.RegistrationDto",
@@ -525,7 +525,7 @@ openApiModule(
     // the import statement must not repeat.
     extraImportMappings = mapOf(
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
-        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel",
+        "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection",
         "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
         "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
     )

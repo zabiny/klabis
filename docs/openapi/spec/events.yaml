@@ -385,7 +385,7 @@ paths:
 
   # This operation has two produces variants on the same 200 response (HAL JSON and text/csv), but
   # the generator emits ONE Java method with ONE return type
-  # (CollectionModel<AccommodationListItemDto>) — it cannot describe the CSV variant's byte[] body.
+  # (Collection<AccommodationListItemDto>) — it cannot describe the CSV variant's byte[] body.
   # getAccommodationList (JSON) DOES implement the generated EventsApi method; the CSV variant
   # (getAccommodationListAsCsv) stays a separate hand-written method with no interface counterpart.
   # See the matching comment in backend/build.gradle.kts and on both methods in EventController.
@@ -416,15 +416,20 @@ paths:
           content:
             application/prs.hal-forms+json:
               schema:
-                $ref: '#/components/schemas/CollectionModelAccommodationListItemDto'
+                $ref: '#/components/schemas/CollectionModelEntityModelAccommodationListItemDto'
             text/csv:
               schema:
                 type: string
                 format: binary
           x-hal-links:
+            self:
+              description: This accommodation list
             event:
               operation: getEvent
-              description: The event this accommodation list belongs to
+              description: |
+                The event this accommodation list belongs to. Present only when the caller may also
+                read the event: reaching this list needs EVENTS:REGISTRATIONS or being the
+                coordinator, which does not imply EVENTS:READ.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1699,7 +1704,14 @@ components:
           nullable: true
           x-klabis-halforms-access: READ_ONLY
 
-    CollectionModelAccommodationListItemDto:
+    # The _embedded key comes from @Relation(collectionRelation = "accommodationList") on the payload
+    # record, not from the schema name — see "A payload schema's name is wire contract" in the
+    # klabis-api-spec skill.
+    #
+    # Items are bare payloads with no _links of their own: an accommodation row is not an addressable
+    # resource and no postprocessor targets EntityModel<AccommodationListItemDto>. Only the
+    # collection carries links (self, event).
+    CollectionModelEntityModelAccommodationListItemDto:
       type: object
       properties:
         _embedded:
