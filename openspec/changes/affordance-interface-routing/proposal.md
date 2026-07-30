@@ -22,6 +22,10 @@ is worth removing the possibility rather than fixing the two instances.
   only to satisfy the affordance lookup; the interface becomes the single declaration site.
 - Add a guard test asserting that affordances resolve their input payload metadata, so a future
   override cannot silently regress.
+- Update the `backend-patterns` skill: state the rule in its "HATEOAS Rules (NON-NEGOTIABLE)" section
+  and correct the eight `methodOn(XController.class)` occurrences in its examples. Without this the
+  skill keeps teaching the pattern this change removes, and the next generated controller reintroduces
+  it.
 
 Nothing in the emitted hypermedia changes: affordance names derive from the method name (identical on
 interface and implementation), URLs come from `@RequestMapping` (present on the interface), and the
@@ -69,9 +73,11 @@ is there; that is a defect being removed, not a behavior being altered.
   counterpart — verified, so no endpoint is left needing to point at the class.
   `getAccommodationListAsCsv` has no interface counterpart but is not an affordance target.
 - **Tests:** 24 `methodOn(...)` call sites, mostly link-assertion unit tests.
+- **Documentation:** `.claude/skills/backend-patterns/SKILL.md` (the rule plus eight example
+  occurrences) and `references/aggregate-checklist.md`, which tells implementers to add affordances
+  without saying against which type. An ADR in `docs/design-decisions.md` records the reasoning.
 - **Developer workflow:** overrides stop needing `@RequestBody`; the interface becomes the one place
-  an endpoint's contract is declared. Worth recording as an ADR in `docs/design-decisions.md` and as
-  a rule in the `klabis-api-spec` skill.
+  an endpoint's contract is declared.
 - **Risk:** `HalFormsSupport.METHOD_AUTH_CACHE` is keyed on `Method` alone; its javadoc notes this is
   sound only while every caller derives `targetClass` from the method itself. That invariant holds
   after the change, but it deserves an explicit test rather than an assumption.
