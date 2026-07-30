@@ -399,7 +399,10 @@ openApiModule(
         "IdentityCardDto",
         "MedicalCourseDto",
         "TrainerLicenseDto",
-        "RefereeLicenseDto"
+        "RefereeLicenseDto",
+        "RegisterMemberRequest",
+        "AddressRequest",
+        "SuspendMembershipRequest"
     ),
     mappings = mapOf(
         "Gender" to "com.klabis.members.domain.Gender",
@@ -409,10 +412,9 @@ openApiModule(
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
         "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
-        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
-        "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
-        "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
-        "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest"
+        // UpdateMemberRequest stays hand-written — every property is a PatchField<T> wrapper, whose
+        // absent/null/value tri-state has no OpenAPI equivalent.
+        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(

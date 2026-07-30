@@ -134,6 +134,7 @@ alongside the types:
 |---|---|
 | `required: [firstName, …]` | `@NotNull` (not `@NotBlank` — see below) |
 | `x-klabis-not-blank: true` | `@NotBlank` (Klabis extension; schema properties only) |
+| `x-klabis-past: true` | `@Past` (Klabis extension; schema properties only) |
 | `maxLength` / `minLength` | `@Size(max=…, min=…)` |
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
@@ -151,6 +152,11 @@ rejects `""` but still accepts `"   "`. OpenAPI has no standard keyword meaning 
 Klabis therefore has its own: **`x-klabis-not-blank: true`** on the property, emitted as `@NotBlank`
 by the overridden `pojo.mustache`. Use it wherever the hand-written record had `@NotBlank`; the field
 also keeps the redundant `@NotNull` from `required`, which is harmless.
+
+**`x-klabis-past: true`** works the same way for `@Past`, which OpenAPI likewise cannot express
+(`format: date` says nothing about the range). Both live in `PROPERTY_ONLY_CONSTRAINT_EXTENSIONS` in
+`validate.mjs`; adding a third constraint of this kind means one entry there plus one branch in
+`pojo.mustache`.
 
 **Check the schema is actually generated before converting a `pattern` hack to it.** Not every
 schema in the spec has a generated counterpart — a request whose Java record is still hand-written

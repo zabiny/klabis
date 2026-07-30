@@ -83,6 +83,11 @@ describe('validateSpec', () => {
         expect(validate(docWithSchema({name: {'x-klabis-not-blank': true}}))).toEqual([]);
     });
 
+    it('requires past to be true rather than false', () => {
+        expect(validate(docWithSchema({dateOfBirth: {'x-klabis-past': false}}))).toHaveLength(1);
+        expect(validate(docWithSchema({dateOfBirth: {'x-klabis-past': true}}))).toEqual([]);
+    });
+
     it('accepts x-hal-templates pointing at an existing operationId', () => {
         expect(validate({
             paths: {

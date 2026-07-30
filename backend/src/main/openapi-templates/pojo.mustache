@@ -27,11 +27,12 @@ public record {{classname}}(
         RegisterMemberRequest and MemberDetailsResponse) keep the same runtime validation the
         hand-written DTOs had.
 
-        @NotBlank is the exception: OpenAPI has no keyword meaning "not blank", so it comes from
-        x-klabis-not-blank rather than the partial. A field that is both `required` and not-blank
-        therefore carries a redundant @NotNull from the partial as well; that is harmless, and
-        suppressing it would mean forking the stock beanValidation template too. }}
+        @NotBlank and @Past are the exceptions: OpenAPI has no keyword for either ("not blank",
+        "strictly in the past"), so they come from x-klabis-not-blank / x-klabis-past rather than
+        the partial. A field that is both `required` and not-blank therefore carries a redundant
+        @NotNull from the partial as well; that is harmless, and suppressing it would mean forking
+        the stock beanValidation template too. }}
     {{#vars}}{{^-first}},
-    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{{datatypeWithEnum}}} {{name}}{{/vars}}
+    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{{datatypeWithEnum}}} {{name}}{{/vars}}
 ) {
 }

@@ -16,9 +16,16 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-authority',
     'x-klabis-halforms-access',
     'x-klabis-not-blank',
+    'x-klabis-past',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
+
+/**
+ * Boolean flags standing in for Bean Validation constraints OpenAPI cannot express. They are
+ * emitted by the overridden pojo.mustache, which covers schema properties only.
+ */
+const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set(['x-klabis-not-blank', 'x-klabis-past']);
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -142,17 +149,17 @@ export function validateSpec(document, {authorities}) {
                 errors.push({path: `${path}/${key}`, message: 'must be true when present'});
             }
 
-            if (key === 'x-klabis-not-blank') {
+            if (PROPERTY_ONLY_CONSTRAINT_EXTENSIONS.has(key)) {
                 if (value !== true) {
                     errors.push({path: `${path}/${key}`, message: 'must be true when present'});
                 }
                 // Only pojo.mustache is overridden, so on a parameter's schema the generator would
-                // silently drop this and ship no validation at all. Flag it here rather than letting
-                // it pass as a no-op; use `pattern: '^(?!\s*$).+'` on parameters instead.
+                // silently drop these and ship no validation at all. Flag it here rather than
+                // letting it pass as a no-op; use a standard keyword (e.g. `pattern`) instead.
                 if (path.includes('/parameters')) {
                     errors.push({
                         path: `${path}/${key}`,
-                        message: 'is not honoured on a parameter — use pattern: \'^(?!\\s*$).+\' instead',
+                        message: `"${key}" is not honoured on a parameter — use a standard OpenAPI keyword instead`,
                     });
                 }
             }

@@ -867,7 +867,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.firstName").value("First name is required"));
+                    .andExpect(jsonPath("$.fieldErrors.firstName").value("must not be blank"));
         }
 
         @Test
@@ -895,7 +895,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("Email must be valid"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("must be a well-formed email address"));
         }
 
         @Test
@@ -924,7 +924,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
-                            "Phone number must be in E.164 format (starts with +)"));
+                            "must match \"^\\+[0-9\\s]{7,20}$\""));
         }
 
         @Test
@@ -951,7 +951,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("Date of birth must be in the past"));
+                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("must be a past date"));
         }
 
         @Test
@@ -979,7 +979,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("Email is required"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("must not be blank"));
         }
 
         @Test
@@ -1092,7 +1092,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
-                            "Nationality must be a 2-letter ISO 3166-1 alpha-2 code"));
+                            "size must be between 2 and 2"));
         }
 
         @Test
@@ -1120,7 +1120,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("Street is required"));
+                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("must not be blank"));
         }
 
         @Test
@@ -1148,7 +1148,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("Country must be a valid ISO 3166-1 alpha-2 code (2 letters)"));
+                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("must match \"^[A-Za-z]{2}$\""));
         }
     }
 
@@ -1773,7 +1773,7 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("missing reason should return 400 with fieldErrors.reason in Czech")
+        @DisplayName("missing reason should return 400 with fieldErrors.reason")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WithFieldErrorWhenReasonIsMissing() throws Exception {
             // Arrange
@@ -1788,11 +1788,11 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.reason").value("Důvod je povinný"));
+                    .andExpect(jsonPath("$.fieldErrors.reason").value("must not be null"));
         }
 
         @Test
-        @DisplayName("note exceeding 500 characters should return 400 with fieldErrors.note in Czech")
+        @DisplayName("note exceeding 500 characters should return 400 with fieldErrors.note")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WithFieldErrorWhenNoteExceeds500Chars() throws Exception {
             // Arrange
@@ -1809,7 +1809,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.note").value("Poznámka nesmí přesáhnout 500 znaků"));
+                    .andExpect(jsonPath("$.fieldErrors.note").value("size must be between 0 and 500"));
         }
 
         @Test

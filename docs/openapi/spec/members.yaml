@@ -605,13 +605,13 @@ components:
       properties:
         firstName:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           description: Member's first name
           example: Jan
           maxLength: 100
         lastName:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           description: Member's last name
           example: Novák
           maxLength: 100
@@ -620,8 +620,12 @@ components:
           format: date
           description: Member's date of birth
           example: '2005-05-15'
+          # No domain guard for this one — Member does not re-check it, so the constraint has to
+          # survive on the DTO.
+          x-klabis-past: true
         nationality:
           type: string
+          x-klabis-not-blank: true
           description: Nationality (ISO 3166-1 alpha-2 code)
           example: CZ
           minLength: 2
@@ -631,12 +635,13 @@ components:
         email:
           type: string
           format: email
+          x-klabis-not-blank: true
           description: Email address
           example: jan.novak@example.com
           maxLength: 255
         phone:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           description: Phone number in E.164 format
           example: '+420777123456'
           pattern: '^\+[0-9\s]{7,20}$'
@@ -708,6 +713,7 @@ components:
           $ref: '#/components/schemas/DeactivationReason'
         note:
           type: string
+          maxLength: 500
 
     # --- Shared value objects ----------------------------------------------
 
@@ -729,21 +735,26 @@ components:
       properties:
         street:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           maxLength: 200
         city:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           maxLength: 100
         postalCode:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           description: Alphanumeric, hyphens and spaces allowed
           maxLength: 20
+          # Kept in sync with Address.POSTAL_CODE_PATTERN, which the aggregate enforces too.
+          pattern: '^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$|^[A-Za-z0-9]$'
         country:
           type: string
-          minLength: 1
+          x-klabis-not-blank: true
           description: ISO 3166-1 alpha-2 code
+          # Kept in sync with Address.ISO_3166_ALPHA_2_PATTERN.
+          pattern: '^[A-Za-z]{2}$'
+
     GuardianDTO:
       type: object
       description: Guardian information for minors
