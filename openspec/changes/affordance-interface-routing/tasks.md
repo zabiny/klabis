@@ -58,21 +58,35 @@
 
 ## 4. Plain `linkTo` call sites
 
-- [ ] 4.1 Convert the 13 `linkTo(methodOn(...))` calls that build a `Location` header — no behavior
-      change, done for consistency
-- [ ] 4.2 Convert the 2 that build a `Link` while bypassing `klabisLinkTo`'s authorization check
-      (`EventController:375`, `MembershipFeeTierController:165`), preserving the bypass, and record
-      the open question from design.md as a follow-up issue rather than changing it here
+- [x] 4.1 Convert the 13 `linkTo(methodOn(...))` calls that build a `Location` header — no behavior
+      change, done for consistency. Completed as part of sections 2–3: the per-module conversion
+      covered plain `linkTo` alongside `klabisLinkTo`. Zero `methodOn(XController.class)` call sites
+      remain anywhere in `backend/src/main/java`.
+- [x] 4.2 Convert the ones that build a `Link` while bypassing `klabisLinkTo`'s authorization check,
+      preserving the bypass. **Correction to the earlier count:** only one of the two is a `Link` —
+      `EventController:375` builds `withRel("event")` on the accommodation list. The other,
+      `MembershipFeeTierController:164`, turned out to be a `Location` header (`.created(...).toUri()`)
+      and therefore belongs to 4.1. The open question in design.md stands for the single remaining
+      site.
 
 ## 5. Guard against regression
 
-- [ ] 5.1 Add a reflective test enumerating `@RestController` beans: for every generated-interface
-      method with a `@RequestBody` parameter, assert `methodOn(Api.class)` yields an affordance whose
-      input payload metadata is non-empty
-- [ ] 5.2 Assert authorization outcomes in the same test, not just metadata presence, so
-      `METHOD_AUTH_CACHE` resolving annotations off the interface stays covered
-- [ ] 5.3 Verify the guard actually fails: temporarily point one affordance back at its controller
-      and confirm a red test, then revert
+- [x] 5.1 **Revised approach.** A reflective enumeration would have to instantiate each affordance
+      outside a request context to inspect its metadata, which `HalFormsSupport` does not support.
+      Two narrower guards cover the same invariant more directly:
+      `AffordanceRoutingArchitectureTest` asserts no production call site passes a `*Controller.class`
+      to `methodOn(...)` (source-level, because ArchUnit sees the call but not the class literal
+      argument), and a new `InterfaceRoutedInputMetadata` case in `AffordanceAuthorizationTest`
+      exercises the real mechanism end to end: an override that omits `@RequestBody`, an affordance
+      recorded against the interface, and an assertion that the field is not `readOnly`.
+- [x] 5.2 Already covered: `AffordanceAuthorizationTest` has an
+      `InterfaceLevelKlabisLinkToAuthorization` nested class asserting both the authorized and
+      unauthorized outcome for `@HasAuthority` declared only on the interface. The new fixture
+      extends the same `AffordanceApi`, so `METHOD_AUTH_CACHE` resolution off the interface stays
+      exercised.
+- [x] 5.3 Both guards verified red then green: pointing the test affordance back at
+      `AffordanceTestController` failed the metadata assertion (17 tests, 1 failed), and reverting
+      `MemberPermissionsLinkProcessor:88` to `PermissionController` failed the architecture test.
 
 ## 6. Documentation
 

@@ -55,10 +55,13 @@ The 16 plain `linkTo(methodOn(...))` calls split into two kinds:
   `GET` the target. They gain nothing from interface routing — no affordance, no payload metadata —
   but converting them keeps one rule instead of two, and the resolved URL is identical either way.
   **Convert them**, for consistency rather than correctness.
-- **2 build a `Link`** (`EventController:375`, `MembershipFeeTierController:165`) while skipping
-  `klabisLinkTo`'s authorization check. Converting the target type does not change that; whether the
-  bypass is correct is a separate question. **Convert, and flag each with a follow-up note** rather
-  than silently changing behavior here.
+- **1 builds a `Link`** (`EventController:375`, the `event` rel on the accommodation list) while
+  skipping `klabisLinkTo`'s authorization check. Converting the target type does not change that;
+  whether the bypass is correct is a separate question. **Convert, and flag it with a follow-up note**
+  rather than silently changing behavior here.
+
+  *Corrected during implementation:* `MembershipFeeTierController:164` was counted here originally,
+  but it builds a `Location` header (`.created(...).toUri()`), so it belongs to the first group.
 
 ### D2. Remove `@RequestBody` from overrides, keep `@Parameter`
 
