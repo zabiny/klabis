@@ -1,6 +1,5 @@
 package com.klabis.common.ui;
 
-import com.klabis.common.patch.PatchField;
 import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
@@ -10,6 +9,7 @@ import com.klabis.common.users.HasAuthority;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -647,11 +647,11 @@ public class HalFormsSupport {
             }
 
             if (Optional.class.getSimpleName().equalsIgnoreCase(result)
-                || PatchField.class.getSimpleName().equalsIgnoreCase(result)
+                || JsonNullable.class.getSimpleName().equalsIgnoreCase(result)
                 || isCollectionType()) {
                 Class<?> generic0 = delegate.getType().getGeneric(0).getRawClass();
                 if (isSupportedCollectionType(generic0)) {
-                    // PatchField<Collection<T>> — unwrap both PatchField and Collection to get element type
+                    // JsonNullable<Collection<T>> — unwrap both to get the element type
                     result = getTypeFromClass(delegate.getType().getGeneric(0).getGeneric(0).getRawClass());
                 } else {
                     result = getTypeFromClass(generic0);
@@ -666,10 +666,10 @@ public class HalFormsSupport {
             if (isSupportedCollectionType(enclosedClass)) {
                 return true;
             }
-            // PatchField<Collection<T>> — treat as collection for multi=true HAL Forms rendering
-            if (PatchField.class.isAssignableFrom(enclosedClass)) {
-                Class<?> patchFieldGeneric = delegate.getType().getGeneric(0).getRawClass();
-                return isSupportedCollectionType(patchFieldGeneric);
+            // JsonNullable<Collection<T>> — treat as collection for multi=true HAL Forms rendering
+            if (JsonNullable.class.isAssignableFrom(enclosedClass)) {
+                Class<?> wrappedType = delegate.getType().getGeneric(0).getRawClass();
+                return isSupportedCollectionType(wrappedType);
             }
             return false;
         }

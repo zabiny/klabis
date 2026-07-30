@@ -1,9 +1,9 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
-import com.klabis.common.patch.PatchField;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,28 +18,28 @@ class UpdateTrainingGroupRequestTest {
     void trainersProvided() {
         MemberId trainer = new MemberId(UUID.randomUUID());
         UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
-                PatchField.notProvided(), PatchField.notProvided(), PatchField.of(List.of(trainer)));
+                JsonNullable.undefined(), JsonNullable.undefined(), JsonNullable.of(List.of(trainer)));
 
-        assertThat(request.trainers().throwIfNotProvided()).containsExactly(trainer);
+        assertThat(request.trainers().orElseThrow()).containsExactly(trainer);
     }
 
     @Test
     @DisplayName("trainers field is provided but null when HAL forms sends explicit null for untouched list")
     void trainersExplicitlyNull() {
         UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
-                PatchField.notProvided(), PatchField.notProvided(), PatchField.of(null));
+                JsonNullable.undefined(), JsonNullable.undefined(), JsonNullable.of(null));
 
-        assertThat(request.trainers().isProvided()).isTrue();
-        assertThat(request.trainers().throwIfNotProvided()).isNull();
+        assertThat(request.trainers().isPresent()).isTrue();
+        assertThat(request.trainers().orElseThrow()).isNull();
     }
 
     @Test
     @DisplayName("trainers field is not provided when absent from request")
     void trainersNotProvided() {
         UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
-                PatchField.notProvided(), PatchField.notProvided(), PatchField.notProvided());
+                JsonNullable.undefined(), JsonNullable.undefined(), JsonNullable.undefined());
 
-        assertThat(request.trainers().isProvided()).isFalse();
+        assertThat(request.trainers().isPresent()).isFalse();
     }
 
     @Test
@@ -50,9 +50,9 @@ class UpdateTrainingGroupRequestTest {
         // properties and does not match the spec's declaration order (minAge, maxAge).
         AgeRangeRequest ageRangeRequest = AgeRangeRequestBuilder.builder().minAge(10).maxAge(18).build();
         UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
-                PatchField.notProvided(), PatchField.of(ageRangeRequest), PatchField.notProvided());
+                JsonNullable.undefined(), JsonNullable.of(ageRangeRequest), JsonNullable.undefined());
 
-        var ageRange = request.ageRangeDomain().throwIfNotProvided();
+        var ageRange = request.ageRangeDomain().orElseThrow();
         assertThat(ageRange.minAge()).isEqualTo(10);
         assertThat(ageRange.maxAge()).isEqualTo(18);
     }

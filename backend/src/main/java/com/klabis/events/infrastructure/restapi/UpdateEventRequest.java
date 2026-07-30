@@ -1,12 +1,12 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.patch.PatchField;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.EventCategoryId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.URL;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,32 +22,32 @@ import java.util.List;
 record UpdateEventRequest(
         @NotBlank(message = "Event name is required")
         @Size(max = 100, message = "Event name must not exceed 100 characters")
-        PatchField<String> name,
+        JsonNullable<String> name,
 
-        PatchField<LocalDate> eventDate,
+        JsonNullable<LocalDate> eventDate,
 
         @Size(max = 100, message = "Event location must not exceed 100 characters")
-        PatchField<String> location,
+        JsonNullable<String> location,
 
         @NotBlank(message = "Event organizer is required")
         @Size(max = 10, message = "Event organizer must not exceed 10 characters")
-        PatchField<String> organizer,
+        JsonNullable<String> organizer,
 
         @URL(message = "Website URL must be valid")
-        PatchField<String> websiteUrl,
+        JsonNullable<String> websiteUrl,
 
-        PatchField<LinkedHashSet<MemberId>> coordinators,
+        JsonNullable<LinkedHashSet<MemberId>> coordinators,
 
-        PatchField<EventTypeId> eventTypeId,
+        JsonNullable<EventTypeId> eventTypeId,
 
         @Size(max = 3, message = "At most 3 deadlines are allowed")
-        PatchField<List<LocalDate>> deadlines,
+        JsonNullable<List<LocalDate>> deadlines,
 
-        PatchField<List<CategoryRequest>> categories,
+        JsonNullable<List<CategoryRequest>> categories,
 
-        PatchField<RankingRequest> ranking,
+        JsonNullable<RankingRequest> ranking,
 
-        PatchField<EntryFeeRequest> baseEntryFee
+        JsonNullable<EntryFeeRequest> baseEntryFee
 ) {
 
     /**
@@ -87,10 +87,10 @@ record UpdateEventRequest(
 
     @AssertTrue(message = "Deadlines must be in non-decreasing order")
     boolean isDeadlinesOrdered() {
-        if (!deadlines.isProvided()) {
+        if (!deadlines.isPresent()) {
             return true;
         }
-        List<LocalDate> dates = deadlines.throwIfNotProvided();
+        List<LocalDate> dates = deadlines.orElseThrow();
         if (dates == null || dates.size() < 2) {
             return true;
         }

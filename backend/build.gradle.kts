@@ -122,6 +122,11 @@ dependencies {
     // Apache Commons CSV for accommodation list CSV export
     implementation("org.apache.commons:commons-csv:1.13.0")
 
+    // JsonNullable: tri-state (absent / null / value) wrapper for PATCH request bodies.
+    // 0.2.10+ ships a Jackson 3 module (tools.jackson); the Jackson 2 artifacts it also declares
+    // stay off the classpath because both are `provided` upstream.
+    implementation("org.openapitools:jackson-databind-nullable:0.2.11")
+
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
     implementation("org.jmolecules:jmolecules-hexagonal-architecture")

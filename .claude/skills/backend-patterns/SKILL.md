@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, PatchField), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
+description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
 version: 0.6.0
 ---
@@ -240,7 +240,7 @@ ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id,
 }
 ```
 
-Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `PatchField<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
+Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `JsonNullable<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
 
 ### HATEOAS — Controllers Return Plain DTOs; HalResponseBodyAdvice Wraps Them
 
@@ -615,17 +615,17 @@ In collections (`GET /members`), each item is evaluated independently — owner 
 
 ### Field-Level Authorization on Request DTOs (PATCH)
 
-`PatchField<T>` components with `@PreAuthorize`, `@HasAuthority`, or `@OwnerVisible` annotations are enforced by `RequestBodyFieldAuthorizationAdvice`. Only provided fields are checked — absent fields are skipped. For `@OwnerVisible`, owner ID is read from the controller method's `@OwnerId @PathVariable` parameter.
+`JsonNullable<T>` components with `@PreAuthorize`, `@HasAuthority`, or `@OwnerVisible` annotations are enforced by `RequestBodyFieldAuthorizationAdvice`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. For `@OwnerVisible`, owner ID is read from the controller method's `@OwnerId @PathVariable` parameter.
 
 ```java
 record UpdateMemberRequest(
-    PatchField<String> email,  // no annotation — anyone can update
+    JsonNullable<String> email,  // no annotation — anyone can update
 
     @HasAuthority(Authority.MEMBERS_MANAGE)
-    PatchField<String> birthNumber,  // only admin can update — 403 if unauthorized
+    JsonNullable<String> birthNumber,  // only admin can update — 403 if unauthorized
 
     @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
-    PatchField<String> chipNumber  // admin OR owner can update
+    JsonNullable<String> chipNumber  // admin OR owner can update
 ) {}
 ```
 
@@ -637,7 +637,7 @@ Controller with `@OwnerId` path variable:
 ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, @RequestBody UpdateMemberRequest request) { ... }
 ```
 
-If an unauthorized user sends a provided `PatchField` for a protected field, `FieldAuthorizationException` is thrown → HTTP 403.
+If an unauthorized user sends a present `JsonNullable` for a protected field, `FieldAuthorizationException` is thrown → HTTP 403.
 
 ### Available denied handlers (`com.klabis.common.security.fieldsecurity`)
 

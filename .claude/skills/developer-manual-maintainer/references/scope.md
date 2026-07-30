@@ -19,7 +19,7 @@ Vše v `backend/src/main/java/com/klabis/common/` — celý package:
 - `common.mvc` — MvcExceptionHandler, MvcComponent, MvcConfiguration
 - `common.observability` — Custom metriky pro Modulith
 - `common.pagination` — TranslatedPageable
-- `common.patch` — PatchField, PatchFieldDeserializer
+- `common.patch` — JsonNullable wiring (JsonNullableConfiguration)
 - `common.ratelimit` — PerKeyRateLimiter
 - `common.security` (vč. `fieldsecurity`) — SecurityConfiguration, Authority, OwnerVisible, OwnerId, KlabisJwtAuthenticationToken, OwnershipResolver
 - `common.templating` — TemplateRenderer

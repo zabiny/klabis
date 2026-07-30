@@ -3,6 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.users.UserId;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.domain.*;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 class UpdateMemberRequestMapper {
 
@@ -40,30 +41,30 @@ class UpdateMemberRequestMapper {
         }
     }
 
-    private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {
-        return email.isProvided() ? EmailAddress.of(email.throwIfNotProvided()) : null;
+    private static EmailAddress toEmailAddress(JsonNullable<String> email) {
+        return email.isPresent() ? EmailAddress.of(email.orElseThrow()) : null;
     }
 
-    private static PhoneNumber toPhoneNumber(com.klabis.common.patch.PatchField<String> phone) {
-        return phone.isProvided() ? PhoneNumber.of(phone.throwIfNotProvided()) : null;
+    private static PhoneNumber toPhoneNumber(JsonNullable<String> phone) {
+        return phone.isPresent() ? PhoneNumber.of(phone.orElseThrow()) : null;
     }
 
-    private static Address toAddress(com.klabis.common.patch.PatchField<AddressRequest> address) {
-        if (!address.isProvided()) {
+    private static Address toAddress(JsonNullable<AddressRequest> address) {
+        if (!address.isPresent()) {
             return null;
         }
-        AddressRequest a = address.throwIfNotProvided();
+        AddressRequest a = address.orElseThrow();
         if (a == null) return null;
         return Address.of(a.street(), a.city(), a.postalCode(), a.country());
     }
 
-    private static String toString(com.klabis.common.patch.PatchField<String> value) {
-        return value.isProvided() ? value.throwIfNotProvided() : null;
+    private static String toString(JsonNullable<String> value) {
+        return value.isPresent() ? value.orElseThrow() : null;
     }
 
-    private static BankAccountNumber toBankAccountNumber(com.klabis.common.patch.PatchField<String> bankAccountNumber) {
-        if (bankAccountNumber.isProvided()) {
-            String value = bankAccountNumber.throwIfNotProvided();
+    private static BankAccountNumber toBankAccountNumber(JsonNullable<String> bankAccountNumber) {
+        if (bankAccountNumber.isPresent()) {
+            String value = bankAccountNumber.orElseThrow();
             if (value != null && !value.isBlank()) {
                 return BankAccountNumber.of(value);
             }
@@ -71,53 +72,53 @@ class UpdateMemberRequestMapper {
         return null;
     }
 
-    private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<IdentityCardDto> identityCard) {
-        if (!identityCard.isProvided()) {
+    private static IdentityCard toIdentityCard(JsonNullable<IdentityCardDto> identityCard) {
+        if (!identityCard.isPresent()) {
             return null;
         }
-        IdentityCardDto dto = identityCard.throwIfNotProvided();
+        IdentityCardDto dto = identityCard.orElseThrow();
         if (dto == null) return null;
         return IdentityCard.of(dto.cardNumber(), dto.validityDate());
     }
 
-    private static <T> T toEnum(com.klabis.common.patch.PatchField<T> enumField) {
-        return enumField.isProvided() ? enumField.throwIfNotProvided() : null;
+    private static <T> T toEnum(JsonNullable<T> enumField) {
+        return enumField.isPresent() ? enumField.orElseThrow() : null;
     }
 
-    private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<MedicalCourseDto> medicalCourse) {
-        if (!medicalCourse.isProvided()) {
+    private static MedicalCourse toMedicalCourse(JsonNullable<MedicalCourseDto> medicalCourse) {
+        if (!medicalCourse.isPresent()) {
             return null;
         }
-        MedicalCourseDto dto = medicalCourse.throwIfNotProvided();
+        MedicalCourseDto dto = medicalCourse.orElseThrow();
         if (dto == null) return null;
         return MedicalCourse.of(dto.completionDate(), java.util.Optional.ofNullable(dto.validityDate()));
     }
 
-    private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {
-        if (!trainerLicense.isProvided()) {
+    private static TrainerLicense toTrainerLicense(JsonNullable<TrainerLicenseDto> trainerLicense) {
+        if (!trainerLicense.isPresent()) {
             return null;
         }
-        TrainerLicenseDto dto = trainerLicense.throwIfNotProvided();
+        TrainerLicenseDto dto = trainerLicense.orElseThrow();
         if (dto == null) return null;
         return TrainerLicense.of(dto.level(), dto.validityDate());
     }
 
-    private static RefereeLicense toRefereeLicense(com.klabis.common.patch.PatchField<RefereeLicenseDto> refereeLicense) {
-        if (!refereeLicense.isProvided()) {
+    private static RefereeLicense toRefereeLicense(JsonNullable<RefereeLicenseDto> refereeLicense) {
+        if (!refereeLicense.isPresent()) {
             return null;
         }
-        RefereeLicenseDto dto = refereeLicense.throwIfNotProvided();
+        RefereeLicenseDto dto = refereeLicense.orElseThrow();
         if (dto == null) return null;
         return RefereeLicense.of(dto.level(), dto.validityDate());
     }
 
-    private static java.time.LocalDate toLocalDate(com.klabis.common.patch.PatchField<java.time.LocalDate> dateField) {
-        return dateField.isProvided() ? dateField.throwIfNotProvided() : null;
+    private static java.time.LocalDate toLocalDate(JsonNullable<java.time.LocalDate> dateField) {
+        return dateField.isPresent() ? dateField.orElseThrow() : null;
     }
 
-    private static BirthNumber toBirthNumber(com.klabis.common.patch.PatchField<String> birthNumber) {
-        if (birthNumber.isProvided()) {
-            String value = birthNumber.throwIfNotProvided();
+    private static BirthNumber toBirthNumber(JsonNullable<String> birthNumber) {
+        if (birthNumber.isPresent()) {
+            String value = birthNumber.orElseThrow();
             if (value != null && !value.isBlank()) {
                 return BirthNumber.of(value);
             }
@@ -125,11 +126,11 @@ class UpdateMemberRequestMapper {
         return null;
     }
 
-    private static GuardianInformation toGuardianInformation(com.klabis.common.patch.PatchField<GuardianDTO> guardian) {
-        if (!guardian.isProvided()) {
+    private static GuardianInformation toGuardianInformation(JsonNullable<GuardianDTO> guardian) {
+        if (!guardian.isPresent()) {
             return null;
         }
-        GuardianDTO dto = guardian.throwIfNotProvided();
+        GuardianDTO dto = guardian.orElseThrow();
         if (dto == null) return null;
         return new GuardianInformation(
                 dto.firstName(),

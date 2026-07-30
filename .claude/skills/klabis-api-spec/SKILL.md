@@ -616,7 +616,7 @@ diff the module's schemas property-by-property against `klabis-codefirst.json` â
 transcription mistakes actually surface.
 
 Expect the springdoc output to be wrong in places (it does not know about `@JsonValue` mixins or the
-`PatchField` deserializer). Where it disagrees with the actual wire format, the spec follows the
+`JsonNullable` deserializer). Where it disagrees with the actual wire format, the spec follows the
 **wire**, and the discrepancy is documented in the spec rather than mirrored.
 
 ### A newly annotated method can fail a link/affordance unit test

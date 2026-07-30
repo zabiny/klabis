@@ -26,23 +26,23 @@ class UpdateEventRequestMapper {
      * An explicitly provided null clears optional fields (e.g. eventTypeId, websiteUrl, location, ranking, baseEntryFee).
      */
     static Event.UpdateEvent toCommand(UpdateEventRequest request, Event existingEvent) {
-        String name = request.name().patchValue(existingEvent.getName());
-        LocalDate eventDate = request.eventDate().patchValue(existingEvent.getEventDate());
-        String location = request.location().patchValue(existingEvent.getLocation());
-        String organizer = request.organizer().patchValue(existingEvent.getOrganizer());
-        String websiteUrl = request.websiteUrl().patchValue(
+        String name = request.name().orElse(existingEvent.getName());
+        LocalDate eventDate = request.eventDate().orElse(existingEvent.getEventDate());
+        String location = request.location().orElse(existingEvent.getLocation());
+        String organizer = request.organizer().orElse(existingEvent.getOrganizer());
+        String websiteUrl = request.websiteUrl().orElse(
                 existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
-        LinkedHashSet<MemberId> coordinators = request.coordinators().patchValue(new LinkedHashSet<>(existingEvent.getCoordinators()));
-        EventTypeId eventTypeId = request.eventTypeId().patchValue(existingEvent.getEventTypeId().orElse(null));
-        RegistrationDeadlines registrationDeadlines = request.deadlines().isProvided()
-                ? toRegistrationDeadlines(request.deadlines().throwIfNotProvided())
+        LinkedHashSet<MemberId> coordinators = request.coordinators().orElse(new LinkedHashSet<>(existingEvent.getCoordinators()));
+        EventTypeId eventTypeId = request.eventTypeId().orElse(existingEvent.getEventTypeId().orElse(null));
+        RegistrationDeadlines registrationDeadlines = request.deadlines().isPresent()
+                ? toRegistrationDeadlines(request.deadlines().orElseThrow())
                 : existingEvent.getRegistrationDeadlines();
-        List<EventCategory> categories = request.categories().isProvided()
-                ? toCategories(request.categories().throwIfNotProvided(), existingEvent)
+        List<EventCategory> categories = request.categories().isPresent()
+                ? toCategories(request.categories().orElseThrow(), existingEvent)
                 : existingEvent.getCategories();
 
-        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).patchValue(existingEvent.getRanking());
-        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
+        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).orElse(existingEvent.getRanking());
+        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).orElse(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
                 coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);

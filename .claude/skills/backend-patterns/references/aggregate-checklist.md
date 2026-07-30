@@ -43,7 +43,7 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
 - [ ] Leave `@RequestBody` and Bean Validation constraints on the interface; the override declares
       only `@Parameter` / `@Operation` for springdoc
 - [ ] Create MapStruct `@Mapper` for simple DTO mapping
-- [ ] Create manual mapper utility class for complex PATCH operations with `PatchField`
+- [ ] Create manual mapper utility class for complex PATCH operations with `JsonNullable`
 
 ## 4. Infrastructure — JDBC
 

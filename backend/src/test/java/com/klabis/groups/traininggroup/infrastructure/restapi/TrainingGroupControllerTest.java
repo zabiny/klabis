@@ -304,7 +304,7 @@ class TrainingGroupControllerTest {
                     com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
             org.mockito.Mockito.verify(trainingGroupManagementService)
                     .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().orElseThrow())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
@@ -330,7 +330,7 @@ class TrainingGroupControllerTest {
                     com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
             org.mockito.Mockito.verify(trainingGroupManagementService)
                     .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().orElseThrow())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
