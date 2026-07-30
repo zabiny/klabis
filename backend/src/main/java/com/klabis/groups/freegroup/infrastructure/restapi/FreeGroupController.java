@@ -3,6 +3,7 @@ package com.klabis.groups.freegroup.infrastructure.restapi;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.groups.common.domain.GroupMembership;
@@ -16,11 +17,8 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberController;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -30,11 +28,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -42,11 +40,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Groups", description = "Members group management API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
 @ExposesResourceFor(FreeGroup.class)
-class FreeGroupController {
+class FreeGroupController implements GroupsApi {
 
     private final FreeGroupManagementPort membersGroupManagementService;
 
@@ -54,12 +52,8 @@ class FreeGroupController {
         this.membersGroupManagementService = membersGroupManagementService;
     }
 
-    @PostMapping(consumes = "application/json")
-    @Operation(summary = "Create a members group")
-    ResponseEntity<Void> createGroup(
-            @Valid @RequestBody CreateGroupRequest request,
-            @ActingMember MemberId actingMember) {
-
+    @Override
+    public ResponseEntity<Void> createGroup(@RequestBody CreateGroupRequest request, @ActingMember MemberId actingMember) {
         FreeGroup group = membersGroupManagementService.createGroup(request.name(), actingMember);
 
         return ResponseEntity.created(
@@ -67,29 +61,22 @@ class FreeGroupController {
         ).build();
     }
 
-    @GetMapping
-    @Operation(summary = "List groups where authenticated member is a member")
-    ResponseEntity<CollectionModel<EntityModel<GroupSummaryResponse>>> listGroups(
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Collection<GroupSummaryResponse>> listGroups(@ActingMember MemberId actingMember) {
 
         List<FreeGroup> groups = membersGroupManagementService.listGroupsForMember(actingMember);
-        List<EntityModel<GroupSummaryResponse>> items = groups.stream()
-                .map(this::buildGroupSummaryModel)
-                .toList();
 
-        CollectionModel<EntityModel<GroupSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).createGroup(null, null)))));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomainList(groups);
+        return ResponseEntity.ok(groups.stream()
+                .map(group -> new GroupSummaryResponse(group.getId(), group.getName()))
+                .toList());
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get group details (owner or member only)")
-    ResponseEntity<EntityModel<GroupResponse>> getGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @ActingMember MemberId actingMember) {
+    // The response record is hand-written because owners/members/pendingInvitations are
+    // List<EntityModel<X>> — each item carries its own _links/_templates, which the generator cannot
+    // express. Everything else, the payload type included, comes from the spec.
+    @Override
+    public ResponseEntity<GroupResponse> getGroup(UUID id, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         FreeGroup group = membersGroupManagementService.getGroup(groupId);
@@ -100,94 +87,61 @@ class FreeGroupController {
             throw new InsufficientAuthorityException("Free group membership or ownership required");
         }
 
-        GroupResponse response = toGroupResponse(group, id, isOwner);
-        var model = entityModelWithDomain(response, group);
-
-        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
-                .ifPresent(link -> model.add(link.withRel("collection")));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomain(group);
+        return ResponseEntity.ok(toGroupResponse(group, id, isOwner));
     }
 
-    @PatchMapping(value = "/{id}", consumes = "application/json")
-    @Operation(summary = "Rename a group (owner only)")
-    ResponseEntity<Void> updateGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody RenameGroupRequest request,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> updateGroup(UUID id, @RequestBody RenameGroupRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.renameGroup(groupId, request.name(), actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a group (owner only)")
-    ResponseEntity<Void> deleteGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> deleteGroup(UUID id, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.deleteGroup(groupId, actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/members/{memberId}")
-    @Operation(summary = "Remove a member from group (owner only)")
-    ResponseEntity<Void> removeGroupMember(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> removeGroupMember(UUID id, UUID memberId, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.removeMember(groupId, new MemberId(memberId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/owners", consumes = "application/json")
-    @Operation(summary = "Add an owner to group (owner only)")
-    ResponseEntity<Void> addGroupOwner(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddOwnerRequest request,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> addGroupOwner(UUID id, @RequestBody AddOwnerRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()), actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/owners/{memberId}")
-    @Operation(summary = "Remove an owner from group (owner only)")
-    ResponseEntity<Void> removeGroupOwner(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Owner member UUID") @PathVariable UUID memberId,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> removeGroupOwner(UUID id, UUID memberId, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.removeOwner(groupId, new MemberId(memberId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/invitations", consumes = "application/json",
-            produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-    @Operation(summary = "Invite a member to a members group (owner only)")
-    ResponseEntity<Void> inviteMember(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody InviteMemberRequest request,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> inviteMember(UUID id, @RequestBody InviteMemberRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.inviteMember(groupId, actingMember, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/invitations/{invitationId}")
-    @Operation(summary = "Cancel a pending invitation (owner only)")
-    ResponseEntity<Void> cancelInvitation(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
-            @RequestBody(required = false) CancelInvitationRequest request,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> cancelInvitation(UUID id, UUID invitationId,
+            @RequestBody(required = false) CancelInvitationRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
@@ -196,13 +150,8 @@ class FreeGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/invitations/{invitationId}/accept",
-            produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-    @Operation(summary = "Accept a pending invitation")
-    ResponseEntity<Void> acceptInvitation(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> acceptInvitation(UUID id, UUID invitationId, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
@@ -210,26 +159,13 @@ class FreeGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/invitations/{invitationId}/reject",
-            produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-    @Operation(summary = "Reject a pending invitation")
-    ResponseEntity<Void> rejectInvitation(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Invitation UUID") @PathVariable UUID invitationId,
-            @ActingMember MemberId actingMember) {
+    @Override
+    public ResponseEntity<Void> rejectInvitation(UUID id, UUID invitationId, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
         membersGroupManagementService.rejectInvitation(groupId, invId, actingMember);
         return ResponseEntity.noContent().build();
-    }
-
-    private EntityModel<GroupSummaryResponse> buildGroupSummaryModel(FreeGroup group) {
-        UUID groupId = group.getId().uuid();
-        EntityModel<GroupSummaryResponse> model = EntityModel.of(new GroupSummaryResponse(group.getId(), group.getName()));
-        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(groupId, null))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-        return model;
     }
 
     private GroupResponse toGroupResponse(FreeGroup group, UUID groupUuid, boolean requestingUserIsOwner) {
@@ -313,6 +249,9 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
             }
             dtoModel.add(selfLink);
         });
+
+        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 
     private boolean isActingMemberOwner(FreeGroup group) {
@@ -334,6 +273,32 @@ class GroupsRootPostprocessor implements RepresentationModelProcessor<EntityMode
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
                 .ifPresent(link -> model.add(link.withRel("groups")));
+        return model;
+    }
+}
+
+@MvcComponent
+class GroupSummaryPostprocessor extends ModelWithDomainPostprocessor<GroupSummaryResponse, FreeGroup> {
+
+    @Override
+    public void process(EntityModel<GroupSummaryResponse> dtoModel, FreeGroup group) {
+        UUID id = group.getId().uuid();
+        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(id, null))
+                .ifPresent(link -> dtoModel.add(link.withSelfRel()));
+    }
+}
+
+// The self link itself is built by HalResponseBodyAdvice from the current request; this processor
+// only contributes the create affordance, which stays authorization-sensitive via klabisAfford.
+@MvcComponent
+class GroupListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<GroupSummaryResponse>>> {
+
+    @Override
+    public CollectionModel<EntityModel<GroupSummaryResponse>> process(
+            CollectionModel<EntityModel<GroupSummaryResponse>> model) {
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
+                .andAffordances(klabisAfford(methodOn(FreeGroupController.class).createGroup(null, null))));
         return model;
     }
 }

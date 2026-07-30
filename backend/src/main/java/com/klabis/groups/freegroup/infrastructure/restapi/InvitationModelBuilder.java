@@ -2,9 +2,7 @@ package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.freegroup.domain.FreeGroup;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberController;
 import org.springframework.hateoas.EntityModel;
 
@@ -14,22 +12,19 @@ import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+// Only used for the excluded getGroup operation (FreeGroupController.buildPendingInvitationModel) —
+// getPendingInvitations (PendingInvitationsController) builds its own EntityModel via
+// PendingInvitationPostprocessor since it goes through HalResponseContext.setDomainList, not this
+// hand-wrapping path.
 class InvitationModelBuilder {
 
     private InvitationModelBuilder() {
     }
 
-    static EntityModel<PendingInvitationResponse> buildFromView(PendingInvitationView view) {
-        return buildInternal(view.groupId(), view.groupName(), view.invitation(), false);
-    }
-
     static EntityModel<PendingInvitationResponse> build(FreeGroup group, Invitation invitation) {
-        return buildInternal(group.getId(), group.getName(), invitation, true);
-    }
-
-    private static EntityModel<PendingInvitationResponse> buildInternal(
-            FreeGroupId groupId, String groupName, Invitation invitation, boolean includeOwnerAffordances) {
-        UUID groupUuid = groupId.uuid();
+        UUID groupUuid = group.getId().uuid();
+        FreeGroupId groupId = group.getId();
+        String groupName = group.getName();
         UUID invitationUuid = invitation.getId().value();
         UUID invitedByUuid = invitation.getInvitedBy().uuid();
         UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
@@ -54,13 +49,11 @@ class InvitationModelBuilder {
                 .ifPresent(link -> model.add(link.withRel("reject")
                         .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
                                 .rejectInvitation(groupUuid, invitationUuid, null)))));
-        if (includeOwnerAffordances) {
-            klabisLinkTo(methodOn(FreeGroupController.class)
-                    .cancelInvitation(groupUuid, invitationUuid, null, null))
-                    .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
-                                    .cancelInvitation(groupUuid, invitationUuid, null, null)))));
-        }
+        klabisLinkTo(methodOn(FreeGroupController.class)
+                .cancelInvitation(groupUuid, invitationUuid, null, null))
+                .ifPresent(link -> model.add(link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                                .cancelInvitation(groupUuid, invitationUuid, null, null)))));
         return model;
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoker;
 import org.springframework.http.MediaType;
@@ -104,8 +105,29 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
+        HalResponseContext.Embedded embedded = HalResponseContext.takeEmbedded();
         EntityModel<Object> model = HalFormsSupport.entityModelWithDomain(body, domain);
-        return new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(model);
+        Object processed = new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(model);
+        return applyEmbeddeds(processed, embedded);
+    }
+
+    /**
+     * Renders any {@code _embedded} collections a postprocessor declared via
+     * {@link EntityModelWithDomain#embed}. Deferred to here because {@code HalModelBuilder} returns a
+     * wrapper around the model rather than the model itself, which a
+     * {@link RepresentationModelProcessor} cannot return in place of its own input type.
+     * <p>
+     * Runs after the processors so the links and affordances they added are already on the model the
+     * builder wraps; {@code HalRepresentationModel} extends {@code EntityModel} and delegates
+     * {@code getContent()} to it, so the payload and its {@code _links} render unchanged.
+     */
+    private Object applyEmbeddeds(Object processed, HalResponseContext.Embedded embedded) {
+        if (embedded == null) {
+            return processed;
+        }
+        return HalModelBuilder.halModelOf(processed)
+                .embed(embedded.collection(), embedded.itemType())
+                .build();
     }
 
     @SuppressWarnings("unchecked")

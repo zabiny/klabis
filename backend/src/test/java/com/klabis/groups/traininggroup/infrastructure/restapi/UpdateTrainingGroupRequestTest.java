@@ -45,8 +45,12 @@ class UpdateTrainingGroupRequestTest {
     @Test
     @DisplayName("ageRangeDomain maps AgeRangeRequest to domain AgeRange when provided")
     void ageRangeDomainMapsWhenProvided() {
+        // Constructed via the RecordBuilder, not positionally: the generated AgeRangeRequest
+        // record's component order (maxAge, minAge) comes from the bundler alphabetizing schema
+        // properties and does not match the spec's declaration order (minAge, maxAge).
+        AgeRangeRequest ageRangeRequest = AgeRangeRequestBuilder.builder().minAge(10).maxAge(18).build();
         UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
-                PatchField.notProvided(), PatchField.of(new AgeRangeRequest(10, 18)), PatchField.notProvided());
+                PatchField.notProvided(), PatchField.of(ageRangeRequest), PatchField.notProvided());
 
         var ageRange = request.ageRangeDomain().throwIfNotProvided();
         assertThat(ageRange.minAge()).isEqualTo(10);

@@ -10,6 +10,7 @@ import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -115,8 +116,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204WhenAuthorized() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
@@ -135,8 +136,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturnLocationHeaderPointingToPermissionsResource() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
@@ -157,8 +158,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204WithNoBody() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
@@ -177,8 +178,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn409WhenRemovingLastAdmin() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new AuthorizationPolicy.AdminLockoutException(
@@ -201,8 +202,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn400ForInvalidAuthority() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_PERMISSIONS));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_PERMISSIONS));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new IllegalArgumentException(
@@ -225,8 +226,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204ForEmptyAuthorities() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of());
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of());
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of()));
@@ -279,8 +280,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldAcceptGroupsTrainingWhenEnabled() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ)));
@@ -298,8 +299,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldRemoveGroupsTrainingWhenDisabled() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));

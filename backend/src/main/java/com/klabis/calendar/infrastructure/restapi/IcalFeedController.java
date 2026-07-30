@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @PrimaryAdapter
 @RestController
 @Tag(name = "Calendar Feed", description = "iCalendar subscribe feed for personal schedule")
-class IcalFeedController {
+class IcalFeedController implements IcalFeedApi {
 
     private static final MediaType TEXT_CALENDAR = new MediaType("text", "calendar", StandardCharsets.UTF_8);
 
@@ -47,7 +46,7 @@ class IcalFeedController {
         this.baseUrl = baseUrl;
     }
 
-    @GetMapping(value = "/ical/my-schedule.ics", produces = "text/calendar")
+    @Override
     @Operation(
             summary = "Personal schedule iCalendar feed",
             description = """
@@ -58,7 +57,7 @@ class IcalFeedController {
     )
     @ApiResponse(responseCode = "200", description = "iCalendar feed returned")
     @ApiResponse(responseCode = "401", description = "Missing or invalid token")
-    ResponseEntity<String> getMySchedule(
+    public ResponseEntity<String> getMySchedule(
             @Parameter(description = "Personal Access Token for calendar authentication", required = true)
             @RequestParam String token) {
 

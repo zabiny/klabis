@@ -78,6 +78,16 @@ describe('validateSpec', () => {
         expect(validate(docWithSchema({id: {'x-klabis-owner-id': true}}))).toEqual([]);
     });
 
+    it('requires not-blank to be true rather than false', () => {
+        expect(validate(docWithSchema({name: {'x-klabis-not-blank': false}}))).toHaveLength(1);
+        expect(validate(docWithSchema({name: {'x-klabis-not-blank': true}}))).toEqual([]);
+    });
+
+    it('requires past to be true rather than false', () => {
+        expect(validate(docWithSchema({dateOfBirth: {'x-klabis-past': false}}))).toHaveLength(1);
+        expect(validate(docWithSchema({dateOfBirth: {'x-klabis-past': true}}))).toEqual([]);
+    });
+
     it('accepts x-hal-templates pointing at an existing operationId', () => {
         expect(validate({
             paths: {
@@ -145,6 +155,18 @@ describe('validateSpec — x-klabis-authority on operations', () => {
         const errors = validate(docWithOperation({'x-klabis-authority': 'NOPE'}));
         expect(errors).toHaveLength(1);
         expect(errors[0].message).toContain('not a constant of Authority.java');
+    });
+
+    it('rejects x-klabis-not-blank on an operation', () => {
+        expect(validate(docWithOperation({'x-klabis-not-blank': true}))).toHaveLength(1);
+    });
+
+    it('rejects x-klabis-not-blank on a parameter schema, where the generator would drop it', () => {
+        const errors = validate(docWithOperation({
+            parameters: [{name: 'token', in: 'query', schema: {type: 'string', 'x-klabis-not-blank': true}}],
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not honoured on a parameter');
     });
 
     it('rejects x-klabis-owner-id on an operation', () => {

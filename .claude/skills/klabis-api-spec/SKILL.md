@@ -132,7 +132,9 @@ alongside the types:
 
 | spec | generates |
 |---|---|
-| `required: [firstName, …]` | `@NotNull` (never `@NotBlank` — see below) |
+| `required: [firstName, …]` | `@NotNull` (not `@NotBlank` — see below) |
+| `x-klabis-not-blank: true` | `@NotBlank` (Klabis extension; schema properties only) |
+| `x-klabis-past: true` | `@Past` (Klabis extension; schema properties only) |
 | `maxLength` / `minLength` | `@Size(max=…, min=…)` |
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
@@ -143,16 +145,33 @@ test expecting `400` and getting `200`, or as missing entries under `fieldErrors
 module, transcribe the Jakarta annotations off the hand-written record; springdoc reports most of
 them in `klabis-codefirst.json` already.
 
-**`required` is not `@NotBlank`, and there is no exact substitute.** In OpenAPI `required` only means
-the key must be present, so it generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets
-you `@Size(min = 1)`, which rejects `""` but still accepts `"   "`. OpenAPI has no keyword that means
-"not blank".
+**`required` is not `@NotBlank`.** In OpenAPI `required` only means the key must be present, so it
+generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets you `@Size(min = 1)`, which
+rejects `""` but still accepts `"   "`. OpenAPI has no standard keyword meaning "not blank".
 
-So a `@NotBlank` field always loses something on migration. Before accepting that, check whether the
-domain guards the same rule (`Assert.hasText` in an aggregate's factory or `update`): if it does, a
-whitespace-only value is still rejected with the same status and only the error *body* degrades —
-a generic message instead of a `fieldErrors` entry naming the field. If it does not, this is a real
-validation hole; use `pattern: '^(?!\s*$).+'` rather than shipping the gap.
+Klabis therefore has its own: **`x-klabis-not-blank: true`** on the property, emitted as `@NotBlank`
+by the overridden `pojo.mustache`. Use it wherever the hand-written record had `@NotBlank`; the field
+also keeps the redundant `@NotNull` from `required`, which is harmless.
+
+**`x-klabis-past: true`** works the same way for `@Past`, which OpenAPI likewise cannot express
+(`format: date` says nothing about the range). Both live in `PROPERTY_ONLY_CONSTRAINT_EXTENSIONS` in
+`validate.mjs`; adding a third constraint of this kind means one entry there plus one branch in
+`pojo.mustache`.
+
+**Check the schema is actually generated before converting a `pattern` hack to it.** Not every
+schema in the spec has a generated counterpart — a request whose Java record is still hand-written
+(`CreateEventRequest`, `UpdateEventRequest` and their nested `*CategoryRequest` / `*RankingRequest` /
+`EntryFeeRequest`) is documented in the spec but excluded from `models`, so the extension emits
+nothing and the validation lives in the hand-written `@NotBlank`. Removing the `pattern` there is a
+pure regression. `find backend/build/generated/openapi -name '<Schema>.java'` settles it.
+
+Two limits:
+- **Schema properties only.** Only `pojo.mustache` is overridden, so the generator would drop the
+  extension on a `parameters` entry; `validate.mjs` rejects it there rather than letting it pass as
+  a silent no-op. For a constrained `@RequestParam` use `pattern: '^(?!\s*$).+'` instead — see the
+  `validatePasswordSetupToken` `token` parameter in `common.yaml`.
+- **The custom message is still lost.** `@NotBlank(message = "…")` texts do not survive; assertions
+  must expect the Bean Validation default (`"must not be blank"`).
 
 **Validation messages become the Bean Validation defaults** (`"size must be between 1 and 100"`).
 OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
@@ -178,7 +197,7 @@ remaining two are property-only and the bundler rejects them on an operation.)
 | extension | value | generates | semantics |
 |---|---|---|---|
 | `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field holding the owner's ID, used to evaluate `x-klabis-owner-visible`. Without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
+| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
 | `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
 | `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
 
@@ -257,6 +276,18 @@ copy of the parameter inlined and annotated — sibling operations keep the plai
 Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
 codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
 `MemberControllerApiTest` for the enforcement tests.
+
+**Declared alone, it means owner-only.** The OR is with whatever authority is declared, so with none
+declared there is nothing to OR against: `HasAuthorityMethodInterceptor.invoke()` computes
+`authorityGranted` as `requiredAuthority != null && hasAuthority(...)`, leaving ownership the sole
+path to `proceed()`. A lone `x-klabis-owner-visible` therefore *narrows* access to the owner rather
+than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
+— `MemberFeeChoice`'s and `MemberFeeSummary`'s 5 operations use exactly this. Do not reach for an
+imperative controller check for that case.
+
+Such operations need a test asserting that a caller holding the module's MANAGE authority is still
+`403` (see `MemberFeeChoiceControllerTest`). Nothing else in the suite distinguishes owner-only from
+owner-OR-MANAGE, so pairing an authority in later would widen access silently.
 
 **Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
 a method without `@HasAuthority` and no check reports it; the endpoint still requires
@@ -537,8 +568,10 @@ this with `doFirst { delete(outputDir) }`; keep it when touching that function.
    Authorization is not always an annotation. A controller may enforce it **imperatively** — a
    private `checkXxxAccess()` throwing `AccessDeniedException`, typically "owner OR MANAGE
    authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair; move it into the
-   spec and delete the helper. Read each method body before concluding an endpoint is unprotected,
-   because an imperative check is invisible both to reflection and to the drift check.
+   spec and delete the helper. A helper that permits *only* the caller themselves, with no authority
+   alternative, is `x-klabis-owner-visible` on its own — declaring it alone does not widen access
+   (see that extension's section). Read each method body before concluding an endpoint is
+   unprotected, because an imperative check is invisible both to reflection and to the drift check.
 6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
 7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the
    domain objects with `HalResponseContext` (below).
@@ -646,4 +679,50 @@ returns `true` unconditionally makes the test assert nothing.
 - Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
-  emit. Propose it, don't add it ad hoc — the bundler rejects unknown ones.
+  emit. Propose it, don't add it ad hoc — `validate.mjs` rejects any `x-klabis-*` key missing from
+  `KNOWN_KLABIS_EXTENSIONS`, and emission needs a matching branch in `pojo.mustache`.
+- Reaching for a raw `x-field-extra-annotation` on a schema property to inject an annotation. The
+  generator only honours it on *parameters*; on a model property the overridden `pojo.mustache`
+  decides, and an unlisted extension is silently dropped — so the annotation never appears and any
+  standard keyword you removed to "replace" is lost too.
+- Naming a fresh top-level `enum:` schema and listing it in `models` — the generator writes a
+  well-formed Java file with no constants and no body, and every reference fails to compile. An
+  enum only works when `schemaMappings` points it at an existing domain enum. With no such enum,
+  use `type: string`; the domain's own `valueOf`/`switch` still rejects bad values.
+- Stripping `@RequestBody` off a generated-interface override because the interface already
+  declares it. `HalFormsSupport` looks for it on the *concrete* method resolved via
+  `methodOn(Controller.class)`, and Java does not inherit parameter annotations across an
+  interface boundary — unlike `@HasAuthority`, nothing bridges this. Binding and authorization
+  still work, so it compiles and passes; the inline options from `klabisAffordWith*Options`
+  silently vanish from `_templates` while `properties[]` and `target` stay correct.
+- Gating a `RepresentationModelProcessor<CollectionModel<EntityModel<X>>>` on a request attribute
+  *for fear of cross-contamination*. Spring HATEOAS's `RepresentationModelProcessorInvoker` resolves
+  the full generic signature, so a processor typed on `EntityModel<X>` does **not** run for another
+  endpoint's `CollectionModel<EntityModel<Y>>` — verified directly against the invoker. Most of the
+  collection processors here are correctly ungated. Gate only when the processor needs data the model
+  cannot carry: `EventRegistrationController.RegistrationListPostprocessor` reads `eventId` from a
+  request attribute because an *empty* registration list has no item to recover it from, which is a
+  different problem from type dispatch.
+- Injecting a new port into an `@MvcComponent` postprocessor — the scan is global, not scoped to a
+  slice's `controllers=`, so every unrelated `@WebMvcTest` breaks unless `WithPostprocessors` also
+  mocks it. Compute port-derived data in the controller, which already holds the port, and pass it
+  through a request attribute.
+- Running `openapiDriftCheck` mid-migration: it boots the app and **rewrites** the
+  `docs/openapi/klabis-full.json` it is supposed to only inspect, so a run leaves >1000 lines of
+  regeneration noise staged. Verify with `md5sum`, and `git checkout` the file if it moved.
+- Choosing a tag that is a substring of another module's tag. The generator's `apis` filter matches
+  by substring, so registering `ORIS` also pulls in `OrisEvents`' operations from another module.
+  Pick tags that are not prefixes of one another (`OrisImport`, not `ORIS`).
+- Passing an empty `models` list to exclude all schemas. Like `apis`, an empty models property makes
+  the generator emit **every** schema in the bundled document, not none. Use a single nonexistent
+  placeholder name to keep the property non-empty while matching nothing.
+- Forgetting that a generated `*Api` interface is class-level `@Validated`. A constrained
+  `@RequestParam` is then rejected by AOP's `MethodValidationInterceptor` **before** MVC argument
+  resolution, throwing `ConstraintViolationException` rather than the
+  `HandlerMethodValidationException` the exception handler covers — a 500 where a 400 is intended.
+  No hand-written controller hits this, so it first appears when a module goes spec-first.
+- Assuming a generated record's constructor parameters follow the order you wrote them in the spec.
+  The bundler **alphabetizes `properties` keys**, so a spec written `(minAge, maxAge)` generates
+  `AgeRangeRequest(maxAge, minAge)`. Positional construction then silently swaps the values — it
+  compiles and only fails on an assertion, if one happens to cover it. Construct generated records
+  via their `RecordBuilder`, never positionally.

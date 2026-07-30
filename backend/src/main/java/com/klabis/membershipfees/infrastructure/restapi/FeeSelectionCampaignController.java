@@ -2,9 +2,9 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -16,19 +16,22 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -37,11 +40,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/fee-selection-campaigns", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "FeeSelectionCampaigns", description = "Publishing fee levels for a calendar year")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(FeeSelectionCampaign.class)
-class FeeSelectionCampaignController {
+class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
     private final FeeSelectionCampaignManagementPort managementPort;
     private final MembershipFeeTierManagementPort levelManagementPort;
@@ -55,96 +58,71 @@ class FeeSelectionCampaignController {
         this.manualCampaignClosePort = manualCampaignClosePort;
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Publish fee levels for a calendar year (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> publishYear(@Valid @RequestBody PublishYearRequest request) {
-        FeeSelectionCampaignId id = managementPort.publishYear(request.toCommand());
+    public ResponseEntity<Void> publishYear(@RequestBody PublishYearRequest request) {
+        FeeSelectionCampaignId id = managementPort.publishYear(MembershipFeesRequestMapper.toCommand(request));
         return ResponseEntity.created(
                 linkTo(methodOn(FeeSelectionCampaignController.class).getPublication(id.value())).toUri()
         ).build();
     }
 
-    @GetMapping
+    @Override
     @Operation(summary = "List fee year publications, optionally filtered by status")
-    ResponseEntity<CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> listPublications(
-            @Parameter(description = "Filter by status: 'closed' returns only past campaigns") @RequestParam(required = false) String status) {
+    public ResponseEntity<java.util.Collection<FeeSelectionCampaignResponse>> listPublications(
+            @Parameter(description = "Filter by status: 'closed' returns only past campaigns") String status) {
         CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
-        List<EntityModel<FeeSelectionCampaignResponse>> items = publications.stream()
-                .map(this::buildSummaryModel)
+        List<FeeSelectionCampaignResponse> items = publications.stream()
+                .map(FeeSelectionCampaignResponse::from)
                 .toList();
 
         List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
                 .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
                 .toList();
+        FeeSelectionCampaignListPostprocessor.setLevelOptions(levelOptions);
 
-        CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications(null))
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(FeeSelectionCampaignController.class).publishYear(null),
-                                Map.of("levelIds", levelOptions)))));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomainList(publications);
+        return ResponseEntity.ok(items);
     }
 
-    @GetMapping("/{id}")
+    @Override
     @Operation(summary = "Get fee year publication details")
-    ResponseEntity<EntityModel<FeeSelectionCampaignResponse>> getPublication(
-            @Parameter(description = "Publication UUID") @PathVariable UUID id) {
+    public ResponseEntity<FeeSelectionCampaignResponse> getPublication(
+            @Parameter(description = "Publication UUID") UUID id) {
         FeeSelectionCampaign publication = managementPort.getPublication(new FeeSelectionCampaignId(id));
-        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(publication);
-        return ResponseEntity.ok(entityModelWithDomain(response, publication));
+        HalResponseContext.setDomain(publication);
+        return ResponseEntity.ok(FeeSelectionCampaignResponse.from(publication));
     }
 
-    @PatchMapping(value = "/{id}/deadline", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Change voting deadline of an active campaign (requires MEMBERS:MANAGE)")
-    ResponseEntity<EntityModel<FeeSelectionCampaignResponse>> changeDeadline(
-            @PathVariable UUID id, @Valid @RequestBody ChangeDeadlineRequest request) {
-        FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id), request.toCommand());
-        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(updated);
-        return ResponseEntity.ok(entityModelWithDomain(response, updated));
+    public ResponseEntity<FeeSelectionCampaignResponse> changeDeadline(
+            UUID id, @RequestBody ChangeDeadlineRequest request) {
+        FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id),
+                MembershipFeesRequestMapper.toCommand(request));
+        HalResponseContext.setDomain(updated);
+        return ResponseEntity.ok(FeeSelectionCampaignResponse.from(updated));
     }
 
-    @PostMapping("/{id}/close")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Manually close a campaign — processes it immediately regardless of deadline (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> closeCampaign(@Parameter(description = "Campaign UUID") @PathVariable UUID id) {
+    public ResponseEntity<Void> closeCampaign(@Parameter(description = "Campaign UUID") UUID id) {
         manualCampaignClosePort.closeCampaign(new FeeSelectionCampaignId(id));
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{year}/levels")
+    @Override
     @Operation(summary = "List published fee groups for a given year")
-    ResponseEntity<CollectionModel<EntityModel<MembershipFeeGroupResponse>>> listGroupsForYear(
-            @Parameter(description = "Calendar year") @PathVariable int year) {
+    public ResponseEntity<java.util.Collection<MembershipFeeGroupResponse>> listGroupsForYear(
+            @Parameter(description = "Calendar year") Integer year) {
         List<MembershipFeeGroup> groups = managementPort.listGroupsForYear(year);
-        List<EntityModel<MembershipFeeGroupResponse>> items = groups.stream()
-                .map(group -> {
-                    MembershipFeeGroupResponse response = MembershipFeeGroupResponse.from(group);
-                    EntityModel<MembershipFeeGroupResponse> model = EntityModel.of(response);
-                    klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(group.getId().value()))
-                            .ifPresent(link -> model.add(link.withSelfRel()));
-                    return model;
-                })
+        List<MembershipFeeGroupResponse> items = groups.stream()
+                .map(MembershipFeeGroupResponse::from)
                 .toList();
 
-        CollectionModel<EntityModel<MembershipFeeGroupResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listGroupsForYear(year))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-
-        return ResponseEntity.ok(model);
-    }
-
-    private EntityModel<FeeSelectionCampaignResponse> buildSummaryModel(FeeSelectionCampaign publication) {
-        UUID publicationId = publication.getId().value();
-        FeeSelectionCampaignResponse response = FeeSelectionCampaignResponse.from(publication);
-        EntityModel<FeeSelectionCampaignResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(publicationId))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-        return model;
+        HalResponseContext.setDomainList(groups);
+        return ResponseEntity.ok(items);
     }
 }
 
@@ -183,3 +161,52 @@ class FeeSelectionCampaignDetailsPostprocessor
     }
 }
 
+// The level inline options are computed by the controller (which already holds
+// MembershipFeeTierManagementPort) and handed over via a request attribute — @MvcComponent beans
+// are discovered by @WebMvcTest's global component scan regardless of the controllers under test
+// (see backend-patterns skill), so injecting the port here would break every unrelated
+// @WebMvcTest slice in the app unless each one also mocked it.
+@MvcComponent
+class FeeSelectionCampaignListPostprocessor
+        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> {
+
+    private static final String LEVEL_OPTIONS_ATTR = FeeSelectionCampaignListPostprocessor.class.getName() + ".levelOptions";
+
+    static void setLevelOptions(List<HalFormsInlineOption> levelOptions) {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            attrs.setAttribute(LEVEL_OPTIONS_ATTR, levelOptions,
+                    org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        }
+    }
+
+    @Override
+    public org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> process(
+            org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model) {
+        // Spring HATEOAS's RepresentationModelProcessorInvoker matches CollectionModel processors
+        // by the outer CollectionModel type only, not by the EntityModel<T> content type, so every
+        // registered CollectionModel processor in the app runs against every CollectionModel
+        // response. The level-options attribute is set only by listPublications(), so its absence
+        // here means this fired for some other endpoint and ifPresent is a no-op — this is a
+        // deliberate guard, not an optional nicety.
+        currentLevelOptions().ifPresent(levelOptions ->
+                model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(FeeSelectionCampaignController.class).publishYear(null),
+                                Map.of("levelIds", levelOptions)))));
+        return model;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Optional<List<HalFormsInlineOption>> currentLevelOptions() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object value = attrs.getAttribute(LEVEL_OPTIONS_ATTR,
+                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        return value instanceof List<?> list ? Optional.of((List<HalFormsInlineOption>) list) : Optional.empty();
+    }
+}

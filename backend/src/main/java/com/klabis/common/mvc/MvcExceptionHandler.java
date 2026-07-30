@@ -7,6 +7,9 @@ import com.klabis.common.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -23,6 +26,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -120,6 +124,42 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ErrorResponse handleOptimisticLockingFailureException(OptimisticLockingFailureException ex) {
         return ErrorResponse.builder(ex, HttpStatus.CONFLICT, ex.getMessage()).title("Concurrent Update Conflict").build();
+    }
+
+    // A generated *Api interface is class-level @Validated, so a constrained @RequestParam (e.g. a
+    // required, pattern-checked query parameter) is validated by AOP's MethodValidationInterceptor
+    // ahead of Spring MVC's own argument resolution, and fails with this exception instead of
+    // HandlerMethodValidationException below. No hand-written controller parameter hit this before
+    // spec-first generation started using @Validated interfaces.
+    @ApiResponse(
+            responseCode = "400",
+            description = "Bad request - invalid argument",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> handleConstraintViolationException(ConstraintViolationException ex) {
+        List<String> parameterErrors = ex.getConstraintViolations().stream()
+                .map(this::toParameterError)
+                .toList();
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        if (!parameterErrors.isEmpty()) {
+            problemDetail.setProperty("parameterErrors", parameterErrors);
+        }
+        return ResponseEntity.badRequest().body(problemDetail);
+    }
+
+    private String toParameterError(ConstraintViolation<?> violation) {
+        Path.Node lastNode = null;
+        Iterator<Path.Node> nodes = violation.getPropertyPath().iterator();
+        while (nodes.hasNext()) {
+            lastNode = nodes.next();
+        }
+        String parameterName = lastNode != null ? lastNode.getName() : violation.getPropertyPath().toString();
+        return "%s: %s".formatted(parameterName, violation.getMessage());
     }
 
     @Override
