@@ -44,8 +44,10 @@
       `@RequestBody` (without `@Valid`), so no HV000151 risk either. The module's own tests already
       assert `options.inline` on the `addRule` / `editRule` templates, which is exactly the metadata
       that would vanish if the routing were wrong, so they serve as the guard here.
-- [ ] 3.5 events + oris (52) — note `getAccommodationListAsCsv` has no interface counterpart but is
-      not an affordance target, so it stays as-is
+- [x] 3.5 events + oris (52 across 6 controllers). `getAccommodationListAsCsv` is not a `methodOn`
+      target, so its missing interface counterpart never mattered. `cancelEvent`'s
+      `@RequestBody(required = false)` matched the interface exactly and was safe to drop. No latent
+      defect — the overrides carried `@RequestBody`.
 - [ ] 3.6 groups (62)
 - [ ] 3.7 For each module: run that module's tests before committing, and diff its 1.1 baseline body
 

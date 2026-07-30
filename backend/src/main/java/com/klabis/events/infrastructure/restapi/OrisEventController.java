@@ -19,7 +19,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -56,12 +55,12 @@ class OrisEventController implements OrisEventsApi {
     @Override
     public ResponseEntity<Void> importEvent(
             @Parameter(description = "ORIS import command with orisId")
-            @RequestBody ImportCommand command) {
+            ImportCommand command) {
 
         Event created = orisEventImportPort.importEventFromOris(command.orisId());
 
         return ResponseEntity
-                .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
+                .created(linkTo(methodOn(EventsApi.class).getEvent(created.getId().value(), null)).toUri())
                 .build();
     }
 
@@ -101,7 +100,7 @@ class OrisEventController implements OrisEventsApi {
     @Override
     public ResponseEntity<BulkImportResult> importEventsBatch(
             @Parameter(description = "Batch import command with list of ORIS event IDs")
-            @RequestBody ImportBatchRequest request) {
+            ImportBatchRequest request) {
 
         BulkImportResult result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
         return ResponseEntity.ok(result);

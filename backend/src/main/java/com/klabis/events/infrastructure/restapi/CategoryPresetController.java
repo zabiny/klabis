@@ -22,7 +22,6 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -87,13 +86,13 @@ class CategoryPresetController implements CategoryPresetsApi {
     @Override
     public ResponseEntity<Void> createCategoryPreset(
             @Parameter(description = "Preset creation data")
-            @RequestBody CreateCategoryPresetRequest request) {
+            CreateCategoryPresetRequest request) {
 
         CategoryPreset.CreateCategoryPreset command = new CategoryPreset.CreateCategoryPreset(request.name(), request.categories());
         CategoryPreset created = categoryPresetManagementService.createPreset(command);
 
         return ResponseEntity
-                .created(linkTo(methodOn(CategoryPresetController.class).getPreset(created.getId().value())).toUri())
+                .created(linkTo(methodOn(CategoryPresetsApi.class).getPreset(created.getId().value())).toUri())
                 .build();
     }
 
@@ -105,7 +104,7 @@ class CategoryPresetController implements CategoryPresetsApi {
     @Override
     public ResponseEntity<Void> updateCategoryPreset(
             @Parameter(description = "Preset UUID") @PathVariable UUID id,
-            @Parameter(description = "Preset update data") @RequestBody UpdateCategoryPresetRequest request) {
+            @Parameter(description = "Preset update data") UpdateCategoryPresetRequest request) {
 
         CategoryPreset.UpdateCategoryPreset command = new CategoryPreset.UpdateCategoryPreset(request.name(), request.categories());
         categoryPresetManagementService.updatePreset(new CategoryPresetId(id), command);
@@ -132,11 +131,11 @@ class CategoryPresetDetailsPostprocessor extends ModelWithDomainPostprocessor<Ca
     @Override
     public void process(EntityModel<CategoryPresetDto> dtoModel, CategoryPreset preset) {
         UUID id = preset.getId().value();
-        klabisLinkTo(methodOn(CategoryPresetController.class).getPreset(id)).ifPresent(link ->
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).getPreset(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).updateCategoryPreset(id, null)))
-                        .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).deleteCategoryPreset(id)))));
-        klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
+                        .andAffordances(klabisAfford(methodOn(CategoryPresetsApi.class).updateCategoryPreset(id, null)))
+                        .andAffordances(klabisAfford(methodOn(CategoryPresetsApi.class).deleteCategoryPreset(id)))));
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -153,7 +152,7 @@ class CategoryPresetListPostprocessor
     public CollectionModel<EntityModel<CategoryPresetDto>> process(
             CollectionModel<EntityModel<CategoryPresetDto>> model) {
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(CategoryPresetController.class).createCategoryPreset(null))));
+                .andAffordances(klabisAfford(methodOn(CategoryPresetsApi.class).createCategoryPreset(null))));
         return model;
     }
 }
