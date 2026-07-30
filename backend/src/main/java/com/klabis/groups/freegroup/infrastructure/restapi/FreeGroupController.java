@@ -23,7 +23,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,7 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.entityModelWithDomain;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -74,12 +72,11 @@ class FreeGroupController implements GroupsApi {
                 .toList());
     }
 
-    // Excluded from generation — see groups.yaml header comment and the comment on this operation
-    // there: the response embeds owners/members/pendingInvitations as arrays of independently
-    // link-carrying items, a shape HalResponseContext cannot reproduce. Kept hand-written, same
-    // precedent as EventController.getEvent / MembershipFeeGroupController.getGroup.
+    // The response record is hand-written because owners/members/pendingInvitations are
+    // List<EntityModel<X>> — each item carries its own _links/_templates, which the generator cannot
+    // express. Everything else, the payload type included, comes from the spec.
     @Override
-    public ResponseEntity<RepresentationModel<?>> getGroup(UUID id, @ActingMember MemberId actingMember) {
+    public ResponseEntity<GroupResponse> getGroup(UUID id, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         FreeGroup group = membersGroupManagementService.getGroup(groupId);
@@ -90,13 +87,8 @@ class FreeGroupController implements GroupsApi {
             throw new InsufficientAuthorityException("Free group membership or ownership required");
         }
 
-        GroupResponse response = toGroupResponse(group, id, isOwner);
-        var model = entityModelWithDomain(response, group);
-
-        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
-                .ifPresent(link -> model.add(link.withRel("collection")));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomain(group);
+        return ResponseEntity.ok(toGroupResponse(group, id, isOwner));
     }
 
     @Override
@@ -257,6 +249,9 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
             }
             dtoModel.add(selfLink);
         });
+
+        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 
     private boolean isActingMemberOwner(FreeGroup group) {

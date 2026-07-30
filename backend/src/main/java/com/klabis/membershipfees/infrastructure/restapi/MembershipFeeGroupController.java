@@ -60,10 +60,11 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         this.groupDetailsPostprocessor = groupDetailsPostprocessor;
     }
 
-    // Hand-written — NOT wired into MembershipFeeGroupsApi generation (see the comment on this
-    // operation in membershipfees.yaml and the matching comment in build.gradle.kts). It embeds a
-    // second, independently-shaped collection (group members) alongside the main payload via
-    // HalModelBuilder, which HalResponseContext cannot represent.
+    // Only the return type is hand-written; the method IS declared on MembershipFeeGroupsApi (hence
+    // @Override) and takes its path, produces, parameters and authorization from the spec. It embeds
+    // a second, independently-shaped collection (group members) as a true _embedded via
+    // HalModelBuilder, which HalResponseContext cannot represent — it carries a single domain object
+    // or a flat list, not a payload plus a differently-shaped sibling collection.
     @Override
     @Operation(summary = "Get membership fee group details with snapshot and member count")
     public ResponseEntity<RepresentationModel<?>> getGroup(

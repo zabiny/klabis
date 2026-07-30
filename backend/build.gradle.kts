@@ -473,13 +473,14 @@ openApiModule(
     // "EventRegistrations" replaces the original multi-word @Tag "Event Registrations", which the
     // generator silently drops.
     //
-    // getEvent (EventController) and getAccommodationList/getAccommodationListAsCsv are documented
-    // in events.yaml but deliberately absent from `models`/left unmapped, so EventsApi does not
-    // declare them and EventController keeps its hand-written methods for them:
+    // EventsApi DOES declare getEvent and getAccommodationList — both are generated from events.yaml
+    // like every other operation and EventController @Overrides them. What differs is only the
+    // return type:
     //   - getEvent embeds a second, independently-shaped collection (registrations) alongside the
     //     main payload via HalModelBuilder — HalResponseContext only supports a single domain
     //     object or a flat list, so there is no envelope this generator setup can redirect onto the
-    //     existing response without changing runtime behaviour.
+    //     existing response without changing runtime behaviour. Its response schema stays
+    //     documentation-only and the return type is mapped to RepresentationModel<?> below.
     //   - the accommodation-list path answers with two produces variants (HAL JSON and text/csv) on
     //     one operation; the generator emits ONE Java method (getAccommodationList) whose inherited
     //     produces lists both content types. The hand-written getAccommodationList (JSON) DOES
@@ -507,10 +508,9 @@ openApiModule(
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
-        // getEvent and getAccommodationList are excluded from generation (see events.yaml comments
-        // on those two operations and the note above `apis` here), but both still ride the "Events"
-        // tag alongside operations that ARE generated, so the generator still emits their methods
-        // on EventsApi and needs a return type for each. Mapped onto the exact hand-written return
+        // getEvent's and getAccommodationList's response schemas are documentation-only (see
+        // events.yaml and the note above `apis` here), but the operations themselves ARE generated
+        // onto EventsApi and need a return type each. Mapped onto the exact hand-written return
         // types so EventController's existing methods satisfy the interface unchanged.
         "EntityModelEventDtoWithRegistrations" to "org.springframework.hateoas.RepresentationModel<?>",
         "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
@@ -587,11 +587,10 @@ openApiModule(
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
         "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
-        // getGroup is excluded from generation (see the note above `apis`), but it still rides the
-        // "MembershipFeeGroups" tag alongside operations that ARE generated, so the generator
-        // still emits a method for it on MembershipFeeGroupsApi and needs a return type. Mapped
-        // onto the exact hand-written return type so MembershipFeeGroupController's existing
-        // method satisfies the interface unchanged.
+        // getGroup's response schema is documentation-only (see the note above `apis`), but the
+        // operation IS generated onto MembershipFeeGroupsApi and needs a return type. Mapped onto
+        // the exact hand-written return type so MembershipFeeGroupController's existing method
+        // satisfies the interface unchanged.
         "EntityModelMembershipFeeGroupResponseWithMembers" to "org.springframework.hateoas.RepresentationModel<?>",
         "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
         "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
@@ -614,11 +613,10 @@ openApiModule(
 openApiModule(
     module = "groupsFamily",
     pkg = "com.klabis.groups.familygroup.infrastructure.restapi",
-    // getFamilyGroup is documented in groups.yaml but deliberately absent from `models`/left
-    // unmapped, so FamilyGroupsApi does not declare it and FamilyGroupController keeps its
-    // hand-written method — its response embeds List<EntityModel<X>> fields (parents/members), a
-    // shape HalResponseContext cannot reproduce. See groups.yaml header comment and the comment on
-    // that operation there.
+    // getFamilyGroup IS generated onto FamilyGroupsApi; only its response schema is
+    // documentation-only, because the record's parents/members are List<EntityModel<X>> whose items
+    // carry their own _links. See groups.yaml header comment and the comment on that method in
+    // FamilyGroupController.
     apis = listOf("FamilyGroups"),
     models = listOf(
         "CreateFamilyGroupRequest",
@@ -627,24 +625,21 @@ openApiModule(
     mappings = mapOf(
         "EntityModelFamilyGroupSummaryResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse",
         "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
-        // getFamilyGroup is excluded from generation (see the note above), but it still rides the
-        // "FamilyGroups" tag alongside operations that ARE generated, so the generator still emits
-        // a method for it on FamilyGroupsApi and needs a return type. Mapped onto the exact
-        // hand-written return type so FamilyGroupController's existing method satisfies the
-        // interface unchanged.
-        "EntityModelFamilyGroupResponse" to "org.springframework.hateoas.RepresentationModel<?>"
+        // Payload type for getFamilyGroup, same envelope-stripping mapping as every other
+        // EntityModelX -> X above. The record's parents/members fields stay List<EntityModel<X>>
+        // (per-item _links), which is why the record is hand-written rather than generated.
+        "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
     ),
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection",
-        "EntityModelFamilyGroupResponse" to "org.springframework.hateoas.RepresentationModel"
+        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection"
     )
 )
 
 openApiModule(
     module = "groupsFree",
     pkg = "com.klabis.groups.freegroup.infrastructure.restapi",
-    // getGroup (Groups) is documented in groups.yaml but deliberately absent from `models`/left
-    // unmapped — same reason as getFamilyGroup above. See groups.yaml header comment.
+    // getGroup (Groups) is generated; only its response schema is documentation-only — same reason
+    // as getFamilyGroup above. See groups.yaml header comment.
     apis = listOf("Groups", "Invitations"),
     models = listOf(
         "CreateGroupRequest",
@@ -656,17 +651,14 @@ openApiModule(
     mappings = mapOf(
         "EntityModelGroupSummaryResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse",
         "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
-        // getGroup is excluded from generation (see the note above), but it still rides the
-        // "Groups" tag alongside operations that ARE generated, so the generator still emits a
-        // method for it on GroupsApi and needs a return type. Mapped onto the exact hand-written
-        // return type so FreeGroupController's existing method satisfies the interface unchanged.
-        "EntityModelGroupResponse" to "org.springframework.hateoas.RepresentationModel<?>",
+        // Payload type for getGroup — same envelope-stripping mapping as every other EntityModelX
+        // -> X. The record's owners/members/pendingInvitations stay List<EntityModel<X>>.
+        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse",
         "EntityModelPendingInvitationResponseForInvitationsList" to "com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse",
         "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
     ),
     extraImportMappings = mapOf(
         "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection",
-        "EntityModelGroupResponse" to "org.springframework.hateoas.RepresentationModel",
         "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection"
     )
 )
@@ -674,8 +666,8 @@ openApiModule(
 openApiModule(
     module = "groupsTraining",
     pkg = "com.klabis.groups.traininggroup.infrastructure.restapi",
-    // getTrainingGroup is documented in groups.yaml but deliberately absent from `models`/left
-    // unmapped — same reason as getFamilyGroup above. See groups.yaml header comment.
+    // getTrainingGroup is generated; only its response schema is documentation-only — same reason as
+    // getFamilyGroup above. See groups.yaml header comment.
     apis = listOf("TrainingGroups"),
     models = listOf(
         "CreateTrainingGroupRequest",
@@ -689,16 +681,12 @@ openApiModule(
         "UpdateTrainingGroupRequest" to "com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest",
         "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
         "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
-        // getTrainingGroup is excluded from generation (see the note above), but it still rides the
-        // "TrainingGroups" tag alongside operations that ARE generated, so the generator still
-        // emits a method for it on TrainingGroupsApi and needs a return type. Mapped onto the exact
-        // hand-written return type so TrainingGroupController's existing method satisfies the
-        // interface unchanged.
-        "EntityModelTrainingGroupResponse" to "org.springframework.hateoas.RepresentationModel<?>"
+        // Payload type for getTrainingGroup — same envelope-stripping mapping as every other
+        // EntityModelX -> X. The record's trainers/members stay List<EntityModel<X>>.
+        "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
     ),
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection",
-        "EntityModelTrainingGroupResponse" to "org.springframework.hateoas.RepresentationModel"
+        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection"
     )
 )
 

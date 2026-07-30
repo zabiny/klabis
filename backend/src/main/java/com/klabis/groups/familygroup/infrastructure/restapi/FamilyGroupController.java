@@ -21,7 +21,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -71,14 +70,12 @@ class FamilyGroupController implements FamilyGroupsApi {
         return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    // Excluded from generation — see groups.yaml header comment and the comment on this operation
-    // there: the response embeds parents/members as arrays of independently link-carrying items,
-    // a shape HalResponseContext cannot reproduce. Kept hand-written, same precedent as
-    // EventController.getEvent / MembershipFeeGroupController.getGroup. The interface still
-    // declares this method (via x-spring-provide-args in the spec, carrying @ActingUser through) so
-    // @Override applies and the method stays wired into FamilyGroupsApi's routing.
+    // The FamilyGroupResponse record itself is hand-written because parents/members are
+    // List<EntityModel<X>> — each item carries its own _links/_templates (a "member" link, plus a
+    // self link with a DELETE affordance when the caller may remove it), which the generator cannot
+    // express. The interface's payload type still comes from the spec.
     @Override
-    public ResponseEntity<RepresentationModel<?>> getFamilyGroup(
+    public ResponseEntity<FamilyGroupResponse> getFamilyGroup(
             UUID id,
             @ActingUser CurrentUserData currentUser) {
 
@@ -92,15 +89,8 @@ class FamilyGroupController implements FamilyGroupsApi {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
         }
 
-        FamilyGroupResponse response = toFamilyGroupResponse(group, hasMembersManage);
-        var model = entityModelWithDomain(response, group);
-
-        if (hasMembersManage) {
-            klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
-                    .ifPresent(link -> model.add(link.withRel("collection")));
-        }
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomain(group);
+        return ResponseEntity.ok(toFamilyGroupResponse(group, hasMembersManage));
     }
 
     @Override
@@ -214,6 +204,11 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null)))
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null))))
                 .ifPresent(dtoModel::add);
+
+        // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
+        // listFamilyGroups requires — the same condition the controller used to check by hand.
+        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
 

@@ -22,7 +22,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -74,12 +73,11 @@ class TrainingGroupController implements TrainingGroupsApi {
         return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    // Excluded from generation — see groups.yaml header comment and the comment on this operation
-    // there: the response embeds trainers/members as arrays of independently link-carrying items,
-    // a shape HalResponseContext cannot reproduce. Kept hand-written, same precedent as
-    // EventController.getEvent / MembershipFeeGroupController.getGroup.
+    // The response record is hand-written because trainers/members are List<EntityModel<X>> — each
+    // item carries its own _links/_templates, which the generator cannot express. Everything else,
+    // the payload type included, comes from the spec.
     @Override
-    public ResponseEntity<RepresentationModel<?>> getTrainingGroup(
+    public ResponseEntity<TrainingGroupResponse> getTrainingGroup(
             UUID id,
             @ActingUser CurrentUserData currentUser) {
 
@@ -97,14 +95,9 @@ class TrainingGroupController implements TrainingGroupsApi {
         TrainingGroupResponse response = hasTrainingAuthority
                 ? toTrainingGroupResponse(group, id, true)
                 : buildLimitedGroupResponse(group, id);
-        var model = entityModelWithDomain(response, group);
 
-        if (hasTrainingAuthority) {
-            klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
-                    .ifPresent(link -> model.add(link.withRel("collection")));
-        }
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomain(group);
+        return ResponseEntity.ok(response);
     }
 
     private TrainingGroupResponse buildLimitedGroupResponse(TrainingGroup group, UUID groupUuid) {
@@ -248,6 +241,11 @@ class TrainingGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Tra
                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null)))
                         .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainer(id, null))))
                 .ifPresent(dtoModel::add);
+
+        // klabisLinkTo omits this for callers without GROUPS:TRAINING, which is the authority
+        // listTrainingGroups requires — the same condition the controller used to check by hand.
+        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
 
