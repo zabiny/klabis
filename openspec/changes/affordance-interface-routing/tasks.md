@@ -40,7 +40,10 @@
 - [x] 3.3 calendar (14, incl. one cross-module ref to `EventsApi`). Third occurrence of the same
       defect: `createCalendarItem` and `updateCalendarItem` rendered all four properties `readOnly`.
       Only diff in the captured bodies is 12 vanished `readOnly: true` entries.
-- [ ] 3.4 membershipfees (38)
+- [x] 3.4 membershipfees (38 across 5 controllers). No latent defect — these overrides carried
+      `@RequestBody` (without `@Valid`), so no HV000151 risk either. The module's own tests already
+      assert `options.inline` on the `addRule` / `editRule` templates, which is exactly the metadata
+      that would vanish if the routing were wrong, so they serve as the guard here.
 - [ ] 3.5 events + oris (52) — note `getAccommodationListAsCsv` has no interface counterpart but is
       not an affordance target, so it stays as-is
 - [ ] 3.6 groups (62)

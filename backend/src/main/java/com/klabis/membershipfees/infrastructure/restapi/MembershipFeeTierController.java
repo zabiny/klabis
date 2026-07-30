@@ -26,7 +26,6 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,11 +63,11 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
 
     @Override
     @Operation(summary = "Create a membership fee tier (requires MEMBERS:MANAGE)")
-    public ResponseEntity<Void> createTier(@RequestBody CreateMembershipFeeTierRequest request) {
+    public ResponseEntity<Void> createTier(CreateMembershipFeeTierRequest request) {
         MembershipFeeTierManagementPort.CreateTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         MembershipFeeTierId id = managementPort.createTier(command);
         return ResponseEntity.created(
-                linkTo(methodOn(MembershipFeeTierController.class).getTier(id.value())).toUri()
+                linkTo(methodOn(MembershipFeeTiersApi.class).getTier(id.value())).toUri()
         ).build();
     }
 
@@ -110,7 +109,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     @Operation(summary = "Edit a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> editTier(
             @Parameter(description = "Tier UUID") UUID id,
-            @RequestBody EditMembershipFeeTierRequest request) {
+            EditMembershipFeeTierRequest request) {
         MembershipFeeTierManagementPort.EditTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         managementPort.editTier(new MembershipFeeTierId(id), command);
         return ResponseEntity.noContent().build();
@@ -156,13 +155,13 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     @Operation(summary = "Add a payment rule to a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> addRule(
             @Parameter(description = "Tier UUID") UUID id,
-            @RequestBody AddPaymentRuleRequest request) {
+            AddPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.AddRuleCommand command = new MembershipFeeTierManagementPort.AddRuleCommand(
                 MembershipFeesRequestMapper.toDomain(request));
         managementPort.addRule(new MembershipFeeTierId(id), command);
         MembershipPaymentRule rule = command.rule();
         return ResponseEntity.created(
-                linkTo(methodOn(MembershipFeeTierController.class)
+                linkTo(methodOn(MembershipFeeTiersApi.class)
                         .getRule(id, rule.eventTypeId().value(), rule.rankingShortName())).toUri()
         ).build();
     }
@@ -173,7 +172,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             @Parameter(description = "Tier UUID") UUID id,
             @Parameter(description = "Event type UUID") UUID eventTypeId,
             @Parameter(description = "Ranking short name") String ranking,
-            @RequestBody EditPaymentRuleRequest request) {
+            EditPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.EditRuleCommand command = new MembershipFeeTierManagementPort.EditRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking,
@@ -213,14 +212,14 @@ class MembershipFeeTierDetailsPostprocessor
     @Override
     public void process(EntityModel<MembershipFeeTierResponse> dtoModel, MembershipFeeTier tier) {
         UUID id = tier.getId().value();
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(id))
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(id))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).editTier(id, null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).deleteTier(id))))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).editTier(id, null)))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).deleteTier(id))))
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listTiers())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
     }
 }
@@ -263,18 +262,18 @@ class MembershipFeeTierListPostprocessor
         }
 
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignController.class).publishYear(null)))
-                .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null))));
+                .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignsApi.class).publishYear(null)))
+                .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
             activeCampaignAttr.get().ifPresent(campaign ->
-                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId()
+                    klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(campaign.getId()
                             .value()))
                             .map(link -> link.withRel("activeCampaign"))
                             .ifPresent(model::add)
             );
-            klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications("closed"))
+            klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).listPublications("closed"))
                     .map(link -> link.withRel("pastCampaigns"))
                     .ifPresent(model::add);
         }
@@ -306,16 +305,16 @@ class PaymentRuleDetailsPostprocessor
         UUID tierId = domain.tierId().value();
         UUID eventTypeId = domain.rule().eventTypeId().value();
         String ranking = domain.rule().rankingShortName();
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).getRule(tierId, eventTypeId, ranking))
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAffordWithOptions(
-                                methodOn(MembershipFeeTierController.class).editRule(tierId,
+                                methodOn(MembershipFeeTiersApi.class).editRule(tierId,
                                         eventTypeId,
                                         ranking,
                                         null),
                                 Map.of("ruleType", RULE_TYPE_OPTIONS)))
                         .andAffordances(klabisAfford(
-                                methodOn(MembershipFeeTierController.class).removeRule(tierId, eventTypeId, ranking))))
+                                methodOn(MembershipFeeTiersApi.class).removeRule(tierId, eventTypeId, ranking))))
                 .ifPresent(dtoModel::add);
         dtoModel.add(Link.of("/api/event-types/" + eventTypeId, "eventType"));
     }
@@ -353,7 +352,7 @@ class MembershipFeeTierListRulesPostprocessor
         if (tierId.isPresent() && options.isPresent()) {
             model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, link -> (Link) link
                     .andAffordances(klabisAffordWithMixedOptions(
-                            methodOn(MembershipFeeTierController.class).addRule(tierId.get(), null),
+                            methodOn(MembershipFeeTiersApi.class).addRule(tierId.get(), null),
                             Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
                             Map.of("rankingShortName", options.get().rankingOptions(),
                                     "eventTypeId", options.get().eventTypeOptions()))));
@@ -398,7 +397,7 @@ class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<En
         if (!SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
             return model;
         }
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listTiers())
                 .ifPresent(link -> model.add(link.withRel("membership-fees")));
         return model;
     }
