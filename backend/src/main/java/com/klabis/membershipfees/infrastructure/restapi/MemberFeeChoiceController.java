@@ -17,7 +17,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,6 +32,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "MemberFeeChoice", description = "Member fee level choice API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
+// Authorization is owner-only, declared as x-klabis-owner-visible with no paired authority (see
+// membershipfees.yaml) and enforced on the generated interface. The actingMember parameter is
+// unused in the method bodies but must stay: it is part of the generated signature and the
+// postprocessors below pass it in methodOn(...) link-building calls.
 class MemberFeeChoiceController implements MemberFeeChoiceApi {
 
     private final MemberChoicePort memberChoicePort;
@@ -41,19 +44,12 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
         this.memberChoicePort = memberChoicePort;
     }
 
-    // No @HasAuthority / @OwnerVisible on any of this controller's operations: authorization is
-    // enforced imperatively below via assertMemberAccessingSelf — ONLY the member themselves, no
-    // MANAGE-authority alternative. Stricter than @OwnerVisible's OR-with-authority semantics, so
-    // converting this to x-klabis-owner-visible in the spec would widen access. See
-    // membershipfees.yaml header comment.
     @Override
     @Operation(summary = "Get member's current fee level choice for a year")
     public ResponseEntity<MemberFeeChoiceResponse> getChoice(
             @Parameter(description = "Member UUID") UUID memberId,
             @Parameter(description = "Calendar year") Integer year,
             @ActingMember MemberId actingMember) {
-
-        assertMemberAccessingSelf(memberId, actingMember);
 
         MemberId memberIdObj = new MemberId(memberId);
         Optional<MembershipFeeGroupId> currentChoice = memberChoicePort.getCurrentChoice(memberIdObj, year);
@@ -78,8 +74,6 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
             @RequestBody ChooseFeeChoiceRequest request,
             @ActingMember MemberId actingMember) {
 
-        assertMemberAccessingSelf(memberId, actingMember);
-
         memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
                 new MemberId(memberId),
                 new MembershipFeeGroupId(request.membershipFeeGroupId()),
@@ -95,17 +89,9 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
             @Parameter(description = "Calendar year") Integer year,
             @ActingMember MemberId actingMember) {
 
-        assertMemberAccessingSelf(memberId, actingMember);
-
         memberChoicePort.removeFeeChoice(new MemberId(memberId), year);
 
         return ResponseEntity.noContent().build();
-    }
-
-    private void assertMemberAccessingSelf(UUID memberId, MemberId actingMember) {
-        if (!actingMember.value().equals(memberId)) {
-            throw new AccessDeniedException("Members can only manage their own fee level choice");
-        }
     }
 }
 

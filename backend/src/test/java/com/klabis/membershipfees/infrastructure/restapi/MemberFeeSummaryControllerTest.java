@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
@@ -163,6 +164,18 @@ class MemberFeeSummaryControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
+
+        // MANAGE authority is deliberately NOT an alternative here — see the matching test in
+        // MemberFeeChoiceControllerTest for why this needs its own coverage.
+        @Test
+        @DisplayName("should return 403 for another member's summary even with MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
+        void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
     }
 
     @Nested
@@ -214,6 +227,16 @@ class MemberFeeSummaryControllerTest {
         @DisplayName("should return 403 when member accesses another member's history")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturn403WhenAccessingOtherMember() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 for another member's history even with MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
+        void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))

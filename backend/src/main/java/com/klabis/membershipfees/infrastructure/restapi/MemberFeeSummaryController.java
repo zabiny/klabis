@@ -17,7 +17,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,6 +33,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "MemberFeeSummary", description = "Member fee level summary and history API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
+// Owner-only authorization, declared as x-klabis-owner-visible with no paired authority — see
+// MemberFeeChoiceController for why actingMember stays despite being unused here.
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
@@ -45,17 +46,12 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
         this.publicationManagementPort = publicationManagementPort;
     }
 
-    // No @HasAuthority / @OwnerVisible on either operation: authorization is enforced imperatively
-    // below via assertMemberAccessingSelf — ONLY the member themselves. See
-    // MemberFeeChoiceController and membershipfees.yaml header comment for the same reasoning.
     @Override
     @Operation(summary = "Get member's current fee level summary for a year")
     public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(
             @Parameter(description = "Member UUID") UUID memberId,
             @Parameter(description = "Calendar year") Integer year,
             @ActingMember MemberId actingMember) {
-
-        assertMemberAccessingSelf(memberId, actingMember);
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
                 new MemberId(memberId), year);
@@ -84,19 +80,11 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
             @Parameter(description = "Member UUID") UUID memberId,
             @ActingMember MemberId actingMember) {
 
-        assertMemberAccessingSelf(memberId, actingMember);
-
         MemberFeeHistoryResponse response = MemberFeeHistoryResponse.from(
                 memberFeeHistoryPort.getLevelHistory(new MemberId(memberId)));
 
         HalResponseContext.setDomain(memberId);
         return ResponseEntity.ok(response);
-    }
-
-    private void assertMemberAccessingSelf(UUID memberId, MemberId actingMember) {
-        if (!actingMember.value().equals(memberId)) {
-            throw new AccessDeniedException("Members can only access their own fee summary and history");
-        }
     }
 }
 

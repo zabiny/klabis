@@ -11,11 +11,11 @@
 # `apis`/`models` generation — see the comment on that operation below and the matching comment in
 # backend/build.gradle.kts. Same precedent as events.yaml's getEvent.
 #
-# MemberFeeChoiceController and MemberFeeSummaryController enforce authorization imperatively via
-# assertMemberAccessingSelf(memberId, actingMember) — ONLY the member themselves, never MANAGE
-# authority. This is stricter than x-klabis-owner-visible (which is OR semantics with an
-# authority), so these 5 operations carry NO x-klabis-authority / x-klabis-owner-visible; the
-# imperative check stays in the controller. See the comment on each operation below.
+# MemberFeeChoice's and MemberFeeSummary's 5 operations are restricted to the member themselves,
+# with no MANAGE-authority alternative. That is exactly x-klabis-owner-visible WITHOUT a paired
+# x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
+# is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
+# lone x-klabis-owner-visible narrows access to the owner rather than widening it.
 
 paths:
 
@@ -847,10 +847,9 @@ paths:
         any.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # the controller (assertMemberAccessingSelf — ONLY the member themselves, no MANAGE
-      # authority alternative). This is stricter than x-klabis-owner-visible's OR-with-authority
-      # semantics, so modeling it with that extension would widen access. See module header comment.
+      # No x-klabis-authority: ONLY the member themselves, no MANAGE-authority alternative.
+      # See module header comment.
+      x-klabis-owner-visible: memberId
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -903,8 +902,8 @@ paths:
       description: Records the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority / x-klabis-owner-visible: see getChoice above — ONLY the member
-      # themselves, enforced imperatively via assertMemberAccessingSelf.
+      # See getChoice above — ONLY the member themselves.
+      x-klabis-owner-visible: memberId
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -946,8 +945,8 @@ paths:
       description: Removes the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority / x-klabis-owner-visible: see getChoice above — ONLY the member
-      # themselves, enforced imperatively via assertMemberAccessingSelf.
+      # See getChoice above — ONLY the member themselves.
+      x-klabis-owner-visible: memberId
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -985,9 +984,8 @@ paths:
         voting is currently open for the year.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # the controller (assertMemberAccessingSelf — ONLY the member themselves). See module header
-      # comment.
+      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-owner-visible: memberId
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -1035,9 +1033,8 @@ paths:
       description: Returns the full history of the member's fee group assignments across years.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # the controller (assertMemberAccessingSelf — ONLY the member themselves). See module header
-      # comment.
+      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-owner-visible: memberId
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:

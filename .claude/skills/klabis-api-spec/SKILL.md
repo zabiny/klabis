@@ -178,7 +178,7 @@ remaining two are property-only and the bundler rejects them on an operation.)
 | extension | value | generates | semantics |
 |---|---|---|---|
 | `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field holding the owner's ID, used to evaluate `x-klabis-owner-visible`. Without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
+| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
 | `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
 | `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
 
@@ -257,6 +257,18 @@ copy of the parameter inlined and annotated — sibling operations keep the plai
 Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
 codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
 `MemberControllerApiTest` for the enforcement tests.
+
+**Declared alone, it means owner-only.** The OR is with whatever authority is declared, so with none
+declared there is nothing to OR against: `HasAuthorityMethodInterceptor.invoke()` computes
+`authorityGranted` as `requiredAuthority != null && hasAuthority(...)`, leaving ownership the sole
+path to `proceed()`. A lone `x-klabis-owner-visible` therefore *narrows* access to the owner rather
+than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
+— `MemberFeeChoice`'s and `MemberFeeSummary`'s 5 operations use exactly this. Do not reach for an
+imperative controller check for that case.
+
+Such operations need a test asserting that a caller holding the module's MANAGE authority is still
+`403` (see `MemberFeeChoiceControllerTest`). Nothing else in the suite distinguishes owner-only from
+owner-OR-MANAGE, so pairing an authority in later would widen access silently.
 
 **Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
 a method without `@HasAuthority` and no check reports it; the endpoint still requires
@@ -537,8 +549,10 @@ this with `doFirst { delete(outputDir) }`; keep it when touching that function.
    Authorization is not always an annotation. A controller may enforce it **imperatively** — a
    private `checkXxxAccess()` throwing `AccessDeniedException`, typically "owner OR MANAGE
    authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair; move it into the
-   spec and delete the helper. Read each method body before concluding an endpoint is unprotected,
-   because an imperative check is invisible both to reflection and to the drift check.
+   spec and delete the helper. A helper that permits *only* the caller themselves, with no authority
+   alternative, is `x-klabis-owner-visible` on its own — declaring it alone does not widen access
+   (see that extension's section). Read each method body before concluding an endpoint is
+   unprotected, because an imperative check is invisible both to reflection and to the drift check.
 6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
 7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the
    domain objects with `HalResponseContext` (below).

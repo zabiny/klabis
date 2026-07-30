@@ -28,9 +28,11 @@
 #      caller a member of THIS group's owner/member set", which only the aggregate can answer.
 #   c) Imperative in the method body — FamilyGroupController.getFamilyGroup and
 #      TrainingGroupController.getTrainingGroup throw InsufficientAuthorityException unless the
-#      caller has the module's MANAGE/TRAINING authority OR is a member of the specific group (an
-#      OR-rule x-klabis-authority cannot express, since it is AND-only and would lock out the very
-#      members the check is there to admit). PendingInvitationsController.getPendingInvitations has
+#      caller has the module's MANAGE/TRAINING authority OR is a member of the specific group.
+#      x-klabis-authority alone would lock out those members, and pairing it with
+#      x-klabis-owner-visible (which does OR with an authority) cannot help either: group
+#      membership is a set stored on the group, not an owner ID this spec can name as a parameter.
+#      PendingInvitationsController.getPendingInvitations has
 #      no annotation either — it always acts on the caller's own invitations, via @ActingMember, so
 #      there is nothing to authorize beyond authentication.
 #
@@ -128,8 +130,8 @@ paths:
       tags: [FamilyGroups]
       summary: Get family group details
       # Imperative check in FamilyGroupController.getFamilyGroup: MEMBERS:MANAGE OR family-group
-      # membership. An OR-rule, so no x-klabis-authority (AND-only) is declared — see module header
-      # comment (pattern c). Excluded from generation — see module header comment.
+      # membership, which no extension can express — group membership is not an owner ID nameable
+      # as a parameter. See module header comment (pattern c). Excluded from generation too.
       description: |
         Returns family group details including parents and children with their own hypermedia links.
         Requires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.
