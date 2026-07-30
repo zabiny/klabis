@@ -79,3 +79,39 @@ Why this works without an ordering conflict: Spring HATEOAS's own postprocessing
 - No dedicated abstraction yet exists for the collection-level `RepresentationModelProcessor<PagedModel<EntityModel<Dto>>>` postprocessor (unlike `ModelWithDomainPostprocessor` for single items) — `MemberListPostprocessor` is a one-off; a shared base class is worth introducing once a second module needs the same shape.
 
 **References:** PR #299 (`worktree-hal-response-advice`), `backend-patterns` skill.
+
+## ADR-003: HAL affordances resolve against the generated `*Api` interface, not the controller
+
+**Status:** Accepted
+
+**Context:**
+
+After the spec-first migration (ADR-002), every REST controller implements a generated `*Api` interface that carries `@RequestMapping`, `@RequestBody`, `@HasAuthority` and `@OwnerId`. Affordances, however, still recorded the **controller** method: `klabisAfford(methodOn(MemberController.class).updateMember(...))`.
+
+`HalFormsSupport.modifyAffordanceForHalForms` walks the parameters of whatever method `methodOn(...)` recorded, looking for `@RequestBody`. Java does not inherit parameter annotations from an interface, so the lookup only succeeds when the override happens to repeat the annotation. When it does not, the method returns the affordance untouched and `HalFormsInputPayloadMetadata` never runs — the code that supplies inline `options`, `@HalForms(access = …)` and the `readOnly` flag.
+
+The failure is silent. No exception, no failing link assertion; the `_templates` entry is still present, still points at the right URL, still has the right name. Only its `properties` come back wrong. Three modules had shipped in that state:
+
+| Endpoint | Symptom |
+|---|---|
+| `PUT /api/users/{id}/permissions` | `authorities` — the only field the endpoint exists to change — rendered `readOnly: true` |
+| `POST …/account/transactions` (deposit, charge, reverse) | every field including the required `amount` rendered `readOnly: true` |
+| `POST /api/calendar-items`, `PATCH …/{id}` | all four fields rendered `readOnly: true` |
+
+**Decision:**
+
+`methodOn(...)` takes the generated interface. Spring HATEOAS supports this directly: `DummyInvocationUtils.getProxyWithInterceptor` branches on `type.isInterface()`, and `WebMvcLinkBuilder.linkTo` resolves the path from `method.getDeclaringClass()`, which for an interface proxy is the interface itself.
+
+Consequently `@RequestBody` is removed from the overrides — the interface becomes the single declaration site. `@Parameter` / `@Operation` / `@ApiResponse` stay on the controller, because springdoc scans the concrete class and `klabis-full.json` would otherwise lose its descriptions. That asymmetry is deliberate and documented in the `backend-patterns` skill, since "remove the annotations the interface already has" is the intuitive but wrong generalization.
+
+Bean Validation forces the removal to be all-or-nothing. Hibernate Validator rejects an override that *redefines* the parameter constraint configuration of the method it overrides (`ConstraintDeclarationException: HV000151`) and compares the parameter list as a whole, so dropping `@RequestBody` while leaving `@NotNull` on a sibling parameter fails **at request time**. `@Valid` is exempt — it is a cascade marker, not a constraint.
+
+**Consequences:**
+
+- A controller override can no longer silently drop HAL-FORMS input metadata; the annotation it would have to forget now lives somewhere it cannot forget it.
+- `HalFormsSupport.METHOD_AUTH_CACHE` is keyed on `Method` alone, sound only while callers derive `targetClass` from `method.getDeclaringClass()`. That class is now the interface rather than the controller — still self-derived, so the invariant holds, but the authorization outcome is asserted explicitly in `AffordanceAuthorizationTest` rather than assumed.
+- Two guards enforce this going forward: `AffordanceRoutingArchitectureTest` fails the build if any production call site passes a `*Controller.class` to `methodOn(...)` (source-level, because ArchUnit sees the call but not the class literal argument), and `AffordanceAuthorizationTest.InterfaceRoutedInputMetadata` exercises the mechanism end to end against an override that deliberately omits `@RequestBody`.
+- One `linkTo(methodOn(...))` call still bypasses `klabisLinkTo`'s authorization check (`EventController`, the `event` rel on the accommodation list). Converting the target type preserved that bypass; whether it is correct is an open question recorded in the change's design doc, not resolved here.
+- Test-local controllers in `AffordanceAuthorizationTest`, `FieldLevelAuthorizationTest` and `HalFormsExpectationsTest` deliberately have no interface — they exercise `HalFormsSupport` directly and are excluded from the architecture guard, which only scans `src/main/java`.
+
+**References:** `openspec/changes/affordance-interface-routing/`, `backend-patterns` skill.

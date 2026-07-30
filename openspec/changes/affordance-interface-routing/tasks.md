@@ -90,16 +90,12 @@
 
 ## 6. Documentation
 
-- [ ] 6.1 Update `.claude/skills/backend-patterns/SKILL.md`: state the rule in "HATEOAS Rules
-      (NON-NEGOTIABLE)" and correct the 8 `methodOn(XController.class)` occurrences in its examples
-- [ ] 6.2 State the `@RequestBody` (interface) vs `@Parameter` (controller) asymmetry explicitly —
-      "remove the annotations the interface already has" is the intuitive but wrong generalization —
-      and the HV000151 rule from design.md D2 (an override declares either all of the interface's
-      parameter constraints or none of them; `@Valid` is exempt, `@NotNull` is not)
-- [ ] 6.3 Update `references/aggregate-checklist.md`, which tells implementers to add affordances
-      without saying against which type
-- [ ] 6.4 Add an ADR to `docs/design-decisions.md` recording why affordances resolve against the
-      interface
+- [x] 6.1 Updated `.claude/skills/backend-patterns/SKILL.md`: rule stated first in "HATEOAS Rules
+      (NON-NEGOTIABLE)", and the 7 `methodOn(XController.class)` example occurrences corrected (the
+      task said 8; the eighth was prose, not a call site).
+- [x] 6.2 Added a "Which annotations belong on the override" table plus the HV000151 paragraph.
+- [x] 6.3 `references/aggregate-checklist.md` now names the target type and the annotation split.
+- [x] 6.4 ADR-003 added to `docs/design-decisions.md`.
 
 ## 7. Verification
 
