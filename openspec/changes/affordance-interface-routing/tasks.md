@@ -1,25 +1,30 @@
 ## 1. Baseline
 
-- [ ] 1.1 Capture the full HAL body of one representative endpoint per module (`getMember`,
+- [x] 1.1 Capture the full HAL body of one representative endpoint per module (`getMember`,
       `getEvent`, `getGroup`, `getTier`, `listCalendarItems`, `getUserPermissions`, an account
       endpoint) against the current build; store under `/mnt/ramdisk/klabis` as the diff baseline
-- [ ] 1.2 Record the current full-suite result (test count, failures) so any later delta is
+      — **revised in practice:** a throwaway `@WebMvcTest` writing the body to a file proved a better
+      capture mechanism than a running server (no OAuth flow, exact diff). It found the
+      `readOnly: true` defect immediately. Rather than keep throwaway capture files per module, each
+      module's commit adds a permanent assertion on the template it fixes; the capture test is
+      deleted once its finding is encoded that way.
+- [x] 1.2 Record the current full-suite result (test count, failures) so any later delta is
       attributable to this change
-- [ ] 1.3 Confirm every controller still resolves: re-run the audit that all 20 controllers implement
+- [x] 1.3 Confirm every controller still resolves: re-run the audit that all 20 controllers implement
       a generated `*Api` and all 97 `methodOn(...)`-referenced methods have an interface counterpart
 
 ## 2. Pilot: common module (4 call sites)
 
-- [ ] 2.1 Convert `methodOn(XController.class)` to `methodOn(XApi.class)` in
+- [x] 2.1 Convert `methodOn(XController.class)` to `methodOn(XApi.class)` in
       `com.klabis.common.**.restapi`, including `PermissionController` — one of the two overrides
       missing `@RequestBody`
-- [ ] 2.2 Remove `@RequestBody` from the converted overrides; leave `@Parameter` in place (springdoc
+- [x] 2.2 Remove `@RequestBody` from the converted overrides; leave `@Parameter` in place (springdoc
       reads it off the concrete class)
-- [ ] 2.3 Run the common-module tests; then diff the `getUserPermissions` HAL body against the 1.1
+- [x] 2.3 Run the common-module tests; then diff the `getUserPermissions` HAL body against the 1.1
       baseline — expect an identical body except for `updatePermissions` gaining its input metadata
-- [ ] 2.4 Verify against a running application (`./runLocalEnvironment.sh`), not only `@WebMvcTest`
+- [x] 2.4 Verify against a running application (`./runLocalEnvironment.sh`), not only `@WebMvcTest`
       slices, that `@EnableMethodSecurity(proxyTargetClass = true)` and interface proxying coexist
-- [ ] 2.5 Commit the pilot separately, so the mechanism is reviewable on its own
+- [x] 2.5 Commit the pilot separately, so the mechanism is reviewable on its own
 
 ## 3. Remaining modules, one commit each
 
