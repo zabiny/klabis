@@ -15,7 +15,7 @@ import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -52,7 +52,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> createTrainingGroup(@RequestBody CreateTrainingGroupRequest request) {
+    public ResponseEntity<Void> createTrainingGroup(CreateTrainingGroupRequest request) {
 
         AgeRange ageRange = new AgeRange(request.minAge(), request.maxAge());
         TrainingGroup.CreateTrainingGroup command = new TrainingGroup.CreateTrainingGroup(
@@ -60,7 +60,7 @@ class TrainingGroupController implements TrainingGroupsApi {
         TrainingGroup group = trainingGroupManagementService.createTrainingGroup(command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(TrainingGroupController.class).getTrainingGroup(group.getId().uuid(), null)).toUri()
+                linkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(group.getId().uuid(), null)).toUri()
         ).build();
     }
 
@@ -104,7 +104,7 @@ class TrainingGroupController implements TrainingGroupsApi {
         List<EntityModel<TrainerResponse>> trainerModels = group.getTrainers().stream()
                 .map(trainerId -> {
                     EntityModel<TrainerResponse> model = EntityModel.of(new TrainerResponse(trainerId.uuid()));
-                    klabisLinkTo(methodOn(MemberController.class).getMember(trainerId.uuid(), null))
+                    klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
                     return model;
@@ -116,7 +116,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateTrainingGroup(UUID id, @RequestBody UpdateTrainingGroupRequest request) {
+    public ResponseEntity<Void> updateTrainingGroup(UUID id, UpdateTrainingGroupRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
@@ -137,7 +137,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addTrainingGroupMember(UUID id, @RequestBody TrainingGroupAddMemberRequest request) {
+    public ResponseEntity<Void> addTrainingGroupMember(UUID id, TrainingGroupAddMemberRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.addMemberToTrainingGroup(groupId, new MemberId(request.memberId()));
@@ -154,7 +154,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addTrainer(UUID id, @RequestBody AddTrainerRequest request) {
+    public ResponseEntity<Void> addTrainer(UUID id, AddTrainerRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
         trainingGroupManagementService.addTrainer(groupId, new MemberId(request.memberId()));
@@ -182,13 +182,13 @@ class TrainingGroupController implements TrainingGroupsApi {
         List<EntityModel<TrainerResponse>> trainerModels = trainerIds.stream()
                 .map(trainerId -> {
                     EntityModel<TrainerResponse> model = EntityModel.of(new TrainerResponse(trainerId.uuid()));
-                    klabisLinkTo(methodOn(MemberController.class).getMember(trainerId.uuid(), null))
+                    klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
                     if (hasTrainingAuthority && trainerIds.size() > 1) {
-                        klabisLinkTo(methodOn(TrainingGroupController.class).removeTrainer(groupUuid, trainerId.uuid()))
+                        klabisLinkTo(methodOn(TrainingGroupsApi.class).removeTrainer(groupUuid, trainerId.uuid()))
                                 .ifPresent(link -> model.add(link.withSelfRel()
-                                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class)
+                                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class)
                                                 .removeTrainer(groupUuid, trainerId.uuid())))));
                     }
                     return model;
@@ -211,16 +211,16 @@ class TrainingGroupController implements TrainingGroupsApi {
         MemberId memberId = membership.memberId();
         GroupMembershipResponse response = new GroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
 
         boolean memberIsTrainer = trainerIds.contains(memberId);
         if (hasTrainingAuthority && !memberIsTrainer) {
-            klabisLinkTo(methodOn(TrainingGroupController.class)
+            klabisLinkTo(methodOn(TrainingGroupsApi.class)
                     .removeTrainingGroupMember(groupUuid, memberId.uuid()))
                     .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(TrainingGroupController.class)
+                            .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class)
                                     .removeTrainingGroupMember(groupUuid, memberId.uuid())))));
         }
 
@@ -234,17 +234,17 @@ class TrainingGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Tra
     @Override
     public void process(EntityModel<TrainingGroupResponse> dtoModel, TrainingGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(id, null))
+        klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).updateTrainingGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).deleteTrainingGroup(id)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainingGroupMember(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).addTrainer(id, null))))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).updateTrainingGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).deleteTrainingGroup(id)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).addTrainingGroupMember(id, null)))
+                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).addTrainer(id, null))))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without GROUPS:TRAINING, which is the authority
         // listTrainingGroups requires — the same condition the controller used to check by hand.
-        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
+        klabisLinkTo(methodOn(TrainingGroupsApi.class).listTrainingGroups())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -254,7 +254,7 @@ class TrainingGroupsRootPostprocessor implements RepresentationModelProcessor<En
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(TrainingGroupController.class).listTrainingGroups())
+        klabisLinkTo(methodOn(TrainingGroupsApi.class).listTrainingGroups())
                 .ifPresent(link -> model.add(link.withRel("training-groups")));
         return model;
     }
@@ -266,7 +266,7 @@ class TrainingGroupSummaryPostprocessor extends ModelWithDomainPostprocessor<Tra
     @Override
     public void process(EntityModel<TrainingGroupSummaryResponse> dtoModel, TrainingGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(id, null))
+        klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(id, null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }
@@ -281,7 +281,7 @@ class TrainingGroupListPostprocessor
     public CollectionModel<EntityModel<TrainingGroupSummaryResponse>> process(
             CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(TrainingGroupController.class).createTrainingGroup(null))));
+                .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).createTrainingGroup(null))));
         return model;
     }
 }

@@ -17,7 +17,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -71,7 +70,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     public ResponseEntity<Void> chooseTier(
             @Parameter(description = "Member UUID") UUID memberId,
             @Parameter(description = "Calendar year") Integer year,
-            @RequestBody ChooseFeeChoiceRequest request,
+            ChooseFeeChoiceRequest request,
             @ActingMember MemberId actingMember) {
 
         memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
@@ -101,19 +100,19 @@ class MemberFeeChoiceDetailsPostprocessor
 
     @Override
     public void process(EntityModel<MemberFeeChoiceResponse> dtoModel, MemberFeeChoiceController.FeeChoiceView view) {
-        klabisLinkTo(methodOn(MemberFeeChoiceController.class).getChoice(view.memberId(), view.year(), null))
+        klabisLinkTo(methodOn(MemberFeeChoiceApi.class).getChoice(view.memberId(), view.year(), null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MemberFeeChoiceController.class)
+                        .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
                                 .chooseTier(view.memberId(), view.year(), null, null)))
-                        .andAffordances(klabisAfford(methodOn(MemberFeeChoiceController.class)
+                        .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
                                 .removeChoice(view.memberId(), view.year(), null)))));
 
         view.currentChoice().ifPresent(groupId ->
-                klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(groupId.value()))
+                klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(groupId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("currentGroup"))));
 
         view.recommended().ifPresent(levelId ->
-                klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(levelId.value()))
+                klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(levelId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("recommendedLevel"))));
     }
 }

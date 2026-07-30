@@ -13,7 +13,7 @@ import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,14 +50,14 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> createFamilyGroup(@RequestBody CreateFamilyGroupRequest request) {
+    public ResponseEntity<Void> createFamilyGroup(CreateFamilyGroupRequest request) {
 
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
                 request.name(), new MemberId(request.parent()));
         FamilyGroup group = familyGroupManagementService.createFamilyGroup(command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(FamilyGroupController.class).getFamilyGroup(group.getId().uuid(), null)).toUri()
+                linkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(group.getId().uuid(), null)).toUri()
         ).build();
     }
 
@@ -102,7 +102,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addFamilyGroupParent(UUID id, @RequestBody AddMemberRequest request) {
+    public ResponseEntity<Void> addFamilyGroupParent(UUID id, AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addParent(groupId, new MemberId(request.memberId()));
@@ -119,7 +119,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addFamilyGroupChild(UUID id, @RequestBody AddMemberRequest request) {
+    public ResponseEntity<Void> addFamilyGroupChild(UUID id, AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addChild(groupId, new MemberId(request.memberId()));
@@ -144,13 +144,13 @@ class FamilyGroupController implements FamilyGroupsApi {
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {
                     EntityModel<ParentResponse> model = EntityModel.of(new ParentResponse(parentId.uuid()));
-                    klabisLinkTo(methodOn(MemberController.class).getMember(parentId.uuid(), null))
+                    klabisLinkTo(methodOn(MembersApi.class).getMember(parentId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
                     if (hasMembersManage && parentIds.size() > 1) {
-                        klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupParent(groupUuid, parentId.uuid()))
+                        klabisLinkTo(methodOn(FamilyGroupsApi.class).removeFamilyGroupParent(groupUuid, parentId.uuid()))
                                 .ifPresent(link -> model.add(link.withSelfRel()
-                                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
+                                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class)
                                                 .removeFamilyGroupParent(groupUuid, parentId.uuid())))));
                     }
                     return model;
@@ -168,13 +168,13 @@ class FamilyGroupController implements FamilyGroupsApi {
         MemberId memberId = membership.memberId();
         FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
         if (hasMembersManage) {
-            klabisLinkTo(methodOn(FamilyGroupController.class).removeFamilyGroupChild(groupUuid, memberId.uuid()))
+            klabisLinkTo(methodOn(FamilyGroupsApi.class).removeFamilyGroupChild(groupUuid, memberId.uuid()))
                     .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(FamilyGroupController.class)
+                            .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class)
                                     .removeFamilyGroupChild(groupUuid, memberId.uuid())))));
         }
         return model;
@@ -187,7 +187,7 @@ class FamilyGroupSummaryPostprocessor extends ModelWithDomainPostprocessor<Famil
     @Override
     public void process(EntityModel<FamilyGroupSummaryResponse> dtoModel, FamilyGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null))
+        klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(id, null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }
@@ -198,16 +198,16 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
     @Override
     public void process(EntityModel<FamilyGroupResponse> dtoModel, FamilyGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null))
+        klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).deleteFamilyGroup(id)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null))))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).deleteFamilyGroup(id)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null)))
+                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null))))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
         // listFamilyGroups requires — the same condition the controller used to check by hand.
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
+        klabisLinkTo(methodOn(FamilyGroupsApi.class).listFamilyGroups())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -217,7 +217,7 @@ class FamilyGroupsRootPostprocessor implements RepresentationModelProcessor<Enti
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
+        klabisLinkTo(methodOn(FamilyGroupsApi.class).listFamilyGroups())
                 .ifPresent(link -> model.add(link.withRel("family-groups")));
         return model;
     }
@@ -233,7 +233,7 @@ class FamilyGroupListPostprocessor
     public CollectionModel<EntityModel<FamilyGroupSummaryResponse>> process(
             CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).createFamilyGroup(null))));
+                .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).createFamilyGroup(null))));
         return model;
     }
 }

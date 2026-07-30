@@ -37,7 +37,11 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
   - [ ] `@SecurityRequirement(name = "KlabisAuth", scopes = {...})`
 - [ ] Convert UUID path variables to typed IDs at controller boundary: `new <Aggregate>Id(uuid)`
 - [ ] Implement role-based command routing (admin vs. self-update)
-- [ ] Add state-driven HATEOAS affordances using `klabisLinkTo()` / `klabisAfford()`
+- [ ] Add state-driven HATEOAS affordances using `klabisLinkTo()` / `klabisAfford()`, passing the
+      generated `*Api` interface to `methodOn(...)` — never the controller class, or the template
+      loses its input metadata (see SKILL.md, "HATEOAS Rules")
+- [ ] Leave `@RequestBody` and Bean Validation constraints on the interface; the override declares
+      only `@Parameter` / `@Operation` for springdoc
 - [ ] Create MapStruct `@Mapper` for simple DTO mapping
 - [ ] Create manual mapper utility class for complex PATCH operations with `PatchField`
 

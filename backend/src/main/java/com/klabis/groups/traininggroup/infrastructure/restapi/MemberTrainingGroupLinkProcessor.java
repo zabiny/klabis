@@ -24,7 +24,7 @@ public class MemberTrainingGroupLinkProcessor implements RepresentationModelProc
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
         MemberId memberId = new MemberId(model.getContent().id());
         trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
-                .ifPresent(group -> klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(group.getId().uuid(), null))
+                .ifPresent(group -> klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("trainingGroup"))
                         .ifPresent(model::add));
         return model;

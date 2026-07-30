@@ -29,10 +29,10 @@ public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelPr
         if (!isSelfDetail(model)) {
             return model;
         }
-        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
+        klabisLinkTo(methodOn(IcalTokenApi.class).getTokenState(null))
                 .ifPresent(link -> model.add(
                         link.withRel("ical-token")
-                                .andAffordances(klabisAfford(methodOn(IcalTokenController.class).generateToken(null)))
+                                .andAffordances(klabisAfford(methodOn(IcalTokenApi.class).generateToken(null)))
                 ));
         return model;
     }

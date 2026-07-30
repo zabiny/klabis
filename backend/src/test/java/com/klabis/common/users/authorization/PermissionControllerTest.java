@@ -90,6 +90,25 @@ class PermissionControllerTest {
         }
 
         @Test
+        @DisplayName("should offer authorities as writable in the updatePermissions template")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldExposeWritableAuthoritiesInTemplate() throws Exception {
+            // Given
+            when(permissionService.getUserPermissions(any(UserId.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
+
+            // When & Then
+            // type/multi are asserted alongside readOnly so the test cannot pass through readOnly
+            // merely being absent for an unrelated reason.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].name").value("authorities"))
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].readOnly").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].type").value("Authority"))
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].multi").value(true));
+        }
+
+        @Test
         @DisplayName("should return 404 when user not found")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn404WhenUserNotFound() throws Exception {

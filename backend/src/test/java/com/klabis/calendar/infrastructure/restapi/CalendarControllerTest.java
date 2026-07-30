@@ -709,6 +709,26 @@ class CalendarControllerTest {
         }
 
         @Test
+        @DisplayName("create template should offer name as writable, not read-only")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void createTemplateShouldHaveWritableFields() throws Exception {
+            when(calendarManagementService.listCalendarItems(any(), any(), any(), eq(false), isNull()))
+                    .thenReturn(List.of(CalendarItemTestDataBuilder.aCalendarItem().buildManual()));
+
+            // required is asserted alongside readOnly so the test cannot pass through the property
+            // being absent from the template altogether.
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createCalendarItem.properties[?(@.name=='name')].readOnly")
+                            .doesNotExist())
+                    .andExpect(jsonPath("$._templates.createCalendarItem.properties[?(@.name=='name')].required")
+                            .value(org.hamcrest.Matchers.contains(true)));
+        }
+
+        @Test
         @DisplayName("update template should have description as not required")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void updateTemplateShouldHaveDescriptionAsNotRequired() throws Exception {
@@ -728,6 +748,27 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='description')]").value(org.hamcrest.Matchers.hasSize(1)))
                     .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='description')].required").value(
                             org.hamcrest.Matchers.not(org.hamcrest.Matchers.contains(true))));
+        }
+
+        @Test
+        @DisplayName("update template should offer name as writable, not read-only")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void updateTemplateShouldHaveWritableFields() throws Exception {
+            UUID calendarItemId = UUID.randomUUID();
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
+                    .withName("Training Session")
+                    .buildManual();
+            when(calendarManagementService.getCalendarItem(new CalendarItemId(calendarItemId))).thenReturn(item);
+
+            mockMvc.perform(
+                            get("/api/calendar-items/{id}", calendarItemId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='name')].readOnly")
+                            .doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateCalendarItem.properties[?(@.name=='name')].required")
+                            .value(org.hamcrest.Matchers.contains(true)));
         }
     }
 

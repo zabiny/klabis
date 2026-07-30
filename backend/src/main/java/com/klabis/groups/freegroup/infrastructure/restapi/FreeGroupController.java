@@ -16,7 +16,7 @@ import com.klabis.groups.freegroup.domain.FreeGroup;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -53,11 +53,11 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> createGroup(@RequestBody CreateGroupRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> createGroup(CreateGroupRequest request, @ActingMember MemberId actingMember) {
         FreeGroup group = membersGroupManagementService.createGroup(request.name(), actingMember);
 
         return ResponseEntity.created(
-                linkTo(methodOn(FreeGroupController.class).getGroup(group.getId().uuid(), null)).toUri()
+                linkTo(methodOn(GroupsApi.class).getGroup(group.getId().uuid(), null)).toUri()
         ).build();
     }
 
@@ -92,7 +92,7 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateGroup(UUID id, @RequestBody RenameGroupRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> updateGroup(UUID id, RenameGroupRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.renameGroup(groupId, request.name(), actingMember);
@@ -116,7 +116,7 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addGroupOwner(UUID id, @RequestBody AddOwnerRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> addGroupOwner(UUID id, AddOwnerRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()), actingMember);
@@ -132,7 +132,7 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> inviteMember(UUID id, @RequestBody InviteMemberRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> inviteMember(UUID id, InviteMemberRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         membersGroupManagementService.inviteMember(groupId, actingMember, new MemberId(request.memberId()));
@@ -141,7 +141,7 @@ class FreeGroupController implements GroupsApi {
 
     @Override
     public ResponseEntity<Void> cancelInvitation(UUID id, UUID invitationId,
-            @RequestBody(required = false) CancelInvitationRequest request, @ActingMember MemberId actingMember) {
+            CancelInvitationRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
@@ -191,13 +191,13 @@ class FreeGroupController implements GroupsApi {
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {
         EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
-        klabisLinkTo(methodOn(MemberController.class).getMember(ownerId.uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(ownerId.uuid(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
         if (requestingUserIsOwner && ownerCount > 1) {
-            klabisLinkTo(methodOn(FreeGroupController.class).removeGroupOwner(groupUuid, ownerId.uuid(), null))
+            klabisLinkTo(methodOn(GroupsApi.class).removeGroupOwner(groupUuid, ownerId.uuid(), null))
                     .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                            .andAffordances(klabisAfford(methodOn(GroupsApi.class)
                                     .removeGroupOwner(groupUuid, ownerId.uuid(), null)))));
         }
         return model;
@@ -210,16 +210,16 @@ class FreeGroupController implements GroupsApi {
         FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
 
         EntityModel<FreeGroupMembershipResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
 
         boolean memberIsOwner = ownerIds.contains(memberId);
         if (isOwner && !memberIsOwner) {
-            klabisLinkTo(methodOn(FreeGroupController.class)
+            klabisLinkTo(methodOn(GroupsApi.class)
                     .removeGroupMember(groupUuid, memberId.uuid(), null))
                     .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(FreeGroupController.class)
+                            .andAffordances(klabisAfford(methodOn(GroupsApi.class)
                                     .removeGroupMember(groupUuid, memberId.uuid(), null)))));
         }
 
@@ -238,19 +238,19 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
     @Override
     public void process(EntityModel<GroupResponse> dtoModel, FreeGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(id, null)).ifPresent(link -> {
+        klabisLinkTo(methodOn(GroupsApi.class).getGroup(id, null)).ifPresent(link -> {
             var selfLink = link.withSelfRel();
             if (isActingMemberOwner(group)) {
                 selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).updateGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).deleteGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).addGroupOwner(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(FreeGroupController.class).inviteMember(id, null, null)));
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).deleteGroup(id, null)))
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).addGroupOwner(id, null, null)))
+                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).inviteMember(id, null, null)));
             }
             dtoModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
+        klabisLinkTo(methodOn(GroupsApi.class).listGroups(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 
@@ -271,7 +271,7 @@ class GroupsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(FreeGroupController.class).listGroups(null))
+        klabisLinkTo(methodOn(GroupsApi.class).listGroups(null))
                 .ifPresent(link -> model.add(link.withRel("groups")));
         return model;
     }
@@ -283,7 +283,7 @@ class GroupSummaryPostprocessor extends ModelWithDomainPostprocessor<GroupSummar
     @Override
     public void process(EntityModel<GroupSummaryResponse> dtoModel, FreeGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(FreeGroupController.class).getGroup(id, null))
+        klabisLinkTo(methodOn(GroupsApi.class).getGroup(id, null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }
@@ -298,7 +298,7 @@ class GroupListPostprocessor
     public CollectionModel<EntityModel<GroupSummaryResponse>> process(
             CollectionModel<EntityModel<GroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FreeGroupController.class).createGroup(null, null))));
+                .andAffordances(klabisAfford(methodOn(GroupsApi.class).createGroup(null, null))));
         return model;
     }
 }

@@ -6,11 +6,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +33,7 @@ class PasswordChangeController implements MyProfileApi {
     @ApiResponse(responseCode = "204", description = "Password changed successfully")
     @ApiResponse(responseCode = "400", description = "Incorrect current password or new password fails complexity rules")
     public ResponseEntity<Void> changePassword(
-            @Valid @RequestBody ChangePasswordRequest request,
+            ChangePasswordRequest request,
             Authentication authentication) {
 
         KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) authentication;

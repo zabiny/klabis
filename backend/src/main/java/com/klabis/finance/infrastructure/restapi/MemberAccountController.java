@@ -17,7 +17,7 @@ import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -170,7 +170,7 @@ class MemberAccountController implements FinanceApi {
     }
 
     private static URI buildTransactionUri(UUID memberId, UUID txId) {
-        return klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
+        return klabisLinkTo(methodOn(FinanceApi.class).getTransaction(memberId, txId, null))
                 .map(link -> link.toUri())
                 .orElseGet(() -> URI.create("/api/members/" + memberId + "/account/transactions/" + txId));
     }
@@ -188,19 +188,19 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
 
     @Override
     public void process(EntityModel<MemberAccountResource> model, MemberId memberId) {
-        klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId.uuid(), null))
+        klabisLinkTo(methodOn(FinanceApi.class).getAccount(memberId.uuid(), null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(
-                                methodOn(MemberAccountController.class).deposit(memberId.uuid(), null, null)))
+                                methodOn(FinanceApi.class).deposit(memberId.uuid(), null, null)))
                         .andAffordances(klabisAfford(
-                                methodOn(MemberAccountController.class).charge(memberId.uuid(), null, null))))
+                                methodOn(FinanceApi.class).charge(memberId.uuid(), null, null))))
                 .ifPresent(model::add);
 
-        klabisLinkTo(methodOn(MemberAccountController.class).listTransactions(
+        klabisLinkTo(methodOn(FinanceApi.class).listTransactions(
                 memberId.uuid(), null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("transactions")));
 
-        klabisLinkTo(methodOn(MemberController.class).getMember(memberId.uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .ifPresent(link -> model.add(link.withRel("accountOwner")));
     }
 }
@@ -217,28 +217,28 @@ class TransactionPostprocessor extends ModelWithDomainPostprocessor<TransactionR
         boolean canReverse = FinanceSecurityHelper.callerHasFinanceManage();
         Optional<UUID> reversedByTxId = twr.reversedBy().map(TransactionId::value);
 
-        klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, txId, null))
+        klabisLinkTo(methodOn(FinanceApi.class).getTransaction(memberId, txId, null))
                 .map(link -> {
                     if (reversedByTxId.isEmpty() && !tx.isReversal() && canReverse) {
                         return link.withSelfRel()
                                 .andAffordances(klabisAfford(
-                                        methodOn(MemberAccountController.class).reverse(memberId, txId, null, null)));
+                                        methodOn(FinanceApi.class).reverse(memberId, txId, null, null)));
                     }
                     return link.withSelfRel();
                 })
                 .ifPresent(model::add);
 
         reversedByTxId.ifPresent(id ->
-                klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, id, null))
+                klabisLinkTo(methodOn(FinanceApi.class).getTransaction(memberId, id, null))
                         .ifPresent(link -> model.add(link.withRel("reversedBy"))));
 
         if (tx.isReversal()) {
             UUID originalTxId = tx.getReversesTransactionId().value();
-            klabisLinkTo(methodOn(MemberAccountController.class).getTransaction(memberId, originalTxId, null))
+            klabisLinkTo(methodOn(FinanceApi.class).getTransaction(memberId, originalTxId, null))
                     .ifPresent(link -> model.add(link.withRel("reverses")));
         }
 
-        klabisLinkTo(methodOn(MemberController.class).getMember(tx.getRecordedBy().uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(tx.getRecordedBy().uuid(), null))
                 .ifPresent(link -> model.add(link.withRel("recordedBy")));
 
         FinanceLinks.accountLink(memberId).ifPresent(model::add);

@@ -44,7 +44,7 @@ class DashboardSelfLinkProcessor implements RepresentationModelProcessor<EntityM
 
     @Override
     public EntityModel<DashboardModel> process(EntityModel<DashboardModel> model) {
-        klabisLinkTo(methodOn(DashboardController.class).dashboard())
+        klabisLinkTo(methodOn(DashboardApi.class).dashboard())
                 .ifPresent(link -> model.add(link.withSelfRel()));
         return model;
     }

@@ -286,14 +286,14 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        klabisLinkTo(methodOn(MemberController.class).getMember(member.getId().uuid(), null))
+        klabisLinkTo(methodOn(MembersApi.class).getMember(member.getId().uuid(), null))
             .map(link -> {
                 var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(member.getId().uuid(), null, null)));
+                    .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(member.getId().uuid(), null, null)));
                 if (member.isActive()) {
-                    self = self.andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(member.getId().uuid(), null, null)));
+                    self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).suspendMember(member.getId().uuid(), null, null)));
                 } else {
-                    self = self.andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(member.getId().uuid(), null)));
+                    self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(member.getId().uuid(), null)));
                 }
                 return self;
             })
@@ -311,8 +311,8 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
     @Override
     public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
         pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null))));
+                .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(null, null, null)))
+                .andAffordances(klabisAfford(methodOn(RegistrationApi.class).registerMember(null, null))));
         return pagedModel;
     }
 }
@@ -328,10 +328,37 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
 
 Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()` — not standard Spring HATEOAS helpers.
 
+- **`methodOn(...)` takes the generated `*Api` interface, never the controller class.** Write
+  `methodOn(MembersApi.class)`, not `methodOn(MemberController.class)`. Java does not inherit
+  parameter annotations from an interface, so an affordance recorded against the implementation only
+  finds `@RequestBody` if that override happens to repeat it. When it does not, `HalFormsSupport`
+  silently skips `HalFormsInputPayloadMetadata` and the `_templates` entry comes back with every
+  field `readOnly: true` — no error, no failing link assertion, just a form the UI cannot submit.
+  `AffordanceRoutingArchitectureTest` fails the build if a controller class reaches `methodOn`.
 - Links (`withSelfRel()`, `withRel()`) — ONLY for GET endpoints
 - Affordances (`klabisAfford()`) — ONLY for POST/PUT/PATCH/DELETE endpoints
 - POST/PUT/PATCH/DELETE return 204 No Content or 201 Created with Location header — no response body
 - `klabisAfford` handles authorization internally — do not duplicate authorization checks
+
+#### Which annotations belong on the override
+
+The interface is the declaration site for everything the framework reads — but springdoc is the
+exception, because it scans the concrete class. "Remove whatever the interface already has" is the
+intuitive generalization and it is wrong.
+
+| Annotation | Where it belongs | Why |
+|---|---|---|
+| `@RequestBody`, `@RequestParam`, `@PathVariable` | interface only | Spring MVC and `HalFormsSupport` both read them from there |
+| `@NotNull`, `@Size`, `@Pattern`, … | interface only | see the HV000151 note below |
+| `@Valid` | either | a cascade marker, not a constraint — repeating it is legal |
+| `@Parameter`, `@Operation`, `@ApiResponse` | **controller** | springdoc scans the implementation; stripping these empties out `klabis-full.json` |
+
+**Bean Validation is all-or-nothing.** Hibernate Validator rejects an override that *redefines* the
+parameter constraint configuration of the method it overrides (`ConstraintDeclarationException:
+HV000151`), and it compares the parameter list as a whole. So removing `@RequestBody` from a method
+whose sibling parameter still carries `@NotNull` produces a signature that differs from the
+interface's and fails **at request time**, not at compile time. Either the override declares the
+interface's full constraint set, or none of it. Prefer none.
 
 ### Root Navigation Postprocessors
 
@@ -342,7 +369,7 @@ Root navigation (`/api`) is **NOT** an aggregate-backed endpoint — `RootModel`
 class MembersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MembersApi.class).listMembers(Pageable.unpaged(), null))
             .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }

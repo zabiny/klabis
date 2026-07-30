@@ -21,7 +21,7 @@ import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.*;
-import com.klabis.members.infrastructure.restapi.MemberController;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -45,6 +45,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -95,7 +98,7 @@ public class EventController implements EventsApi {
     @Override
     public ResponseEntity<Void> createEvent(
             @Parameter(description = "Event creation data")
-            @RequestBody CreateEventRequest request) {
+            CreateEventRequest request) {
 
         Event.CreateEvent command = new Event.CreateEvent(
                 request.name(),
@@ -111,7 +114,7 @@ public class EventController implements EventsApi {
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
-                .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
+                .created(linkTo(methodOn(EventsApi.class).getEvent(created.getId().value(), null)).toUri())
                 .build();
     }
 
@@ -123,7 +126,7 @@ public class EventController implements EventsApi {
     @Override
     public ResponseEntity<Void> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") @RequestBody UpdateEventRequest request) {
+            @Parameter(description = "Event update data") UpdateEventRequest request) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventId eventId = new EventId(id);
@@ -338,7 +341,7 @@ public class EventController implements EventsApi {
     public ResponseEntity<Void> cancelEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @Parameter(description = "Optional cancellation details")
-            @RequestBody(required = false) CancelEventRequest request) {
+            CancelEventRequest request) {
 
         Event.CancelEvent command = request != null
                 ? new Event.CancelEvent(request.cancellationReason())
@@ -364,18 +367,14 @@ public class EventController implements EventsApi {
     // handler methods.
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
-    public ResponseEntity<CollectionModel<AccommodationListItemDto>> getAccommodationList(
+    public ResponseEntity<Collection<AccommodationListItemDto>> getAccommodationList(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
-        CollectionModel<AccommodationListItemDto> collectionModel = CollectionModel.of(
-                items,
-                linkTo(methodOn(EventController.class).getEvent(eventId, null)).withRel("event")
-        );
-
-        return ResponseEntity.ok(collectionModel);
+        HalResponseContext.setDomainList(event.getRegistrations());
+        return ResponseEntity.ok(items);
     }
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
@@ -465,23 +464,23 @@ class EventAffordanceSupport {
 
         switch (event.getStatus()) {
             case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
                 if (canManage) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
                 if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
 
             case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
                 if (canManage) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
                 if (orisIntegrationActive && event.getOrisId() != null) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncEventFromOris(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
 
@@ -548,25 +547,25 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
+        klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
-                            methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null),
+                            methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
-                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                            methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
                             Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                     if (currentMemberId != null) {
-                        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
+                        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
                                 .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
                     }
                 }
@@ -575,24 +574,24 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             dtoModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, null, null))
+        klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         if (event.getStatus() != EventStatus.DRAFT) {
-            klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))
+            klabisLinkTo(methodOn(EventRegistrationsApi.class).listRegistrations(eventId, null))
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
         event.getCoordinators().forEach(coordinatorId ->
-                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                klabisLinkTo(methodOn(MembersApi.class).getMember(coordinatorId.value(), null))
                         .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
-                klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
+                klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
         if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            klabisLinkTo(methodOn(EventController.class).getAccommodationList(eventId))
+            klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
     }
@@ -616,25 +615,25 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
+        klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
-                            methodOn(EventRegistrationController.class).editRegistration(eventId, currentMemberId.value(), null),
+                            methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
-                            methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null),
+                            methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
                             Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
                     ));
                     if (currentMemberId != null) {
-                        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(currentMemberId.value(), eventId, true))
+                        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
                                 .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
                     }
                 }
@@ -644,11 +643,11 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         });
 
         event.getCoordinators().forEach(coordinatorId ->
-                klabisLinkTo(methodOn(MemberController.class).getMember(coordinatorId.value(), null))
+                klabisLinkTo(methodOn(MembersApi.class).getMember(coordinatorId.value(), null))
                         .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
 
         event.getEventTypeId().ifPresent(eventTypeId ->
-                klabisLinkTo(methodOn(EventTypeController.class).getEventType(eventTypeId.value()))
+                klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
     }
 }
@@ -673,15 +672,49 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
         boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
 
         model.mapLink(IanaLinkRelations.SELF, selfLink -> {
-            Link link = (Link) selfLink.andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
+            Link link = (Link) selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).createEvent(null)));
             if (orisIntegrationActive && hasManageAuthority) {
-                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEvent(null)));
-                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).importEventsBatch(null)));
-                link = link.andAffordances(klabisAfford(methodOn(OrisEventController.class).syncAllUpcomingFromOris()));
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEvent(null)));
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEventsBatch(null)));
+                link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncAllUpcomingFromOris()));
             }
             return link;
         });
         return model;
+    }
+}
+
+/**
+ * Contributes the {@code event} relation to the accommodation list. The eventId comes from the URI
+ * template rather than from an item, because an event with no registrations yields an empty
+ * collection with nothing to recover it from.
+ */
+@MvcComponent
+class AccommodationListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<AccommodationListItemDto>>> {
+
+    @Override
+    public CollectionModel<EntityModel<AccommodationListItemDto>> process(
+            CollectionModel<EntityModel<AccommodationListItemDto>> model) {
+        currentEventId().ifPresent(eventId ->
+                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
+                        .ifPresent(link -> model.add(link.withRel("event"))));
+        return model;
+    }
+
+    private static Optional<UUID> currentEventId() {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object variables = attrs.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
+                RequestAttributes.SCOPE_REQUEST);
+        if (!(variables instanceof Map<?, ?> pathVariables)) {
+            return Optional.empty();
+        }
+        Object eventId = pathVariables.get("eventId");
+        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
     }
 }
 
@@ -690,9 +723,9 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
-        klabisLinkTo(methodOn(CategoryPresetController.class).listPresets())
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("category-presets")));
         return model;
     }

@@ -93,7 +93,7 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
 
     @Override
     public void process(EntityModel<MemberFeeHistoryResponse> dtoModel, UUID memberId) {
-        klabisLinkTo(methodOn(MemberFeeSummaryController.class).getFeeHistory(memberId, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(memberId, null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }
@@ -109,19 +109,19 @@ class MemberFeeSummaryDetailsPostprocessor
         MemberFeeHistoryPort.CurrentLevelInfo info = view.info();
         List<HalFormsInlineOption> groupOptions = view.groupOptions();
 
-        klabisLinkTo(methodOn(MemberFeeSummaryController.class).getFeeSummary(memberId, year, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year, null))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
                         self = self.andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(MemberFeeChoiceController.class).chooseTier(memberId, year, null, null),
+                                methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null, null),
                                 Map.of("membershipFeeGroupId", groupOptions)));
                     }
                     dtoModel.add(self);
                 });
 
         if (info.groupId() != null) {
-            klabisLinkTo(methodOn(MembershipFeeGroupController.class).getGroup(info.groupId().value()))
+            klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(info.groupId().value()))
                     .ifPresent(link -> dtoModel.add(link.withRel("group")));
         }
     }

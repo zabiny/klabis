@@ -27,7 +27,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -84,11 +83,11 @@ public class EventTypeController implements EventTypesApi {
     @ApiResponse(responseCode = "201", description = "Event type created")
     @Override
     public ResponseEntity<Void> createEventType(
-            @Parameter(description = "Event type creation data") @RequestBody CreateEventTypeRequest request) {
+            @Parameter(description = "Event type creation data") CreateEventTypeRequest request) {
 
         EventType created = eventTypeManagementService.createEventType(EventTypeRequestMapper.toCommand(request));
         return ResponseEntity
-                .created(linkTo(methodOn(EventTypeController.class).getEventType(created.getId().value())).toUri())
+                .created(linkTo(methodOn(EventTypesApi.class).getEventType(created.getId().value())).toUri())
                 .build();
     }
 
@@ -97,7 +96,7 @@ public class EventTypeController implements EventTypesApi {
     @Override
     public ResponseEntity<Void> updateEventType(
             @Parameter(description = "Event type UUID") @PathVariable UUID id,
-            @Parameter(description = "Event type update data") @RequestBody UpdateEventTypeRequest request) {
+            @Parameter(description = "Event type update data") UpdateEventTypeRequest request) {
 
         eventTypeManagementService.updateEventType(new EventTypeId(id), EventTypeRequestMapper.toCommand(request));
         return ResponseEntity.noContent().build();
@@ -128,13 +127,13 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
         UUID id = eventType.getId().value();
         EventTypeManagementPort port = portProvider.getIfAvailable();
         List<HalFormsInlineOption> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
-        klabisLinkTo(methodOn(EventTypeController.class).getEventType(id)).ifPresent(link ->
+        klabisLinkTo(methodOn(EventTypesApi.class).getEventType(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(EventTypeController.class).updateEventType(id, null),
+                                methodOn(EventTypesApi.class).updateEventType(id, null),
                                 Map.of("orisDisciplineIds", disciplineOptions)))
-                        .andAffordances(klabisAfford(methodOn(EventTypeController.class).deleteEventType(id)))));
-        klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
+                        .andAffordances(klabisAfford(methodOn(EventTypesApi.class).deleteEventType(id)))));
+        klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -162,7 +161,7 @@ class EventTypeListPostprocessor
 
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(klabisAffordWithPromptedOptions(
-                        methodOn(EventTypeController.class).createEventType(null),
+                        methodOn(EventTypesApi.class).createEventType(null),
                         Map.of("orisDisciplineIds", disciplineOptions))));
         return model;
     }
@@ -178,7 +177,7 @@ class EventTypesRootPostprocessor implements RepresentationModelProcessor<Entity
                 .anyMatch(a -> a.getAuthority().equals(Authority.EVENTS_MANAGE.toString()))) {
             return model;
         }
-        klabisLinkTo(methodOn(EventTypeController.class).listEventTypes())
+        klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
                 .ifPresent(link -> model.add(link.withRel("event-types")));
         return model;
     }

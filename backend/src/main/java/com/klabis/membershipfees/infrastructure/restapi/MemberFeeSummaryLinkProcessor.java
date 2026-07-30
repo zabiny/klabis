@@ -53,7 +53,7 @@ public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcess
         }
 
         int year = campaignManagementPort.get().relevantFeeYear(LocalDate.now(clock));
-        klabisLinkTo(methodOn(MemberFeeSummaryController.class).getFeeSummary(resourceMemberId, year, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(resourceMemberId, year, null))
                 .ifPresent(link -> model.add(link.withRel("feeSummary")));
 
         return model;
