@@ -48,8 +48,13 @@
       target, so its missing interface counterpart never mattered. `cancelEvent`'s
       `@RequestBody(required = false)` matched the interface exactly and was safe to drop. No latent
       defect — the overrides carried `@RequestBody`.
-- [ ] 3.6 groups (62)
-- [ ] 3.7 For each module: run that module's tests before committing, and diff its 1.1 baseline body
+- [x] 3.6 groups (62 across 4 controllers). Note `FreeGroupController` implements `GroupsApi`, not
+      the `FreeGroupsApi` the naming convention would suggest. `cancelInvitation`'s
+      `@RequestBody(required = false)` matched the interface and was safe to drop.
+- [x] 3.7 For each module: run that module's tests before committing, and diff its 1.1 baseline body.
+      Defects found and fixed: `common` (updatePermissions), `finance` (deposit/charge/reverse),
+      `calendar` (create/updateCalendarItem). No defect in members, membershipfees, events or groups —
+      their overrides already declared `@RequestBody`.
 
 ## 4. Plain `linkTo` call sites
 
