@@ -1,0 +1,1722 @@
+# Membership fees module — the API surface of MembershipFeeTierController,
+# FeeSelectionCampaignController, MembershipFeeGroupController, MemberFeeChoiceController and
+# MemberFeeSummaryController (membershipfees module).
+#
+# MemberFeeChoice and MemberFeeSummary share the URL prefix /api/members/{memberId} with the
+# members module — registered here by controller, not by URL prefix, per klabis-api-spec skill.
+# Their parameter is named MembershipFeeMemberIdParam to avoid colliding with members.yaml's
+# MemberIdParam — component names are one global namespace after bundling.
+#
+# getGroup (MembershipFeeGroupController) is documented here but excluded from openApiModule's
+# `apis`/`models` generation — see the comment on that operation below and the matching comment in
+# backend/build.gradle.kts. Same precedent as events.yaml's getEvent.
+#
+# MemberFeeChoice's and MemberFeeSummary's 5 operations are restricted to the member themselves,
+# with no MANAGE-authority alternative. That is exactly x-klabis-owner-visible WITHOUT a paired
+# x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
+# is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
+# lone x-klabis-owner-visible narrows access to the owner rather than widening it.
+
+paths:
+
+  /api/membership-fee-tiers:
+    get:
+      operationId: listTiers
+      tags: [MembershipFeeTiers]
+      summary: List all membership fee tiers
+      description: Returns all membership fee tiers in the catalog.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. The activeCampaign/
+      # pastCampaigns links and the createTier/publishYear affordances are only added for callers
+      # with MEMBERS:MANAGE, but that is decided inline in the controller (isAdmin()) rather than
+      # gating the whole operation.
+      responses:
+        '200':
+          description: List of membership fee tiers retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeTierSummaryResponse'
+          x-hal-links:
+            self:
+              description: This collection
+            activeCampaign:
+              operation: getPublication
+              description: Present only for callers with MEMBERS:MANAGE, when a campaign is active
+            pastCampaigns:
+              operation: listPublications
+              description: Present only for callers with MEMBERS:MANAGE
+          x-hal-templates:
+            createTier:
+              operation: createTier
+              description: Present only for callers with MEMBERS:MANAGE
+            publishYear:
+              operation: publishYear
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createTier
+      tags: [MembershipFeeTiers]
+      summary: Create a membership fee tier
+      description: Creates a new membership fee tier in the catalog.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembershipFeeTierRequest'
+      responses:
+        '201':
+          description: Membership fee tier created
+          headers:
+            Location:
+              description: URI of the created tier
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-tiers/{id}:
+    get:
+      operationId: getTier
+      tags: [MembershipFeeTiers]
+      summary: Get membership fee tier details
+      description: Returns a single membership fee tier by ID.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. editTier/deleteTier
+      # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check.
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+      responses:
+        '200':
+          description: Membership fee tier found
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMembershipFeeTierResponse'
+          x-hal-links:
+            self:
+              description: This tier
+            collection:
+              operation: listTiers
+              description: Back to the tier list
+            rules:
+              operation: listRules
+              description: Payment rules for this tier
+          x-hal-templates:
+            default:
+              operation: editTier
+              description: Present only for callers with MEMBERS:MANAGE
+            deleteTier:
+              operation: deleteTier
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: editTier
+      tags: [MembershipFeeTiers]
+      summary: Edit a membership fee tier
+      description: |
+        Partial update of a tier's name, yearly fee and/or payment rules. Fields omitted from the
+        request are left unchanged.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditMembershipFeeTierRequest'
+      responses:
+        '204':
+          description: Membership fee tier updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteTier
+      tags: [MembershipFeeTiers]
+      summary: Delete a membership fee tier
+      description: Deletes a membership fee tier from the catalog.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+      responses:
+        '204':
+          description: Membership fee tier deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-tiers/{id}/rules:
+    get:
+      operationId: listRules
+      tags: [MembershipFeeTiers]
+      summary: List payment rules for a membership fee tier
+      description: Returns all payment rules defined on a tier.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. addRule affordance still
+      # requires MEMBERS:MANAGE via klabisAfford's own authorization check.
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+      responses:
+        '200':
+          description: List of payment rules retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            addRule:
+              operation: addRule
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: addRule
+      tags: [MembershipFeeTiers]
+      summary: Add a payment rule to a membership fee tier
+      description: |
+        Adds a new payment rule (percentage or fixed amount) for an event type/ranking combination.
+        Returns Location header pointing to the created rule.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPaymentRuleRequest'
+      responses:
+        '201':
+          description: Payment rule created
+          headers:
+            Location:
+              description: URI of the created rule
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
+    get:
+      operationId: getRule
+      tags: [MembershipFeeTiers]
+      summary: Get a payment rule detail from a membership fee tier
+      description: Returns a single payment rule identified by event type and ranking.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. editRule/removeRule
+      # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check.
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/RuleEventTypeIdParam'
+        - $ref: '#/components/parameters/RuleRankingParam'
+      responses:
+        '200':
+          description: Payment rule found
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelPaymentRuleResponse'
+          x-hal-links:
+            self:
+              description: This payment rule
+            eventType:
+              description: The event type this rule applies to
+          x-hal-templates:
+            default:
+              operation: editRule
+              description: Present only for callers with MEMBERS:MANAGE
+            removeRule:
+              operation: removeRule
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: editRule
+      tags: [MembershipFeeTiers]
+      summary: Edit a payment rule's value on a membership fee tier
+      description: Updates the rule type and value (percentage or fixed amount) of an existing rule.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/RuleEventTypeIdParam'
+        - $ref: '#/components/parameters/RuleRankingParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditPaymentRuleRequest'
+      responses:
+        '204':
+          description: Payment rule updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: removeRule
+      tags: [MembershipFeeTiers]
+      summary: Remove a payment rule from a membership fee tier
+      description: Removes a payment rule identified by event type and ranking.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/RuleEventTypeIdParam'
+        - $ref: '#/components/parameters/RuleRankingParam'
+      responses:
+        '204':
+          description: Payment rule removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/fee-selection-campaigns:
+    get:
+      operationId: listPublications
+      tags: [FeeSelectionCampaigns]
+      summary: List fee year publications, optionally filtered by status
+      description: |
+        Lists fee selection campaigns (one per calendar year). status=closed returns only past
+        campaigns; omitted returns all.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. publishYear affordance still
+      # requires MEMBERS:MANAGE via klabisAfford's own authorization check.
+      parameters:
+        - name: status
+          in: query
+          description: 'Filter by status: ''closed'' returns only past campaigns'
+          required: false
+          schema:
+            # Plain string, not enum: an inline `enum:` on a property/parameter that IS generated
+            # into Java (request DTOs, query params) produces a reference to a synthetic
+            # "<Schema><Property>" (or named-schema) enum class, but this generator version emits
+            # an EMPTY body for a bare top-level enum schema used only as a query-param type — the
+            # file compiles to nothing and every reference fails "cannot find symbol". No existing
+            # domain enum exists to map onto either (see events.yaml's EventStatus precedent, which
+            # works because it maps onto a real domain enum). Plain string preserves the actual
+            # wire format; CampaignStatusFilter.valueOf() in the controller already validates it.
+            type: string
+      responses:
+        '200':
+          description: List of fee year publications retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/CollectionModelEntityModelFeeSelectionCampaignResponse'
+          x-hal-links:
+            self:
+              description: This collection, with the current status filter
+          x-hal-templates:
+            publishYear:
+              operation: publishYear
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: publishYear
+      tags: [FeeSelectionCampaigns]
+      summary: Publish fee levels for a calendar year
+      description: |
+        Opens a fee selection campaign for a calendar year, publishing a snapshot of the given
+        membership fee tiers as fee groups members can choose from.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishYearRequest'
+      responses:
+        '201':
+          description: Fee year publication created
+          headers:
+            Location:
+              description: URI of the created publication
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/fee-selection-campaigns/{id}:
+    get:
+      operationId: getPublication
+      tags: [FeeSelectionCampaigns]
+      summary: Get fee year publication details
+      description: Returns a single fee selection campaign by ID.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. changeDeadline/closeCampaign
+      # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check, and are
+      # additionally state-gated (not closed / not processed) in the postprocessor.
+      parameters:
+        - $ref: '#/components/parameters/CampaignIdParam'
+      responses:
+        '200':
+          description: Fee year publication found
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
+          x-hal-links:
+            self:
+              description: This publication
+            collection:
+              operation: listPublications
+              description: Back to the publication list
+            levels:
+              operation: listGroupsForYear
+              description: Fee groups published for this campaign's year
+          x-hal-templates:
+            default:
+              operation: changeDeadline
+              description: Present for callers with MEMBERS:MANAGE, while the campaign is not closed
+            closeCampaign:
+              operation: closeCampaign
+              description: |
+                Present for callers with MEMBERS:MANAGE, while the campaign is not closed and not
+                yet processed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/fee-selection-campaigns/{id}/deadline:
+    patch:
+      operationId: changeDeadline
+      tags: [FeeSelectionCampaigns]
+      summary: Change voting deadline of an active campaign
+      description: Updates the voting deadline of a campaign that is not yet closed.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CampaignIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeDeadlineRequest'
+      responses:
+        '200':
+          description: Voting deadline updated
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
+          x-hal-links:
+            self:
+              description: This publication
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/fee-selection-campaigns/{id}/close:
+    post:
+      operationId: closeCampaign
+      tags: [FeeSelectionCampaigns]
+      summary: Manually close a campaign
+      description: |
+        Processes a campaign immediately, regardless of its voting deadline — finalising member
+        assignments to fee groups for the campaign's year.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CampaignIdParam'
+      responses:
+        '204':
+          description: Campaign closed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/fee-selection-campaigns/{year}/levels:
+    get:
+      operationId: listGroupsForYear
+      tags: [FeeSelectionCampaigns]
+      summary: List published fee groups for a given year
+      description: Returns the fee groups published as part of the campaign for the given year.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller.
+      parameters:
+        - $ref: '#/components/parameters/CampaignYearParam'
+      responses:
+        '200':
+          description: List of fee groups retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeGroupResponse'
+          x-hal-links:
+            self:
+              description: This collection, for the given year
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-groups/{id}:
+    # getGroup returns the plain MembershipFeeGroupResponse payload. The group-members collection is
+    # declared by the controller via HalResponseContext.embed(...) and rendered under _embedded
+    # by HalResponseBodyAdvice — the same deferred-assembly path as _links and _templates, so it
+    # stays out of the generated return type — same as events.yaml's getEvent.
+    # Note the _embedded key below is "members" per MembershipFeeGroupResponse's
+    # @Relation(collectionRelation = "members") — NOT the class-name-derived default.
+    get:
+      operationId: getGroup
+      tags: [MembershipFeeGroups]
+      summary: Get membership fee group details with snapshot and member count
+      description: |
+        Returns a published fee group's snapshot (yearly fee, payment rules) and its members,
+        embedded under "members".
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller. assignMember/editSnapshot
+      # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check.
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: Membership fee group found
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMembershipFeeGroupResponseWithMembers'
+          x-hal-links:
+            self:
+              description: This fee group
+            rules:
+              operation: listGroupRules
+              description: Payment rules snapshot for this group
+            sourceLevel:
+              operation: getTier
+              description: The membership fee tier this group's snapshot was published from
+          x-hal-templates:
+            default:
+              operation: editSnapshot
+              description: Present for callers with MEMBERS:MANAGE, only while the group is EDITABLE
+            assignMember:
+              operation: assignMember
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: editSnapshot
+      tags: [MembershipFeeGroups]
+      summary: Edit yearly fee and payment rules of a published level
+      description: |
+        Updates the yearly fee amount and/or payment rules snapshot of a published fee group. Only
+        allowed while the group's status is EDITABLE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditGroupSnapshotRequest'
+      responses:
+        '204':
+          description: Fee group snapshot updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-groups/{id}/rules:
+    get:
+      operationId: listGroupRules
+      tags: [MembershipFeeGroups]
+      summary: List payment rules snapshot for a membership fee group
+      description: Returns the payment rules snapshot published for this fee group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: readable by any authenticated caller.
+      parameters:
+        - $ref: '#/components/parameters/GroupIdParam'
+      responses:
+        '200':
+          description: List of payment rules retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
+          x-hal-links:
+            self:
+              description: This collection
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/membership-fee-groups/{groupId}/members:
+    post:
+      operationId: assignMember
+      tags: [MembershipFeeGroups]
+      summary: Assign a member to a fee group
+      description: |
+        Admin emergency assignment: adds a member directly to a published fee group for a given
+        year, bypassing the normal self-service choice flow.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingAdmin'
+      parameters:
+        - $ref: '#/components/parameters/GroupIdPathParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminAssignMemberRequest'
+      responses:
+        '204':
+          description: Member assigned to fee group
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/fee-choice/{year}:
+    get:
+      operationId: getChoice
+      tags: [MemberFeeChoice]
+      summary: Get member's current fee level choice for a year
+      description: |
+        Returns the member's current fee group choice and the recommended tier for the year, if
+        any.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: ONLY the member themselves, no MANAGE-authority alternative.
+      # See module header comment.
+      x-klabis-owner-visible: memberId
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
+        - $ref: '#/components/parameters/FeeChoiceYearParam'
+      responses:
+        '200':
+          description: Fee level choice retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMemberFeeChoiceResponse'
+          x-hal-links:
+            self:
+              description: This fee choice
+            currentGroup:
+              operation: getGroup
+              description: Present when the member has a current fee group choice
+            recommendedLevel:
+              operation: getTier
+              description: Present when a recommended tier exists for this year
+          x-hal-templates:
+            default:
+              operation: chooseTier
+              description: Choose a fee level for this year
+            removeChoice:
+              operation: removeChoice
+              description: Remove the fee level choice for this year
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - members can only access their own fee level choice
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: chooseTier
+      tags: [MemberFeeChoice]
+      summary: Choose a fee level for a year
+      description: Records the member's chosen fee group for the given year.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # See getChoice above — ONLY the member themselves.
+      x-klabis-owner-visible: memberId
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
+        - $ref: '#/components/parameters/FeeChoiceYearParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChooseFeeChoiceRequest'
+      responses:
+        '204':
+          description: Fee level choice recorded
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - members can only manage their own fee level choice
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: removeChoice
+      tags: [MemberFeeChoice]
+      summary: Remove fee level choice for a year
+      description: Removes the member's chosen fee group for the given year.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # See getChoice above — ONLY the member themselves.
+      x-klabis-owner-visible: memberId
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
+        - $ref: '#/components/parameters/FeeChoiceYearParam'
+      responses:
+        '204':
+          description: Fee level choice removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - members can only manage their own fee level choice
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/fee-summary/{year}:
+    get:
+      operationId: getFeeSummary
+      tags: [MemberFeeSummary]
+      summary: Get member's current fee level summary for a year
+      description: |
+        Returns the member's current fee group (if assigned), the recommended level, and whether
+        voting is currently open for the year.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-owner-visible: memberId
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
+        - $ref: '#/components/parameters/FeeSummaryYearParam'
+      responses:
+        '200':
+          description: Fee level summary retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMemberFeeSummaryResponse'
+          x-hal-links:
+            self:
+              description: This fee summary
+            group:
+              operation: getGroup
+              description: Present when the member has a current fee group
+          x-hal-templates:
+            default:
+              operation: chooseTier
+              description: Present only while voting is open for this year
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - members can only access their own fee summary
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/fee-history:
+    get:
+      operationId: getFeeHistory
+      tags: [MemberFeeSummary]
+      summary: Get member's fee level assignment history
+      description: Returns the full history of the member's fee group assignments across years.
+      security:
+        - KlabisAuth: [MEMBERS]
+      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-owner-visible: memberId
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
+      responses:
+        '200':
+          description: Fee level history retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMemberFeeHistoryResponse'
+          x-hal-links:
+            self:
+              description: This fee history
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - members can only access their own fee history
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+components:
+
+  parameters:
+    TierIdParam:
+      name: id
+      in: path
+      description: Membership fee tier UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    RuleEventTypeIdParam:
+      name: eventTypeId
+      in: path
+      description: Event type UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    RuleRankingParam:
+      name: ranking
+      in: path
+      description: Ranking short name
+      required: true
+      schema:
+        type: string
+
+    CampaignIdParam:
+      name: id
+      in: path
+      description: Fee selection campaign UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CampaignYearParam:
+      name: year
+      in: path
+      description: Calendar year
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    GroupIdParam:
+      name: id
+      in: path
+      description: Membership fee group UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    GroupIdPathParam:
+      name: groupId
+      in: path
+      description: Membership fee group UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    # Prefixed to avoid colliding with members.yaml's MemberIdParam — component names are one
+    # global namespace after bundling. See klabis-api-spec skill.
+    FeeChoiceMemberIdParam:
+      name: memberId
+      in: path
+      description: Member UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    FeeChoiceYearParam:
+      name: year
+      in: path
+      description: Calendar year
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+    FeeSummaryMemberIdParam:
+      name: memberId
+      in: path
+      description: Member UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    FeeSummaryYearParam:
+      name: year
+      in: path
+      description: Calendar year
+      required: true
+      schema:
+        type: integer
+        format: int32
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid argument
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+    Conflict:
+      description: Conflict - concurrent update (optimistic locking failure)
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+    UnprocessableEntity:
+      description: Unprocessable entity - request violates a business rule
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  schemas:
+
+    # Envelope schemas — never generated into Java; see klabis-api-spec skill:
+    # "Payload and envelope are separate schemas".
+    CollectionModelEntityModelMembershipFeeTierSummaryResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            membershipFeeTierSummaryResponseList:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelMembershipFeeTierSummaryResponse'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+        _templates:
+          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    EntityModelMembershipFeeTierSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MembershipFeeTierSummaryResponse:
+      type: object
+      description: Membership fee tier summary for list views.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        yearlyFeeAmount:
+          type: number
+        yearlyFeeCurrency:
+          type: string
+        ruleCount:
+          type: integer
+          format: int32
+
+    EntityModelMembershipFeeTierResponse:
+      allOf:
+        - $ref: '#/components/schemas/MembershipFeeTierResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    MembershipFeeTierResponse:
+      type: object
+      description: Complete membership fee tier information.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        yearlyFeeAmount:
+          type: number
+        yearlyFeeCurrency:
+          type: string
+
+    CreateMembershipFeeTierRequest:
+      type: object
+      required: [name, yearlyFeeAmount]
+      properties:
+        name:
+          type: string
+          x-klabis-not-blank: true
+        yearlyFeeAmount:
+          type: number
+          exclusiveMinimum: 0
+        yearlyFeeCurrency:
+          type: string
+          description: Defaults to CZK when omitted.
+
+    EditMembershipFeeTierRequest:
+      type: object
+      description: |
+        Partial update. Fields omitted from the request are left unchanged. When rules is
+        provided, it replaces the tier's entire rule set.
+      properties:
+        name:
+          type: string
+        yearlyFeeAmount:
+          type: number
+        yearlyFeeCurrency:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRuleRequest'
+
+    PaymentRuleRequest:
+      type: object
+      required: [eventTypeId, rankingShortName, ruleType]
+      properties:
+        eventTypeId:
+          type: string
+          format: uuid
+        rankingShortName:
+          type: string
+          x-klabis-not-blank: true
+        ruleType:
+          # Plain string, not enum — see the CampaignStatusFilterParam comment above for why; same
+          # generator limitation, and no existing domain RuleType enum to map onto (the domain uses
+          # a sealed RuleValue interface, not an enum). The domain's switch expression already
+          # rejects unknown values.
+          type: string
+          x-klabis-not-blank: true
+        percent:
+          type: integer
+          format: int32
+          description: Required when ruleType is PERCENTAGE.
+        fixedAmount:
+          type: number
+          description: Required when ruleType is FIXED_AMOUNT.
+        fixedCurrency:
+          type: string
+          description: Defaults to CZK when omitted.
+
+    CollectionModelEntityModelPaymentRuleResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            paymentRuleResponseList:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelPaymentRuleResponse'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+        _templates:
+          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    EntityModelPaymentRuleResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaymentRuleResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    PaymentRuleResponse:
+      type: object
+      description: |
+        A single payment rule. percentage is present when ruleType is PERCENTAGE; fixedAmount/
+        fixedCurrency are present when ruleType is FIXED_AMOUNT.
+      properties:
+        eventTypeId:
+          type: string
+          format: uuid
+        rankingShortName:
+          type: string
+        ruleType:
+          type: string
+          enum: [PERCENTAGE, FIXED_AMOUNT]
+        percentage:
+          type: integer
+          format: int32
+          nullable: true
+        fixedAmount:
+          type: number
+          nullable: true
+        fixedCurrency:
+          type: string
+          nullable: true
+
+    AddPaymentRuleRequest:
+      type: object
+      required: [eventTypeId, rankingShortName, ruleType]
+      properties:
+        eventTypeId:
+          type: string
+          format: uuid
+        rankingShortName:
+          type: string
+          x-klabis-not-blank: true
+        ruleType:
+          type: string
+          x-klabis-not-blank: true
+        percentage:
+          type: integer
+          format: int32
+          description: Required when ruleType is PERCENTAGE.
+        fixedAmount:
+          type: number
+          description: Required when ruleType is FIXED_AMOUNT.
+        fixedCurrency:
+          type: string
+          description: Defaults to CZK when omitted.
+
+    EditPaymentRuleRequest:
+      type: object
+      required: [ruleType]
+      properties:
+        ruleType:
+          type: string
+          x-klabis-not-blank: true
+        percentage:
+          type: integer
+          format: int32
+          description: Required when ruleType is PERCENTAGE.
+        fixedAmount:
+          type: number
+          description: Required when ruleType is FIXED_AMOUNT.
+        fixedCurrency:
+          type: string
+          description: Defaults to CZK when omitted.
+
+    CollectionModelEntityModelFeeSelectionCampaignResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            feeSelectionCampaignResponseList:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+        _templates:
+          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    EntityModelFeeSelectionCampaignResponse:
+      allOf:
+        - $ref: '#/components/schemas/FeeSelectionCampaignResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    FeeSelectionCampaignResponse:
+      type: object
+      description: A fee selection campaign for one calendar year.
+      properties:
+        id:
+          type: string
+          format: uuid
+        year:
+          type: integer
+          format: int32
+        votingDeadline:
+          type: string
+          format: date
+        deadlineProcessedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PublishYearRequest:
+      type: object
+      required: [year, votingDeadline, levelIds]
+      properties:
+        year:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        votingDeadline:
+          type: string
+          format: date
+        levelIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+
+    ChangeDeadlineRequest:
+      type: object
+      required: [votingDeadline]
+      properties:
+        votingDeadline:
+          type: string
+          format: date
+
+    CollectionModelEntityModelMembershipFeeGroupResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            membershipFeeGroupResponseList:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelMembershipFeeGroupResponse'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    EntityModelMembershipFeeGroupResponse:
+      allOf:
+        - $ref: '#/components/schemas/MembershipFeeGroupResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    # The full wire shape of getGroup: MembershipFeeGroupResponse's properties plus an
+    # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse).
+    # schemaMappings points at MembershipFeeGroupResponse, so the generated method returns the
+    # payload alone — the _embedded block is declared by the controller
+    # (HalResponseContext.embed) and assembled by HalResponseBodyAdvice, like _links and _templates.
+    EntityModelMembershipFeeGroupResponseWithMembers:
+      allOf:
+        - $ref: '#/components/schemas/MembershipFeeGroupResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+            _embedded:
+              type: object
+              properties:
+                members:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MemberInGroupResponse'
+
+    MembershipFeeGroupResponse:
+      type: object
+      description: A published fee group — a snapshot taken from a tier for one campaign year.
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceLevelId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        year:
+          type: integer
+          format: int32
+        yearlyFeeAmount:
+          type: number
+        yearlyFeeCurrency:
+          type: string
+        status:
+          type: string
+          enum: [EDITABLE, FROZEN]
+        memberCount:
+          type: integer
+          format: int32
+        rulesSnapshot:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRuleResponse'
+
+    MemberInGroupResponse:
+      type: object
+      description: A member's assignment to a fee group.
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        registrationNumber:
+          type: string
+          nullable: true
+        joinedAt:
+          type: string
+          format: date
+        source:
+          type: string
+          enum: [MEMBER_CHOICE, ADMIN_ASSIGNMENT]
+
+    EditGroupSnapshotRequest:
+      type: object
+      required: [yearlyFeeAmount]
+      properties:
+        yearlyFeeAmount:
+          type: number
+          exclusiveMinimum: 0
+        yearlyFeeCurrency:
+          type: string
+          description: Defaults to CZK when omitted.
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRuleRequest'
+
+    AdminAssignMemberRequest:
+      type: object
+      required: [memberId, year]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        year:
+          type: integer
+          format: int32
+
+    EntityModelMemberFeeChoiceResponse:
+      allOf:
+        - $ref: '#/components/schemas/MemberFeeChoiceResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    MemberFeeChoiceResponse:
+      type: object
+      description: A member's fee level choice for a given year.
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        year:
+          type: integer
+          format: int32
+        currentGroupId:
+          type: string
+          format: uuid
+          nullable: true
+        recommendedLevelId:
+          type: string
+          format: uuid
+          nullable: true
+
+    ChooseFeeChoiceRequest:
+      type: object
+      required: [membershipFeeGroupId]
+      properties:
+        membershipFeeGroupId:
+          type: string
+          format: uuid
+
+    EntityModelMemberFeeSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/MemberFeeSummaryResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    MemberFeeSummaryResponse:
+      type: object
+      description: A member's current fee level summary for a year.
+      properties:
+        currentGroup:
+          allOf:
+            - $ref: '#/components/schemas/CurrentGroupResponse'
+          nullable: true
+        votingOpen:
+          type: boolean
+        recommendedLevelId:
+          type: string
+          format: uuid
+          nullable: true
+
+    CurrentGroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        yearlyFee:
+          type: number
+
+    EntityModelMemberFeeHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/MemberFeeHistoryResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MemberFeeHistoryResponse:
+      type: object
+      description: A member's full fee group assignment history across years.
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeAssignmentResponse'
+
+    FeeAssignmentResponse:
+      type: object
+      properties:
+        year:
+          type: integer
+          format: int32
+        groupId:
+          type: string
+          format: uuid
+        groupName:
+          type: string
+        joinedAt:
+          type: string
+          format: date
+        source:
+          type: string
+          enum: [MEMBER_CHOICE, ADMIN_ASSIGNMENT]

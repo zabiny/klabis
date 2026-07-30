@@ -58,8 +58,11 @@ class PasswordSetupControllerTest {
             // Given
             String plainToken = UUID.randomUUID().toString();
             String password = "SecurePassword123!";
-            SetPasswordRequest request =
-                    new SetPasswordRequest(plainToken, password, password);
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(plainToken)
+                    .password(password)
+                    .passwordConfirmation(password)
+                    .build();
 
             when(passwordSetupServiceMock.completePasswordSetup(any(PasswordSetupService.SetupPasswordCommand.class), anyString()))
                     .thenReturn(User.createdUser("ZBM0101", "$2a$10$hash"));
@@ -78,8 +81,11 @@ class PasswordSetupControllerTest {
         void shouldRejectPasswordMismatch() throws Exception {
             // Given
             String plainToken = UUID.randomUUID().toString();
-            SetPasswordRequest request =
-                    new SetPasswordRequest(plainToken, "Password123!", "DifferentPassword123!");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(plainToken)
+                    .password("Password123!")
+                    .passwordConfirmation("DifferentPassword123!")
+                    .build();
 
             // When/Then — controller validates password match before calling service
             mockMvc.perform(post("/api/auth/password-setup/complete")
@@ -95,8 +101,11 @@ class PasswordSetupControllerTest {
             // Given
             String plainToken = UUID.randomUUID().toString();
             String weakPassword = "weak";
-            SetPasswordRequest request =
-                    new SetPasswordRequest(plainToken, weakPassword, weakPassword);
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(plainToken)
+                    .password(weakPassword)
+                    .passwordConfirmation(weakPassword)
+                    .build();
 
             when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new PasswordValidationException(
@@ -114,10 +123,11 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject invalid token")
         void shouldRejectInvalidToken() throws Exception {
             // Given
-            SetPasswordRequest request =
-                    new SetPasswordRequest("invalid-token",
-                            "SecurePassword123!",
-                            "SecurePassword123!");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token("invalid-token")
+                    .password("SecurePassword123!")
+                    .passwordConfirmation("SecurePassword123!")
+                    .build();
 
             when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenValidationException("Invalid token"));
@@ -135,10 +145,11 @@ class PasswordSetupControllerTest {
         void shouldRejectExpiredTokenWithGoneStatus() throws Exception {
             // Given
             String plainToken = UUID.randomUUID().toString();
-            SetPasswordRequest request =
-                    new SetPasswordRequest(plainToken,
-                            "SecurePassword123!",
-                            "SecurePassword123!");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(plainToken)
+                    .password("SecurePassword123!")
+                    .passwordConfirmation("SecurePassword123!")
+                    .build();
 
             when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenExpiredException("Token has expired"));
@@ -156,10 +167,11 @@ class PasswordSetupControllerTest {
         void shouldRejectUsedTokenWithGoneStatus() throws Exception {
             // Given
             String plainToken = UUID.randomUUID().toString();
-            SetPasswordRequest request =
-                    new SetPasswordRequest(plainToken,
-                            "SecurePassword123!",
-                            "SecurePassword123!");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(plainToken)
+                    .password("SecurePassword123!")
+                    .passwordConfirmation("SecurePassword123!")
+                    .build();
 
             when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenAlreadyUsedException("Token has already been used"));
@@ -176,8 +188,11 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject request with blank token")
         void shouldRejectRequestWithBlankToken() throws Exception {
             // Given
-            SetPasswordRequest request =
-                    new SetPasswordRequest("", "SecurePassword123!", "SecurePassword123!");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token("")
+                    .password("SecurePassword123!")
+                    .passwordConfirmation("SecurePassword123!")
+                    .build();
 
             // When/Then
             mockMvc.perform(post("/api/auth/password-setup/complete")
@@ -190,8 +205,11 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject request with blank password")
         void shouldRejectRequestWithBlankPassword() throws Exception {
             // Given
-            SetPasswordRequest request =
-                    new SetPasswordRequest(UUID.randomUUID().toString(), "", "");
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(UUID.randomUUID().toString())
+                    .password("")
+                    .passwordConfirmation("")
+                    .build();
 
             // When/Then
             mockMvc.perform(post("/api/auth/password-setup/complete")
@@ -276,11 +294,10 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject request with blank token")
         void shouldRejectRequestWithBlankToken() throws Exception {
             // When/Then
-            // HandlerMethodValidationException wraps the validation error and returns 500
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", ""))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.parameterErrors[0]").value("token: must not be blank"));
+                    .andExpect(jsonPath("$.parameterErrors[0]").value("token: must match \"^(?!\\s*$).+\""));
         }
 
         @Test
@@ -300,8 +317,10 @@ class PasswordSetupControllerTest {
         @DisplayName("should return error for unsupported operation")
         void shouldReturnErrorForUnsupportedOperation() throws Exception {
             // Given
-            TokenRequestRequest request =
-                    new TokenRequestRequest("ZBM0101", "test@example.com");
+            TokenRequestRequest request = TokenRequestRequestBuilder.builder()
+                    .registrationNumber("ZBM0101")
+                    .email("test@example.com")
+                    .build();
 
             // When/Then - UnsupportedOperationException is not caught, returns 500
             mockMvc.perform(post("/api/auth/password-setup/request")
@@ -318,8 +337,10 @@ class PasswordSetupControllerTest {
         @DisplayName("should reject request with blank registration number")
         void shouldRejectRequestWithBlankRegistrationNumber() throws Exception {
             // Given
-            TokenRequestRequest request =
-                    new TokenRequestRequest("", "test@example.com");
+            TokenRequestRequest request = TokenRequestRequestBuilder.builder()
+                    .registrationNumber("")
+                    .email("test@example.com")
+                    .build();
 
             // When/Then
             mockMvc.perform(post("/api/auth/password-setup/request")

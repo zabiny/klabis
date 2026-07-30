@@ -153,7 +153,12 @@ class MembershipFeeGroupControllerTest {
                             get("/api/membership-fee-groups/{id}", GROUP_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.memberCount").value(0));
+                    .andExpect(jsonPath("$.memberCount").value(0))
+                    // The relation must survive an empty collection: the _embedded block is assembled
+                    // from the controller's HalResponseContext.embed declaration, and without the
+                    // itemType fallback an empty list would drop the "members" key entirely.
+                    .andExpect(jsonPath("$._embedded.members").isArray())
+                    .andExpect(jsonPath("$._embedded.members").isEmpty());
         }
     }
 

@@ -3,10 +3,10 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -17,9 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
@@ -28,7 +26,9 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -41,11 +41,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/membership-fee-tiers", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "MembershipFeeTiers", description = "Membership fee tier catalog management API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(MembershipFeeTier.class)
-class MembershipFeeTierController {
+class MembershipFeeTierController implements MembershipFeeTiersApi {
 
     private final MembershipFeeTierManagementPort managementPort;
     private final RankingOptionsPort rankingOptionsPort;
@@ -62,46 +62,33 @@ class MembershipFeeTierController {
         this.campaignManagementPort = campaignManagementPort;
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Create a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> createTier(@Valid @RequestBody CreateMembershipFeeTierRequest request) {
-        MembershipFeeTierManagementPort.CreateTierCommand command = request.toCommand();
+    public ResponseEntity<Void> createTier(@RequestBody CreateMembershipFeeTierRequest request) {
+        MembershipFeeTierManagementPort.CreateTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         MembershipFeeTierId id = managementPort.createTier(command);
         return ResponseEntity.created(
                 linkTo(methodOn(MembershipFeeTierController.class).getTier(id.value())).toUri()
         ).build();
     }
 
-    @GetMapping
+    @Override
     @Operation(summary = "List all membership fee tiers")
-    ResponseEntity<CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>>> listTiers() {
+    public ResponseEntity<java.util.Collection<MembershipFeeTierSummaryResponse>> listTiers() {
         List<MembershipFeeTier> tiers = managementPort.listTiers();
-        List<EntityModel<MembershipFeeTierSummaryResponse>> items = tiers.stream()
-                .map(this::buildSummaryModel)
+        List<MembershipFeeTierSummaryResponse> items = tiers.stream()
+                .map(MembershipFeeTierSummaryResponse::from)
                 .toList();
 
-        CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).listTiers())
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignController.class).publishYear(null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null)))));
+        // isAdmin() gate mirrors the original controller's behaviour: the extra links are only
+        // computed (and campaignManagementPort queried) for callers with MEMBERS:MANAGE.
+        Optional<FeeSelectionCampaign> activeCampaign = isAdmin()
+                ? campaignManagementPort.findActiveCampaign()
+                : Optional.empty();
+        MembershipFeeTierListPostprocessor.setActiveCampaign(activeCampaign);
 
-        if (isAdmin()) {
-            Optional<FeeSelectionCampaign> activeCampaign = campaignManagementPort.findActiveCampaign();
-            activeCampaign.ifPresent(campaign ->
-                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId()
-                            .value()))
-                            .map(link -> link.withRel("activeCampaign"))
-                            .ifPresent(model::add)
-            );
-            klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications("closed"))
-                    .map(link -> link.withRel("pastCampaigns"))
-                    .ifPresent(model::add);
-
-        }
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomainList(tiers);
+        return ResponseEntity.ok(items);
     }
 
     private boolean isAdmin() {
@@ -110,75 +97,68 @@ class MembershipFeeTierController {
                 Authority.MEMBERS_MANAGE);
     }
 
-    @GetMapping("/{id}")
+    @Override
     @Operation(summary = "Get membership fee tier details")
-    ResponseEntity<EntityModel<MembershipFeeTierResponse>> getTier(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id) {
+    public ResponseEntity<MembershipFeeTierResponse> getTier(
+            @Parameter(description = "Tier UUID") UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
-        MembershipFeeTierResponse response = MembershipFeeTierResponse.from(tier);
-        return ResponseEntity.ok(entityModelWithDomain(response, tier));
+        HalResponseContext.setDomain(tier);
+        return ResponseEntity.ok(MembershipFeeTierResponse.from(tier));
     }
 
-    @PatchMapping(value = "/{id}", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Edit a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> editTier(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id,
-            @Valid @RequestBody EditMembershipFeeTierRequest request) {
-        MembershipFeeTierManagementPort.EditTierCommand command = request.toCommand();
+    public ResponseEntity<Void> editTier(
+            @Parameter(description = "Tier UUID") UUID id,
+            @RequestBody EditMembershipFeeTierRequest request) {
+        MembershipFeeTierManagementPort.EditTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         managementPort.editTier(new MembershipFeeTierId(id), command);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}/rules")
+    @Override
     @Operation(summary = "List payment rules for a membership fee tier")
-    ResponseEntity<CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>>> listRules(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id) {
+    public ResponseEntity<java.util.Collection<MembershipFeeTierResponse.PaymentRuleResponse>> listRules(
+            @Parameter(description = "Tier UUID") UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
-        List<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> items = tier.getRules().stream()
-                .map(rule -> entityModelWithDomain(
-                        MembershipFeeTierResponse.PaymentRuleResponse.from(rule),
-                        new PaymentRuleDomain(new MembershipFeeTierId(id), rule)))
+        List<PaymentRuleDomain> domains = tier.getRules().stream()
+                .map(rule -> new PaymentRuleDomain(new MembershipFeeTierId(id), rule))
                 .toList();
-        List<HalFormsInlineOption> rankingOptions = rankingOptionsPort.listRankingOptions();
-        List<HalFormsInlineOption> eventTypeOptions = eventTypeOptionsPort.listEventTypeOptions();
-        CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithMixedOptions(
-                                methodOn(MembershipFeeTierController.class).addRule(id, null),
-                                Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
-                                Map.of("rankingShortName", rankingOptions, "eventTypeId", eventTypeOptions)))));
-        return ResponseEntity.ok(model);
+        List<MembershipFeeTierResponse.PaymentRuleResponse> items = domains.stream()
+                .map(d -> MembershipFeeTierResponse.PaymentRuleResponse.from(d.rule()))
+                .toList();
+
+        MembershipFeeTierListRulesPostprocessor.setOptions(
+                rankingOptionsPort.listRankingOptions(), eventTypeOptionsPort.listEventTypeOptions());
+        HalResponseContext.setDomainList(domains);
+        return ResponseEntity.ok(items);
     }
 
-    @GetMapping("/{id}/rules/{eventTypeId}/{ranking}")
+    @Override
     @Operation(summary = "Get a payment rule detail from a membership fee tier")
-    ResponseEntity<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> getRule(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id,
-            @Parameter(description = "Event type UUID") @PathVariable UUID eventTypeId,
-            @Parameter(description = "Ranking short name") @PathVariable String ranking) {
+    public ResponseEntity<MembershipFeeTierResponse.PaymentRuleResponse> getRule(
+            @Parameter(description = "Tier UUID") UUID id,
+            @Parameter(description = "Event type UUID") UUID eventTypeId,
+            @Parameter(description = "Ranking short name") String ranking) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         MembershipPaymentRule rule = tier.getRules().stream()
                 .filter(r -> r.eventTypeId().value().equals(eventTypeId) && r.rankingShortName().equals(ranking))
                 .findFirst()
                 .orElseThrow(() -> new PaymentRuleNotFoundException(EventTypeReference.of(eventTypeId), ranking));
-        return ResponseEntity.ok(entityModelWithDomain(
-                MembershipFeeTierResponse.PaymentRuleResponse.from(rule),
-                new PaymentRuleDomain(new MembershipFeeTierId(id), rule)));
+        HalResponseContext.setDomain(new PaymentRuleDomain(new MembershipFeeTierId(id), rule));
+        return ResponseEntity.ok(MembershipFeeTierResponse.PaymentRuleResponse.from(rule));
     }
 
     record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
     }
 
-    @PostMapping(value = "/{id}/rules", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Add a payment rule to a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> addRule(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddPaymentRuleRequest request) {
+    public ResponseEntity<Void> addRule(
+            @Parameter(description = "Tier UUID") UUID id,
+            @RequestBody AddPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.AddRuleCommand command = new MembershipFeeTierManagementPort.AddRuleCommand(
-                request.toDomain());
+                MembershipFeesRequestMapper.toDomain(request));
         managementPort.addRule(new MembershipFeeTierId(id), command);
         MembershipPaymentRule rule = command.rule();
         return ResponseEntity.created(
@@ -187,30 +167,28 @@ class MembershipFeeTierController {
         ).build();
     }
 
-    @PatchMapping(value = "/{id}/rules/{eventTypeId}/{ranking}", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Edit a payment rule's value on a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> editRule(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id,
-            @Parameter(description = "Event type UUID") @PathVariable UUID eventTypeId,
-            @Parameter(description = "Ranking short name") @PathVariable String ranking,
-            @Valid @RequestBody EditPaymentRuleRequest request) {
+    public ResponseEntity<Void> editRule(
+            @Parameter(description = "Tier UUID") UUID id,
+            @Parameter(description = "Event type UUID") UUID eventTypeId,
+            @Parameter(description = "Ranking short name") String ranking,
+            @RequestBody EditPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.EditRuleCommand command = new MembershipFeeTierManagementPort.EditRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking,
-                request.toRuleValue(eventTypeId, ranking)
+                MembershipFeesRequestMapper.toRuleValue(request, eventTypeId, ranking)
         );
         managementPort.editRule(new MembershipFeeTierId(id), command);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/rules/{eventTypeId}/{ranking}")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Remove a payment rule from a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> removeRule(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id,
-            @Parameter(description = "Event type UUID") @PathVariable UUID eventTypeId,
-            @Parameter(description = "Ranking short name") @PathVariable String ranking) {
+    public ResponseEntity<Void> removeRule(
+            @Parameter(description = "Tier UUID") UUID id,
+            @Parameter(description = "Event type UUID") UUID eventTypeId,
+            @Parameter(description = "Ranking short name") String ranking) {
         MembershipFeeTierManagementPort.RemoveRuleCommand command = new MembershipFeeTierManagementPort.RemoveRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking
@@ -219,22 +197,12 @@ class MembershipFeeTierController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @Override
     @Operation(summary = "Delete a membership fee tier (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> deleteTier(
-            @Parameter(description = "Tier UUID") @PathVariable UUID id) {
+    public ResponseEntity<Void> deleteTier(
+            @Parameter(description = "Tier UUID") UUID id) {
         managementPort.deleteTier(new MembershipFeeTierId(id));
         return ResponseEntity.noContent().build();
-    }
-
-    private EntityModel<MembershipFeeTierSummaryResponse> buildSummaryModel(MembershipFeeTier tier) {
-        UUID tierId = tier.getId().value();
-        MembershipFeeTierSummaryResponse summary = MembershipFeeTierSummaryResponse.from(tier);
-        EntityModel<MembershipFeeTierSummaryResponse> model = EntityModel.of(summary);
-        klabisLinkTo(methodOn(MembershipFeeTierController.class).getTier(tierId))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-        return model;
     }
 }
 
@@ -254,6 +222,75 @@ class MembershipFeeTierDetailsPostprocessor
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
         klabisLinkTo(methodOn(MembershipFeeTierController.class).listRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
+    }
+}
+
+// The active campaign is looked up by the controller (which already holds
+// FeeSelectionCampaignManagementPort) and handed over via a request attribute, rather than
+// injecting the port here — @MvcComponent beans are discovered by @WebMvcTest's global component
+// scan regardless of the controllers under test (see backend-patterns skill), so adding a new
+// port dependency here would break every unrelated @WebMvcTest slice in the app unless each one
+// also mocked it.
+@MvcComponent
+class MembershipFeeTierListPostprocessor
+        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>>> {
+
+    private static final String ACTIVE_CAMPAIGN_ATTR = MembershipFeeTierListPostprocessor.class.getName() + ".activeCampaign";
+
+    static void setActiveCampaign(Optional<FeeSelectionCampaign> activeCampaign) {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            attrs.setAttribute(ACTIVE_CAMPAIGN_ATTR, activeCampaign,
+                    org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        }
+    }
+
+    @Override
+    public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> process(
+            org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model) {
+        // The activeCampaign attribute is what carries listTiers()'s campaign state here; the model
+        // itself cannot.
+        //
+        // The early return is defensive, not a live path: listTiers() is the only producer of this
+        // collection type and always sets the attribute, and this is NOT a type-dispatch guard —
+        // RepresentationModelProcessorInvoker resolves the full generic signature, so this processor
+        // never sees another endpoint's CollectionModel<EntityModel<Y>>. It earns its keep only if a
+        // second producer of this type appears, or the processor runs outside a request.
+        Optional<Optional<FeeSelectionCampaign>> activeCampaignAttr = currentActiveCampaignAttr();
+        if (activeCampaignAttr.isEmpty()) {
+            return model;
+        }
+
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignController.class).publishYear(null)))
+                .andAffordances(klabisAfford(methodOn(MembershipFeeTierController.class).createTier(null))));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
+            activeCampaignAttr.get().ifPresent(campaign ->
+                    klabisLinkTo(methodOn(FeeSelectionCampaignController.class).getPublication(campaign.getId()
+                            .value()))
+                            .map(link -> link.withRel("activeCampaign"))
+                            .ifPresent(model::add)
+            );
+            klabisLinkTo(methodOn(FeeSelectionCampaignController.class).listPublications("closed"))
+                    .map(link -> link.withRel("pastCampaigns"))
+                    .ifPresent(model::add);
+        }
+        return model;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Optional<Optional<FeeSelectionCampaign>> currentActiveCampaignAttr() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object value = attrs.getAttribute(ACTIVE_CAMPAIGN_ATTR,
+                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        return value instanceof Optional<?> opt ? Optional.of((Optional<FeeSelectionCampaign>) opt) : Optional.empty();
     }
 }
 
@@ -284,6 +321,74 @@ class PaymentRuleDetailsPostprocessor
     }
 }
 
+// The tier id is read off the current request's resolved @PathVariable map, since
+// CollectionModel<EntityModel<PaymentRuleResponse>> carries no reference back to the tier when the
+// list is empty. Same pattern as EventRegistrationController.RegistrationListPostprocessor.
+// The ranking/event-type inline options are computed by the controller (which already holds
+// RankingOptionsPort/EventTypeOptionsPort) and handed over via a request attribute — see the
+// comment on MembershipFeeTierListPostprocessor for why these ports are not injected here.
+@MvcComponent
+class MembershipFeeTierListRulesPostprocessor
+        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>>> {
+
+    private static final String OPTIONS_ATTR = MembershipFeeTierListRulesPostprocessor.class.getName() + ".options";
+
+    record RuleOptions(List<HalFormsInlineOption> rankingOptions, List<HalFormsInlineOption> eventTypeOptions) {
+    }
+
+    static void setOptions(List<HalFormsInlineOption> rankingOptions, List<HalFormsInlineOption> eventTypeOptions) {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            attrs.setAttribute(OPTIONS_ATTR, new RuleOptions(rankingOptions, eventTypeOptions),
+                    org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        }
+    }
+
+    @Override
+    public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> process(
+            org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model) {
+        Optional<UUID> tierId = currentTierId();
+        Optional<RuleOptions> options = currentOptions();
+        if (tierId.isPresent() && options.isPresent()) {
+            model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, link -> (Link) link
+                    .andAffordances(klabisAffordWithMixedOptions(
+                            methodOn(MembershipFeeTierController.class).addRule(tierId.get(), null),
+                            Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
+                            Map.of("rankingShortName", options.get().rankingOptions(),
+                                    "eventTypeId", options.get().eventTypeOptions()))));
+        }
+        return model;
+    }
+
+    private static Optional<UUID> currentTierId() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object variables = attrs.getAttribute(
+                org.springframework.web.servlet.HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
+                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        if (!(variables instanceof Map<?, ?> pathVariables)) {
+            return Optional.empty();
+        }
+        Object id = pathVariables.get("id");
+        return id != null ? Optional.of(UUID.fromString(id.toString())) : Optional.empty();
+    }
+
+    private static Optional<RuleOptions> currentOptions() {
+        org.springframework.web.context.request.RequestAttributes attrs =
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object value = attrs.getAttribute(OPTIONS_ATTR,
+                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        return value instanceof RuleOptions ro ? Optional.of(ro) : Optional.empty();
+    }
+}
+
 @MvcComponent
 class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
@@ -298,4 +403,3 @@ class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<En
         return model;
     }
 }
-

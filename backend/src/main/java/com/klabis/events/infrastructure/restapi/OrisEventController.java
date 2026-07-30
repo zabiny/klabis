@@ -15,16 +15,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -32,11 +30,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @OrisIntegrationComponent
 @RestController
-@RequestMapping(value = "/api/events", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Events", description = "ORIS event import API")
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@Tag(name = "OrisEvents", description = "ORIS event import API")
 @PrimaryAdapter
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
-class OrisEventController {
+class OrisEventController implements OrisEventsApi {
 
     private final OrisEventImportPort orisEventImportPort;
     private final OrisEventBulkImportPort orisEventBulkImportPort;
@@ -50,16 +48,15 @@ class OrisEventController {
         this.orisBulkSyncPort = orisBulkSyncPort;
     }
 
-    @PostMapping(value = "/import", consumes = "application/json")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Import event from ORIS",
             description = "Creates a new event in DRAFT status by importing data from ORIS."
     )
     @ApiResponse(responseCode = "201", description = "Event imported successfully")
+    @Override
     public ResponseEntity<Void> importEvent(
             @Parameter(description = "ORIS import command with orisId")
-            @Valid @RequestBody Event.ImportCommand command) {
+            @RequestBody ImportCommand command) {
 
         Event created = orisEventImportPort.importEventFromOris(command.orisId());
 
@@ -68,13 +65,12 @@ class OrisEventController {
                 .build();
     }
 
-    @PostMapping("/{id}/sync-from-oris")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Sync event from ORIS",
             description = "Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and ACTIVE events with an orisId."
     )
     @ApiResponse(responseCode = "204", description = "Event synced from ORIS successfully")
+    @Override
     public ResponseEntity<Void> syncEventFromOris(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
@@ -82,8 +78,6 @@ class OrisEventController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/sync-from-oris/all-upcoming")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Bulk sync all upcoming ORIS events",
             description = "Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID. "
@@ -91,14 +85,12 @@ class OrisEventController {
                         + "Always returns 200 — check failureCount in the response body."
     )
     @ApiResponse(responseCode = "200", description = "Bulk sync completed; inspect failureCount for partial failures")
-    public ResponseEntity<EntityModel<BulkSyncResult>> syncAllUpcomingFromOris() {
+    @Override
+    public ResponseEntity<BulkSyncResult> syncAllUpcomingFromOris() {
         BulkSyncResult result = orisBulkSyncPort.syncAllUpcoming();
-        EntityModel<BulkSyncResult> model = EntityModel.of(result);
-        return ResponseEntity.ok(model);
+        return ResponseEntity.ok(result);
     }
 
-    @PostMapping(value = "/import-batch", consumes = "application/json")
-    @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Batch import events from ORIS",
             description = "Imports multiple ORIS events in a single request. Each event is processed independently; "
@@ -106,17 +98,12 @@ class OrisEventController {
                         + "Always returns 200 — check failureCount in the response body for partial failures."
     )
     @ApiResponse(responseCode = "200", description = "Batch import completed; inspect failureCount for partial failures")
-    public ResponseEntity<EntityModel<BulkImportResult>> importEventsBatch(
+    @Override
+    public ResponseEntity<BulkImportResult> importEventsBatch(
             @Parameter(description = "Batch import command with list of ORIS event IDs")
-            @Valid @RequestBody ImportBatchRequest request) {
+            @RequestBody ImportBatchRequest request) {
 
         BulkImportResult result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
-        return ResponseEntity.ok(EntityModel.of(result));
+        return ResponseEntity.ok(result);
     }
 }
-
-record ImportBatchRequest(
-        @NotEmpty(message = "orisIds must not be empty")
-        @Size(max = 50, message = "orisIds must not contain more than 50 entries")
-        List<Integer> orisIds
-) {}

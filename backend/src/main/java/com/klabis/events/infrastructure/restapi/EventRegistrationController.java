@@ -1,9 +1,10 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.security.fieldsecurity.OwnerId;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
+import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
+import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
@@ -20,22 +21,31 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.servlet.HandlerMapping;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -45,12 +55,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(value = "/api/events/{eventId}/registrations", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Event Registrations", description = "Event registration API for members")
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@Tag(name = "EventRegistrations", description = "Event registration API for members")
 @PrimaryAdapter
 @ExposesResourceFor(EventRegistration.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
-class EventRegistrationController {
+class EventRegistrationController implements EventRegistrationsApi {
 
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort registrationService;
@@ -64,7 +74,6 @@ class EventRegistrationController {
         this.entityLinks = entityLinks;
     }
 
-    @PostMapping(consumes = "application/json")
     @Operation(
             summary = "Register for an event",
             description = "Register the authenticated member for an event with SI card number. " +
@@ -72,11 +81,15 @@ class EventRegistrationController {
     )
     @ApiResponse(responseCode = "201", description = "Successfully registered for event")
     @ApiResponse(responseCode = "409", description = "User already registered to this event")
+    @Override
     public ResponseEntity<Void> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Registration data") @Valid @RequestBody Event.RegisterCommand command,
+            @Parameter(description = "Registration data") @RequestBody RegisterEventRequest request,
             @ActingMember MemberId actingMember) {
 
+        Event.RegisterCommand command = new Event.RegisterCommand(
+                request.siCardNumber(),
+                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null);
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
@@ -84,7 +97,6 @@ class EventRegistrationController {
         ).build();
     }
 
-    @DeleteMapping
     @Operation(
             summary = "Unregister from an event",
             description = """
@@ -93,6 +105,7 @@ class EventRegistrationController {
                     """
     )
     @ApiResponse(responseCode = "204", description = "Successfully unregistered")
+    @Override
     public ResponseEntity<Void> unregisterFromEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @ActingMember MemberId actingMember) {
@@ -101,9 +114,6 @@ class EventRegistrationController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping(value = "/{memberId}", consumes = "application/json")
-    @OwnerVisible
-    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
             summary = "Edit event registration",
             description = "Update SI card number and/or category for a member's registration. " +
@@ -112,21 +122,21 @@ class EventRegistrationController {
     )
     @ApiResponse(responseCode = "204", description = "Registration updated successfully")
     @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS")
+    @Override
     public ResponseEntity<Void> editRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @Valid @RequestBody EditRegistrationRequest request) {
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+            @RequestBody EditRegistrationRequest request) {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
                 SiCardNumber.of(request.siCardNumber()),
-                request.categoryId()
+                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping
     @Operation(
             summary = "List event registrations",
             description = """
@@ -139,7 +149,8 @@ class EventRegistrationController {
                     """
     )
     @ApiResponse(responseCode = "200", description = "List of registrations retrieved successfully")
-    public ResponseEntity<CollectionModel<EntityModel<RegistrationSummaryDto>>> listRegistrations(
+    @Override
+    public ResponseEntity<Collection<RegistrationSummaryDto>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Sort field and optional direction, e.g. 'lastName' or 'lastName,desc'")
             @RequestParam(required = false) String sort) {
@@ -152,48 +163,17 @@ class EventRegistrationController {
         boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event);
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations, memberIndex, event, sort, callerCanSortByRegistrationTime);
 
-        List<EntityModel<RegistrationSummaryDto>> items = buildRegistrationItems(sorted, memberIndex, event, eventId);
+        List<RegistrationSummaryDto> payload = sorted.stream()
+                .map(registration -> RegistrationDtoMapper.toDto(registration, memberIndex, members, event))
+                .toList();
+        List<RegistrationView> domainList = sorted.stream()
+                .map(registration -> new RegistrationView(event, registration.memberId()))
+                .toList();
 
-        CollectionModel<EntityModel<RegistrationSummaryDto>> collectionModel = CollectionModel.of(
-                items,
-                entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
-        );
-        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId, null))
-                .ifPresent(link -> collectionModel.add(link.withSelfRel().expand()));
-
-        return ResponseEntity.ok(collectionModel);
+        HalResponseContext.setDomainList(domainList);
+        return ResponseEntity.ok(payload);
     }
 
-    private List<EntityModel<RegistrationSummaryDto>> buildRegistrationItems(
-            List<EventRegistration> registrations,
-            Map<MemberId, MemberDto> memberIndex,
-            Event event,
-            UUID eventId) {
-
-        List<EntityModel<RegistrationSummaryDto>> items = new ArrayList<>();
-        for (EventRegistration registration : registrations) {
-            RegistrationSummaryDto dto = RegistrationDtoMapper.toDto(registration, memberIndex, members, event);
-            EntityModel<RegistrationSummaryDto> item = EntityModel.of(dto);
-            UUID rowMemberId = registration.memberId().value();
-            klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId, false))
-                    .ifPresent(selfLinkBuilder -> {
-                        if (event.areRegistrationsOpen()) {
-                            item.add(selfLinkBuilder.withSelfRel()
-                                    .andAffordances(klabisAffordWithPromptedOptions(
-                                            methodOn(EventRegistrationController.class).editRegistration(eventId, rowMemberId, null),
-                                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event)))));
-                        } else {
-                            item.add(selfLinkBuilder.withSelfRel());
-                        }
-                    });
-            items.add(item);
-        }
-        return items;
-    }
-
-    @GetMapping("/{memberId}")
-    @OwnerVisible
-    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
             summary = "Get registration by member ID",
             description = "Get a member's event registration including SI card number. " +
@@ -203,16 +183,17 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "200", description = "Registration retrieved successfully or defaults returned (new=true)")
     @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with mismatched memberId")
     @ApiResponse(responseCode = "404", description = "Member not registered for this event (new=false only)")
-    public ResponseEntity<EntityModel<RegistrationDto>> getRegistration(
-            @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+    @Override
+    public ResponseEntity<RegistrationDto> getRegistration(
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "When true, returns default prefilled registration data instead of looking up an existing registration")
-            @RequestParam(required = false, defaultValue = "false") boolean newRegistration) {
+            @RequestParam(required = false, defaultValue = "false") Boolean newRegistration) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId targetMember = new MemberId(memberId);
 
-        if (newRegistration) {
+        if (Boolean.TRUE.equals(newRegistration)) {
             MemberId principalMemberId = EventAffordanceSupport.resolveMemberId(auth);
             if (principalMemberId == null || !principalMemberId.equals(targetMember)) {
                 throw new AccessDeniedException(
@@ -228,38 +209,17 @@ class EventRegistrationController {
                     null
             );
             Event event = eventManagementService.getEvent(new EventId(eventId), false);
-            EntityModel<RegistrationDto> entityModel = EntityModel.of(defaults);
-            addLinksForRegistration(entityModel, eventId, event, targetMember, auth);
-            return ResponseEntity.ok(entityModel);
+            HalResponseContext.setDomain(new RegistrationView(event, targetMember));
+            return ResponseEntity.ok(defaults);
         }
 
         Event event = eventManagementService.getEvent(new EventId(eventId), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS));
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
-        EntityModel<RegistrationDto> entityModel = EntityModel.of(toRegistrationDto(registration, event));
-        addLinksForRegistration(entityModel, eventId, event, targetMember, auth);
-
-        return ResponseEntity.ok(entityModel);
-    }
-
-    private void addLinksForRegistration(EntityModel<RegistrationDto> entityModel, UUID eventId, Event event, MemberId memberId, Authentication auth) {
-        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId, false)).ifPresent(selfLinkBuilder -> {
-            var selfLink = selfLinkBuilder.withSelfRel();
-            if (event.areRegistrationsOpen()) {
-                selfLink = selfLink
-                        .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null),
-                                Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
-                if (memberId.equals(actingMember)) {
-                    selfLink = selfLink
-                            .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                }
-            }
-            entityModel.add(selfLink);
-        });
-        entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
+        RegistrationDto payload = toRegistrationDto(registration, event);
+        HalResponseContext.setDomain(new RegistrationView(event, targetMember));
+        return ResponseEntity.ok(payload);
     }
 
     private RegistrationDto toRegistrationDto(EventRegistration registration, Event event) {
@@ -269,5 +229,114 @@ class EventRegistrationController {
                 RegistrationDtoMapper.toCategoryDto(registration, event), registration.registeredAt());
     }
 
+    /**
+     * Pairs the event with the target member for {@link RegistrationDetailsPostprocessor} — the
+     * event alone is not enough to build the self/edit/unregister links, which depend on which
+     * member the registration (or the "new" defaults) belongs to.
+     */
+    record RegistrationView(Event event, MemberId memberId) {}
 
+}
+
+@MvcComponent
+class RegistrationSummaryPostprocessor
+        extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
+
+    @Override
+    public void process(EntityModel<RegistrationSummaryDto> dtoModel, EventRegistrationController.RegistrationView view) {
+        Event event = view.event();
+        UUID eventId = event.getId().value();
+        UUID rowMemberId = view.memberId().value();
+
+        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(rowMemberId, eventId, false))
+                .ifPresent(selfLinkBuilder -> {
+                    if (event.areRegistrationsOpen()) {
+                        dtoModel.add(selfLinkBuilder.withSelfRel()
+                                .andAffordances(klabisAffordWithPromptedOptions(
+                                        methodOn(EventRegistrationController.class).editRegistration(eventId, rowMemberId, null),
+                                        Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event)))));
+                    } else {
+                        dtoModel.add(selfLinkBuilder.withSelfRel());
+                    }
+                });
+    }
+}
+
+/**
+ * Adds the collection-level {@code event} link — always present, regardless of whether the event
+ * has any registrations. The eventId is read off the current request's resolved
+ * {@code @PathVariable} map, since {@code CollectionModel<EntityModel<RegistrationSummaryDto>>}
+ * carries no reference back to the event when the list is empty. The self link itself is built by
+ * {@code HalResponseBodyAdvice}.
+ */
+@MvcComponent
+class RegistrationListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<RegistrationSummaryDto>>> {
+
+    private final EntityLinks entityLinks;
+
+    RegistrationListPostprocessor(EntityLinks entityLinks) {
+        this.entityLinks = entityLinks;
+    }
+
+    @Override
+    public CollectionModel<EntityModel<RegistrationSummaryDto>> process(
+            CollectionModel<EntityModel<RegistrationSummaryDto>> model) {
+        currentEventId().ifPresent(eventId ->
+                model.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event")));
+        return model;
+    }
+
+    private static Optional<UUID> currentEventId() {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return Optional.empty();
+        }
+        Object variables = attrs.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
+                RequestAttributes.SCOPE_REQUEST);
+        if (!(variables instanceof Map<?, ?> pathVariables)) {
+            return Optional.empty();
+        }
+        Object eventId = pathVariables.get("eventId");
+        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
+    }
+}
+
+@MvcComponent
+class RegistrationDetailsPostprocessor
+        extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
+
+    private final EntityLinks entityLinks;
+
+    RegistrationDetailsPostprocessor(EntityLinks entityLinks) {
+        this.entityLinks = entityLinks;
+    }
+
+    @Override
+    public void process(EntityModel<RegistrationDto> dtoModel, EventRegistrationController.RegistrationView view) {
+        Event event = view.event();
+        MemberId memberId = view.memberId();
+        UUID eventId = event.getId().value();
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
+
+        klabisLinkTo(methodOn(EventRegistrationController.class).getRegistration(memberId.value(), eventId, false))
+                .ifPresent(selfLinkBuilder -> {
+                    var selfLink = selfLinkBuilder.withSelfRel();
+                    if (event.areRegistrationsOpen()) {
+                        selfLink = selfLink
+                                .andAffordances(klabisAffordWithPromptedOptions(
+                                        methodOn(EventRegistrationController.class).editRegistration(eventId, memberId.value(), null),
+                                        Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
+                        if (memberId.equals(actingMember)) {
+                            selfLink = selfLink
+                                    .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                        }
+                    }
+                    dtoModel.add(selfLink);
+                });
+        dtoModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
+    }
 }

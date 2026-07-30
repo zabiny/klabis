@@ -2,10 +2,10 @@ package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
@@ -14,11 +14,9 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberController;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -28,6 +26,7 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -38,11 +37,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/family-groups", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "FamilyGroups", description = "Family group management API")
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
 @ExposesResourceFor(FamilyGroup.class)
-class FamilyGroupController {
+class FamilyGroupController implements FamilyGroupsApi {
 
     private final FamilyGroupManagementPort familyGroupManagementService;
 
@@ -50,11 +49,8 @@ class FamilyGroupController {
         this.familyGroupManagementService = familyGroupManagementService;
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Create a family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> createFamilyGroup(
-            @Valid @RequestBody CreateFamilyGroupRequest request) {
+    @Override
+    public ResponseEntity<Void> createFamilyGroup(@RequestBody CreateFamilyGroupRequest request) {
 
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
                 request.name(), new MemberId(request.parent()));
@@ -65,28 +61,22 @@ class FamilyGroupController {
         ).build();
     }
 
-    @GetMapping
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "List all family groups (requires MEMBERS:MANAGE)")
-    ResponseEntity<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> listFamilyGroups() {
+    @Override
+    public ResponseEntity<Collection<FamilyGroupSummaryResponse>> listFamilyGroups() {
 
         List<FamilyGroup> groups = familyGroupManagementService.listFamilyGroups();
-        List<EntityModel<FamilyGroupSummaryResponse>> items = groups.stream()
-                .map(this::buildFamilyGroupSummaryModel)
-                .toList();
 
-        CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model = CollectionModel.of(items);
-        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
-                .ifPresent(link -> model.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).createFamilyGroup(null)))));
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomainList(groups);
+        return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get family group details")
-    ResponseEntity<EntityModel<FamilyGroupResponse>> getFamilyGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
+    // The FamilyGroupResponse record itself is hand-written because parents/members are
+    // List<EntityModel<X>> — each item carries its own _links/_templates (a "member" link, plus a
+    // self link with a DELETE affordance when the caller may remove it), which the generator cannot
+    // express. The interface's payload type still comes from the spec.
+    @Override
+    public ResponseEntity<FamilyGroupResponse> getFamilyGroup(
+            UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
@@ -99,46 +89,28 @@ class FamilyGroupController {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
         }
 
-        FamilyGroupResponse response = toFamilyGroupResponse(group, hasMembersManage);
-        var model = entityModelWithDomain(response, group);
-
-        if (hasMembersManage) {
-            klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
-                    .ifPresent(link -> model.add(link.withRel("collection")));
-        }
-
-        return ResponseEntity.ok(model);
+        HalResponseContext.setDomain(group);
+        return ResponseEntity.ok(toFamilyGroupResponse(group, hasMembersManage));
     }
 
-    @DeleteMapping("/{id}")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Delete a family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> deleteFamilyGroup(
-            @Parameter(description = "Group UUID") @PathVariable UUID id) {
+    @Override
+    public ResponseEntity<Void> deleteFamilyGroup(UUID id) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.deleteFamilyGroup(groupId);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/parents", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Add a parent to family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> addFamilyGroupParent(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request) {
+    @Override
+    public ResponseEntity<Void> addFamilyGroupParent(UUID id, @RequestBody AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addParent(groupId, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/parents/{memberId}")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Remove a parent from family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> removeFamilyGroupParent(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Parent member UUID") @PathVariable UUID memberId) {
+    @Override
+    public ResponseEntity<Void> removeFamilyGroupParent(UUID id, UUID memberId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         MemberId parentToRemove = new MemberId(memberId);
@@ -146,38 +118,24 @@ class FamilyGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/children", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Add a child to family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> addFamilyGroupChild(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request) {
+    @Override
+    public ResponseEntity<Void> addFamilyGroupChild(UUID id, @RequestBody AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.addChild(groupId, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/children/{memberId}")
-    @HasAuthority(Authority.MEMBERS_MANAGE)
-    @Operation(summary = "Remove a child from family group (requires MEMBERS:MANAGE)")
-    ResponseEntity<Void> removeFamilyGroupChild(
-            @Parameter(description = "Group UUID") @PathVariable UUID id,
-            @Parameter(description = "Child member UUID") @PathVariable UUID memberId) {
+    @Override
+    public ResponseEntity<Void> removeFamilyGroupChild(UUID id, UUID memberId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
         familyGroupManagementService.removeChild(groupId, new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 
-    private EntityModel<FamilyGroupSummaryResponse> buildFamilyGroupSummaryModel(FamilyGroup group) {
-        UUID groupId = group.getId().uuid();
-        FamilyGroupSummaryResponse response = new FamilyGroupSummaryResponse(
-                group.getId(), group.getName(), group.getMembers().size());
-        EntityModel<FamilyGroupSummaryResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(groupId, null))
-                .ifPresent(link -> model.add(link.withSelfRel()));
-        return model;
+    private FamilyGroupSummaryResponse toSummaryResponse(FamilyGroup group) {
+        return new FamilyGroupSummaryResponse(group.getId(), group.getName(), group.getMembers().size());
     }
 
     private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, boolean hasMembersManage) {
@@ -224,6 +182,17 @@ class FamilyGroupController {
 }
 
 @MvcComponent
+class FamilyGroupSummaryPostprocessor extends ModelWithDomainPostprocessor<FamilyGroupSummaryResponse, FamilyGroup> {
+
+    @Override
+    public void process(EntityModel<FamilyGroupSummaryResponse> dtoModel, FamilyGroup group) {
+        UUID id = group.getId().uuid();
+        klabisLinkTo(methodOn(FamilyGroupController.class).getFamilyGroup(id, null))
+                .ifPresent(link -> dtoModel.add(link.withSelfRel()));
+    }
+}
+
+@MvcComponent
 class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<FamilyGroupResponse, FamilyGroup> {
 
     @Override
@@ -235,6 +204,11 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupParent(id, null)))
                         .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).addFamilyGroupChild(id, null))))
                 .ifPresent(dtoModel::add);
+
+        // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
+        // listFamilyGroups requires — the same condition the controller used to check by hand.
+        klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
+                .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
 
@@ -245,6 +219,21 @@ class FamilyGroupsRootPostprocessor implements RepresentationModelProcessor<Enti
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(FamilyGroupController.class).listFamilyGroups())
                 .ifPresent(link -> model.add(link.withRel("family-groups")));
+        return model;
+    }
+}
+
+// The self link itself is built by HalResponseBodyAdvice from the current request; this processor
+// only contributes the create affordance, which stays authorization-sensitive via klabisAfford.
+@MvcComponent
+class FamilyGroupListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<FamilyGroupSummaryResponse>>> {
+
+    @Override
+    public CollectionModel<EntityModel<FamilyGroupSummaryResponse>> process(
+            CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model) {
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
+                .andAffordances(klabisAfford(methodOn(FamilyGroupController.class).createFamilyGroup(null))));
         return model;
     }
 }

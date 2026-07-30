@@ -137,7 +137,7 @@ public class MemberController implements MembersApi {
         var command = new Member.SuspendMembership(
                 currentUserId,
                 request.reason(),
-                request.note().orElse(null)
+                request.note()
         );
 
         managementService.suspendMember(new MemberId(id), command);

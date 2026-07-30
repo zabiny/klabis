@@ -43,6 +43,32 @@ paths:
     $ref: './event-types.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
     $ref: './event-types.yaml#/paths/~1api~1event-types~1{id}'
+  /api/events:
+    $ref: './events.yaml#/paths/~1api~1events'
+  /api/events/{id}:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}'
+  /api/events/{id}/publish:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1publish'
+  /api/events/{id}/cancel:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1cancel'
+  /api/events/{eventId}/accommodation-list:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1accommodation-list'
+  /api/events/import:
+    $ref: './events.yaml#/paths/~1api~1events~1import'
+  /api/events/{id}/sync-from-oris:
+    $ref: './events.yaml#/paths/~1api~1events~1{id}~1sync-from-oris'
+  /api/events/sync-from-oris/all-upcoming:
+    $ref: './events.yaml#/paths/~1api~1events~1sync-from-oris~1all-upcoming'
+  /api/events/import-batch:
+    $ref: './events.yaml#/paths/~1api~1events~1import-batch'
+  /api/events/{eventId}/registrations:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1registrations'
+  /api/events/{eventId}/registrations/{memberId}:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1registrations~1{memberId}'
+  /api/category-presets:
+    $ref: './events.yaml#/paths/~1api~1category-presets'
+  /api/category-presets/{id}:
+    $ref: './events.yaml#/paths/~1api~1category-presets~1{id}'
   # /api/members/{memberId}/account* looks like a members path but is served by the finance
   # module's controller — registered here, not in members.yaml. See finance.yaml header comment.
   /api/members/{memberId}/account:
@@ -64,6 +90,99 @@ paths:
   # Outside /api/ and not HAL: text/calendar feed authenticated by a ?token= query parameter.
   /ical/my-schedule.ics:
     $ref: './calendar.yaml#/paths/~1ical~1my-schedule.ics'
+  /api/membership-fee-tiers:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
+  /api/membership-fee-tiers/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}'
+  /api/membership-fee-tiers/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules'
+  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules~1{eventTypeId}~1{ranking}'
+  /api/fee-selection-campaigns:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns'
+  /api/fee-selection-campaigns/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}'
+  /api/fee-selection-campaigns/{id}/deadline:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1deadline'
+  /api/fee-selection-campaigns/{id}/close:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1close'
+  /api/fee-selection-campaigns/{year}/levels:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1levels'
+  /api/membership-fee-groups/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}'
+  /api/membership-fee-groups/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}~1rules'
+  /api/membership-fee-groups/{groupId}/members:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{groupId}~1members'
+  # /api/members/{memberId}/fee-choice* and /api/members/{memberId}/fee-summary,fee-history look
+  # like members paths but are served by the membershipfees module's controllers — registered
+  # here, not in members.yaml. See membershipfees.yaml header comment.
+  /api/members/{memberId}/fee-choice/{year}:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-choice~1{year}'
+  /api/members/{memberId}/fee-summary/{year}:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
+  /api/members/{memberId}/fee-history:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
+  /api/family-groups:
+    $ref: './groups.yaml#/paths/~1api~1family-groups'
+  /api/family-groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}'
+  /api/family-groups/{id}/parents:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents'
+  /api/family-groups/{id}/parents/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{memberId}'
+  /api/family-groups/{id}/children:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children'
+  /api/family-groups/{id}/children/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children~1{memberId}'
+  /api/groups:
+    $ref: './groups.yaml#/paths/~1api~1groups'
+  /api/groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}'
+  /api/groups/{id}/members/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1members~1{memberId}'
+  /api/groups/{id}/owners:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1owners'
+  /api/groups/{id}/owners/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1owners~1{memberId}'
+  /api/groups/{id}/invitations:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations'
+  /api/groups/{id}/invitations/{invitationId}:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}'
+  /api/groups/{id}/invitations/{invitationId}/accept:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}~1accept'
+  /api/groups/{id}/invitations/{invitationId}/reject:
+    $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1invitations~1{invitationId}~1reject'
+  /api/invitations/pending:
+    $ref: './groups.yaml#/paths/~1api~1invitations~1pending'
+  /api/training-groups:
+    $ref: './groups.yaml#/paths/~1api~1training-groups'
+  /api/training-groups/{id}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}'
+  /api/training-groups/{id}/members:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1members'
+  /api/training-groups/{id}/members/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1members~1{memberId}'
+  /api/training-groups/{id}/trainers:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers'
+  /api/training-groups/{id}/trainers/{memberId}:
+    $ref: './groups.yaml#/paths/~1api~1training-groups~1{id}~1trainers~1{memberId}'
+  /api:
+    $ref: './common.yaml#/paths/~1api'
+  /api/dashboard:
+    $ref: './common.yaml#/paths/~1api~1dashboard'
+  /api/me/password-change:
+    $ref: './common.yaml#/paths/~1api~1me~1password-change'
+  /api/auth/password-setup/validate:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1validate'
+  /api/auth/password-setup/complete:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1complete'
+  /api/auth/password-setup/request:
+    $ref: './common.yaml#/paths/~1api~1auth~1password-setup~1request'
+  /api/users/{id}/permissions:
+    $ref: './common.yaml#/paths/~1api~1users~1{id}~1permissions'
+  /api/oris/events:
+    $ref: './oris.yaml#/paths/~1api~1oris~1events'
 
 components:
   securitySchemes:

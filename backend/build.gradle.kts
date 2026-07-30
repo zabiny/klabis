@@ -399,7 +399,10 @@ openApiModule(
         "IdentityCardDto",
         "MedicalCourseDto",
         "TrainerLicenseDto",
-        "RefereeLicenseDto"
+        "RefereeLicenseDto",
+        "RegisterMemberRequest",
+        "AddressRequest",
+        "SuspendMembershipRequest"
     ),
     mappings = mapOf(
         "Gender" to "com.klabis.members.domain.Gender",
@@ -409,10 +412,9 @@ openApiModule(
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
         "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
-        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest",
-        "SuspendMembershipRequest" to "com.klabis.members.infrastructure.restapi.SuspendMembershipRequest",
-        "RegisterMemberRequest" to "com.klabis.members.infrastructure.restapi.RegisterMemberRequest",
-        "AddressRequest" to "com.klabis.members.infrastructure.restapi.AddressRequest"
+        // UpdateMemberRequest stays hand-written — every property is a PatchField<T> wrapper, whose
+        // absent/null/value tri-state has no OpenAPI equivalent.
+        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
@@ -465,13 +467,74 @@ openApiModule(
     )
 )
 openApiModule(
+    module = "events",
+    pkg = "com.klabis.events.infrastructure.restapi",
+    // OrisEvents is its own tag (not "Events") so it gets its own generated interface even though
+    // OrisEventController shares the /api/events URL prefix with EventController — see
+    // klabis-api-spec skill: "one *Api interface per tag" and events.yaml header comment.
+    // "EventRegistrations" replaces the original multi-word @Tag "Event Registrations", which the
+    // generator silently drops.
+    //
+    // Two operations on this tag need a note:
+    //   - getEvent returns EventDto; its _embedded.registrationDtoList is contributed by
+    //     the controller via HalResponseContext.embed(...) and assembled by HalResponseBodyAdvice,
+    //     so the _embedded block never appears in the Java return type.
+    //   - the accommodation-list path answers with two produces variants (HAL JSON and text/csv) on
+    //     one operation; the generator emits ONE Java method (getAccommodationList) whose inherited
+    //     produces lists both content types. The hand-written getAccommodationList (JSON) DOES
+    //     implement that generated method — its own @GetMapping narrows produces down to the HAL
+    //     variant, because Spring refuses to dispatch when getAccommodationList and the separate
+    //     hand-written getAccommodationListAsCsv (text/csv) both claim to serve text/csv
+    //     ("Ambiguous handler methods"). getAccommodationListAsCsv itself has no interface
+    //     counterpart — see the comment on that method in EventController.
+    // Same precedent as IcalFeedController in the calendar module.
+    apis = listOf("Events", "OrisEvents", "EventRegistrations", "CategoryPresets"),
+    models = listOf(
+        "ImportCommand",
+        "ImportBatchRequest",
+        "RegisterEventRequest",
+        "EditRegistrationRequest",
+        "CreateCategoryPresetRequest",
+        "UpdateCategoryPresetRequest"
+    ),
+    mappings = mapOf(
+        // CreateEventRequest/UpdateEventRequest stay hand-written — see the comment above
+        // CreateEventRequest in events.yaml for why (cross-field @AssertTrue validation on create,
+        // PatchField<T> wrappers on update — neither is representable purely in OpenAPI).
+        "CreateEventRequest" to "com.klabis.events.infrastructure.restapi.CreateEventRequest",
+        "UpdateEventRequest" to "com.klabis.events.infrastructure.restapi.UpdateEventRequest",
+        "EventStatus" to "com.klabis.events.domain.EventStatus",
+        "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
+        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
+        // getEvent returns the payload; the _embedded.registrationDtoList block in the
+        // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
+        // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
+        "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
+        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
+        "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
+        "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
+        "EntityModelRegistrationDto" to "com.klabis.events.infrastructure.restapi.RegistrationDto",
+        // Collection, not List: "List" is a reserved container name in the generator's type system,
+        // and a schemaMapping onto it is dropped silently — the method then generates as
+        // `ResponseEntity<>`, which fails to compile.
+        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.RegistrationSummaryDto>",
+        "EntityModelCategoryPresetDto" to "com.klabis.events.infrastructure.restapi.CategoryPresetDto",
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>"
+    ),
+    // The generic Page<T>/Collection<T>/CollectionModel<T> mappings above carry type arguments that
+    // the import statement must not repeat.
+    extraImportMappings = mapOf(
+        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
+        "CollectionModelAccommodationListItemDto" to "org.springframework.hateoas.CollectionModel",
+        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
+    )
+)
+
+openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
-    // "Calendar Feed" is deliberately absent: /ical/my-schedule.ics returns a raw RFC 5545 string
-    // rather than a DTO, sits outside /api/, and authenticates via a ?token= query parameter. An
-    // interface for it would generate nothing worth implementing against, so IcalFeedController
-    // stays hand-written. The spec still describes the endpoint.
-    apis = listOf("Calendar", "IcalToken"),
+    apis = listOf("Calendar", "IcalToken", "IcalFeed"),
     // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
     models = listOf(
         "CreateCalendarItemRequest",
@@ -485,5 +548,188 @@ openApiModule(
     ),
     extraImportMappings = mapOf(
         "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection"
+    )
+)
+
+openApiModule(
+    module = "membershipfees",
+    pkg = "com.klabis.membershipfees.infrastructure.restapi",
+    // getGroup (MembershipFeeGroups) is documented in membershipfees.yaml but deliberately absent
+    // from `models`/left unmapped, so MembershipFeeGroupsApi does not declare it and
+    // MembershipFeeGroupController keeps its hand-written method: it embeds a second,
+    // independently-shaped collection (group members) alongside the main payload via
+    // HalModelBuilder — HalResponseContext only supports a single domain object or a flat list.
+    // Same precedent as EventController's getEvent in the events module.
+    apis = listOf("MembershipFeeTiers", "FeeSelectionCampaigns", "MembershipFeeGroups", "MemberFeeChoice", "MemberFeeSummary"),
+    models = listOf(
+        "CreateMembershipFeeTierRequest",
+        "EditMembershipFeeTierRequest",
+        "PaymentRuleRequest",
+        "AddPaymentRuleRequest",
+        "EditPaymentRuleRequest",
+        "PublishYearRequest",
+        "ChangeDeadlineRequest",
+        "EditGroupSnapshotRequest",
+        "AdminAssignMemberRequest",
+        "ChooseFeeChoiceRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelMembershipFeeTierSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse",
+        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse>",
+        "EntityModelMembershipFeeTierResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse",
+        "EntityModelPaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
+        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse>",
+        "EntityModelFeeSelectionCampaignResponse" to "com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse",
+        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
+        "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
+        // getGroup returns the payload; the _embedded.members block in the WithMembers schema is
+        // contributed by the controller via HalResponseContext.embed(...) and assembled by
+        // HalResponseBodyAdvice, so it does not belong in the Java return type.
+        "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
+        "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
+        "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
+        "EntityModelMemberFeeHistoryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeHistoryResponse"
+    ),
+    // The generic Collection<T> mappings above carry type arguments that the import statement must
+    // not repeat.
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection",
+        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection",
+        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection",
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection"
+    )
+)
+
+// The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
+// own controller — openApiModule's pkg/models/mappings are scalar-per-task, so this is three
+// registrations against the ONE groups.yaml spec file, not one. See groups.yaml header comment.
+openApiModule(
+    module = "groupsFamily",
+    pkg = "com.klabis.groups.familygroup.infrastructure.restapi",
+    // getFamilyGroup IS generated onto FamilyGroupsApi; only its response schema is
+    // documentation-only, because the record's parents/members are List<EntityModel<X>> whose items
+    // carry their own _links. See groups.yaml header comment and the comment on that method in
+    // FamilyGroupController.
+    apis = listOf("FamilyGroups"),
+    models = listOf(
+        "CreateFamilyGroupRequest",
+        "AddMemberRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelFamilyGroupSummaryResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse",
+        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
+        // Payload type for getFamilyGroup, same envelope-stripping mapping as every other
+        // EntityModelX -> X above. The record's parents/members fields stay List<EntityModel<X>>
+        // (per-item _links), which is why the record is hand-written rather than generated.
+        "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
+    ),
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection"
+    )
+)
+
+openApiModule(
+    module = "groupsFree",
+    pkg = "com.klabis.groups.freegroup.infrastructure.restapi",
+    // getGroup (Groups) is generated; only its response schema is documentation-only — same reason
+    // as getFamilyGroup above. See groups.yaml header comment.
+    apis = listOf("Groups", "Invitations"),
+    models = listOf(
+        "CreateGroupRequest",
+        "RenameGroupRequest",
+        "AddOwnerRequest",
+        "InviteMemberRequest",
+        "CancelInvitationRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelGroupSummaryResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse",
+        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
+        // Payload type for getGroup — same envelope-stripping mapping as every other EntityModelX
+        // -> X. The record's owners/members/pendingInvitations stay List<EntityModel<X>>.
+        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse",
+        "EntityModelPendingInvitationResponseForInvitationsList" to "com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse",
+        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection",
+        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection"
+    )
+)
+
+openApiModule(
+    module = "groupsTraining",
+    pkg = "com.klabis.groups.traininggroup.infrastructure.restapi",
+    // getTrainingGroup is generated; only its response schema is documentation-only — same reason as
+    // getFamilyGroup above. See groups.yaml header comment.
+    apis = listOf("TrainingGroups"),
+    models = listOf(
+        "CreateTrainingGroupRequest",
+        "TrainingGroupAddMemberRequest",
+        "AddTrainerRequest",
+        "AgeRangeRequest"
+        // UpdateTrainingGroupRequest stays hand-written — every property is a PatchField<T>
+        // wrapper, which OpenAPI cannot express (see the comment on that schema in groups.yaml).
+    ),
+    mappings = mapOf(
+        "UpdateTrainingGroupRequest" to "com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest",
+        "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
+        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
+        // Payload type for getTrainingGroup — same envelope-stripping mapping as every other
+        // EntityModelX -> X. The record's trainers/members stay List<EntityModel<X>>.
+        "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
+    ),
+    extraImportMappings = mapOf(
+        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection"
+    )
+)
+
+openApiModule(
+    module = "common",
+    pkg = "com.klabis.common.users.infrastructure.restapi",
+    apis = listOf("MyProfile", "PasswordSetup", "Permissions", "Root", "Dashboard"),
+    models = listOf(
+        "ChangePasswordRequest",
+        "ValidateTokenResponse",
+        "SetPasswordRequest",
+        "PasswordSetupResponse",
+        "TokenRequestRequest",
+        "TokenRequestResponse",
+        "UpdatePermissionsRequest"
+    ),
+    mappings = mapOf(
+        "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
+        "Authority" to "com.klabis.common.users.Authority",
+        // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
+        // other migrated module: the generated interface returns the plain RootModel/DashboardModel
+        // marker record, and the controller populates HalResponseContext.setDomain(...) with a
+        // non-null placeholder so HalResponseBodyAdvice.wrapSingle() wraps it into
+        // EntityModelWithDomain<RootModel, String> (which extends EntityModel<RootModel>) and runs it
+        // through the postprocessor pipeline. The nine RepresentationModelProcessor<EntityModel<RootModel>>
+        // beans (plus the DashboardModel one) are typed on the CONTENT (EntityModel<RootModel>), not
+        // on the domain type parameter, so they still bind correctly. See RootController/
+        // DashboardController for the actual setDomain(...) call and value chosen.
+        "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
+        "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
+    )
+)
+
+openApiModule(
+    module = "oris",
+    pkg = "com.klabis.oris",
+    // "OrisImport", not "ORIS": the generator's `apis` filter matches tags by substring, and
+    // events.yaml already owns "OrisEvents" — "ORIS" alone matches both tags and pulls
+    // OrisEventsApi's operations in here instead of/alongside this module's own. See oris.yaml
+    // header comment.
+    apis = listOf("OrisImport"),
+    // No real model to generate: OrisEventSummary is mapped below onto the hand-written record
+    // already on the controller. An empty `models` list is NOT safe here — like the `apis` global
+    // property, the generator's "models" property generates every schema in the bundled document
+    // when given an empty string, not none. A single nonexistent placeholder name keeps the
+    // "models" property non-empty (so the "generate everything" branch never triggers) while
+    // matching nothing, so only the interface (OrisImportApi) is produced.
+    models = listOf("_NoGeneratedModelsForOris"),
+    mappings = mapOf(
+        "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
     )
 )
