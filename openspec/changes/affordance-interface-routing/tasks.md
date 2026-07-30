@@ -37,7 +37,9 @@
       overrides did carry `@RequestBody`, so the HAL bodies are byte-identical before and after.
       Surfaced the HV000151 constraint-redefinition rule now recorded in design.md D2: removing only
       `@RequestBody` while leaving `@NotNull` on a sibling parameter fails at request time.
-- [ ] 3.3 calendar (14)
+- [x] 3.3 calendar (14, incl. one cross-module ref to `EventsApi`). Third occurrence of the same
+      defect: `createCalendarItem` and `updateCalendarItem` rendered all four properties `readOnly`.
+      Only diff in the captured bodies is 12 vanished `readOnly: true` entries.
 - [ ] 3.4 membershipfees (38)
 - [ ] 3.5 events + oris (52) — note `getAccommodationListAsCsv` has no interface counterpart but is
       not an affordance target, so it stays as-is

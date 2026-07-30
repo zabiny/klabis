@@ -10,7 +10,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
-import com.klabis.events.infrastructure.restapi.EventController;
+import com.klabis.events.infrastructure.restapi.EventsApi;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -154,7 +154,7 @@ class CalendarController implements CalendarApi {
         CalendarItem created = calendarManagementService.createCalendarItem(toCommand(request));
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value()))
+                .created(klabisLinkTo(methodOn(CalendarApi.class).getCalendarItem(created.getId().value()))
                         .map(link -> link.toUri())
                         .orElseGet(() -> URI.create("/api/calendar-items/" + created.getId().value())))
                 .build();
@@ -237,22 +237,22 @@ class CalendarItemPostprocessor extends ModelWithDomainPostprocessor<CalendarIte
     public void process(EntityModel<CalendarItemDto> dtoModel, CalendarItem calendarItem) {
         UUID calendarItemId = calendarItem.getId().value();
 
-        klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
+        klabisLinkTo(methodOn(CalendarApi.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
             if (calendarItem instanceof EventCalendarItem eventItem) {
                 dtoModel.add(selfLinkBuilder.withSelfRel());
                 EventId eventId = eventItem.getEventId();
-                klabisLinkTo(methodOn(EventController.class).getEvent(eventId.value(), null))
+                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId.value(), null))
                         .ifPresent(link -> dtoModel.add(link.withRel("event")));
             } else {
                 var selfLink = selfLinkBuilder.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)))
-                        .andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));
+                        .andAffordances(klabisAfford(methodOn(CalendarApi.class).updateCalendarItem(calendarItemId, null)))
+                        .andAffordances(klabisAfford(methodOn(CalendarApi.class).deleteCalendarItem(calendarItemId)));
                 dtoModel.add(selfLink);
             }
         });
 
         LocalDate today = LocalDate.now();
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc", null, null))
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc", null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 }
@@ -270,7 +270,7 @@ class CalendarItemListPostprocessor
     public CollectionModel<EntityModel<CalendarItemDto>> process(
             CollectionModel<EntityModel<CalendarItemDto>> model) {
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null))));
+                .andAffordances(klabisAfford(methodOn(CalendarApi.class).createCalendarItem(null))));
 
         model.getLink(IanaLinkRelations.SELF)
                 .map(Link::getHref)
@@ -292,12 +292,12 @@ class CalendarItemListPostprocessor
 
         LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
         LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort, mySchedule, null))
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort, mySchedule, null))
                 .ifPresent(link -> model.add(link.withRel("next")));
 
         LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
         LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort, mySchedule, null))
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort, mySchedule, null))
                 .ifPresent(link -> model.add(link.withRel("prev")));
     }
 
@@ -315,7 +315,7 @@ class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityMo
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(
                 LocalDate.now().withDayOfMonth(1),
                 LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()),
                 "startDate,asc", null, null

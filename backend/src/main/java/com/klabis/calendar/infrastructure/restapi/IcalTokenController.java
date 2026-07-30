@@ -98,10 +98,10 @@ class IcalTokenResponsePostprocessor implements RepresentationModelProcessor<Ent
 
     @Override
     public EntityModel<IcalTokenResponse> process(EntityModel<IcalTokenResponse> model) {
-        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
+        klabisLinkTo(methodOn(IcalTokenApi.class).getTokenState(null))
                 .ifPresent(link -> model.add(
                         link.withSelfRel()
-                                .andAffordances(klabisAfford(methodOn(IcalTokenController.class).generateToken(null)))
+                                .andAffordances(klabisAfford(methodOn(IcalTokenApi.class).generateToken(null)))
                 ));
         return model;
     }
