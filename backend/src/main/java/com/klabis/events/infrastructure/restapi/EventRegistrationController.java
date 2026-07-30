@@ -1,12 +1,9 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.OwnerId;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
@@ -117,8 +114,6 @@ class EventRegistrationController implements EventRegistrationsApi {
         return ResponseEntity.noContent().build();
     }
 
-    @OwnerVisible
-    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
             summary = "Edit event registration",
             description = "Update SI card number and/or category for a member's registration. " +
@@ -130,7 +125,7 @@ class EventRegistrationController implements EventRegistrationsApi {
     @Override
     public ResponseEntity<Void> editRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @RequestBody EditRegistrationRequest request) {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
@@ -179,8 +174,6 @@ class EventRegistrationController implements EventRegistrationsApi {
         return ResponseEntity.ok(payload);
     }
 
-    @OwnerVisible
-    @HasAuthority(Authority.EVENTS_REGISTRATIONS)
     @Operation(
             summary = "Get registration by member ID",
             description = "Get a member's event registration including SI card number. " +
@@ -192,7 +185,7 @@ class EventRegistrationController implements EventRegistrationsApi {
     @ApiResponse(responseCode = "404", description = "Member not registered for this event (new=false only)")
     @Override
     public ResponseEntity<RegistrationDto> getRegistration(
-            @OwnerId @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "When true, returns default prefilled registration data instead of looking up an existing registration")
             @RequestParam(required = false, defaultValue = "false") Boolean newRegistration) {
