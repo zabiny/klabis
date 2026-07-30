@@ -28,7 +28,11 @@
 
 ## 3. Remaining modules, one commit each
 
-- [ ] 3.1 finance (12) — includes `MemberAccountController.deposit`, the second defective override
+- [x] 3.1 finance (12) — includes `MemberAccountController.deposit`, the second defective override.
+      The defect turned out to be wider than described: `deposit`, `charge` **and** `reverse` all
+      rendered every property `readOnly: true`, including the required `amount`. Two of the 12 sites
+      are cross-module (`methodOn(MemberController.class)` → `MembersApi`, permitted by the
+      `@NamedInterface("members.rest")` on the members restapi package).
 - [ ] 3.2 members (12)
 - [ ] 3.3 calendar (14)
 - [ ] 3.4 membershipfees (38)

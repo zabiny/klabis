@@ -14,7 +14,7 @@ final class FinanceLinks {
     }
 
     static Optional<Link> accountLink(UUID memberId) {
-        return klabisLinkTo(methodOn(MemberAccountController.class).getAccount(memberId, null))
+        return klabisLinkTo(methodOn(FinanceApi.class).getAccount(memberId, null))
                 .map(link -> link.withRel("account"));
     }
 }
