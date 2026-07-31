@@ -698,14 +698,17 @@ components:
           type: ['string', 'null']
           format: date
           x-klabis-authority: MEMBERS_MANAGE
-        # gender keeps allOf, not the nullable oneOf the other $ref properties use: the generator
-        # strips property-level vendor extensions from a composed schema, and losing
-        # x-klabis-authority here would make an admin-only field writable by anyone. Nothing is
-        # given up — gender has no cleared state (PersonalInformation rejects null), so the
-        # tri-state wrapper would be unused.
+        # gender re-declares the Gender enum inline instead of $ref-ing it. Both composition
+        # keywords are unusable here: oneOf/allOf strip property-level vendor extensions, and an
+        # allOf that keeps x-klabis-authority still generates a bare `Gender`, not
+        # `JsonNullable<Gender>` — and RequestBodyFieldAuthorizationAdvice skips every component
+        # that is not JsonNullable, so the @HasAuthority it emits is never evaluated. Inlining is
+        # what keeps the wrapper and the extension at the same time.
+        # A null is accepted on the wire and treated as "leave alone" (PersonalInformation rejects
+        # a null gender); the wrapper is here for the authorization check, not to clear the field.
         gender:
-          allOf:
-            - $ref: '#/components/schemas/Gender'
+          type: ['string', 'null']
+          enum: ['MALE', 'FEMALE', null]
           x-klabis-authority: MEMBERS_MANAGE
         chipNumber:
           type: ['string', 'null']

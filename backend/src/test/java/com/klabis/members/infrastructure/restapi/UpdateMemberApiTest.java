@@ -10,7 +10,6 @@ import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -229,9 +228,13 @@ class UpdateMemberApiTest {
                 assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Vegetarian");
             }
 
+            /**
+             * A stranger — neither the owner nor an admin — is refused by the endpoint's own
+             * {@code @HasAuthority(MEMBERS_MANAGE)}, before any field is looked at. This was
+             * disabled as "to be changed in prod code"; that enforcement in fact existed all along.
+             */
             @Test
             @DisplayName("updating admin-only fields without MEMBERS:MANAGE authority should return 403")
-            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
             @WithKlabisMockUser(authorities = {})
             void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
@@ -619,6 +622,61 @@ class UpdateMemberApiTest {
                         .andExpect(status().isForbidden());
 
                 verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            /**
+             * The owner is the only caller for whom field-level authorization decides anything: a
+             * stranger is already refused by the endpoint's @HasAuthority, and an admin satisfies
+             * every field. So this pair is what actually exercises @HasAuthority on a component —
+             * gender is refused while chipNumber, which carries no authority, goes through.
+             *
+             * <p>gender is the field this guards because it reached production unenforced: an
+             * allOf in the spec generated a bare Gender rather than a JsonNullable, and
+             * RequestBodyFieldAuthorizationAdvice skips every component that is not
+             * JsonNullable-typed.
+             */
+            @Test
+            @DisplayName("updating own gender should return 403 — it needs MEMBERS:MANAGE")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldRejectMemberUpdatingOwnGender() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "gender": "FEMALE"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
+            @DisplayName("updating own chipNumber should return 204 — it carries no authority")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldAllowMemberToUpdateOwnChipNumber() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "chipNumber": "12345"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.UpdateMember.class);
+                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
+                assertThat(captor.getValue().chipNumber().orElseThrow()).isEqualTo("12345");
             }
         }
 

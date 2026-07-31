@@ -121,7 +121,7 @@ class MemberFeeSummaryDetailsPostprocessor
                 });
 
         if (info.groupId() != null) {
-            klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(info.groupId().value()))
+            klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(info.groupId().value()))
                     .ifPresent(link -> dtoModel.add(link.withRel("group")));
         }
     }

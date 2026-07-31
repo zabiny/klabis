@@ -31,7 +31,7 @@ class UpdateMemberRequestMapper {
                     unwrap(request.firstName()),
                     unwrap(request.lastName()),
                     unwrap(request.dateOfBirth()),
-                    request.gender(),
+                    unwrap(request.gender()),
                     map(request.birthNumber(), UpdateMemberRequestMapper::toBirthNumber),
                     updatedBy
             );

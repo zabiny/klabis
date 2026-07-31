@@ -108,7 +108,7 @@ class MemberFeeChoiceDetailsPostprocessor
                                 .removeChoice(view.memberId(), view.year(), null)))));
 
         view.currentChoice().ifPresent(groupId ->
-                klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(groupId.value()))
+                klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(groupId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("currentGroup"))));
 
         view.recommended().ifPresent(levelId ->

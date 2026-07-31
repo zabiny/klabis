@@ -65,17 +65,35 @@ function resolveParameter(document, param) {
     return document.components?.parameters?.[match[1]];
 }
 
-/** Collects every operationId present in the document. */
+/** Collects every operationId present in the document, with the operations declaring it. */
 function collectOperationIds(document) {
-    const ids = new Set();
-    for (const pathItem of Object.values(document.paths ?? {})) {
+    const byId = new Map();
+    for (const [pathName, pathItem] of Object.entries(document.paths ?? {})) {
         if (!isPlainObject(pathItem)) continue;
         for (const [method, operation] of Object.entries(pathItem)) {
             if (!HTTP_METHODS.includes(method) || !isPlainObject(operation)) continue;
-            if (typeof operation.operationId === 'string') ids.add(operation.operationId);
+            if (typeof operation.operationId !== 'string') continue;
+            const declaredAt = `${method.toUpperCase()} ${pathName}`;
+            byId.set(operation.operationId, [...(byId.get(operation.operationId) ?? []), declaredAt]);
         }
     }
-    return ids;
+    return byId;
+}
+
+/**
+ * OpenAPI requires operationId to be unique across the whole document, and two modules picking the
+ * same name is easy to miss because each file reads fine on its own. It matters beyond conformance:
+ * haltypes.mjs derives its exported type names from the operationId, so a collision emits duplicate
+ * TypeScript declarations that fail the frontend build rather than anything diagnosable here.
+ */
+function duplicateOperationIdErrors(operationIds) {
+    return [...operationIds]
+        .filter(([, declaredAt]) => declaredAt.length > 1)
+        .map(([id, declaredAt]) => ({
+            path: `/paths (operationId "${id}")`,
+            message: `operationId must be unique across the document, but is declared by `
+                + `${declaredAt.length} operations: ${declaredAt.join(', ')}`,
+        }));
 }
 
 /**
@@ -104,8 +122,8 @@ function walk(node, path, visit, context, parentKind) {
  * @returns {Array<{path: string, message: string}>} empty when the document is valid
  */
 export function validateSpec(document, {authorities}) {
-    const errors = [];
     const operationIds = collectOperationIds(document);
+    const errors = duplicateOperationIdErrors(operationIds);
 
     walk(document, '', (node, path, context) => {
         if (!isPlainObject(node)) return;

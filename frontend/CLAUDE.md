@@ -107,10 +107,12 @@ npm run refresh-backend-server-resources
 npm run openapi
 
 # Reads: ../docs/openapi/klabis-full.json
-# Outputs: ./src/api/klabisApi.d.ts
+# Outputs: ./src/api/klabisApi.d.ts, ./src/api/halTypes.ts
 ```
 
-**Important:** Regenerate types after backend API changes.
+**Important:** `klabis-full.json` is itself generated from `docs/openapi/spec/` (the source of
+truth). After an API change, run `./gradlew openapiBundle` from `backend/` to refresh it, *then*
+`npm run openapi` here — otherwise you regenerate from a stale bundle.
 
 ### API Setup
 
