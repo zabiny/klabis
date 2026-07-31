@@ -1,10 +1,10 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +82,7 @@ class HalFormsExpectationsTest {
 
     @WithKlabisMockUser(username = "Tester")
     @Test
-    @DisplayName("it should return expected type for PatchField attributes")
+    @DisplayName("it should return expected type for JsonNullable attributes")
     void shouldReturnExpectedTypeForPatchFieldAttribute() throws Exception {
         mockMvc.perform(get("/api/testHalSupport")
                         .param("id", "2")
@@ -196,7 +196,7 @@ class HalFormsExpectationsTest {
 
 }
 
-record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address, Optional<String> dietary, Optional<Address> postalAddress, PatchField<String> diet, Set<String> tags, Set<Authority> roles, List<Integer> scores, Set<Address> addresses) {
+record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address, Optional<String> dietary, Optional<Address> postalAddress, JsonNullable<String> diet, Set<String> tags, Set<Authority> roles, List<Integer> scores, Set<Address> addresses) {
 
 }
 
@@ -212,7 +212,7 @@ class HalFormsExampleController {
 
     @GetMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
-        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"), Set.of("tag1"), Set.of(Authority.MEMBERS_READ), List.of(42), Set.of());
+        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), JsonNullable.of("Jen maso"), Set.of("tag1"), Set.of(Authority.MEMBERS_READ), List.of(42), Set.of());
 
         EntityModel<User> model = EntityModel.of(data);
         klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).ifPresent(link ->
@@ -225,7 +225,7 @@ class HalFormsExampleController {
     @GetMapping(value = "/withDomain", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUserWithDomain(@RequestParam int id) {
         User data = new User(id, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"),
-                Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"), Set.of("tag1"),
+                Optional.of("Vegetarian"), Optional.empty(), JsonNullable.of("Jen maso"), Set.of("tag1"),
                 Set.of(Authority.MEMBERS_READ), List.of(42), Set.of());
         UserEntity domain = new UserEntity(data, List.of("admin"));
 

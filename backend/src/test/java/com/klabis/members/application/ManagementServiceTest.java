@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -75,8 +76,8 @@ class ManagementServiceTest {
         @DisplayName("should update member birth number via update command")
         void shouldUpdateMemberWithBirthNumber() {
             var command = MemberUpdateMemberBuilder.builder()
-                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
-                    .birthNumber(BirthNumber.of("900101/1234"))
+                    .bankAccountNumber(JsonNullable.of(BankAccountNumber.of("12345/5678")))
+                    .birthNumber(JsonNullable.of(BirthNumber.of("900101/1234")))
                     .build();
 
             Member czechMember = MemberTestDataBuilder.aMember()
@@ -97,7 +98,7 @@ class ManagementServiceTest {
         @DisplayName("should update member bank account number via update command")
         void shouldUpdateMemberWithBankAccountNumber() {
             var command = MemberUpdateMemberBuilder.builder()
-                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
+                    .bankAccountNumber(JsonNullable.of(BankAccountNumber.of("12345/5678")))
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
@@ -113,7 +114,7 @@ class ManagementServiceTest {
         @DisplayName("should update member contact info via update command")
         void shouldUpdateMemberContactInfo() {
             var command = MemberUpdateMemberBuilder.builder()
-                    .email(EmailAddress.of("new@example.com"))
+                    .email(JsonNullable.of(EmailAddress.of("new@example.com")))
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));

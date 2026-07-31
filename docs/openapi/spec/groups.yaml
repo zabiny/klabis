@@ -1591,36 +1591,27 @@ components:
           format: int32
           minimum: 0
 
-    # UpdateTrainingGroupRequest is a PATCH request whose every property is a PatchField<T> wrapper —
-    # same pattern as members.yaml's UpdateMemberRequest and events.yaml's UpdateEventRequest.
-    # "required" only means "present"; the PatchField absent/null/value tri-state has no OpenAPI
-    # equivalent (see klabis-api-spec skill).
+    # Every property is nullable so the generator emits JsonNullable<T>, which carries the
+    # absent/null/value tri-state a PATCH body needs. Properties are inlined rather than sharing
+    # named wrapper schemas: a shared schema cannot carry per-property constraints.
     UpdateTrainingGroupRequest:
       type: object
       description: |
-        Partial update request. Every property is a PatchField wrapper: an absent property is left
-        untouched, whereas an explicitly null value is rejected by the domain (name/ageRange cannot
-        be cleared). trainers, when provided, replaces the full trainer set.
+        Partial update request. An absent property is left untouched, whereas an explicitly null
+        value is rejected by the domain (name/ageRange cannot be cleared). trainers, when provided,
+        replaces the full trainer set.
       properties:
         name:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
         ageRange:
-          $ref: '#/components/schemas/PatchFieldAgeRangeRequest'
+          oneOf:
+            - $ref: '#/components/schemas/AgeRangeRequest'
+            - type: 'null'
         trainers:
-          $ref: '#/components/schemas/PatchFieldTrainerIds'
-
-    PatchFieldString:
-      type: string
-      nullable: true
-
-    PatchFieldAgeRangeRequest:
-      $ref: '#/components/schemas/AgeRangeRequest'
-
-    PatchFieldTrainerIds:
-      type: array
-      items:
-        type: string
-        format: uuid
+          type: ['array', 'null']
+          items:
+            type: string
+            format: uuid
 
     CollectionModelEntityModelTrainingGroupSummaryResponse:
       type: object

@@ -26,23 +26,27 @@ class UpdateEventRequestMapper {
      * An explicitly provided null clears optional fields (e.g. eventTypeId, websiteUrl, location, ranking, baseEntryFee).
      */
     static Event.UpdateEvent toCommand(UpdateEventRequest request, Event existingEvent) {
-        String name = request.name().patchValue(existingEvent.getName());
-        LocalDate eventDate = request.eventDate().patchValue(existingEvent.getEventDate());
-        String location = request.location().patchValue(existingEvent.getLocation());
-        String organizer = request.organizer().patchValue(existingEvent.getOrganizer());
-        String websiteUrl = request.websiteUrl().patchValue(
+        String name = request.name().orElse(existingEvent.getName());
+        LocalDate eventDate = request.eventDate().orElse(existingEvent.getEventDate());
+        String location = request.location().orElse(existingEvent.getLocation());
+        String organizer = request.organizer().orElse(existingEvent.getOrganizer());
+        String websiteUrl = request.websiteUrl().orElse(
                 existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
-        LinkedHashSet<MemberId> coordinators = request.coordinators().patchValue(new LinkedHashSet<>(existingEvent.getCoordinators()));
-        EventTypeId eventTypeId = request.eventTypeId().patchValue(existingEvent.getEventTypeId().orElse(null));
-        RegistrationDeadlines registrationDeadlines = request.deadlines().isProvided()
-                ? toRegistrationDeadlines(request.deadlines().throwIfNotProvided())
+        LinkedHashSet<MemberId> coordinators = request.coordinators().isPresent()
+                ? EventRequestConversions.toCoordinators(request.coordinators().orElseThrow())
+                : new LinkedHashSet<>(existingEvent.getCoordinators());
+        EventTypeId eventTypeId = request.eventTypeId().isPresent()
+                ? EventRequestConversions.toEventTypeId(request.eventTypeId().orElseThrow())
+                : existingEvent.getEventTypeId().orElse(null);
+        RegistrationDeadlines registrationDeadlines = request.deadlines().isPresent()
+                ? EventRequestConversions.toRegistrationDeadlines(request.deadlines().orElseThrow())
                 : existingEvent.getRegistrationDeadlines();
-        List<EventCategory> categories = request.categories().isProvided()
-                ? toCategories(request.categories().throwIfNotProvided(), existingEvent)
+        List<EventCategory> categories = request.categories().isPresent()
+                ? toCategories(request.categories().orElseThrow(), existingEvent)
                 : existingEvent.getCategories();
 
-        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).patchValue(existingEvent.getRanking());
-        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
+        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).orElse(existingEvent.getRanking());
+        Money baseEntryFee = request.baseEntryFee().map(EventRequestConversions::toMoney).orElse(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
                 coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
@@ -54,7 +58,7 @@ class UpdateEventRequestMapper {
      * registration links are preserved); a request category without an {@code id} is new and gets
      * a freshly generated one; any existing category id absent from the request is dropped.
      */
-    private static List<EventCategory> toCategories(List<UpdateEventRequest.CategoryRequest> requested, Event existingEvent) {
+    private static List<EventCategory> toCategories(List<UpdateEventCategoryRequest> requested, Event existingEvent) {
         if (requested == null) {
             return List.of();
         }
@@ -64,40 +68,24 @@ class UpdateEventRequestMapper {
         return requested.stream()
                 .map(request -> {
                     if (request.id() == null) {
-                        return new EventCategory(EventCategoryId.generate(), null, request.name(), toMoney(request.fee()));
+                        return new EventCategory(EventCategoryId.generate(), null, request.name(), EventRequestConversions.toMoney(request.fee()));
                     }
-                    EventCategory existing = existingById.get(request.id());
+                    EventCategoryId id = new EventCategoryId(request.id());
+                    EventCategory existing = existingById.get(id);
                     if (existing == null) {
                         throw new BusinessRuleViolationException(
-                                "Category id '" + request.id() + "' does not belong to this event") {};
+                                "Category id '" + id + "' does not belong to this event") {};
                     }
-                    return new EventCategory(existing.id(), existing.orisId(), request.name(), toMoney(request.fee()));
+                    return new EventCategory(existing.id(), existing.orisId(), request.name(), EventRequestConversions.toMoney(request.fee()));
                 })
                 .toList();
     }
 
-    private static EventRanking toRanking(UpdateEventRequest.RankingRequest rankingRequest) {
+    private static EventRanking toRanking(UpdateEventRankingRequest rankingRequest) {
         if (rankingRequest == null) {
             return null;
         }
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
     }
 
-    private static Money toMoney(UpdateEventRequest.EntryFeeRequest feeRequest) {
-        if (feeRequest == null) {
-            return null;
-        }
-        return Money.of(feeRequest.amount(), Money.parseCurrency(feeRequest.currency()));
-    }
-
-    private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {
-        if (deadlines == null || deadlines.isEmpty()) {
-            return RegistrationDeadlines.none();
-        }
-        return RegistrationDeadlines.of(
-                deadlines.get(0),
-                deadlines.size() > 1 ? deadlines.get(1) : null,
-                deadlines.size() > 2 ? deadlines.get(2) : null
-        );
-    }
 }

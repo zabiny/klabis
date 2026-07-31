@@ -4,7 +4,6 @@ import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
-import com.klabis.common.patch.PatchField;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -161,9 +161,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("Seniors"),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
+                    JsonNullable.of("Seniors"),
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined()
             );
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
@@ -182,9 +182,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.of(new AgeRange(5, 12)),
-                    PatchField.notProvided()
+                    JsonNullable.undefined(),
+                    JsonNullable.of(new AgeRange(5, 12)),
+                    JsonNullable.undefined()
             );
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
@@ -202,9 +202,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(true);
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.of(new AgeRange(18, 25)),
-                    PatchField.notProvided()
+                    JsonNullable.undefined(),
+                    JsonNullable.of(new AgeRange(18, 25)),
+                    JsonNullable.undefined()
             );
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
@@ -220,9 +220,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.notProvided(),
-                    PatchField.of(Set.of(TRAINER_2))
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined(),
+                    JsonNullable.of(Set.of(TRAINER_2))
             );
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
@@ -240,9 +240,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("Updated Juniors"),
-                    PatchField.of(new AgeRange(8, 14)),
-                    PatchField.of(Set.of(TRAINER_2))
+                    JsonNullable.of("Updated Juniors"),
+                    JsonNullable.of(new AgeRange(8, 14)),
+                    JsonNullable.of(Set.of(TRAINER_2))
             );
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
@@ -261,9 +261,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined()
             );
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
@@ -279,9 +279,9 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("New Name"),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
+                    JsonNullable.of("New Name"),
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined()
             );
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))

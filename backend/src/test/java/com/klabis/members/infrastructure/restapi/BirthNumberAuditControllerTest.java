@@ -117,7 +117,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber()).isNotNull();
+            assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
             assertThat(command.updatedBy()).isNotNull();
         }
 
@@ -144,7 +144,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber()).isNull();
+            assertThat(command.birthNumber().isPresent()).isFalse();
             assertThat(command.updatedBy()).isNotNull();
         }
     }

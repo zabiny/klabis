@@ -28,12 +28,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
+import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -121,11 +121,24 @@ class TrainingGroupController implements TrainingGroupsApi {
         TrainingGroupId groupId = new TrainingGroupId(id);
         UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
                 request.name(),
-                request.ageRangeDomain(),
-                request.trainers().map(trainers -> trainers == null ? null : new HashSet<>(trainers))
+                request.ageRange().map(TrainingGroupController::toAgeRange),
+                request.trainers().map(TrainingGroupController::toMemberIds)
         );
         trainingGroupManagementService.updateTrainingGroup(groupId, command);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Both converters forward an explicit null instead of dereferencing it, so the domain's own
+     * Assert rejects it as a 400. Mapping it here would NPE into a 500 — {@code map} applies the
+     * mapper on presence, not on nullness.
+     */
+    private static AgeRange toAgeRange(AgeRangeRequest request) {
+        return request == null ? null : new AgeRange(request.minAge(), request.maxAge());
+    }
+
+    private static Set<MemberId> toMemberIds(List<UUID> trainers) {
+        return trainers == null ? null : trainers.stream().map(MemberId::new).collect(toSet());
     }
 
     @Override

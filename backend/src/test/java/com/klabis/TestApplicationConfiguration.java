@@ -3,7 +3,10 @@ package com.klabis;
 import com.klabis.config.TestSslConfiguration;
 import com.klabis.authorizationserver.KlabisUserDetailsService;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -27,4 +30,15 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @CleanupTestData    // tests are sharing single H2 - need to find out why so we can remove this cleanup (it deletes also bootstrap data what can cause issues somewhere)
 public class TestApplicationConfiguration {
+
+    /**
+     * Make async event handlers run synchronously during tests to avoid shutdown races
+     * where background tasks try to access Hikari after the pool was closed.
+     *
+     * This is test-only and safe to add here because this class is a @TestConfiguration.
+     */
+    @Bean(name = "taskExecutor")
+    public TaskExecutor taskExecutor() {
+        return new SyncTaskExecutor();
+    }
 }

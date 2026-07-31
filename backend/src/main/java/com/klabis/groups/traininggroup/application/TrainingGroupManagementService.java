@@ -53,12 +53,12 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     @Override
     public TrainingGroup updateTrainingGroup(TrainingGroupId id, UpdateTrainingGroupCommand command) {
         TrainingGroup group = loadTrainingGroup(id);
-        command.name().ifProvided(group::rename);
-        command.ageRange().ifProvided(newAgeRange -> {
+        command.name().ifPresent(group::rename);
+        command.ageRange().ifPresent(newAgeRange -> {
             validateNoOverlappingAgeRange(newAgeRange, id);
             group.updateAgeRange(newAgeRange);
         });
-        command.trainers().ifProvided(group::replaceTrainers);
+        command.trainers().ifPresent(group::replaceTrainers);
         return trainingGroupRepository.save(group);
     }
 

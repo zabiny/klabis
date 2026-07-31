@@ -100,17 +100,7 @@ public class EventController implements EventsApi {
             @Parameter(description = "Event creation data")
             CreateEventRequest request) {
 
-        Event.CreateEvent command = new Event.CreateEvent(
-                request.name(),
-                request.eventDate(),
-                request.location(),
-                request.organizer(),
-                request.websiteUrl(),
-                request.coordinators(),
-                request.eventTypeId(),
-                request.toRegistrationDeadlines(),
-                request.toCategories()
-        );
+        Event.CreateEvent command = CreateEventRequestMapper.toCommand(request);
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity

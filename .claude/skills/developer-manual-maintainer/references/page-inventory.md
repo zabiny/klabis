@@ -54,7 +54,7 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 - `@HalForms` annotation + `Access` enum
 - `RootController` a navigace
 - `EntityModelWithDomain` + `ModelWithDomainPostprocessor`
-- `PatchField<T>` framework
+- `JsonNullable<T>` tri-state PATCH wrapper
 - `@ValidOptionalSize`
 - `MvcExceptionHandler` mapování výjimek na HTTP statusy
 - `HateoasConfiguration`, `MvcConfiguration`, `SpaFallbackController`, `@MvcComponent`
