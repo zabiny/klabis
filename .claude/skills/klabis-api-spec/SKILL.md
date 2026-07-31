@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.2.0
+version: 0.3.0
 ---
 
 # Klabis API Spec
@@ -139,6 +139,7 @@ alongside the types:
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
 | `minimum` / `maximum` | `@Min` / `@Max` |
+| `type: [x, 'null']` | `JsonNullable<X>` — PATCH tri-state, see below |
 
 A schema that omits them produces a DTO that accepts anything — the failure shows up as a controller
 test expecting `400` and getting `200`, or as missing entries under `fieldErrors`. When migrating a
@@ -177,6 +178,67 @@ Two limits:
 OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
 migration. Update the assertions to the default text rather than contriving a way to keep the old
 one — the constraint still fires, only the wording changes.
+
+## PATCH bodies: nullable properties become `JsonNullable<T>`
+
+A PATCH body needs three states, not two: *absent* (leave the field alone), *present and null* (clear
+it), and *present with a value*. A plain Java field cannot express that — `null` would mean both
+"untouched" and "clear". Marking the property nullable generates `JsonNullable<T>`, which can.
+
+**Use the OpenAPI 3.1 spelling.** The specs are `3.1.0`, where the 3.0 `nullable: true` keyword is
+**silently ignored** — the property stays non-nullable, the wrapper never appears, and nothing warns
+(`skipValidateSpec` is on):
+
+```yaml
+name:
+  type: ['string', 'null']          # -> JsonNullable<String>
+  maxLength: 100
+
+ageRange:                            # a $ref property needs the oneOf form
+  oneOf:
+    - $ref: '#/components/schemas/AgeRangeRequest'
+    - type: 'null'                   # -> JsonNullable<AgeRangeRequest>
+```
+
+`nullable: true` and `allOf` + `nullable` both generate the bare type. This is driven by
+`openApiNullable = "true"` in `openApiModule(...)` plus the `isNullable` branch in the overridden
+`pojo.mustache`; if that template is ever re-forked from upstream, port the branch or every PATCH DTO
+silently loses its wrappers.
+
+Do **not** mark response properties or POST/PUT bodies nullable — they have no tri-state, and the
+wrapper would leak into code that only wants a value.
+
+### `oneOf` strips property-level `x-klabis-*`
+
+The generator discards vendor extensions on a *composed* schema. A `$ref` property that needs both
+the wrapper and a field-security extension cannot have both:
+
+```yaml
+gender:
+  allOf:                             # keeps x-klabis-authority, no wrapper
+    - $ref: '#/components/schemas/Gender'
+  x-klabis-authority: MEMBERS_MANAGE
+```
+
+Losing the extension is the worse outcome — an unwrapped component is *skipped* by
+`RequestBodyFieldAuthorizationAdvice`, so a dropped `x-klabis-authority` makes an admin-only field
+writable by anyone, silently. Prefer the annotation and give up the wrapper for fields that have no
+cleared state anyway. Scalar unions (`type: ['string','null']`) keep their extensions fine; only
+compositions lose them. `PatchRequestWrapperArchitectureTest` records each such exception and asserts
+the field still declares the authority it was excepted for.
+
+### Consuming the tri-state
+
+`JsonNullable.map` applies the mapper to a *present null* — it branches on presence, not on nullness.
+A mapper that dereferences the value turns an intended `400` into an NPE and a `500`:
+
+```java
+// forwards the null so the domain's own Assert rejects it
+field.map(value -> value == null ? null : convert(value))
+```
+
+`orElse(current)` is the "apply patch" primitive: the wrapped value when present (including null),
+the fallback when absent.
 
 ## Core rule: DTOs carry wire types
 
@@ -615,9 +677,11 @@ deserialization target.
 diff the module's schemas property-by-property against `klabis-codefirst.json` — that is where
 transcription mistakes actually surface.
 
-Expect the springdoc output to be wrong in places (it does not know about `@JsonValue` mixins or the
-`JsonNullable` deserializer). Where it disagrees with the actual wire format, the spec follows the
-**wire**, and the discrepancy is documented in the spec rather than mirrored.
+Expect the springdoc output to be wrong in places — it does not know about `@JsonValue` mixins, and
+it introspects Java types rather than the wire, so a wrapper like `JsonNullable<T>` can surface as an
+object with the wrapper's own fields rather than as the value it serializes to. Where it disagrees
+with the actual wire format, the spec follows the **wire**, and the discrepancy is documented in the
+spec rather than mirrored.
 
 ### A newly annotated method can fail a link/affordance unit test
 
@@ -681,6 +745,11 @@ returns `true` unconditionally makes the test assert nothing.
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
   emit. Propose it, don't add it ad hoc — `validate.mjs` rejects any `x-klabis-*` key missing from
   `KNOWN_KLABIS_EXTENSIONS`, and emission needs a matching branch in `pojo.mustache`.
+  **First check the generator cannot already do it**, and check that against *stock* templates: an
+  `x-klabis-patch-field` extension was written and then removed once it turned out `openApiNullable`
+  did the job, the earlier "it doesn't work" verdict having come from testing with our own
+  `pojo.mustache` — which ignored the flag the generator was setting correctly all along. Disable
+  `templateDir` before concluding a generator feature is broken.
 - Reaching for a raw `x-field-extra-annotation` on a schema property to inject an annotation. The
   generator only honours it on *parameters*; on a model property the overridden `pojo.mustache`
   decides, and an unlisted extension is silently dropped — so the annotation never appears and any
@@ -721,6 +790,17 @@ returns `true` unconditionally makes the test assert nothing.
   resolution, throwing `ConstraintViolationException` rather than the
   `HandlerMethodValidationException` the exception handler covers — a 500 where a 400 is intended.
   No hand-written controller hits this, so it first appears when a module goes spec-first.
+- Writing `nullable: true` on a PATCH property. It is the OpenAPI 3.0 keyword and these specs are
+  3.1, so it is silently ignored: no `JsonNullable`, no warning, and the endpoint quietly loses the
+  ability to distinguish "absent" from "clear this field". Use `type: [x, 'null']`.
+- Giving a `$ref` PATCH property the nullable `oneOf` when it also carries `x-klabis-authority` or
+  `x-klabis-owner-visible` — the generator strips vendor extensions from a composed schema, and an
+  unwrapped component is skipped by `RequestBodyFieldAuthorizationAdvice`, so the field silently
+  becomes writable by anyone. Keep `allOf` + the extension.
+- Marking a response property or a POST/PUT body property nullable. There is no tri-state to express
+  and the `JsonNullable` wrapper leaks into code that only ever wants a value.
+- Mapping a `JsonNullable` with a converter that dereferences the value. `map` runs on a *present
+  null* too, so `field.map(this::convert)` NPEs into a 500 where the domain would have answered 400.
 - Assuming a generated record's constructor parameters follow the order you wrote them in the spec.
   The bundler **alphabetizes `properties` keys**, so a spec written `(minAge, maxAge)` generates
   `AgeRangeRequest(maxAge, minAge)`. Positional construction then silently swaps the values — it
