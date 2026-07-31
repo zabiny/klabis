@@ -1591,14 +1591,14 @@ components:
           format: int32
           minimum: 0
 
-    # UpdateTrainingGroupRequest is a PATCH request whose every property is a PatchField<T> wrapper —
+    # UpdateTrainingGroupRequest is a PATCH request whose every property is a JsonNullable<T> wrapper —
     # same pattern as members.yaml's UpdateMemberRequest and events.yaml's UpdateEventRequest.
-    # "required" only means "present"; the PatchField absent/null/value tri-state has no OpenAPI
+    # "required" only means "present"; the JsonNullable absent/null/value tri-state has no OpenAPI
     # equivalent (see klabis-api-spec skill).
     UpdateTrainingGroupRequest:
       type: object
       description: |
-        Partial update request. Every property is a PatchField wrapper: an absent property is left
+        Partial update request. Every property is a JsonNullable wrapper: an absent property is left
         untouched, whereas an explicitly null value is rejected by the domain (name/ageRange cannot
         be cleared). trainers, when provided, replaces the full trainer set.
       properties:

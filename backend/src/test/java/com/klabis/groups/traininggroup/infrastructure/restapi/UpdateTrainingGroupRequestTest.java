@@ -56,4 +56,25 @@ class UpdateTrainingGroupRequestTest {
         assertThat(ageRange.minAge()).isEqualTo(10);
         assertThat(ageRange.maxAge()).isEqualTo(18);
     }
+
+    @Test
+    @DisplayName("ageRangeDomain forwards an explicit null instead of dereferencing it")
+    void ageRangeDomainForwardsExplicitNull() {
+        UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
+                JsonNullable.undefined(), JsonNullable.of(null), JsonNullable.undefined());
+
+        var ageRange = request.ageRangeDomain();
+
+        assertThat(ageRange.isPresent()).isTrue();
+        assertThat(ageRange.orElseThrow()).isNull();
+    }
+
+    @Test
+    @DisplayName("ageRangeDomain stays undefined when the field is absent")
+    void ageRangeDomainStaysUndefinedWhenAbsent() {
+        UpdateTrainingGroupRequest request = new UpdateTrainingGroupRequest(
+                JsonNullable.undefined(), JsonNullable.undefined(), JsonNullable.undefined());
+
+        assertThat(request.ageRangeDomain().isPresent()).isFalse();
+    }
 }

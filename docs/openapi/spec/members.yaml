@@ -234,7 +234,7 @@ paths:
       summary: Update member details
       description: |
         Partial update — only the fields present in the request body are changed. Each field is a
-        PatchField wrapper, so omitting a field and setting it to null are different operations.
+        JsonNullable wrapper, so omitting a field and setting it to null are different operations.
         Fields the caller is not authorized to change are rejected.
       security:
         - KlabisAuth: [MEMBERS]
@@ -663,8 +663,13 @@ components:
     UpdateMemberRequest:
       type: object
       description: |
-        Partial update request. Every property is a PatchField wrapper: an absent property is left
-        untouched, whereas an explicitly null value clears the field.
+        Partial update request. An absent property is left untouched, whereas an explicitly null
+        value clears the field — where the underlying field is optional.
+
+        Clearing a field the domain requires is rejected. firstName, lastName, dateOfBirth and
+        gender have no cleared state, so a null there is treated as "leave alone". An explicit null
+        is refused for email or phone unless a guardian still covers that contact, for guardian
+        when the member is a minor, and for birthNumber when the member is a Czech national.
       required: [firstName, lastName]
       properties:
         email:
@@ -845,18 +850,16 @@ components:
       type: string
       enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
 
-    # --- PatchField wrappers -----------------------------------------------
+    # --- JsonNullable wrappers -----------------------------------------------
     #
-    # PatchField<T> distinguishes "not provided" from "provided as null". On the wire the wrapper is
-    # transparent: PatchFieldDeserializer reads the value directly, so the payload is
-    # `"email": "a@b.cz"`, never `{"provided": true, ...}`.
+    # JsonNullable<T> distinguishes "not provided" from "provided as null". On the wire the wrapper
+    # is transparent — the payload is `"email": "a@b.cz"`, never an object describing the wrapper.
     #
-    # Springdoc gets this wrong — it introspects the Java type and reports
-    # `{type: object, properties: {provided: boolean}}`, which no client ever sends or receives.
-    # These schemas describe the wire format; the drift check will not flag the difference because
-    # it compares schemas by name.
+    # These schemas describe that wire format. Springdoc used to introspect the old hand-rolled
+    # PatchField<T> and report `{type: object, properties: {provided: boolean}}`, which no client
+    # ever sent or received; the drift check did not flag it because it compares schemas by name.
     #
-    # They exist as named schemas so the generator can later emit PatchField<T> rather than a bare T.
+    # They exist as named schemas so the generator can later emit JsonNullable<T> rather than a bare T.
 
     PatchFieldString:
       type: string

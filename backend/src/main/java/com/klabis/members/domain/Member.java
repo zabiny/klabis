@@ -12,7 +12,7 @@ import com.klabis.members.MemberSuspendedEvent;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
-
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
@@ -107,50 +107,75 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * Covers all updatable fields. Authorization at the API layer determines which fields
      * a given caller is permitted to set — admin-only fields (firstName, lastName, dateOfBirth,
      * gender, birthNumber) are blocked for non-admins before the command reaches the domain.
-     * Fields set to null retain the current value (PATCH semantics).
+     * <p>
+     * Optional fields are {@link JsonNullable} so a caller can tell "leave alone" (undefined) from
+     * "clear it" (present null); a plain {@code null} is normalised to undefined, which keeps the
+     * builder usable without naming every field. The required fields of
+     * {@link PersonalInformation} stay plain: they have no meaningful cleared state, and null there
+     * still means "retain".
      */
     @RecordBuilder
     public record UpdateMember(
-            EmailAddress email,
-            PhoneNumber phone,
-            Address address,
-            String chipNumber,
+            JsonNullable<EmailAddress> email,
+            JsonNullable<PhoneNumber> phone,
+            JsonNullable<Address> address,
+            JsonNullable<String> chipNumber,
             String nationality,
-            BankAccountNumber bankAccountNumber,
-            IdentityCard identityCard,
-            DrivingLicenseGroup drivingLicenseGroup,
-            MedicalCourse medicalCourse,
-            TrainerLicense trainerLicense,
-            RefereeLicense refereeLicense,
-            String dietaryRestrictions,
-            GuardianInformation guardian,
+            JsonNullable<BankAccountNumber> bankAccountNumber,
+            JsonNullable<IdentityCard> identityCard,
+            JsonNullable<DrivingLicenseGroup> drivingLicenseGroup,
+            JsonNullable<MedicalCourse> medicalCourse,
+            JsonNullable<TrainerLicense> trainerLicense,
+            JsonNullable<RefereeLicense> refereeLicense,
+            JsonNullable<String> dietaryRestrictions,
+            JsonNullable<GuardianInformation> guardian,
             String firstName,
             String lastName,
             LocalDate dateOfBirth,
             Gender gender,
-            BirthNumber birthNumber,
+            JsonNullable<BirthNumber> birthNumber,
             UserId updatedBy
     ) {
+        public UpdateMember {
+            email = undefinedIfNull(email);
+            phone = undefinedIfNull(phone);
+            address = undefinedIfNull(address);
+            chipNumber = undefinedIfNull(chipNumber);
+            bankAccountNumber = undefinedIfNull(bankAccountNumber);
+            identityCard = undefinedIfNull(identityCard);
+            drivingLicenseGroup = undefinedIfNull(drivingLicenseGroup);
+            medicalCourse = undefinedIfNull(medicalCourse);
+            trainerLicense = undefinedIfNull(trainerLicense);
+            refereeLicense = undefinedIfNull(refereeLicense);
+            dietaryRestrictions = undefinedIfNull(dietaryRestrictions);
+            guardian = undefinedIfNull(guardian);
+            birthNumber = undefinedIfNull(birthNumber);
+        }
+
+        private static <T> JsonNullable<T> undefinedIfNull(JsonNullable<T> value) {
+            return value == null ? JsonNullable.undefined() : value;
+        }
+
         public static UpdateMember from(Member member) {
             return new UpdateMember(
-                    member.email,
-                    member.phone,
-                    member.address,
-                    member.chipNumber,
+                    JsonNullable.of(member.email),
+                    JsonNullable.of(member.phone),
+                    JsonNullable.of(member.address),
+                    JsonNullable.of(member.chipNumber),
                     member.personalInformation != null ? member.personalInformation.getNationalityCode() : null,
-                    member.bankAccountNumber,
-                    member.identityCard,
-                    member.drivingLicenseGroup,
-                    member.medicalCourse,
-                    member.trainerLicense,
-                    member.refereeLicense,
-                    member.dietaryRestrictions,
-                    member.guardian,
+                    JsonNullable.of(member.bankAccountNumber),
+                    JsonNullable.of(member.identityCard),
+                    JsonNullable.of(member.drivingLicenseGroup),
+                    JsonNullable.of(member.medicalCourse),
+                    JsonNullable.of(member.trainerLicense),
+                    JsonNullable.of(member.refereeLicense),
+                    JsonNullable.of(member.dietaryRestrictions),
+                    JsonNullable.of(member.guardian),
                     member.personalInformation != null ? member.personalInformation.getFirstName() : null,
                     member.personalInformation != null ? member.personalInformation.getLastName() : null,
                     member.personalInformation != null ? member.personalInformation.getDateOfBirth() : null,
                     member.personalInformation != null ? member.personalInformation.getGender() : null,
-                    member.birthNumber,
+                    JsonNullable.of(member.birthNumber),
                     null
             );
         }
@@ -559,10 +584,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     // ========== Command Handlers (Domain Methods) ==========
 
     public void update(UpdateMember command) {
-        EmailAddress newEmail = command.email() != null ? command.email() : this.email;
-        PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
-        Address newAddress = command.address() != null ? command.address() : this.address;
-        GuardianInformation newGuardian = command.guardian() != null ? command.guardian() : this.guardian;
+        EmailAddress newEmail = command.email().orElse(this.email);
+        PhoneNumber newPhone = command.phone().orElse(this.phone);
+        Address newAddress = command.address().orElse(this.address);
+        GuardianInformation newGuardian = command.guardian().orElse(this.guardian);
 
         validateContactInformation(newEmail, newPhone, newGuardian);
 
@@ -583,7 +608,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         validateGuardianForMinors(newPersonalInfo, newGuardian);
 
-        BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
+        BirthNumber newBirthNumber = command.birthNumber().orElse(this.birthNumber);
         if (newBirthNumber != null && !Nationality.of(newPersonalInfo.getNationalityCode()).isCzech()) {
             newBirthNumber = null;
         }
@@ -598,16 +623,17 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.personalInformation = newPersonalInfo;
         this.birthNumber = newBirthNumber;
 
-        if (command.chipNumber() != null) this.chipNumber = command.chipNumber();
-        if (command.bankAccountNumber() != null) this.bankAccountNumber = command.bankAccountNumber();
-        if (command.identityCard() != null) this.identityCard = command.identityCard();
-        if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
-        if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
-        if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
-        if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
-        if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
+        command.chipNumber().ifPresent(value -> this.chipNumber = value);
+        command.bankAccountNumber().ifPresent(value -> this.bankAccountNumber = value);
+        command.identityCard().ifPresent(value -> this.identityCard = value);
+        command.drivingLicenseGroup().ifPresent(value -> this.drivingLicenseGroup = value);
+        command.medicalCourse().ifPresent(value -> this.medicalCourse = value);
+        command.trainerLicense().ifPresent(value -> this.trainerLicense = value);
+        command.refereeLicense().ifPresent(value -> this.refereeLicense = value);
+        command.dietaryRestrictions().ifPresent(value -> this.dietaryRestrictions = value);
 
-        if (command.birthNumber() != null && command.updatedBy() != null && !command.birthNumber().equals(previousBirthNumber)) {
+        if (command.birthNumber().isPresent() && command.updatedBy() != null
+            && !Objects.equals(this.birthNumber, previousBirthNumber)) {
             registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
         }
     }

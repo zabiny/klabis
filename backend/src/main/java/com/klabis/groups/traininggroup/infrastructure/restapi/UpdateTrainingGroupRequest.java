@@ -12,7 +12,11 @@ record UpdateTrainingGroupRequest(
         @Valid JsonNullable<AgeRangeRequest> ageRange,
         JsonNullable<List<MemberId>> trainers
 ) {
+    /**
+     * An explicit {@code null} is forwarded as a present null rather than dereferenced here, so the
+     * domain's own {@code Assert.notNull} rejects it as a 400. Mapping it would NPE into a 500.
+     */
     JsonNullable<AgeRange> ageRangeDomain() {
-        return ageRange.map(r -> new AgeRange(r.minAge(), r.maxAge()));
+        return ageRange.map(r -> r == null ? null : new AgeRange(r.minAge(), r.maxAge()));
     }
 }

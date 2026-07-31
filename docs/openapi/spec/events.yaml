@@ -1315,9 +1315,9 @@ components:
     # classes via schemaMappings (see build.gradle.kts) rather than generated:
     #   - CreateEventRequest has a cross-field business rule (deadlines must be non-decreasing,
     #     Event.CreateEvent.isDeadlinesOrdered @AssertTrue) that OpenAPI cannot express.
-    #   - UpdateEventRequest is a PATCH request whose every property is a PatchField<T> wrapper —
+    #   - UpdateEventRequest is a PATCH request whose every property is a JsonNullable<T> wrapper —
     #     same pattern as members.yaml's UpdateMemberRequest. "required" only means "present"; the
-    #     PatchField absent/null/value tri-state has no OpenAPI equivalent (see klabis-api-spec
+    #     JsonNullable absent/null/value tri-state has no OpenAPI equivalent (see klabis-api-spec
     #     skill), and there is a matching @AssertTrue on the deadlines field there too.
     # Both are documented below to match the actual wire format for the frontend generator.
     CreateEventRequest:
@@ -1391,7 +1391,7 @@ components:
     UpdateEventRequest:
       type: object
       description: |
-        Partial update request. Every property is a PatchField wrapper: an absent property is left
+        Partial update request. Every property is a JsonNullable wrapper: an absent property is left
         untouched, whereas an explicitly null value clears the field (where the underlying field is
         optional). Category `id` present = update an existing category (must belong to this event);
         absent = a new category, server assigns a fresh id. Deadlines, when provided, must be in
