@@ -367,6 +367,9 @@ fun openApiModule(
                 "useSpringBoot3" to "true",
                 "useJakartaEe" to "true",
                 "documentationProvider" to "none",
+                // Left off: the generator ignores nullability in OpenAPI 3.1 mode (verified against
+                // both `nullable: true` and `type: [x, "null"]`), so JsonNullable comes from
+                // x-klabis-patch-field in pojo.mustache instead.
                 "openApiNullable" to "false",
                 "useTags" to "true",
                 "additionalModelTypeAnnotations" to
@@ -407,7 +410,8 @@ openApiModule(
         "RefereeLicenseDto",
         "RegisterMemberRequest",
         "AddressRequest",
-        "SuspendMembershipRequest"
+        "SuspendMembershipRequest",
+        "UpdateMemberRequest"
     ),
     mappings = mapOf(
         "Gender" to "com.klabis.members.domain.Gender",
@@ -416,10 +420,7 @@ openApiModule(
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
-        // UpdateMemberRequest stays hand-written — every property is a PatchField<T> wrapper, whose
-        // absent/null/value tri-state has no OpenAPI equivalent.
-        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest"
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
@@ -672,12 +673,10 @@ openApiModule(
         "CreateTrainingGroupRequest",
         "TrainingGroupAddMemberRequest",
         "AddTrainerRequest",
-        "AgeRangeRequest"
-        // UpdateTrainingGroupRequest stays hand-written — every property is a PatchField<T>
-        // wrapper, which OpenAPI cannot express (see the comment on that schema in groups.yaml).
+        "AgeRangeRequest",
+        "UpdateTrainingGroupRequest"
     ),
     mappings = mapOf(
-        "UpdateTrainingGroupRequest" to "com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest",
         "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
         "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
         // Payload type for getTrainingGroup — same envelope-stripping mapping as every other

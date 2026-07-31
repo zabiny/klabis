@@ -670,44 +670,90 @@ components:
         gender have no cleared state, so a null there is treated as "leave alone". An explicit null
         is refused for email or phone unless a guardian still covers that contact, for guardian
         when the member is a minor, and for birthNumber when the member is a Czech national.
-      required: [firstName, lastName]
+      # Properties are inlined rather than sharing named wrapper schemas: seven of them are plain
+      # strings with different constraints (email 255, chipNumber 50 + digits, firstName 100), and a
+      # shared schema can only carry one set.
       properties:
         email:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 255
+          x-klabis-patch-field: true
         phone:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 50
+          x-klabis-patch-field: true
         address:
-          $ref: '#/components/schemas/PatchFieldAddressRequest'
+          allOf:
+            - $ref: '#/components/schemas/AddressRequest'
+          x-klabis-patch-field: true
         firstName:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-patch-field: true
         lastName:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-patch-field: true
         dateOfBirth:
-          $ref: '#/components/schemas/PatchFieldLocalDate'
+          type: string
+          format: date
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-patch-field: true
         gender:
-          $ref: '#/components/schemas/PatchFieldGender'
+          allOf:
+            - $ref: '#/components/schemas/Gender'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-patch-field: true
         chipNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 50
+          pattern: '^[0-9]+$'
+          x-klabis-patch-field: true
         nationality:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          minLength: 2
+          maxLength: 2
+          x-klabis-patch-field: true
         identityCard:
-          $ref: '#/components/schemas/PatchFieldIdentityCardDto'
+          allOf:
+            - $ref: '#/components/schemas/IdentityCardDto'
+          x-klabis-patch-field: true
         medicalCourse:
-          $ref: '#/components/schemas/PatchFieldMedicalCourseDto'
+          allOf:
+            - $ref: '#/components/schemas/MedicalCourseDto'
+          x-klabis-patch-field: true
         trainerLicense:
-          $ref: '#/components/schemas/PatchFieldTrainerLicenseDto'
+          allOf:
+            - $ref: '#/components/schemas/TrainerLicenseDto'
+          x-klabis-patch-field: true
         refereeLicense:
-          $ref: '#/components/schemas/PatchFieldRefereeLicenseDto'
+          allOf:
+            - $ref: '#/components/schemas/RefereeLicenseDto'
+          x-klabis-patch-field: true
         drivingLicenseGroup:
-          $ref: '#/components/schemas/PatchFieldDrivingLicenseGroup'
+          allOf:
+            - $ref: '#/components/schemas/DrivingLicenseGroup'
+          x-klabis-patch-field: true
         dietaryRestrictions:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 500
+          x-klabis-patch-field: true
         birthNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-patch-field: true
         bankAccountNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: string
+          maxLength: 50
+          x-klabis-patch-field: true
         guardian:
-          $ref: '#/components/schemas/PatchFieldGuardianDTO'
+          allOf:
+            - $ref: '#/components/schemas/GuardianDTO'
+          x-klabis-patch-field: true
 
     SuspendMembershipRequest:
       type: object
@@ -850,46 +896,3 @@ components:
       type: string
       enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
 
-    # --- JsonNullable wrappers -----------------------------------------------
-    #
-    # JsonNullable<T> distinguishes "not provided" from "provided as null". On the wire the wrapper
-    # is transparent — the payload is `"email": "a@b.cz"`, never an object describing the wrapper.
-    #
-    # These schemas describe that wire format. Springdoc used to introspect the old hand-rolled
-    # PatchField<T> and report `{type: object, properties: {provided: boolean}}`, which no client
-    # ever sent or received; the drift check did not flag it because it compares schemas by name.
-    #
-    # They exist as named schemas so the generator can later emit JsonNullable<T> rather than a bare T.
-
-    PatchFieldString:
-      type: string
-      nullable: true
-
-    PatchFieldLocalDate:
-      type: string
-      format: date
-      nullable: true
-
-    PatchFieldGender:
-      $ref: '#/components/schemas/Gender'
-
-    PatchFieldDrivingLicenseGroup:
-      $ref: '#/components/schemas/DrivingLicenseGroup'
-
-    PatchFieldAddressRequest:
-      $ref: '#/components/schemas/AddressRequest'
-
-    PatchFieldGuardianDTO:
-      $ref: '#/components/schemas/GuardianDTO'
-
-    PatchFieldIdentityCardDto:
-      $ref: '#/components/schemas/IdentityCardDto'
-
-    PatchFieldMedicalCourseDto:
-      $ref: '#/components/schemas/MedicalCourseDto'
-
-    PatchFieldTrainerLicenseDto:
-      $ref: '#/components/schemas/TrainerLicenseDto'
-
-    PatchFieldRefereeLicenseDto:
-      $ref: '#/components/schemas/RefereeLicenseDto'

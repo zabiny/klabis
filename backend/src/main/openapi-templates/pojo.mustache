@@ -31,8 +31,15 @@ public record {{classname}}(
         "strictly in the past"), so they come from x-klabis-not-blank / x-klabis-past rather than
         the partial. A field that is both `required` and not-blank therefore carries a redundant
         @NotNull from the partial as well; that is harmless, and suppressing it would mean forking
-        the stock beanValidation template too. }}
+        the stock beanValidation template too.
+
+        x-klabis-patch-field wraps the component in JsonNullable<T>, giving a PATCH body the
+        absent/null/value tri-state. It is a Klabis extension rather than the generator's own
+        openApiNullable option because that option keys off `nullable`, which openapi-generator
+        ignores in OpenAPI 3.1 mode — verified against both `nullable: true` and the 3.1 spelling
+        `type: [x, "null"]`; neither produced a JsonNullable. The type is fully qualified so
+        model.mustache needs no extra import. }}
     {{#vars}}{{^-first}},
-    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{{datatypeWithEnum}}} {{name}}{{/vars}}
+    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{#vendorExtensions.x-klabis-patch-field}}org.openapitools.jackson.nullable.JsonNullable<{{{datatypeWithEnum}}}> {{name}}{{/vendorExtensions.x-klabis-patch-field}}{{^vendorExtensions.x-klabis-patch-field}}{{{datatypeWithEnum}}} {{name}}{{/vendorExtensions.x-klabis-patch-field}}{{/vars}}
 ) {
 }

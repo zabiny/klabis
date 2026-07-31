@@ -17,15 +17,24 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-halforms-access',
     'x-klabis-not-blank',
     'x-klabis-past',
+    'x-klabis-patch-field',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
 
 /**
- * Boolean flags standing in for Bean Validation constraints OpenAPI cannot express. They are
+ * Boolean flags standing in for things OpenAPI cannot express — Bean Validation constraints, and
+ * the JsonNullable wrapper that carries a PATCH body's absent/null/value tri-state. They are
  * emitted by the overridden pojo.mustache, which covers schema properties only.
+ *
+ * x-klabis-patch-field does not use `nullable: true` because openapi-generator ignores nullability
+ * in OpenAPI 3.1 mode — verified against both spellings, neither produced JsonNullable.
  */
-const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set(['x-klabis-not-blank', 'x-klabis-past']);
+const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set([
+    'x-klabis-not-blank',
+    'x-klabis-past',
+    'x-klabis-patch-field',
+]);
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
