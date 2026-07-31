@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.3.0
+version: 0.4.0
 ---
 
 # Klabis API Spec
@@ -135,6 +135,8 @@ alongside the types:
 | `required: [firstName, …]` | `@NotNull` (not `@NotBlank` — see below) |
 | `x-klabis-not-blank: true` | `@NotBlank` (Klabis extension; schema properties only) |
 | `x-klabis-past: true` | `@Past` (Klabis extension; schema properties only) |
+| `x-klabis-url: true` | `@URL` (Klabis extension; schema properties only) |
+| `x-klabis-class-constraint: <FQN>` | that annotation on the record itself — cross-field rules |
 | `maxLength` / `minLength` | `@Size(max=…, min=…)` |
 | `pattern` | `@Pattern(regexp=…)` |
 | `format: email` | `@Email` |
@@ -155,16 +157,49 @@ by the overridden `pojo.mustache`. Use it wherever the hand-written record had `
 also keeps the redundant `@NotNull` from `required`, which is harmless.
 
 **`x-klabis-past: true`** works the same way for `@Past`, which OpenAPI likewise cannot express
-(`format: date` says nothing about the range). Both live in `PROPERTY_ONLY_CONSTRAINT_EXTENSIONS` in
-`validate.mjs`; adding a third constraint of this kind means one entry there plus one branch in
-`pojo.mustache`.
+(`format: date` says nothing about the range), and **`x-klabis-url: true`** for `@URL`. All three
+live in `PROPERTY_ONLY_CONSTRAINT_EXTENSIONS` in `validate.mjs`; adding a fourth constraint of this
+kind means one entry there plus one branch in `pojo.mustache`.
+
+**Do not pair `x-klabis-url` with `format: uri`.** That format makes the generator emit
+`java.net.URI`, and Hibernate's `@URL` constrains `CharSequence` — the combination changes the Java
+type out from under the mapper and the constraint silently never applies. Leave the property a plain
+string and let the extension carry the validation.
 
 **Check the schema is actually generated before converting a `pattern` hack to it.** Not every
-schema in the spec has a generated counterpart — a request whose Java record is still hand-written
-(`CreateEventRequest`, `UpdateEventRequest` and their nested `*CategoryRequest` / `*RankingRequest` /
-`EntryFeeRequest`) is documented in the spec but excluded from `models`, so the extension emits
-nothing and the validation lives in the hand-written `@NotBlank`. Removing the `pattern` there is a
-pure regression. `find backend/build/generated/openapi -name '<Schema>.java'` settles it.
+schema in the spec has a generated counterpart — `CreateEventRequest` is documented in the spec but
+excluded from `models`, so the extension emits nothing there and the validation lives in the
+hand-written `@NotBlank`. Removing the `pattern` there is a pure regression.
+`find backend/build/generated/openapi -name '<Schema>.java'` settles it.
+
+### Cross-field rules: `x-klabis-class-constraint`
+
+A rule spanning two properties ("these deadlines must be non-decreasing") has no OpenAPI keyword, and
+the `@AssertTrue` accessor that used to express it cannot survive migration — a generated record has
+no method bodies. Write a class-level Bean Validation constraint instead and name it on the schema:
+
+```yaml
+UpdateEventRequest:
+  type: object
+  x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
+```
+
+The value is a fully-qualified annotation name **without** the leading `@`; `pojo.mustache` renders it
+above the record. Unlike `additionalModelTypeAnnotations` — which applies to every model in the task —
+this is keyed on the individual schema.
+
+The annotation is rendered with **no argument list**, so all its members must have defaults; a
+constraint needing a mandatory attribute means extending the template block to carry arguments.
+
+Two things the validator must handle, both learned from `DeadlinesOrderedValidator`:
+- **It must be `public`.** Hibernate's default factory instantiates validators reflectively and
+  rejects a package-private class with `HV000064`.
+- **Re-anchor the violation on the property** via `addPropertyNode`, or the 400 response stops naming
+  the offending field and just reports a class-level error.
+
+Reading the value usually means reflection over the record component, since the same rule tends to
+apply to both a POST and a PATCH request — and on the PATCH side it arrives wrapped in
+`JsonNullable<T>`.
 
 Two limits:
 - **Schema properties only.** Only `pojo.mustache` is overridden, so the generator would drop the

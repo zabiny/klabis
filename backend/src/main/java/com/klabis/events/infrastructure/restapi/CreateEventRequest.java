@@ -7,13 +7,11 @@ import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.URL;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -62,22 +60,12 @@ record CreateEventRequest(
             EntryFeeRequest fee
     ) {
         EventCategory toDomain() {
-            return new EventCategory(EventCategoryId.generate(), null, name, fee != null ? fee.toMoney() : null);
+            return new EventCategory(EventCategoryId.generate(), null, name, CreateEventRequest.toMoney(fee));
         }
     }
 
-    record EntryFeeRequest(
-            @NotNull(message = "Entry fee amount is required")
-            @DecimalMin(value = "0", message = "Entry fee amount must be non-negative")
-            BigDecimal amount,
-
-            @NotBlank(message = "Entry fee currency is required")
-            @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters")
-            String currency
-    ) {
-        Money toMoney() {
-            return Money.of(amount, Money.parseCurrency(currency));
-        }
+    private static Money toMoney(EntryFeeRequest fee) {
+        return fee == null ? null : Money.of(fee.amount(), Money.parseCurrency(fee.currency()));
     }
 
     @AssertTrue(message = "Deadlines must be in non-decreasing order")

@@ -34,7 +34,8 @@ class PatchRequestWrapperArchitectureTest {
 
     private static final List<Class<?>> PATCH_REQUESTS = List.of(
             com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
-            com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class);
+            com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class,
+            com.klabis.events.infrastructure.restapi.UpdateEventRequest.class);
 
     /**
      * gender is unwrapped on purpose. The generator strips property-level vendor extensions from a

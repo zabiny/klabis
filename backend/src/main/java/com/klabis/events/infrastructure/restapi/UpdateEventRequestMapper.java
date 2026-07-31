@@ -11,9 +11,11 @@ import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 class UpdateEventRequestMapper {
@@ -32,8 +34,12 @@ class UpdateEventRequestMapper {
         String organizer = request.organizer().orElse(existingEvent.getOrganizer());
         String websiteUrl = request.websiteUrl().orElse(
                 existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
-        LinkedHashSet<MemberId> coordinators = request.coordinators().orElse(new LinkedHashSet<>(existingEvent.getCoordinators()));
-        EventTypeId eventTypeId = request.eventTypeId().orElse(existingEvent.getEventTypeId().orElse(null));
+        LinkedHashSet<MemberId> coordinators = request.coordinators().isPresent()
+                ? toCoordinators(request.coordinators().orElseThrow())
+                : new LinkedHashSet<>(existingEvent.getCoordinators());
+        EventTypeId eventTypeId = request.eventTypeId().isPresent()
+                ? toEventTypeId(request.eventTypeId().orElseThrow())
+                : existingEvent.getEventTypeId().orElse(null);
         RegistrationDeadlines registrationDeadlines = request.deadlines().isPresent()
                 ? toRegistrationDeadlines(request.deadlines().orElseThrow())
                 : existingEvent.getRegistrationDeadlines();
@@ -49,12 +55,28 @@ class UpdateEventRequestMapper {
     }
 
     /**
+     * A cleared coordinator list is an empty set rather than null — the command's coordinators are
+     * always a collection, and the domain reads "no coordinators" from emptiness.
+     */
+    private static LinkedHashSet<MemberId> toCoordinators(Collection<UUID> coordinators) {
+        if (coordinators == null) {
+            return new LinkedHashSet<>();
+        }
+        return coordinators.stream().map(MemberId::new)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static EventTypeId toEventTypeId(UUID eventTypeId) {
+        return eventTypeId == null ? null : new EventTypeId(eventTypeId);
+    }
+
+    /**
      * Applies the id / no-id / missing-id semantics from the design: a request category carrying
      * an {@code id} must reference one already on this event (updates name/fee, id and any
      * registration links are preserved); a request category without an {@code id} is new and gets
      * a freshly generated one; any existing category id absent from the request is dropped.
      */
-    private static List<EventCategory> toCategories(List<UpdateEventRequest.CategoryRequest> requested, Event existingEvent) {
+    private static List<EventCategory> toCategories(List<UpdateEventCategoryRequest> requested, Event existingEvent) {
         if (requested == null) {
             return List.of();
         }
@@ -66,24 +88,25 @@ class UpdateEventRequestMapper {
                     if (request.id() == null) {
                         return new EventCategory(EventCategoryId.generate(), null, request.name(), toMoney(request.fee()));
                     }
-                    EventCategory existing = existingById.get(request.id());
+                    EventCategoryId id = new EventCategoryId(request.id());
+                    EventCategory existing = existingById.get(id);
                     if (existing == null) {
                         throw new BusinessRuleViolationException(
-                                "Category id '" + request.id() + "' does not belong to this event") {};
+                                "Category id '" + id + "' does not belong to this event") {};
                     }
                     return new EventCategory(existing.id(), existing.orisId(), request.name(), toMoney(request.fee()));
                 })
                 .toList();
     }
 
-    private static EventRanking toRanking(UpdateEventRequest.RankingRequest rankingRequest) {
+    private static EventRanking toRanking(UpdateEventRankingRequest rankingRequest) {
         if (rankingRequest == null) {
             return null;
         }
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
     }
 
-    private static Money toMoney(UpdateEventRequest.EntryFeeRequest feeRequest) {
+    private static Money toMoney(EntryFeeRequest feeRequest) {
         if (feeRequest == null) {
             return null;
         }

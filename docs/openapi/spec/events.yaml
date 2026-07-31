@@ -1311,15 +1311,12 @@ components:
         name:
           type: string
 
-    # CreateEventRequest and UpdateEventRequest stay hand-written and are mapped onto the existing
-    # classes via schemaMappings (see build.gradle.kts) rather than generated:
-    #   - CreateEventRequest has a cross-field business rule (deadlines must be non-decreasing,
-    #     Event.CreateEvent.isDeadlinesOrdered @AssertTrue) that OpenAPI cannot express.
-    #   - UpdateEventRequest is a PATCH request whose every property is a JsonNullable<T> wrapper —
-    #     same pattern as members.yaml's UpdateMemberRequest. "required" only means "present"; the
-    #     JsonNullable absent/null/value tri-state has no OpenAPI equivalent (see klabis-api-spec
-    #     skill), and there is a matching @AssertTrue on the deadlines field there too.
-    # Both are documented below to match the actual wire format for the frontend generator.
+    # CreateEventRequest stays hand-written and is mapped onto the existing class via schemaMappings
+    # (see build.gradle.kts): it carries domain conversion methods (toRegistrationDeadlines,
+    # toCategories, CategoryRequest.toDomain, EntryFeeRequest.toMoney) that EventController calls
+    # directly, and a generated record cannot carry a method body. Extracting those into a mapper —
+    # as updateEvent already has — is what would make it generatable; that is its own change.
+    # It is documented here to match the actual wire format for the frontend generator.
     CreateEventRequest:
       type: object
       description: |
@@ -1390,81 +1387,65 @@ components:
 
     UpdateEventRequest:
       type: object
+      x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
       description: |
         Partial update request. Every property is a JsonNullable wrapper: an absent property is left
         untouched, whereas an explicitly null value clears the field (where the underlying field is
         optional). Category `id` present = update an existing category (must belong to this event);
         absent = a new category, server assigns a fresh id. Deadlines, when provided, must be in
         non-decreasing order.
+
+        Properties are inlined rather than sharing PatchField* wrapper schemas: a shared schema
+        cannot carry per-property constraints, and the generator drops maxLength/pattern from a
+        mapped schema. See the klabis-api-spec skill.
       properties:
         name:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: [string, 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
         eventDate:
-          $ref: '#/components/schemas/PatchFieldLocalDate'
+          type: [string, 'null']
+          format: date
         location:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: [string, 'null']
+          maxLength: 100
         organizer:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: [string, 'null']
+          maxLength: 10
+          x-klabis-not-blank: true
+        # No `format: uri`: it makes the generator emit java.net.URI, which @URL cannot validate
+        # (it constrains CharSequence) and which would change the mapper's contract. x-klabis-url
+        # carries the validation instead.
         websiteUrl:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: [string, 'null']
+          x-klabis-url: true
         coordinators:
-          $ref: '#/components/schemas/PatchFieldCoordinators'
+          type: [array, 'null']
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
         eventTypeId:
-          $ref: '#/components/schemas/PatchFieldEventTypeId'
+          type: [string, 'null']
+          format: uuid
         deadlines:
-          $ref: '#/components/schemas/PatchFieldDeadlines'
+          type: [array, 'null']
+          maxItems: 3
+          items:
+            type: string
+            format: date
         categories:
-          $ref: '#/components/schemas/PatchFieldEventCategories'
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/UpdateEventCategoryRequest'
         ranking:
-          $ref: '#/components/schemas/PatchFieldEventRanking'
+          oneOf:
+            - $ref: '#/components/schemas/UpdateEventRankingRequest'
+            - type: 'null'
         baseEntryFee:
-          $ref: '#/components/schemas/PatchFieldEntryFeeRequest'
-
-    PatchFieldString:
-      type: string
-      nullable: true
-
-    PatchFieldLocalDate:
-      type: string
-      format: date
-      nullable: true
-
-    PatchFieldCoordinators:
-      type: array
-      nullable: true
-      uniqueItems: true
-      items:
-        type: string
-        format: uuid
-
-    PatchFieldEventTypeId:
-      type: string
-      format: uuid
-      nullable: true
-
-    PatchFieldDeadlines:
-      type: array
-      nullable: true
-      maxItems: 3
-      items:
-        type: string
-        format: date
-
-    PatchFieldEventCategories:
-      type: array
-      nullable: true
-      items:
-        $ref: '#/components/schemas/UpdateEventCategoryRequest'
-
-    PatchFieldEventRanking:
-      allOf:
-        - $ref: '#/components/schemas/UpdateEventRankingRequest'
-      nullable: true
-
-    PatchFieldEntryFeeRequest:
-      allOf:
-        - $ref: '#/components/schemas/EntryFeeRequest'
-      nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/EntryFeeRequest'
+            - type: 'null'
 
     UpdateEventCategoryRequest:
       type: object

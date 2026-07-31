@@ -367,9 +367,9 @@ fun openApiModule(
                 "useSpringBoot3" to "true",
                 "useJakartaEe" to "true",
                 "documentationProvider" to "none",
-                // Left off: the generator ignores nullability in OpenAPI 3.1 mode (verified against
-                // both `nullable: true` and `type: [x, "null"]`), so JsonNullable comes from
-                // x-klabis-patch-field in pojo.mustache instead.
+                // Emits JsonNullable<T> for a nullable property, giving PATCH bodies their
+                // absent/null/value tri-state. Requires the OpenAPI 3.1 spelling
+                // `type: [x, "null"]` — the 3.0 `nullable: true` keyword leaves isNullable false.
                 "openApiNullable" to "true",
                 "useTags" to "true",
                 "additionalModelTypeAnnotations" to
@@ -501,14 +501,16 @@ openApiModule(
         "RegisterEventRequest",
         "EditRegistrationRequest",
         "CreateCategoryPresetRequest",
-        "UpdateCategoryPresetRequest"
+        "UpdateCategoryPresetRequest",
+        "UpdateEventRequest",
+        "UpdateEventCategoryRequest",
+        "UpdateEventRankingRequest",
+        "EntryFeeRequest"
     ),
     mappings = mapOf(
-        // CreateEventRequest/UpdateEventRequest stay hand-written — see the comment above
-        // CreateEventRequest in events.yaml for why (cross-field @AssertTrue validation on create,
-        // PatchField<T> wrappers on update — neither is representable purely in OpenAPI).
+        // CreateEventRequest stays hand-written — see the comment above it in events.yaml (it
+        // carries domain conversion methods the controller calls; a generated record cannot).
         "CreateEventRequest" to "com.klabis.events.infrastructure.restapi.CreateEventRequest",
-        "UpdateEventRequest" to "com.klabis.events.infrastructure.restapi.UpdateEventRequest",
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
