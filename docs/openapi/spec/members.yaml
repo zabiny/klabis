@@ -234,7 +234,7 @@ paths:
       summary: Update member details
       description: |
         Partial update — only the fields present in the request body are changed. Each field is a
-        PatchField wrapper, so omitting a field and setting it to null are different operations.
+        JsonNullable wrapper, so omitting a field and setting it to null are different operations.
         Fields the caller is not authorized to change are rejected.
       security:
         - KlabisAuth: [MEMBERS]
@@ -663,46 +663,91 @@ components:
     UpdateMemberRequest:
       type: object
       description: |
-        Partial update request. Every property is a PatchField wrapper: an absent property is left
-        untouched, whereas an explicitly null value clears the field.
-      required: [firstName, lastName]
+        Partial update request. An absent property is left untouched, whereas an explicitly null
+        value clears the field — where the underlying field is optional.
+
+        Clearing a field the domain requires is rejected. firstName, lastName, dateOfBirth and
+        gender have no cleared state, so a null there is treated as "leave alone". An explicit null
+        is refused for email or phone unless a guardian still covers that contact, for guardian
+        when the member is a minor, and for birthNumber when the member is a Czech national.
+      # Properties are inlined rather than sharing named wrapper schemas: seven of them are plain
+      # strings with different constraints (email 255, chipNumber 50 + digits, firstName 100), and a
+      # shared schema can only carry one set.
       properties:
         email:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 255
         phone:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 50
         address:
-          $ref: '#/components/schemas/PatchFieldAddressRequest'
+          oneOf:
+            - $ref: '#/components/schemas/AddressRequest'
+            - type: 'null'
         firstName:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
         lastName:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
         dateOfBirth:
-          $ref: '#/components/schemas/PatchFieldLocalDate'
+          type: ['string', 'null']
+          format: date
+          x-klabis-authority: MEMBERS_MANAGE
+        # gender keeps allOf, not the nullable oneOf the other $ref properties use: the generator
+        # strips property-level vendor extensions from a composed schema, and losing
+        # x-klabis-authority here would make an admin-only field writable by anyone. Nothing is
+        # given up — gender has no cleared state (PersonalInformation rejects null), so the
+        # tri-state wrapper would be unused.
         gender:
-          $ref: '#/components/schemas/PatchFieldGender'
+          allOf:
+            - $ref: '#/components/schemas/Gender'
+          x-klabis-authority: MEMBERS_MANAGE
         chipNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 50
+          pattern: '^[0-9]+$'
         nationality:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          minLength: 2
+          maxLength: 2
         identityCard:
-          $ref: '#/components/schemas/PatchFieldIdentityCardDto'
+          oneOf:
+            - $ref: '#/components/schemas/IdentityCardDto'
+            - type: 'null'
         medicalCourse:
-          $ref: '#/components/schemas/PatchFieldMedicalCourseDto'
+          oneOf:
+            - $ref: '#/components/schemas/MedicalCourseDto'
+            - type: 'null'
         trainerLicense:
-          $ref: '#/components/schemas/PatchFieldTrainerLicenseDto'
+          oneOf:
+            - $ref: '#/components/schemas/TrainerLicenseDto'
+            - type: 'null'
         refereeLicense:
-          $ref: '#/components/schemas/PatchFieldRefereeLicenseDto'
+          oneOf:
+            - $ref: '#/components/schemas/RefereeLicenseDto'
+            - type: 'null'
         drivingLicenseGroup:
-          $ref: '#/components/schemas/PatchFieldDrivingLicenseGroup'
+          oneOf:
+            - $ref: '#/components/schemas/DrivingLicenseGroup'
+            - type: 'null'
         dietaryRestrictions:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 500
         birthNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          x-klabis-authority: MEMBERS_MANAGE
         bankAccountNumber:
-          $ref: '#/components/schemas/PatchFieldString'
+          type: ['string', 'null']
+          maxLength: 50
         guardian:
-          $ref: '#/components/schemas/PatchFieldGuardianDTO'
+          oneOf:
+            - $ref: '#/components/schemas/GuardianDTO'
+            - type: 'null'
 
     SuspendMembershipRequest:
       type: object
@@ -845,48 +890,3 @@ components:
       type: string
       enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
 
-    # --- PatchField wrappers -----------------------------------------------
-    #
-    # PatchField<T> distinguishes "not provided" from "provided as null". On the wire the wrapper is
-    # transparent: PatchFieldDeserializer reads the value directly, so the payload is
-    # `"email": "a@b.cz"`, never `{"provided": true, ...}`.
-    #
-    # Springdoc gets this wrong — it introspects the Java type and reports
-    # `{type: object, properties: {provided: boolean}}`, which no client ever sends or receives.
-    # These schemas describe the wire format; the drift check will not flag the difference because
-    # it compares schemas by name.
-    #
-    # They exist as named schemas so the generator can later emit PatchField<T> rather than a bare T.
-
-    PatchFieldString:
-      type: string
-      nullable: true
-
-    PatchFieldLocalDate:
-      type: string
-      format: date
-      nullable: true
-
-    PatchFieldGender:
-      $ref: '#/components/schemas/Gender'
-
-    PatchFieldDrivingLicenseGroup:
-      $ref: '#/components/schemas/DrivingLicenseGroup'
-
-    PatchFieldAddressRequest:
-      $ref: '#/components/schemas/AddressRequest'
-
-    PatchFieldGuardianDTO:
-      $ref: '#/components/schemas/GuardianDTO'
-
-    PatchFieldIdentityCardDto:
-      $ref: '#/components/schemas/IdentityCardDto'
-
-    PatchFieldMedicalCourseDto:
-      $ref: '#/components/schemas/MedicalCourseDto'
-
-    PatchFieldTrainerLicenseDto:
-      $ref: '#/components/schemas/TrainerLicenseDto'
-
-    PatchFieldRefereeLicenseDto:
-      $ref: '#/components/schemas/RefereeLicenseDto'

@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeAll;
+import org.openapitools.jackson.nullable.JsonNullable;
+import org.openapitools.jackson.nullable.JsonNullableJakartaValueExtractor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,14 +20,14 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Proves that standard JSR 303 constraint annotations work on PatchField fields
- * via PatchFieldValueExtractor registered through META-INF/services.
+ * Proves that standard JSR 303 constraint annotations work on JsonNullable fields
+ * via JsonNullableJakartaValueExtractor registered through META-INF/services.
  * <p>
  * The validator is built with explicit extractor registration to guarantee the
  * META-INF/services discovery mechanism is active in the test JVM classloader context.
  */
-@DisplayName("PatchField — standard JSR 303 validation")
-class PatchFieldValidationTest {
+@DisplayName("JsonNullable — standard JSR 303 validation")
+class JsonNullableValidationTest {
 
     private static Validator validator;
 
@@ -36,23 +38,23 @@ class PatchFieldValidationTest {
 
     private record TestRequest(
             @NotBlank(message = "notBlank field must not be blank")
-            PatchField<String> notBlankField,
+            JsonNullable<String> notBlankField,
 
             @Size(max = 5, message = "size field must not exceed 5 characters")
-            PatchField<String> sizeField,
+            JsonNullable<String> sizeField,
 
             @Pattern(regexp = "[0-9]+", message = "pattern field must contain only digits")
-            PatchField<String> patternField,
+            JsonNullable<String> patternField,
 
             @Valid
-            PatchField<NestedDto> nestedField
+            JsonNullable<NestedDto> nestedField
     ) {}
 
     @BeforeAll
     static void setUpValidator() {
         validator = Validation.byProvider(HibernateValidator.class)
                 .configure()
-                .addValueExtractor(new PatchFieldValueExtractor())
+                .addValueExtractor(new JsonNullableJakartaValueExtractor())
                 .buildValidatorFactory()
                 .getValidator();
     }
@@ -64,17 +66,17 @@ class PatchFieldValidationTest {
     }
 
     @Nested
-    @DisplayName("Not-provided PatchField — constraints never evaluated")
+    @DisplayName("Not-provided JsonNullable — constraints never evaluated")
     class NotProvidedTests {
 
         @Test
         @DisplayName("Not-provided field with @NotBlank produces no violations")
         void notProvided_notBlank_noViolations() {
             var request = new TestRequest(
-                    PatchField.notProvided(),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.undefined(),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "notBlankField");
@@ -86,10 +88,10 @@ class PatchFieldValidationTest {
         @DisplayName("Not-provided field with @Size produces no violations")
         void notProvided_size_noViolations() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.notProvided(),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.undefined(),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "sizeField");
@@ -101,10 +103,10 @@ class PatchFieldValidationTest {
         @DisplayName("Not-provided field with @Pattern produces no violations")
         void notProvided_pattern_noViolations() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.undefined(),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "patternField");
@@ -121,10 +123,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided null + @NotBlank produces violation")
         void providedNull_notBlank_violation() {
             var request = new TestRequest(
-                    PatchField.of(null),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of(null),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "notBlankField");
@@ -137,10 +139,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided null + @Size produces no violation (JSR 303 null-permissive)")
         void providedNull_size_noViolation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of(null),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of(null),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "sizeField");
@@ -152,10 +154,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided null + @Pattern produces no violation (JSR 303 null-permissive)")
         void providedNull_pattern_noViolation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of(null),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of(null),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "patternField");
@@ -172,10 +174,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided blank + @NotBlank produces violation")
         void providedBlank_notBlank_violation() {
             var request = new TestRequest(
-                    PatchField.of("   "),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("   "),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "notBlankField");
@@ -193,10 +195,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided too-long string + @Size(max=5) produces violation")
         void providedTooLong_size_violation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("toolong"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("toolong"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "sizeField");
@@ -209,10 +211,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided valid-length string + @Size(max=5) produces no violation")
         void providedValidLength_size_noViolation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "sizeField");
@@ -229,10 +231,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided non-matching string + @Pattern produces violation")
         void providedNonMatching_pattern_violation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("abc123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("abc123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "patternField");
@@ -245,10 +247,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided matching string + @Pattern produces no violation")
         void providedMatching_pattern_noViolation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("12345"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("12345"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "patternField");
@@ -258,17 +260,17 @@ class PatchFieldValidationTest {
     }
 
     @Nested
-    @DisplayName("@Valid cascade into nested DTO inside PatchField")
+    @DisplayName("@Valid cascade into nested DTO inside JsonNullable")
     class ValidCascadeTests {
 
         @Test
         @DisplayName("Provided valid nested DTO produces no violations")
         void providedValidNested_noViolations() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.of(new NestedDto("valid name"))
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.of(new NestedDto("valid name"))
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "nestedField");
@@ -280,10 +282,10 @@ class PatchFieldValidationTest {
         @DisplayName("Provided invalid nested DTO produces violation for nested field")
         void providedInvalidNested_violation() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.of(new NestedDto(""))
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.of(new NestedDto(""))
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "nestedField");
@@ -293,13 +295,13 @@ class PatchFieldValidationTest {
         }
 
         @Test
-        @DisplayName("Not-provided nested PatchField produces no violations")
+        @DisplayName("Not-provided nested JsonNullable produces no violations")
         void notProvided_nested_noViolations() {
             var request = new TestRequest(
-                    PatchField.of("ok"),
-                    PatchField.of("ok"),
-                    PatchField.of("123"),
-                    PatchField.notProvided()
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("ok"),
+                    JsonNullable.of("123"),
+                    JsonNullable.undefined()
             );
 
             Set<ConstraintViolation<TestRequest>> violations = validateField(request, "nestedField");

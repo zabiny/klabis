@@ -122,6 +122,11 @@ dependencies {
     // Apache Commons CSV for accommodation list CSV export
     implementation("org.apache.commons:commons-csv:1.13.0")
 
+    // JsonNullable: tri-state (absent / null / value) wrapper for PATCH request bodies.
+    // 0.2.10+ ships a Jackson 3 module (tools.jackson); the Jackson 2 artifacts it also declares
+    // stay off the classpath because both are `provided` upstream.
+    implementation("org.openapitools:jackson-databind-nullable:0.2.11")
+
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
     implementation("org.jmolecules:jmolecules-hexagonal-architecture")
@@ -362,7 +367,10 @@ fun openApiModule(
                 "useSpringBoot3" to "true",
                 "useJakartaEe" to "true",
                 "documentationProvider" to "none",
-                "openApiNullable" to "false",
+                // Emits JsonNullable<T> for a nullable property, giving PATCH bodies their
+                // absent/null/value tri-state. Requires the OpenAPI 3.1 spelling
+                // `type: [x, "null"]` — the 3.0 `nullable: true` keyword leaves isNullable false.
+                "openApiNullable" to "true",
                 "useTags" to "true",
                 "additionalModelTypeAnnotations" to
                     "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"
@@ -402,7 +410,8 @@ openApiModule(
         "RefereeLicenseDto",
         "RegisterMemberRequest",
         "AddressRequest",
-        "SuspendMembershipRequest"
+        "SuspendMembershipRequest",
+        "UpdateMemberRequest"
     ),
     mappings = mapOf(
         "Gender" to "com.klabis.members.domain.Gender",
@@ -411,10 +420,7 @@ openApiModule(
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
-        // UpdateMemberRequest stays hand-written — every property is a PatchField<T> wrapper, whose
-        // absent/null/value tri-state has no OpenAPI equivalent.
-        "UpdateMemberRequest" to "com.klabis.members.infrastructure.restapi.UpdateMemberRequest"
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
@@ -495,14 +501,15 @@ openApiModule(
         "RegisterEventRequest",
         "EditRegistrationRequest",
         "CreateCategoryPresetRequest",
-        "UpdateCategoryPresetRequest"
+        "UpdateCategoryPresetRequest",
+        "UpdateEventRequest",
+        "UpdateEventCategoryRequest",
+        "UpdateEventRankingRequest",
+        "EntryFeeRequest",
+        "CreateEventRequest",
+        "CreateEventCategoryRequest"
     ),
     mappings = mapOf(
-        // CreateEventRequest/UpdateEventRequest stay hand-written — see the comment above
-        // CreateEventRequest in events.yaml for why (cross-field @AssertTrue validation on create,
-        // PatchField<T> wrappers on update — neither is representable purely in OpenAPI).
-        "CreateEventRequest" to "com.klabis.events.infrastructure.restapi.CreateEventRequest",
-        "UpdateEventRequest" to "com.klabis.events.infrastructure.restapi.UpdateEventRequest",
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
@@ -667,12 +674,10 @@ openApiModule(
         "CreateTrainingGroupRequest",
         "TrainingGroupAddMemberRequest",
         "AddTrainerRequest",
-        "AgeRangeRequest"
-        // UpdateTrainingGroupRequest stays hand-written — every property is a PatchField<T>
-        // wrapper, which OpenAPI cannot express (see the comment on that schema in groups.yaml).
+        "AgeRangeRequest",
+        "UpdateTrainingGroupRequest"
     ),
     mappings = mapOf(
-        "UpdateTrainingGroupRequest" to "com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest",
         "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
         "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
         // Payload type for getTrainingGroup — same envelope-stripping mapping as every other

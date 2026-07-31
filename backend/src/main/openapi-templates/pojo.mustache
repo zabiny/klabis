@@ -16,6 +16,14 @@
  * {{description}}{{^description}}{{classname}}{{/description}}
  */
 {{>additionalModelTypeAnnotations}}
+{{! Class-level constraints, for cross-field rules OpenAPI cannot express. Unlike
+    additionalModelTypeAnnotations — which is global to every model in the task — this is keyed on
+    the individual schema. The value is a fully-qualified annotation name written without its
+    leading '@', and rendered with no argument list — so the annotation's members must all have
+    defaults. Supporting a constraint with a mandatory attribute means extending this block to
+    carry arguments. See x-klabis-class-constraint in the klabis-api-spec skill. }}
+{{#vendorExtensions.x-klabis-class-constraint}}@{{.}}
+{{/vendorExtensions.x-klabis-class-constraint}}
 {{>generatedAnnotation}}
 public record {{classname}}(
     {{! Field-level security: x-klabis-* extensions on the spec property map 1:1 onto the
@@ -27,12 +35,21 @@ public record {{classname}}(
         RegisterMemberRequest and MemberDetailsResponse) keep the same runtime validation the
         hand-written DTOs had.
 
-        @NotBlank and @Past are the exceptions: OpenAPI has no keyword for either ("not blank",
-        "strictly in the past"), so they come from x-klabis-not-blank / x-klabis-past rather than
-        the partial. A field that is both `required` and not-blank therefore carries a redundant
+        @NotBlank, @Past and @URL are the exceptions: OpenAPI has no keyword for any of them ("not
+        blank", "strictly in the past", "a syntactically valid URL" — `format: uri` is documentation
+        only and the generator emits no constraint for it), so they come from x-klabis-not-blank /
+        x-klabis-past / x-klabis-url rather than the partial. A field that is both `required` and
+        not-blank therefore carries a redundant
         @NotNull from the partial as well; that is harmless, and suppressing it would mean forking
-        the stock beanValidation template too. }}
+        the stock beanValidation template too.
+
+        A nullable property becomes JsonNullable<T>, giving a PATCH body the absent/null/value
+        tri-state. This mirrors the stock pojo.mustache, which gates the same wrapper on
+        openApiNullable + isNullable; the record form just has no setters to also guard. The spec
+        must use the OpenAPI 3.1 spelling `type: [x, "null"]` — the 3.0 `nullable: true` keyword is
+        not recognised in a 3.1 document and leaves isNullable false. The type is fully qualified,
+        so model.mustache needs no extra import. }}
     {{#vars}}{{^-first}},
-    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{{datatypeWithEnum}}} {{name}}{{/vars}}
+    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#vendorExtensions.x-klabis-url}}@org.hibernate.validator.constraints.URL {{/vendorExtensions.x-klabis-url}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{#openApiNullable}}{{#isNullable}}org.openapitools.jackson.nullable.JsonNullable<{{{datatypeWithEnum}}}>{{/isNullable}}{{^isNullable}}{{{datatypeWithEnum}}}{{/isNullable}}{{/openApiNullable}}{{^openApiNullable}}{{{datatypeWithEnum}}}{{/openApiNullable}} {{name}}{{/vars}}
 ) {
 }

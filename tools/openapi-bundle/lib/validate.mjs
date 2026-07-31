@@ -17,6 +17,8 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-halforms-access',
     'x-klabis-not-blank',
     'x-klabis-past',
+    'x-klabis-url',
+    'x-klabis-class-constraint',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
@@ -25,7 +27,11 @@ export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE'
  * Boolean flags standing in for Bean Validation constraints OpenAPI cannot express. They are
  * emitted by the overridden pojo.mustache, which covers schema properties only.
  */
-const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set(['x-klabis-not-blank', 'x-klabis-past']);
+const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set([
+    'x-klabis-not-blank',
+    'x-klabis-past',
+    'x-klabis-url',
+]);
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -147,6 +153,17 @@ export function validateSpec(document, {authorities}) {
 
             if (key === 'x-klabis-owner-id' && value !== true) {
                 errors.push({path: `${path}/${key}`, message: 'must be true when present'});
+            }
+
+            // Rendered verbatim after a '@' at class level by pojo.mustache, so a value that is not
+            // a fully-qualified annotation name becomes a compile error in generated code rather
+            // than anything diagnosable here.
+            if (key === 'x-klabis-class-constraint'
+                && (typeof value !== 'string' || !/^[a-z]\w*(\.\w+)+$/.test(value))) {
+                errors.push({
+                    path: `${path}/${key}`,
+                    message: 'must be a fully-qualified annotation class name, without the leading "@"',
+                });
             }
 
             if (PROPERTY_ONLY_CONSTRAINT_EXTENSIONS.has(key)) {

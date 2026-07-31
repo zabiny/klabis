@@ -1,10 +1,10 @@
 package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.patch.PatchField;
 import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -53,20 +53,22 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         UUID ownerIdFromPath = resolveOwnerIdFromPath(parameter.getMethod());
 
         for (RecordComponent component : components) {
-            if (!PatchField.class.isAssignableFrom(component.getType())) {
+            if (!JsonNullable.class.isAssignableFrom(component.getType())) {
                 continue;
             }
 
             Method accessor = component.getAccessor();
             accessor.setAccessible(true);
-            PatchField<?> fieldValue;
+            JsonNullable<?> fieldValue;
             try {
-                fieldValue = (PatchField<?>) accessor.invoke(record);
+                fieldValue = (JsonNullable<?>) accessor.invoke(record);
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to read record component: " + component.getName(), e);
             }
 
-            if (fieldValue == null || !fieldValue.isProvided()) {
+            // An explicit null is still "present", so submitting `"field": null` for a privileged
+            // field must be rejected rather than waved through as if it were absent.
+            if (fieldValue == null || !fieldValue.isPresent()) {
                 continue;
             }
 

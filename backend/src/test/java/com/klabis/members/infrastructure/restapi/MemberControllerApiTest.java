@@ -2055,7 +2055,7 @@ class MemberControllerApiTest {
 
             Mockito.verify(managementService).updateMember(
                     eq(new MemberId(memberId)),
-                    argThat((Member.UpdateMember cmd) -> cmd.email() != null && cmd.phone() == null)
+                    argThat((Member.UpdateMember cmd) -> cmd.email().isPresent() && !cmd.phone().isPresent())
             );
         }
     }

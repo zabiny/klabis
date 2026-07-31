@@ -23,6 +23,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -126,9 +127,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
-                assertThat(command.phone()).isNull();
-                assertThat(command.address()).isNull();
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("new.email@example.com"));
+                assertThat(command.phone().isPresent()).isFalse();
+                assertThat(command.address().isPresent()).isFalse();
             }
 
             @Test
@@ -154,9 +155,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isNull();
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address()).isNull();
+                assertThat(command.email().isPresent()).isFalse();
+                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address().isPresent()).isFalse();
             }
 
             @Test
@@ -187,13 +188,13 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isNull();
-                assertThat(command.phone()).isNull();
-                assertThat(command.address()).isNotNull();
-                assertThat(command.address().street()).isEqualTo("New Street 123");
-                assertThat(command.address().city()).isEqualTo("Prague");
-                assertThat(command.address().postalCode()).isEqualTo("11000");
-                assertThat(command.address().country()).isEqualTo("CZ");
+                assertThat(command.email().isPresent()).isFalse();
+                assertThat(command.phone().isPresent()).isFalse();
+                assertThat(command.address().isPresent()).isTrue();
+                assertThat(command.address().orElseThrow().street()).isEqualTo("New Street 123");
+                assertThat(command.address().orElseThrow().city()).isEqualTo("Prague");
+                assertThat(command.address().orElseThrow().postalCode()).isEqualTo("11000");
+                assertThat(command.address().orElseThrow().country()).isEqualTo("CZ");
             }
 
             @Test
@@ -223,9 +224,9 @@ class UpdateMemberApiTest {
 
                 var command = captor.getValue();
                 assertThat(command.gender()).isEqualTo(Gender.FEMALE);
-                assertThat(command.chipNumber()).isEqualTo("12345");
-                assertThat(command.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
-                assertThat(command.dietaryRestrictions()).isEqualTo("Vegetarian");
+                assertThat(command.chipNumber().orElseThrow()).isEqualTo("12345");
+                assertThat(command.drivingLicenseGroup().orElseThrow()).isEqualTo(DrivingLicenseGroup.B);
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Vegetarian");
             }
 
             @Test
@@ -278,8 +279,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
+                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
@@ -305,8 +306,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("850520/9876"));
-                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("850520/9876"));
+                assertThat(command.bankAccountNumber().isPresent()).isFalse();
             }
 
             @Test
@@ -335,10 +336,14 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
+                assertThat(command.birthNumber().isPresent()).isTrue();
+                assertThat(command.birthNumber().orElseThrow()).isNull();
+                assertThat(command.bankAccountNumber().isPresent()).isTrue();
+                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
+                assertThat(command.chipNumber().isPresent()).isTrue();
+                assertThat(command.chipNumber().orElseThrow()).isNull();
+                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
+                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
             }
 
             @Test
@@ -364,8 +369,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber().isPresent()).isFalse();
+                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
@@ -406,9 +411,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.identityCard()).isNotNull();
-                assertThat(command.medicalCourse()).isNotNull();
-                assertThat(command.trainerLicense()).isNotNull();
+                assertThat(command.identityCard().isPresent()).isTrue();
+                assertThat(command.medicalCourse().isPresent()).isTrue();
+                assertThat(command.trainerLicense().isPresent()).isTrue();
             }
 
             @Test
@@ -435,8 +440,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("partial.update@example.com"));
-                assertThat(command.dietaryRestrictions()).isEqualTo("No dairy");
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("partial.update@example.com"));
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("No dairy");
             }
         }
 
@@ -468,7 +473,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
             }
 
             @Test
@@ -495,7 +500,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
+                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420987654321"));
             }
 
             @Test
@@ -527,9 +532,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.address()).isNotNull();
-                assertThat(command.address().street()).isEqualTo("My New Address 456");
-                assertThat(command.address().city()).isEqualTo("Brno");
+                assertThat(command.address().isPresent()).isTrue();
+                assertThat(command.address().orElseThrow().street()).isEqualTo("My New Address 456");
+                assertThat(command.address().orElseThrow().city()).isEqualTo("Brno");
             }
 
             @Test
@@ -556,7 +561,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Gluten-free, no nuts");
             }
 
             @Test
@@ -585,9 +590,12 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
+                assertThat(command.chipNumber().isPresent()).isTrue();
+                assertThat(command.chipNumber().orElseThrow()).isNull();
+                assertThat(command.bankAccountNumber().isPresent()).isTrue();
+                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
+                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
+                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
             }
 
             @Test
