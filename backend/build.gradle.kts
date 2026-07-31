@@ -399,7 +399,12 @@ openApiModule(
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>"
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        // suspendMember's 409 body. The real types are package-private nested records of
+        // MembersExceptionHandler, so there is nothing to map onto; Object keeps the generator
+        // from importing a model it was never asked to generate. Response-only — the interface
+        // declares ResponseEntity<Void>, so this mapping never reaches a method signature.
+        "SuspensionBlockedWarning" to "java.lang.Object"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(

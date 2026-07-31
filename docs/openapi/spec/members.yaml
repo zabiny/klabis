@@ -276,7 +276,8 @@ paths:
       summary: Suspend a membership
       description: |
         Suspends an active membership. Refused when the member still has outstanding debt on their
-        finance account.
+        finance account, or when they are the sole owner of at least one group — a successor must
+        be designated first.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -305,7 +306,19 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          # MembersExceptionHandler answers both suspension blockers with a bespoke JSON body
+          # carrying the data the caller needs to resolve them, not with a ProblemDetail — hence
+          # the local response instead of the shared #/components/responses/Conflict.
+          description: |
+            Suspension is blocked — either the member owes money on their finance account, or they
+            are the sole owner of at least one group.
+          content:
+            # application/json, not the hal-forms/problem+json this operation otherwise produces:
+            # the body comes from a @RestControllerAdvice handler returning a plain record, which
+            # is not bound by the handler method's own produces list.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuspensionBlockedWarning'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
@@ -314,6 +327,8 @@ paths:
       operationId: resumeMember
       tags: [Members]
       summary: Resume a suspended membership
+      description: |
+        Reactivates a suspended membership. Refused when the membership is already active.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -762,6 +777,66 @@ components:
         note:
           type: string
           maxLength: 500
+
+    # The 409 body of suspendMember, one of two shapes — see the schemaMapping in
+    # backend/build.gradle.kts for why it is mapped away rather than generated. Named rather than
+    # left inline: an inline oneOf makes the generator synthesise a `SuspendMember409Response`
+    # type and import it into MembersApi, and there would be no schema name to map that onto.
+    SuspensionBlockedWarning:
+      oneOf:
+        - $ref: '#/components/schemas/OutstandingDebtWarning'
+        - $ref: '#/components/schemas/LastOwnerWarning'
+
+    OutstandingDebtWarning:
+      type: object
+      description: The member owes money — settle the account before suspending them.
+      required: [balance, accountLink]
+      properties:
+        balance:
+          $ref: '#/components/schemas/MonetaryAmount'
+        accountLink:
+          type: string
+          format: uri
+          description: Absolute URL of the member's finance account
+
+    LastOwnerWarning:
+      type: object
+      description: |
+        The member is the sole owner of the listed groups. Each one needs another owner (or must be
+        dissolved) before the suspension can go through.
+      required: [message, affectedGroups]
+      properties:
+        message:
+          type: string
+        affectedGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/AffectedGroup'
+
+    AffectedGroup:
+      type: object
+      required: [groupId, groupName, groupType]
+      properties:
+        groupId:
+          type: string
+          format: uuid
+        groupName:
+          type: string
+        groupType:
+          type: string
+          enum: [FREE, FAMILY, TRAINING]
+          description: Which of the three group aggregates the member owns
+
+    MonetaryAmount:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          description: Negative when the member is in debt
+        currency:
+          type: string
+          description: ISO 4217 code
 
     # --- Shared value objects ----------------------------------------------
 
