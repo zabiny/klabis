@@ -129,6 +129,33 @@ describe('validateSpec', () => {
             },
         })).toEqual([]);
     });
+
+    // Two modules picking the same operationId reads fine in each file on its own, and the
+    // consequence lands in the frontend build: haltypes.mjs names its exported types after the
+    // operationId, so a collision emits duplicate TypeScript declarations.
+    it('rejects an operationId declared by more than one operation', () => {
+        const errors = validate({
+            paths: {
+                '/api/groups/{id}': {get: {operationId: 'getGroup', responses: {}}},
+                '/api/membership-fee-groups/{id}': {get: {operationId: 'getGroup', responses: {}}},
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be unique');
+        expect(errors[0].message).toContain('GET /api/groups/{id}');
+        expect(errors[0].message).toContain('GET /api/membership-fee-groups/{id}');
+    });
+
+    it('allows the same operationId to appear once per document', () => {
+        expect(validate({
+            paths: {
+                '/api/groups/{id}': {
+                    get: {operationId: 'getGroup', responses: {}},
+                    patch: {operationId: 'updateGroup', responses: {}},
+                },
+            },
+        })).toEqual([]);
+    });
 });
 
 describe('validateSpec — x-klabis-authority on operations', () => {

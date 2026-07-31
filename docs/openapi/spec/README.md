@@ -1,17 +1,23 @@
 # Hand-written OpenAPI spec
 
-This directory is being established as **the** source of truth for the Klabis REST API. Java DTOs,
-API interfaces and frontend HAL types will all be generated from it.
+This directory is **the** source of truth for the Klabis REST API. Java DTOs, API interfaces and
+frontend types are all generated from it.
 
-## Current state: migration in progress
+## Pipeline
 
-The API is **still code-first**. Nothing here is generated from yet.
+```
+docs/openapi/spec/  ──openapiBundle──▶  docs/openapi/klabis-full.json  ──npm run openapi──▶  frontend types
+        │
+        └──────────openApiGenerate<Module>──────────▶  backend DTOs + *Api interfaces
+```
 
-- `docs/openapi/klabis-full.json` — committed artifact, currently still produced by springdoc
-- `docs/openapi/generated/klabis-codefirst.json` — springdoc output (gitignored), input for the drift check
-- `docs/openapi/spec/` — hand-written spec, currently only a skeleton
+- `docs/openapi/spec/` — hand-written spec; edit here
+- `docs/openapi/klabis-full.json` — committed bundle, generated; never hand-edit
+- `docs/openapi/generated/klabis-codefirst.json` — springdoc dump of what the running app serves
+  (gitignored). Nothing depends on it; it exists only for ad-hoc comparison against the spec.
 
-Run `./gradlew openapiDriftCheck` (from `backend/`) to see which operations are not migrated yet.
+**Change an endpoint by editing the spec, not the Java.** A generated DTO or `*Api` interface edited
+by hand is overwritten on the next build.
 
 ## Layout
 
@@ -32,12 +38,14 @@ Run from `backend/`:
 
 | command | what it does |
 |---|---|
-| `./gradlew openapiBundle` | validates the spec and reports its size (does not write) |
-| `./gradlew openapiBundle -PopenapiOut=docs/openapi/klabis-full.json` | validates and writes the bundle |
-| `./gradlew openapiDriftCheck` | compares springdoc output against this spec |
-| `./gradlew openapiDriftCheck -PopenapiModule=/api/members` | same, restricted to one module |
+| `./gradlew openapiBundle` | validates the spec and writes `docs/openapi/klabis-full.json` |
+| `./gradlew openapiBundle -PopenapiCheck` | validates only, writes nothing (what CI runs) |
+| `./gradlew openapiBundle -PopenapiOut=<path>` | writes the bundle elsewhere |
 
-Or directly from `tools/openapi-bundle/`: `node bundle.mjs --check`, `node drift.mjs`.
+Or directly from `tools/openapi-bundle/`: `node bundle.mjs [--check] [--out <path>]`.
+
+`drift.mjs` is still there for comparing the spec against a springdoc dump, but it needs
+`docs/openapi/generated/klabis-codefirst.json`, which only exists after `./gradlew generateOpenApiDocs`.
 
 From `frontend/`, `npm run openapi` regenerates both `src/api/klabisApi.d.ts` (schemas, via
 openapi-typescript) and `src/api/halTypes.ts` (link/template relations, via
@@ -66,6 +74,14 @@ put them in `description`.
 
 Extension values are validated during bundling: `x-klabis-authority` must be a constant of
 `Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`.
+
+> **Never put a field-authorization extension on a property that uses `oneOf`/`allOf`.** The
+> generator drops property-level vendor extensions from composed schemas, and an `allOf` also
+> generates a bare type instead of `JsonNullable<T>` — which
+> `RequestBodyFieldAuthorizationAdvice` skips outright. Either way the field silently stops being
+> authorization-checked. Inline the type instead (see `UpdateMemberRequest.gender` in
+> `members.yaml`), and add a `schemaMappings` entry for the generated `<Parent>_<property>` name if
+> it needs to stay a domain type. `PatchRequestWrapperArchitectureTest` guards this.
 
 ## Rules
 

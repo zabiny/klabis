@@ -57,7 +57,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
 
     @Override
     @Operation(summary = "Get membership fee group details with snapshot and member count")
-    public ResponseEntity<MembershipFeeGroupResponse> getGroup(
+    public ResponseEntity<MembershipFeeGroupResponse> getFeeGroup(
             @Parameter(description = "Group UUID") UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
 
@@ -126,7 +126,7 @@ class MembershipFeeGroupDetailsPostprocessor
     @Override
     public void process(EntityModel<MembershipFeeGroupResponse> dtoModel, MembershipFeeGroup group) {
         UUID id = group.getId().value();
-        klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getGroup(id))
+        klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(id))
                 .map(link -> {
                     var self = link.withSelfRel()
                             .andAffordances(klabisAfford(

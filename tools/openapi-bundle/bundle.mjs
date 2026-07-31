@@ -6,8 +6,9 @@
  *   --out    destination (default: docs/openapi/klabis-full.json)
  *   --check  validate and bundle, but do not write
  *
- * During the migration the default output is NOT wired into the Gradle build — springdoc still
- * produces klabis-full.json. See docs/openapi/spec/README or the migration plan.
+ * This is the sole producer of docs/openapi/klabis-full.json, which the frontend generates its
+ * TypeScript types from. Run it via `./gradlew openapiBundle` from backend/, or directly.
+ * See docs/openapi/spec/README.md.
  */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';

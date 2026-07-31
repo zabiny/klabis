@@ -7,9 +7,10 @@
 # Their parameter is named MembershipFeeMemberIdParam to avoid colliding with members.yaml's
 # MemberIdParam — component names are one global namespace after bundling.
 #
-# getGroup (MembershipFeeGroupController) is documented here but excluded from openApiModule's
-# `apis`/`models` generation — see the comment on that operation below and the matching comment in
-# backend/build.gradle.kts. Same precedent as events.yaml's getEvent.
+# getFeeGroup (MembershipFeeGroupController) is generated like any other operation; only its
+# response schema is documentation-only, mapped down to the bare payload — see the comment on that
+# operation below and the matching comment in backend/build.gradle.kts. Same precedent as
+# events.yaml's getEvent.
 #
 # MemberFeeChoice's and MemberFeeSummary's 5 operations are restricted to the member themselves,
 # with no MANAGE-authority alternative. That is exactly x-klabis-owner-visible WITHOUT a paired
@@ -667,14 +668,14 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
 
   /api/membership-fee-groups/{id}:
-    # getGroup returns the plain MembershipFeeGroupResponse payload. The group-members collection is
+    # getFeeGroup returns the plain MembershipFeeGroupResponse payload. The group-members collection is
     # declared by the controller via HalResponseContext.embed(...) and rendered under _embedded
     # by HalResponseBodyAdvice — the same deferred-assembly path as _links and _templates, so it
     # stays out of the generated return type — same as events.yaml's getEvent.
     # Note the _embedded key below is "members" per MembershipFeeGroupResponse's
     # @Relation(collectionRelation = "members") — NOT the class-name-derived default.
     get:
-      operationId: getGroup
+      operationId: getFeeGroup
       tags: [MembershipFeeGroups]
       summary: Get membership fee group details with snapshot and member count
       description: |
@@ -862,7 +863,7 @@ paths:
             self:
               description: This fee choice
             currentGroup:
-              operation: getGroup
+              operation: getFeeGroup
               description: Present when the member has a current fee group choice
             recommendedLevel:
               operation: getTier
@@ -998,7 +999,7 @@ paths:
             self:
               description: This fee summary
             group:
-              operation: getGroup
+              operation: getFeeGroup
               description: Present when the member has a current fee group
           x-hal-templates:
             default:
@@ -1512,7 +1513,7 @@ components:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
 
-    # The full wire shape of getGroup: MembershipFeeGroupResponse's properties plus an
+    # The full wire shape of getFeeGroup: MembershipFeeGroupResponse's properties plus an
     # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse).
     # schemaMappings points at MembershipFeeGroupResponse, so the generated method returns the
     # payload alone — the _embedded block is declared by the controller
