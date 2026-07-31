@@ -200,10 +200,10 @@ tasks.named<ProcessResources>("processResources") {
 
 // SpringDoc OpenAPI Gradle Plugin configuration
 //
-// Output goes to docs/openapi/generated/ (gitignored), not straight to klabis-full.json.
-// During the spec-first migration this is only an input for `openapiDriftCheck`; the committed
-// klabis-full.json is produced by `copyGeneratedOpenApiSpec` below and will be taken over by
-// `openapiBundle` once every module is migrated.
+// The API is spec-first: docs/openapi/spec/ is the source of truth and `openapiBundle` produces the
+// committed klabis-full.json. This task is kept only to dump what the running application actually
+// serves, into gitignored docs/openapi/generated/, for ad-hoc comparison against the spec. Nothing
+// in the build depends on its output.
 openApi {
     apiDocsUrl.set("http://localhost:8080/v3/api-docs")
     outputDir.set(file("../docs/openapi/generated"))
@@ -215,10 +215,7 @@ openApi {
 }
 
 // ---------------------------------------------------------------------------
-// Spec-first migration tooling (tools/openapi-bundle)
-//
-// None of these tasks are wired into `build` yet — the API is still code-first and
-// klabis-full.json still originates from springdoc. See the migration plan.
+// Spec bundling (tools/openapi-bundle)
 // ---------------------------------------------------------------------------
 
 val openapiToolDir = layout.projectDirectory.dir("../tools/openapi-bundle")
@@ -229,48 +226,27 @@ val openapiToolDir = layout.projectDirectory.dir("../tools/openapi-bundle")
 // it works no matter what environment launched Gradle.
 val runNodeScript = openapiToolDir.file("run-node.sh").asFile.absolutePath
 
-val codeFirstSpec = layout.projectDirectory.file("../docs/openapi/generated/klabis-codefirst.json")
-val bundledSpec = layout.projectDirectory.file("../docs/openapi/klabis-full.json")
-
 /**
- * Preserves today's behaviour: springdoc output becomes the committed klabis-full.json.
+ * Produces the committed klabis-full.json from docs/openapi/spec/, which the frontend's
+ * `npm run openapi` reads to generate its TypeScript types.
  *
- * generateOpenApiDocs used to write klabis-full.json directly; now that it writes to generated/,
- * this task restores the end result so the existing manual workflow ("regenerate the spec, then
- * run npm run openapi") keeps working. It is finalizedBy generateOpenApiDocs so that developers
- * and scripts calling the old task name still get the file they expect.
- *
- * Removed in the final migration phase, when openapiBundle takes over klabis-full.json.
+ * Writes by default rather than only validating: this is now the sole producer of the file, so
+ * `./gradlew openapiBundle` has to be enough to refresh it. Pass -PopenapiOut to redirect it, or
+ * -PopenapiCheck to validate without writing (what CI wants).
  */
-val copyGeneratedOpenApiSpec by tasks.registering(Copy::class) {
-    group = "openapi"
-    description = "Copies the springdoc output to docs/openapi/klabis-full.json (code-first, transitional)"
-    from(codeFirstSpec)
-    into(bundledSpec.asFile.parentFile)
-    rename { "klabis-full.json" }
-}
-
-tasks.named("generateOpenApiDocs") {
-    finalizedBy(copyGeneratedOpenApiSpec)
-}
-
-/** Validates docs/openapi/spec/ and bundles it into a single document. */
 val openapiBundle by tasks.registering(Exec::class) {
     group = "openapi"
-    description = "Bundles the hand-written OpenAPI spec into a single document"
+    description = "Bundles the hand-written OpenAPI spec into docs/openapi/klabis-full.json"
     workingDir = openapiToolDir.asFile
-    commandLine(runNodeScript, "bundle.mjs", *(project.findProperty("openapiOut")
-        ?.let { arrayOf("--out", it.toString()) } ?: arrayOf("--check")))
-}
-
-/** Reports which operations are not migrated to the hand-written spec yet. */
-val openapiDriftCheck by tasks.registering(Exec::class) {
-    group = "openapi"
-    description = "Compares the springdoc output against the hand-written spec (migration aid)"
-    dependsOn(tasks.named("generateOpenApiDocs"))
-    workingDir = openapiToolDir.asFile
-    commandLine(runNodeScript, "drift.mjs", *(project.findProperty("openapiModule")
-        ?.let { arrayOf("--module", it.toString()) } ?: emptyArray()))
+    val bundleArgs = when {
+        project.hasProperty("openapiCheck") && project.hasProperty("openapiOut") ->
+            throw GradleException("openapiCheck and openapiOut are mutually exclusive: "
+                + "-PopenapiCheck writes nothing, so -PopenapiOut would have no effect")
+        project.hasProperty("openapiCheck") -> arrayOf("--check")
+        project.hasProperty("openapiOut") -> arrayOf("--out", project.property("openapiOut").toString())
+        else -> emptyArray()
+    }
+    commandLine(runNodeScript, "bundle.mjs", *bundleArgs)
 }
 
 // ---------------------------------------------------------------------------
@@ -415,6 +391,9 @@ openApiModule(
     ),
     mappings = mapOf(
         "Gender" to "com.klabis.members.domain.Gender",
+        // UpdateMemberRequest.gender inlines the enum rather than $ref-ing Gender, so that it keeps
+        // both its JsonNullable wrapper and x-klabis-authority. See the comment in members.yaml.
+        "UpdateMemberRequest_gender" to "com.klabis.members.domain.Gender",
         "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
         "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",

@@ -10,7 +10,6 @@ import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -229,11 +228,19 @@ class UpdateMemberApiTest {
                 assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Vegetarian");
             }
 
+            /**
+             * Of the fields this used to send, only gender carries @HasAuthority — chipNumber,
+             * drivingLicenseGroup and dietaryRestrictions are editable by the member themselves, so
+             * a request mixing them could never have been a clean test of the authority check.
+             *
+             * It was disabled as "to be changed in prod code", but the enforcement existed all
+             * along; what defeated it was gender being generated as a bare Gender rather than a
+             * JsonNullable, which RequestBodyFieldAuthorizationAdvice skips outright.
+             */
             @Test
-            @DisplayName("updating admin-only fields without MEMBERS:MANAGE authority should return 403")
-            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
+            @DisplayName("updating gender without MEMBERS:MANAGE authority should return 403")
             @WithKlabisMockUser(authorities = {})
-            void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
+            void shouldRejectUpdateGenderWithoutAdmin() throws Exception {
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -242,14 +249,10 @@ class UpdateMemberApiTest {
                                         .contentType("application/json")
                                         .content("""
                                                 {
-                                                    "gender": "FEMALE",
-                                                    "chipNumber": "12345",
-                                                    "drivingLicenseGroup": "B",
-                                                    "dietaryRestrictions": "Vegetarian"
+                                                    "gender": "FEMALE"
                                                 }
                                                 """)
                         )
-                        .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isForbidden());
 
                 verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));

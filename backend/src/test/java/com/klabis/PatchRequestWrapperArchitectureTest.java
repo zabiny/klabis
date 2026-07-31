@@ -8,6 +8,7 @@ import org.openapitools.jackson.nullable.JsonNullable;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +28,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Losing the wrapper usually breaks compilation too, because the mapper unwraps the value. Not
  * always: a component the mapper passes straight through keeps compiling and silently loses its
- * authorization check. That residual case is what this test exists for.
+ * authorization check. That residual case is what this test exists for — and it is not
+ * hypothetical. {@code gender} shipped in exactly that state, generated as a bare {@code Gender}
+ * from an {@code allOf} and passed straight through the mapper, so its
+ * {@code @HasAuthority(MEMBERS_MANAGE)} was never evaluated.
  */
 @DisplayName("PATCH request wrapper architecture")
 class PatchRequestWrapperArchitectureTest {
@@ -36,15 +40,6 @@ class PatchRequestWrapperArchitectureTest {
             com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
             com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class,
             com.klabis.events.infrastructure.restapi.UpdateEventRequest.class);
-
-    /**
-     * gender is unwrapped on purpose. The generator strips property-level vendor extensions from a
-     * composed schema, so the nullable {@code oneOf} the other {@code $ref} properties use would
-     * cost it {@code x-klabis-authority} — an admin-only field would become writable by anyone.
-     * Nothing is lost by the exception: gender has no cleared state, so it never needed the wrapper.
-     * It keeps its authorization because {@code @HasAuthority} is still on the component.
-     */
-    private static final List<String> UNWRAPPED_BY_DESIGN = List.of("gender");
 
     @Test
     @DisplayName("every component of a PATCH request DTO is a JsonNullable wrapper")
@@ -58,7 +53,6 @@ class PatchRequestWrapperArchitectureTest {
             List<String> unwrapped = Arrays.stream(patchRequest.getRecordComponents())
                     .filter(component -> !JsonNullable.class.isAssignableFrom(component.getType()))
                     .map(RecordComponent::getName)
-                    .filter(name -> !UNWRAPPED_BY_DESIGN.contains(name))
                     .toList();
 
             assertThat(unwrapped)
@@ -71,24 +65,44 @@ class PatchRequestWrapperArchitectureTest {
     }
 
     /**
-     * The exception above only holds while the excepted component is still annotated — an unwrapped
-     * component is skipped by the advice, so {@code @HasAuthority} on it is what the spec's
-     * {@code x-klabis-authority} is protecting, and the exception exists precisely to keep it.
+     * The wrapper rule above is what makes {@code @HasAuthority} reachable; this asserts the
+     * annotation is actually still there. Losing it is the other half of the same failure — the
+     * advice would inspect the component and find nothing to enforce. It is easy to lose by
+     * accident, because composition keywords ({@code oneOf}, {@code allOf}) silently strip
+     * property-level vendor extensions such as {@code x-klabis-authority}.
+     *
+     * <p>Pinning the exact set, rather than merely counting, is what makes a *disappearance*
+     * visible: a spec edit that drops one property's extension still leaves the others annotated,
+     * so any assertion weaker than this passes straight through it.
      */
+    private static final Map<Class<?>, List<String>> EXPECTED_PRIVILEGED_COMPONENTS = Map.of(
+            com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
+            List.of("birthNumber", "dateOfBirth", "firstName", "gender", "lastName"),
+            com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class,
+            List.of(),
+            com.klabis.events.infrastructure.restapi.UpdateEventRequest.class,
+            List.of());
+
     @Test
-    @DisplayName("a component unwrapped by design still declares the authority it was kept for")
-    void unwrappedComponentsStillDeclareAuthority() {
-        for (Class<?> patchRequest : PATCH_REQUESTS) {
-            for (RecordComponent component : patchRequest.getRecordComponents()) {
-                if (!UNWRAPPED_BY_DESIGN.contains(component.getName())) {
-                    continue;
-                }
-                assertThat(component.getAccessor().getAnnotation(HasAuthority.class))
-                        .as("%s.%s is exempt from the wrapper rule only because it carries "
-                            + "@HasAuthority — without it the exemption is unjustified",
-                                patchRequest.getSimpleName(), component.getName())
-                        .isNotNull();
-            }
-        }
+    @DisplayName("privileged components still declare the authority the spec assigns them")
+    void privilegedComponentsDeclareAuthority() {
+        assertThat(EXPECTED_PRIVILEGED_COMPONENTS.keySet())
+                .as("every PATCH DTO needs an expectation here, even an empty one — otherwise a "
+                    + "DTO that grows its first privileged field is not covered by this test")
+                .containsExactlyInAnyOrderElementsOf(PATCH_REQUESTS);
+
+        EXPECTED_PRIVILEGED_COMPONENTS.forEach((patchRequest, expected) -> {
+            List<String> annotated = Arrays.stream(patchRequest.getRecordComponents())
+                    .filter(component -> component.getAccessor().getAnnotation(HasAuthority.class) != null)
+                    .map(RecordComponent::getName)
+                    .sorted()
+                    .toList();
+
+            assertThat(annotated)
+                    .as("x-klabis-authority in the spec must survive into %s; a property rewritten "
+                        + "to use oneOf/allOf loses it without any error",
+                            patchRequest.getSimpleName())
+                    .containsExactlyElementsOf(expected);
+        });
     }
 }
