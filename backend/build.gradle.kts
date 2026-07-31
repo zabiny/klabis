@@ -370,7 +370,7 @@ fun openApiModule(
                 // Left off: the generator ignores nullability in OpenAPI 3.1 mode (verified against
                 // both `nullable: true` and `type: [x, "null"]`), so JsonNullable comes from
                 // x-klabis-patch-field in pojo.mustache instead.
-                "openApiNullable" to "false",
+                "openApiNullable" to "true",
                 "useTags" to "true",
                 "additionalModelTypeAnnotations" to
                     "@io.soabase.recordbuilder.core.RecordBuilder @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) @org.springframework.security.authorization.method.HandleAuthorizationDenied(handlerClass = com.klabis.common.security.fieldsecurity.NullDeniedHandler.class)"

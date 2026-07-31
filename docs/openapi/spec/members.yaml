@@ -675,85 +675,79 @@ components:
       # shared schema can only carry one set.
       properties:
         email:
-          type: string
+          type: ['string', 'null']
           maxLength: 255
-          x-klabis-patch-field: true
         phone:
-          type: string
+          type: ['string', 'null']
           maxLength: 50
-          x-klabis-patch-field: true
         address:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/AddressRequest'
-          x-klabis-patch-field: true
+            - type: 'null'
         firstName:
-          type: string
+          type: ['string', 'null']
           maxLength: 100
           x-klabis-not-blank: true
           x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-patch-field: true
         lastName:
-          type: string
+          type: ['string', 'null']
           maxLength: 100
           x-klabis-not-blank: true
           x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-patch-field: true
         dateOfBirth:
-          type: string
+          type: ['string', 'null']
           format: date
           x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-patch-field: true
+        # gender keeps allOf, not the nullable oneOf the other $ref properties use: the generator
+        # strips property-level vendor extensions from a composed schema, and losing
+        # x-klabis-authority here would make an admin-only field writable by anyone. Nothing is
+        # given up — gender has no cleared state (PersonalInformation rejects null), so the
+        # tri-state wrapper would be unused.
         gender:
           allOf:
             - $ref: '#/components/schemas/Gender'
           x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-patch-field: true
         chipNumber:
-          type: string
+          type: ['string', 'null']
           maxLength: 50
           pattern: '^[0-9]+$'
-          x-klabis-patch-field: true
         nationality:
-          type: string
+          type: ['string', 'null']
           minLength: 2
           maxLength: 2
-          x-klabis-patch-field: true
         identityCard:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/IdentityCardDto'
-          x-klabis-patch-field: true
+            - type: 'null'
         medicalCourse:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/MedicalCourseDto'
-          x-klabis-patch-field: true
+            - type: 'null'
         trainerLicense:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/TrainerLicenseDto'
-          x-klabis-patch-field: true
+            - type: 'null'
         refereeLicense:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/RefereeLicenseDto'
-          x-klabis-patch-field: true
+            - type: 'null'
         drivingLicenseGroup:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/DrivingLicenseGroup'
-          x-klabis-patch-field: true
+            - type: 'null'
         dietaryRestrictions:
-          type: string
+          type: ['string', 'null']
           maxLength: 500
-          x-klabis-patch-field: true
         birthNumber:
-          type: string
+          type: ['string', 'null']
           x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-patch-field: true
         bankAccountNumber:
-          type: string
+          type: ['string', 'null']
           maxLength: 50
-          x-klabis-patch-field: true
         guardian:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/GuardianDTO'
-          x-klabis-patch-field: true
+            - type: 'null'
 
     SuspendMembershipRequest:
       type: object

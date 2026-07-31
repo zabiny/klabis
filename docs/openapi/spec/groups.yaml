@@ -1602,15 +1602,13 @@ components:
         replaces the full trainer set.
       properties:
         name:
-          type: string
-          x-klabis-patch-field: true
+          type: ['string', 'null']
         ageRange:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/AgeRangeRequest'
-          x-klabis-patch-field: true
+            - type: 'null'
         trainers:
-          type: array
-          x-klabis-patch-field: true
+          type: ['array', 'null']
           items:
             type: string
             format: uuid

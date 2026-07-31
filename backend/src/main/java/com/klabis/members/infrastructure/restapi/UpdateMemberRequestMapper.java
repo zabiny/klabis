@@ -31,7 +31,7 @@ class UpdateMemberRequestMapper {
                     unwrap(request.firstName()),
                     unwrap(request.lastName()),
                     unwrap(request.dateOfBirth()),
-                    unwrap(request.gender()),
+                    request.gender(),
                     map(request.birthNumber(), UpdateMemberRequestMapper::toBirthNumber),
                     updatedBy
             );
@@ -52,6 +52,7 @@ class UpdateMemberRequestMapper {
     /**
      * For the fields of {@link PersonalInformation}, which have no cleared state: an explicit null
      * collapses to "retain", matching the plain-null contract of the command's required fields.
+     * gender needs no unwrapping — it is not wrapped, see PatchRequestWrapperArchitectureTest.
      */
     private static <T> T unwrap(JsonNullable<T> field) {
         return field.isPresent() ? field.orElseThrow() : null;
