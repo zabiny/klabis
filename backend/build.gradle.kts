@@ -540,10 +540,10 @@ openApiModule(
 openApiModule(
     module = "membershipfees",
     pkg = "com.klabis.membershipfees.infrastructure.restapi",
-    // getGroup (MembershipFeeGroups) is documented in membershipfees.yaml but deliberately absent
-    // from `models`/left unmapped, so MembershipFeeGroupsApi does not declare it and
-    // MembershipFeeGroupController keeps its hand-written method: it embeds a second,
-    // independently-shaped collection (group members) alongside the main payload via
+    // getFeeGroup (MembershipFeeGroups) is generated like any other operation; it is only its
+    // *response schema* that is documentation-only. EntityModelMembershipFeeGroupResponseWithMembers
+    // is mapped down to the bare payload below, so the generated method does not try to express the
+    // second, independently-shaped collection (group members) the controller embeds via
     // HalModelBuilder — HalResponseContext only supports a single domain object or a flat list.
     // Same precedent as EventController's getEvent in the events module.
     apis = listOf("MembershipFeeTiers", "FeeSelectionCampaigns", "MembershipFeeGroups", "MemberFeeChoice", "MemberFeeSummary"),
@@ -569,7 +569,7 @@ openApiModule(
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
         "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
-        // getGroup returns the payload; the _embedded.members block in the WithMembers schema is
+        // getFeeGroup returns the payload; the _embedded.members block in the WithMembers schema is
         // contributed by the controller via HalResponseContext.embed(...) and assembled by
         // HalResponseBodyAdvice, so it does not belong in the Java return type.
         "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",

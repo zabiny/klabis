@@ -9811,7 +9811,7 @@
       "x-hal-links": {
        "currentGroup": {
         "description": "Present when the member has a current fee group choice",
-        "operation": "getGroup"
+        "operation": "getFeeGroup"
        },
        "recommendedLevel": {
         "description": "Present when a recommended tier exists for this year",
@@ -10066,7 +10066,7 @@
       "x-hal-links": {
        "group": {
         "description": "Present when the member has a current fee group",
-        "operation": "getGroup"
+        "operation": "getFeeGroup"
        },
        "self": {
         "description": "This fee summary"
@@ -10190,7 +10190,7 @@
   "/api/membership-fee-groups/{id}": {
    "get": {
     "description": "Returns a published fee group's snapshot (yearly fee, payment rules) and its members,\nembedded under \"members\".\n",
-    "operationId": "getGroup",
+    "operationId": "getFeeGroup",
     "parameters": [
      {
       "$ref": "#/components/parameters/GroupIdParam"

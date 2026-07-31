@@ -243,6 +243,36 @@ export const GetFamilyGroupRels = {
 export type GetFamilyGroupLinkRel = typeof GetFamilyGroupRels.links[number];
 export type GetFamilyGroupTemplateRel = typeof GetFamilyGroupRels.templates[number];
 
+// --- GET /api/membership-fee-groups/{id} (200) ---
+
+export interface GetFeeGroupHal {
+  _links?: {
+    /** Payment rules snapshot for this group */
+    'rules'?: HalResourceLinks;
+    /** This fee group */
+    'self'?: HalResourceLinks;
+    /** The membership fee tier this group's snapshot was published from */
+    'sourceLevel'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Present only for callers with MEMBERS:MANAGE */
+    'assignMember'?: HalFormsTemplate;
+    /** Present for callers with MEMBERS:MANAGE, only while the group is EDITABLE */
+    'default'?: HalFormsTemplate;
+  };
+}
+
+export type GetFeeGroupResource =
+  components['schemas']['EntityModelMembershipFeeGroupResponseWithMembers'] & GetFeeGroupHal;
+
+export const GetFeeGroupRels = {
+  links: ['rules', 'self', 'sourceLevel'] as const,
+  templates: ['assignMember', 'default'] as const,
+} as const;
+
+export type GetFeeGroupLinkRel = typeof GetFeeGroupRels.links[number];
+export type GetFeeGroupTemplateRel = typeof GetFeeGroupRels.templates[number];
+
 // --- GET /api/members/{memberId}/fee-history (200) ---
 
 export interface GetFeeHistoryHal {
@@ -308,36 +338,6 @@ export type GetGroupResource =
 export const GetGroupRels = {
   links: ['collection', 'self'] as const,
   templates: [] as const,
-} as const;
-
-export type GetGroupLinkRel = typeof GetGroupRels.links[number];
-export type GetGroupTemplateRel = typeof GetGroupRels.templates[number];
-
-// --- GET /api/membership-fee-groups/{id} (200) ---
-
-export interface GetGroupHal {
-  _links?: {
-    /** Payment rules snapshot for this group */
-    'rules'?: HalResourceLinks;
-    /** This fee group */
-    'self'?: HalResourceLinks;
-    /** The membership fee tier this group's snapshot was published from */
-    'sourceLevel'?: HalResourceLinks;
-  };
-  _templates?: {
-    /** Present only for callers with MEMBERS:MANAGE */
-    'assignMember'?: HalFormsTemplate;
-    /** Present for callers with MEMBERS:MANAGE, only while the group is EDITABLE */
-    'default'?: HalFormsTemplate;
-  };
-}
-
-export type GetGroupResource =
-  components['schemas']['EntityModelMembershipFeeGroupResponseWithMembers'] & GetGroupHal;
-
-export const GetGroupRels = {
-  links: ['rules', 'self', 'sourceLevel'] as const,
-  templates: ['assignMember', 'default'] as const,
 } as const;
 
 export type GetGroupLinkRel = typeof GetGroupRels.links[number];

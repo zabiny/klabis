@@ -1428,7 +1428,7 @@ export interface paths {
          *     embedded under "members".
          *
          */
-        get: operations["getGroup"];
+        get: operations["getFeeGroup"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5993,7 +5993,7 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
         };
     };
-    getGroup: {
+    getFeeGroup: {
         parameters: {
             query?: never;
             header?: never;
