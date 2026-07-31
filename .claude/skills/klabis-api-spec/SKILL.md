@@ -239,21 +239,35 @@ of the composition keyword itself, not of what it contains — a scalar
 union spelling `type: ['string', 'null']` keeps them.
 
 That is only a dilemma for `$ref` properties, since a scalar can always use the union spelling
-instead. A `$ref` property has no union form, so one that needs both the wrapper and a field-security
-extension cannot have both:
+instead. **Neither composition keyword is a way out**, and `allOf` is a trap worth naming, because
+it looks like one:
 
 ```yaml
 gender:
-  allOf:                             # keeps x-klabis-authority, no wrapper
+  allOf:                             # keeps x-klabis-authority — but generates a bare Gender
     - $ref: '#/components/schemas/Gender'
   x-klabis-authority: MEMBERS_MANAGE
 ```
 
-Losing the extension is the worse outcome — an unwrapped component is *skipped* by
-`RequestBodyFieldAuthorizationAdvice`, so a dropped `x-klabis-authority` makes an admin-only field
-writable by anyone, silently. Prefer the annotation and give up the wrapper for fields that have no
-cleared state anyway. `PatchRequestWrapperArchitectureTest` records each such exception and asserts
-the field still declares the authority it was excepted for.
+`allOf` does keep the extension, but it costs the `JsonNullable` wrapper — and
+`RequestBodyFieldAuthorizationAdvice` **skips every component that is not `JsonNullable`-typed**, so
+the `@HasAuthority` it emits is never evaluated. Keeping the annotation while losing the wrapper
+protects nothing. This shipped: `UpdateMemberRequest.gender` was written exactly this way, and
+`MEMBERS:MANAGE` went unenforced on it until 2026-07-31.
+
+**Inline the type instead**, so the property keeps both:
+
+```yaml
+gender:
+  type: ['string', 'null']
+  enum: ['MALE', 'FEMALE', null]
+  x-klabis-authority: MEMBERS_MANAGE
+```
+
+Inlining loses the schema name that `schemaMappings` keys on, so add an entry for the generated
+`<Parent>_<property>` name (`UpdateMemberRequest_gender` → `com.klabis.members.domain.Gender`) to
+keep the domain type. `PatchRequestWrapperArchitectureTest` pins both halves: every component is
+wrapped, and the exact set of components carrying an authority.
 
 ### Consuming the tri-state
 
@@ -827,11 +841,12 @@ returns `true` unconditionally makes the test assert nothing.
 - Writing `nullable: true` on a PATCH property. It is the OpenAPI 3.0 keyword and these specs are
   3.1, so it is silently ignored: no `JsonNullable`, no warning, and the endpoint quietly loses the
   ability to distinguish "absent" from "clear this field". Use `type: [x, 'null']`.
-- Writing a PATCH property as a `oneOf` when it also carries `x-klabis-authority` or
-  `x-klabis-owner-visible` — the generator strips vendor extensions from any `oneOf`, scalar ones
-  included, and an unwrapped component is skipped by `RequestBodyFieldAuthorizationAdvice`, so the
-  field silently becomes writable by anyone. For a scalar use `type: [x, 'null']`, which keeps both;
-  for a `$ref`, which has no union form, keep `allOf` + the extension and give up the wrapper.
+- Writing a PATCH property with `oneOf` or `allOf` when it also carries `x-klabis-authority` or
+  `x-klabis-owner-visible`. `oneOf` strips the extension (scalar ones included); `allOf` keeps it
+  but generates a bare type, and `RequestBodyFieldAuthorizationAdvice` skips every component that is
+  not `JsonNullable`, so the annotation is never evaluated. Either way the check silently stops
+  running for the one caller it exists for — the owner. Inline the type and map
+  `<Parent>_<property>` in `schemaMappings`; see the `gender` section above.
 - Marking a response property or a POST/PUT body property nullable. There is no tri-state to express
   and the `JsonNullable` wrapper leaks into code that only ever wants a value.
 - Mapping a `JsonNullable` with a converter that dereferences the value. `map` runs on a *present

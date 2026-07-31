@@ -19,7 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>{@code RequestBodyFieldAuthorizationAdvice} skips any component that is not wrapper-typed, so a
  * field that loses its wrapper is not merely mis-typed — it stops being authorization-checked
  * entirely, with no error anywhere. {@code UpdateMemberRequest} alone has five components carrying
- * {@code @HasAuthority(MEMBERS_MANAGE)} that would silently become writable by any caller.
+ * {@code @HasAuthority(MEMBERS_MANAGE)}.
+ *
+ * <p>The caller this actually exposes is the <em>owner</em>: the endpoint is annotated
+ * {@code @HasAuthority(MEMBERS_MANAGE)} <em>and</em> {@code @OwnerVisible}, so a stranger is turned
+ * away before any field is read, and an admin satisfies every field anyway. A member editing their
+ * own record is the one caller for whom these per-field checks decide anything — and the one who
+ * silently gains write access to all five when a wrapper goes missing.
  *
  * <p>These records are generated from the spec, where the wrapper follows from the OpenAPI 3.1
  * nullable spelling {@code type: [x, "null"]}. Writing the 3.0 {@code nullable: true} keyword
