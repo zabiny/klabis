@@ -342,16 +342,15 @@ Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()
 
 #### Which annotations belong on the override
 
-The interface is the declaration site for everything the framework reads — but springdoc is the
-exception, because it scans the concrete class. "Remove whatever the interface already has" is the
-intuitive generalization and it is wrong.
+The interface is the declaration site for everything the framework reads. The override carries the
+method body and nothing else.
 
 | Annotation | Where it belongs | Why |
 |---|---|---|
 | `@RequestBody`, `@RequestParam`, `@PathVariable` | interface only | Spring MVC and `HalFormsSupport` both read them from there |
 | `@NotNull`, `@Size`, `@Pattern`, … | interface only | see the HV000151 note below |
 | `@Valid` | either | a cascade marker, not a constraint — repeating it is legal |
-| `@Parameter`, `@Operation`, `@ApiResponse` | **controller** | springdoc scans the implementation; stripping these empties out `klabis-full.json` |
+| `@Parameter`, `@Operation`, `@ApiResponse` | interface only, and generated | the generator emits them from the spec (`documentationProvider=springdoc`); a hand-written copy on the controller only drifts |
 
 **Bean Validation is all-or-nothing.** Hibernate Validator rejects an override that *redefines* the
 parameter constraint configuration of the method it overrides (`ConstraintDeclarationException:

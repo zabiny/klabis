@@ -1,15 +1,9 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingUser;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Member;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
@@ -30,8 +24,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Members", description = "Member registration and management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class RegistrationController implements RegistrationApi {
 
     private final RegistrationPort registrationService;
@@ -51,15 +43,8 @@ class RegistrationController implements RegistrationApi {
      * @param currentUserId the authenticated user performing the registration
      * @return 201 Created with Location header and member resource
      */
-    @Operation(
-            summary = "Register a new member",
-            description = "Creates a new member with personal information, contact details, and optional guardian information for minors. " +
-                          "Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence)."
-    )
-    @ApiResponse(responseCode = "201", description = "Member successfully registered")
     @Override
     public ResponseEntity<Void> registerMember(
-            @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
             RegisterMemberRequest request,
             @ActingUser UserId currentUserId) {
 

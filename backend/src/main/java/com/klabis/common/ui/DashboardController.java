@@ -2,8 +2,6 @@ package com.klabis.common.ui;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.infrastructure.restapi.DashboardApi;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -16,8 +14,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
-@Tag(name = "Dashboard", description = "Dashboard widget link index")
-@SecurityRequirement(name = "KlabisAuth", scopes = {"openid"})
 class DashboardController implements DashboardApi {
 
     @Override

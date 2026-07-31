@@ -3,7 +3,6 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.users.Authority;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -14,10 +13,6 @@ import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -38,8 +33,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "MembershipFeeGroups", description = "Published fee level group details API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(MembershipFeeGroup.class)
 class MembershipFeeGroupController implements MembershipFeeGroupsApi {
 
@@ -56,9 +49,8 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     }
 
     @Override
-    @Operation(summary = "Get membership fee group details with snapshot and member count")
     public ResponseEntity<MembershipFeeGroupResponse> getFeeGroup(
-            @Parameter(description = "Group UUID") UUID id) {
+            UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
 
         // The members collection is declared here, not in the postprocessor: it needs the Members
@@ -83,18 +75,16 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     }
 
     @Override
-    @Operation(summary = "Edit yearly fee and payment rules of a published level (requires MEMBERS:MANAGE, only while EDITABLE)")
     public ResponseEntity<Void> editSnapshot(
-            @Parameter(description = "Group UUID") UUID id,
+            UUID id,
             EditGroupSnapshotRequest request) {
         managementPort.editGroupSnapshot(new MembershipFeeGroupId(id), MembershipFeesRequestMapper.toCommand(request));
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    @Operation(summary = "List payment rules snapshot for a membership fee group")
     public ResponseEntity<java.util.Collection<MembershipFeeTierResponse.PaymentRuleResponse>> listGroupRules(
-            @Parameter(description = "Group UUID") UUID id) {
+            UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
         List<MembershipFeeTierResponse.PaymentRuleResponse> items = group.getRulesSnapshot().stream()
                 .map(MembershipFeeTierResponse.PaymentRuleResponse::from)
@@ -103,9 +93,8 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     }
 
     @Override
-    @Operation(summary = "Assign a member to a fee group (admin emergency assignment, requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> assignMember(
-            @Parameter(description = "Fee group UUID") UUID groupId,
+            UUID groupId,
             AdminAssignMemberRequest request,
             @ActingMember MemberId actingAdmin) {
 

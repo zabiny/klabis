@@ -16,11 +16,6 @@ import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -55,10 +50,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "EventRegistrations", description = "Event registration API for members")
 @PrimaryAdapter
 @ExposesResourceFor(EventRegistration.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 class EventRegistrationController implements EventRegistrationsApi {
 
     private final EventManagementPort eventManagementService;
@@ -73,17 +66,10 @@ class EventRegistrationController implements EventRegistrationsApi {
         this.entityLinks = entityLinks;
     }
 
-    @Operation(
-            summary = "Register for an event",
-            description = "Register the authenticated member for an event with SI card number. " +
-                          "Only allowed for ACTIVE events. Returns Location header pointing to the registration."
-    )
-    @ApiResponse(responseCode = "201", description = "Successfully registered for event")
-    @ApiResponse(responseCode = "409", description = "User already registered to this event")
     @Override
     public ResponseEntity<Void> registerForEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Registration data") RegisterEventRequest request,
+            @PathVariable UUID eventId,
+            RegisterEventRequest request,
             @ActingMember MemberId actingMember) {
 
         Event.RegisterCommand command = new Event.RegisterCommand(
@@ -96,35 +82,19 @@ class EventRegistrationController implements EventRegistrationsApi {
         ).build();
     }
 
-    @Operation(
-            summary = "Unregister from an event",
-            description = """
-                    Unregister the authenticated member from an event.
-                    Only allowed before the event date.
-                    """
-    )
-    @ApiResponse(responseCode = "204", description = "Successfully unregistered")
     @Override
     public ResponseEntity<Void> unregisterFromEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
+            @PathVariable UUID eventId,
             @ActingMember MemberId actingMember) {
 
         registrationService.unregisterMember(new EventId(eventId), actingMember);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "Edit event registration",
-            description = "Update SI card number and/or category for a member's registration. " +
-                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. " +
-                          "Only allowed when registrations are open."
-    )
-    @ApiResponse(responseCode = "204", description = "Registration updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS")
     @Override
     public ResponseEntity<Void> editRegistration(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
+            @PathVariable UUID eventId,
+            @PathVariable UUID memberId,
             EditRegistrationRequest request) {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
@@ -136,22 +106,9 @@ class EventRegistrationController implements EventRegistrationsApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "List event registrations",
-            description = """
-                    List all registrations for an event.
-                    SI card numbers are not included for privacy protection.
-                    Supported sort fields: firstName, lastName, category, registrationTime.
-                    Default sort: registrationTime ASC.
-                    sort=registrationTime is silently ignored for members without EVENTS:REGISTRATIONS authority
-                    who are not the event coordinator. Unknown sort fields also fall back to default.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "List of registrations retrieved successfully")
     @Override
     public ResponseEntity<Collection<RegistrationSummaryDto>> listRegistrations(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Sort field and optional direction, e.g. 'lastName' or 'lastName,desc'")
+            @PathVariable UUID eventId,
             @RequestParam(required = false) String sort) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -173,20 +130,10 @@ class EventRegistrationController implements EventRegistrationsApi {
         return ResponseEntity.ok(payload);
     }
 
-    @Operation(
-            summary = "Get registration by member ID",
-            description = "Get a member's event registration including SI card number. " +
-                          "Accessible by the member themselves or a user with EVENTS:REGISTRATIONS authority. " +
-                          "When new=true, returns prefilled defaults (siCardNumber from profile) for a not-yet-existing registration."
-    )
-    @ApiResponse(responseCode = "200", description = "Registration retrieved successfully or defaults returned (new=true)")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with mismatched memberId")
-    @ApiResponse(responseCode = "404", description = "Member not registered for this event (new=false only)")
     @Override
     public ResponseEntity<RegistrationDto> getRegistration(
-            @Parameter(description = "Member UUID") @PathVariable UUID memberId,
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "When true, returns default prefilled registration data instead of looking up an existing registration")
+            @PathVariable UUID memberId,
+            @PathVariable UUID eventId,
             @RequestParam(required = false, defaultValue = "false") Boolean newRegistration) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

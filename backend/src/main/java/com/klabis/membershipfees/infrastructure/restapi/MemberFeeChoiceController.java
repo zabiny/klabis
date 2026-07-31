@@ -3,16 +3,11 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.users.Authority;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberChoicePort;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -29,8 +24,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "MemberFeeChoice", description = "Member fee level choice API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 // Authorization is owner-only, declared as x-klabis-owner-visible with no paired authority (see
 // membershipfees.yaml) and enforced on the generated interface. The actingMember parameter is
 // unused in the method bodies but must stay: it is part of the generated signature and the
@@ -44,10 +37,9 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     }
 
     @Override
-    @Operation(summary = "Get member's current fee level choice for a year")
     public ResponseEntity<MemberFeeChoiceResponse> getChoice(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Calendar year") Integer year,
+            UUID memberId,
+            Integer year,
             @ActingMember MemberId actingMember) {
 
         MemberId memberIdObj = new MemberId(memberId);
@@ -66,10 +58,9 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     }
 
     @Override
-    @Operation(summary = "Choose a fee level for a year")
     public ResponseEntity<Void> chooseTier(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Calendar year") Integer year,
+            UUID memberId,
+            Integer year,
             ChooseFeeChoiceRequest request,
             @ActingMember MemberId actingMember) {
 
@@ -82,10 +73,9 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     }
 
     @Override
-    @Operation(summary = "Remove fee level choice for a year")
     public ResponseEntity<Void> removeChoice(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Calendar year") Integer year,
+            UUID memberId,
+            Integer year,
             @ActingMember MemberId actingMember) {
 
         memberChoicePort.removeFeeChoice(new MemberId(memberId), year);

@@ -5,10 +5,6 @@ import com.klabis.calendar.application.IcalFeedPort.EventScheduleEntry;
 import com.klabis.calendar.infrastructure.ical.ICalendarRenderer;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
@@ -28,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 @PrimaryAdapter
 @RestController
-@Tag(name = "Calendar Feed", description = "iCalendar subscribe feed for personal schedule")
 class IcalFeedController implements IcalFeedApi {
 
     private static final MediaType TEXT_CALENDAR = new MediaType("text", "calendar", StandardCharsets.UTF_8);
@@ -47,18 +42,7 @@ class IcalFeedController implements IcalFeedApi {
     }
 
     @Override
-    @Operation(
-            summary = "Personal schedule iCalendar feed",
-            description = """
-                    Returns an iCalendar (RFC 5545) feed for the authenticated user's personal schedule.
-                    Includes events where the user is an active participant OR acts as coordinator.
-                    Authenticate via the ?token= query parameter (Personal Access Token).
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "iCalendar feed returned")
-    @ApiResponse(responseCode = "401", description = "Missing or invalid token")
     public ResponseEntity<String> getMySchedule(
-            @Parameter(description = "Personal Access Token for calendar authentication", required = true)
             @RequestParam String token) {
 
         MemberId memberId = resolveAuthenticatedMemberId();

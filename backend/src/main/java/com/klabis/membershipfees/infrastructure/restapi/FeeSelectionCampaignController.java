@@ -4,7 +4,6 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -12,10 +11,6 @@ import com.klabis.membershipfees.application.ManualCampaignClosePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -40,8 +35,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "FeeSelectionCampaigns", description = "Publishing fee levels for a calendar year")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(FeeSelectionCampaign.class)
 class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
@@ -58,7 +51,6 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    @Operation(summary = "Publish fee levels for a calendar year (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> publishYear(PublishYearRequest request) {
         FeeSelectionCampaignId id = managementPort.publishYear(MembershipFeesRequestMapper.toCommand(request));
         return ResponseEntity.created(
@@ -67,9 +59,8 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    @Operation(summary = "List fee year publications, optionally filtered by status")
     public ResponseEntity<java.util.Collection<FeeSelectionCampaignResponse>> listPublications(
-            @Parameter(description = "Filter by status: 'closed' returns only past campaigns") String status) {
+            String status) {
         CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
         List<FeeSelectionCampaignResponse> items = publications.stream()
@@ -86,16 +77,14 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    @Operation(summary = "Get fee year publication details")
     public ResponseEntity<FeeSelectionCampaignResponse> getPublication(
-            @Parameter(description = "Publication UUID") UUID id) {
+            UUID id) {
         FeeSelectionCampaign publication = managementPort.getPublication(new FeeSelectionCampaignId(id));
         HalResponseContext.setDomain(publication);
         return ResponseEntity.ok(FeeSelectionCampaignResponse.from(publication));
     }
 
     @Override
-    @Operation(summary = "Change voting deadline of an active campaign (requires MEMBERS:MANAGE)")
     public ResponseEntity<FeeSelectionCampaignResponse> changeDeadline(
             UUID id, ChangeDeadlineRequest request) {
         FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id),
@@ -105,16 +94,14 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    @Operation(summary = "Manually close a campaign — processes it immediately regardless of deadline (requires MEMBERS:MANAGE)")
-    public ResponseEntity<Void> closeCampaign(@Parameter(description = "Campaign UUID") UUID id) {
+    public ResponseEntity<Void> closeCampaign(UUID id) {
         manualCampaignClosePort.closeCampaign(new FeeSelectionCampaignId(id));
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    @Operation(summary = "List published fee groups for a given year")
     public ResponseEntity<java.util.Collection<MembershipFeeGroupResponse>> listGroupsForYear(
-            @Parameter(description = "Calendar year") Integer year) {
+            Integer year) {
         List<MembershipFeeGroup> groups = managementPort.listGroupsForYear(year);
         List<MembershipFeeGroupResponse> items = groups.stream()
                 .map(MembershipFeeGroupResponse::from)

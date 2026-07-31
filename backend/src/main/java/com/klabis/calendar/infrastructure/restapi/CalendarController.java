@@ -8,17 +8,11 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.infrastructure.restapi.EventsApi;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.CollectionModel;
@@ -43,10 +37,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Calendar", description = "Calendar item management API")
 @PrimaryAdapter
 @ExposesResourceFor(CalendarItem.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.CALENDAR_SCOPE})
 class CalendarController implements CalendarApi {
 
     private final CalendarManagementPort calendarManagementService;
@@ -55,28 +47,11 @@ class CalendarController implements CalendarApi {
         this.calendarManagementService = calendarManagementService;
     }
 
-    @Operation(
-            summary = "List calendar items with date range filtering",
-            description = """
-                    Retrieves a list of calendar items filtered by date range.
-                    If dates not provided, defaults to current month.
-                    Maximum date range is 1 year (366 days).
-                    Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
-                    When mySchedule=true, returns only EVENT_DATE items linked to events where the current
-                    user is an active participant or event coordinator.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "List of calendar items retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Date range exceeds 366 days or invalid sort field")
     @Override
     public ResponseEntity<Collection<CalendarItemDto>> listCalendarItems(
-            @Parameter(description = "Start date for filtering (ISO DATE format, defaults to first day of current month)")
             LocalDate startDate,
-            @Parameter(description = "End date for filtering (ISO DATE format, defaults to last day of current month)")
             LocalDate endDate,
-            @Parameter(description = "Sorting parameters (default: startDate,asc)")
             String sort,
-            @Parameter(description = "When true, restricts results to EVENT_DATE items for events where the current user is a participant or coordinator")
             Boolean mySchedule,
             @ActingUser CurrentUserData currentUser) {
 
@@ -124,15 +99,9 @@ class CalendarController implements CalendarApi {
         return Sort.by(direction, field);
     }
 
-    @Operation(
-            summary = "Get calendar item by ID",
-            description = "Retrieves detailed calendar item information by ID. " +
-                          "Returns HATEOAS links based on whether the item is manually created or event-linked."
-    )
-    @ApiResponse(responseCode = "200", description = "Calendar item found")
     @Override
     public ResponseEntity<CalendarItemDto> getCalendarItem(
-            @Parameter(description = "Calendar item UUID") UUID id) {
+            UUID id) {
 
         CalendarItem calendarItem = calendarManagementService.getCalendarItem(new CalendarItemId(id));
 
@@ -140,16 +109,9 @@ class CalendarController implements CalendarApi {
         return ResponseEntity.ok(toDto(calendarItem));
     }
 
-    @Operation(
-            summary = "Create a new manual calendar item",
-            description = "Creates a new manual calendar item (not linked to an event). " +
-                          "Manual items can be updated and deleted. " +
-                          "Returns Location header pointing to the created resource."
-    )
-    @ApiResponse(responseCode = "201", description = "Calendar item successfully created")
     @Override
     public ResponseEntity<Void> createCalendarItem(
-            @Parameter(description = "Calendar item creation data") CreateCalendarItemRequest request) {
+            CreateCalendarItemRequest request) {
 
         CalendarItem created = calendarManagementService.createCalendarItem(toCommand(request));
 
@@ -160,19 +122,10 @@ class CalendarController implements CalendarApi {
                 .build();
     }
 
-    @Operation(
-            summary = "Update a manual calendar item",
-            description = """
-                    Updates calendar item information. Only allowed for manual items (not event-linked).
-                    Event-linked items are read-only and managed automatically.
-                    """
-    )
-    @ApiResponse(responseCode = "204", description = "Calendar item successfully updated")
-    @ApiResponse(responseCode = "400", description = "Cannot update event-linked calendar item")
     @Override
     public ResponseEntity<Void> updateCalendarItem(
-            @Parameter(description = "Calendar item UUID") UUID id,
-            @Parameter(description = "Calendar item update data") UpdateCalendarItemRequest request) {
+            UUID id,
+            UpdateCalendarItemRequest request) {
 
         calendarManagementService.updateCalendarItem(new CalendarItemId(id), toCommand(request));
         return ResponseEntity.noContent().build();
@@ -192,17 +145,9 @@ class CalendarController implements CalendarApi {
         return description != null && description.isBlank() ? null : description;
     }
 
-    @Operation(
-            summary = "Delete a manual calendar item",
-            description = "Deletes a manual calendar item. " +
-                          "Only allowed for manual items (not event-linked). " +
-                          "Event-linked items are read-only and managed automatically."
-    )
-    @ApiResponse(responseCode = "204", description = "Calendar item successfully deleted")
-    @ApiResponse(responseCode = "400", description = "Cannot delete event-linked calendar item")
     @Override
     public ResponseEntity<Void> deleteCalendarItem(
-            @Parameter(description = "Calendar item UUID") UUID id) {
+            UUID id) {
 
         calendarManagementService.deleteCalendarItem(new CalendarItemId(id));
         return ResponseEntity.noContent().build();
