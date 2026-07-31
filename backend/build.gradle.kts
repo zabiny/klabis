@@ -505,12 +505,11 @@ openApiModule(
         "UpdateEventRequest",
         "UpdateEventCategoryRequest",
         "UpdateEventRankingRequest",
-        "EntryFeeRequest"
+        "EntryFeeRequest",
+        "CreateEventRequest",
+        "CreateEventCategoryRequest"
     ),
     mappings = mapOf(
-        // CreateEventRequest stays hand-written — see the comment above it in events.yaml (it
-        // carries domain conversion methods the controller calls; a generated record cannot).
-        "CreateEventRequest" to "com.klabis.events.infrastructure.restapi.CreateEventRequest",
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",

@@ -1311,24 +1311,24 @@ components:
         name:
           type: string
 
-    # CreateEventRequest stays hand-written and is mapped onto the existing class via schemaMappings
-    # (see build.gradle.kts): it carries domain conversion methods (toRegistrationDeadlines,
-    # toCategories, CategoryRequest.toDomain, EntryFeeRequest.toMoney) that EventController calls
-    # directly, and a generated record cannot carry a method body. Extracting those into a mapper —
-    # as updateEvent already has — is what would make it generatable; that is its own change.
-    # It is documented here to match the actual wire format for the frontend generator.
     CreateEventRequest:
       type: object
+      x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
       description: |
         Accepts deadlines as a list of dates (max 3) and coordinators/categories inline. Category
         `id` is never supplied on create — the server always assigns a fresh id. Deadlines must be
         in non-decreasing order.
+
+        Nested category and fee constraints are enforced: the generated record carries `@Valid` on
+        `categories`, which the hand-written predecessor lacked. A blank category name used to reach
+        the domain and fail its `Assert.hasText` as a 500; a negative fee amount was not checked
+        anywhere at all. Both are now a 400 with field errors.
       required: [name, eventDate, organizer]
       properties:
         name:
           type: string
           maxLength: 100
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         eventDate:
           type: string
           format: date
@@ -1338,10 +1338,11 @@ components:
         organizer:
           type: string
           maxLength: 10
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
+        # No `format: uri` — see the note on UpdateEventRequest.websiteUrl.
         websiteUrl:
           type: string
-          format: uri
+          x-klabis-url: true
         coordinators:
           type: array
           uniqueItems: true
@@ -1369,7 +1370,7 @@ components:
         name:
           type: string
           maxLength: 50
-          pattern: '^(?!\s*$).+'
+          x-klabis-not-blank: true
         fee:
           $ref: '#/components/schemas/EntryFeeRequest'
 

@@ -52,8 +52,11 @@ class DeadlinesOrderedValidatorTest {
         return validator.validate(request);
     }
 
-    private static List<String> orderingViolationPaths(
-            Set<ConstraintViolation<UpdateEventRequest>> violations) {
+    /**
+     * Filters out the other constraints on these requests (@NotBlank, @Size, ...) so an assertion
+     * speaks only to the ordering rule under test.
+     */
+    private static List<String> orderingViolationPaths(Set<? extends ConstraintViolation<?>> violations) {
         return violations.stream()
                 .filter(v -> v.getConstraintDescriptor().getAnnotation() instanceof DeadlinesOrdered)
                 .map(v -> v.getPropertyPath().toString())
@@ -97,6 +100,44 @@ class DeadlinesOrderedValidatorTest {
             var violations = validateDeadlines(JsonNullable.of(null));
 
             assertThat(orderingViolationPaths(violations)).isEmpty();
+        }
+    }
+
+    /**
+     * The same constraint is declared on the POST body, where {@code deadlines} is a bare
+     * {@code List} rather than a {@link JsonNullable}. This is the reason the validator reads the
+     * component reflectively instead of taking a typed request.
+     */
+    @Nested
+    @DisplayName("on a generated POST request")
+    class OnCreateEventRequest {
+
+        private List<String> validate(List<LocalDate> deadlines) {
+            CreateEventRequest request = CreateEventRequestBuilder.builder()
+                    .name("Event")
+                    .organizer("ZBM")
+                    .eventDate(LocalDate.of(2026, 7, 1))
+                    .deadlines(deadlines)
+                    .build();
+            return orderingViolationPaths(validator.validate(request));
+        }
+
+        @Test
+        @DisplayName("rejects deadlines that decrease, reporting the deadlines property")
+        void rejectsDecreasingDeadlines() {
+            assertThat(validate(List.of(LATER, EARLIER))).containsExactly("deadlines");
+        }
+
+        @Test
+        @DisplayName("accepts deadlines in non-decreasing order")
+        void acceptsNonDecreasingDeadlines() {
+            assertThat(validate(List.of(EARLIER, LATER))).isEmpty();
+        }
+
+        @Test
+        @DisplayName("accepts an omitted deadlines list")
+        void acceptsNullDeadlines() {
+            assertThat(validate(null)).isEmpty();
         }
     }
 }

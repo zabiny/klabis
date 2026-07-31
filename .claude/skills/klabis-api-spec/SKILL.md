@@ -167,9 +167,10 @@ type out from under the mapper and the constraint silently never applies. Leave 
 string and let the extension carry the validation.
 
 **Check the schema is actually generated before converting a `pattern` hack to it.** Not every
-schema in the spec has a generated counterpart — `CreateEventRequest` is documented in the spec but
-excluded from `models`, so the extension emits nothing there and the validation lives in the
-hand-written `@NotBlank`. Removing the `pattern` there is a pure regression.
+schema in the spec has a generated counterpart: one that is mapped away via `schemaMappings`, or
+simply absent from a module's `models` allow-list, is documented for the frontend but produces no
+Java. There the extension emits nothing and the validation still lives in a hand-written annotation,
+so swapping `pattern: '^(?!\s*$).+'` for `x-klabis-not-blank` is a pure regression.
 `find backend/build/generated/openapi -name '<Schema>.java'` settles it.
 
 ### Cross-field rules: `x-klabis-class-constraint`

@@ -124,6 +124,40 @@ class EventControllerTest {
                     .andExpect(status().isBadRequest());
         }
 
+        /**
+         * The hand-written CreateEventRequest had no @Valid on categories, so nested constraints
+         * never ran: a blank name reached the domain and failed Assert.hasText as a 500, and a
+         * negative fee amount was not rejected anywhere. Generating the record from the spec fixed
+         * both — this pins that they stay 400s.
+         */
+        @Test
+        @DisplayName("should return 400 for a blank category name")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400ForBlankCategoryName() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\","
+                                             + "\"categories\":[{\"name\":\"  \"}]}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 400 for a negative category fee")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400ForNegativeCategoryFee() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\","
+                                             + "\"categories\":[{\"name\":\"H21\",\"fee\":{\"amount\":-1,\"currency\":\"CZK\"}}]}")
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
         @Test
         @DisplayName("should return 201 when location is omitted")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})

@@ -11,11 +11,9 @@ import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 class UpdateEventRequestMapper {
@@ -35,39 +33,23 @@ class UpdateEventRequestMapper {
         String websiteUrl = request.websiteUrl().orElse(
                 existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
         LinkedHashSet<MemberId> coordinators = request.coordinators().isPresent()
-                ? toCoordinators(request.coordinators().orElseThrow())
+                ? EventRequestConversions.toCoordinators(request.coordinators().orElseThrow())
                 : new LinkedHashSet<>(existingEvent.getCoordinators());
         EventTypeId eventTypeId = request.eventTypeId().isPresent()
-                ? toEventTypeId(request.eventTypeId().orElseThrow())
+                ? EventRequestConversions.toEventTypeId(request.eventTypeId().orElseThrow())
                 : existingEvent.getEventTypeId().orElse(null);
         RegistrationDeadlines registrationDeadlines = request.deadlines().isPresent()
-                ? toRegistrationDeadlines(request.deadlines().orElseThrow())
+                ? EventRequestConversions.toRegistrationDeadlines(request.deadlines().orElseThrow())
                 : existingEvent.getRegistrationDeadlines();
         List<EventCategory> categories = request.categories().isPresent()
                 ? toCategories(request.categories().orElseThrow(), existingEvent)
                 : existingEvent.getCategories();
 
         EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).orElse(existingEvent.getRanking());
-        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).orElse(existingEvent.getBaseEntryFee());
+        Money baseEntryFee = request.baseEntryFee().map(EventRequestConversions::toMoney).orElse(existingEvent.getBaseEntryFee());
 
         return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
                 coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
-    }
-
-    /**
-     * A cleared coordinator list is an empty set rather than null — the command's coordinators are
-     * always a collection, and the domain reads "no coordinators" from emptiness.
-     */
-    private static LinkedHashSet<MemberId> toCoordinators(Collection<UUID> coordinators) {
-        if (coordinators == null) {
-            return new LinkedHashSet<>();
-        }
-        return coordinators.stream().map(MemberId::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private static EventTypeId toEventTypeId(UUID eventTypeId) {
-        return eventTypeId == null ? null : new EventTypeId(eventTypeId);
     }
 
     /**
@@ -86,7 +68,7 @@ class UpdateEventRequestMapper {
         return requested.stream()
                 .map(request -> {
                     if (request.id() == null) {
-                        return new EventCategory(EventCategoryId.generate(), null, request.name(), toMoney(request.fee()));
+                        return new EventCategory(EventCategoryId.generate(), null, request.name(), EventRequestConversions.toMoney(request.fee()));
                     }
                     EventCategoryId id = new EventCategoryId(request.id());
                     EventCategory existing = existingById.get(id);
@@ -94,7 +76,7 @@ class UpdateEventRequestMapper {
                         throw new BusinessRuleViolationException(
                                 "Category id '" + id + "' does not belong to this event") {};
                     }
-                    return new EventCategory(existing.id(), existing.orisId(), request.name(), toMoney(request.fee()));
+                    return new EventCategory(existing.id(), existing.orisId(), request.name(), EventRequestConversions.toMoney(request.fee()));
                 })
                 .toList();
     }
@@ -106,21 +88,4 @@ class UpdateEventRequestMapper {
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
     }
 
-    private static Money toMoney(EntryFeeRequest feeRequest) {
-        if (feeRequest == null) {
-            return null;
-        }
-        return Money.of(feeRequest.amount(), Money.parseCurrency(feeRequest.currency()));
-    }
-
-    private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {
-        if (deadlines == null || deadlines.isEmpty()) {
-            return RegistrationDeadlines.none();
-        }
-        return RegistrationDeadlines.of(
-                deadlines.get(0),
-                deadlines.size() > 1 ? deadlines.get(1) : null,
-                deadlines.size() > 2 ? deadlines.get(2) : null
-        );
-    }
 }
