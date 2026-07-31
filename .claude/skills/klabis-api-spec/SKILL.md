@@ -205,13 +205,21 @@ ageRange:                            # a $ref property needs the oneOf form
 `pojo.mustache`; if that template is ever re-forked from upstream, port the branch or every PATCH DTO
 silently loses its wrappers.
 
-Do **not** mark response properties or POST/PUT bodies nullable — they have no tri-state, and the
-wrapper would leak into code that only wants a value.
+Only PATCH bodies want this. A nullable response property or POST/PUT body would generate the
+wrapper too, forcing an unwrap on every read for a distinction those payloads do not have. Several
+response schemas still carry a leftover `nullable: true`; it is inert only because the 3.0 keyword is
+ignored, so do not "modernise" them to the 3.1 spelling.
 
 ### `oneOf` strips property-level `x-klabis-*`
 
-The generator discards vendor extensions on a *composed* schema. A `$ref` property that needs both
-the wrapper and a field-security extension cannot have both:
+The generator discards vendor extensions from any property written as a `oneOf`. This is a property
+of the composition keyword itself, not of what it contains — a scalar
+`oneOf: [{type: string}, {type: 'null'}]` loses them just as a `$ref` branch does, even though the
+union spelling `type: ['string', 'null']` keeps them.
+
+That is only a dilemma for `$ref` properties, since a scalar can always use the union spelling
+instead. A `$ref` property has no union form, so one that needs both the wrapper and a field-security
+extension cannot have both:
 
 ```yaml
 gender:
@@ -223,8 +231,7 @@ gender:
 Losing the extension is the worse outcome — an unwrapped component is *skipped* by
 `RequestBodyFieldAuthorizationAdvice`, so a dropped `x-klabis-authority` makes an admin-only field
 writable by anyone, silently. Prefer the annotation and give up the wrapper for fields that have no
-cleared state anyway. Scalar unions (`type: ['string','null']`) keep their extensions fine; only
-compositions lose them. `PatchRequestWrapperArchitectureTest` records each such exception and asserts
+cleared state anyway. `PatchRequestWrapperArchitectureTest` records each such exception and asserts
 the field still declares the authority it was excepted for.
 
 ### Consuming the tri-state
@@ -793,10 +800,11 @@ returns `true` unconditionally makes the test assert nothing.
 - Writing `nullable: true` on a PATCH property. It is the OpenAPI 3.0 keyword and these specs are
   3.1, so it is silently ignored: no `JsonNullable`, no warning, and the endpoint quietly loses the
   ability to distinguish "absent" from "clear this field". Use `type: [x, 'null']`.
-- Giving a `$ref` PATCH property the nullable `oneOf` when it also carries `x-klabis-authority` or
-  `x-klabis-owner-visible` — the generator strips vendor extensions from a composed schema, and an
-  unwrapped component is skipped by `RequestBodyFieldAuthorizationAdvice`, so the field silently
-  becomes writable by anyone. Keep `allOf` + the extension.
+- Writing a PATCH property as a `oneOf` when it also carries `x-klabis-authority` or
+  `x-klabis-owner-visible` — the generator strips vendor extensions from any `oneOf`, scalar ones
+  included, and an unwrapped component is skipped by `RequestBodyFieldAuthorizationAdvice`, so the
+  field silently becomes writable by anyone. For a scalar use `type: [x, 'null']`, which keeps both;
+  for a `$ref`, which has no union form, keep `allOf` + the extension and give up the wrapper.
 - Marking a response property or a POST/PUT body property nullable. There is no tri-state to express
   and the `JsonNullable` wrapper leaks into code that only ever wants a value.
 - Mapping a `JsonNullable` with a converter that dereferences the value. `map` runs on a *present
