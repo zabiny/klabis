@@ -185,6 +185,10 @@ paths:
     $ref: './oris.yaml#/paths/~1api~1oris~1events'
 
 components:
+  # Inlined rather than $ref'd to _shared/security.yaml: a root component that only $refs another
+  # file collapses to a self-referencing "$ref: #/components/securitySchemes/KlabisAuth" in the
+  # bundle, because a ref into #/components/ is localized, not expanded. The module files carry
+  # the same definition; validate.mjs checks that all ten stay identical.
   securitySchemes:
     KlabisAuth:
       type: oauth2

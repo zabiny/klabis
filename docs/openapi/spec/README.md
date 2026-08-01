@@ -35,6 +35,39 @@ _shared/
 Module specs are pulled in from `klabis.yaml` via `$ref`. Shared components are hoisted into the
 bundle on demand — a schema nobody references does not end up in the output.
 
+### Every module file is a standalone OpenAPI document
+
+Each `<module>.yaml` carries its own `openapi`, `info` and `servers`, so it opens directly in Swagger
+UI or Redoc without being bundled first:
+
+```bash
+npx @redocly/cli preview-docs docs/openapi/spec/members.yaml
+```
+
+Serve it from this directory — its `./_shared/*.yaml` refs are relative, so a module file moved out
+of here stops resolving.
+
+That standalone-ness costs three keys duplicated from `klabis.yaml`: `openapi`, `info.version` and
+`components.securitySchemes`. The last one is not optional decoration — operations carry
+`security: [KlabisAuth: [...]]`, and a security requirement naming a scheme the document does not
+define is an error, not a warning.
+
+The bundler **ignores all three**: modules are pulled in through a `#/paths/...` pointer, so nothing
+outside `paths` and the referenced `components` is ever read. A module that drifted from the root
+would therefore keep bundling cleanly and only mislead whoever opened that one file — so
+`validateModuleDocuments` (validate.mjs) pins each to the root's value. Change `info.version` in
+`klabis.yaml` and the bundle fails until every module matches.
+
+`securitySchemes` is inlined in `klabis.yaml` rather than shared from `_shared/`, because a root
+component that only `$ref`s another file collapses to a self-referencing
+`$ref: '#/components/securitySchemes/KlabisAuth'` in the bundle — a ref into `#/components/` is
+localized, not expanded.
+
+`_shared/*.yaml` are fragments, not modules: they hold `components` only and are never opened on
+their own, so they carry no header. The check derives its module list from the files `klabis.yaml`
+routes a path to, so anything it does not route to — `_shared/`, or a scratch file left in this
+directory — is simply not a module and is not checked.
+
 ## Commands
 
 Run from `backend/`:
