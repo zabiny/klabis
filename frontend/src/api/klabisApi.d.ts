@@ -1183,7 +1183,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resume a suspended membership */
+        /**
+         * Resume a suspended membership
+         * @description Reactivates a suspended membership. Refused when the membership is already active.
+         *
+         */
         post: operations["resumeMember"];
         delete?: never;
         options?: never;
@@ -1203,7 +1207,8 @@ export interface paths {
         /**
          * Suspend a membership
          * @description Suspends an active membership. Refused when the member still has outstanding debt on their
-         *     finance account.
+         *     finance account, or when they are the sole owner of at least one group — a successor must
+         *     be designated first.
          *
          */
         post: operations["suspendMember"];
@@ -1839,6 +1844,16 @@ export interface components {
             memberId: string;
             /** Format: int32 */
             year: number;
+        };
+        AffectedGroup: {
+            /** Format: uuid */
+            groupId: string;
+            groupName: string;
+            /**
+             * @description Which of the three group aggregates the member owns
+             * @enum {string}
+             */
+            groupType: "FREE" | "FAMILY" | "TRAINING";
         };
         AgeRangeRequest: {
             /** Format: int32 */
@@ -2540,6 +2555,13 @@ export interface components {
             /** Format: uuid */
             memberId: string;
         };
+        /** @description The member is the sole owner of the listed groups. Each one needs another owner (or must be
+         *     dissolved) before the suspension can go through.
+         *      */
+        LastOwnerWarning: {
+            affectedGroups: components["schemas"]["AffectedGroup"][];
+            message: string;
+        };
         Link: {
             deprecation?: string;
             href: string;
@@ -2712,6 +2734,12 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        MonetaryAmount: {
+            /** @description Negative when the member is in debt */
+            amount: number;
+            /** @description ISO 4217 code */
+            currency: string;
+        };
         /** @description A single ORIS event available for import. */
         OrisEventSummary: {
             /** Format: date */
@@ -2721,6 +2749,15 @@ export interface components {
             location?: string | null;
             name?: string;
             organizer?: string | null;
+        };
+        /** @description The member owes money — settle the account before suspending them. */
+        OutstandingDebtWarning: {
+            /**
+             * Format: uri
+             * @description Absolute URL of the member's finance account
+             */
+            accountLink: string;
+            balance: components["schemas"]["MonetaryAmount"];
         };
         PageMetadata: {
             /** Format: int64 */
@@ -2929,6 +2966,7 @@ export interface components {
             note?: string;
             reason: components["schemas"]["DeactivationReason"];
         };
+        SuspensionBlockedWarning: components["schemas"]["OutstandingDebtWarning"] | components["schemas"]["LastOwnerWarning"];
         TokenRequestRequest: {
             /** Format: email */
             email: string;
@@ -5548,7 +5586,17 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description Suspension is blocked — either the member owes money on their finance account, or they
+             *     are the sole owner of at least one group.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuspensionBlockedWarning"];
+                };
+            };
             422: components["responses"]["UnprocessableEntity"];
         };
     };

@@ -13,10 +13,6 @@ import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.*;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -41,8 +37,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "MembershipFeeTiers", description = "Membership fee tier catalog management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(MembershipFeeTier.class)
 class MembershipFeeTierController implements MembershipFeeTiersApi {
 
@@ -62,7 +56,6 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Create a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> createTier(CreateMembershipFeeTierRequest request) {
         MembershipFeeTierManagementPort.CreateTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         MembershipFeeTierId id = managementPort.createTier(command);
@@ -72,7 +65,6 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "List all membership fee tiers")
     public ResponseEntity<java.util.Collection<MembershipFeeTierSummaryResponse>> listTiers() {
         List<MembershipFeeTier> tiers = managementPort.listTiers();
         List<MembershipFeeTierSummaryResponse> items = tiers.stream()
@@ -97,18 +89,16 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Get membership fee tier details")
     public ResponseEntity<MembershipFeeTierResponse> getTier(
-            @Parameter(description = "Tier UUID") UUID id) {
+            UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         HalResponseContext.setDomain(tier);
         return ResponseEntity.ok(MembershipFeeTierResponse.from(tier));
     }
 
     @Override
-    @Operation(summary = "Edit a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> editTier(
-            @Parameter(description = "Tier UUID") UUID id,
+            UUID id,
             EditMembershipFeeTierRequest request) {
         MembershipFeeTierManagementPort.EditTierCommand command = MembershipFeesRequestMapper.toCommand(request);
         managementPort.editTier(new MembershipFeeTierId(id), command);
@@ -116,9 +106,8 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "List payment rules for a membership fee tier")
     public ResponseEntity<java.util.Collection<MembershipFeeTierResponse.PaymentRuleResponse>> listRules(
-            @Parameter(description = "Tier UUID") UUID id) {
+            UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         List<PaymentRuleDomain> domains = tier.getRules().stream()
                 .map(rule -> new PaymentRuleDomain(new MembershipFeeTierId(id), rule))
@@ -134,11 +123,10 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Get a payment rule detail from a membership fee tier")
     public ResponseEntity<MembershipFeeTierResponse.PaymentRuleResponse> getRule(
-            @Parameter(description = "Tier UUID") UUID id,
-            @Parameter(description = "Event type UUID") UUID eventTypeId,
-            @Parameter(description = "Ranking short name") String ranking) {
+            UUID id,
+            UUID eventTypeId,
+            String ranking) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         MembershipPaymentRule rule = tier.getRules().stream()
                 .filter(r -> r.eventTypeId().value().equals(eventTypeId) && r.rankingShortName().equals(ranking))
@@ -152,9 +140,8 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Add a payment rule to a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> addRule(
-            @Parameter(description = "Tier UUID") UUID id,
+            UUID id,
             AddPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.AddRuleCommand command = new MembershipFeeTierManagementPort.AddRuleCommand(
                 MembershipFeesRequestMapper.toDomain(request));
@@ -167,11 +154,10 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Edit a payment rule's value on a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> editRule(
-            @Parameter(description = "Tier UUID") UUID id,
-            @Parameter(description = "Event type UUID") UUID eventTypeId,
-            @Parameter(description = "Ranking short name") String ranking,
+            UUID id,
+            UUID eventTypeId,
+            String ranking,
             EditPaymentRuleRequest request) {
         MembershipFeeTierManagementPort.EditRuleCommand command = new MembershipFeeTierManagementPort.EditRuleCommand(
                 EventTypeReference.of(eventTypeId),
@@ -183,11 +169,10 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Remove a payment rule from a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> removeRule(
-            @Parameter(description = "Tier UUID") UUID id,
-            @Parameter(description = "Event type UUID") UUID eventTypeId,
-            @Parameter(description = "Ranking short name") String ranking) {
+            UUID id,
+            UUID eventTypeId,
+            String ranking) {
         MembershipFeeTierManagementPort.RemoveRuleCommand command = new MembershipFeeTierManagementPort.RemoveRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking
@@ -197,9 +182,8 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    @Operation(summary = "Delete a membership fee tier (requires MEMBERS:MANAGE)")
     public ResponseEntity<Void> deleteTier(
-            @Parameter(description = "Tier UUID") UUID id) {
+            UUID id) {
         managementPort.deleteTier(new MembershipFeeTierId(id));
         return ResponseEntity.noContent().build();
     }

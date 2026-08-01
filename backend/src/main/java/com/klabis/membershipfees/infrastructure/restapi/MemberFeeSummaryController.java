@@ -4,15 +4,10 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.users.Authority;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -31,8 +26,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "MemberFeeSummary", description = "Member fee level summary and history API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 // Owner-only authorization, declared as x-klabis-owner-visible with no paired authority — see
 // MemberFeeChoiceController for why actingMember stays despite being unused here.
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
@@ -47,10 +40,9 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
     }
 
     @Override
-    @Operation(summary = "Get member's current fee level summary for a year")
     public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Calendar year") Integer year,
+            UUID memberId,
+            Integer year,
             @ActingMember MemberId actingMember) {
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
@@ -75,9 +67,8 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
     }
 
     @Override
-    @Operation(summary = "Get member's fee level assignment history")
     public ResponseEntity<MemberFeeHistoryResponse> getFeeHistory(
-            @Parameter(description = "Member UUID") UUID memberId,
+            UUID memberId,
             @ActingMember MemberId actingMember) {
 
         MemberFeeHistoryResponse response = MemberFeeHistoryResponse.from(

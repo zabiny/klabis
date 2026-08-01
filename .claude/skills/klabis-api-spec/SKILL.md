@@ -35,31 +35,36 @@ is a single source of truth end to end.
   the `*Dto` suffix.
 - Changing the spec requires regenerating **both** the bundle (`./gradlew openapiBundle`) and the
   frontend types (`npm run openapi` from `frontend/`).
-- **Controllers keep their springdoc annotations** — see below.
+- **Never put `@Operation` / `@ApiResponse` / `@Parameter` on a controller** — see below.
 
-#### Why `@Operation` / `@ApiResponse` / `@Parameter` stay on the controller
+#### Why the controllers carry no springdoc annotations
 
-They duplicate `summary`, `description` and response descriptions that the spec already states, so
-they look like leftovers. They are not: springdoc reads annotations off the **concrete class**, and
-Java does not inherit method annotations from an interface. Deleting them compiles fine and silently
-guts `klabis-full.json` — `summary` and `description` become `null`, parameter descriptions vanish,
-and response descriptions degrade to a bare `"OK"`. Only `tags` and `operationId` survive, because
-those are derived from the class and method names.
+`documentationProvider = "springdoc"` makes the generator emit them onto the `*Api` interface,
+straight from the spec. Springdoc reads annotations off the concrete class and Java does not inherit
+method annotations from an interface — but the controller `@Override`s a method whose *declaration*
+carries them, and springdoc resolves that. So `/v3/api-docs` is spec-derived too, and hand-written
+duplicates are pure drift surface.
 
-(This is the same inheritance gap `@HasAuthority` has. There we bridged it with
-`MethodSecurityAnnotations`; springdoc offers no equivalent hook and is not worth patching for a
-component being removed.)
+The generated set is strictly richer than what the controllers used to hold: it also carries
+`security`, `tags`, every error response with its description and `@Content` schema, and
+`@Parameter(hidden = true)` on the `x-spring-provide-args` arguments. Measured over the whole app
+when the 26 controllers were stripped: operations 117 → 117 (none lost), summaries 82 → 117,
+descriptions 51 → 111, parameter descriptions 95 → 133.
 
-The generator's own `documentationProvider = "springdoc"` would emit these annotations onto the
-interface — richer than the hand-written ones, since it also carries the error-response descriptions.
-It does not work here: it renders `@Schema(implementation = …)` from `schemaMappings`, and our
-envelope mappings target *generic* types, producing `java.util.Collection<…EventTypeDto>.class` —
-not valid Java. Both migrated modules hit it (`Collection<T>` and `Page<T>` alike), so it is a direct
-conflict with how envelopes are mapped, not an edge case.
+**The catch is generic `schemaMappings`.** `documentationProvider` renders each response's baseType
+into `@Schema(implementation = <baseType>.class)`, and the envelope mappings target *generic* types,
+producing `java.util.Collection<…EventTypeDto>.class` — not legal Java (JLS 15.8.2: a class literal
+takes a raw type). 27 occurrences across 5 modules. The generator has no hook for it: stock
+`api.mustache` emits `{{{baseType}}}` verbatim, Mustache cannot transform a string, and a lambda
+would mean subclassing `SpringCodegen`. `openApiModule` therefore erases the type arguments in a
+`doLast` over the generated `*Api.java`. That erasure is declared via `inputs.property` — a `doLast`
+body is not part of a task's cache fingerprint, so without it a cached output could be restored
+having been patched by an older version of the rule.
 
-So: leave them for now. They no longer feed the published document — `openapiBundle` does — but
-stripping them is a separate mechanical pass, and until it happens they are what `/v3/api-docs`
-serves to anyone introspecting the running app.
+The exceptions are the 7 files with no generated counterpart, which legitimately keep their
+annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
+`GroupsExceptionHandler`, the hand-written `MemberOptionResponse`/`MemberSummaryResponse`, and
+`@Hidden` on `ActingUser`/`ActingMember`.
 
 ## Layout
 
@@ -513,8 +518,8 @@ Two guards, both worth knowing because each fails at a different moment:
 
 - **`halTypes.ts` indexes into `klabisApi.d.ts`** by schema name
   (`components['schemas']['EntityModelEventTypeDto']`). A name that does not exist there is a `tsc`
-  error — loud, immediate. This one is an artifact of `klabisApi.d.ts` coming from springdoc (see
-  the exception at the top) and disappears once the bundler owns `klabis-full.json`.
+  error — loud, immediate. Since the bundler owns `klabis-full.json`, that name comes from the spec,
+  so the fix is to correct the schema name there and regenerate — never to edit `klabisApi.d.ts`.
 - **The `_embedded` key is not checked by anything.** Getting it wrong in the envelope produces
   frontend types naming a property no response ever contains: `undefined` at runtime, an empty list
   in the UI, no error anywhere.
@@ -782,9 +787,8 @@ returns `true` unconditionally makes the test assert nothing.
   real `OwnershipResolver` instead
 - Writing `@HasAuthority` on a controller method — the authority belongs in `x-klabis-authority`,
   stated once
-- Stripping `@Operation` / `@ApiResponse` / `@Parameter` off a controller because "the spec already
-  says that" — springdoc cannot see them through the interface, and the published document loses its
-  summaries and descriptions
+- Writing `@Operation` / `@ApiResponse` / `@Parameter` on a controller — the generator emits them
+  onto the `*Api` interface from the spec, and a hand-written copy only drifts from it
 - Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
   output, not the interface you author against
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably

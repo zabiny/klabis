@@ -5,19 +5,11 @@ import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenAlreadyUsedException;
 import com.klabis.common.users.domain.TokenExpiredException;
 import com.klabis.common.users.domain.User;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
  * </ul>
  */
 @RestController
-@Tag(name = "PasswordSetup", description = "Password setup and account activation API")
 @PrimaryAdapter
 public class PasswordSetupController implements PasswordSetupApi {
 
@@ -56,11 +47,6 @@ public class PasswordSetupController implements PasswordSetupApi {
      * @return validation response with masked email and expiration time
      */
     @Override
-    @Operation(summary = "Validate password setup token", description = "Validates a token before showing the password setup form")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token is valid", content = @Content(schema = @Schema(implementation = ValidateTokenResponse.class))),
-    })
-    @Parameter(name = "token", description = "The plain text token from the email link", required = true, example = "abc123def456")
     public ResponseEntity<ValidateTokenResponse> validatePasswordSetupToken(String token) {
         PasswordSetupToken setupToken = passwordSetupService.validateToken(token);
         return ResponseEntity.ok(ValidateTokenResponseBuilder.builder()
@@ -80,8 +66,6 @@ public class PasswordSetupController implements PasswordSetupApi {
      * @return success response with registration number
      */
     @Override
-    @Operation(summary = "Complete password setup", description = "Sets the user's password and activates the account")
-    @ApiResponse(responseCode = "200", description = "Password set successfully")
     public ResponseEntity<PasswordSetupResponse> completePasswordSetup(
             SetPasswordRequest request,
             HttpServletRequest httpRequest) {
@@ -121,8 +105,6 @@ public class PasswordSetupController implements PasswordSetupApi {
      * @return success message (generic response for security)
      */
     @Override
-    @Operation(summary = "Request new password setup token", description = "Requests a new token if the previous one expired")
-    @ApiResponse(responseCode = "200", description = "Request processed successfully")
     public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(TokenRequestRequest request) {
         passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
         return ResponseEntity.ok(new TokenRequestResponse(
@@ -151,21 +133,11 @@ public class PasswordSetupController implements PasswordSetupApi {
         return ip;
     }
 
-    @ApiResponse(
-            responseCode = "410",
-            description = "Token expired or already used",
-            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
-    )
     @ExceptionHandler(TokenExpiredException.class)
     public ErrorResponse handleTokenExpired(TokenExpiredException e) {
         return ErrorResponse.create(e, HttpStatus.GONE, "Token has expired. Please request a new one.");
     }
 
-    @ApiResponse(
-            responseCode = "410",
-            description = "Token expired or already used",
-            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
-    )
     @ExceptionHandler(TokenAlreadyUsedException.class)
     public ErrorResponse handleTokenAlreadyUsed(TokenAlreadyUsedException e) {
         return ErrorResponse.create(e, HttpStatus.GONE, "Token has already been used. Please request a new one.");

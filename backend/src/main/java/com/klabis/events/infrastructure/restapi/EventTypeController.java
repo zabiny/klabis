@@ -9,11 +9,6 @@ import com.klabis.common.users.Authority;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.EventType;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.hateoas.CollectionModel;
@@ -41,10 +36,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "EventTypes", description = "Event type catalog management API")
 @PrimaryAdapter
 @ExposesResourceFor(EventType.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 public class EventTypeController implements EventTypesApi {
 
     private final EventTypeManagementPort eventTypeManagementService;
@@ -53,8 +46,6 @@ public class EventTypeController implements EventTypesApi {
         this.eventTypeManagementService = eventTypeManagementService;
     }
 
-    @Operation(summary = "List all event types", description = "Returns all event types sorted by sort_order. Requires EVENTS:READ authority.")
-    @ApiResponse(responseCode = "200", description = "List of event types")
     @Override
     public ResponseEntity<Collection<EventTypeDto>> listEventTypes() {
         List<EventType> eventTypes = eventTypeManagementService.listAllSorted();
@@ -67,11 +58,9 @@ public class EventTypeController implements EventTypesApi {
         return ResponseEntity.ok(payload);
     }
 
-    @Operation(summary = "Get event type by ID", description = "Returns a single event type. Requires EVENTS:READ authority.")
-    @ApiResponse(responseCode = "200", description = "Event type found")
     @Override
     public ResponseEntity<EventTypeDto> getEventType(
-            @Parameter(description = "Event type UUID") @PathVariable UUID id) {
+            @PathVariable UUID id) {
 
         EventType eventType = eventTypeManagementService.getEventType(new EventTypeId(id));
 
@@ -79,11 +68,9 @@ public class EventTypeController implements EventTypesApi {
         return ResponseEntity.ok(EventTypeDtoMapper.toDto(eventType));
     }
 
-    @Operation(summary = "Create an event type", description = "Creates a new event type. Requires EVENTS:MANAGE authority.")
-    @ApiResponse(responseCode = "201", description = "Event type created")
     @Override
     public ResponseEntity<Void> createEventType(
-            @Parameter(description = "Event type creation data") CreateEventTypeRequest request) {
+            CreateEventTypeRequest request) {
 
         EventType created = eventTypeManagementService.createEventType(EventTypeRequestMapper.toCommand(request));
         return ResponseEntity
@@ -91,22 +78,18 @@ public class EventTypeController implements EventTypesApi {
                 .build();
     }
 
-    @Operation(summary = "Update an event type", description = "Updates an existing event type. Requires EVENTS:MANAGE authority.")
-    @ApiResponse(responseCode = "204", description = "Event type updated")
     @Override
     public ResponseEntity<Void> updateEventType(
-            @Parameter(description = "Event type UUID") @PathVariable UUID id,
-            @Parameter(description = "Event type update data") UpdateEventTypeRequest request) {
+            @PathVariable UUID id,
+            UpdateEventTypeRequest request) {
 
         eventTypeManagementService.updateEventType(new EventTypeId(id), EventTypeRequestMapper.toCommand(request));
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Delete an event type", description = "Deletes an event type not in use. Requires EVENTS:MANAGE authority.")
-    @ApiResponse(responseCode = "204", description = "Event type deleted")
     @Override
     public ResponseEntity<Void> deleteEventType(
-            @Parameter(description = "Event type UUID") @PathVariable UUID id) {
+            @PathVariable UUID id) {
 
         eventTypeManagementService.deleteEventType(new EventTypeId(id));
         return ResponseEntity.noContent().build();

@@ -553,6 +553,32 @@
     ],
     "type": "object"
    },
+   "AffectedGroup": {
+    "properties": {
+     "groupId": {
+      "format": "uuid",
+      "type": "string"
+     },
+     "groupName": {
+      "type": "string"
+     },
+     "groupType": {
+      "description": "Which of the three group aggregates the member owns",
+      "enum": [
+       "FREE",
+       "FAMILY",
+       "TRAINING"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "groupId",
+     "groupName",
+     "groupType"
+    ],
+    "type": "object"
+   },
    "AgeRangeRequest": {
     "properties": {
      "maxAge": {
@@ -2817,6 +2843,25 @@
     ],
     "type": "object"
    },
+   "LastOwnerWarning": {
+    "description": "The member is the sole owner of the listed groups. Each one needs another owner (or must be\ndissolved) before the suspension can go through.\n",
+    "properties": {
+     "affectedGroups": {
+      "items": {
+       "$ref": "#/components/schemas/AffectedGroup"
+      },
+      "type": "array"
+     },
+     "message": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "message",
+     "affectedGroups"
+    ],
+    "type": "object"
+   },
    "Link": {
     "properties": {
      "deprecation": {
@@ -3237,6 +3282,23 @@
     },
     "type": "object"
    },
+   "MonetaryAmount": {
+    "properties": {
+     "amount": {
+      "description": "Negative when the member is in debt",
+      "type": "number"
+     },
+     "currency": {
+      "description": "ISO 4217 code",
+      "type": "string"
+     }
+    },
+    "required": [
+     "amount",
+     "currency"
+    ],
+    "type": "object"
+   },
    "OrisEventSummary": {
     "description": "A single ORIS event available for import.",
     "properties": {
@@ -3260,6 +3322,24 @@
       "type": "string"
      }
     },
+    "type": "object"
+   },
+   "OutstandingDebtWarning": {
+    "description": "The member owes money — settle the account before suspending them.",
+    "properties": {
+     "accountLink": {
+      "description": "Absolute URL of the member's finance account",
+      "format": "uri",
+      "type": "string"
+     },
+     "balance": {
+      "$ref": "#/components/schemas/MonetaryAmount"
+     }
+    },
+    "required": [
+     "balance",
+     "accountLink"
+    ],
     "type": "object"
    },
    "PageMetadata": {
@@ -3770,6 +3850,16 @@
      "reason"
     ],
     "type": "object"
+   },
+   "SuspensionBlockedWarning": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/OutstandingDebtWarning"
+     },
+     {
+      "$ref": "#/components/schemas/LastOwnerWarning"
+     }
+    ]
    },
    "TokenRequestRequest": {
     "properties": {
@@ -9071,6 +9161,7 @@
   },
   "/api/members/{id}/resume": {
    "post": {
+    "description": "Reactivates a suspended membership. Refused when the membership is already active.\n",
     "operationId": "resumeMember",
     "parameters": [
      {
@@ -9123,7 +9214,7 @@
   },
   "/api/members/{id}/suspend": {
    "post": {
-    "description": "Suspends an active membership. Refused when the member still has outstanding debt on their\nfinance account.\n",
+    "description": "Suspends an active membership. Refused when the member still has outstanding debt on their\nfinance account, or when they are the sole owner of at least one group — a successor must\nbe designated first.\n",
     "operationId": "suspendMember",
     "parameters": [
      {
@@ -9161,7 +9252,14 @@
       "$ref": "#/components/responses/NotFound"
      },
      "409": {
-      "$ref": "#/components/responses/Conflict"
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SuspensionBlockedWarning"
+        }
+       }
+      },
+      "description": "Suspension is blocked — either the member owes money on their finance account, or they\nare the sole owner of at least one group.\n"
      },
      "422": {
       "$ref": "#/components/responses/UnprocessableEntity"

@@ -342,7 +342,7 @@ fun openApiModule(
                 "skipDefaultInterface" to "true",
                 "useSpringBoot3" to "true",
                 "useJakartaEe" to "true",
-                "documentationProvider" to "none",
+                "documentationProvider" to "springdoc",
                 // Emits JsonNullable<T> for a nullable property, giving PATCH bodies their
                 // absent/null/value tri-state. Requires the OpenAPI 3.1 spelling
                 // `type: [x, "null"]` — the 3.0 `nullable: true` keyword leaves isNullable false.
@@ -364,6 +364,45 @@ fun openApiModule(
         val commonMappings = mapOf("ProblemDetail" to "org.springframework.http.ProblemDetail")
         schemaMappings.set(mappings + commonMappings)
         importMappings.set(mappings + commonMappings + extraImportMappings + mapOf("Instant" to "java.time.Instant"))
+
+        // `documentationProvider=springdoc` renders each response's baseType into
+        // `@Schema(implementation = <baseType>.class)`. For the envelope schemaMappings above that
+        // baseType carries type arguments — `Page<MemberSummaryResponse>.class` — which is not
+        // legal Java (JLS 15.8.2: a class literal takes a raw type). The generator has no hook for
+        // this: the stock api.mustache emits {{{baseType}}} verbatim, Mustache cannot transform a
+        // string, and registering a lambda would mean subclassing SpringCodegen.
+        //
+        // Drop the response's whole `content = {...}` block, not just the offending `@Schema`.
+        // Springdoc derives the schema from the method's *return type* — which still carries the
+        // type argument — but only for an @ApiResponse that declares no content at all. Anything
+        // left behind wins over that fallback and makes the document worse than before: a raw
+        // `Page.class` flattens to a bare `Page` (and `Collection.class` to `"type": "string"`),
+        // while a bare `@Content(mediaType = ...)` yields an empty `{}`. Measured over all three
+        // variants; only removing the block keeps `PageMemberSummaryResponse` and the array shapes.
+        //
+        // `java.lang.Object` — what a schemaMapping falls back to when no Java type names the
+        // response body — gets the same treatment for the same reason: springdoc renders it as
+        // `"type": "string"`, which is worse than saying nothing.
+        //
+        // Anchored on `content = {` … `}` containing an unusable class literal. `[^{}]*` cannot
+        // span the block's own braces, so the match stops at the right `}`.
+        val unusableResponseContent =
+            Regex(""",\s*content = \{[^{}]*implementation = (?:[\w.]+<|java\.lang\.Object\b)[^{}]*\}""")
+
+        // GenerateTask is @CacheableTask, and Gradle fingerprints only declared inputs — never the
+        // body of a doLast closure. Without this the task could be restored from the build cache
+        // with the output of an *older* version of the patch below, and the edit would never run.
+        inputs.property("unusableResponseContent", unusableResponseContent.pattern)
+
+        doLast {
+            outputDir.get().asFile.walkTopDown()
+                .filter { it.isFile && it.name.endsWith("Api.java") }
+                .forEach { file ->
+                    val original = file.readText()
+                    val patched = original.replace(unusableResponseContent, "")
+                    if (patched != original) file.writeText(patched)
+                }
+        }
     }
 
     // Part of the main sourceSet (not a separate one) so Lombok -> MapStruct -> RecordBuilder
@@ -399,7 +438,16 @@ openApiModule(
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
         "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>"
+        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
+        // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
+        // for the union. Object is the honest answer, and it also stops the generator importing a
+        // model it was not asked to generate. Generating the union instead does not work — the
+        // generator flattens a discriminator-less oneOf into one record holding every branch's
+        // fields, each @NotNull, which nothing can satisfy. The published contract in
+        // klabis-full.json still carries the full oneOf; only /v3/api-docs goes without, since the
+        // doLast below drops the `"type": "string"` springdoc would otherwise infer from Object.
+        "SuspensionBlockedWarning" to "java.lang.Object"
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
