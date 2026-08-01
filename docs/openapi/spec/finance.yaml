@@ -7,7 +7,8 @@
 # The three GET operations were guarded by an imperative checkAccountAccess() check: caller must be
 # the account owner OR hold FINANCE:MANAGE. That maps to x-klabis-authority + x-klabis-owner-visible
 # (OR semantics) on each GET operation. The three POST operations are FINANCE:MANAGE only — never
-# owner-accessible — so they carry x-klabis-authority alone.
+# owner-accessible — so they carry x-klabis-authority alone. They still share
+# AccountMemberIdParam and so inherit its @OwnerId, which is inert without @OwnerVisible.
 
 paths:
 
@@ -20,7 +21,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: memberId
+      x-klabis-owner-visible: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -72,7 +73,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: memberId
+      x-klabis-owner-visible: true
       x-spring-paginated: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
@@ -228,7 +229,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: memberId
+      x-klabis-owner-visible: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -327,6 +328,10 @@ components:
       in: path
       description: Member UUID
       required: true
+      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
+      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
+      # operations here that do not opt into ownership are unaffected.
+      x-klabis-owner-id: true
       schema:
         type: string
         format: uuid

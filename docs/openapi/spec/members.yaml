@@ -239,7 +239,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: id
+      x-klabis-owner-visible: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -362,6 +362,10 @@ components:
       in: path
       description: Member UUID
       required: true
+      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
+      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
+      # operations here that do not opt into ownership are unaffected.
+      x-klabis-owner-id: true
       schema:
         type: string
         format: uuid

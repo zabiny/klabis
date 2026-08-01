@@ -9,7 +9,8 @@
     "schema": {
      "format": "uuid",
      "type": "string"
-    }
+    },
+    "x-klabis-owner-id": true
    },
    "CalendarItemIdParam": {
     "description": "Calendar item UUID",
@@ -105,7 +106,8 @@
     "schema": {
      "format": "uuid",
      "type": "string"
-    }
+    },
+    "x-klabis-owner-id": true
    },
    "FeeChoiceYearParam": {
     "description": "Calendar year",
@@ -125,7 +127,8 @@
     "schema": {
      "format": "uuid",
      "type": "string"
-    }
+    },
+    "x-klabis-owner-id": true
    },
    "FeeSummaryYearParam": {
     "description": "Calendar year",
@@ -185,7 +188,8 @@
     "schema": {
      "format": "uuid",
      "type": "string"
-    }
+    },
+    "x-klabis-owner-id": true
    },
    "PageParam": {
     "description": "Zero-based page index (0..N)",
@@ -216,7 +220,8 @@
     "schema": {
      "format": "uuid",
      "type": "string"
-    }
+    },
+    "x-klabis-owner-id": true
    },
    "RuleEventTypeIdParam": {
     "description": "Event type UUID",
@@ -4847,8 +4852,7 @@
     "tags": [
      "Calendar"
     ],
-    "x-klabis-authority": "CALENDAR_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.CALENDAR_MANAGE)"
+    "x-klabis-authority": "CALENDAR_MANAGE"
    }
   },
   "/api/calendar-items/{id}": {
@@ -4904,8 +4908,7 @@
     "tags": [
      "Calendar"
     ],
-    "x-klabis-authority": "CALENDAR_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.CALENDAR_MANAGE)"
+    "x-klabis-authority": "CALENDAR_MANAGE"
    },
    "get": {
     "description": "Retrieves detailed calendar item information by ID. Returns HATEOAS links based on whether\nthe item is manually created or event-linked.\n",
@@ -5043,8 +5046,7 @@
     "tags": [
      "Calendar"
     ],
-    "x-klabis-authority": "CALENDAR_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.CALENDAR_MANAGE)"
+    "x-klabis-authority": "CALENDAR_MANAGE"
    }
   },
   "/api/category-presets": {
@@ -5103,8 +5105,7 @@
     "tags": [
      "CategoryPresets"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    },
    "post": {
     "description": "Creates a new category preset. Requires EVENTS:MANAGE authority.",
@@ -5166,8 +5167,7 @@
     "tags": [
      "CategoryPresets"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/category-presets/{id}": {
@@ -5216,8 +5216,7 @@
     "tags": [
      "CategoryPresets"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    },
    "get": {
     "description": "Returns a single category preset. Requires EVENTS:MANAGE authority.",
@@ -5287,8 +5286,7 @@
     "tags": [
      "CategoryPresets"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    },
    "patch": {
     "description": "Updates an existing category preset. Requires EVENTS:MANAGE authority.",
@@ -5346,8 +5344,7 @@
     "tags": [
      "CategoryPresets"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/dashboard": {
@@ -5463,8 +5460,7 @@
     "tags": [
      "EventTypes"
     ],
-    "x-klabis-authority": "EVENTS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_READ)"
+    "x-klabis-authority": "EVENTS_READ"
    },
    "post": {
     "description": "Creates a new event type. When sortOrder is omitted it is assigned automatically.",
@@ -5526,8 +5522,7 @@
     "tags": [
      "EventTypes"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/event-types/{id}": {
@@ -5576,8 +5571,7 @@
     "tags": [
      "EventTypes"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    },
    "get": {
     "description": "Returns a single event type.",
@@ -5647,8 +5641,7 @@
     "tags": [
      "EventTypes"
     ],
-    "x-klabis-authority": "EVENTS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_READ)"
+    "x-klabis-authority": "EVENTS_READ"
    },
    "put": {
     "description": "Updates an existing event type.",
@@ -5706,8 +5699,7 @@
     "tags": [
      "EventTypes"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events": {
@@ -5900,7 +5892,6 @@
      "Events"
     ],
     "x-klabis-authority": "EVENTS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_READ)",
     "x-spring-paginated": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
@@ -5966,8 +5957,7 @@
     "tags": [
      "Events"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/import": {
@@ -6031,8 +6021,7 @@
     "tags": [
      "OrisEvents"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/import-batch": {
@@ -6096,8 +6085,7 @@
     "tags": [
      "OrisEvents"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/sync-from-oris/all-upcoming": {
@@ -6150,8 +6138,7 @@
     "tags": [
      "OrisEvents"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/{eventId}/accommodation-list": {
@@ -6429,15 +6416,7 @@
     "operationId": "getRegistration",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/RegMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/RegEventIdParam"
@@ -6528,8 +6507,7 @@
      "EventRegistrations"
     ],
     "x-klabis-authority": "EVENTS_REGISTRATIONS",
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_REGISTRATIONS)\n@com.klabis.common.security.fieldsecurity.OwnerVisible"
+    "x-klabis-owner-visible": true
    },
    "put": {
     "description": "Update SI card number and/or category for a member's registration. Accessible by the\nmember themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when\nregistrations are open.\n",
@@ -6539,15 +6517,7 @@
       "$ref": "#/components/parameters/RegEventIdParam"
      },
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/RegMemberIdParam"
      }
     ],
     "requestBody": {
@@ -6606,8 +6576,7 @@
      "EventRegistrations"
     ],
     "x-klabis-authority": "EVENTS_REGISTRATIONS",
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_REGISTRATIONS)\n@com.klabis.common.security.fieldsecurity.OwnerVisible"
+    "x-klabis-owner-visible": true
    }
   },
   "/api/events/{id}": {
@@ -6720,7 +6689,6 @@
      "Events"
     ],
     "x-klabis-authority": "EVENTS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_READ)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
     ]
@@ -6840,8 +6808,7 @@
     "tags": [
      "Events"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/{id}/publish": {
@@ -6890,8 +6857,7 @@
     "tags": [
      "Events"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/events/{id}/sync-from-oris": {
@@ -6940,8 +6906,7 @@
     "tags": [
      "OrisEvents"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/family-groups": {
@@ -6999,8 +6964,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    },
    "post": {
     "description": "Creates a new family group with a single parent. Requires MEMBERS:MANAGE.",
@@ -7062,8 +7026,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/family-groups/{id}": {
@@ -7112,8 +7075,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    },
    "get": {
     "description": "Returns family group details including parents and children with their own hypermedia links.\nRequires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.\n",
@@ -7235,8 +7197,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/family-groups/{id}/children/{memberId}": {
@@ -7295,8 +7256,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/family-groups/{id}/parents": {
@@ -7356,8 +7316,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/family-groups/{id}/parents/{memberId}": {
@@ -7416,8 +7375,7 @@
     "tags": [
      "FamilyGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/fee-selection-campaigns": {
@@ -7548,8 +7506,7 @@
     "tags": [
      "FeeSelectionCampaigns"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/fee-selection-campaigns/{id}": {
@@ -7673,8 +7630,7 @@
     "tags": [
      "FeeSelectionCampaigns"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/fee-selection-campaigns/{id}/deadline": {
@@ -7743,8 +7699,7 @@
     "tags": [
      "FeeSelectionCampaigns"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/fee-selection-campaigns/{year}/levels": {
@@ -8849,7 +8804,6 @@
      "Members"
     ],
     "x-klabis-authority": "MEMBERS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_READ)",
     "x-spring-paginated": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
@@ -8925,7 +8879,6 @@
      "Registration"
     ],
     "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -8987,8 +8940,7 @@
     "tags": [
      "Members"
     ],
-    "x-klabis-authority": "MEMBERS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_READ)"
+    "x-klabis-authority": "MEMBERS_READ"
    }
   },
   "/api/members/{id}": {
@@ -9082,7 +9034,6 @@
      "Members"
     ],
     "x-klabis-authority": "MEMBERS_READ",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_READ)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
     ]
@@ -9092,15 +9043,7 @@
     "operationId": "updateMember",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "id",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/MemberIdParam"
      }
     ],
     "requestBody": {
@@ -9152,8 +9095,7 @@
      "Members"
     ],
     "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-klabis-owner-visible": "id",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)\n@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
     ]
@@ -9206,7 +9148,6 @@
      "Members"
     ],
     "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -9277,7 +9218,6 @@
      "Members"
     ],
     "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -9289,15 +9229,7 @@
     "operationId": "getAccount",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/AccountMemberIdParam"
      }
     ],
     "responses": {
@@ -9365,8 +9297,7 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)\n@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
     ]
@@ -9378,15 +9309,7 @@
     "operationId": "listTransactions",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/AccountMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/PageParam"
@@ -9486,8 +9409,7 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)\n@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-paginated": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
@@ -9559,7 +9481,6 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -9632,7 +9553,6 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -9644,15 +9564,7 @@
     "operationId": "getTransaction",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/AccountMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/TxIdParam"
@@ -9724,8 +9636,7 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)\n@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser"
     ]
@@ -9801,7 +9712,6 @@
      "Finance"
     ],
     "x-klabis-authority": "FINANCE_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.FINANCE_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId"
     ]
@@ -9813,15 +9723,7 @@
     "operationId": "removeChoice",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/FeeChoiceMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/FeeChoiceYearParam"
@@ -9871,8 +9773,7 @@
     "tags": [
      "MemberFeeChoice"
     ],
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember"
     ]
@@ -9882,15 +9783,7 @@
     "operationId": "getChoice",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/FeeChoiceMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/FeeChoiceYearParam"
@@ -9967,8 +9860,7 @@
     "tags": [
      "MemberFeeChoice"
     ],
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember"
     ]
@@ -9978,15 +9870,7 @@
     "operationId": "chooseTier",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/FeeChoiceMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/FeeChoiceYearParam"
@@ -10047,8 +9931,7 @@
     "tags": [
      "MemberFeeChoice"
     ],
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember"
     ]
@@ -10060,15 +9943,7 @@
     "operationId": "getFeeHistory",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/FeeSummaryMemberIdParam"
      }
     ],
     "responses": {
@@ -10124,8 +9999,7 @@
     "tags": [
      "MemberFeeSummary"
     ],
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember"
     ]
@@ -10137,15 +10011,7 @@
     "operationId": "getFeeSummary",
     "parameters": [
      {
-      "description": "Member UUID",
-      "in": "path",
-      "name": "memberId",
-      "required": true,
-      "schema": {
-       "format": "uuid",
-       "type": "string"
-      },
-      "x-field-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerId"
+      "$ref": "#/components/parameters/FeeSummaryMemberIdParam"
      },
      {
       "$ref": "#/components/parameters/FeeSummaryYearParam"
@@ -10214,8 +10080,7 @@
     "tags": [
      "MemberFeeSummary"
     ],
-    "x-klabis-owner-visible": "memberId",
-    "x-operation-extra-annotation": "@com.klabis.common.security.fieldsecurity.OwnerVisible",
+    "x-klabis-owner-visible": true,
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember"
     ]
@@ -10279,7 +10144,6 @@
      "MembershipFeeGroups"
     ],
     "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)",
     "x-spring-provide-args": [
      "@com.klabis.members.ActingMember com.klabis.members.MemberId actingAdmin"
     ]
@@ -10415,8 +10279,7 @@
     "tags": [
      "MembershipFeeGroups"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/membership-fee-groups/{id}/rules": {
@@ -10605,8 +10468,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/membership-fee-tiers/{id}": {
@@ -10655,8 +10517,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    },
    "get": {
     "description": "Returns a single membership fee tier by ID.",
@@ -10787,8 +10648,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/membership-fee-tiers/{id}/rules": {
@@ -10918,8 +10778,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}": {
@@ -10974,8 +10833,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    },
    "get": {
     "description": "Returns a single payment rule identified by event type and ranking.",
@@ -11113,8 +10971,7 @@
     "tags": [
      "MembershipFeeTiers"
     ],
-    "x-klabis-authority": "MEMBERS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)"
+    "x-klabis-authority": "MEMBERS_MANAGE"
    }
   },
   "/api/oris/events": {
@@ -11170,8 +11027,7 @@
     "tags": [
      "OrisImport"
     ],
-    "x-klabis-authority": "EVENTS_MANAGE",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.EVENTS_MANAGE)"
+    "x-klabis-authority": "EVENTS_MANAGE"
    }
   },
   "/api/training-groups": {
@@ -11229,8 +11085,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    },
    "post": {
     "description": "Creates a new training group with a trainer and an age range. Requires GROUPS:TRAINING.",
@@ -11292,8 +11147,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/training-groups/{id}": {
@@ -11342,8 +11196,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    },
    "get": {
     "description": "Returns training group details including trainers and members with their own hypermedia\nlinks. Requires GROUPS:TRAINING, or the caller must be a member or trainer of this group (in\nwhich case a reduced response — name and trainers only — is returned).\n",
@@ -11463,8 +11316,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/training-groups/{id}/members": {
@@ -11524,8 +11376,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/training-groups/{id}/members/{memberId}": {
@@ -11584,8 +11435,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/training-groups/{id}/trainers": {
@@ -11645,8 +11495,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/training-groups/{id}/trainers/{memberId}": {
@@ -11705,8 +11554,7 @@
     "tags": [
      "TrainingGroups"
     ],
-    "x-klabis-authority": "GROUPS_TRAINING",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.GROUPS_TRAINING)"
+    "x-klabis-authority": "GROUPS_TRAINING"
    }
   },
   "/api/users/{id}/permissions": {
@@ -11769,8 +11617,7 @@
     "tags": [
      "Permissions"
     ],
-    "x-klabis-authority": "MEMBERS_PERMISSIONS",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_PERMISSIONS)"
+    "x-klabis-authority": "MEMBERS_PERMISSIONS"
    },
    "put": {
     "description": "Replaces the full set of authorities granted to a user.",
@@ -11844,8 +11691,7 @@
     "tags": [
      "Permissions"
     ],
-    "x-klabis-authority": "MEMBERS_PERMISSIONS",
-    "x-operation-extra-annotation": "@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_PERMISSIONS)"
+    "x-klabis-authority": "MEMBERS_PERMISSIONS"
    }
   },
   "/ical/my-schedule.ics": {

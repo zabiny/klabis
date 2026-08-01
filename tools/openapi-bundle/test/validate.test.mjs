@@ -238,11 +238,12 @@ describe('validateSpec — x-klabis-owner-visible on operations', () => {
     const authorities = parseAuthorities(AUTHORITY_JAVA);
     const validate = (doc) => validateSpec(doc, {authorities});
 
-    // x-klabis-owner-visible on an operation names the parameter that carries the owner ID.
-    // This is the only shape that guarantees @OwnerVisible can never be generated without a
-    // matching @OwnerId — the bundler resolves the name against the operation's own parameters,
-    // so a typo or missing parameter is a validation/bundle error rather than a silently
-    // incomplete pair.
+    // The pair is split across two nodes: x-klabis-owner-visible: true on the operation
+    // (-> @OwnerVisible, api.mustache) and x-klabis-owner-id: true on one of its parameters
+    // (-> @OwnerId, pathParams.mustache). Neither template can see the other, so validation is
+    // the only thing keeping them together — @OwnerVisible without @OwnerId makes
+    // checkOwnership() deny instead of resolving ownership, silently dropping the
+    // owner-or-authority semantics the endpoint advertises.
     const docWithParams = (operationExtra, parameters) => ({
         paths: {
             '/api/members/{id}': {
@@ -256,54 +257,103 @@ describe('validateSpec — x-klabis-owner-visible on operations', () => {
         },
     });
 
-    it('accepts x-klabis-owner-visible naming an existing path parameter', () => {
+    const ownerParam = (extra) =>
+        ({name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}, ...extra});
+
+    it('accepts an operation whose parameter is marked x-klabis-owner-id', () => {
         const errors = validate(docWithParams(
-            {'x-klabis-owner-visible': 'id'},
-            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+            {'x-klabis-owner-visible': true},
+            [ownerParam({'x-klabis-owner-id': true})],
         ));
         expect(errors).toEqual([]);
     });
 
-    it('rejects x-klabis-owner-visible naming a parameter the operation does not declare', () => {
-        const errors = validate(docWithParams(
-            {'x-klabis-owner-visible': 'memberId'},
-            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
-        ));
+    it('rejects x-klabis-owner-visible when no parameter carries the owner id', () => {
+        const errors = validate(docWithParams({'x-klabis-owner-visible': true}, [ownerParam()]));
         expect(errors).toHaveLength(1);
-        expect(errors[0].message).toContain('"memberId"');
-        expect(errors[0].message).toContain('does not match any parameter');
+        expect(errors[0].message).toContain('exactly one parameter marked x-klabis-owner-id');
     });
 
     it('rejects x-klabis-owner-visible on an operation with no parameters at all', () => {
-        const errors = validate(docWithParams({'x-klabis-owner-visible': 'id'}, undefined));
+        const errors = validate(docWithParams({'x-klabis-owner-visible': true}, undefined));
         expect(errors).toHaveLength(1);
-        expect(errors[0].message).toContain('does not match any parameter');
+        expect(errors[0].message).toContain('exactly one parameter marked x-klabis-owner-id');
     });
 
-    it('rejects a non-string x-klabis-owner-visible value on an operation', () => {
+    it('rejects two owner-id parameters — findAnnotatedParameterIndex would take the first', () => {
         const errors = validate(docWithParams(
             {'x-klabis-owner-visible': true},
-            [{name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}}],
+            [ownerParam({'x-klabis-owner-id': true}),
+             {name: 'other', in: 'path', required: true, schema: {type: 'string'}, 'x-klabis-owner-id': true}],
         ));
         expect(errors).toHaveLength(1);
-        expect(errors[0].message).toContain('must be the name of a parameter');
+        expect(errors[0].message).toContain('2 parameters are marked');
     });
 
-    it('resolves a $ref parameter to check the name', () => {
+    it('rejects an owner-id parameter that is not a path parameter', () => {
+        // Only pathParams.mustache has a branch for the key, so anywhere else it is silently
+        // dropped and @OwnerVisible is left with nothing to resolve against. This also covers
+        // page/size/sort, which x-spring-paginated folds into Pageable — they are query params.
+        const errors = validate(docWithParams(
+            {'x-klabis-owner-visible': true},
+            [{name: 'memberId', in: 'query', schema: {type: 'string'}, 'x-klabis-owner-id': true}],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('only generated for path parameters');
+    });
+
+    it('rejects a non-boolean x-klabis-owner-visible on an operation', () => {
+        const errors = validate(docWithParams(
+            {'x-klabis-owner-visible': 'id'},
+            [ownerParam({'x-klabis-owner-id': true})],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be true when present');
+    });
+
+    it('resolves a $ref parameter when looking for the owner id', () => {
         const doc = {
             paths: {
                 '/api/members/{id}': {
                     patch: {
                         operationId: 'updateMember',
                         responses: {},
-                        'x-klabis-owner-visible': 'id',
+                        'x-klabis-owner-visible': true,
                         parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
                     },
                 },
             },
             components: {
                 parameters: {
-                    MemberIdParam: {name: 'id', in: 'path', required: true, schema: {type: 'string', format: 'uuid'}},
+                    MemberIdParam: {...ownerParam({'x-klabis-owner-id': true})},
+                },
+            },
+        };
+        expect(validate(doc)).toEqual([]);
+    });
+
+    it('allows an owner-id parameter shared with operations that never opt into ownership', () => {
+        // This is what lets the annotation sit on a shared $ref instead of being inlined per
+        // operation: @OwnerId is inert unless the method is also @OwnerVisible.
+        const doc = {
+            paths: {
+                '/api/members/{id}': {
+                    get: {
+                        operationId: 'getMember',
+                        responses: {},
+                        parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                    },
+                    patch: {
+                        operationId: 'updateMember',
+                        responses: {},
+                        'x-klabis-owner-visible': true,
+                        parameters: [{$ref: '#/components/parameters/MemberIdParam'}],
+                    },
+                },
+            },
+            components: {
+                parameters: {
+                    MemberIdParam: {...ownerParam({'x-klabis-owner-id': true})},
                 },
             },
         };

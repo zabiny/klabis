@@ -41,8 +41,8 @@ function main() {
         process.exit(1);
     }
 
-    // The x-klabis-* rewrites inside bundleSpec throw on a spec they cannot translate — an
-    // incomplete @OwnerVisible/@OwnerId pair, say. validateSpec reports the same mistakes with a
+    // The x-klabis-owner-visible rewrite inside bundleSpec throws on a spec it cannot translate —
+    // an incomplete @OwnerVisible/@OwnerId pair. validateSpec reports the same mistakes with a
     // path, but it only runs on an already-bundled document, so those throws surface first.
     // Reported here in the same shape rather than as a stack trace.
     let bundled;

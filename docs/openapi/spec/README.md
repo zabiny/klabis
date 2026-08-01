@@ -65,6 +65,13 @@ Field-level authorization, on schema properties:
 | `x-klabis-authority: MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` |
 | `x-klabis-halforms-access: READ_ONLY` | `@HalForms(access = READ_ONLY)` |
 
+Endpoint authorization uses the same three keys one level up: `x-klabis-authority` and
+`x-klabis-owner-visible: true` on the **operation**, `x-klabis-owner-id: true` on one of its **path
+parameters**. The owner-id parameter may be a shared `$ref` — `@OwnerId` is inert unless the method
+is also `@OwnerVisible` — but an operation declaring `x-klabis-owner-visible` must have exactly one,
+which `validate.mjs` enforces during bundling: `@OwnerVisible` without `@OwnerId` denies instead of
+resolving ownership.
+
 Hypermedia, on **response objects** (not on schemas — links belong to the representation):
 
 - `x-hal-links` — link relations the response may carry
@@ -77,6 +84,14 @@ put them in `description`.
 
 Extension values are validated during bundling: `x-klabis-authority` must be a constant of
 `Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`.
+
+`x-klabis-*` keys are consumed by the overridden templates in `backend/src/main/openapi-templates/`
+— `pojo.mustache` for schema properties, `api.mustache` for operations, `pathParams.mustache` for
+parameters. The bundler passes them through untouched, so the published contract states each rule
+once, in the spec's own vocabulary, rather than alongside a Java string derived from it.
+**`api.mustache` and `pathParams.mustache` are forks of the stock `JavaSpring` templates** and
+nothing detects drift: on a generator upgrade, diff each against its new stock version and port the
+Klabis branch across. Each file opens with a note saying so.
 
 > **Never put a field-authorization extension on a property that uses `oneOf`/`allOf`.** The
 > generator drops property-level vendor extensions from composed schemas, and an `allOf` also
