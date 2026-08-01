@@ -212,13 +212,14 @@ curl -k -X POST https://localhost:8443/api/members \
 | `/api/auth/password-setup/validate` | GET    | Public   | Validate token           |
 | `/api/auth/password-setup/complete` | POST   | Public   | Complete password setup  |
 
-**For complete API specification, see** [../docs/openapi/klabis-full.json](../docs/openapi/klabis-full.json).
+**For complete API specification, see** [../docs/openapi/spec/](../docs/openapi/spec/) (source of
+truth; run `./gradlew openapiBundle` to generate the bundled `klabis-full.json`).
 
 ## Documentation
 
 - **[docs/README.md](docs/README.md)** - Documentation index + curated external references
 - **[docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)** - Spring Modulith event flows and outbox pattern
-- **[../docs/openapi/klabis-full.json](../docs/openapi/klabis-full.json)** - OpenAPI specification
+- **[../docs/openapi/spec/](../docs/openapi/spec/)** - OpenAPI specification (source; `klabis-full.json` is the generated bundle)
 - **[CLAUDE.md](CLAUDE.md)** - Build, test, run, security extension points, profiles
 - Day-to-day backend conventions (aggregates, controllers, HATEOAS, JDBC mementos, field-level auth, testing) live in the `backend-patterns` skill, not in this repo
 

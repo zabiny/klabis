@@ -28,8 +28,8 @@ driver.
 `klabisApi.d.ts` are built from it. `openapiBundle` produces it from `docs/openapi/spec/`, so there
 is a single source of truth end to end.
 
-- **`klabis-full.json` is a build artifact, not a review target.** Review the spec; regenerate the
-  bundle. Never hand-edit it.
+- **`klabis-full.json` is a gitignored build artifact, not a review target.** Review the spec;
+  regenerate the bundle. Never hand-edit it.
 - **A schema name in the spec is a wire contract** — `halTypes.ts` indexes into `klabisApi.d.ts` by
   schema name. See "A payload schema's name is wire contract" below; this is why `event-types` keeps
   the `*Dto` suffix.
