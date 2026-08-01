@@ -13,9 +13,10 @@
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {parse} from 'yaml';
 
 import {bundleSpec, countOperations} from './lib/bundle.mjs';
-import {loadAuthorities, validateSpec} from './lib/validate.mjs';
+import {loadAuthorities, moduleFileNames, validateModuleDocuments, validateSpec} from './lib/validate.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -41,10 +42,8 @@ function main() {
         process.exit(1);
     }
 
-    // The x-klabis-owner-visible rewrite inside bundleSpec throws on a spec it cannot translate —
-    // an incomplete @OwnerVisible/@OwnerId pair. validateSpec reports the same mistakes with a
-    // path, but it only runs on an already-bundled document, so those throws surface first.
-    // Reported here in the same shape rather than as a stack trace.
+    // bundleSpec throws on a spec it cannot merge — an unresolvable cross-file $ref. Reported in
+    // the same shape as validation errors rather than as a stack trace.
     let bundled;
     try {
         bundled = bundleSpec(SPEC_ROOT);
@@ -62,6 +61,13 @@ function main() {
 
     const authorities = loadAuthorities(AUTHORITY_JAVA);
     const errors = validateSpec(document, {authorities});
+
+    const specDir = dirname(SPEC_ROOT);
+    const rootDocument = parse(readFileSync(SPEC_ROOT, 'utf8'));
+    const moduleFiles = moduleFileNames(rootDocument)
+        .map((f) => ({name: f, document: parse(readFileSync(resolve(specDir, f), 'utf8'))}));
+
+    errors.push(...validateModuleDocuments(rootDocument, moduleFiles));
 
     if (errors.length > 0) {
         console.error(`Spec validation failed (${errors.length} error(s)):`);

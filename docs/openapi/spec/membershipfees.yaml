@@ -18,6 +18,24 @@
 # is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
 # lone x-klabis-owner-visible narrows access to the owner rather than widening it.
 
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Membership fees module
+  description: The Membership fees slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
 paths:
 
   /api/membership-fee-tiers:
@@ -1064,6 +1082,19 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
 
 components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
 
   parameters:
     TierIdParam:
@@ -1379,15 +1410,12 @@ components:
           type: string
           enum: [PERCENTAGE, FIXED_AMOUNT]
         percentage:
-          type: integer
+          type: [integer, 'null']
           format: int32
-          nullable: true
         fixedAmount:
-          type: number
-          nullable: true
+          type: [number, 'null']
         fixedCurrency:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     AddPaymentRuleRequest:
       type: object
@@ -1470,9 +1498,8 @@ components:
           type: string
           format: date
         deadlineProcessedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
 
     PublishYearRequest:
       type: object
@@ -1581,14 +1608,11 @@ components:
           type: string
           format: uuid
         firstName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         lastName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         registrationNumber:
-          type: string
-          nullable: true
+          type: [string, 'null']
         joinedAt:
           type: string
           format: date
@@ -1643,13 +1667,11 @@ components:
           type: integer
           format: int32
         currentGroupId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         recommendedLevelId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
 
     ChooseFeeChoiceRequest:
       type: object
@@ -1674,15 +1696,14 @@ components:
       description: A member's current fee level summary for a year.
       properties:
         currentGroup:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/CurrentGroupResponse'
-          nullable: true
+            - type: 'null'
         votingOpen:
           type: boolean
         recommendedLevelId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
 
     CurrentGroupResponse:
       type: object

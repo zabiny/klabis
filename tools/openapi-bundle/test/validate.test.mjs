@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
-import {parseAuthorities, validateSpec} from '../lib/validate.mjs';
+import {moduleFileNames, parseAuthorities, validateModuleDocuments, validateSpec} from '../lib/validate.mjs';
 
 const AUTHORITY_JAVA = `
 package com.klabis.common.users;
@@ -382,5 +382,90 @@ describe('validateSpec — x-klabis-owner-visible on operations', () => {
             },
         });
         expect(errors).toHaveLength(1);
+    });
+});
+
+describe('validateModuleDocuments', () => {
+    const SCHEMES = {KlabisAuth: {type: 'oauth2', flows: {authorizationCode: {scopes: {MEMBERS: 'Members'}}}}};
+    const root = {
+        openapi: '3.1.0',
+        info: {title: 'Klabis', version: '0.1.0'},
+        components: {securitySchemes: SCHEMES},
+    };
+    const module = (overrides = {}) => ({
+        openapi: '3.1.0',
+        info: {title: 'Klabis API — Members module', version: '0.1.0'},
+        components: {securitySchemes: SCHEMES},
+        ...overrides,
+    });
+
+    it('accepts a module matching the root', () => {
+        expect(validateModuleDocuments(root, [{name: 'members.yaml', document: module()}])).toEqual([]);
+    });
+
+    it('allows the title to differ — only version, openapi and securitySchemes are pinned', () => {
+        const doc = module({info: {title: 'Something else entirely', version: '0.1.0'}});
+        expect(validateModuleDocuments(root, [{name: 'members.yaml', document: doc}])).toEqual([]);
+    });
+
+    it('rejects a drifted info.version', () => {
+        const doc = module({info: {title: 'x', version: '0.2.0'}});
+        const errors = validateModuleDocuments(root, [{name: 'members.yaml', document: doc}]);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('members.yaml/info/version');
+    });
+
+    it('rejects a drifted openapi version', () => {
+        const errors = validateModuleDocuments(root, [
+            {name: 'members.yaml', document: module({openapi: '3.0.3'})},
+        ]);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('members.yaml/openapi');
+    });
+
+    it('rejects drifted securitySchemes', () => {
+        const doc = module({
+            components: {securitySchemes: {KlabisAuth: {type: 'http', scheme: 'bearer'}}},
+        });
+        const errors = validateModuleDocuments(root, [{name: 'members.yaml', document: doc}]);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('members.yaml/components/securitySchemes');
+    });
+
+    // A module without the header at all is the pre-migration state, not a valid document — it
+    // must fail rather than be waved through as "nothing to compare".
+    it('rejects a module missing the header entirely', () => {
+        const errors = validateModuleDocuments(root, [{name: 'members.yaml', document: {paths: {}}}]);
+        expect(errors).toHaveLength(3);
+    });
+});
+
+describe('moduleFileNames', () => {
+    it('derives the module list from the paths klabis.yaml routes', () => {
+        expect(moduleFileNames({
+            paths: {
+                '/api/members': {$ref: './members.yaml#/paths/~1api~1members'},
+                '/api/members/{id}': {$ref: './members.yaml#/paths/~1api~1members~1{id}'},
+                '/api/events': {$ref: './events.yaml#/paths/~1api~1events'},
+            },
+        })).toEqual(['events.yaml', 'members.yaml']);
+    });
+
+    // _shared/*.yaml hold components only and are pulled in by the modules, never routed to.
+    it('excludes refs into a subdirectory', () => {
+        expect(moduleFileNames({
+            paths: {'/api/x': {$ref: './_shared/hal.yaml#/components/schemas/Link'}},
+        })).toEqual([]);
+    });
+
+    // The point of deriving rather than globbing: a scratch file in the spec directory is not a
+    // module, so it is never forced through the header check.
+    it('ignores a file nothing routes to', () => {
+        expect(moduleFileNames({paths: {'/api/x': {$ref: './members.yaml#/paths/~1api~1x'}}}))
+            .toEqual(['members.yaml']);
+    });
+
+    it('tolerates a document with no paths', () => {
+        expect(moduleFileNames({})).toEqual([]);
     });
 });

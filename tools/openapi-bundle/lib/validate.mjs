@@ -1,6 +1,6 @@
 import {readFileSync} from 'node:fs';
 
-import {HTTP_METHODS} from './bundle.mjs';
+import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
 
 /**
  * Validation of Klabis-specific OpenAPI extensions.
@@ -262,6 +262,71 @@ export function validateSpec(document, {authorities}) {
             }
         }
     });
+
+    return errors;
+}
+
+/**
+ * The module files, derived from the ones klabis.yaml routes a path to.
+ *
+ * Deliberately not a directory glob: that would treat any stray .yaml left in the spec directory as
+ * a module and fail the build on its missing header. Deriving it from `paths` means a file nothing
+ * routes to is simply not a module, and a newly routed one is picked up with no second list to
+ * update. Refs into a subdirectory (`./_shared/hal.yaml`) are fragments, not modules.
+ */
+export function moduleFileNames(root) {
+    return [...new Set(
+        Object.values(root?.paths ?? {})
+            .map((pathItem) => pathItem?.$ref)
+            .filter((ref) => typeof ref === 'string')
+            .map((ref) => ref.split('#')[0].replace(/^\.\//, ''))
+            .filter((file) => !file.includes('/')),
+    )].sort();
+}
+
+/**
+ * Checks the invariants that hold between the spec FILES, which validateSpec cannot see.
+ *
+ * Every module file is a standalone OpenAPI document so it renders on its own in Swagger UI, which
+ * means it repeats `openapi`, `info.version` and `components.securitySchemes` from klabis.yaml.
+ * The bundler drops all three (modules are pulled in by a `#/paths/...` pointer, never whole-file),
+ * so a module that drifted from the root would keep bundling cleanly and only mislead whoever
+ * opened that one file. These checks are the only thing making the duplication safe.
+ *
+ * @param root      parsed klabis.yaml
+ * @param modules   [{name, document}] parsed module files
+ */
+export function validateModuleDocuments(root, modules) {
+    const errors = [];
+    // Key order carries no meaning in a security scheme, so compare the sorted shape — otherwise
+    // reordering `type`/`description`/`flows` in one file would report drift that isn't there.
+    const canonical = (schemes) => JSON.stringify(sortKeysDeep(schemes ?? null));
+    const rootScheme = canonical(root?.components?.securitySchemes);
+
+    for (const {name, document} of modules) {
+        if (document?.openapi !== root?.openapi) {
+            errors.push({
+                path: `${name}/openapi`,
+                message: `"${document?.openapi}" does not match klabis.yaml's "${root?.openapi}"`,
+            });
+        }
+
+        if (document?.info?.version !== root?.info?.version) {
+            errors.push({
+                path: `${name}/info/version`,
+                message: `"${document?.info?.version}" does not match klabis.yaml's `
+                    + `"${root?.info?.version}"`,
+            });
+        }
+
+        if (canonical(document?.components?.securitySchemes) !== rootScheme) {
+            errors.push({
+                path: `${name}/components/securitySchemes`,
+                message: 'does not match klabis.yaml — an operation\'s `security` would name a '
+                    + 'scheme that differs from the one the bundle publishes',
+            });
+        }
+    }
 
     return errors;
 }

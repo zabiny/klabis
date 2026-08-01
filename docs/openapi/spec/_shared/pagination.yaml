@@ -1,0 +1,30 @@
+# Generic paging parameters shared by every paginated list endpoint.
+#
+# `sort` is deliberately NOT here: its description enumerates the allowed sort fields, which are
+# always specific to one resource (see PageParam usage vs. each module's own SortParam, e.g.
+# EventSortParam in events.yaml). A shared, resource-agnostic sort description would be either too
+# vague to be useful or wrong for whichever resource didn't inspire it — TransactionSortParam
+# (finance.yaml) used to $ref members.yaml's SortParam this way and documented member fields
+# (firstName, lastName) on an endpoint that sorts transactions.
+
+components:
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Zero-based page index (0..N)
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+
+    SizeParam:
+      name: size
+      in: query
+      description: The size of the page to be returned
+      required: false
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
