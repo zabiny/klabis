@@ -6,13 +6,13 @@ frontend types are all generated from it.
 ## Pipeline
 
 ```
-docs/openapi/spec/  ──openapiBundle──▶  docs/openapi/klabis-full.json  ──npm run openapi──▶  frontend types
+docs/openapi/spec/  ──npm run openapi (bundles, then generates)──▶  docs/openapi/klabis-full.json  ──▶  frontend types
         │
         └──────────openApiGenerate<Module>──────────▶  backend DTOs + *Api interfaces
 ```
 
 - `docs/openapi/spec/` — hand-written spec; edit here
-- `docs/openapi/klabis-full.json` — committed bundle, generated; never hand-edit
+- `docs/openapi/klabis-full.json` — gitignored build artifact, generated; never hand-edit
 - `docs/openapi/generated/klabis-codefirst.json` — springdoc dump of what the running app serves
   (gitignored). Nothing depends on it; it exists only for ad-hoc comparison against the spec. Since
   the generator runs with `documentationProvider=springdoc`, the annotations springdoc introspects
@@ -84,9 +84,11 @@ Or directly from `tools/openapi-bundle/`: `node bundle.mjs [--check] [--out <pat
 `drift.mjs` is still there for comparing the spec against a springdoc dump, but it needs
 `docs/openapi/generated/klabis-codefirst.json`, which only exists after `./gradlew generateOpenApiDocs`.
 
-From `frontend/`, `npm run openapi` regenerates both `src/api/klabisApi.d.ts` (schemas, via
-openapi-typescript) and `src/api/halTypes.ts` (link/template relations, via
-`tools/openapi-bundle/haltypes.mjs`).
+From `frontend/`, `npm run openapi` bundles the spec first (equivalent to `node bundle.mjs`), then
+regenerates both `src/api/klabisApi.d.ts` (schemas, via openapi-typescript) and
+`src/api/halTypes.ts` (link/template relations, via `tools/openapi-bundle/haltypes.mjs`). A
+standalone `./gradlew openapiBundle` run is only needed to inspect the bundle directly or when
+driving backend codegen manually — `npm run openapi` doesn't need it as a separate step.
 
 ## Klabis extensions
 
@@ -139,7 +141,7 @@ Klabis branch across. Each file opens with a note saying so.
 
 - API DTOs carry **wire types**, not domain types — `string`/`format: uuid`, never a `MemberId` object.
   Conversion to domain types belongs in the mapper or controller.
-- Never hand-edit `docs/openapi/klabis-full.json` — it is generated.
+- Never hand-edit `docs/openapi/klabis-full.json` — it is generated and gitignored.
 - Reference operations by `operation: <operationId>`, not by escaped `operationRef` pointers.
 - **Nullable properties use the OpenAPI 3.1 union spelling**, `type: [string, 'null']`, never the
   3.0 `nullable: true`. These documents declare `openapi: 3.1.0`; `nullable: true` is a 3.0 keyword
