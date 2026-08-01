@@ -299,14 +299,15 @@ one.
 
 On schema properties. Each maps to exactly one existing Java annotation.
 
-(`x-klabis-authority` and `x-klabis-owner-visible` also work one level up, on an operation — see
+(`x-klabis-authority` and `x-klabis-owner-visible` also work one level up, on an operation, and
+`x-klabis-owner-id` also works on a path parameter — see
 [endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below. The
-remaining two are property-only and the bundler rejects them on an operation.)
+remaining one is property-only and the bundler rejects it on an operation.)
 
 | extension | value | generates | semantics |
 |---|---|---|---|
-| `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field holding the owner's ID, used to evaluate `x-klabis-owner-visible`. Without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` (property) / parameter name (operation) | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). On an operation, see below — the value names the `@OwnerId` parameter, not `true`. |
+| `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field — or, on an operation's path parameter, the parameter — holding the owner's ID, used to evaluate `x-klabis-owner-visible`. On a property without it, the single UUID-convertible field is used. |
+| `x-klabis-owner-visible` | `true` | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). |
 | `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
 | `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
 
@@ -357,10 +358,9 @@ annotation would compile and silently enforce nothing.
 
 `@OwnerVisible` and `@OwnerId` are a pair: `HasAuthorityMethodInterceptor.checkOwnership()` scans the
 method's parameters for the one carrying `@OwnerId` to know whose ownership to check.
-`@OwnerVisible` on a method without a matching `@OwnerId` parameter silently enforces nothing — so
-the spec extension is deliberately structured so it is **impossible to declare one half without the
-other**. On an operation, the *value* is the name of the parameter that carries the owner ID, not
-`true`:
+`@OwnerVisible` on a method without a matching `@OwnerId` parameter enforces nothing — it denies
+rather than resolving ownership, silently dropping the owner-or-authority semantics the endpoint
+advertises. The two halves are declared on two different nodes:
 
 ```yaml
 paths:
@@ -368,19 +368,34 @@ paths:
     patch:
       operationId: updateMember
       x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: id   # -> @OwnerVisible on the method, @OwnerId on parameter "id"
+      x-klabis-owner-visible: true       # -> @OwnerVisible on the method
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
+
+components:
+  parameters:
+    MemberIdParam:
+      name: id
+      in: path
+      required: true
+      x-klabis-owner-id: true            # -> @OwnerId on the parameter
 ```
 
-The bundler resolves `id` against the operation's own `parameters` (following a local `$ref` such as
-the shared `MemberIdParam`), inlines that one parameter, and stamps `x-field-extra-annotation` on it
-(`@OwnerId`) while adding `@OwnerVisible` to the operation's `x-operation-extra-annotation`. A name
-that does not match any parameter on that operation — typo, or a `$ref` shared with an endpoint that
-never opted in — fails the bundle rather than emitting half the pair. Because parameters are commonly
-shared by `$ref` across several operations (`MemberIdParam` is used by `getMember`, `updateMember`,
-`suspendMember`, `resumeMember`), only the operation that declares `x-klabis-owner-visible` gets its
-copy of the parameter inlined and annotated — sibling operations keep the plain shared `$ref`.
+`api.mustache` emits `@OwnerVisible`, `pathParams.mustache` emits `@OwnerId`, and neither can see
+the other — so **`validate.mjs` is the only thing keeping the pair together.** It requires an
+operation declaring `x-klabis-owner-visible` to have exactly one parameter marked
+`x-klabis-owner-id` (zero denies; two would silently resolve against whichever came first).
+
+**`x-klabis-owner-id` may sit on a `$ref` parameter shared with operations that never opt into
+ownership.** `MemberIdParam` is used by `getMember`, `updateMember`, `suspendMember` and
+`resumeMember`, but only `updateMember` declares `x-klabis-owner-visible`; the other three get an
+inert `@OwnerId`. That is harmless because nothing reads `@OwnerId` on its own — both
+`checkOwnership()` and `RequestBodyFieldAuthorizationAdvice` only consult it for a method or field
+already marked `@OwnerVisible`. `@OwnerId` on a parameter is only allowed on a **path** parameter —
+`pathParams.mustache` is the only parameter template with a branch for it, so anywhere else the key
+would be silently dropped. `validate.mjs` rejects that too, along with an owner-id parameter that
+`x-spring-paginated` would fold into `Pageable` (`page`/`size`/`sort` are query parameters, so the
+same check covers them).
 
 Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
 codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
