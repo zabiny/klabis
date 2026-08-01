@@ -2,7 +2,6 @@ import {describe, expect, it} from 'vitest';
 import {parse} from 'yaml';
 
 import {
-    applyOperationAuthorityAnnotations,
     applyOperationOwnerVisibleAnnotations,
     bundleSpec,
     sortKeysDeep,
@@ -275,80 +274,29 @@ paths: {}
     });
 });
 
-describe('applyOperationAuthorityAnnotations', () => {
-    it('translates x-klabis-authority on an operation into x-operation-extra-annotation', () => {
-        const document = {
-            paths: {
-                '/api/members/{id}/suspend': {
-                    post: {
-                        operationId: 'suspendMember',
-                        'x-klabis-authority': 'MEMBERS_MANAGE',
-                        responses: {},
-                    },
-                },
-            },
-        };
+describe('x-klabis-authority on an operation', () => {
+    // Emitting @HasAuthority is api.mustache's job, straight off this key — the same way
+    // pojo.mustache reads it off a schema property. The bundler used to rewrite it into
+    // x-operation-extra-annotation, which put a derived Java string into the published
+    // contract next to the key it was derived from. This pins that it no longer does.
+    it('is carried through untouched, not rewritten into an annotation', () => {
+        const readYaml = fakeReader({
+            'klabis.yaml': `
+openapi: 3.1.0
+paths:
+  /api/members/{id}/suspend:
+    post:
+      operationId: suspendMember
+      x-klabis-authority: MEMBERS_MANAGE
+      responses: {}
+`,
+        });
 
-        applyOperationAuthorityAnnotations(document);
+        const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
+        const operation = document.paths['/api/members/{id}/suspend'].post;
 
-        expect(document.paths['/api/members/{id}/suspend'].post['x-operation-extra-annotation'])
-            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)');
-    });
-
-    it('leaves operations without x-klabis-authority untouched', () => {
-        const document = {
-            paths: {
-                '/api/members': {
-                    get: {operationId: 'listMembers', responses: {}},
-                },
-            },
-        };
-
-        applyOperationAuthorityAnnotations(document);
-
-        expect(document.paths['/api/members'].get['x-operation-extra-annotation']).toBeUndefined();
-    });
-
-    it('appends to an existing x-operation-extra-annotation rather than overwriting it', () => {
-        const document = {
-            paths: {
-                '/api/members/{id}': {
-                    patch: {
-                        operationId: 'updateMember',
-                        'x-klabis-authority': 'MEMBERS_MANAGE',
-                        'x-operation-extra-annotation': '@com.klabis.common.security.fieldsecurity.OwnerVisible',
-                        responses: {},
-                    },
-                },
-            },
-        };
-
-        applyOperationAuthorityAnnotations(document);
-
-        expect(document.paths['/api/members/{id}'].patch['x-operation-extra-annotation']).toBe(
-            '@com.klabis.common.security.fieldsecurity.OwnerVisible\n' +
-            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)',
-        );
-    });
-
-    it('does not touch x-klabis-authority on a schema property', () => {
-        const document = {
-            paths: {},
-            components: {
-                schemas: {
-                    Thing: {
-                        properties: {
-                            dateOfBirth: {type: 'string', 'x-klabis-authority': 'MEMBERS_MANAGE'},
-                        },
-                    },
-                },
-            },
-        };
-
-        applyOperationAuthorityAnnotations(document);
-
-        expect(document.components.schemas.Thing.properties.dateOfBirth['x-operation-extra-annotation'])
-            .toBeUndefined();
+        expect(operation['x-klabis-authority']).toBe('MEMBERS_MANAGE');
+        expect(operation['x-operation-extra-annotation']).toBeUndefined();
     });
 });
 
@@ -356,9 +304,10 @@ describe('applyOperationOwnerVisibleAnnotations', () => {
     // x-klabis-owner-visible on an operation names the parameter holding the owner ID. The
     // bundler inlines that one parameter (breaking any shared $ref) and stamps
     // x-field-extra-annotation: @OwnerId onto it, while adding @OwnerVisible to the operation via
-    // x-operation-extra-annotation — same mechanism x-klabis-authority already uses. This is what
-    // makes the pair impossible to split: there is a single spec key, and if the named parameter
-    // cannot be found the bundle throws instead of emitting half the pair.
+    // x-operation-extra-annotation. This is what makes the pair impossible to split: there is a
+    // single spec key, and if the named parameter cannot be found the bundle throws instead of
+    // emitting half the pair. (x-klabis-authority no longer works this way — api.mustache reads
+    // that key directly; only owner-visible still needs a rewrite, because it spans two nodes.)
     const OWNER_VISIBLE_FQN = '@com.klabis.common.security.fieldsecurity.OwnerVisible';
     const OWNER_ID_FQN = '@com.klabis.common.security.fieldsecurity.OwnerId';
 
@@ -530,29 +479,6 @@ describe('applyOperationOwnerVisibleAnnotations', () => {
     });
 });
 
-describe('bundleSpec — x-klabis-authority on operations end to end', () => {
-    it('rewrites x-klabis-authority into x-operation-extra-annotation on the bundled document', () => {
-        const readYaml = fakeReader({
-            'klabis.yaml': `
-openapi: 3.1.0
-paths:
-  /api/members/{id}/resume:
-    post:
-      operationId: resumeMember
-      x-klabis-authority: MEMBERS_MANAGE
-      responses:
-        '204':
-          description: ok
-`,
-        });
-
-        const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
-
-        expect(document.paths['/api/members/{id}/resume'].post['x-operation-extra-annotation'])
-            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)');
-    });
-});
-
 describe('bundleSpec — x-klabis-owner-visible on operations end to end', () => {
     it('rewrites x-klabis-owner-visible into paired @OwnerVisible/@OwnerId annotations, MANAGE-or-owner semantics preserved', () => {
         const readYaml = fakeReader({
@@ -593,18 +519,17 @@ components:
         const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
 
         const patch = document.paths['/api/members/{id}'].patch;
-        expect(patch['x-operation-extra-annotation']).toBe(
-            '@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_MANAGE)\n' +
-            '@com.klabis.common.security.fieldsecurity.OwnerVisible',
-        );
+        expect(patch['x-operation-extra-annotation'])
+            .toBe('@com.klabis.common.security.fieldsecurity.OwnerVisible');
         expect(patch.parameters[0]['x-field-extra-annotation'])
             .toBe('@com.klabis.common.security.fieldsecurity.OwnerId');
+        // The authority half stays a plain spec key — api.mustache turns it into @HasAuthority.
+        expect(patch['x-klabis-authority']).toBe('MEMBERS_MANAGE');
 
         // getMember shares the same $ref'd parameter but never opted into ownership — it must
         // stay a plain MANAGE-only check with no @OwnerId leaking onto its parameter.
         const get = document.paths['/api/members/{id}'].get;
-        expect(get['x-operation-extra-annotation'])
-            .toBe('@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.MEMBERS_READ)');
+        expect(get['x-operation-extra-annotation']).toBeUndefined();
         expect(get.parameters[0].$ref).toBe('#/components/parameters/MemberIdParam');
     });
 

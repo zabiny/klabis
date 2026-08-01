@@ -193,8 +193,8 @@ apply to both a POST and a PATCH request — and on the PATCH side it arrives wr
 `JsonNullable<T>`.
 
 Two limits:
-- **Schema properties only.** Only `pojo.mustache` is overridden, so the generator would drop the
-  extension on a `parameters` entry; `validate.mjs` rejects it there rather than letting it pass as
+- **Schema properties only.** Only `pojo.mustache` has a branch for it, so the generator would drop
+  the extension on a `parameters` entry; `validate.mjs` rejects it there rather than letting it pass as
   a silent no-op. For a constrained `@RequestParam` use `pattern: '^(?!\s*$).+'` instead — see the
   `validatePasswordSetupToken` `token` parameter in `common.yaml`.
 - **The custom message is still lost.** `@NotBlank(message = "…")` texts do not survive; assertions
@@ -342,9 +342,9 @@ paths:
       x-klabis-authority: MEMBERS_READ    # -> @HasAuthority(Authority.MEMBERS_READ) on MembersApi.getMember
 ```
 
-The bundler rewrites it into `x-operation-extra-annotation`, which the generator emits verbatim
-above the method. **Do not write that extension by hand** for authorization — it is the transport,
-not the interface.
+The overridden `api.mustache` reads this key directly and emits the annotation above the method —
+the same way `pojo.mustache` reads it off a schema property. Nothing rewrites it, so the published
+`klabis-full.json` carries the spec key alone, not a Java string derived from it.
 
 Do not also annotate the controller. The authority is stated once, in the spec; a second copy in
 Java is what this replaces.
@@ -789,8 +789,8 @@ returns `true` unconditionally makes the test assert nothing.
   stated once
 - Writing `@Operation` / `@ApiResponse` / `@Parameter` on a controller — the generator emits them
   onto the `*Api` interface from the spec, and a hand-written copy only drifts from it
-- Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — that is the bundler's
-  output, not the interface you author against
+- Hand-writing `x-operation-extra-annotation` to inject `@HasAuthority` — `api.mustache` emits that
+  from `x-klabis-authority` itself, and a hand-written copy would emit the annotation twice
 - Inventing a new `x-klabis-*` extension: each must map to an annotation the generator can reliably
   emit. Propose it, don't add it ad hoc — `validate.mjs` rejects any `x-klabis-*` key missing from
   `KNOWN_KLABIS_EXTENSIONS`, and emission needs a matching branch in `pojo.mustache`.

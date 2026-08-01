@@ -78,6 +78,13 @@ put them in `description`.
 Extension values are validated during bundling: `x-klabis-authority` must be a constant of
 `Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`.
 
+`x-klabis-*` keys are consumed by the overridden templates in `backend/src/main/openapi-templates/`
+— `pojo.mustache` for schema properties, `api.mustache` for operations. The bundler passes them
+through untouched, so the published contract states each rule once, in the spec's own vocabulary,
+rather than alongside a Java string derived from it. **`api.mustache` is a fork of the stock
+`JavaSpring` template**: on a generator upgrade, diff it against the new stock version and port the
+`x-klabis-authority` branch across.
+
 > **Never put a field-authorization extension on a property that uses `oneOf`/`allOf`.** The
 > generator drops property-level vendor extensions from composed schemas, and an `allOf` also
 > generates a bare type instead of `JsonNullable<T>` — which
