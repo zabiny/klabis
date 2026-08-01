@@ -404,7 +404,7 @@ export interface GetMemberHal {
 }
 
 export type GetMemberResource =
-  components['schemas']['EntityModelMemberDetailsResponse'] & GetMemberHal;
+  components['schemas']['MemberDetailsResponse'] & GetMemberHal;
 
 export const GetMemberRels = {
   links: ['account', 'collection', 'familyGroup', 'feeSummary', 'ical-token', 'permissions', 'self', 'trainingGroup'] as const,
@@ -931,7 +931,7 @@ export interface ListMembersHal {
 }
 
 export type ListMembersResource =
-  components['schemas']['PagedModelEntityModelMemberSummaryResponse'] & ListMembersHal;
+  components['schemas']['MemberSummaryResponseList'] & ListMembersHal;
 
 export const ListMembersRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,

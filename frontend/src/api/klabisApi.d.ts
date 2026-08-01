@@ -2699,6 +2699,7 @@ export interface components {
              */
             registrationNumber?: string;
         };
+        MemberSummaryResponseList: components["schemas"]["MemberSummaryResponse"][];
         /** @description A published fee group — a snapshot taken from a tier for one campaign year. */
         MembershipFeeGroupResponse: {
             /** Format: uuid */
@@ -5398,6 +5399,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMemberSummaryResponse"];
                 };
             };
@@ -5488,6 +5490,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberDetailsResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberDetailsResponse"];
                 };
             };

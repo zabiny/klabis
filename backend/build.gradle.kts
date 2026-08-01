@@ -268,7 +268,11 @@ val bundleSpecForCodegen by tasks.registering(Exec::class) {
     workingDir = openapiToolDir.asFile
     val out = layout.buildDirectory.file("generated/openapi/bundled.json").get().asFile
     doFirst { out.parentFile.mkdirs() }
-    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath)
+    // --strip-hal drops HAL/HAL+FORMS response content (and x-hal-links/x-hal-templates) from any
+    // response that also declares application/json, so the generator sees the bare payload schema
+    // directly and needs no envelope -> payload schemaMappings redirection. klabis-full.json (the
+    // frontend-facing bundle from openapiBundle) is unaffected — this flag only applies here.
+    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath, "--strip-hal")
 }
 
 /**
@@ -437,8 +441,12 @@ openApiModule(
         "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
-        "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        // getMember's application/json response references MemberDetailsResponse directly (see
+        // members.yaml) — no envelope redirection needed since the schema name already matches the
+        // Java type. listMembers still needs one: its application/json response is a bare array
+        // (MemberSummaryResponseList), which the generator would otherwise turn into List<...>, but
+        // the controller returns Page<...> for pagination metadata that a bare array can't carry.
+        "MemberSummaryResponseList" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
         // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
         // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
         // for the union. Object is the honest answer, and it also stops the generator importing a
@@ -451,7 +459,7 @@ openApiModule(
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page"
+        "MemberSummaryResponseList" to "org.springframework.data.domain.Page"
     )
 )
 
