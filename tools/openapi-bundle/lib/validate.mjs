@@ -199,35 +199,48 @@ export function validateSpec(document, {authorities}) {
                 }
             }
 
-            if (key === 'x-klabis-owner-visible' && context === 'operation') {
-                // On an operation the value names the parameter that carries the owner ID — this
-                // is what lets the bundler generate @OwnerVisible and @OwnerId as an inseparable
-                // pair (see applyOperationOwnerVisibleAnnotations in bundle.mjs). On a schema
-                // property (context undefined) it stays the boolean field-level flag, handled below.
-                //
-                // The parameter-exists check below is defence in depth: validateSpec runs on an
-                // already-bundled document, and applyOperationOwnerVisibleAnnotations throws on the
-                // same mistake first, so the CLI reports that throw rather than this error. It stays
-                // for callers that validate a document without bundling it.
-                if (typeof value !== 'string' || value.length === 0) {
+            if (key === 'x-klabis-owner-visible' && value !== true) {
+                errors.push({path: `${path}/${key}`, message: 'must be true when present'});
+            }
+
+            // @OwnerVisible without an @OwnerId parameter is the dangerous half of the pair:
+            // checkOwnership() finds no owner to compare against and denies, so the endpoint
+            // silently loses the owner-or-authority semantics it claims to have. The templates
+            // emit each annotation from its own node and cannot see the other, so this is the
+            // only thing keeping the two together.
+            if (key === 'x-klabis-owner-visible' && context === 'operation' && value === true) {
+                const params = Array.isArray(node.parameters) ? node.parameters : [];
+                const ownerIdParams = params
+                    .map((p) => resolveParameter(document, p))
+                    .filter((p) => p?.['x-klabis-owner-id'] === true);
+
+                if (ownerIdParams.length === 0) {
                     errors.push({
                         path: `${path}/${key}`,
-                        message: 'must be the name of a parameter declared on this operation',
+                        message: 'requires exactly one parameter marked x-klabis-owner-id: true — '
+                            + '@OwnerVisible without @OwnerId denies instead of resolving ownership',
                     });
-                } else {
-                    const params = Array.isArray(node.parameters) ? node.parameters : [];
-                    const names = params
-                        .map((p) => resolveParameter(document, p)?.name)
-                        .filter((name) => name !== undefined);
-                    if (!names.includes(value)) {
-                        errors.push({
-                            path: `${path}/${key}`,
-                            message: `"${value}" does not match any parameter declared on this operation`,
-                        });
-                    }
+                } else if (ownerIdParams.length > 1) {
+                    // findAnnotatedParameterIndex returns the first match, so a second one would
+                    // be silently ignored — and which parameter wins would depend on spec order.
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: `${ownerIdParams.length} parameters are marked x-klabis-owner-id; `
+                            + 'ownership resolves against exactly one',
+                    });
+                } else if (ownerIdParams[0].in !== 'path') {
+                    // Only pathParams.mustache has a branch for x-klabis-owner-id. On a query or
+                    // header parameter the key would be silently dropped, leaving @OwnerVisible
+                    // with nothing to resolve against — the exact failure this check exists to
+                    // prevent, just one step later. This also covers the page/size/sort case:
+                    // x-spring-paginated folds those into a single Pageable argument, dropping the
+                    // parameter the annotation was meant for, and all three are query parameters.
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: `owner-id parameter "${ownerIdParams[0].name}" is in `
+                            + `"${ownerIdParams[0].in}"; @OwnerId is only generated for path parameters`,
+                    });
                 }
-            } else if (key === 'x-klabis-owner-visible' && value !== true) {
-                errors.push({path: `${path}/${key}`, message: 'must be true when present'});
             }
         }
 
