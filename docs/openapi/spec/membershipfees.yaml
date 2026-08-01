@@ -1410,15 +1410,12 @@ components:
           type: string
           enum: [PERCENTAGE, FIXED_AMOUNT]
         percentage:
-          type: integer
+          type: [integer, 'null']
           format: int32
-          nullable: true
         fixedAmount:
-          type: number
-          nullable: true
+          type: [number, 'null']
         fixedCurrency:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     AddPaymentRuleRequest:
       type: object
@@ -1501,9 +1498,8 @@ components:
           type: string
           format: date
         deadlineProcessedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
 
     PublishYearRequest:
       type: object
@@ -1612,14 +1608,11 @@ components:
           type: string
           format: uuid
         firstName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         lastName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         registrationNumber:
-          type: string
-          nullable: true
+          type: [string, 'null']
         joinedAt:
           type: string
           format: date
@@ -1674,13 +1667,11 @@ components:
           type: integer
           format: int32
         currentGroupId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         recommendedLevelId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
 
     ChooseFeeChoiceRequest:
       type: object
@@ -1705,15 +1696,14 @@ components:
       description: A member's current fee level summary for a year.
       properties:
         currentGroup:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/CurrentGroupResponse'
-          nullable: true
+            - type: 'null'
         votingOpen:
           type: boolean
         recommendedLevelId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
 
     CurrentGroupResponse:
       type: object

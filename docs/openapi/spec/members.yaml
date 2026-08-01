@@ -40,8 +40,8 @@ paths:
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
         - $ref: '#/components/parameters/SortParam'
         - name: q
           in: query
@@ -400,26 +400,6 @@ components:
       schema:
         type: string
         format: uuid
-
-    PageParam:
-      name: page
-      in: query
-      description: Zero-based page index (0..N)
-      required: false
-      schema:
-        type: integer
-        default: 0
-        minimum: 0
-
-    SizeParam:
-      name: size
-      in: query
-      description: The size of the page to be returned
-      required: false
-      schema:
-        type: integer
-        default: 10
-        minimum: 1
 
     SortParam:
       name: sort

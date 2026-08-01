@@ -570,11 +570,9 @@ components:
         after generateToken, when it carries the full subscribe URL exactly once.
       properties:
         url:
-          type: string
-          nullable: true
+          type: [string, 'null']
           x-klabis-halforms-access: READ_ONLY
         lastSetAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
           x-klabis-halforms-access: READ_ONLY

@@ -52,8 +52,8 @@ paths:
       x-spring-provide-args:
         - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/SizeParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
         - $ref: '#/components/parameters/EventSortParam'
         - name: status
           in: query
@@ -1097,26 +1097,6 @@ components:
         type: string
         format: uuid
 
-    PageParam:
-      name: page
-      in: query
-      description: Zero-based page index (0..N)
-      required: false
-      schema:
-        type: integer
-        default: 0
-        minimum: 0
-
-    SizeParam:
-      name: size
-      in: query
-      description: The size of the page to be returned
-      required: false
-      schema:
-        type: integer
-        default: 10
-        minimum: 1
-
     EventSortParam:
       name: sort
       in: query
@@ -1578,8 +1558,7 @@ components:
           type: string
           enum: [SUCCESS, FAILED]
         error:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     EntityModelBulkImportResult:
       allOf:
@@ -1613,18 +1592,15 @@ components:
           type: integer
           format: int32
         name:
-          type: string
-          nullable: true
+          type: [string, 'null']
         date:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         status:
           type: string
           enum: [SUCCESS, FAILED]
         error:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     RegisterEventRequest:
       type: object
@@ -1716,9 +1692,8 @@ components:
             - $ref: '#/components/schemas/EventCategoryDto'
           x-klabis-halforms-access: READ_ONLY
         registeredAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
           x-klabis-halforms-access: READ_ONLY
 
     # The _embedded key comes from @Relation(collectionRelation = "accommodationList") on the payload
@@ -1746,34 +1721,25 @@ components:
       description: Fields not recorded for a member are returned as null.
       properties:
         firstName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         lastName:
-          type: string
-          nullable: true
+          type: [string, 'null']
         identityCardNumber:
-          type: string
-          nullable: true
+          type: [string, 'null']
         identityCardValidityDate:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         dateOfBirth:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
         addressStreet:
-          type: string
-          nullable: true
+          type: [string, 'null']
         addressCity:
-          type: string
-          nullable: true
+          type: [string, 'null']
         addressPostalCode:
-          type: string
-          nullable: true
+          type: [string, 'null']
         addressCountry:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     CollectionModelEntityModelCategoryPresetDto:
       type: object

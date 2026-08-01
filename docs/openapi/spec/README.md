@@ -29,6 +29,7 @@ klabis.yaml          root document: info, servers, securitySchemes, $ref to modu
 _shared/
   hal.yaml           HAL and HAL-FORMS building blocks (media-type level, not Klabis-specific)
   problem.yaml       RFC 7807 ProblemDetail
+  pagination.yaml    generic PageParam/SizeParam — see note below on why `sort` is not here
 <module>.yaml        one file per module, added as it is migrated
 ```
 
@@ -140,3 +141,10 @@ Klabis branch across. Each file opens with a note saying so.
   Conversion to domain types belongs in the mapper or controller.
 - Never hand-edit `docs/openapi/klabis-full.json` — it is generated.
 - Reference operations by `operation: <operationId>`, not by escaped `operationRef` pointers.
+- **Nullable properties use the OpenAPI 3.1 union spelling**, `type: [string, 'null']`, never the
+  3.0 `nullable: true`. These documents declare `openapi: 3.1.0`; `nullable: true` is a 3.0 keyword
+  that a 3.1-aware tool (Redocly, `openApiNullable`) does not recognize as nullable at all. For a
+  `$ref` that needs to be nullable, `allOf: [{$ref: ...}, nullable: true]` doesn't compose the way
+  it looks like it should — use `oneOf: [{$ref: ...}, {type: 'null'}]` instead (see
+  `MemberFeeSummaryResponse.currentGroup` in `membershipfees.yaml`), and re-read the `oneOf`/`allOf`
+  warning above first if the property carries a field-authorization extension.
