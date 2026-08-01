@@ -291,6 +291,22 @@
      "type": "string"
     }
    },
+   "TransactionSortParam": {
+    "description": "Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,\nrecordedAt, amount, type.\n",
+    "in": "query",
+    "name": "sort",
+    "required": false,
+    "schema": {
+     "default": [
+      "occurredAt",
+      "DESC"
+     ],
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
    "TxIdParam": {
     "description": "Transaction UUID",
     "in": "path",
@@ -379,42 +395,60 @@
     "description": "Fields not recorded for a member are returned as null.",
     "properties": {
      "addressCity": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "addressCountry": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "addressPostalCode": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "addressStreet": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "dateOfBirth": {
       "format": "date",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "firstName": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "identityCardNumber": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "identityCardValidityDate": {
       "format": "date",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "lastName": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      }
     },
     "type": "object"
@@ -2283,16 +2317,22 @@
     "properties": {
      "date": {
       "format": "date",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "error": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "name": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "orisId": {
       "format": "int32",
@@ -2385,8 +2425,10 @@
    "EventSyncEntry": {
     "properties": {
      "error": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "eventId": {
       "format": "uuid",
@@ -2510,8 +2552,10 @@
     "properties": {
      "deadlineProcessedAt": {
       "format": "date-time",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "id": {
       "format": "uuid",
@@ -2780,13 +2824,17 @@
     "properties": {
      "lastSetAt": {
       "format": "date-time",
-      "nullable": true,
-      "type": "string",
+      "type": [
+       "string",
+       "null"
+      ],
       "x-klabis-halforms-access": "READ_ONLY"
      },
      "url": {
-      "nullable": true,
-      "type": "string",
+      "type": [
+       "string",
+       "null"
+      ],
       "x-klabis-halforms-access": "READ_ONLY"
      }
     },
@@ -3065,8 +3113,10 @@
     "properties": {
      "currentGroupId": {
       "format": "uuid",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "memberId": {
       "format": "uuid",
@@ -3074,8 +3124,10 @@
      },
      "recommendedLevelId": {
       "format": "uuid",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "year": {
       "format": "int32",
@@ -3100,17 +3152,21 @@
     "description": "A member's current fee level summary for a year.",
     "properties": {
      "currentGroup": {
-      "allOf": [
+      "oneOf": [
        {
         "$ref": "#/components/schemas/CurrentGroupResponse"
+       },
+       {
+        "type": "null"
        }
-      ],
-      "nullable": true
+      ]
      },
      "recommendedLevelId": {
       "format": "uuid",
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "votingOpen": {
       "type": "boolean"
@@ -3122,24 +3178,30 @@
     "description": "A member's assignment to a fee group.",
     "properties": {
      "firstName": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "joinedAt": {
       "format": "date",
       "type": "string"
      },
      "lastName": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "memberId": {
       "format": "uuid",
       "type": "string"
      },
      "registrationNumber": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "source": {
       "enum": [
@@ -3316,15 +3378,19 @@
       "type": "integer"
      },
      "location": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "name": {
       "type": "string"
      },
      "organizer": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      }
     },
     "type": "object"
@@ -3498,17 +3564,23 @@
       "type": "string"
      },
      "fixedAmount": {
-      "nullable": true,
-      "type": "number"
+      "type": [
+       "number",
+       "null"
+      ]
      },
      "fixedCurrency": {
-      "nullable": true,
-      "type": "string"
+      "type": [
+       "string",
+       "null"
+      ]
      },
      "percentage": {
       "format": "int32",
-      "nullable": true,
-      "type": "integer"
+      "type": [
+       "integer",
+       "null"
+      ]
      },
      "rankingShortName": {
       "type": "string"
@@ -3759,8 +3831,10 @@
      },
      "registeredAt": {
       "format": "date-time",
-      "nullable": true,
-      "type": "string",
+      "type": [
+       "string",
+       "null"
+      ],
       "x-klabis-halforms-access": "READ_ONLY"
      },
      "siCardNumber": {
@@ -9318,7 +9392,7 @@
       "$ref": "#/components/parameters/SizeParam"
      },
      {
-      "$ref": "#/components/parameters/SortParam"
+      "$ref": "#/components/parameters/TransactionSortParam"
      },
      {
       "description": "Only include transactions occurred on or after this date",

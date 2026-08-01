@@ -8,6 +8,24 @@
 # instead of (or alongside) this module's own. See klabis-api-spec skill and the events.yaml
 # OrisEvents section.
 
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — ORIS integration module
+  description: The ORIS integration slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
 paths:
 
   /api/oris/events:
@@ -47,6 +65,19 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
 components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
 
   responses:
     BadRequest:
@@ -83,8 +114,6 @@ components:
           type: string
           format: date
         location:
-          type: string
-          nullable: true
+          type: [string, 'null']
         organizer:
-          type: string
-          nullable: true
+          type: [string, 'null']
