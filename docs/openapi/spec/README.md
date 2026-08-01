@@ -29,11 +29,45 @@ klabis.yaml          root document: info, servers, securitySchemes, $ref to modu
 _shared/
   hal.yaml           HAL and HAL-FORMS building blocks (media-type level, not Klabis-specific)
   problem.yaml       RFC 7807 ProblemDetail
+  pagination.yaml    generic PageParam/SizeParam — see note below on why `sort` is not here
 <module>.yaml        one file per module, added as it is migrated
 ```
 
 Module specs are pulled in from `klabis.yaml` via `$ref`. Shared components are hoisted into the
 bundle on demand — a schema nobody references does not end up in the output.
+
+### Every module file is a standalone OpenAPI document
+
+Each `<module>.yaml` carries its own `openapi`, `info` and `servers`, so it opens directly in Swagger
+UI or Redoc without being bundled first:
+
+```bash
+npx @redocly/cli preview-docs docs/openapi/spec/members.yaml
+```
+
+Serve it from this directory — its `./_shared/*.yaml` refs are relative, so a module file moved out
+of here stops resolving.
+
+That standalone-ness costs three keys duplicated from `klabis.yaml`: `openapi`, `info.version` and
+`components.securitySchemes`. The last one is not optional decoration — operations carry
+`security: [KlabisAuth: [...]]`, and a security requirement naming a scheme the document does not
+define is an error, not a warning.
+
+The bundler **ignores all three**: modules are pulled in through a `#/paths/...` pointer, so nothing
+outside `paths` and the referenced `components` is ever read. A module that drifted from the root
+would therefore keep bundling cleanly and only mislead whoever opened that one file — so
+`validateModuleDocuments` (validate.mjs) pins each to the root's value. Change `info.version` in
+`klabis.yaml` and the bundle fails until every module matches.
+
+`securitySchemes` is inlined in `klabis.yaml` rather than shared from `_shared/`, because a root
+component that only `$ref`s another file collapses to a self-referencing
+`$ref: '#/components/securitySchemes/KlabisAuth'` in the bundle — a ref into `#/components/` is
+localized, not expanded.
+
+`_shared/*.yaml` are fragments, not modules: they hold `components` only and are never opened on
+their own, so they carry no header. The check derives its module list from the files `klabis.yaml`
+routes a path to, so anything it does not route to — `_shared/`, or a scratch file left in this
+directory — is simply not a module and is not checked.
 
 ## Commands
 
@@ -107,3 +141,10 @@ Klabis branch across. Each file opens with a note saying so.
   Conversion to domain types belongs in the mapper or controller.
 - Never hand-edit `docs/openapi/klabis-full.json` — it is generated.
 - Reference operations by `operation: <operationId>`, not by escaped `operationRef` pointers.
+- **Nullable properties use the OpenAPI 3.1 union spelling**, `type: [string, 'null']`, never the
+  3.0 `nullable: true`. These documents declare `openapi: 3.1.0`; `nullable: true` is a 3.0 keyword
+  that a 3.1-aware tool (Redocly, `openApiNullable`) does not recognize as nullable at all. For a
+  `$ref` that needs to be nullable, `allOf: [{$ref: ...}, nullable: true]` doesn't compose the way
+  it looks like it should — use `oneOf: [{$ref: ...}, {type: 'null'}]` instead (see
+  `MemberFeeSummaryResponse.currentGroup` in `membershipfees.yaml`), and re-read the `oneOf`/`allOf`
+  warning above first if the property carries a field-authorization extension.
