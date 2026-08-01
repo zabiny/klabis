@@ -22,11 +22,6 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.*;
 import com.klabis.members.infrastructure.restapi.MembersApi;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -65,10 +60,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Events", description = "Event management API")
 @PrimaryAdapter
 @ExposesResourceFor(Event.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 public class EventController implements EventsApi {
 
     private final EventManagementPort eventManagementService;
@@ -90,14 +83,8 @@ public class EventController implements EventsApi {
         this.csvRenderer = csvRenderer;
     }
 
-    @Operation(
-            summary = "Create a new event",
-            description = "Creates a new event in DRAFT status. Returns Location header pointing to the created resource."
-    )
-    @ApiResponse(responseCode = "201", description = "Event successfully created")
     @Override
     public ResponseEntity<Void> createEvent(
-            @Parameter(description = "Event creation data")
             CreateEventRequest request) {
 
         Event.CreateEvent command = CreateEventRequestMapper.toCommand(request);
@@ -108,15 +95,10 @@ public class EventController implements EventsApi {
                 .build();
     }
 
-    @Operation(
-            summary = "Update an event",
-            description = "Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields may be provided; absent fields are left unchanged."
-    )
-    @ApiResponse(responseCode = "204", description = "Event successfully updated")
     @Override
     public ResponseEntity<Void> updateEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") UpdateEventRequest request) {
+            @PathVariable UUID id,
+            UpdateEventRequest request) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventId eventId = new EventId(id);
@@ -131,15 +113,9 @@ public class EventController implements EventsApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "Get event by ID",
-            description = "Retrieves detailed event information by ID. " +
-                          "Returns HATEOAS links based on event status and includes embedded registrations."
-    )
-    @ApiResponse(responseCode = "200", description = "Event found")
     @Override
     public ResponseEntity<EventDto> getEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id,
+            @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -158,39 +134,18 @@ public class EventController implements EventsApi {
         return RegistrationDtoMapper.toDtoList(registrations, members, event);
     }
 
-    @Operation(
-            summary = "List events with pagination and filtering",
-            description = """
-                    Retrieves a paginated list of events.
-                    Supports filtering by status and sorting by various fields.
-                    Default: page=0, size=10, sort=eventDate,desc.
-                    Allowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "Paginated list of events retrieved successfully")
     @Override
     public ResponseEntity<Page<EventSummaryDto>> listEvents(
-            @Parameter(description = "Filter by event status (optional)")
             EventStatus status,
-            @Parameter(description = "Fulltext search on event name and location (optional)")
             String q,
-            @Parameter(description = "Filter by organizer code (optional)")
             String organizer,
-            @Parameter(description = "Filter by coordinator member UUID (optional)")
             UUID coordinator,
-            @Parameter(description = "Filter by registration: only 'me' is currently accepted (optional)")
             String registeredBy,
-            @Parameter(description = "Filter events from this date (inclusive, yyyy-MM-dd, optional)")
             LocalDate dateFrom,
-            @Parameter(description = "Filter events up to this date (inclusive, yyyy-MM-dd, optional)")
             LocalDate dateTo,
-            @Parameter(description = "Return events whose nearest future registration deadline falls within [today, today+period] (ISO-8601 duration, e.g. P7D, optional)")
             String deadlineWithin,
-            @Parameter(description = "Exclude events where the given member is registered: only 'me' is currently accepted (optional)")
             String notRegisteredBy,
-            @Parameter(description = "Filter by event type UUID (multi-value: ?eventTypeId=x&eventTypeId=y, optional)")
             List<UUID> eventTypeId,
-            @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
 
@@ -309,28 +264,17 @@ public class EventController implements EventsApi {
         }
     }
 
-    @Operation(
-            summary = "Publish an event",
-            description = "Transitions event from DRAFT to ACTIVE status."
-    )
-    @ApiResponse(responseCode = "204", description = "Event published successfully")
     @Override
     public ResponseEntity<Void> publishEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id) {
+            @PathVariable UUID id) {
 
         eventManagementService.publishEvent(new EventId(id));
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "Cancel an event",
-            description = "Transitions event to CANCELLED status. An optional cancellation reason may be provided."
-    )
-    @ApiResponse(responseCode = "204", description = "Event cancelled successfully")
     @Override
     public ResponseEntity<Void> cancelEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Optional cancellation details")
+            @PathVariable UUID id,
             CancelEventRequest request) {
 
         Event.CancelEvent command = request != null
@@ -340,16 +284,6 @@ public class EventController implements EventsApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "Get accommodation list for an event",
-            description = """
-                    Returns the accommodation list for an event with personal details for each registered member.
-                    Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS authority.
-                    Fields that are not recorded for a member are returned as null.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "Accommodation list retrieved successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS")
     // Narrows the interface's inherited produces (which lists text/csv too, for documentation
     // purposes — see events.yaml) down to the HAL variant only. Without this, Spring sees two
     // handler methods both willing to serve text/csv (this one via the inherited mapping, plus
@@ -358,7 +292,7 @@ public class EventController implements EventsApi {
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
     public ResponseEntity<Collection<AccommodationListItemDto>> getAccommodationList(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
+            @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
@@ -368,17 +302,8 @@ public class EventController implements EventsApi {
     }
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
-    @Operation(
-            summary = "Download accommodation list for an event as CSV",
-            description = """
-                    Returns the accommodation list as a CSV file (UTF-8 BOM, semicolon delimiter, Czech headers).
-                    Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS authority.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "CSV file downloaded successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS")
     public ResponseEntity<byte[]> getAccommodationListAsCsv(
-            @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
+            @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);

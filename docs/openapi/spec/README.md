@@ -14,7 +14,10 @@ docs/openapi/spec/  ──openapiBundle──▶  docs/openapi/klabis-full.json 
 - `docs/openapi/spec/` — hand-written spec; edit here
 - `docs/openapi/klabis-full.json` — committed bundle, generated; never hand-edit
 - `docs/openapi/generated/klabis-codefirst.json` — springdoc dump of what the running app serves
-  (gitignored). Nothing depends on it; it exists only for ad-hoc comparison against the spec.
+  (gitignored). Nothing depends on it; it exists only for ad-hoc comparison against the spec. Since
+  the generator runs with `documentationProvider=springdoc`, the annotations springdoc introspects
+  are themselves generated from the spec, so the two documents now differ only in the Actuator paths
+  springdoc auto-discovers.
 
 **Change an endpoint by editing the spec, not the Java.** A generated DTO or `*Api` interface edited
 by hand is overwritten on the next build.

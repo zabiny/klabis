@@ -13,11 +13,6 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -47,9 +42,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 public class MemberController implements MembersApi {
 
     private final ManagementPort managementService;
@@ -65,18 +58,9 @@ public class MemberController implements MembersApi {
         this.memberMapper = memberMapper;
     }
 
-    @Operation(
-            summary = "Update member information (partial update)",
-            description = "Updates member information with PATCH semantics (partial update). " +
-                          "Admin (MEMBERS:MANAGE) or owner can call this endpoint. " +
-                          "Field-level authorization enforces which fields each role may submit. " +
-                          "Only provided fields are updated; null/missing fields keep existing values."
-    )
-    @ApiResponse(responseCode = "204", description = "Member updated successfully")
     @Override
     public ResponseEntity<Void> updateMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @Parameter(description = "Partial update request - only include fields to update")
+            @PathVariable UUID id,
             UpdateMemberRequest request,
             @ActingUser CurrentUserData currentUser) {
 
@@ -93,19 +77,9 @@ public class MemberController implements MembersApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-            summary = "Resume suspended member membership",
-            description = "Resumes a suspended member's membership. " +
-                          "Requires MEMBERS:MANAGE authority (admin-only). " +
-                          "Sets active status to true and records resume timestamp and user who performed resume."
-    )
-    @ApiResponse(responseCode = "204", description = "Membership resumed successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid resume request (e.g., member is already active)")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
-    @ApiResponse(responseCode = "404", description = "Member not found")
     @Override
     public ResponseEntity<Void> resumeMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @PathVariable UUID id,
             @ActingUser UserId currentUserId) {
 
         var command = new Member.ResumeMembership(currentUserId);
@@ -115,21 +89,9 @@ public class MemberController implements MembersApi {
                 .build();
     }
 
-    @Operation(
-            summary = "Suspend member membership",
-            description = "Suspends a member's membership with a specified reason. " +
-                          "Requires MEMBERS:MANAGE authority (admin-only). " +
-                          "Sets active status to false and records suspension details including timestamp and user who performed suspension."
-    )
-    @ApiResponse(responseCode = "204", description = "Membership suspended successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid suspension request (e.g., already suspended)")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
-    @ApiResponse(responseCode = "404", description = "Member not found")
-    @ApiResponse(responseCode = "409", description = "Member is the sole owner of one or more groups — designate a successor before suspension")
     @Override
     public ResponseEntity<Void> suspendMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @Parameter(description = "Suspension request")
+            @PathVariable UUID id,
             SuspendMembershipRequest request,
             @ActingUser UserId currentUserId) {
 
@@ -158,25 +120,10 @@ public class MemberController implements MembersApi {
     }
 
     @Transactional(readOnly = true)
-    @Operation(
-            summary = "List members with pagination and sorting",
-            description = "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). " +
-                          "Supports pagination (page, size) and sorting (sort=field,direction). " +
-                          "Default: page=0, size=10, sort=lastName,asc. " +
-                          "Allowed sort fields: firstName, lastName, registrationNumber. " +
-                          "Returns HATEOAS links for navigation including pagination links (first, last, next, prev). " +
-                          "Access is restricted to active members only - terminated members will receive 403 Forbidden."
-    )
-    @ApiResponse(responseCode = "200", description = "Paginated list of members retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid filter parameter value")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     @Override
     public ResponseEntity<Page<MemberSummaryResponse>> listMembers(
-            @Parameter(description = "Fulltext search over firstName, lastName, registrationNumber (min 2 chars)")
             @Valid @RequestParam(required = false) String q,
-            @Parameter(description = "Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.")
             @Valid @RequestParam(required = false) String status,
-            @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = {"lastName", "firstName"}, direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
 
@@ -234,15 +181,9 @@ public class MemberController implements MembersApi {
         }
     }
 
-    @Operation(
-            summary = "Get member by ID",
-            description = "Retrieves detailed member information by ID including personal information, " +
-                          "contact details, and guardian information if applicable. Returns HATEOAS links for navigation."
-    )
-    @ApiResponse(responseCode = "200", description = "Member found")
     @Override
     public ResponseEntity<MemberDetailsResponse> getMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);

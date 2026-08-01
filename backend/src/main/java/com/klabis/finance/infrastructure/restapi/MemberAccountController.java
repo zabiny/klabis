@@ -18,10 +18,6 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +40,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Finance", description = "Member financial account API")
 class MemberAccountController implements FinanceApi {
 
     private final DepositPort depositPort;
@@ -64,13 +59,10 @@ class MemberAccountController implements FinanceApi {
         this.transactionQueryPort = transactionQueryPort;
     }
 
-    @Operation(summary = "Get a member's finance account balance",
-            description = "Returns the current balance of a member's finance account.")
-    @ApiResponse(responseCode = "200", description = "Account found")
     @Transactional(readOnly = true)
     @Override
     public ResponseEntity<MemberAccountResource> getAccount(
-            @Parameter(description = "Member UUID") UUID memberId,
+            UUID memberId,
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
         Money balance = memberAccountRepository.findBalanceById(id)
@@ -80,18 +72,14 @@ class MemberAccountController implements FinanceApi {
         return ResponseEntity.ok(resource);
     }
 
-    @Operation(summary = "List a member's account transactions",
-            description = "Paginated, filterable transaction history for a member's finance account. "
-                          + "Supports filtering by occurred-date range and transaction type.")
-    @ApiResponse(responseCode = "200", description = "Paginated transaction history")
     @Transactional(readOnly = true)
     @Override
     public ResponseEntity<Page<TransactionResource>> listTransactions(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Only include transactions occurred on or after this date") LocalDate occurredAtFrom,
-            @Parameter(description = "Only include transactions occurred on or before this date") LocalDate occurredAtTo,
-            @Parameter(description = "Transaction type filter: DEPOSIT, CHARGE, OTHER") String type,
-            @Parameter(description = "Pagination parameters: page, size, sort") Pageable pageable,
+            UUID memberId,
+            LocalDate occurredAtFrom,
+            LocalDate occurredAtTo,
+            String type,
+            Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
         TransactionType typeFilter = type != null ? TransactionType.valueOf(type) : null;
@@ -105,14 +93,11 @@ class MemberAccountController implements FinanceApi {
         return ResponseEntity.ok(page.map(twr -> TransactionResource.from(twr.transaction())));
     }
 
-    @Operation(summary = "Get a single account transaction",
-            description = "Returns a single transaction on a member's finance account.")
-    @ApiResponse(responseCode = "200", description = "Transaction found")
     @Transactional(readOnly = true)
     @Override
     public ResponseEntity<TransactionResource> getTransaction(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Transaction UUID") UUID txId,
+            UUID memberId,
+            UUID txId,
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
         Transaction tx = transactionQueryPort.findTransaction(id, new TransactionId(txId));
@@ -125,12 +110,9 @@ class MemberAccountController implements FinanceApi {
         return ResponseEntity.ok(TransactionResource.from(tx));
     }
 
-    @Operation(summary = "Record a deposit on a member's account",
-            description = "Records a deposit transaction, crediting the member's account balance.")
-    @ApiResponse(responseCode = "201", description = "Deposit recorded")
     @Override
     public ResponseEntity<Void> deposit(
-            @Parameter(description = "Member UUID") UUID memberId,
+            UUID memberId,
             DepositRequest request,
             @ActingUser com.klabis.common.users.UserId currentUserId) {
         LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();
@@ -139,12 +121,9 @@ class MemberAccountController implements FinanceApi {
         return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
     }
 
-    @Operation(summary = "Record a charge on a member's account",
-            description = "Records a charge transaction, debiting the member's account balance.")
-    @ApiResponse(responseCode = "201", description = "Charge recorded")
     @Override
     public ResponseEntity<Void> charge(
-            @Parameter(description = "Member UUID") UUID memberId,
+            UUID memberId,
             ChargeRequest request,
             @ActingUser com.klabis.common.users.UserId currentUserId) {
         LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();
@@ -153,14 +132,10 @@ class MemberAccountController implements FinanceApi {
         return ResponseEntity.created(buildTransactionUri(memberId, tx.getId().value())).build();
     }
 
-    @Operation(summary = "Reverse an account transaction",
-            description = "Creates a reversal transaction offsetting the original. "
-                          + "Fails with 409 when the transaction has already been reversed.")
-    @ApiResponse(responseCode = "201", description = "Reversal recorded")
     @Override
     public ResponseEntity<Void> reverse(
-            @Parameter(description = "Member UUID") UUID memberId,
-            @Parameter(description = "Transaction UUID") UUID txId,
+            UUID memberId,
+            UUID txId,
             ReverseRequest request,
             @ActingUser com.klabis.common.users.UserId currentUserId) {
         LocalDate occurredAt = request.occurredAt() != null ? request.occurredAt() : LocalDate.now();

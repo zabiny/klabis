@@ -9,7 +9,6 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -17,8 +16,6 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -41,8 +38,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Groups", description = "Members group management API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.GROUPS_SCOPE})
 @ExposesResourceFor(FreeGroup.class)
 class FreeGroupController implements GroupsApi {
 

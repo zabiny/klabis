@@ -3,11 +3,7 @@ package com.klabis.oris;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisEventListFilter;
 import com.dpolach.api.orisclient.OrisRegion;
-import com.klabis.common.users.Authority;
 import com.klabis.events.application.ImportedOrisEventsPort;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +23,6 @@ import java.util.stream.Stream;
 @RestController
 @PrimaryAdapter
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "OrisImport", description = "ORIS orienteering system integration API")
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 public class OrisController implements OrisImportApi {
 
     private final OrisApiClient orisApiClient;
@@ -40,10 +34,6 @@ public class OrisController implements OrisImportApi {
     }
 
     @Override
-    @Operation(
-            summary = "List upcoming ORIS events",
-            description = "Returns events from ORIS available for import. Accepts multiple region parameters (OrisRegion enum names) to combine results."
-    )
     public ResponseEntity<List<OrisEventSummary>> listOrisEvents(List<String> region) {
         List<OrisRegion> regions = (region == null || region.isEmpty())
                 ? List.of(OrisRegion.JIHOMORAVSKA)

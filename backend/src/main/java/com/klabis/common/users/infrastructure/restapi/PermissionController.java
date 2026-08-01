@@ -10,8 +10,6 @@ import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -43,9 +41,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Permissions", description = "User permission management")
 @PrimaryAdapter
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 @ExposesResourceFor(UserPermissions.class)
 public class PermissionController implements PermissionsApi {
 
