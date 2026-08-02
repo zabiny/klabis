@@ -2423,6 +2423,7 @@ export interface components {
             memberCount?: number;
             name?: string;
         };
+        FamilyGroupSummaryResponseList: components["schemas"]["FamilyGroupSummaryResponse"][];
         FeeAssignmentResponse: {
             /** Format: uuid */
             groupId?: string;
@@ -2463,6 +2464,7 @@ export interface components {
             id?: string;
             name?: string;
         };
+        GroupSummaryResponseList: components["schemas"]["GroupSummaryResponse"][];
         /** @description Guardian information for minors */
         GuardianDTO: {
             /**
@@ -2844,6 +2846,7 @@ export interface components {
             /** Format: uuid */
             invitedBy?: string;
         };
+        PendingInvitationResponseList: components["schemas"]["PendingInvitationResponse"][];
         /** @description A user's granted authorities. */
         PermissionsResponse: {
             authorities?: string[];
@@ -3018,6 +3021,7 @@ export interface components {
             minAge?: number;
             name?: string;
         };
+        TrainingGroupSummaryResponseList: components["schemas"]["TrainingGroupSummaryResponse"][];
         /** @description A single transaction on a member's finance account. */
         TransactionResource: {
             amount?: number;
@@ -4496,6 +4500,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FamilyGroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFamilyGroupSummaryResponse"];
                 };
             };
@@ -4925,6 +4930,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["GroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelGroupSummaryResponse"];
                 };
             };
@@ -5299,6 +5305,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PendingInvitationResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPendingInvitationResponseForInvitationsList"];
                 };
             };
@@ -6536,6 +6543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TrainingGroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelTrainingGroupSummaryResponse"];
                 };
             };

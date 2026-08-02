@@ -718,13 +718,16 @@ openApiModule(
     mappings = mapOf(
         "EntityModelFamilyGroupSummaryResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse",
         "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
+        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listFamilyGroups.
+        "FamilyGroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
         // Payload type for getFamilyGroup, same envelope-stripping mapping as every other
         // EntityModelX -> X above. The record's parents/members fields stay List<EntityModel<X>>
         // (per-item _links), which is why the record is hand-written rather than generated.
         "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
     ),
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection"
+        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection",
+        "FamilyGroupSummaryResponseList" to "java.util.Collection"
     )
 )
 
@@ -744,15 +747,21 @@ openApiModule(
     mappings = mapOf(
         "EntityModelGroupSummaryResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse",
         "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
+        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listGroups.
+        "GroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
         // Payload type for getGroup — same envelope-stripping mapping as every other EntityModelX
         // -> X. The record's owners/members/pendingInvitations stay List<EntityModel<X>>.
         "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse",
         "EntityModelPendingInvitationResponseForInvitationsList" to "com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
+        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>",
+        // Same reasoning as EventSummaryDtoList — named array sibling for getPendingInvitations.
+        "PendingInvitationResponseList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
     ),
     extraImportMappings = mapOf(
         "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection"
+        "GroupSummaryResponseList" to "java.util.Collection",
+        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection",
+        "PendingInvitationResponseList" to "java.util.Collection"
     )
 )
 
@@ -772,12 +781,15 @@ openApiModule(
     mappings = mapOf(
         "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
         "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
+        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listTrainingGroups.
+        "TrainingGroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
         // Payload type for getTrainingGroup — same envelope-stripping mapping as every other
         // EntityModelX -> X. The record's trainers/members stay List<EntityModel<X>>.
         "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
     ),
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection"
+        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection",
+        "TrainingGroupSummaryResponseList" to "java.util.Collection"
     )
 )
 
