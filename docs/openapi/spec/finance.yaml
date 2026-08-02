@@ -129,7 +129,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TransactionResourceList'
+                $ref: '#/components/schemas/TransactionResourcePage'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/PagedModelEntityModelTransactionResource'
@@ -438,11 +438,15 @@ components:
 
   schemas:
 
-    # Named so schemaMappings can retarget it onto Page<TransactionResource> — an inline array has no
-    # schema name to map from, and the generator would otherwise infer List<TransactionResource>
-    # straight from this application/json sibling (it wins type resolution over the emptied HAL
-    # schema), silently changing listTransactions' return type away from Page<T>.
-    TransactionResourceList:
+    # Named (not inline) so schemaMappings can retarget it onto Page<TransactionResource> — an inline
+    # array has no schema name to map from, and the generator would otherwise infer
+    # List<TransactionResource> straight from this application/json sibling (it wins type resolution
+    # over the emptied HAL schema), silently changing listTransactions' return type away from Page<T>.
+    # Named "...Page", not "...List": the schema is a plain array on the wire (pagination metadata
+    # only exists in the HAL sibling), but the Java type it resolves to is Page<T> — the name reflects
+    # the mapping target, not the JSON shape, to avoid the same "List implies List<T>" confusion that
+    # motivated dropping the equivalent mapping in event-types.
+    TransactionResourcePage:
       type: array
       items:
         $ref: '#/components/schemas/TransactionResource'

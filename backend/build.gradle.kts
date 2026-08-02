@@ -488,17 +488,17 @@ openApiModule(
     ),
     mappings = mapOf(
         "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>",
-        // listTransactions' application/json sibling is a named array schema (TransactionResourceList),
+        // listTransactions' application/json sibling is a named array schema (TransactionResourcePage),
         // not an inline one — an inline array has no schema name for the generator to key a type
         // resolution off, and it would otherwise infer List<TransactionResource> straight from that
         // sibling (it wins over the emptied HAL schema during type resolution), bypassing this mapping.
         // Confirmed by removing it: listTransactions degrades to ResponseEntity<List<TransactionResource>>.
-        "TransactionResourceList" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
+        "TransactionResourcePage" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
     ),
     // The generic Page<T> mappings above carry type arguments that the import must not repeat.
     extraImportMappings = mapOf(
         "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page",
-        "TransactionResourceList" to "org.springframework.data.domain.Page"
+        "TransactionResourcePage" to "org.springframework.data.domain.Page"
     )
 )
 openApiModule(

@@ -3040,7 +3040,7 @@ export interface components {
             /** @description DEPOSIT, CHARGE or OTHER */
             type?: string;
         };
-        TransactionResourceList: components["schemas"]["TransactionResource"][];
+        TransactionResourcePage: components["schemas"]["TransactionResource"][];
         /** @description Manual calendar item update data */
         UpdateCalendarItemRequest: {
             description?: string;
@@ -5706,7 +5706,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TransactionResourceList"];
+                    "application/json": components["schemas"]["TransactionResourcePage"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelTransactionResource"];
                 };
             };
