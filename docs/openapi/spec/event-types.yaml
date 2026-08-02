@@ -36,6 +36,9 @@ paths:
         '200':
           description: List of event types
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelEventTypeDto'
@@ -115,6 +118,9 @@ paths:
         '200':
           description: Event type found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeDto'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelEventTypeDto'
@@ -274,12 +280,20 @@ components:
 
   schemas:
 
+    # Named so schemaMappings can retarget it onto Collection<EventTypeDto> — an inline array has no
+    # schema name to map from, and the generator would otherwise infer List<EventTypeDto> straight
+    # from this application/json sibling (it wins type resolution over the emptied HAL schema).
+    EventTypeDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/EventTypeDto'
+
     # Envelope schemas — never generated into Java; the backend generator emits only the payload.
     #
     # The response references the true wire shape (the HAL object with _embedded), and
-    # schemaMappings redirects it to a plain java.util.List<EventTypeDto> in the generated
-    # signature — that List is what the controller hands to HalResponseBodyAdvice, which builds the
-    # CollectionModel described here. Same split as PagedModel*/Page<T> for paged endpoints.
+    # schemaMappings redirects it to a plain java.util.Collection<EventTypeDto> in the generated
+    # signature — that Collection is what the controller hands to HalResponseBodyAdvice, which builds
+    # the CollectionModel described here. Same split as PagedModel*/Page<T> for paged endpoints.
     CollectionModelEntityModelEventTypeDto:
       type: object
       properties:

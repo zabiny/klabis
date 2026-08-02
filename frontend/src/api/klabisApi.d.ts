@@ -2403,6 +2403,7 @@ export interface components {
             /** Format: int32 */
             sortOrder?: number;
         };
+        EventTypeDtoList: components["schemas"]["EventTypeDto"][];
         /** @description Family group detail with parents and children as independently linked items. */
         FamilyGroupResponse: {
             /** Format: uuid */
@@ -3755,6 +3756,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventTypeDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelEventTypeDto"];
                 };
             };
@@ -3816,6 +3818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventTypeDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventTypeDto"];
                 };
             };

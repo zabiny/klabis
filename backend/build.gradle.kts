@@ -478,11 +478,17 @@ openApiModule(
         // and a schemaMapping onto it is dropped silently — the method then generates as
         // `ResponseEntity<>`, which fails to compile. Collection carries the same meaning for
         // HalResponseBodyAdvice, which only iterates the value.
-        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.EventTypeDto>"
+        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.EventTypeDto>",
+        // listEventTypes' application/json sibling is a named array schema (EventTypeDtoList), not
+        // an inline one — an inline array has no schema name for the generator to key a type
+        // resolution off, and it would otherwise infer List<EventTypeDto> straight from that sibling
+        // (it wins over the emptied HAL schema during type resolution), bypassing this mapping.
+        "EventTypeDtoList" to "java.util.Collection<com.klabis.events.infrastructure.restapi.EventTypeDto>"
     ),
-    // The generic Collection<T> mapping above carries type arguments that the import must not repeat.
+    // The generic Collection<T> mappings above carry type arguments that the import must not repeat.
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection"
+        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection",
+        "EventTypeDtoList" to "java.util.Collection"
     )
 )
 

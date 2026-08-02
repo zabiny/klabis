@@ -210,7 +210,7 @@ populated at runtime with the available ORIS discipline options.
 }
 
 export type GetEventTypeResource =
-  components['schemas']['EntityModelEventTypeDto'] & GetEventTypeHal;
+  components['schemas']['EventTypeDto'] & GetEventTypeHal;
 
 export const GetEventTypeRels = {
   links: ['collection', 'self'] as const,
@@ -809,7 +809,7 @@ populated at runtime with the available ORIS discipline options.
 }
 
 export type ListEventTypesResource =
-  components['schemas']['CollectionModelEntityModelEventTypeDto'] & ListEventTypesHal;
+  components['schemas']['EventTypeDtoList'] & ListEventTypesHal;
 
 export const ListEventTypesRels = {
   links: ['self'] as const,
