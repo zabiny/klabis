@@ -3027,6 +3027,7 @@ export interface components {
             /** @description DEPOSIT, CHARGE or OTHER */
             type?: string;
         };
+        TransactionResourceList: components["schemas"]["TransactionResource"][];
         /** @description Manual calendar item update data */
         UpdateCalendarItemRequest: {
             description?: string;
@@ -5628,6 +5629,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberAccountResource"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberAccountResource"];
                 };
             };
@@ -5672,6 +5674,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TransactionResourceList"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelTransactionResource"];
                 };
             };
@@ -5773,6 +5776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TransactionResource"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelTransactionResource"];
                 };
             };

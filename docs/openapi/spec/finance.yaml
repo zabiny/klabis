@@ -48,6 +48,9 @@ paths:
         '200':
           description: Account found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberAccountResource'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMemberAccountResource'
@@ -124,6 +127,9 @@ paths:
         '200':
           description: Paginated transaction history
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResourceList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/PagedModelEntityModelTransactionResource'
@@ -257,6 +263,9 @@ paths:
         '200':
           description: Transaction found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResource'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelTransactionResource'
@@ -428,6 +437,15 @@ components:
             $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
 
   schemas:
+
+    # Named so schemaMappings can retarget it onto Page<TransactionResource> — an inline array has no
+    # schema name to map from, and the generator would otherwise infer List<TransactionResource>
+    # straight from this application/json sibling (it wins type resolution over the emptied HAL
+    # schema), silently changing listTransactions' return type away from Page<T>.
+    TransactionResourceList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionResource'
 
     # Envelope schemas — never generated into Java; see klabis-api-spec skill:
     # "Payload and envelope are separate schemas".

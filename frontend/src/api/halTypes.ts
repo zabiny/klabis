@@ -98,7 +98,7 @@ export interface GetAccountHal {
 }
 
 export type GetAccountResource =
-  components['schemas']['EntityModelMemberAccountResource'] & GetAccountHal;
+  components['schemas']['MemberAccountResource'] & GetAccountHal;
 
 export const GetAccountRels = {
   links: ['accountOwner', 'self', 'transactions'] as const,
@@ -652,7 +652,7 @@ has not already been reversed.
 }
 
 export type GetTransactionResource =
-  components['schemas']['EntityModelTransactionResource'] & GetTransactionHal;
+  components['schemas']['TransactionResource'] & GetTransactionHal;
 
 export const GetTransactionRels = {
   links: ['account', 'recordedBy', 'reversedBy', 'reverses', 'self'] as const,
@@ -1108,7 +1108,7 @@ export interface ListTransactionsHal {
 }
 
 export type ListTransactionsResource =
-  components['schemas']['PagedModelEntityModelTransactionResource'] & ListTransactionsHal;
+  components['schemas']['TransactionResourceList'] & ListTransactionsHal;
 
 export const ListTransactionsRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
