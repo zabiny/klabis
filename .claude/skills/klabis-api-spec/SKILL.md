@@ -537,6 +537,59 @@ need a mapping too — three cases:
 generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — use
 `java.util.Collection<...>` if a collection response truly needs that Java type rather than `List<T>`.
 
+#### Only add the sibling where a HAL response actually exists
+
+An endpoint whose controller already declares `produces = MediaType.APPLICATION_JSON_VALUE` and
+returns a plain payload directly — no `EntityModel`/`PagedModel`/`CollectionModel` envelope, no
+`x-hal-links`/`x-hal-templates` — is not a HAL response at all, and needs no sibling: its single
+`application/json` content entry already **is** the whole story. `oris.yaml`'s `OrisImport` endpoints
+are exactly this (plain `List<OrisEventSummary>`, genuinely `List`, so its inline `type: array` schema
+is correct as-is). Don't add a redundant second `application/json` entry, and don't go looking for an
+envelope schema to invent one — check the controller's `produces` and return type first.
+
+#### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not the new sibling
+
+`haltypes.mjs` builds each `*Resource` type by picking a schema out of the response's `content` map.
+Because the bundler alphabetizes content-type keys, `"application/json"` always sorts ahead of
+`"application/prs.hal-forms+json"` — so without an explicit preference, adding the sibling silently
+retypes `*Resource` off the *bare* payload/array instead of the envelope, dropping `_embedded`/`page`
+from the generated type even though the wire response still has them. `haltypes.mjs` now explicitly
+prefers `application/prs.hal-forms+json`/`application/hal+json` over any other content type (falling
+back only if neither is present) — this is handled centrally, so authoring a spec response correctly
+(HAL content type + `x-hal-links`/`x-hal-templates` + `application/json` sibling) is enough; nothing
+extra is required per-endpoint. But if a `*Resource` type ever looks wrong after adding a sibling,
+this is the first thing to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content
+ordering (ordering in the YAML doesn't survive bundling anyway — keys are re-sorted).
+
+#### A response already declaring more than one HAL-ish content type may reject a third
+
+Adding `application/json` to a response that already lists **two** content types pointing at the same
+schema (`application/hal+json` *and* `application/prs.hal-forms+json` — the `common` module's
+`rootNavigation`/`dashboard` are the only endpoints in the spec that do this) can make the generator's
+return-type resolution give up and collapse the method to `ResponseEntity<Void>`, silently breaking
+the controller's `@Override`. Confirmed empirically (generating with two vs. three content types on
+the same schema) — there's no known clean fix, so **skip the `application/json` sibling** for a
+response in this situation and leave a comment explaining why, the same way `common.yaml` does for
+`rootNavigation`/`dashboard`. This is rare: it only arises for a marker-type response with no real
+payload of its own, which is the same shape that makes the sibling low-value anyway.
+
+#### A test without an explicit `Accept` header may start asserting against the wrong content type
+
+Content negotiation for a response now has a plain `application/json` option alongside HAL-FORMS. A
+`MockMvc` test asserting `$._links...`/`$._templates...` that omits `.accept(...)` can start resolving
+to the bare payload instead, failing those assertions even though the endpoint still serves HAL-FORMS
+correctly to the real frontend (which always sends `Accept: application/prs.hal-forms+json`). Fix by
+adding the header explicitly:
+
+```java
+mockMvc.perform(get("/api/users/{id}/permissions", id).accept(MediaTypes.HAL_FORMS_JSON))
+    .andExpect(jsonPath("$._links.self.href").exists());
+```
+
+Same root cause as "Bodyless success responses" above (a test without `.accept(...)` "passes either
+way" until the set of producible media types changes) — check for this whenever migrating a module
+whose controller tests assert on `_links`/`_templates`.
+
 ### A payload schema's name is wire contract
 
 Spring HATEOAS derives the `_embedded` key of a collection from the **payload class name** at
@@ -846,6 +899,18 @@ returns `true` unconditionally makes the test assert nothing.
   controller returning `Collection<T>`) — there is no schema name for `schemaMappings` to target, so
   the generator infers `List<T>` straight from the inline array and the interface method's signature
   silently changes out from under the controller that implements it
+- Adding an `application/json` sibling to an endpoint whose controller never returns a HAL envelope in
+  the first place (plain `produces = MediaType.APPLICATION_JSON_VALUE`, no `EntityModel`/`PagedModel`/
+  `CollectionModel`, no `x-hal-links`/`x-hal-templates`) — there is no envelope to redirect away from,
+  the single `application/json` entry the response already has is correct as-is
+- Adding an `application/json` sibling to a response that already declares two other content types
+  pointing at the same schema (`application/hal+json` alongside `application/prs.hal-forms+json`) — a
+  third content type on the same schema can make the generator collapse the return type to
+  `ResponseEntity<Void>`, silently breaking the controller's `@Override`; skip the sibling instead
+- Leaving a `MockMvc` test asserting `$._links`/`$._templates` without an explicit
+  `.accept(MediaTypes.HAL_FORMS_JSON)` after adding an `application/json` sibling to that endpoint's
+  response — content negotiation can now resolve to the bare payload instead, and the assertions fail
+  even though the endpoint still serves HAL-FORMS correctly to a client that asks for it
 - Renaming a payload schema for tidiness — it renames the `_embedded` key on the wire
 - Deriving the `_embedded` key from the class name without checking the payload class for
   `@Relation(collectionRelation = ...)`, which overrides it
