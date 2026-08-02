@@ -19,7 +19,6 @@ import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.EventStatus;
 import com.klabis.members.*;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import jakarta.annotation.Nullable;
@@ -189,7 +188,7 @@ public class EventController implements EventsApi {
             List<UUID> eventTypeId,
             CurrentUserData currentUser) {
 
-        EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
+        EventFilter filter = status != null ? EventFilter.byStatus(toDomainStatus(status)) : EventFilter.none();
 
         if (q != null) {
             filter = filter.withFulltext(q);
@@ -241,6 +240,10 @@ public class EventController implements EventsApi {
         }
 
         return filter;
+    }
+
+    private static com.klabis.events.domain.EventStatus toDomainStatus(EventStatus status) {
+        return status == null ? null : com.klabis.events.domain.EventStatus.valueOf(status.name());
     }
 
     private void validateSortFields(Sort sort) {
@@ -418,7 +421,7 @@ class EventAffordanceSupport {
     }
 
     static boolean shouldOfferRegistration(Event event) {
-        return event.getStatus() == EventStatus.ACTIVE && event.areRegistrationsOpen();
+        return event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE && event.areRegistrationsOpen();
     }
 
     static boolean isCoordinatorOrHasManageAuthority(Authentication auth, Event event) {
@@ -492,7 +495,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
-        if (event.getStatus() != EventStatus.DRAFT) {
+        if (event.getStatus() != com.klabis.events.domain.EventStatus.DRAFT) {
             klabisLinkTo(methodOn(EventRegistrationsApi.class).listRegistrations(eventId, null))
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }

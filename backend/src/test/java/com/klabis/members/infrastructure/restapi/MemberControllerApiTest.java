@@ -9,6 +9,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.*;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
+import com.klabis.members.domain.Gender;
+import com.klabis.members.domain.DeactivationReason;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import org.junit.jupiter.api.Disabled;

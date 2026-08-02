@@ -15,6 +15,7 @@ import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 
 import com.klabis.events.domain.*;
+import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;

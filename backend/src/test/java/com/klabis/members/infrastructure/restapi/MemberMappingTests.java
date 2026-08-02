@@ -139,7 +139,7 @@ class MemberMappingTests {
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(TrainerLevel.T1);
+            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T1);
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
@@ -157,7 +157,7 @@ class MemberMappingTests {
             TrainerLicense license = new TrainerLicense(TrainerLevel.T3, today);
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
-            assertThat(dto.level()).isEqualTo(TrainerLevel.T3);
+            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T3);
             assertThat(dto.validityDate()).isEqualTo(today);
         }
     }
@@ -173,7 +173,7 @@ class MemberMappingTests {
             RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(license);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(RefereeLevel.R2);
+            assertThat(dto.level()).isEqualTo(RefereeLicenseDtoLevel.R2);
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
@@ -253,7 +253,7 @@ class MemberMappingTests {
                     .withMedicalCourse(medicalCourse)
                     .withTrainerLicense(trainerLicense)
                     .withChipNumber("CHIP123")
-                    .withDrivingLicenseGroup(DrivingLicenseGroup.B)
+                    .withDrivingLicenseGroup(com.klabis.members.domain.DrivingLicenseGroup.B)
                     .withDietaryRestrictions("No restrictions")
                     .build();
 
@@ -274,8 +274,9 @@ class MemberMappingTests {
             assertThat(dto.medicalCourse()).isNotNull();
             assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 1, 1));
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T2);
-            assertThat(dto.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T2);
+            assertThat(dto.drivingLicenseGroup()).isEqualTo(
+                    com.klabis.members.infrastructure.restapi.DrivingLicenseGroup.B);
             assertThat(dto.dietaryRestrictions()).isEqualTo("No restrictions");
         }
 
@@ -350,7 +351,7 @@ class MemberMappingTests {
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNull();
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T1);
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T1);
         }
 
         @Test

@@ -97,7 +97,7 @@ public class MemberController implements MembersApi {
 
         var command = new Member.SuspendMembership(
                 currentUserId,
-                request.reason(),
+                memberMapper.deactivationReasonToDomain(request.reason()),
                 request.note()
         );
 

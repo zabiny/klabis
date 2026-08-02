@@ -430,17 +430,24 @@ openApiModule(
         "RegisterMemberRequest",
         "AddressRequest",
         "SuspendMembershipRequest",
-        "UpdateMemberRequest"
+        "UpdateMemberRequest",
+        // Enum schemas — must be listed explicitly so the generator emits them; without a
+        // schemaMapping redirecting them onto the domain enum, they need `models` to know to
+        // generate the type at all (see the mapping comment below for why they're no longer mapped).
+        "Gender",
+        "UpdateMemberRequest_gender",
+        "DeactivationReason",
+        "DrivingLicenseGroup",
+        "TrainerLicenseDto_level",
+        "RefereeLicenseDto_level"
     ),
     mappings = mapOf(
-        "Gender" to "com.klabis.members.domain.Gender",
-        // UpdateMemberRequest.gender inlines the enum rather than $ref-ing Gender, so that it keeps
-        // both its JsonNullable wrapper and x-klabis-authority. See the comment in members.yaml.
-        "UpdateMemberRequest_gender" to "com.klabis.members.domain.Gender",
-        "DeactivationReason" to "com.klabis.members.domain.DeactivationReason",
-        "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
-        "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
-        "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
+        // Gender/DeactivationReason/DrivingLicenseGroup/TrainerLicenseDto_level/RefereeLicenseDto_level
+        // used to be redirected here onto the hand-written domain enums (Gender, DeactivationReason,
+        // DrivingLicenseGroup, TrainerLevel, RefereeLevel). Now that model.mustache renders a real
+        // enumOuterClass for a promoted/$ref'd top-level enum, the generator synthesizes its own DTO
+        // enum for each of these instead — see MemberMapper/UpdateMemberRequestMapper for the explicit
+        // conversion between the generated DTO enum and the domain enum at the REST boundary.
         // getMember's application/json response references MemberDetailsResponse directly (see
         // members.yaml) — no envelope redirection needed since the schema name already matches the
         // Java type. listMembers still needs one: its application/json response is a bare array
@@ -536,10 +543,16 @@ openApiModule(
         "UpdateEventRankingRequest",
         "EntryFeeRequest",
         "CreateEventRequest",
-        "CreateEventCategoryRequest"
+        "CreateEventCategoryRequest",
+        // Enum schema — must be listed explicitly so the generator emits it (see the mapping comment
+        // below for why it's no longer redirected onto the domain enum).
+        "EventStatus"
     ),
     mappings = mapOf(
-        "EventStatus" to "com.klabis.events.domain.EventStatus",
+        // EventStatus used to be redirected here onto the hand-written domain enum
+        // com.klabis.events.domain.EventStatus. Now that model.mustache renders a real enumOuterClass
+        // for a top-level enum schema, the generator synthesizes its own DTO enum instead — see
+        // EventDto/EventSummaryDto/EventController for the explicit conversion to/from the domain enum.
         // listEvents is genuinely paginated (x-spring-paginated: true) — no array shape carries
         // pagination metadata, so both the envelope and the named array sibling stay mapped onto
         // Page<T> (finance module precedent: removing either one degrades the generated return type

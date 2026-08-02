@@ -10,6 +10,8 @@ import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.*;
+import com.klabis.members.domain.Gender;
+import com.klabis.members.domain.DrivingLicenseGroup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

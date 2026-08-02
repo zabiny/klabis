@@ -22,16 +22,16 @@ class UpdateMemberRequestMapper {
                     unwrap(request.nationality()),
                     map(request.bankAccountNumber(), UpdateMemberRequestMapper::toBankAccountNumber),
                     map(request.identityCard(), dto -> IdentityCard.of(dto.cardNumber(), dto.validityDate())),
-                    request.drivingLicenseGroup(),
+                    map(request.drivingLicenseGroup(), UpdateMemberRequestMapper::toDrivingLicenseGroup),
                     map(request.medicalCourse(), UpdateMemberRequestMapper::toMedicalCourse),
-                    map(request.trainerLicense(), dto -> TrainerLicense.of(dto.level(), dto.validityDate())),
-                    map(request.refereeLicense(), dto -> RefereeLicense.of(dto.level(), dto.validityDate())),
+                    map(request.trainerLicense(), dto -> TrainerLicense.of(toTrainerLevel(dto.level()), dto.validityDate())),
+                    map(request.refereeLicense(), dto -> RefereeLicense.of(toRefereeLevel(dto.level()), dto.validityDate())),
                     request.dietaryRestrictions(),
                     map(request.guardian(), UpdateMemberRequestMapper::toGuardianInformation),
                     unwrap(request.firstName()),
                     unwrap(request.lastName()),
                     unwrap(request.dateOfBirth()),
-                    unwrap(request.gender()),
+                    toGender(unwrap(request.gender())),
                     map(request.birthNumber(), UpdateMemberRequestMapper::toBirthNumber),
                     updatedBy
             );
@@ -72,6 +72,22 @@ class UpdateMemberRequestMapper {
 
     private static BirthNumber toBirthNumber(String value) {
         return value.isBlank() ? null : BirthNumber.of(value);
+    }
+
+    private static com.klabis.members.domain.DrivingLicenseGroup toDrivingLicenseGroup(DrivingLicenseGroup dto) {
+        return dto == null ? null : com.klabis.members.domain.DrivingLicenseGroup.valueOf(dto.name());
+    }
+
+    private static com.klabis.members.domain.Gender toGender(UpdateMemberRequestGender dto) {
+        return dto == null ? null : com.klabis.members.domain.Gender.valueOf(dto.name());
+    }
+
+    private static com.klabis.members.domain.TrainerLevel toTrainerLevel(TrainerLicenseDtoLevel dto) {
+        return dto == null ? null : com.klabis.members.domain.TrainerLevel.valueOf(dto.name());
+    }
+
+    private static com.klabis.members.domain.RefereeLevel toRefereeLevel(RefereeLicenseDtoLevel dto) {
+        return dto == null ? null : com.klabis.members.domain.RefereeLevel.valueOf(dto.name());
     }
 
     private static GuardianInformation toGuardianInformation(GuardianDTO dto) {
