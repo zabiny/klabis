@@ -617,13 +617,17 @@ openApiModule(
         "UpdateCalendarItemRequest"
     ),
     mappings = mapOf(
-        "EntityModelCalendarItemDto" to "com.klabis.calendar.infrastructure.restapi.CalendarItemDto",
-        "EntityModelIcalTokenResponse" to "com.klabis.calendar.infrastructure.restapi.IcalTokenResponse",
         // Collection, not List — see the event-types block above for why List is unusable here.
-        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection<com.klabis.calendar.infrastructure.restapi.CalendarItemDto>"
+        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection<com.klabis.calendar.infrastructure.restapi.CalendarItemDto>",
+        // listCalendarItems' application/json sibling is a named array schema (CalendarItemDtoList),
+        // not an inline one — an inline array has no schema name for the generator to key a type
+        // resolution off, and it would otherwise infer List<CalendarItemDto> straight from that
+        // sibling (it wins over the emptied HAL schema during type resolution), bypassing this mapping.
+        "CalendarItemDtoList" to "java.util.Collection<com.klabis.calendar.infrastructure.restapi.CalendarItemDto>"
     ),
     extraImportMappings = mapOf(
-        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection"
+        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection",
+        "CalendarItemDtoList" to "java.util.Collection"
     )
 )
 

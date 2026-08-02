@@ -1904,6 +1904,7 @@ export interface components {
             /** Format: date */
             startDate?: string;
         };
+        CalendarItemDtoList: components["schemas"]["CalendarItemDto"][];
         CancelEventRequest: {
             cancellationReason?: string;
         };
@@ -3420,6 +3421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CalendarItemDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCalendarItemDto"];
                 };
             };
@@ -3481,6 +3483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CalendarItemDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
                 };
             };
@@ -5314,6 +5317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["IcalTokenResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelIcalTokenResponse"];
                 };
             };
@@ -5340,6 +5344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["IcalTokenResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelIcalTokenResponse"];
                 };
             };
