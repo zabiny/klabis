@@ -496,20 +496,25 @@ stripped along with the schema, since they describe the envelope that backend co
 `openapiBundle` (→ `klabis-full.json`, what the frontend reads) never gets `--strip-hal`, so it keeps
 both content types and the hypermedia metadata untouched.
 
-Because backend codegen now sees the bare `application/json` schema directly, **most
-`schemaMappings` entries for envelope→payload redirection are gone.** A payload schema referenced
-by name (`MemberDetailsResponse`) needs no mapping at all — the generator already produces exactly
-that type. A `$ref`'d single-resource `application/json` schema always resolves correctly on its own;
-collection-shaped responses need more care, and a name mismatch unrelated to the envelope can still
-need a mapping too — three cases:
+Because backend codegen now sees the bare `application/json` schema directly, **`schemaMappings`
+entries for envelope→payload redirection are gone almost entirely** — including collection ones. A
+`$ref`'d payload schema (single resource or array) needs no mapping at all when its name matches the
+target Java type: the generator already produces exactly that type.
 
-- **Any collection response whose Java return type must be something other than bare `List<T>`** —
-  `Page<T>` for pagination, or an existing controller returning `Collection<T>` specifically. An
-  inline `type: array` `application/json` schema has no schema name for `schemaMappings` to key on,
-  and the generator resolves the operation's Java return type from that sibling directly (it wins over
-  the emptied HAL schema during type resolution) — so an inline array silently generates `List<T>`,
-  changing the interface method's signature out from under the controller it no longer compiles
-  against. **Always give the array its own named, `$ref`'d top-level schema**, then map that name:
+**`type: array` — named or inline — always generates `List<T>` directly, with no wrapper class and
+no mapping needed**, confirmed by generating with the actual pinned generator version (7.18.0):
+see `docs/technicalAnalysis/openapi-generator-list-types.md`. This corrects an earlier, wrong
+assumption in this skill (and in several already-migrated modules) that an inline array "has no
+schema name to map from" and would need one to avoid some broken fallback — that was never true; the
+`List` result is exactly the generator's normal, safe, class-free behavior for any array schema.
+**Prefer a plain `type: array` with no mapping over a named schema + `schemaMappings` entry** unless
+one of the two cases below applies:
+
+- **`Page<T>` for a paginated response.** There is no array shape that carries pagination metadata —
+  `Page<T>` genuinely needs `schemaMappings`, since the JSON on the wire is the same array shape a
+  `List<T>` would produce, but the Java type must additionally carry `totalElements`/`totalPages`/etc.
+  Give the array its own named, `$ref`'d top-level schema (so `schemaMappings` has a name to target)
+  and map that name onto `Page<T>`:
 
   ```yaml
   MemberSummaryResponseList:      # application/json counterpart of PagedModelEntityModelMemberSummaryResponse
@@ -520,22 +525,27 @@ need a mapping too — three cases:
   ```kotlin
   mappings = mapOf(
       "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
-      // or: "EventTypeDtoList" to "java.util.Collection<…EventTypeDto>"
   )
   extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
   ```
-
-  If the controller genuinely returns a plain `List<T>` (no existing controller does today, but a
-  newly migrated one might), an inline `type: array` with **no** mapping at all generates `List<T>`
-  correctly — the named-schema requirement only applies once the target type isn't `List<T>`.
 
 - **A schema/Java-type name mismatch** that has nothing to do with the envelope (e.g.
   `EntityModelDashboardModel` → `common.ui.RootModel` today, where the payload schema and the target
   Java class are named differently on purpose). These are unrelated to HAL stripping and stay as-is.
 
+**A controller returning `Collection<T>` for a non-paginated list should be migrated to `List<T>`
+instead of kept mapped.** There is no generator-native way to produce `Collection<T>` from an array
+schema (only `List<T>`, always), so the choice is between a `schemaMappings` entry that exists purely
+to preserve an incidental `Collection<T>` signature, or changing the controller's declared return type
+to `List<T>` — prefer the latter. The underlying value is normally already a `List` (`.stream()...
+.toList()`), so this is usually a one-line signature change, not a behavior change;
+`HalResponseBodyAdvice.wrapCollection` branches on `instanceof Collection<?>`, which `List` satisfies
+identically. `event-types`' `EventTypeController.listEventTypes` is the reference example.
+
 **`List` still cannot be a `schemaMappings` target.** It remains a reserved container name in the
-generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — use
-`java.util.Collection<...>` if a collection response truly needs that Java type rather than `List<T>`.
+generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — this
+is a non-issue now that array schemas are left unmapped rather than redirected onto anything, but
+worth knowing if a future case seems to need remapping a `List<T>` response onto something else.
 
 #### Only add the sibling where a HAL response actually exists
 
@@ -759,6 +769,11 @@ openApiModule(
 )
 ```
 
+A module with no paginated response needs no `mappings` at all — `event-types` is `mappings = mapOf()`
+end to end: `getEventType`'s `application/json` sibling is `$ref: EventTypeDto` (name already matches),
+`listEventTypes`' is a plain array (`List<EventTypeDto>`, no wrapper, no mapping — see "Every HAL
+response also needs an `application/json` sibling" above).
+
 One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
 `schemaMappings` is global per task, so a single task could never let two modules each define their
 own `AddressRequest`.
@@ -894,11 +909,15 @@ returns `true` unconditionally makes the test assert nothing.
   `application/json` sibling — backend codegen (`--strip-hal`) only rewrites a response that already
   has an `application/json` entry to key off; without one the response is left fully HAL-enveloped and
   falls back to needing a manual `schemaMappings` redirect, defeating the point
-- Giving a collection response's `application/json` content an inline `type: array` schema when the
-  controller returns anything other than plain `List<T>` (`Page<T>` for pagination, or an existing
-  controller returning `Collection<T>`) — there is no schema name for `schemaMappings` to target, so
-  the generator infers `List<T>` straight from the inline array and the interface method's signature
-  silently changes out from under the controller that implements it
+- Adding a `schemaMappings` entry for a `List<T>` collection response "just in case" — an unmapped
+  `type: array` schema (named or inline) always generates `List<T>` directly with no wrapper class,
+  confirmed against the pinned generator version; a mapping here is pure ceremony. Only `Page<T>`
+  (pagination metadata an array can't carry) needs one, and even then only a **named** array schema.
+- Keeping a controller's return type as `Collection<T>` and adding a `schemaMappings` entry to match
+  it, instead of migrating the controller to `List<T>` — there is no generator-native way to produce
+  `Collection<T>` from an array schema, only `List<T>`, so the mapping exists purely to preserve an
+  incidental signature choice. Change the controller instead (usually a one-line type change, since
+  the underlying value is already a `List`)
 - Adding an `application/json` sibling to an endpoint whose controller never returns a HAL envelope in
   the first place (plain `produces = MediaType.APPLICATION_JSON_VALUE`, no `EntityModel`/`PagedModel`/
   `CollectionModel`, no `x-hal-links`/`x-hal-templates`) — there is no envelope to redirect away from,
