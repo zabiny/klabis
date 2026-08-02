@@ -28,7 +28,7 @@ const HAL_CONTENT_TYPES = ['application/prs.hal-forms+json', 'application/hal+js
 /** getMember -> GetMember */
 const pascalCase = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-const quote = (s) => `'${s.replace(/'/g, "\\'")}'`;
+const quote = (s) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
 /**
  * Collects one descriptor per operation that declares x-hal-links or x-hal-templates.

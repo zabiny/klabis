@@ -51,10 +51,8 @@ final class MembershipFeesRequestMapper {
     }
 
     static FeeSelectionCampaignManagementPort.PublishYearCommand toCommand(PublishYearRequest request) {
-        List<MembershipFeeTierId> ids = request.levelIds().stream()
-                .map(MembershipFeeTierId::new)
-                .toList();
-        return new FeeSelectionCampaignManagementPort.PublishYearCommand(request.year(), request.votingDeadline(), ids);
+        return new FeeSelectionCampaignManagementPort.PublishYearCommand(request.year(), request.votingDeadline(),
+                request.levelIds().stream().map(MembershipFeeTierId::new).toList());
     }
 
     static FeeSelectionCampaignManagementPort.ChangeDeadlineCommand toCommand(ChangeDeadlineRequest request) {

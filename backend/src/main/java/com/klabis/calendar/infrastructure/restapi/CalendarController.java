@@ -229,8 +229,6 @@ class CalendarItemListPostprocessor
 
         LocalDate currentStartDate = params.getFirst("startDate") != null
                 ? LocalDate.parse(params.getFirst("startDate")) : getCurrentMonthFirstDay();
-        LocalDate currentEndDate = params.getFirst("endDate") != null
-                ? LocalDate.parse(params.getFirst("endDate")) : getCurrentMonthLastDay();
         String sort = params.getFirst("sort") != null ? params.getFirst("sort") : "startDate,asc";
         Boolean mySchedule = params.getFirst("mySchedule") != null ? Boolean.valueOf(params.getFirst("mySchedule")) : null;
 

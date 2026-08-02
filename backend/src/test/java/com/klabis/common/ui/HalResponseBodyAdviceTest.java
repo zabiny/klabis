@@ -10,7 +10,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.MediaTypes;
@@ -54,7 +53,7 @@ class HalResponseBodyAdviceTest {
             List<String> domain = List.of("a", "b");
             Page<TestItemResponse> page = new PageImpl<>(
                     domain.stream().map(TestItemResponse::new).toList(),
-                    PageRequest.of(0, 10), domain.size());
+                    pageable, domain.size());
 
             HalResponseContext.setDomainList(domain);
 
