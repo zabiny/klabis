@@ -499,11 +499,17 @@ both content types and the hypermedia metadata untouched.
 Because backend codegen now sees the bare `application/json` schema directly, **most
 `schemaMappings` entries for envelope→payload redirection are gone.** A payload schema referenced
 by name (`MemberDetailsResponse`) needs no mapping at all — the generator already produces exactly
-that type. Two cases still need one:
+that type. A `$ref`'d single-resource `application/json` schema always resolves correctly on its own;
+collection-shaped responses need more care, and a name mismatch unrelated to the envelope can still
+need a mapping too — three cases:
 
-- **`Page<T>` for paginated responses.** There is no bare-array shape that carries pagination
-  metadata, so a plain `type: array` `application/json` schema would generate `List<T>`, losing it.
-  Give the array its own named schema instead of an inline one, and map *that* name onto `Page<T>`:
+- **Any collection response whose Java return type must be something other than bare `List<T>`** —
+  `Page<T>` for pagination, or an existing controller returning `Collection<T>` specifically. An
+  inline `type: array` `application/json` schema has no schema name for `schemaMappings` to key on,
+  and the generator resolves the operation's Java return type from that sibling directly (it wins over
+  the emptied HAL schema during type resolution) — so an inline array silently generates `List<T>`,
+  changing the interface method's signature out from under the controller it no longer compiles
+  against. **Always give the array its own named, `$ref`'d top-level schema**, then map that name:
 
   ```yaml
   MemberSummaryResponseList:      # application/json counterpart of PagedModelEntityModelMemberSummaryResponse
@@ -514,25 +520,22 @@ that type. Two cases still need one:
   ```kotlin
   mappings = mapOf(
       "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
+      // or: "EventTypeDtoList" to "java.util.Collection<…EventTypeDto>"
   )
   extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
   ```
 
-  An inline `type: array` (no `$ref`) has no stable schema name to map, and the generator's synthesized
-  name for it is not something to rely on — always give a paginated response's `application/json`
-  array its own top-level schema.
+  If the controller genuinely returns a plain `List<T>` (no existing controller does today, but a
+  newly migrated one might), an inline `type: array` with **no** mapping at all generates `List<T>`
+  correctly — the named-schema requirement only applies once the target type isn't `List<T>`.
 
 - **A schema/Java-type name mismatch** that has nothing to do with the envelope (e.g.
   `EntityModelDashboardModel` → `common.ui.RootModel` today, where the payload schema and the target
   Java class are named differently on purpose). These are unrelated to HAL stripping and stay as-is.
 
-**`List` still cannot be a `schemaMappings` target** for the collection case above — it remains a
-reserved container name in the generator's type system, dropped *silently*, producing
-`ResponseEntity<>` with no diagnostic. This is now moot for plain collections, since an
-`application/json` array with no mapping already generates `List<T>` correctly on its own; it only
-still matters if a collection response needs `Collection<T>` specifically (existing controllers that
-predate this convention) — in that case, name the array schema and map it the same way as `Page<T>`
-above, targeting `java.util.Collection<...>`.
+**`List` still cannot be a `schemaMappings` target.** It remains a reserved container name in the
+generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — use
+`java.util.Collection<...>` if a collection response truly needs that Java type rather than `List<T>`.
 
 ### A payload schema's name is wire contract
 
@@ -838,9 +841,11 @@ returns `true` unconditionally makes the test assert nothing.
   `application/json` sibling — backend codegen (`--strip-hal`) only rewrites a response that already
   has an `application/json` entry to key off; without one the response is left fully HAL-enveloped and
   falls back to needing a manual `schemaMappings` redirect, defeating the point
-- Giving a paginated response's `application/json` content an inline `type: array` schema instead of a
-  named, `$ref`-able one — there is nothing for `schemaMappings` to target, so the generator produces
-  `List<T>` and the pagination metadata the controller actually returns (`Page<T>`) is lost
+- Giving a collection response's `application/json` content an inline `type: array` schema when the
+  controller returns anything other than plain `List<T>` (`Page<T>` for pagination, or an existing
+  controller returning `Collection<T>`) — there is no schema name for `schemaMappings` to target, so
+  the generator infers `List<T>` straight from the inline array and the interface method's signature
+  silently changes out from under the controller that implements it
 - Renaming a payload schema for tidiness — it renames the `_embedded` key on the wire
 - Deriving the `_embedded` key from the class name without checking the payload class for
   `@Relation(collectionRelation = ...)`, which overrides it
