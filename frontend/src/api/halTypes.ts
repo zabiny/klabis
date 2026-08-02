@@ -68,7 +68,7 @@ coordinator, which does not imply EVENTS:READ.
 }
 
 export type GetAccommodationListResource =
-  components['schemas']['AccommodationListItemDtoList'] & GetAccommodationListHal;
+  components['schemas']['CollectionModelEntityModelAccommodationListItemDto'] & GetAccommodationListHal;
 
 export const GetAccommodationListRels = {
   links: ['event', 'self'] as const,
@@ -98,7 +98,7 @@ export interface GetAccountHal {
 }
 
 export type GetAccountResource =
-  components['schemas']['MemberAccountResource'] & GetAccountHal;
+  components['schemas']['EntityModelMemberAccountResource'] & GetAccountHal;
 
 export const GetAccountRels = {
   links: ['accountOwner', 'self', 'transactions'] as const,
@@ -210,7 +210,7 @@ populated at runtime with the available ORIS discipline options.
 }
 
 export type GetEventTypeResource =
-  components['schemas']['EventTypeDto'] & GetEventTypeHal;
+  components['schemas']['EntityModelEventTypeDto'] & GetEventTypeHal;
 
 export const GetEventTypeRels = {
   links: ['collection', 'self'] as const,
@@ -404,7 +404,7 @@ export interface GetMemberHal {
 }
 
 export type GetMemberResource =
-  components['schemas']['MemberDetailsResponse'] & GetMemberHal;
+  components['schemas']['EntityModelMemberDetailsResponse'] & GetMemberHal;
 
 export const GetMemberRels = {
   links: ['account', 'collection', 'familyGroup', 'feeSummary', 'ical-token', 'permissions', 'self', 'trainingGroup'] as const,
@@ -453,7 +453,7 @@ export interface GetPresetHal {
 }
 
 export type GetPresetResource =
-  components['schemas']['CategoryPresetDto'] & GetPresetHal;
+  components['schemas']['EntityModelCategoryPresetDto'] & GetPresetHal;
 
 export const GetPresetRels = {
   links: ['collection', 'self'] as const,
@@ -513,7 +513,7 @@ export interface GetRegistrationHal {
 }
 
 export type GetRegistrationResource =
-  components['schemas']['RegistrationDto'] & GetRegistrationHal;
+  components['schemas']['EntityModelRegistrationDto'] & GetRegistrationHal;
 
 export const GetRegistrationRels = {
   links: ['event', 'self'] as const,
@@ -652,7 +652,7 @@ has not already been reversed.
 }
 
 export type GetTransactionResource =
-  components['schemas']['TransactionResource'] & GetTransactionHal;
+  components['schemas']['EntityModelTransactionResource'] & GetTransactionHal;
 
 export const GetTransactionRels = {
   links: ['account', 'recordedBy', 'reversedBy', 'reverses', 'self'] as const,
@@ -717,7 +717,7 @@ export interface ImportEventsBatchHal {
 }
 
 export type ImportEventsBatchResource =
-  components['schemas']['BulkImportResult'] & ImportEventsBatchHal;
+  components['schemas']['EntityModelBulkImportResult'] & ImportEventsBatchHal;
 
 export const ImportEventsBatchRels = {
   links: ['self'] as const,
@@ -783,7 +783,7 @@ export interface ListEventsHal {
 }
 
 export type ListEventsResource =
-  components['schemas']['EventSummaryDtoList'] & ListEventsHal;
+  components['schemas']['PagedModelEntityModelEventSummaryDto'] & ListEventsHal;
 
 export const ListEventsRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
@@ -809,7 +809,7 @@ populated at runtime with the available ORIS discipline options.
 }
 
 export type ListEventTypesResource =
-  components['schemas']['EventTypeDtoList'] & ListEventTypesHal;
+  components['schemas']['CollectionModelEntityModelEventTypeDto'] & ListEventTypesHal;
 
 export const ListEventTypesRels = {
   links: ['self'] as const,
@@ -931,7 +931,7 @@ export interface ListMembersHal {
 }
 
 export type ListMembersResource =
-  components['schemas']['MemberSummaryResponseList'] & ListMembersHal;
+  components['schemas']['PagedModelEntityModelMemberSummaryResponse'] & ListMembersHal;
 
 export const ListMembersRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
@@ -955,7 +955,7 @@ export interface ListPresetsHal {
 }
 
 export type ListPresetsResource =
-  components['schemas']['CategoryPresetDtoList'] & ListPresetsHal;
+  components['schemas']['CollectionModelEntityModelCategoryPresetDto'] & ListPresetsHal;
 
 export const ListPresetsRels = {
   links: ['self'] as const,
@@ -1002,7 +1002,7 @@ export interface ListRegistrationsHal {
 }
 
 export type ListRegistrationsResource =
-  components['schemas']['RegistrationSummaryDtoList'] & ListRegistrationsHal;
+  components['schemas']['CollectionModelEntityModelRegistrationSummaryDto'] & ListRegistrationsHal;
 
 export const ListRegistrationsRels = {
   links: ['event', 'self'] as const,
@@ -1108,7 +1108,7 @@ export interface ListTransactionsHal {
 }
 
 export type ListTransactionsResource =
-  components['schemas']['TransactionResourceList'] & ListTransactionsHal;
+  components['schemas']['PagedModelEntityModelTransactionResource'] & ListTransactionsHal;
 
 export const ListTransactionsRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
@@ -1150,7 +1150,7 @@ export interface SyncAllUpcomingFromOrisHal {
 }
 
 export type SyncAllUpcomingFromOrisResource =
-  components['schemas']['BulkSyncResult'] & SyncAllUpcomingFromOrisHal;
+  components['schemas']['EntityModelBulkSyncResult'] & SyncAllUpcomingFromOrisHal;
 
 export const SyncAllUpcomingFromOrisRels = {
   links: ['self'] as const,
