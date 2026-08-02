@@ -473,10 +473,8 @@ components:
 
   schemas:
 
-    # Named so schemaMappings can retarget it onto Collection<CalendarItemDto> — an inline array has
-    # no schema name to map from, and the generator would otherwise infer List<CalendarItemDto>
-    # straight from this application/json sibling (it wins type resolution over the emptied HAL
-    # schema).
+    # application/json sibling for listCalendarItems — a plain array schema, no schemaMappings needed;
+    # generates List<CalendarItemDto> directly.
     CalendarItemDtoList:
       type: array
       items:
