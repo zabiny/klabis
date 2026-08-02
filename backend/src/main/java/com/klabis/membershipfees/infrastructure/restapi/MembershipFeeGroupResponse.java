@@ -21,7 +21,7 @@ record MembershipFeeGroupResponse(
         String yearlyFeeCurrency,
         String status,
         int memberCount,
-        List<MembershipFeeTierResponse.PaymentRuleResponse> rulesSnapshot
+        List<PaymentRuleResponse> rulesSnapshot
 ) {
     static MembershipFeeGroupResponse from(MembershipFeeGroup group) {
         return new MembershipFeeGroupResponse(
@@ -33,7 +33,7 @@ record MembershipFeeGroupResponse(
                 group.getYearlyFeeSnapshot().currency().getCurrencyCode(),
                 group.getStatus().name(),
                 group.memberCount(),
-                group.getRulesSnapshot().stream().map(MembershipFeeTierResponse.PaymentRuleResponse::from).toList()
+                group.getRulesSnapshot().stream().map(PaymentRuleResponse::from).toList()
         );
     }
 

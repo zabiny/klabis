@@ -60,35 +60,38 @@ that the schema name alone can't express.
 | events | `EntityModelEventDtoWithRegistrations` | `EventDto` | `getEvent` has no `application/json` sibling (its `_embedded.registrationDtoList` is contributed out-of-band via `HalResponseContext.embed(...)`, and adding a sibling would let it win frontend type resolution over the envelope, silently dropping that typing — same precedent as `getFeeGroup`/the three "get single group" endpoints below). Since there's no sibling, backend codegen still sees the full envelope schema, whose name (`...WithRegistrations`) genuinely differs from the target class (`EventDto`). |
 | events | `EntityModelBulkSyncResult` / `EntityModelBulkImportResult` | `com.klabis.events.application.BulkSyncResult` / `BulkImportResult` | Envelope-side halves; these are **application-layer** types, not `infrastructure.restapi` DTOs — package mismatch alone would break `@Schema(implementation = ...)` resolution regardless of envelope stripping. |
 | events | `BulkSyncResult` / `BulkImportResult` (bare) | same as above | `application/json`-sibling-side halves of the same package-mismatch problem — the bare schema name matches the simple class name, but not the fully-qualified one the generator needs, so this mapping is still required even though `stripHal.mjs` empties the envelope's schema for these operations. |
-| membershipfees | `PaymentRuleResponse` | `MembershipFeeTierResponse.PaymentRuleResponse` | Nested Java class. A bare top-level schema name never auto-resolves to a nested class — `getRule`'s `application/json` sibling (named `PaymentRuleResponse`) would otherwise resolve against a nonexistent top-level `PaymentRuleResponse` class. **Verified empirically**: removing it broke `openApiGenerateMembershipfees`'s output; restored (commit `aea2160c`). |
 | membershipfees | `EntityModelMembershipFeeGroupResponseWithMembers` | `MembershipFeeGroupResponse` | Same shape as `EntityModelEventDtoWithRegistrations` above: `getFeeGroup` has no `application/json` sibling (its `_embedded.members` block is contributed out-of-band), so backend codegen sees the full envelope, whose name genuinely differs from the bare payload class. |
 | groupsFamily | `EntityModelFamilyGroupResponse` | `FamilyGroupResponse` | `getFamilyGroup` has no `application/json` sibling (per-item `_links` on `parents`/`members` can't be expressed in a bare payload — same precedent as the two `...WithX` cases above), so the envelope schema (name differs from the target class) is what backend codegen sees. **Verified empirically** (commit `9d544b03`): removing it breaks the controller's `@Override`. |
 | groupsFree | `EntityModelGroupResponse` | `GroupResponse` | Same reasoning as `groupsFamily`, for `getGroup` (`owners`/`members`/`pendingInvitations`). |
 | groupsTraining | `EntityModelTrainingGroupResponse` | `TrainingGroupResponse` | Same reasoning, for `getTrainingGroup` (`trainers`/`members`). |
 | common | `PermissionsResponse` | `com.klabis.common.users.infrastructure.restapi.PermissionsResponse` | `PermissionsResponse` is hand-written (not in the module's `models` list, so never regenerated) — without the mapping, the generator would try to synthesize its own `PermissionsResponse` model instead of referencing the existing hand-written record. |
 | common | `EntityModelRootModel` / `EntityModelDashboardModel` | `com.klabis.common.ui.RootModel` / `DashboardModel` | `rootNavigation`/`dashboard` deliberately have **no** `application/json` sibling (adding a third content-type entry to a response that already lists two — `application/hal+json` and `application/prs.hal-forms+json` — collapsed the generator's return-type resolution to `ResponseEntity<Void>`; see commit `8c2db7fb`). Since there's no sibling, backend codegen sees the full envelope. **Verified empirically in this round** (commit `992e1a47`): removing both temporarily collapsed the return types to the ungenerated envelope schema names, which don't compile; restored. |
-| oris | `OrisEventSummary` | `com.klabis.oris.OrisController.OrisEventSummary` | Nested Java class (inner record of `OrisController`) — same reasoning as `PaymentRuleResponse`. **Verified empirically in this round**: removing it produced `cannot find symbol` on a nonexistent top-level `com.klabis.oris.OrisEventSummary` across four generated call sites; restored. |
-
-`event-types` and `calendar` have **zero** entries in either category — every response in both
-modules resolves correctly with no mapping at all.
+`event-types`, `calendar`, and `oris` have **zero** entries in either category — every response in
+all three modules resolves correctly with no mapping at all. `oris` reached this state by moving
+`OrisEventSummary` out of `OrisController` into its own top-level file in the same package (and
+`PaymentRuleResponse` out of `MembershipFeeTierResponse` similarly, in `membershipfees`) — a bare
+schema name auto-resolves to a top-level class of the same name, so a nested class was the only
+reason either mapping existed.
 
 ## Summary
 
 - 8 domain-enum mappings — a separate, pre-existing mechanism, none eliminable.
 - 1 "no valid Java type" mapping (`SuspensionBlockedWarning` → `Object`) — not eliminable, no envelope
   involved at all.
-- 19 genuine envelope/response-shape mappings in `mappings` — every one targets `Page<T>` (2 pairs, 4
-  entries), a nested Java class (2 entries), a cross-package application-layer type (4 entries), or an
-  envelope whose corresponding operation has no `application/json` sibling by design (7 entries: the 5
-  "second independently-shaped collection"/no-sibling cases plus the 2 Root/Dashboard marker-type
-  cases). None are eliminable under the current generator version and current controller designs —
-  each was independently verified by removing it and observing either a compile failure or a silently
-  wrong generated type.
+- 17 genuine envelope/response-shape mappings in `mappings` — every one targets `Page<T>` (2 pairs, 4
+  entries), a cross-package application-layer type (4 entries), or an envelope whose corresponding
+  operation has no `application/json` sibling by design (7 entries: the 5 "second
+  independently-shaped collection"/no-sibling cases plus the 2 Root/Dashboard marker-type cases).
+  None are eliminable under the current generator version and current controller designs — each was
+  independently verified by removing it and observing either a compile failure or a silently wrong
+  generated type.
 - 5 more entries in `extraImportMappings`, duplicating the `Page<T>` targets above with the raw type
   only (the import statement can't repeat the type argument).
 
-Total: **33 mapping entries** across the whole file (28 in `mappings`, 5 in `extraImportMappings`).
+Total: **31 mapping entries** across the whole file (26 in `mappings`, 5 in `extraImportMappings`).
 Down from 58 envelope-style entries (`EntityModel*`/`CollectionModel*`/`PagedModel*`) before the
 schemaMappings-elimination round, and from an even larger table before the HAL/JSON-split work began.
-Every remaining entry addresses a problem that has no generator-native solution today — none are
-candidates for further elimination without either a generator upgrade or a controller/spec redesign.
+The two nested-class mappings (`PaymentRuleResponse`, `OrisEventSummary`) were eliminated by moving
+those records to top-level files. Every remaining entry addresses a problem that has no
+generator-native solution today — none are candidates for further elimination without either a
+generator upgrade or a controller/spec redesign.
