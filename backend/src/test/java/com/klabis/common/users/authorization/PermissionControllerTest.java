@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -83,7 +84,10 @@ class PermissionControllerTest {
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
 
             // When & Then
-            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
+            // Explicit Accept: getUserPermissions now also produces application/json (bare
+            // payload, no _links) alongside HAL-FORMS — without this header, content negotiation
+            // may pick the first producible type instead of HAL-FORMS.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID.uuid().toString() + "/permissions")));
@@ -99,8 +103,9 @@ class PermissionControllerTest {
 
             // When & Then
             // type/multi are asserted alongside readOnly so the test cannot pass through readOnly
-            // merely being absent for an unrelated reason.
-            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
+            // merely being absent for an unrelated reason. Explicit Accept — see
+            // shouldIncludeHateoasLinks above.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updatePermissions.properties[0].name").value("authorities"))
                     .andExpect(jsonPath("$._templates.updatePermissions.properties[0].readOnly").doesNotExist())

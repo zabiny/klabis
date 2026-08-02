@@ -89,6 +89,58 @@ describe('collectHalResources', () => {
         expect(resources[0].schema).toBe('MemberDetailsResponse');
     });
 
+    it('prefers the HAL content type schema over an application/json sibling', () => {
+        // application/json is the backend-codegen sibling (klabis-api-spec skill); *Resource must
+        // still type off the envelope schema (EntityModel*/PagedModel*/CollectionModel*), which
+        // carries _links/_embedded/page — the bare payload schema does not. Bundled documents sort
+        // content keys alphabetically, so "application/json" always precedes the HAL content type;
+        // without an explicit preference this regressed silently across the members/event-types/
+        // finance/events module migrations.
+        const document = {
+            paths: {
+                '/api/members': {
+                    get: {
+                        operationId: 'listMembers',
+                        responses: {
+                            '200': {
+                                content: {
+                                    'application/json': {schema: {$ref: '#/components/schemas/MemberSummaryResponseList'}},
+                                    'application/prs.hal-forms+json': {schema: {$ref: '#/components/schemas/PagedModelEntityModelMemberSummaryResponse'}},
+                                },
+                                'x-hal-links': {self: {}},
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        expect(collectHalResources(document)[0].schema).toBe('PagedModelEntityModelMemberSummaryResponse');
+    });
+
+    it('falls back to any content schema when no HAL content type carries one', () => {
+        const document = {
+            paths: {
+                '/api/members': {
+                    get: {
+                        operationId: 'listMembers',
+                        responses: {
+                            '200': {
+                                content: {
+                                    'application/json': {schema: {$ref: '#/components/schemas/MemberSummaryResponseList'}},
+                                    'application/prs.hal-forms+json': {},
+                                },
+                                'x-hal-links': {self: {}},
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        expect(collectHalResources(document)[0].schema).toBe('MemberSummaryResponseList');
+    });
+
     it('leaves the schema undefined when the response has no content', () => {
         const document = memberDocument({'x-hal-links': {self: {}}});
         delete document.paths['/api/members/{id}'].get.responses['200'].content;

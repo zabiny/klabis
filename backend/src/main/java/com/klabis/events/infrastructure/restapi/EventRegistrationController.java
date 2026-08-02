@@ -36,7 +36,6 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.servlet.HandlerMapping;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +106,7 @@ class EventRegistrationController implements EventRegistrationsApi {
     }
 
     @Override
-    public ResponseEntity<Collection<RegistrationSummaryDto>> listRegistrations(
+    public ResponseEntity<List<RegistrationSummaryDto>> listRegistrations(
             @PathVariable UUID eventId,
             @RequestParam(required = false) String sort) {
 

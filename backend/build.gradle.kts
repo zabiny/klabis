@@ -268,7 +268,11 @@ val bundleSpecForCodegen by tasks.registering(Exec::class) {
     workingDir = openapiToolDir.asFile
     val out = layout.buildDirectory.file("generated/openapi/bundled.json").get().asFile
     doFirst { out.parentFile.mkdirs() }
-    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath)
+    // --strip-hal drops HAL/HAL+FORMS response content (and x-hal-links/x-hal-templates) from any
+    // response that also declares application/json, so the generator sees the bare payload schema
+    // directly and needs no envelope -> payload schemaMappings redirection. klabis-full.json (the
+    // frontend-facing bundle from openapiBundle) is unaffected — this flag only applies here.
+    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath, "--strip-hal")
 }
 
 /**
@@ -437,8 +441,12 @@ openApiModule(
         "DrivingLicenseGroup" to "com.klabis.members.domain.DrivingLicenseGroup",
         "TrainerLicenseDto_level" to "com.klabis.members.domain.TrainerLevel",
         "RefereeLicenseDto_level" to "com.klabis.members.domain.RefereeLevel",
-        "EntityModelMemberDetailsResponse" to "com.klabis.members.infrastructure.restapi.MemberDetailsResponse",
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        // getMember's application/json response references MemberDetailsResponse directly (see
+        // members.yaml) — no envelope redirection needed since the schema name already matches the
+        // Java type. listMembers still needs one: its application/json response is a bare array
+        // (MemberSummaryResponseList), which the generator would otherwise turn into List<...>, but
+        // the controller returns Page<...> for pagination metadata that a bare array can't carry.
+        "MemberSummaryResponseList" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
         // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
         // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
         // for the union. Object is the honest answer, and it also stops the generator importing a
@@ -451,7 +459,7 @@ openApiModule(
     ),
     // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
     extraImportMappings = mapOf(
-        "PagedModelEntityModelMemberSummaryResponse" to "org.springframework.data.domain.Page"
+        "MemberSummaryResponseList" to "org.springframework.data.domain.Page"
     )
 )
 
@@ -464,18 +472,7 @@ openApiModule(
         "CreateEventTypeRequest",
         "UpdateEventTypeRequest"
     ),
-    mappings = mapOf(
-        "EntityModelEventTypeDto" to "com.klabis.events.infrastructure.restapi.EventTypeDto",
-        // Collection, not List: "List" is a reserved container name in the generator's type system,
-        // and a schemaMapping onto it is dropped silently — the method then generates as
-        // `ResponseEntity<>`, which fails to compile. Collection carries the same meaning for
-        // HalResponseBodyAdvice, which only iterates the value.
-        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.EventTypeDto>"
-    ),
-    // The generic Collection<T> mapping above carries type arguments that the import must not repeat.
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection"
-    )
+    mappings = mapOf()
 )
 
 openApiModule(
@@ -490,13 +487,18 @@ openApiModule(
         "ReverseRequest"
     ),
     mappings = mapOf(
-        "EntityModelMemberAccountResource" to "com.klabis.finance.infrastructure.restapi.MemberAccountResource",
-        "EntityModelTransactionResource" to "com.klabis.finance.infrastructure.restapi.TransactionResource",
-        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
+        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>",
+        // listTransactions' application/json sibling is a named array schema (TransactionResourcePage),
+        // not an inline one — an inline array has no schema name for the generator to key a type
+        // resolution off, and it would otherwise infer List<TransactionResource> straight from that
+        // sibling (it wins over the emptied HAL schema during type resolution), bypassing this mapping.
+        // Confirmed by removing it: listTransactions degrades to ResponseEntity<List<TransactionResource>>.
+        "TransactionResourcePage" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
     ),
-    // The generic Page<T> mapping above carries type arguments that the import must not repeat.
+    // The generic Page<T> mappings above carry type arguments that the import must not repeat.
     extraImportMappings = mapOf(
-        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page"
+        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page",
+        "TransactionResourcePage" to "org.springframework.data.domain.Page"
     )
 )
 openApiModule(
@@ -538,30 +540,30 @@ openApiModule(
     ),
     mappings = mapOf(
         "EventStatus" to "com.klabis.events.domain.EventStatus",
-        "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
+        // listEvents is genuinely paginated (x-spring-paginated: true) — no array shape carries
+        // pagination metadata, so both the envelope and the named array sibling stay mapped onto
+        // Page<T> (finance module precedent: removing either one degrades the generated return type
+        // to List<T>, since the plain-JSON sibling's inferred type wins resolution otherwise).
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
+        "EventSummaryDtoList" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
         // getEvent returns the payload; the _embedded.registrationDtoList block in the
         // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
         // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
+        // Schema name differs from the target Java class (EventDto), so this mapping stays.
         "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
-        "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
+        // BulkSyncResult/BulkImportResult are application-layer types, not restapi DTOs — the
+        // envelope and application/json-sibling schema names never match the target package, so both
+        // stay mapped (otherwise springdoc's @Schema(implementation = ...) resolves against pkg,
+        // where no such class exists).
         "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
-        "EntityModelRegistrationDto" to "com.klabis.events.infrastructure.restapi.RegistrationDto",
-        // Collection, not List: "List" is a reserved container name in the generator's type system,
-        // and a schemaMapping onto it is dropped silently — the method then generates as
-        // `ResponseEntity<>`, which fails to compile.
-        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.RegistrationSummaryDto>",
-        "EntityModelCategoryPresetDto" to "com.klabis.events.infrastructure.restapi.CategoryPresetDto",
-        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>"
+        "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
+        "BulkImportResult" to "com.klabis.events.application.BulkImportResult"
     ),
-    // The generic Page<T>/Collection<T>/CollectionModel<T> mappings above carry type arguments that
-    // the import statement must not repeat.
+    // The generic Page<T> mappings above carry type arguments that the import must not repeat.
     extraImportMappings = mapOf(
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
-        "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection",
-        "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
-        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
+        "EventSummaryDtoList" to "org.springframework.data.domain.Page"
     )
 )
 
@@ -574,15 +576,10 @@ openApiModule(
         "CreateCalendarItemRequest",
         "UpdateCalendarItemRequest"
     ),
-    mappings = mapOf(
-        "EntityModelCalendarItemDto" to "com.klabis.calendar.infrastructure.restapi.CalendarItemDto",
-        "EntityModelIcalTokenResponse" to "com.klabis.calendar.infrastructure.restapi.IcalTokenResponse",
-        // Collection, not List — see the event-types block above for why List is unusable here.
-        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection<com.klabis.calendar.infrastructure.restapi.CalendarItemDto>"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelCalendarItemDto" to "java.util.Collection"
-    )
+    // No mappings: listCalendarItems' CalendarItemDtoList is a named array schema -> List<CalendarItemDto>
+    // directly, and getCalendarItem/getTokenState/generateToken's application/json siblings already
+    // match their target Java class names — nothing to redirect. No pagination in this module.
+    mappings = mapOf()
 )
 
 openApiModule(
@@ -608,30 +605,19 @@ openApiModule(
         "ChooseFeeChoiceRequest"
     ),
     mappings = mapOf(
-        "EntityModelMembershipFeeTierSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse",
-        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse>",
-        "EntityModelMembershipFeeTierResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse",
-        "EntityModelPaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
-        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse>",
-        "EntityModelFeeSelectionCampaignResponse" to "com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse",
-        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
-        "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
-        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
+        // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); its
+        // application/json bare-payload sibling (schema name PaymentRuleResponse, for getRule) would
+        // otherwise resolve to a top-level PaymentRuleResponse class rather than the nested one, so
+        // this mapping stays.
+        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
         // getFeeGroup returns the payload; the _embedded.members block in the WithMembers schema is
         // contributed by the controller via HalResponseContext.embed(...) and assembled by
-        // HalResponseBodyAdvice, so it does not belong in the Java return type.
-        "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
-        "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
-        "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
-        "EntityModelMemberFeeHistoryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeHistoryResponse"
-    ),
-    // The generic Collection<T> mappings above carry type arguments that the import statement must
-    // not repeat.
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection",
-        "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection",
-        "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection",
-        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection"
+        // HalResponseBodyAdvice, so it does not belong in the Java return type. No application/json
+        // sibling was added for getFeeGroup's response — same precedent as EventController's getEvent:
+        // the bundler sorts "application/json" first, so a bare-payload sibling would win type
+        // resolution over EntityModelMembershipFeeGroupResponseWithMembers and silently drop
+        // _embedded.members from the frontend's GetFeeGroupResource type.
+        "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse"
     )
 )
 
@@ -651,15 +637,17 @@ openApiModule(
         "AddMemberRequest"
     ),
     mappings = mapOf(
-        "EntityModelFamilyGroupSummaryResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse",
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
-        // Payload type for getFamilyGroup, same envelope-stripping mapping as every other
-        // EntityModelX -> X above. The record's parents/members fields stay List<EntityModel<X>>
-        // (per-item _links), which is why the record is hand-written rather than generated.
+        // getFamilyGroup has no application/json sibling (its response's per-item _links can't be
+        // expressed in a bare payload — see groups.yaml header comment), so backend codegen still
+        // sees the full envelope schema. EntityModelFamilyGroupResponse's name differs from the
+        // target Java class, so this mapping stays — same precedent as EntityModelEventDtoWithRegistrations
+        // in the events module. Verified empirically: removing it degrades getFamilyGroup's return
+        // type to the ungenerated envelope, breaking the controller's @Override.
         "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection"
+        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is stripped
+        // by --strip-hal since FamilyGroupSummaryResponseList (application/json sibling) exists; that
+        // named array schema generates List<FamilyGroupSummaryResponse> directly with no mapping
+        // needed, so the controller was migrated from Collection<T> to List<T> instead of mapping it.
     )
 )
 
@@ -677,17 +665,15 @@ openApiModule(
         "CancelInvitationRequest"
     ),
     mappings = mapOf(
-        "EntityModelGroupSummaryResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse",
-        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
-        // Payload type for getGroup — same envelope-stripping mapping as every other EntityModelX
-        // -> X. The record's owners/members/pendingInvitations stay List<EntityModel<X>>.
-        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse",
-        "EntityModelPendingInvitationResponseForInvitationsList" to "com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection"
+        // getGroup has no application/json sibling (per-item _links on owners/members/
+        // pendingInvitations can't be expressed in a bare payload — see groups.yaml header comment),
+        // so backend codegen still sees the full envelope schema. EntityModelGroupResponse's name
+        // differs from the target Java class, so this mapping stays.
+        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse"
+        // listGroups' and getPendingInvitations' envelopes are stripped by --strip-hal since their
+        // application/json siblings (GroupSummaryResponseList, PendingInvitationResponseList) exist;
+        // those named array schemas generate List<T> directly with no mapping needed, so both
+        // controllers were migrated from Collection<T> to List<T> instead of mapping them.
     )
 )
 
@@ -705,14 +691,15 @@ openApiModule(
         "UpdateTrainingGroupRequest"
     ),
     mappings = mapOf(
-        "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
-        // Payload type for getTrainingGroup — same envelope-stripping mapping as every other
-        // EntityModelX -> X. The record's trainers/members stay List<EntityModel<X>>.
+        // getTrainingGroup has no application/json sibling (per-item _links on trainers/members
+        // can't be expressed in a bare payload — see groups.yaml header comment), so backend codegen
+        // still sees the full envelope schema. EntityModelTrainingGroupResponse's name differs from
+        // the target Java class, so this mapping stays.
         "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection"
+        // listTrainingGroups' envelope is stripped by --strip-hal since its application/json sibling
+        // (TrainingGroupSummaryResponseList) exists; that named array schema generates
+        // List<TrainingGroupSummaryResponse> directly with no mapping needed, so the controller was
+        // migrated from Collection<T> to List<T> instead of mapping it.
     )
 )
 
@@ -730,7 +717,11 @@ openApiModule(
         "UpdatePermissionsRequest"
     ),
     mappings = mapOf(
-        "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
+        // PermissionsResponse is hand-written (not in `models`, so never regenerated). The
+        // application/json sibling on getUserPermissions references it directly by its own schema
+        // name, which already matches the target Java class — so only this bare mapping is needed;
+        // the envelope schema EntityModelPermissionsResponse never needs its own mapping.
+        "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
         "Authority" to "com.klabis.common.users.Authority",
         // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
         // other migrated module: the generated interface returns the plain RootModel/DashboardModel

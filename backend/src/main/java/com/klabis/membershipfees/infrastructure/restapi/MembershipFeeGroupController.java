@@ -83,7 +83,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     }
 
     @Override
-    public ResponseEntity<java.util.Collection<MembershipFeeTierResponse.PaymentRuleResponse>> listGroupRules(
+    public ResponseEntity<List<MembershipFeeTierResponse.PaymentRuleResponse>> listGroupRules(
             UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
         List<MembershipFeeTierResponse.PaymentRuleResponse> items = group.getRulesSnapshot().stream()

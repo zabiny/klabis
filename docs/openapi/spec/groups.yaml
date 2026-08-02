@@ -83,6 +83,9 @@ paths:
         '200':
           description: List of family groups retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyGroupSummaryResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelFamilyGroupSummaryResponse'
@@ -383,6 +386,9 @@ paths:
         '200':
           description: List of groups retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupSummaryResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelGroupSummaryResponse'
@@ -821,6 +827,9 @@ paths:
         '200':
           description: Pending invitations retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingInvitationResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelPendingInvitationResponseForInvitationsList'
@@ -857,6 +866,9 @@ paths:
         '200':
           description: List of training groups retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroupSummaryResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelTrainingGroupSummaryResponse'
@@ -1285,6 +1297,11 @@ components:
           type: string
           format: uuid
 
+    FamilyGroupSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/FamilyGroupSummaryResponse'
+
     CollectionModelEntityModelFamilyGroupSummaryResponse:
       type: object
       properties:
@@ -1422,6 +1439,11 @@ components:
           type: string
           maxLength: 500
 
+    GroupSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/GroupSummaryResponse'
+
     CollectionModelEntityModelGroupSummaryResponse:
       type: object
       properties:
@@ -1547,6 +1569,11 @@ components:
     # +cancelInvitation affordance that EntityModelPendingInvitationResponse above carries — only
     # invitedMember/accept/reject. A separate envelope schema documents that narrower shape so this
     # collection's items are not mistaken for carrying a cancel affordance they never have.
+    PendingInvitationResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/PendingInvitationResponse'
+
     CollectionModelEntityModelPendingInvitationResponseForInvitationsList:
       type: object
       properties:
@@ -1643,6 +1670,11 @@ components:
           items:
             type: string
             format: uuid
+
+    TrainingGroupSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TrainingGroupSummaryResponse'
 
     CollectionModelEntityModelTrainingGroupSummaryResponse:
       type: object

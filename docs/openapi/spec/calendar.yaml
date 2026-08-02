@@ -82,6 +82,9 @@ paths:
         '200':
           description: List of calendar items retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarItemDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelCalendarItemDto'
@@ -167,6 +170,9 @@ paths:
         '200':
           description: Calendar item found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarItemDto'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelCalendarItemDto'
@@ -295,6 +301,9 @@ paths:
         '200':
           description: Token state returned
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IcalTokenResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelIcalTokenResponse'
@@ -335,6 +344,9 @@ paths:
         '200':
           description: New token generated; full subscribe URL returned once
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IcalTokenResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelIcalTokenResponse'
@@ -460,6 +472,13 @@ components:
             $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
 
   schemas:
+
+    # application/json sibling for listCalendarItems — a plain array schema, no schemaMappings needed;
+    # generates List<CalendarItemDto> directly.
+    CalendarItemDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/CalendarItemDto'
 
     # Envelope schemas — never generated into Java; see klabis-api-spec skill:
     # "Payload and envelope are separate schemas".
