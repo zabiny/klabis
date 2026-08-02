@@ -291,7 +291,7 @@ public class EventController implements EventsApi {
     // handler methods.
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
-    public ResponseEntity<Collection<AccommodationListItemDto>> getAccommodationList(
+    public ResponseEntity<List<AccommodationListItemDto>> getAccommodationList(
             @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);

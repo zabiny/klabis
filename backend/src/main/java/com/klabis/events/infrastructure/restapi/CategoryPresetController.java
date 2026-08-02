@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +40,7 @@ class CategoryPresetController implements CategoryPresetsApi {
     }
 
     @Override
-    public ResponseEntity<Collection<CategoryPresetDto>> listPresets() {
+    public ResponseEntity<List<CategoryPresetDto>> listPresets() {
         List<CategoryPreset> presets = categoryPresetManagementService.listAll();
 
         List<CategoryPresetDto> payload = presets.stream().map(CategoryPresetDtoMapper::toDto).toList();
