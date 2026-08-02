@@ -637,18 +637,17 @@ openApiModule(
         "AddMemberRequest"
     ),
     mappings = mapOf(
-        "EntityModelFamilyGroupSummaryResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse",
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
-        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listFamilyGroups.
-        "FamilyGroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupSummaryResponse>",
-        // Payload type for getFamilyGroup, same envelope-stripping mapping as every other
-        // EntityModelX -> X above. The record's parents/members fields stay List<EntityModel<X>>
-        // (per-item _links), which is why the record is hand-written rather than generated.
+        // getFamilyGroup has no application/json sibling (its response's per-item _links can't be
+        // expressed in a bare payload — see groups.yaml header comment), so backend codegen still
+        // sees the full envelope schema. EntityModelFamilyGroupResponse's name differs from the
+        // target Java class, so this mapping stays — same precedent as EntityModelEventDtoWithRegistrations
+        // in the events module. Verified empirically: removing it degrades getFamilyGroup's return
+        // type to the ungenerated envelope, breaking the controller's @Override.
         "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelFamilyGroupSummaryResponse" to "java.util.Collection",
-        "FamilyGroupSummaryResponseList" to "java.util.Collection"
+        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is stripped
+        // by --strip-hal since FamilyGroupSummaryResponseList (application/json sibling) exists; that
+        // named array schema generates List<FamilyGroupSummaryResponse> directly with no mapping
+        // needed, so the controller was migrated from Collection<T> to List<T> instead of mapping it.
     )
 )
 
@@ -666,23 +665,15 @@ openApiModule(
         "CancelInvitationRequest"
     ),
     mappings = mapOf(
-        "EntityModelGroupSummaryResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse",
-        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
-        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listGroups.
-        "GroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.GroupSummaryResponse>",
-        // Payload type for getGroup — same envelope-stripping mapping as every other EntityModelX
-        // -> X. The record's owners/members/pendingInvitations stay List<EntityModel<X>>.
-        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse",
-        "EntityModelPendingInvitationResponseForInvitationsList" to "com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>",
-        // Same reasoning as EventSummaryDtoList — named array sibling for getPendingInvitations.
-        "PendingInvitationResponseList" to "java.util.Collection<com.klabis.groups.freegroup.infrastructure.restapi.PendingInvitationResponse>"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelGroupSummaryResponse" to "java.util.Collection",
-        "GroupSummaryResponseList" to "java.util.Collection",
-        "CollectionModelEntityModelPendingInvitationResponseForInvitationsList" to "java.util.Collection",
-        "PendingInvitationResponseList" to "java.util.Collection"
+        // getGroup has no application/json sibling (per-item _links on owners/members/
+        // pendingInvitations can't be expressed in a bare payload — see groups.yaml header comment),
+        // so backend codegen still sees the full envelope schema. EntityModelGroupResponse's name
+        // differs from the target Java class, so this mapping stays.
+        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse"
+        // listGroups' and getPendingInvitations' envelopes are stripped by --strip-hal since their
+        // application/json siblings (GroupSummaryResponseList, PendingInvitationResponseList) exist;
+        // those named array schemas generate List<T> directly with no mapping needed, so both
+        // controllers were migrated from Collection<T> to List<T> instead of mapping them.
     )
 )
 
@@ -700,17 +691,15 @@ openApiModule(
         "UpdateTrainingGroupRequest"
     ),
     mappings = mapOf(
-        "EntityModelTrainingGroupSummaryResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse",
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
-        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listTrainingGroups.
-        "TrainingGroupSummaryResponseList" to "java.util.Collection<com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupSummaryResponse>",
-        // Payload type for getTrainingGroup — same envelope-stripping mapping as every other
-        // EntityModelX -> X. The record's trainers/members stay List<EntityModel<X>>.
+        // getTrainingGroup has no application/json sibling (per-item _links on trainers/members
+        // can't be expressed in a bare payload — see groups.yaml header comment), so backend codegen
+        // still sees the full envelope schema. EntityModelTrainingGroupResponse's name differs from
+        // the target Java class, so this mapping stays.
         "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
-    ),
-    extraImportMappings = mapOf(
-        "CollectionModelEntityModelTrainingGroupSummaryResponse" to "java.util.Collection",
-        "TrainingGroupSummaryResponseList" to "java.util.Collection"
+        // listTrainingGroups' envelope is stripped by --strip-hal since its application/json sibling
+        // (TrainingGroupSummaryResponseList) exists; that named array schema generates
+        // List<TrainingGroupSummaryResponse> directly with no mapping needed, so the controller was
+        // migrated from Collection<T> to List<T> instead of mapping it.
     )
 )
 

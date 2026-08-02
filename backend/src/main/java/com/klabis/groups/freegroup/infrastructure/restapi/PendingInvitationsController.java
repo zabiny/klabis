@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
 import java.util.List;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -39,7 +38,7 @@ class PendingInvitationsController implements InvitationsApi {
     }
 
     @Override
-    public ResponseEntity<Collection<PendingInvitationResponse>> getPendingInvitations(
+    public ResponseEntity<List<PendingInvitationResponse>> getPendingInvitations(
             @ActingMember MemberId actingMember) {
 
         List<PendingInvitationView> views = membersGroupManagementService.getPendingInvitationsForMember(actingMember);

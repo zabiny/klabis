@@ -25,7 +25,6 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -61,7 +60,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Collection<TrainingGroupSummaryResponse>> listTrainingGroups() {
+    public ResponseEntity<List<TrainingGroupSummaryResponse>> listTrainingGroups() {
 
         List<TrainingGroup> groups = trainingGroupManagementService.listTrainingGroups();
 
