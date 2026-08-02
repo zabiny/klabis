@@ -1456,12 +1456,12 @@ components:
           type: string
           enum: [PERCENTAGE, FIXED_AMOUNT]
         percentage:
-          type: [integer, 'null']
+          type: integer
           format: int32
         fixedAmount:
-          type: [number, 'null']
+          type: number
         fixedCurrency:
-          type: [string, 'null']
+          type: string
 
     AddPaymentRuleRequest:
       type: object
@@ -1549,7 +1549,7 @@ components:
           type: string
           format: date
         deadlineProcessedAt:
-          type: [string, 'null']
+          type: string
           format: date-time
 
     PublishYearRequest:
@@ -1664,11 +1664,11 @@ components:
           type: string
           format: uuid
         firstName:
-          type: [string, 'null']
+          type: string
         lastName:
-          type: [string, 'null']
+          type: string
         registrationNumber:
-          type: [string, 'null']
+          type: string
         joinedAt:
           type: string
           format: date
@@ -1723,10 +1723,10 @@ components:
           type: integer
           format: int32
         currentGroupId:
-          type: [string, 'null']
+          type: string
           format: uuid
         recommendedLevelId:
-          type: [string, 'null']
+          type: string
           format: uuid
 
     ChooseFeeChoiceRequest:
@@ -1752,13 +1752,11 @@ components:
       description: A member's current fee level summary for a year.
       properties:
         currentGroup:
-          oneOf:
-            - $ref: '#/components/schemas/CurrentGroupResponse'
-            - type: 'null'
+          $ref: '#/components/schemas/CurrentGroupResponse'
         votingOpen:
           type: boolean
         recommendedLevelId:
-          type: [string, 'null']
+          type: string
           format: uuid
 
     CurrentGroupResponse:

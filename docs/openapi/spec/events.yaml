@@ -1598,7 +1598,7 @@ components:
           type: string
           enum: [SUCCESS, FAILED]
         error:
-          type: [string, 'null']
+          type: string
 
     EntityModelBulkImportResult:
       allOf:
@@ -1632,15 +1632,15 @@ components:
           type: integer
           format: int32
         name:
-          type: [string, 'null']
+          type: string
         date:
-          type: [string, 'null']
+          type: string
           format: date
         status:
           type: string
           enum: [SUCCESS, FAILED]
         error:
-          type: [string, 'null']
+          type: string
 
     RegisterEventRequest:
       type: object
@@ -1740,7 +1740,7 @@ components:
             - $ref: '#/components/schemas/EventCategoryDto'
           x-klabis-halforms-access: READ_ONLY
         registeredAt:
-          type: [string, 'null']
+          type: string
           format: date-time
           x-klabis-halforms-access: READ_ONLY
 
@@ -1778,25 +1778,25 @@ components:
       description: Fields not recorded for a member are returned as null.
       properties:
         firstName:
-          type: [string, 'null']
+          type: string
         lastName:
-          type: [string, 'null']
+          type: string
         identityCardNumber:
-          type: [string, 'null']
+          type: string
         identityCardValidityDate:
-          type: [string, 'null']
+          type: string
           format: date
         dateOfBirth:
-          type: [string, 'null']
+          type: string
           format: date
         addressStreet:
-          type: [string, 'null']
+          type: string
         addressCity:
-          type: [string, 'null']
+          type: string
         addressPostalCode:
-          type: [string, 'null']
+          type: string
         addressCountry:
-          type: [string, 'null']
+          type: string
 
     # Named so schemaMappings can retarget it onto Collection<CategoryPresetDto> — an inline array
     # has no schema name to map from, and the generator would otherwise infer List<CategoryPresetDto>

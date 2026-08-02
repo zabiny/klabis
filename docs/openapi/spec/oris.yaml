@@ -114,6 +114,6 @@ components:
           type: string
           format: date
         location:
-          type: [string, 'null']
+          type: string
         organizer:
-          type: [string, 'null']
+          type: string
