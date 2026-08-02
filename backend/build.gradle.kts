@@ -717,10 +717,10 @@ openApiModule(
         "UpdatePermissionsRequest"
     ),
     mappings = mapOf(
-        "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        // Bare payload for the application/json sibling on getUserPermissions — PermissionsResponse
-        // is hand-written (not in `models`, so never regenerated), same target class as the envelope
-        // mapping above.
+        // PermissionsResponse is hand-written (not in `models`, so never regenerated). The
+        // application/json sibling on getUserPermissions references it directly by its own schema
+        // name, which already matches the target Java class — so only this bare mapping is needed;
+        // the envelope schema EntityModelPermissionsResponse never needs its own mapping.
         "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
         "Authority" to "com.klabis.common.users.Authority",
         // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
