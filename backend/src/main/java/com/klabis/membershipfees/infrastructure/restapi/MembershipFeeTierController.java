@@ -65,7 +65,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    public ResponseEntity<java.util.Collection<MembershipFeeTierSummaryResponse>> listTiers() {
+    public ResponseEntity<List<MembershipFeeTierSummaryResponse>> listTiers() {
         List<MembershipFeeTier> tiers = managementPort.listTiers();
         List<MembershipFeeTierSummaryResponse> items = tiers.stream()
                 .map(MembershipFeeTierSummaryResponse::from)
@@ -106,7 +106,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    public ResponseEntity<java.util.Collection<MembershipFeeTierResponse.PaymentRuleResponse>> listRules(
+    public ResponseEntity<List<MembershipFeeTierResponse.PaymentRuleResponse>> listRules(
             UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         List<PaymentRuleDomain> domains = tier.getRules().stream()
