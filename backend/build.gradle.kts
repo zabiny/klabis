@@ -656,16 +656,31 @@ openApiModule(
     mappings = mapOf(
         "EntityModelMembershipFeeTierSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse",
         "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse>",
+        // Same reasoning as EventSummaryDtoList in the events module — named array sibling for listTiers.
+        "MembershipFeeTierSummaryResponseList" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierSummaryResponse>",
         "EntityModelMembershipFeeTierResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse",
         "EntityModelPaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
+        // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); the
+        // application/json bare-payload sibling for getRule needs the same explicit mapping.
+        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
         "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for listRules/listGroupRules.
+        "PaymentRuleResponseList" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse>",
         "EntityModelFeeSelectionCampaignResponse" to "com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse",
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for listPublications.
+        "FeeSelectionCampaignResponseList" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.FeeSelectionCampaignResponse>",
         "EntityModelMembershipFeeGroupResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for listGroupsForYear.
+        "MembershipFeeGroupResponseList" to "java.util.Collection<com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse>",
         // getFeeGroup returns the payload; the _embedded.members block in the WithMembers schema is
         // contributed by the controller via HalResponseContext.embed(...) and assembled by
-        // HalResponseBodyAdvice, so it does not belong in the Java return type.
+        // HalResponseBodyAdvice, so it does not belong in the Java return type. No application/json
+        // sibling was added for getFeeGroup's response — same precedent as EventController's getEvent:
+        // the bundler sorts "application/json" first, so a bare-payload sibling would win type
+        // resolution over EntityModelMembershipFeeGroupResponseWithMembers and silently drop
+        // _embedded.members from the frontend's GetFeeGroupResource type.
         "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse",
         "EntityModelMemberFeeChoiceResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeChoiceResponse",
         "EntityModelMemberFeeSummaryResponse" to "com.klabis.membershipfees.infrastructure.restapi.MemberFeeSummaryResponse",
@@ -675,9 +690,13 @@ openApiModule(
     // not repeat.
     extraImportMappings = mapOf(
         "CollectionModelEntityModelMembershipFeeTierSummaryResponse" to "java.util.Collection",
+        "MembershipFeeTierSummaryResponseList" to "java.util.Collection",
         "CollectionModelEntityModelPaymentRuleResponse" to "java.util.Collection",
+        "PaymentRuleResponseList" to "java.util.Collection",
         "CollectionModelEntityModelFeeSelectionCampaignResponse" to "java.util.Collection",
-        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection"
+        "FeeSelectionCampaignResponseList" to "java.util.Collection",
+        "CollectionModelEntityModelMembershipFeeGroupResponse" to "java.util.Collection",
+        "MembershipFeeGroupResponseList" to "java.util.Collection"
     )
 )
 

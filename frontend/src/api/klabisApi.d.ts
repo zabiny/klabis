@@ -2445,6 +2445,7 @@ export interface components {
             /** Format: int32 */
             year?: number;
         };
+        FeeSelectionCampaignResponseList: components["schemas"]["FeeSelectionCampaignResponse"][];
         /** @enum {string} */
         Gender: "MALE" | "FEMALE";
         /** @description Free group detail with owners, members and invitations as independently linked items. */
@@ -2722,6 +2723,7 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        MembershipFeeGroupResponseList: components["schemas"]["MembershipFeeGroupResponse"][];
         /** @description Complete membership fee tier information. */
         MembershipFeeTierResponse: {
             /** Format: uuid */
@@ -2740,6 +2742,7 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        MembershipFeeTierSummaryResponseList: components["schemas"]["MembershipFeeTierSummaryResponse"][];
         MonetaryAmount: {
             /** @description Negative when the member is in debt */
             amount: number;
@@ -2831,6 +2834,7 @@ export interface components {
             /** @enum {string} */
             ruleType?: "PERCENTAGE" | "FIXED_AMOUNT";
         };
+        PaymentRuleResponseList: components["schemas"]["PaymentRuleResponse"][];
         PendingInvitationResponse: {
             /** Format: uuid */
             groupId?: string;
@@ -4739,6 +4743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4800,6 +4805,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4862,6 +4868,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4891,6 +4898,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeGroupResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelMembershipFeeGroupResponse"];
                 };
             };
@@ -5862,6 +5870,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeChoiceResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeChoiceResponse"];
                 };
             };
@@ -5981,6 +5990,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeHistoryResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeHistoryResponse"];
                 };
             };
@@ -6020,6 +6030,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeSummaryResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeSummaryResponse"];
                 };
             };
@@ -6152,6 +6163,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPaymentRuleResponse"];
                 };
             };
@@ -6178,6 +6190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeTierSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelMembershipFeeTierSummaryResponse"];
                 };
             };
@@ -6239,6 +6252,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeTierResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipFeeTierResponse"];
                 };
             };
@@ -6330,6 +6344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPaymentRuleResponse"];
                 };
             };
@@ -6398,6 +6413,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelPaymentRuleResponse"];
                 };
             };
