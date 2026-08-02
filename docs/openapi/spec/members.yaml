@@ -62,6 +62,9 @@ paths:
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/PagedModelEntityModelMemberSummaryResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberSummaryResponseList'
           x-hal-links:
             self:
               description: This collection, with the current paging and filter parameters
@@ -206,6 +209,9 @@ paths:
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMemberDetailsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailsResponse'
           x-hal-links:
             self:
               description: This member
@@ -612,6 +618,14 @@ components:
           $ref: './_shared/hal.yaml#/components/schemas/Links'
         page:
           $ref: './_shared/hal.yaml#/components/schemas/PageMetadata'
+
+    # application/json counterpart of PagedModelEntityModelMemberSummaryResponse, for backend codegen
+    # (see stripHal.mjs): a plain array of the payload, mapped in build.gradle.kts onto Page<...>
+    # since pagination metadata has no bare-array equivalent.
+    MemberSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/MemberSummaryResponse'
 
     MemberOptionResponse:
       type: object

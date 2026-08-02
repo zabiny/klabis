@@ -128,6 +128,9 @@ paths:
         '200':
           description: Paginated list of events retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSummaryDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/PagedModelEntityModelEventSummaryDto'
@@ -232,6 +235,14 @@ paths:
         '200':
           description: Event found
           content:
+            # No application/json sibling here, deliberately: the bundler alphabetizes content keys
+            # (sortKeysDeep in bundle.mjs), so "application/json" always sorts ahead of
+            # "application/prs.hal-forms+json" regardless of source order. haltypes.mjs types
+            # GetEventResource off the FIRST content entry's schema — adding a bare EventDto sibling
+            # would make it win over EntityModelEventDtoWithRegistrations and silently drop
+            # _embedded.registrationDtoList from the frontend's GetEventResource type. The backend
+            # Java return type is unaffected either way (schemaMappings resolves it directly from the
+            # envelope schema name), so this endpoint keeps only the HAL/HAL+FORMS content entry.
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelEventDtoWithRegistrations'
@@ -432,6 +443,9 @@ paths:
         '200':
           description: Accommodation list retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccommodationListItemDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelAccommodationListItemDto'
@@ -552,6 +566,9 @@ paths:
         '200':
           description: Bulk sync completed; inspect failureCount for partial failures
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkSyncResult'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelBulkSyncResult'
@@ -594,6 +611,9 @@ paths:
         '200':
           description: Batch import completed; inspect failureCount for partial failures
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkImportResult'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelBulkImportResult'
@@ -724,6 +744,9 @@ paths:
         '200':
           description: List of registrations retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationSummaryDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelRegistrationSummaryDto'
@@ -820,6 +843,9 @@ paths:
         '200':
           description: Registration retrieved successfully or defaults returned (new=true)
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationDto'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelRegistrationDto'
@@ -872,6 +898,9 @@ paths:
         '200':
           description: List of category presets
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPresetDtoList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelCategoryPresetDto'
@@ -949,6 +978,9 @@ paths:
         '200':
           description: Category preset found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPresetDto'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelCategoryPresetDto'
@@ -1153,6 +1185,14 @@ components:
     EventStatus:
       type: string
       enum: [DRAFT, ACTIVE, FINISHED, CANCELLED]
+
+    # Named so schemaMappings can retarget it onto Page<EventSummaryDto> — an inline array has no
+    # schema name to map from, and the generator would otherwise infer List<EventSummaryDto> straight
+    # from this application/json sibling (it wins type resolution over the emptied HAL schema).
+    EventSummaryDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/EventSummaryDto'
 
     # Envelope schemas — never generated into Java; see klabis-api-spec skill:
     # "Payload and envelope are separate schemas".
@@ -1625,6 +1665,14 @@ components:
           type: string
           format: uuid
 
+    # Named so schemaMappings can retarget it onto Collection<RegistrationSummaryDto> — an inline
+    # array has no schema name to map from, and the generator would otherwise infer
+    # List<RegistrationSummaryDto> straight from this application/json sibling.
+    RegistrationSummaryDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/RegistrationSummaryDto'
+
     CollectionModelEntityModelRegistrationSummaryDto:
       type: object
       properties:
@@ -1703,6 +1751,15 @@ components:
     # Items are bare payloads with no _links of their own: an accommodation row is not an addressable
     # resource and no postprocessor targets EntityModel<AccommodationListItemDto>. Only the
     # collection carries links (self, event).
+    #
+    # Named so schemaMappings can retarget it onto Collection<AccommodationListItemDto> — an inline
+    # array has no schema name to map from, and the generator would otherwise infer
+    # List<AccommodationListItemDto> straight from this application/json sibling.
+    AccommodationListItemDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/AccommodationListItemDto'
+
     CollectionModelEntityModelAccommodationListItemDto:
       type: object
       properties:
@@ -1740,6 +1797,14 @@ components:
           type: [string, 'null']
         addressCountry:
           type: [string, 'null']
+
+    # Named so schemaMappings can retarget it onto Collection<CategoryPresetDto> — an inline array
+    # has no schema name to map from, and the generator would otherwise infer List<CategoryPresetDto>
+    # straight from this application/json sibling.
+    CategoryPresetDtoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/CategoryPresetDto'
 
     CollectionModelEntityModelCategoryPresetDto:
       type: object

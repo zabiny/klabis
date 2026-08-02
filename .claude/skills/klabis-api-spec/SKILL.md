@@ -458,32 +458,147 @@ No body is produced; this only pins the negotiated media type. Easy to miss beca
 that omit `.accept(...)` pass either way — the gap surfaces only against a real client, or a test that
 sets the header.
 
-### The response must reference the envelope — always
+### Every HAL response also needs an `application/json` sibling
 
-A response references the `EntityModel*` / `PagedModel*` / `CollectionModel*` schema, never the bare
-payload or a bare array. The envelope is what actually goes on the wire; the plain Java signature is
-arranged separately, by mapping the envelope schema onto an existing type in `build.gradle.kts`:
+A response's HAL content type (`application/prs.hal-forms+json`, occasionally `application/hal+json`)
+references the `EntityModel*` / `PagedModel*` / `CollectionModel*` envelope schema — that is what
+actually goes on the wire, and `x-hal-links`/`x-hal-templates` describe it. But the response must
+**also** declare an `application/json` content entry, pointing at the bare payload (or an array of
+it) — this is what backend codegen reads, so the interface method gets a plain Java signature without
+a `schemaMappings` redirect:
 
-| envelope schema | `schemaMappings` target | controller returns |
+```yaml
+responses:
+  '200':
+    content:
+      application/prs.hal-forms+json:
+        schema: { $ref: '#/components/schemas/EntityModelMemberDetailsResponse' }
+      application/json:
+        schema: { $ref: '#/components/schemas/MemberDetailsResponse' }
+    x-hal-links: { ... }
+```
+
+| response shape | `application/json` schema | generated Java (no mapping needed) |
 |---|---|---|
-| `EntityModelFooResponse` | `…restapi.FooResponse` | `FooResponse` |
-| `PagedModelEntityModelFooResponse` | `org.springframework.data.domain.Page<…FooResponse>` | `Page<FooResponse>` |
-| `CollectionModelEntityModelFooDto` | `java.util.Collection<…FooDto>` | `Collection<FooDto>` |
+| single resource (`EntityModelFooResponse`) | `$ref: FooResponse` | `FooResponse` |
+| collection (`CollectionModelEntityModelFooDto`) | `type: array, items: $ref FooDto` | `List<FooDto>` |
+| paged (`PagedModelEntityModelFooResponse`) | see below — `Page` needs a named schema | `Page<FooResponse>` (via mapping) |
 
-It is tempting to reference a plain `type: array` instead, because that yields a `List<T>` signature
-directly. Don't: the spec then advertises a bare JSON array while the endpoint actually returns a HAL
-object with `_embedded`. Nothing fails at build time — envelopes are never generated into Java — so
-the lie surfaces only as frontend types describing a response shape that never occurs.
+`bundleSpecForCodegen` (`backend/build.gradle.kts`) runs `bundle.mjs --strip-hal`, which empties every
+HAL content entry's *schema* wherever an `application/json` sibling exists (`stripHal.mjs`) — the HAL
+content-type **key** is kept (as `{}`), only its schema is removed. This is deliberate: `api.mustache`
+derives each method's Spring `produces` clause from the full set of content-type keys, and the
+frontend sends `Accept: application/prs.hal-forms+json` on every request. Deleting the key outright
+(rather than emptying it) drops that media type from `produces` and the real endpoint starts
+answering 406 to its actual caller — the same failure mode "Bodyless success responses" above
+documents for a `204` with no HAL content block at all. `x-hal-links`/`x-hal-templates` themselves are
+stripped along with the schema, since they describe the envelope that backend codegen no longer sees.
+`openapiBundle` (→ `klabis-full.json`, what the frontend reads) never gets `--strip-hal`, so it keeps
+both content types and the hypermedia metadata untouched.
 
-**`List` cannot be a `schemaMappings` target.** `List` is a reserved container name in the
-generator's type system: a mapping onto `java.util.List<...>` is dropped *silently*, and the method
-generates as `ResponseEntity<>` — a syntax error with no diagnostic pointing at the mapping. Use
-`java.util.Collection<...>`. Both the advice and the postprocessors only iterate the value, so
-nothing downstream cares.
+Because backend codegen now sees the bare `application/json` schema directly, **`schemaMappings`
+entries for envelope→payload redirection are gone almost entirely** — including collection ones. A
+`$ref`'d payload schema (single resource or array) needs no mapping at all when its name matches the
+target Java type: the generator already produces exactly that type.
 
-Generic mappings also need a matching `importMappings` entry carrying the raw type only
-(`java.util.Collection`, `org.springframework.data.domain.Page`) — the import statement must not
-repeat the type arguments.
+**`type: array` — named or inline — always generates `List<T>` directly, with no wrapper class and
+no mapping needed**, confirmed by generating with the actual pinned generator version (7.18.0):
+see `docs/technicalAnalysis/openapi-generator-list-types.md`. This corrects an earlier, wrong
+assumption in this skill (and in several already-migrated modules) that an inline array "has no
+schema name to map from" and would need one to avoid some broken fallback — that was never true; the
+`List` result is exactly the generator's normal, safe, class-free behavior for any array schema.
+**Prefer a plain `type: array` with no mapping over a named schema + `schemaMappings` entry** unless
+one of the two cases below applies:
+
+- **`Page<T>` for a paginated response.** There is no array shape that carries pagination metadata —
+  `Page<T>` genuinely needs `schemaMappings`, since the JSON on the wire is the same array shape a
+  `List<T>` would produce, but the Java type must additionally carry `totalElements`/`totalPages`/etc.
+  Give the array its own named, `$ref`'d top-level schema (so `schemaMappings` has a name to target)
+  and map that name onto `Page<T>`:
+
+  ```yaml
+  MemberSummaryResponseList:      # application/json counterpart of PagedModelEntityModelMemberSummaryResponse
+    type: array
+    items:
+      $ref: '#/components/schemas/MemberSummaryResponse'
+  ```
+  ```kotlin
+  mappings = mapOf(
+      "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
+  )
+  extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
+  ```
+
+- **A schema/Java-type name mismatch** that has nothing to do with the envelope (e.g.
+  `EntityModelDashboardModel` → `common.ui.RootModel` today, where the payload schema and the target
+  Java class are named differently on purpose). These are unrelated to HAL stripping and stay as-is.
+
+**A controller returning `Collection<T>` for a non-paginated list should be migrated to `List<T>`
+instead of kept mapped.** There is no generator-native way to produce `Collection<T>` from an array
+schema (only `List<T>`, always), so the choice is between a `schemaMappings` entry that exists purely
+to preserve an incidental `Collection<T>` signature, or changing the controller's declared return type
+to `List<T>` — prefer the latter. The underlying value is normally already a `List` (`.stream()...
+.toList()`), so this is usually a one-line signature change, not a behavior change;
+`HalResponseBodyAdvice.wrapCollection` branches on `instanceof Collection<?>`, which `List` satisfies
+identically. `event-types`' `EventTypeController.listEventTypes` is the reference example.
+
+**`List` still cannot be a `schemaMappings` target.** It remains a reserved container name in the
+generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — this
+is a non-issue now that array schemas are left unmapped rather than redirected onto anything, but
+worth knowing if a future case seems to need remapping a `List<T>` response onto something else.
+
+#### Only add the sibling where a HAL response actually exists
+
+An endpoint whose controller already declares `produces = MediaType.APPLICATION_JSON_VALUE` and
+returns a plain payload directly — no `EntityModel`/`PagedModel`/`CollectionModel` envelope, no
+`x-hal-links`/`x-hal-templates` — is not a HAL response at all, and needs no sibling: its single
+`application/json` content entry already **is** the whole story. `oris.yaml`'s `OrisImport` endpoints
+are exactly this (plain `List<OrisEventSummary>`, genuinely `List`, so its inline `type: array` schema
+is correct as-is). Don't add a redundant second `application/json` entry, and don't go looking for an
+envelope schema to invent one — check the controller's `produces` and return type first.
+
+#### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not the new sibling
+
+`haltypes.mjs` builds each `*Resource` type by picking a schema out of the response's `content` map.
+Because the bundler alphabetizes content-type keys, `"application/json"` always sorts ahead of
+`"application/prs.hal-forms+json"` — so without an explicit preference, adding the sibling silently
+retypes `*Resource` off the *bare* payload/array instead of the envelope, dropping `_embedded`/`page`
+from the generated type even though the wire response still has them. `haltypes.mjs` now explicitly
+prefers `application/prs.hal-forms+json`/`application/hal+json` over any other content type (falling
+back only if neither is present) — this is handled centrally, so authoring a spec response correctly
+(HAL content type + `x-hal-links`/`x-hal-templates` + `application/json` sibling) is enough; nothing
+extra is required per-endpoint. But if a `*Resource` type ever looks wrong after adding a sibling,
+this is the first thing to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content
+ordering (ordering in the YAML doesn't survive bundling anyway — keys are re-sorted).
+
+#### A response already declaring more than one HAL-ish content type may reject a third
+
+Adding `application/json` to a response that already lists **two** content types pointing at the same
+schema (`application/hal+json` *and* `application/prs.hal-forms+json` — the `common` module's
+`rootNavigation`/`dashboard` are the only endpoints in the spec that do this) can make the generator's
+return-type resolution give up and collapse the method to `ResponseEntity<Void>`, silently breaking
+the controller's `@Override`. Confirmed empirically (generating with two vs. three content types on
+the same schema) — there's no known clean fix, so **skip the `application/json` sibling** for a
+response in this situation and leave a comment explaining why, the same way `common.yaml` does for
+`rootNavigation`/`dashboard`. This is rare: it only arises for a marker-type response with no real
+payload of its own, which is the same shape that makes the sibling low-value anyway.
+
+#### A test without an explicit `Accept` header may start asserting against the wrong content type
+
+Content negotiation for a response now has a plain `application/json` option alongside HAL-FORMS. A
+`MockMvc` test asserting `$._links...`/`$._templates...` that omits `.accept(...)` can start resolving
+to the bare payload instead, failing those assertions even though the endpoint still serves HAL-FORMS
+correctly to the real frontend (which always sends `Accept: application/prs.hal-forms+json`). Fix by
+adding the header explicitly:
+
+```java
+mockMvc.perform(get("/api/users/{id}/permissions", id).accept(MediaTypes.HAL_FORMS_JSON))
+    .andExpect(jsonPath("$._links.self.href").exists());
+```
+
+Same root cause as "Bodyless success responses" above (a test without `.accept(...)` "passes either
+way" until the set of producible media types changes) — check for this whenever migrating a module
+whose controller tests assert on `_links`/`_templates`.
 
 ### A payload schema's name is wire contract
 
@@ -638,17 +753,26 @@ Writing the YAML generates nothing on its own. Each module gets its own codegen 
 
 ```kotlin
 openApiModule(
-    module = "event-types",                                  // -> build/generated/openapi/event-types
-    pkg = "com.klabis.events.infrastructure.restapi",         // same package as the controller
-    apis = listOf("EventTypes"),                              // OpenAPI tags
-    models = listOf("EventTypeDto", "CreateEventTypeRequest", "UpdateEventTypeRequest"),
+    module = "members",                                       // -> build/generated/openapi/members
+    pkg = "com.klabis.members.infrastructure.restapi",         // same package as the controller
+    apis = listOf("Members", "Registration"),                  // OpenAPI tags
+    models = listOf("MemberDetailsResponse", /* ... */),
     mappings = mapOf(
-        "EntityModelEventTypeDto" to "com.klabis.events.infrastructure.restapi.EventTypeDto",
-        "CollectionModelEntityModelEventTypeDto" to "java.util.Collection<…EventTypeDto>"
+        // getMember's application/json response references MemberDetailsResponse directly — no
+        // mapping needed, the schema name already matches the Java type.
+        // listMembers needs one: its application/json response is a named array schema
+        // (MemberSummaryResponseList), and the controller returns Page<...> for pagination metadata
+        // a bare array can't carry — see "Every HAL response also needs an application/json sibling".
+        "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
     ),
-    extraImportMappings = mapOf("CollectionModelEntityModelEventTypeDto" to "java.util.Collection")
+    extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
 )
 ```
+
+A module with no paginated response needs no `mappings` at all — `event-types` is `mappings = mapOf()`
+end to end: `getEventType`'s `application/json` sibling is `$ref: EventTypeDto` (name already matches),
+`listEventTypes`' is a plain array (`List<EventTypeDto>`, no wrapper, no mapping — see "Every HAL
+response also needs an `application/json` sibling" above).
 
 One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
 `schemaMappings` is global per task, so a single task could never let two modules each define their
@@ -781,8 +905,31 @@ returns `true` unconditionally makes the test assert nothing.
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
-- Pointing a response at a bare `type: array` or the raw payload instead of the `EntityModel*` /
-  `PagedModel*` / `CollectionModel*` envelope, to get a nicer Java signature
+- Writing a HAL response with only an `application/prs.hal-forms+json` content entry, no
+  `application/json` sibling — backend codegen (`--strip-hal`) only rewrites a response that already
+  has an `application/json` entry to key off; without one the response is left fully HAL-enveloped and
+  falls back to needing a manual `schemaMappings` redirect, defeating the point
+- Adding a `schemaMappings` entry for a `List<T>` collection response "just in case" — an unmapped
+  `type: array` schema (named or inline) always generates `List<T>` directly with no wrapper class,
+  confirmed against the pinned generator version; a mapping here is pure ceremony. Only `Page<T>`
+  (pagination metadata an array can't carry) needs one, and even then only a **named** array schema.
+- Keeping a controller's return type as `Collection<T>` and adding a `schemaMappings` entry to match
+  it, instead of migrating the controller to `List<T>` — there is no generator-native way to produce
+  `Collection<T>` from an array schema, only `List<T>`, so the mapping exists purely to preserve an
+  incidental signature choice. Change the controller instead (usually a one-line type change, since
+  the underlying value is already a `List`)
+- Adding an `application/json` sibling to an endpoint whose controller never returns a HAL envelope in
+  the first place (plain `produces = MediaType.APPLICATION_JSON_VALUE`, no `EntityModel`/`PagedModel`/
+  `CollectionModel`, no `x-hal-links`/`x-hal-templates`) — there is no envelope to redirect away from,
+  the single `application/json` entry the response already has is correct as-is
+- Adding an `application/json` sibling to a response that already declares two other content types
+  pointing at the same schema (`application/hal+json` alongside `application/prs.hal-forms+json`) — a
+  third content type on the same schema can make the generator collapse the return type to
+  `ResponseEntity<Void>`, silently breaking the controller's `@Override`; skip the sibling instead
+- Leaving a `MockMvc` test asserting `$._links`/`$._templates` without an explicit
+  `.accept(MediaTypes.HAL_FORMS_JSON)` after adding an `application/json` sibling to that endpoint's
+  response — content negotiation can now resolve to the bare payload instead, and the assertions fail
+  even though the endpoint still serves HAL-FORMS correctly to a client that asks for it
 - Renaming a payload schema for tidiness — it renames the `_embedded` key on the wire
 - Deriving the `_embedded` key from the class name without checking the payload class for
   `@Relation(collectionRelation = ...)`, which overrides it

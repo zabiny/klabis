@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,7 +47,7 @@ class CalendarController implements CalendarApi {
     }
 
     @Override
-    public ResponseEntity<Collection<CalendarItemDto>> listCalendarItems(
+    public ResponseEntity<List<CalendarItemDto>> listCalendarItems(
             LocalDate startDate,
             LocalDate endDate,
             String sort,
@@ -66,7 +65,7 @@ class CalendarController implements CalendarApi {
         List<CalendarItem> calendarItems = calendarManagementService
                 .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId);
 
-        Collection<CalendarItemDto> payload = calendarItems.stream().map(this::toDto).toList();
+        List<CalendarItemDto> payload = calendarItems.stream().map(this::toDto).toList();
 
         HalResponseContext.setDomainList(calendarItems);
         return ResponseEntity.ok(payload);

@@ -1798,6 +1798,7 @@ export interface components {
             identityCardValidityDate?: string | null;
             lastName?: string | null;
         };
+        AccommodationListItemDtoList: components["schemas"]["AccommodationListItemDto"][];
         AddMemberRequest: {
             /** Format: uuid */
             memberId: string;
@@ -1903,6 +1904,7 @@ export interface components {
             /** Format: date */
             startDate?: string;
         };
+        CalendarItemDtoList: components["schemas"]["CalendarItemDto"][];
         CancelEventRequest: {
             cancellationReason?: string;
         };
@@ -1915,6 +1917,7 @@ export interface components {
             id?: string;
             name?: string;
         };
+        CategoryPresetDtoList: components["schemas"]["CategoryPresetDto"][];
         ChangeDeadlineRequest: {
             /** Format: date */
             votingDeadline: string;
@@ -2383,6 +2386,7 @@ export interface components {
             status?: components["schemas"]["EventStatus"];
             websiteUrl?: string;
         };
+        EventSummaryDtoList: components["schemas"]["EventSummaryDto"][];
         EventSyncEntry: {
             error?: string | null;
             /** Format: uuid */
@@ -2403,6 +2407,7 @@ export interface components {
             /** Format: int32 */
             sortOrder?: number;
         };
+        EventTypeDtoList: components["schemas"]["EventTypeDto"][];
         /** @description Family group detail with parents and children as independently linked items. */
         FamilyGroupResponse: {
             /** Format: uuid */
@@ -2418,6 +2423,7 @@ export interface components {
             memberCount?: number;
             name?: string;
         };
+        FamilyGroupSummaryResponseList: components["schemas"]["FamilyGroupSummaryResponse"][];
         FeeAssignmentResponse: {
             /** Format: uuid */
             groupId?: string;
@@ -2440,6 +2446,7 @@ export interface components {
             /** Format: int32 */
             year?: number;
         };
+        FeeSelectionCampaignResponseList: components["schemas"]["FeeSelectionCampaignResponse"][];
         /** @enum {string} */
         Gender: "MALE" | "FEMALE";
         /** @description Free group detail with owners, members and invitations as independently linked items. */
@@ -2457,6 +2464,7 @@ export interface components {
             id?: string;
             name?: string;
         };
+        GroupSummaryResponseList: components["schemas"]["GroupSummaryResponse"][];
         /** @description Guardian information for minors */
         GuardianDTO: {
             /**
@@ -2699,6 +2707,7 @@ export interface components {
              */
             registrationNumber?: string;
         };
+        MemberSummaryResponseList: components["schemas"]["MemberSummaryResponse"][];
         /** @description A published fee group — a snapshot taken from a tier for one campaign year. */
         MembershipFeeGroupResponse: {
             /** Format: uuid */
@@ -2716,6 +2725,7 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        MembershipFeeGroupResponseList: components["schemas"]["MembershipFeeGroupResponse"][];
         /** @description Complete membership fee tier information. */
         MembershipFeeTierResponse: {
             /** Format: uuid */
@@ -2734,6 +2744,7 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        MembershipFeeTierSummaryResponseList: components["schemas"]["MembershipFeeTierSummaryResponse"][];
         MonetaryAmount: {
             /** @description Negative when the member is in debt */
             amount: number;
@@ -2825,6 +2836,7 @@ export interface components {
             /** @enum {string} */
             ruleType?: "PERCENTAGE" | "FIXED_AMOUNT";
         };
+        PaymentRuleResponseList: components["schemas"]["PaymentRuleResponse"][];
         PendingInvitationResponse: {
             /** Format: uuid */
             groupId?: string;
@@ -2834,6 +2846,7 @@ export interface components {
             /** Format: uuid */
             invitedBy?: string;
         };
+        PendingInvitationResponseList: components["schemas"]["PendingInvitationResponse"][];
         /** @description A user's granted authorities. */
         PermissionsResponse: {
             authorities?: string[];
@@ -2943,6 +2956,7 @@ export interface components {
             /** Format: date-time */
             registrationTime?: string;
         };
+        RegistrationSummaryDtoList: components["schemas"]["RegistrationSummaryDto"][];
         RenameGroupRequest: {
             name: string;
         };
@@ -3007,6 +3021,7 @@ export interface components {
             minAge?: number;
             name?: string;
         };
+        TrainingGroupSummaryResponseList: components["schemas"]["TrainingGroupSummaryResponse"][];
         /** @description A single transaction on a member's finance account. */
         TransactionResource: {
             amount?: number;
@@ -3025,6 +3040,7 @@ export interface components {
             /** @description DEPOSIT, CHARGE or OTHER */
             type?: string;
         };
+        TransactionResourcePage: components["schemas"]["TransactionResource"][];
         /** @description Manual calendar item update data */
         UpdateCalendarItemRequest: {
             description?: string;
@@ -3413,6 +3429,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CalendarItemDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCalendarItemDto"];
                 };
             };
@@ -3474,6 +3491,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CalendarItemDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
                 };
             };
@@ -3578,6 +3596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CategoryPresetDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCategoryPresetDto"];
                 };
             };
@@ -3639,6 +3658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CategoryPresetDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelCategoryPresetDto"];
                 };
             };
@@ -3754,6 +3774,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventTypeDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelEventTypeDto"];
                 };
             };
@@ -3815,6 +3836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventTypeDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventTypeDto"];
                 };
             };
@@ -3934,6 +3956,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventSummaryDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventSummaryDto"];
                 };
             };
@@ -4028,6 +4051,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["BulkImportResult"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelBulkImportResult"];
                 };
             };
@@ -4054,6 +4078,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["BulkSyncResult"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelBulkSyncResult"];
                 };
             };
@@ -4083,6 +4108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["AccommodationListItemDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelAccommodationListItemDto"];
                     "text/csv": string;
                 };
@@ -4124,6 +4150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["RegistrationSummaryDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelRegistrationSummaryDto"];
                 };
             };
@@ -4232,6 +4259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["RegistrationDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelRegistrationDto"];
                 };
             };
@@ -4472,6 +4500,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FamilyGroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFamilyGroupSummaryResponse"];
                 };
             };
@@ -4719,6 +4748,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4780,6 +4810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4842,6 +4873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FeeSelectionCampaignResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelFeeSelectionCampaignResponse"];
                 };
             };
@@ -4871,6 +4903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeGroupResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelMembershipFeeGroupResponse"];
                 };
             };
@@ -4897,6 +4930,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["GroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelGroupSummaryResponse"];
                 };
             };
@@ -5271,6 +5305,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PendingInvitationResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPendingInvitationResponseForInvitationsList"];
                 };
             };
@@ -5297,6 +5332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["IcalTokenResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelIcalTokenResponse"];
                 };
             };
@@ -5323,6 +5359,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["IcalTokenResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelIcalTokenResponse"];
                 };
             };
@@ -5398,6 +5435,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMemberSummaryResponse"];
                 };
             };
@@ -5488,6 +5526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberDetailsResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberDetailsResponse"];
                 };
             };
@@ -5622,6 +5661,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberAccountResource"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberAccountResource"];
                 };
             };
@@ -5666,6 +5706,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TransactionResourcePage"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelTransactionResource"];
                 };
             };
@@ -5767,6 +5808,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TransactionResource"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelTransactionResource"];
                 };
             };
@@ -5835,6 +5877,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeChoiceResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeChoiceResponse"];
                 };
             };
@@ -5954,6 +5997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeHistoryResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeHistoryResponse"];
                 };
             };
@@ -5993,6 +6037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MemberFeeSummaryResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberFeeSummaryResponse"];
                 };
             };
@@ -6125,6 +6170,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPaymentRuleResponse"];
                 };
             };
@@ -6151,6 +6197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeTierSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelMembershipFeeTierSummaryResponse"];
                 };
             };
@@ -6212,6 +6259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeTierResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipFeeTierResponse"];
                 };
             };
@@ -6303,6 +6351,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPaymentRuleResponse"];
                 };
             };
@@ -6371,6 +6420,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PaymentRuleResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelPaymentRuleResponse"];
                 };
             };
@@ -6493,6 +6543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TrainingGroupSummaryResponseList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelTrainingGroupSummaryResponse"];
                 };
             };
@@ -6773,6 +6824,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PermissionsResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelPermissionsResponse"];
                 };
             };
