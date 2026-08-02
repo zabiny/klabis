@@ -6824,6 +6824,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["PermissionsResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelPermissionsResponse"];
                 };
             };

@@ -808,6 +808,10 @@ openApiModule(
     ),
     mappings = mapOf(
         "EntityModelPermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
+        // Bare payload for the application/json sibling on getUserPermissions — PermissionsResponse
+        // is hand-written (not in `models`, so never regenerated), same target class as the envelope
+        // mapping above.
+        "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
         "Authority" to "com.klabis.common.users.Authority",
         // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
         // other migrated module: the generated interface returns the plain RootModel/DashboardModel
