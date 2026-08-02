@@ -23,7 +23,6 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -57,7 +56,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Collection<FamilyGroupSummaryResponse>> listFamilyGroups() {
+    public ResponseEntity<List<FamilyGroupSummaryResponse>> listFamilyGroups() {
 
         List<FamilyGroup> groups = familyGroupManagementService.listFamilyGroups();
 

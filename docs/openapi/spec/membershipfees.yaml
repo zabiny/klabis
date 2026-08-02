@@ -54,6 +54,9 @@ paths:
         '200':
           description: List of membership fee tiers retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipFeeTierSummaryResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeTierSummaryResponse'
@@ -141,6 +144,9 @@ paths:
         '200':
           description: Membership fee tier found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipFeeTierResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMembershipFeeTierResponse'
@@ -254,6 +260,9 @@ paths:
         '200':
           description: List of payment rules retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRuleResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
@@ -338,6 +347,9 @@ paths:
         '200':
           description: Payment rule found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRuleResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelPaymentRuleResponse'
@@ -464,6 +476,9 @@ paths:
         '200':
           description: List of fee year publications retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeSelectionCampaignResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelFeeSelectionCampaignResponse'
@@ -545,6 +560,9 @@ paths:
         '200':
           description: Fee year publication found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeSelectionCampaignResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
@@ -601,6 +619,9 @@ paths:
         '200':
           description: Voting deadline updated
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeSelectionCampaignResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
@@ -666,6 +687,9 @@ paths:
         '200':
           description: List of fee groups retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipFeeGroupResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeGroupResponse'
@@ -793,6 +817,9 @@ paths:
         '200':
           description: List of payment rules retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRuleResponseList'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
@@ -874,6 +901,9 @@ paths:
         '200':
           description: Fee level choice retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberFeeChoiceResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMemberFeeChoiceResponse'
@@ -1010,6 +1040,9 @@ paths:
         '200':
           description: Fee level summary retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberFeeSummaryResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMemberFeeSummaryResponse'
@@ -1058,6 +1091,9 @@ paths:
         '200':
           description: Fee level history retrieved successfully
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberFeeHistoryResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelMemberFeeHistoryResponse'
@@ -1245,6 +1281,11 @@ components:
 
   schemas:
 
+    MembershipFeeTierSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
+
     # Envelope schemas — never generated into Java; see klabis-api-spec skill:
     # "Payload and envelope are separate schemas".
     CollectionModelEntityModelMembershipFeeTierSummaryResponse:
@@ -1370,6 +1411,11 @@ components:
           type: string
           description: Defaults to CZK when omitted.
 
+    PaymentRuleResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/PaymentRuleResponse'
+
     CollectionModelEntityModelPaymentRuleResponse:
       type: object
       properties:
@@ -1459,6 +1505,11 @@ components:
           type: string
           description: Defaults to CZK when omitted.
 
+    FeeSelectionCampaignResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/FeeSelectionCampaignResponse'
+
     CollectionModelEntityModelFeeSelectionCampaignResponse:
       type: object
       properties:
@@ -1526,6 +1577,11 @@ components:
         votingDeadline:
           type: string
           format: date
+
+    MembershipFeeGroupResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/MembershipFeeGroupResponse'
 
     CollectionModelEntityModelMembershipFeeGroupResponse:
       type: object

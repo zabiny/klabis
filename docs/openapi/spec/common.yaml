@@ -16,6 +16,15 @@
 # plain JSON — not HAL+FORMS. PasswordChangeController returns no body at all. Content types below
 # follow the controllers' actual `produces`, not a blanket application/prs.hal-forms+json.
 #
+# rootNavigation/dashboard do NOT get an application/json sibling (unlike every other migrated
+# module's HAL responses): RootModel/DashboardModel are empty marker records with no payload to
+# type off, and both operations already declare application/hal+json alongside
+# application/prs.hal-forms+json. Adding a third content-type entry pointing at the same
+# EntityModelRootModel/EntityModelDashboardModel schema makes the generator's return-type
+# resolution collapse to ResponseEntity<Void> instead of ResponseEntity<RootModel>/<DashboardModel>
+# — confirmed empirically by generating with two vs. three content types on the same schema.
+# getUserPermissions, whose response carries a real payload, gets the sibling normally.
+#
 # Tag renames (multi-word tags are silently dropped by the generator — see klabis-api-spec skill):
 #   "My Profile"     -> "MyProfile"      (PasswordChangeController)
 #   "Password Setup" -> "PasswordSetup"  (PasswordSetupController)
@@ -60,6 +69,13 @@ paths:
       responses:
         '200':
           description: API root resource
+          # No application/json sibling here: RootModel is an empty marker record (there is no
+          # payload to type off), and this operation already produces THREE content types
+          # (application/hal+json, application/prs.hal-forms+json, and — if a sibling were added —
+          # application/json). Adding a third $ref to the same EntityModelRootModel schema makes the
+          # generator's return-type resolution give up and fall back to ResponseEntity<Void>,
+          # breaking RootController's @Override; confirmed empirically, see common module header
+          # comment. Two content types on this schema resolve fine; three do not.
           content:
             application/hal+json:
               schema:
@@ -100,6 +116,7 @@ paths:
       responses:
         '200':
           description: Dashboard link index
+          # No application/json sibling — same reasoning as rootNavigation above.
           content:
             application/hal+json:
               schema:
@@ -284,6 +301,9 @@ paths:
         '200':
           description: User permissions found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelPermissionsResponse'

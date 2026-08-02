@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,10 +46,10 @@ public class EventTypeController implements EventTypesApi {
     }
 
     @Override
-    public ResponseEntity<Collection<EventTypeDto>> listEventTypes() {
+    public ResponseEntity<List<EventTypeDto>> listEventTypes() {
         List<EventType> eventTypes = eventTypeManagementService.listAllSorted();
 
-        Collection<EventTypeDto> payload = eventTypes.stream()
+        List<EventTypeDto> payload = eventTypes.stream()
                 .map(EventTypeDtoMapper::toDto)
                 .toList();
 

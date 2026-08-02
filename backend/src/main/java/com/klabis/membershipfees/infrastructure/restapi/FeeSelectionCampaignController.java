@@ -59,7 +59,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    public ResponseEntity<java.util.Collection<FeeSelectionCampaignResponse>> listPublications(
+    public ResponseEntity<List<FeeSelectionCampaignResponse>> listPublications(
             String status) {
         CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
@@ -100,7 +100,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     }
 
     @Override
-    public ResponseEntity<java.util.Collection<MembershipFeeGroupResponse>> listGroupsForYear(
+    public ResponseEntity<List<MembershipFeeGroupResponse>> listGroupsForYear(
             Integer year) {
         List<MembershipFeeGroup> groups = managementPort.listGroupsForYear(year);
         List<MembershipFeeGroupResponse> items = groups.stream()

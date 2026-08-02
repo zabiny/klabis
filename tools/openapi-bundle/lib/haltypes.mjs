@@ -17,6 +17,14 @@ const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch'
 /** `#/components/schemas/EntityModelMemberDetailsResponse` -> `EntityModelMemberDetailsResponse` */
 const refName = (ref) => (typeof ref === 'string' ? ref.split('/').pop() : undefined);
 
+/**
+ * Content types that actually carry the HAL envelope (`_links`/`_embedded`/`page`) on the wire.
+ * `*Resource` must be typed off one of these, never off a same-response `application/json` sibling
+ * (added for backend codegen — see klabis-api-spec skill) or the bare payload/array shape wins, since
+ * the bundler alphabetizes content keys and "application/json" always sorts first.
+ */
+const HAL_CONTENT_TYPES = ['application/prs.hal-forms+json', 'application/hal+json'];
+
 /** getMember -> GetMember */
 const pascalCase = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -48,16 +56,19 @@ export function collectHalResources(document) {
                 if (linkRels.length === 0 && templateRels.length === 0) continue;
 
                 const content = isPlainObject(response.content) ? response.content : {};
-                const schemas = Object.values(content)
-                    .map((c) => refName(c?.schema?.$ref))
+                const halSchemas = HAL_CONTENT_TYPES
+                    .map((type) => refName(content[type]?.schema?.$ref))
                     .filter(Boolean);
+                // Fallback for a response with no HAL content type carrying a schema (shouldn't
+                // happen for anything declaring x-hal-links/x-hal-templates, but stay safe).
+                const anySchemas = Object.values(content).map((c) => refName(c?.schema?.$ref)).filter(Boolean);
 
                 resources.push({
                     operationId: operation.operationId ?? `${method}${path}`,
                     path,
                     method,
                     status,
-                    schema: schemas[0],
+                    schema: halSchemas[0] ?? anySchemas[0],
                     links: linkRels.sort(),
                     templates: templateRels.sort(),
                     descriptions: {
