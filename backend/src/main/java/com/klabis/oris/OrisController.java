@@ -65,4 +65,7 @@ public class OrisController implements OrisImportApi {
 
         return ResponseEntity.ok(events);
     }
+
+    public record OrisEventSummary(int id, String name, LocalDate date, String location, String organizer) {
+    }
 }

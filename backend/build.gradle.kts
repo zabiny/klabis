@@ -605,6 +605,11 @@ openApiModule(
         "ChooseFeeChoiceRequest"
     ),
     mappings = mapOf(
+        // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); its
+        // application/json bare-payload sibling (schema name PaymentRuleResponse, for getRule) would
+        // otherwise resolve to a top-level PaymentRuleResponse class rather than the nested one, so
+        // this mapping stays.
+        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
         // getFeeGroup returns the payload; the _embedded.members block in the WithMembers schema is
         // contributed by the controller via HalResponseContext.embed(...) and assembled by
         // HalResponseBodyAdvice, so it does not belong in the Java return type. No application/json
@@ -740,15 +745,14 @@ openApiModule(
     // OrisEventsApi's operations in here instead of/alongside this module's own. See oris.yaml
     // header comment.
     apis = listOf("OrisImport"),
-    // No real model to generate: OrisEventSummary is a top-level hand-written record in this
-    // package, so the bare schema name already resolves to it with no mapping needed. An empty
-    // `models` list is NOT safe here — like the `apis` global property, the generator's "models"
-    // property generates every schema in the bundled document when given an empty string, not none.
-    // A single nonexistent placeholder name keeps the "models" property non-empty (so the
-    // "generate everything" branch never triggers) while matching nothing, so only the interface
-    // (OrisImportApi) is produced.
+    // No real model to generate: OrisEventSummary is mapped below onto the hand-written record
+    // already on the controller. An empty `models` list is NOT safe here — like the `apis` global
+    // property, the generator's "models" property generates every schema in the bundled document
+    // when given an empty string, not none. A single nonexistent placeholder name keeps the
+    // "models" property non-empty (so the "generate everything" branch never triggers) while
+    // matching nothing, so only the interface (OrisImportApi) is produced.
     models = listOf("_NoGeneratedModelsForOris"),
-    // OrisEventSummary is a top-level record in this same package — the bare schema name resolves
-    // to it directly, no redirect needed.
-    mappings = mapOf()
+    mappings = mapOf(
+        "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
+    )
 )

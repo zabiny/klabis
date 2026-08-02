@@ -106,14 +106,14 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    public ResponseEntity<List<PaymentRuleResponse>> listRules(
+    public ResponseEntity<List<MembershipFeeTierResponse.PaymentRuleResponse>> listRules(
             UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         List<PaymentRuleDomain> domains = tier.getRules().stream()
                 .map(rule -> new PaymentRuleDomain(new MembershipFeeTierId(id), rule))
                 .toList();
-        List<PaymentRuleResponse> items = domains.stream()
-                .map(d -> PaymentRuleResponse.from(d.rule()))
+        List<MembershipFeeTierResponse.PaymentRuleResponse> items = domains.stream()
+                .map(d -> MembershipFeeTierResponse.PaymentRuleResponse.from(d.rule()))
                 .toList();
 
         MembershipFeeTierListRulesPostprocessor.setOptions(
@@ -123,7 +123,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     @Override
-    public ResponseEntity<PaymentRuleResponse> getRule(
+    public ResponseEntity<MembershipFeeTierResponse.PaymentRuleResponse> getRule(
             UUID id,
             UUID eventTypeId,
             String ranking) {
@@ -133,7 +133,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .findFirst()
                 .orElseThrow(() -> new PaymentRuleNotFoundException(EventTypeReference.of(eventTypeId), ranking));
         HalResponseContext.setDomain(new PaymentRuleDomain(new MembershipFeeTierId(id), rule));
-        return ResponseEntity.ok(PaymentRuleResponse.from(rule));
+        return ResponseEntity.ok(MembershipFeeTierResponse.PaymentRuleResponse.from(rule));
     }
 
     record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
@@ -279,12 +279,12 @@ class MembershipFeeTierListPostprocessor
 
 @MvcComponent
 class PaymentRuleDetailsPostprocessor
-        extends ModelWithDomainPostprocessor<PaymentRuleResponse, MembershipFeeTierController.PaymentRuleDomain> {
+        extends ModelWithDomainPostprocessor<MembershipFeeTierResponse.PaymentRuleResponse, MembershipFeeTierController.PaymentRuleDomain> {
 
     private static final List<String> RULE_TYPE_OPTIONS = List.of("PERCENTAGE", "FIXED_AMOUNT");
 
     @Override
-    public void process(EntityModel<PaymentRuleResponse> dtoModel,
+    public void process(EntityModel<MembershipFeeTierResponse.PaymentRuleResponse> dtoModel,
                         MembershipFeeTierController.PaymentRuleDomain domain) {
         UUID tierId = domain.tierId().value();
         UUID eventTypeId = domain.rule().eventTypeId().value();
@@ -312,7 +312,7 @@ class PaymentRuleDetailsPostprocessor
 // comment on MembershipFeeTierListPostprocessor for why these ports are not injected here.
 @MvcComponent
 class MembershipFeeTierListRulesPostprocessor
-        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>>> {
+        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>>> {
 
     private static final String OPTIONS_ATTR = MembershipFeeTierListRulesPostprocessor.class.getName() + ".options";
 
@@ -329,8 +329,8 @@ class MembershipFeeTierListRulesPostprocessor
     }
 
     @Override
-    public org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>> process(
-            org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>> model) {
+    public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> process(
+            org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierResponse.PaymentRuleResponse>> model) {
         Optional<UUID> tierId = currentTierId();
         Optional<RuleOptions> options = currentOptions();
         if (tierId.isPresent() && options.isPresent()) {
