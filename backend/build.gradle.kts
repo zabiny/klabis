@@ -560,28 +560,50 @@ openApiModule(
         "EventStatus" to "com.klabis.events.domain.EventStatus",
         "EntityModelEventSummaryDto" to "com.klabis.events.infrastructure.restapi.EventSummaryDto",
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
+        // listEvents' application/json sibling is a named array schema (EventSummaryDtoList), not an
+        // inline one — an inline array has no schema name for the generator to key a type resolution
+        // off, and it would otherwise infer List<EventSummaryDto> straight from that sibling (it wins
+        // over the emptied HAL schema during type resolution), bypassing this mapping.
+        "EventSummaryDtoList" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
         // getEvent returns the payload; the _embedded.registrationDtoList block in the
         // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
         // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
         "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
         "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for getAccommodationList.
+        "AccommodationListItemDtoList" to "java.util.Collection<com.klabis.events.infrastructure.restapi.AccommodationListItemDto>",
         "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
+        // Bare application/json siblings for syncAllUpcomingFromOris/importEventsBatch: BulkSyncResult
+        // and BulkImportResult are application-layer types, not infrastructure.restapi DTOs, so they
+        // need an explicit mapping the same as their envelope counterparts above — otherwise springdoc's
+        // @Schema(implementation = BulkSyncResult.class) resolves against pkg (infrastructure.restapi),
+        // where no such class exists.
+        "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
+        "BulkImportResult" to "com.klabis.events.application.BulkImportResult",
         "EntityModelRegistrationDto" to "com.klabis.events.infrastructure.restapi.RegistrationDto",
         // Collection, not List: "List" is a reserved container name in the generator's type system,
         // and a schemaMapping onto it is dropped silently — the method then generates as
         // `ResponseEntity<>`, which fails to compile.
         "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.RegistrationSummaryDto>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for listRegistrations.
+        "RegistrationSummaryDtoList" to "java.util.Collection<com.klabis.events.infrastructure.restapi.RegistrationSummaryDto>",
         "EntityModelCategoryPresetDto" to "com.klabis.events.infrastructure.restapi.CategoryPresetDto",
-        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>"
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>",
+        // Same reasoning as EventSummaryDtoList above — named array sibling for listPresets.
+        "CategoryPresetDtoList" to "java.util.Collection<com.klabis.events.infrastructure.restapi.CategoryPresetDto>"
     ),
     // The generic Page<T>/Collection<T>/CollectionModel<T> mappings above carry type arguments that
     // the import statement must not repeat.
     extraImportMappings = mapOf(
         "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
+        "EventSummaryDtoList" to "org.springframework.data.domain.Page",
         "CollectionModelEntityModelAccommodationListItemDto" to "java.util.Collection",
+        "AccommodationListItemDtoList" to "java.util.Collection",
         "CollectionModelEntityModelRegistrationSummaryDto" to "java.util.Collection",
-        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection"
+        "RegistrationSummaryDtoList" to "java.util.Collection",
+        "CollectionModelEntityModelCategoryPresetDto" to "java.util.Collection",
+        "CategoryPresetDtoList" to "java.util.Collection"
     )
 )
 

@@ -1798,6 +1798,7 @@ export interface components {
             identityCardValidityDate?: string | null;
             lastName?: string | null;
         };
+        AccommodationListItemDtoList: components["schemas"]["AccommodationListItemDto"][];
         AddMemberRequest: {
             /** Format: uuid */
             memberId: string;
@@ -1915,6 +1916,7 @@ export interface components {
             id?: string;
             name?: string;
         };
+        CategoryPresetDtoList: components["schemas"]["CategoryPresetDto"][];
         ChangeDeadlineRequest: {
             /** Format: date */
             votingDeadline: string;
@@ -2383,6 +2385,7 @@ export interface components {
             status?: components["schemas"]["EventStatus"];
             websiteUrl?: string;
         };
+        EventSummaryDtoList: components["schemas"]["EventSummaryDto"][];
         EventSyncEntry: {
             error?: string | null;
             /** Format: uuid */
@@ -2945,6 +2948,7 @@ export interface components {
             /** Format: date-time */
             registrationTime?: string;
         };
+        RegistrationSummaryDtoList: components["schemas"]["RegistrationSummaryDto"][];
         RenameGroupRequest: {
             name: string;
         };
@@ -3581,6 +3585,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CategoryPresetDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCategoryPresetDto"];
                 };
             };
@@ -3642,6 +3647,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["CategoryPresetDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelCategoryPresetDto"];
                 };
             };
@@ -3939,6 +3945,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventSummaryDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventSummaryDto"];
                 };
             };
@@ -4033,6 +4040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["BulkImportResult"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelBulkImportResult"];
                 };
             };
@@ -4059,6 +4067,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["BulkSyncResult"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelBulkSyncResult"];
                 };
             };
@@ -4088,6 +4097,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["AccommodationListItemDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelAccommodationListItemDto"];
                     "text/csv": string;
                 };
@@ -4129,6 +4139,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["RegistrationSummaryDtoList"];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelRegistrationSummaryDto"];
                 };
             };
@@ -4237,6 +4248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["RegistrationDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelRegistrationDto"];
                 };
             };
