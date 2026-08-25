@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.4.0
+version: 0.5.0
 ---
 
 # Klabis API Spec
@@ -22,11 +22,13 @@ driver.
 ./gradlew openapiBundle -PopenapiCheck           # validate only, write nothing
 ```
 
-### `klabis-full.json` is generated from the spec
+### `klabis-full.json` is generated from the spec — and is the sole input to BOTH backend and frontend codegen
 
-`docs/openapi/klabis-full.json` is the published API document — Swagger UI and the frontend's
-`klabisApi.d.ts` are built from it. `openapiBundle` produces it from `docs/openapi/spec/`, so there
-is a single source of truth end to end.
+`docs/openapi/klabis-full.json` is the published API document — Swagger UI, the backend's
+`KlabisSpringCodegen`-based Java codegen, and the frontend's `klabisApi.d.ts` are all built from it.
+`openapiBundle` produces it from `docs/openapi/spec/`, so there is a single source of truth end to
+end, and a single bundle to keep it that way — no separate codegen-only bundle exists anymore (see
+"HAL envelopes are unwrapped structurally" below).
 
 - **`klabis-full.json` is a gitignored build artifact, not a review target.** Review the spec;
   regenerate the bundle. Never hand-edit it.
@@ -51,15 +53,14 @@ The generated set is strictly richer than what the controllers used to hold: it 
 when the 26 controllers were stripped: operations 117 → 117 (none lost), summaries 82 → 117,
 descriptions 51 → 111, parameter descriptions 95 → 133.
 
-**The catch is generic `schemaMappings`.** `documentationProvider` renders each response's baseType
-into `@Schema(implementation = <baseType>.class)`, and the envelope mappings target *generic* types,
-producing `java.util.Collection<…EventTypeDto>.class` — not legal Java (JLS 15.8.2: a class literal
-takes a raw type). 27 occurrences across 5 modules. The generator has no hook for it: stock
-`api.mustache` emits `{{{baseType}}}` verbatim, Mustache cannot transform a string, and a lambda
-would mean subclassing `SpringCodegen`. `openApiModule` therefore erases the type arguments in a
-`doLast` over the generated `*Api.java`. That erasure is declared via `inputs.property` — a `doLast`
-body is not part of a task's cache fingerprint, so without it a cached output could be restored
-having been patched by an older version of the rule.
+**The catch is a generic return type in `@Schema(implementation = ...)`.** `documentationProvider`
+renders each response's baseType into `@Schema(implementation = <baseType>.class)`, and a paginated
+response's real type is `Page<X>` — not legal Java there (JLS 15.8.2: a class literal takes a raw
+type). Same problem for a `schemaMappings` target of `java.lang.Object` (springdoc would render it as
+`"type": "string"`, worse than nothing). `KlabisSpringCodegen.fromResponse()` (`buildSrc/`) handles
+both by leaving that response's `baseType` unset, so `api.mustache`'s `{{#baseType}}...{{/baseType}}`
+never opens the `content = {...}` block for it — no post-process patch needed. This used to be a
+`doLast` regex over the generated `*Api.java`; it is gone as of `custom-openapi-codegen`.
 
 The exceptions are the 7 files with no generated counterpart, which legitimately keep their
 annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
@@ -458,80 +459,66 @@ No body is produced; this only pins the negotiated media type. Easy to miss beca
 that omit `.accept(...)` pass either way — the gap surfaces only against a real client, or a test that
 sets the header.
 
-### Every HAL response also needs an `application/json` sibling
+### HAL envelopes are unwrapped structurally — no `schemaMappings`, no separate codegen bundle
 
-A response's HAL content type (`application/prs.hal-forms+json`, occasionally `application/hal+json`)
-references the `EntityModel*` / `PagedModel*` / `CollectionModel*` envelope schema — that is what
-actually goes on the wire, and `x-hal-links`/`x-hal-templates` describe it. But the response must
-**also** declare an `application/json` content entry, pointing at the bare payload (or an array of
-it) — this is what backend codegen reads, so the interface method gets a plain Java signature without
-a `schemaMappings` redirect:
+`KlabisSpringCodegen` (`backend/buildSrc/`) resolves a response's `EntityModel*` / `PagedModel*` /
+`CollectionModel*` HAL envelope schema down to its real payload type by inspecting the schema's
+*shape*, not its name — see `openspec/changes/custom-openapi-codegen/design.md` for the full
+rationale and `HalEnvelopeDetector` for the two shapes it matches:
 
-```yaml
-responses:
-  '200':
-    content:
-      application/prs.hal-forms+json:
-        schema: { $ref: '#/components/schemas/EntityModelMemberDetailsResponse' }
-      application/json:
-        schema: { $ref: '#/components/schemas/MemberDetailsResponse' }
-    x-hal-links: { ... }
-```
+- **Shape 1 — single entity:** `allOf` of exactly two members, the first a `$ref`, the second an
+  inline object whose properties are a subset of `{_links, _templates, _embedded}`. Unwraps to the
+  `$ref` target.
+- **Shape 2 — collection:** a plain object with a `_links` property and exactly one
+  `_embedded.<name>: array[$ref]`-shaped property. Unwraps to the array item's payload type (composed
+  through a nested Shape 1, if the item is itself an envelope), as `List<T>` or — when the operation
+  declares `x-spring-paginated: true` — `Page<T>`.
 
-| response shape | `application/json` schema | generated Java (no mapping needed) |
+This means **the generator needs no separate `application/json` sibling to resolve the payload
+type** — it reads the HAL envelope schema directly. Still declare one anyway wherever the response is
+genuinely served as plain JSON to some caller (most Klabis responses are), since that is a real
+content-negotiation option, not a codegen workaround; see "Bodyless success responses" above for why
+a bare `{}` entry still matters for `produces`. The single codegen-only bundle
+(`bundleSpecForCodegen` / `bundle.mjs --strip-hal`) this used to require no longer exists — backend
+codegen reads `docs/openapi/klabis-full.json` directly, the exact same bundle the frontend consumes.
+
+| response shape | `application/json` schema (optional, real content negotiation) | generated Java |
 |---|---|---|
 | single resource (`EntityModelFooResponse`) | `$ref: FooResponse` | `FooResponse` |
 | collection (`CollectionModelEntityModelFooDto`) | `type: array, items: $ref FooDto` | `List<FooDto>` |
-| paged (`PagedModelEntityModelFooResponse`) | see below — `Page` needs a named schema | `Page<FooResponse>` (via mapping) |
+| paged (`PagedModelEntityModelFooResponse`) | named array schema, e.g. `FooResponseList` | `Page<FooResponse>` |
 
-`bundleSpecForCodegen` (`backend/build.gradle.kts`) runs `bundle.mjs --strip-hal`, which empties every
-HAL content entry's *schema* wherever an `application/json` sibling exists (`stripHal.mjs`) — the HAL
-content-type **key** is kept (as `{}`), only its schema is removed. This is deliberate: `api.mustache`
-derives each method's Spring `produces` clause from the full set of content-type keys, and the
-frontend sends `Accept: application/prs.hal-forms+json` on every request. Deleting the key outright
-(rather than emptying it) drops that media type from `produces` and the real endpoint starts
-answering 406 to its actual caller — the same failure mode "Bodyless success responses" above
-documents for a `204` with no HAL content block at all. `x-hal-links`/`x-hal-templates` themselves are
-stripped along with the schema, since they describe the envelope that backend codegen no longer sees.
-`openapiBundle` (→ `klabis-full.json`, what the frontend reads) never gets `--strip-hal`, so it keeps
-both content types and the hypermedia metadata untouched.
+Pagination is read from `x-spring-paginated: true` on the **operation**, independent of which content
+type resolves the payload — an operation serving only `application/json` still gets `Page<T>`, and a
+paginated operation's `application/json` sibling (even a bare array with no `page`/`_links`) still
+resolves to `Page<T>`, never `List<T>`.
 
-Because backend codegen now sees the bare `application/json` schema directly, **`schemaMappings`
-entries for envelope→payload redirection are gone almost entirely** — including collection ones. A
-`$ref`'d payload schema (single resource or array) needs no mapping at all when its name matches the
-target Java type: the generator already produces exactly that type.
+### `mappings` is now only for hand-written overrides the generator cannot derive from spec structure
+
+Envelope→payload redirection needs **zero** `mappings`/`extraImportMappings` entries — the structural
+detection above handles every `EntityModel*`/`PagedModel*`/`CollectionModel*` schema in the spec, by
+shape, with no naming convention to follow. A `mappings` entry in `openApiModule(...)` is only for a
+case the generator genuinely cannot infer from the spec alone:
+
+- **A nested Java class.** `PaymentRuleResponse` → `MembershipFeeTierResponse.PaymentRuleResponse` —
+  the schema name matches a top-level class name that isn't the one actually used.
+- **A domain enum redirect.** `Authority` → `com.klabis.common.users.Authority` — without the
+  mapping the generator synthesizes its own duplicate enum class instead of reusing the domain one.
+- **A cross-module application type.** `BulkSyncResult` → `com.klabis.events.application.BulkSyncResult`
+  — the target package differs from the module's own `restapi` package.
+- **A marker type with no payload of its own.** `EntityModelRootModel` → `common.ui.RootModel`,
+  `EntityModelDashboardModel` → `common.ui.DashboardModel` — shaped as
+  `{type: object, properties: {_links}}` (no `allOf`, no `_embedded`), which
+  `HalEnvelopeDetector` **deliberately does not match** — see "Payload and envelope are separate
+  schemas" below for why these two are legitimately envelope-only.
+- **The `java.lang.Object` fallback.** `SuspensionBlockedWarning` → `java.lang.Object` — a
+  discriminator-less `oneOf` union with no single Java type to stand for it. `KlabisSpringCodegen`
+  suppresses the resulting (illegal) `@Schema(implementation = java.lang.Object.class)` doc block the
+  same way it suppresses one for `Page<T>`.
 
 **`type: array` — named or inline — always generates `List<T>` directly, with no wrapper class and
 no mapping needed**, confirmed by generating with the actual pinned generator version (7.18.0):
-see `docs/technicalAnalysis/openapi-generator-list-types.md`. This corrects an earlier, wrong
-assumption in this skill (and in several already-migrated modules) that an inline array "has no
-schema name to map from" and would need one to avoid some broken fallback — that was never true; the
-`List` result is exactly the generator's normal, safe, class-free behavior for any array schema.
-**Prefer a plain `type: array` with no mapping over a named schema + `schemaMappings` entry** unless
-one of the two cases below applies:
-
-- **`Page<T>` for a paginated response.** There is no array shape that carries pagination metadata —
-  `Page<T>` genuinely needs `schemaMappings`, since the JSON on the wire is the same array shape a
-  `List<T>` would produce, but the Java type must additionally carry `totalElements`/`totalPages`/etc.
-  Give the array its own named, `$ref`'d top-level schema (so `schemaMappings` has a name to target)
-  and map that name onto `Page<T>`:
-
-  ```yaml
-  MemberSummaryResponseList:      # application/json counterpart of PagedModelEntityModelMemberSummaryResponse
-    type: array
-    items:
-      $ref: '#/components/schemas/MemberSummaryResponse'
-  ```
-  ```kotlin
-  mappings = mapOf(
-      "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
-  )
-  extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
-  ```
-
-- **A schema/Java-type name mismatch** that has nothing to do with the envelope (e.g.
-  `EntityModelDashboardModel` → `common.ui.RootModel` today, where the payload schema and the target
-  Java class are named differently on purpose). These are unrelated to HAL stripping and stay as-is.
+see `docs/technicalAnalysis/openapi-generator-list-types.md`.
 
 **A controller returning `Collection<T>` for a non-paginated list should be migrated to `List<T>`
 instead of kept mapped.** There is no generator-native way to produce `Collection<T>` from an array
@@ -547,29 +534,25 @@ generator's type system, dropped *silently*, producing `ResponseEntity<>` with n
 is a non-issue now that array schemas are left unmapped rather than redirected onto anything, but
 worth knowing if a future case seems to need remapping a `List<T>` response onto something else.
 
-#### Only add the sibling where a HAL response actually exists
+**`models` still needs every payload schema listed explicitly, per module.** Structural envelope
+unwrapping is unrelated to *discovery* — a proposal to have the generator discover a module's schemas
+by tag reachability was investigated and withdrawn (design.md Decision 5: the generator exposes no
+hook for it; model filtering lives entirely in `DefaultGenerator`, outside any `CodegenConfig`
+override point). Adding a new request/response DTO to an already-migrated module still means adding
+its schema name to that module's `models` list in `openApiModule(...)`, exactly as before.
 
-An endpoint whose controller already declares `produces = MediaType.APPLICATION_JSON_VALUE` and
-returns a plain payload directly — no `EntityModel`/`PagedModel`/`CollectionModel` envelope, no
-`x-hal-links`/`x-hal-templates` — is not a HAL response at all, and needs no sibling: its single
-`application/json` content entry already **is** the whole story. `oris.yaml`'s `OrisImport` endpoints
-are exactly this (plain `List<OrisEventSummary>`, genuinely `List`, so its inline `type: array` schema
-is correct as-is). Don't add a redundant second `application/json` entry, and don't go looking for an
-envelope schema to invent one — check the controller's `produces` and return type first.
-
-#### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not the new sibling
+#### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not an `application/json` sibling
 
 `haltypes.mjs` builds each `*Resource` type by picking a schema out of the response's `content` map.
 Because the bundler alphabetizes content-type keys, `"application/json"` always sorts ahead of
-`"application/prs.hal-forms+json"` — so without an explicit preference, adding the sibling silently
-retypes `*Resource` off the *bare* payload/array instead of the envelope, dropping `_embedded`/`page`
-from the generated type even though the wire response still has them. `haltypes.mjs` now explicitly
-prefers `application/prs.hal-forms+json`/`application/hal+json` over any other content type (falling
-back only if neither is present) — this is handled centrally, so authoring a spec response correctly
-(HAL content type + `x-hal-links`/`x-hal-templates` + `application/json` sibling) is enough; nothing
-extra is required per-endpoint. But if a `*Resource` type ever looks wrong after adding a sibling,
-this is the first thing to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content
-ordering (ordering in the YAML doesn't survive bundling anyway — keys are re-sorted).
+`"application/prs.hal-forms+json"` — so without an explicit preference, declaring both content types
+would silently retype `*Resource` off the *bare* payload/array instead of the envelope, dropping
+`_embedded`/`page` from the generated type even though the wire response still has them.
+`haltypes.mjs` explicitly prefers `application/prs.hal-forms+json`/`application/hal+json` over any
+other content type (falling back only if neither is present) — this is handled centrally, so nothing
+extra is required per-endpoint. But if a `*Resource` type ever looks wrong, this is the first thing
+to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content ordering (ordering in
+the YAML doesn't survive bundling anyway — keys are re-sorted).
 
 #### A response already declaring more than one HAL-ish content type may reject a third
 
@@ -733,8 +716,10 @@ exists at runtime and the frontend types should know about it), and do not relax
 The spec moves first.
 
 1. Edit `docs/openapi/spec/<module>.yaml`
-2. `./gradlew compileJava` — regenerates DTOs and `*Api`, then fails on whatever no longer matches.
-   This is the real check: the generator runs off `bundleSpecForCodegen`, not off `openapiBundle`.
+2. `./gradlew compileJava` — regenerates `docs/openapi/klabis-full.json` (via `openapiBundle`, which
+   every `openApiGenerate<Module>` task now depends on directly) and then the DTOs/`*Api`, failing on
+   whatever no longer matches. This is the real check — a plain `./gradlew openapiBundle` only
+   validates the spec syntactically; it does not run the Java generator.
 3. Fix the controller against the regenerated interface
 4. `cd frontend && npm run openapi`
 5. `npx tsc --noEmit -p tsconfig.app.json` — catches schema-name mismatches in `halTypes.ts`
@@ -758,21 +743,19 @@ openApiModule(
     apis = listOf("Members", "Registration"),                  // OpenAPI tags
     models = listOf("MemberDetailsResponse", /* ... */),
     mappings = mapOf(
-        // getMember's application/json response references MemberDetailsResponse directly — no
-        // mapping needed, the schema name already matches the Java type.
-        // listMembers needs one: its application/json response is a named array schema
-        // (MemberSummaryResponseList), and the controller returns Page<...> for pagination metadata
-        // a bare array can't carry — see "Every HAL response also needs an application/json sibling".
-        "MemberSummaryResponseList" to "org.springframework.data.domain.Page<…MemberSummaryResponse>"
+        // listMembers' PagedModelEntityModelMemberSummaryResponse envelope and its
+        // MemberSummaryResponseList application/json sibling both resolve to
+        // Page<MemberSummaryResponse> structurally — no mapping needed (see "HAL envelopes are
+        // unwrapped structurally" above). suspendMember's 409 body has no single Java type
+        // (a discriminator-less oneOf) — Object is the honest hand-written fallback.
+        "SuspensionBlockedWarning" to "java.lang.Object"
     ),
-    extraImportMappings = mapOf("MemberSummaryResponseList" to "org.springframework.data.domain.Page")
+    generator = "klabis-spring"
 )
 ```
 
-A module with no paginated response needs no `mappings` at all — `event-types` is `mappings = mapOf()`
-end to end: `getEventType`'s `application/json` sibling is `$ref: EventTypeDto` (name already matches),
-`listEventTypes`' is a plain array (`List<EventTypeDto>`, no wrapper, no mapping — see "Every HAL
-response also needs an `application/json` sibling" above).
+A module with no hand-written overrides needs no `mappings` at all — `event-types` and `calendar` are
+`mappings = mapOf()` end to end. `models` must still list every payload schema explicitly either way.
 
 One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
 `schemaMappings` is global per task, so a single task could never let two modules each define their
@@ -905,10 +888,10 @@ returns `true` unconditionally makes the test assert nothing.
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
-- Writing a HAL response with only an `application/prs.hal-forms+json` content entry, no
-  `application/json` sibling — backend codegen (`--strip-hal`) only rewrites a response that already
-  has an `application/json` entry to key off; without one the response is left fully HAL-enveloped and
-  falls back to needing a manual `schemaMappings` redirect, defeating the point
+- Adding a `mappings` entry to unwrap an `EntityModel*`/`PagedModel*`/`CollectionModel*` envelope —
+  `HalEnvelopeDetector` does this structurally for every shape-matching schema in the spec; a
+  `mappings` entry is only for the hand-written-override cases listed above (nested classes, domain
+  enums, cross-module types, marker types, the `java.lang.Object` fallback)
 - Adding a `schemaMappings` entry for a `List<T>` collection response "just in case" — an unmapped
   `type: array` schema (named or inline) always generates `List<T>` directly with no wrapper class,
   confirmed against the pinned generator version; a mapping here is pure ceremony. Only `Page<T>`
