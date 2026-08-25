@@ -6,17 +6,17 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.servers.Server;
+import org.openapitools.codegen.CodegenMediaType;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenResponse;
-import org.openapitools.codegen.model.ModelMap;
-import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.languages.SpringCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
 
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Klabis-specific fork of the stock {@code spring} OpenAPI generator.
@@ -40,9 +40,9 @@ import java.util.Optional;
  *     <li>{@link #fromOperation} — records the current {@link Operation} in an instance field so
  *     {@link #fromResponse} (which the stock signature gives no operation context) can still read
  *     {@code x-spring-paginated} off it.</li>
- *     <li>{@link #postProcessOperationsWithModels} — drops any leftover {@code import} of an
- *     envelope class once every operation in a tag is final; a class the generator never produces
- *     would otherwise fail the build.</li>
+ *     <li>{@link #getContent} — prevents an {@code import} of an envelope class from ever being
+ *     added, by unwrapping each media type's schema before {@code super} walks the content map; a
+ *     class the generator never produces would otherwise fail the build.</li>
  * </ul>
  * Discovering which schemas/tags to generate at all ({@code models}/{@code apis} allow-lists) is
  * NOT something this class controls — that lives entirely in {@code DefaultGenerator}, outside any
@@ -141,34 +141,37 @@ public class KlabisSpringCodegen extends SpringCodegen {
     }
 
     /**
-     * Drops imports naming a HAL envelope schema, which is never generated as a Java class.
+     * Prevents an import of a HAL envelope schema from ever being added, by mapping each media
+     * type's schema through the same unwrap pipeline as {@link #fromResponse} and {@link
+     * #handleMethodResponse} before delegating to {@code super}.
      *
-     * <p>{@code fromOperation()} adds an import for each response's {@code baseType} while
-     * assembling the operation, using the raw (still-enveloped) schema and running before either
-     * {@link #fromResponse} or {@link #handleMethodResponse} can unwrap it. The unwrapped type is
-     * imported too, so the envelope import is left over — and referencing a class the generator
-     * was never asked to produce makes the API interface fail to compile.
-     *
-     * <p>Runs last, once every operation and its imports are final, which is why it belongs here
-     * rather than in the two unwrap hooks.
+     * <p>{@code DefaultCodegen.fromOperation()} calls this directly on the response's raw content
+     * map (sources line ~4707) BEFORE either of those two overrides ever runs, adding an import
+     * for every media type's schema it walks — including the envelope, which is never generated
+     * as a Java class and would otherwise fail the build. Widened to {@code public} (legal on
+     * override) for direct unit testing, matching {@link #handleMethodResponse}.
      */
     @Override
-    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
-        OperationsMap processed = super.postProcessOperationsWithModels(objs, allModels);
-
-        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
-        for (Iterator<Map<String, String>> it = processed.getImports().iterator(); it.hasNext(); ) {
-            String imported = it.next().get("import");
-            if (imported == null) {
-                continue;
-            }
-            String simpleName = imported.substring(imported.lastIndexOf('.') + 1);
-            Schema<?> schema = schemas.get(simpleName);
-            if (schema != null && HalEnvelopeDetector.detect(schema, schemas).isPresent()) {
-                it.remove();
-            }
+    public LinkedHashMap<String, CodegenMediaType> getContent(Content content, Set<String> imports, String mediaTypeSchemaSuffix) {
+        if (content == null) {
+            return super.getContent(null, imports, mediaTypeSchemaSuffix);
         }
-        return processed;
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        Content unwrapped = new Content();
+        for (Map.Entry<String, MediaType> entry : content.entrySet()) {
+            MediaType mediaType = entry.getValue();
+            Schema<?> schema = mediaType == null ? null : mediaType.getSchema();
+            Schema<?> resolvedForDetection = HalEnvelopeDetector.resolveRef(schema, schemas);
+            Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
+                ? Optional.empty()
+                : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
+
+            MediaType rewritten = unwrap
+                .map(u -> new MediaType().schema(unwrappedResponseSchema(u)))
+                .orElse(mediaType);
+            unwrapped.addMediaType(entry.getKey(), rewritten);
+        }
+        return super.getContent(unwrapped, imports, mediaTypeSchemaSuffix);
     }
 
     /**

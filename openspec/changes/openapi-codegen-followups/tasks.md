@@ -21,24 +21,37 @@
 
 ## 2. `getContent()` override replaces the name-based import cleanup
 
-- [ ] 2.1 Write a failing test at the `getContent` level: a response whose content map holds
+- [x] 2.1 Write a failing test at the `getContent` level: a response whose content map holds
       both `application/json` (bare payload) and `application/prs.hal-forms+json` (envelope)
       contributes NO import for the envelope type to the `imports` set it is handed.
-- [ ] 2.2 Override `getContent(Content, Set<String>, String)` (protected, `DefaultCodegen`
+      Added `KlabisSpringCodegenGetContentTest.java` (4 tests); confirmed RED before the override
+      existed (`getContent` is protected in a different package, so the test failed to compile).
+- [x] 2.2 Override `getContent(Content, Set<String>, String)` (protected, `DefaultCodegen`
       sources line 7864) to map each media type's schema through the existing
       `resolveRef` + `HalEnvelopeDetector.detect` + `unwrappedResponseSchema` pipeline before
       delegating to `super`, so the envelope type is never imported in the first place.
-- [ ] 2.3 Delete `postProcessOperationsWithModels` and its `KlabisSpringCodegenPostProcessOperationsTest`
+      Widened to `public` on the override (same pattern already used for `handleMethodResponse`).
+- [x] 2.3 Delete `postProcessOperationsWithModels` and its `KlabisSpringCodegenPostProcessOperationsTest`
       counterpart — or repoint that test at the new hook if its aggregation-flow coverage is
       still worth keeping (it is what caught the promoted-`$ref` bug originally).
-- [ ] 2.4 Regenerate and diff against 0.1 for all 11 modules. Pay attention to `groupsFamily`,
+      Deleted both; kept one `fromOperation()`-level regression test
+      (`fromOperationNeverAddsEnvelopeImportForPromotedEmbeddedRef`) covering the promoted-`$ref`
+      case — the old test's tag-level import aggregation coverage is redundant now that
+      `getContent` prevents the import from entering `op.imports` in the first place.
+- [x] 2.4 Regenerate and diff against 0.1 for all 11 modules. Pay attention to `groupsFamily`,
       `groupsFree`, `groupsTraining` (single-item envelopes with no `application/json` sibling)
       and `event-types` (the promoted `_embedded` `$ref` case) — those exercise the paths where
       an envelope import could survive.
-- [ ] 2.5 Confirm `CodegenResponse.content` is not rendered anywhere: verified during planning
+      All 11 modules regenerated + compiled clean; diffed vs baseline, every diff line across
+      ~90 changed files is exclusively the `@Generated` timestamp. groupsFamily/Free/Training and
+      event-types specifically checked clean.
+- [x] 2.5 Confirm `CodegenResponse.content` is not rendered anywhere: verified during planning
       that no template under `backend/src/main/openapi-templates/` reads `{{#content}}` — re-check
       after the change, since `getContent`'s return value populates that field.
-- [ ] 2.6 Run the full backend test suite.
+      Only hit is `api.mustache` line 197, a literal `@Schema(implementation=...)` string gated by
+      `baseType`, not by `{{#content}}`/mustache field access. Confirmed clean.
+- [x] 2.6 Run the full backend test suite.
+      buildSrc: 29/29 pass. Full backend suite: 3200/3200 passed.
 
 ## 3. Shared test fixture builder
 
