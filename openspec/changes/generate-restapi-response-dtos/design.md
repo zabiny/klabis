@@ -71,8 +71,15 @@ carrying its own `_links` — not nested under `_embedded`. This is explicitly n
 **Goals:**
 - Every response DTO in an `infrastructure.restapi` package is generated from the spec, the same
   way every request DTO already is.
+- Every field-level security annotation the hand-written class carried (`@OwnerId`,
+  `@OwnerVisible`, `@HasAuthority`, `@HalForms(access=...)`) has a corresponding `x-klabis-*`
+  extension on the spec property **before** that hand-written class is deleted — never after. A
+  silently-dropped `@HasAuthority(MEMBERS_MANAGE)` on `email`/`active` (`MemberSummaryResponse`) or
+  `@HasAuthority(EVENTS_MANAGE)` on `status` (`EventSummaryDto`) is a security regression, not a
+  cosmetic diff — see [[feedback-check-annotations-before-unmapping]] precedent from the
+  hand-written-to-generated *request* DTO migration, which this repeats for *response* DTOs.
 - Category A: add missing `models` entries only; delete the hand-written class once the generated
-  one is shape-equivalent.
+  one is shape-equivalent AND field-security-equivalent (Decision 0).
 - Category B: introduce `x-klabis-relation` and its `pojo.mustache` render rule.
 - Category C: extend `KlabisSpringCodegen`/`HalEnvelopeDetector` to unwrap a **property**'s schema,
   not just an operation's response schema, producing a bare `List<Payload>` — never
@@ -99,14 +106,50 @@ carrying its own `_links` — not nested under `_embedded`. This is explicitly n
 
 ## Decisions
 
+### Decision 0 (all categories): field-security parity check gates every deletion
+
+Structural shape-equivalence (field names, types, JSON shape) is necessary but not sufficient
+before a hand-written class is deleted. A hand-written response DTO commonly carries
+security-relevant annotations that have no counterpart in a *field name/type* diff:
+
+| Hand-written annotation | Spec extension it must map from | Where seen in the 33 classes |
+|---|---|---|
+| `@HasAuthority(Authority.X)` | `x-klabis-authority: X` | `MemberSummaryResponse.email/active`, `EventSummaryDto.status` |
+| `@OwnerVisible` | `x-klabis-owner-visible: true` | `RegistrationSummaryDto.registrationTime` |
+| `@OwnerId` | `x-klabis-owner-id: true` | `RegistrationSummaryDto.coordinators` |
+| `@HalForms(access = READ_ONLY)` | `x-klabis-halforms-access: READ_ONLY` | `EventDto.id/status/cancellationReason/deadlines`, `CalendarItemDto.id/eventId`, `CategoryPresetDto.id` |
+| `@HandleAuthorizationDenied(NullDeniedHandler.class)` (class-level) | none needed — `additionalModelTypeAnnotations` applies it to every generated model unconditionally | all |
+| `@JsonIgnore` (drops a field from the wire entirely) | property omitted from the spec schema altogether | `RegistrationSummaryDto.coordinators/registeredMemberId` |
+
+**Verification procedure, per class, before deletion (not after):**
+1. List every field-level annotation on the hand-written record's components (grep the file for
+   `@OwnerId`, `@OwnerVisible`, `@HasAuthority`, `@HalForms`, `@JsonIgnore`, `@JsonInclude` at the
+   component level — class-level `@JsonInclude`/`@HandleAuthorizationDenied` are already covered by
+   `additionalModelTypeAnnotations` and need no per-field check).
+2. For each, confirm the matching `x-klabis-*` extension exists on the corresponding spec property
+   (or, for `@JsonIgnore`, confirm the property is absent from the spec schema — never present and
+   silently unauthorized).
+3. Generate and read the actual generated `.java` source (not just the spec YAML) — `pojo.mustache`
+   is the thing that must render the annotation, and a typo in the extension key (`x-klabis-authroity`)
+   fails silently (no annotation rendered, no build error) rather than loudly.
+4. Only after steps 1–3 pass does the hand-written class get deleted. If a gap is found, fix the
+   spec first (add the missing `x-klabis-*` extension) — never delete the hand-written class to
+   "match" a spec that hasn't caught up yet.
+
+This mirrors the exact incident recorded in [[feedback-check-annotations-before-unmapping]] from
+the request-DTO migration: a hand-written class replaced by a generated one that silently dropped
+a `x-klabis-minLength`/`x-klabis-authority` constraint is a quiet security regression, not a build
+failure — nothing in `./gradlew build` catches a missing annotation, only a deliberate diff against
+the hand-written source does.
+
 ### Decision 1 (Category A): treat as a `models`-list gap, not a codegen gap
 
 No `KlabisSpringCodegen`/template change. Per class: add to the module's `models` list in
 `build.gradle.kts`, run the generate task, diff the generated record against the hand-written one
-(field names, types, `x-klabis-*`-derived annotations), fix any spec gap (e.g. a property missing
-`x-klabis-halforms-access` that the hand-written version had as `@HalForms`), delete the
-hand-written class, update its (unchanged) import in every controller/mapper/postprocessor that
-referenced it.
+(field names, types, `x-klabis-*`-derived annotations per Decision 0's checklist), fix any spec gap
+(e.g. a property missing `x-klabis-halforms-access` that the hand-written version had as
+`@HalForms`), only then delete the hand-written class, and update its (unchanged) import in every
+controller/mapper/postprocessor that referenced it.
 
 **Nested classes** (`EventDto.RankingDto`/`EntryFeeDto`/`EventCategoryDto`,
 `SuspensionBlockedWarning`'s `OutstandingDebtWarning`/`LastOwnerWarning`/`AffectedGroup`,
@@ -218,6 +261,13 @@ HATEOAS's runtime concern (`RepresentationModelProcessor`, `EntityModel.of(...)`
 present in every affected controller). Emitting `EntityModel<T>` as a generated field type would
 require the generator to know about `org.springframework.hateoas.EntityModel` as a model-property
 container — a capability the stock generator has no notion of and this design does not introduce.
+
+**Field-security check applies here too:** `TrainerResponse`/`GroupMembershipResponse`/
+`ParentResponse`/`FamilyGroupMembershipResponse`/`OwnerResponse`/`FreeGroupMembershipResponse` are
+plain value carriers today with no `@OwnerVisible`/`@HasAuthority` — Decision 0's checklist still
+applies (confirm none is silently introduced as a gap, i.e. confirm the *absence* of any
+field-security annotation on the hand-written class before treating the promoted spec schema as
+equivalent, not just its presence).
 
 ## Risks / Trade-offs
 

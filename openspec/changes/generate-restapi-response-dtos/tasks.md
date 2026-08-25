@@ -18,6 +18,10 @@
 - [ ] 2.2 Generate, diff the generated records against `CalendarItemDto.java` and the nested
       `IcalTokenResponse` in `IcalTokenController.java` (field names/types, `@HalForms` ↔
       `x-klabis-halforms-access` parity).
+- [ ] 2.2a Field-security check (design.md Decision 0): list every field-level annotation on both
+      hand-written records (`@HalForms` on `CalendarItemDto.id`/`.eventId`; none on
+      `IcalTokenResponse`), confirm each has a matching `x-klabis-*` extension in the generated
+      spec/Java, confirm none is silently missing. Gate 2.3 on this passing.
 - [ ] 2.3 Delete both hand-written declarations; confirm `CalendarController`,
       `IcalTokenController`, and their postprocessors compile unchanged (same package, same simple
       name).
@@ -38,11 +42,18 @@
 - [ ] 3.4 Add `TransactionResource` to `finance`'s `models` list; move its `from(...)` mapping logic
       to a mapper; generate, diff, delete hand-written class.
 - [ ] 3.5 Add `MemberSummaryResponse`, `MemberOptionResponse` to `members`'s `models` list;
-      generate, diff, delete hand-written classes.
+      generate, diff.
+- [ ] 3.5a Field-security check (design.md Decision 0): `MemberSummaryResponse.email`/`.active`
+      carry `@HasAuthority(Authority.MEMBERS_MANAGE)` — confirm `members.yaml`'s
+      `MemberSummaryResponse` has `x-klabis-authority: MEMBERS_MANAGE` on both properties and the
+      generated Java actually renders `@HasAuthority`, not just that the spec has the extension.
+- [ ] 3.5b Delete `MemberSummaryResponse.java`/`MemberOptionResponse.java` — only after 3.5a passes.
 - [ ] 3.6 Add `SuspensionBlockedWarning`, `OutstandingDebtWarning`, `LastOwnerWarning`,
       `AffectedGroup` to `members`'s `models` list; correct the stale comment in `members.yaml`
       (lines ~815-816) that still references the removed `schemaMapping` mechanism; generate, diff,
-      delete hand-written classes (including the nested ones in `MembersExceptionHandler`).
+      delete hand-written classes (including the nested ones in `MembersExceptionHandler`) — none of
+      these four carry field-level security annotations today, so Decision 0's check here is
+      confirming that absence stays true in the generated form, not adding anything.
 - [ ] 3.7 Run `common`, `finance`, `members` module tests via the test-runner agent.
 
 ## 4. Category A+B — `events` module
@@ -53,11 +64,30 @@
       not nested inside `EventDto` — this is expected, see design.md Decision 1).
 - [ ] 4.2 Fix every reference to the nested form (`EventDto.RankingDto` etc.) across `events`
       module source to the top-level generated name.
-- [ ] 4.3 Delete `EventDto.java`, `EventSummaryDto.java`, `CategoryPresetDto.java`.
+- [ ] 4.2a Field-security check (design.md Decision 0): `EventDto`/`EventSummaryDto` both mark
+      `id`/`status`/`cancellationReason`/`deadlines` `@HalForms(access = READ_ONLY)`, and
+      `EventSummaryDto.status` additionally carries `@HasAuthority(Authority.EVENTS_MANAGE)` +
+      `@HandleAuthorizationDenied` — confirm `events.yaml`'s `EventDto`/`EventSummaryDto` schemas
+      carry `x-klabis-halforms-access: READ_ONLY` on all four properties and
+      `x-klabis-authority: EVENTS_MANAGE` on `EventSummaryDto.status`, and that the generated Java
+      renders both.
+- [ ] 4.3 Delete `EventDto.java`, `EventSummaryDto.java`, `CategoryPresetDto.java` — only after 4.2a
+      passes.
 - [ ] 4.4 Add `x-klabis-relation` to `RegistrationSummaryDto`
       (`collectionRelation: registrationDtoList`) and `AccommodationListItemDto`
       (`collectionRelation: accommodationList`) in `events.yaml`; add both to `events`'s `models`
-      list; generate, diff, delete hand-written classes.
+      list; generate, diff.
+- [ ] 4.4a Field-security check (design.md Decision 0): `RegistrationSummaryDto.registrationTime`
+      carries `@OwnerVisible` + `@HasAuthority(Authority.EVENTS_REGISTRATIONS)`;
+      `.coordinators`/`.registeredMemberId` carry `@JsonIgnore` (never serialized) and
+      `.coordinators` also carries `@OwnerId`. Confirm `x-klabis-owner-visible: true` +
+      `x-klabis-authority: EVENTS_REGISTRATIONS` on `registrationTime`, `x-klabis-owner-id: true` on
+      `coordinators`, and that both `coordinators`/`registeredMemberId` are either absent from the
+      spec response schema or otherwise never rendered into the generated wire payload — a
+      `@JsonIgnore`'d field silently reappearing on the wire is exactly the kind of regression this
+      check exists to catch.
+- [ ] 4.4b Delete `RegistrationSummaryDto.java`, `AccommodationListItemDto.java` — only after 4.4a
+      passes.
 - [ ] 4.5 Add an integration test (or confirm an existing one covers) `GET /api/events/{id}` still
       returns `_embedded.registrationDtoList` unchanged — the runtime-embed path itself is
       untouched by this change, but `EventDto` moving to generated code is the highest-risk point
@@ -73,7 +103,12 @@
 - [ ] 5.2 Generate, diff each against its hand-written counterpart; confirm
       `MembershipFeeGroupResponse` generates as a flat record (no `members` property — it stays a
       runtime `_embedded` addition, same as `EventDto`).
-- [ ] 5.3 Delete all nine hand-written classes; fix imports in
+- [ ] 5.2a Field-security check (design.md Decision 0): grep all nine hand-written classes for
+      `@OwnerId`/`@OwnerVisible`/`@HasAuthority`/`@HalForms`/`@JsonIgnore` at the component level
+      (none expected on any of the nine as of this exploration — `membershipfees` response DTOs
+      carry no field-level security today) and confirm the generated spec/Java doesn't silently
+      introduce or drop any such annotation relative to the hand-written source.
+- [ ] 5.3 Delete all nine hand-written classes — only after 5.2a passes; fix imports in
       `MembershipFeeTierController`/`MembershipFeeGroupController`/`FeeSelectionCampaignController`/
       `MemberFeeChoiceController`/`MemberFeeSummaryController` and their mappers/postprocessors.
 - [ ] 5.4 Add/confirm an integration test that `GET /api/membership-fee-groups/{id}` still returns
@@ -87,7 +122,10 @@
       (`collectionRelation: groupSummaryResponseList`), `PendingInvitationResponse`
       (`collectionRelation: pendingInvitationResponseList`) in `groups.yaml`.
 - [ ] 6.2 Add `FamilyGroupSummaryResponse`, `GroupSummaryResponse`, `PendingInvitationResponse` to
-      their modules' `models` lists; generate, diff, delete hand-written classes.
+      their modules' `models` lists; generate, diff.
+- [ ] 6.2a Field-security check (design.md Decision 0): none of these three carry field-level
+      security annotations today — confirm that stays true in the generated form, then delete the
+      three hand-written classes.
 - [ ] 6.3 Implement Category C's property-level unwrap in `KlabisSpringCodegen` using the hook
       confirmed in Phase 1; unit-test it against `FamilyGroupResponse.parents`/`.members` and
       `GroupResponse.owners`/`.members`/`.pendingInvitations` fixtures (all already reference named
@@ -96,7 +134,10 @@
 - [ ] 6.4 Add `FamilyGroupResponse`, `ParentResponse`, `FamilyGroupMembershipResponse`,
       `GroupResponse`, `OwnerResponse`, `FreeGroupMembershipResponse` to the two modules' `models`
       lists; generate, diff each property's resolved type is `List<Payload>` (never
-      `List<EntityModel<Payload>>`); delete the six hand-written classes; fix imports in
+      `List<EntityModel<Payload>>`).
+- [ ] 6.4a Field-security check (design.md Decision 0): none of these six carry field-level security
+      annotations today — confirm that stays true in the generated form.
+- [ ] 6.4b Delete the six hand-written classes — only after 6.4a passes; fix imports in
       `FamilyGroupController`/`FreeGroupController`/`PendingInvitationsController` and their
       postprocessors/model builders (`InvitationModelBuilder` stays — it still constructs
       `EntityModel<PendingInvitationResponse>` at runtime, only the payload type is now generated).
@@ -114,9 +155,12 @@
       `AgeRangeResponse` to `groupsTraining`'s `models` list; generate; confirm `trainers`/`members`
       resolve to `List<TrainerResponse>`/`List<GroupMembershipResponse>` and `ageRange` resolves as
       a plain `$ref` property (Category A, confirmed no array unwrap needed for it).
-- [ ] 7.4 Delete the five hand-written classes; fix imports in `TrainingGroupController` and its
-      postprocessors (per-item `EntityModel.of(new TrainerResponse(...))` calls stay — only the
-      payload type is now generated).
+- [ ] 7.3a Field-security check (design.md Decision 0): none of these four carry field-level
+      security annotations today — confirm that stays true in the generated form.
+- [ ] 7.4 Delete the five hand-written classes — only after 7.3a passes; fix imports in
+      `TrainingGroupController` and its postprocessors (per-item
+      `EntityModel.of(new TrainerResponse(...))` calls stay — only the payload type is now
+      generated).
 - [ ] 7.5 Run `groupsTraining` module tests via the test-runner agent.
 
 ## 8. Closeout
@@ -129,3 +173,10 @@
       `x-klabis-*` semantic drift between the deleted hand-written classes and their generated
       replacements, and that `docs/openapi/klabis-full.json` was regenerated and committed alongside
       the spec changes.
+- [ ] 8.4 Final field-security audit (design.md Decision 0): re-diff the generated sources for
+      `MemberSummaryResponse`, `EventSummaryDto`, `RegistrationSummaryDto` — the three classes
+      confirmed to carry `@HasAuthority`/`@OwnerVisible`/`@OwnerId`/`@JsonIgnore` — against the git
+      history of the deleted hand-written files (`git show <sha>:<path>` for each), field by field,
+      as an independent double-check before this change is considered done. This is the one
+      irreversible-if-missed step in the whole migration: a dropped authorization annotation ships
+      silently, with no failing test to catch it.
