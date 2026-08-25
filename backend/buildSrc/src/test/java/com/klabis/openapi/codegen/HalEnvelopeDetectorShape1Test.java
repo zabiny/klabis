@@ -17,14 +17,11 @@ class HalEnvelopeDetectorShape1Test {
     void detectsEnvelopeWithLinksTemplatesAndEmbedded() {
         // EntityModelEventDtoWithRegistrations: allOf [$ref EventDto, {_links, _templates, _embedded}]
         Schema<?> eventDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
-        Schema<?> envelope = new Schema<>()
-            .allOf(java.util.List.of(
-                new Schema<>().$ref("#/components/schemas/EventDto"),
-                new Schema<>().type("object")
-                    .addProperty("_embedded", new Schema<>().type("object"))
-                    .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-                    .addProperty("_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates"))
-            ));
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("EventDto", Map.of(
+            "_embedded", new Schema<>().type("object"),
+            "_links", new Schema<>().$ref("#/components/schemas/Links"),
+            "_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates")
+        ));
         Map<String, Schema> schemas = Map.of("EventDto", eventDto);
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
@@ -40,13 +37,10 @@ class HalEnvelopeDetectorShape1Test {
     void detectsEnvelopeWithOnlyLinksAndTemplates() {
         // EntityModelPaymentRuleResponse: allOf [$ref PaymentRuleResponse, {_links, _templates}], no _embedded
         Schema<?> paymentRuleResponse = new Schema<>().type("object").addProperty("amount", new Schema<>().type("number"));
-        Schema<?> envelope = new Schema<>()
-            .allOf(java.util.List.of(
-                new Schema<>().$ref("#/components/schemas/PaymentRuleResponse"),
-                new Schema<>().type("object")
-                    .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-                    .addProperty("_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates"))
-            ));
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("PaymentRuleResponse", Map.of(
+            "_links", new Schema<>().$ref("#/components/schemas/Links"),
+            "_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates")
+        ));
         Map<String, Schema> schemas = Map.of("PaymentRuleResponse", paymentRuleResponse);
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
@@ -60,13 +54,8 @@ class HalEnvelopeDetectorShape1Test {
         // EntityModelMemberSummaryResponse: allOf [$ref MemberSummaryResponse, {_links}], plus a top-level
         // "description" sibling to allOf — detection must not be confused by extra top-level keywords.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> envelope = new Schema<>()
-            .description("A member summary wrapped in a HAL entity model")
-            .allOf(java.util.List.of(
-                new Schema<>().$ref("#/components/schemas/MemberSummaryResponse"),
-                new Schema<>().type("object")
-                    .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-            ));
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("MemberSummaryResponse")
+            .description("A member summary wrapped in a HAL entity model");
         Map<String, Schema> schemas = Map.of("MemberSummaryResponse", memberSummaryResponse);
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
@@ -74,6 +63,10 @@ class HalEnvelopeDetectorShape1Test {
         assertThat(result).isPresent();
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/MemberSummaryResponse");
     }
+
+    // Negative-case fixtures below are deliberately hand-built, not routed through
+    // HalEnvelopeFixtures: each one exists specifically to deviate from the canonical shape the
+    // builder produces, so building it via the builder would hide which property makes it invalid.
 
     @Test
     void rejectsMarkerTypeWithOnlyLinksAndNoAllOf() {

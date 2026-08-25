@@ -55,17 +55,25 @@
 
 ## 3. Shared test fixture builder
 
-- [ ] 3.1 Add a package-private builder under `buildSrc/src/test/java/com/klabis/openapi/codegen/`
+- [x] 3.1 Add a package-private builder under `buildSrc/src/test/java/com/klabis/openapi/codegen/`
       covering the three shapes rebuilt by hand across the suite: Shape 1
       (`allOf[$ref X, {_links, ...}]`), Shape 2 (`{_embedded: {<name>: array[$ref]}, _links}`,
       with an optional `page` property), and the `OpenAPI` + `Components` assembly that
       `KlabisSpringCodegenHandleMethodResponseTest` already extracted as `openApiWithSchemas`.
-- [ ] 3.2 Migrate the positive-case fixtures in all four test files onto the builder.
-- [ ] 3.3 Leave the negative-case fixtures hand-built and add a comment saying why: they exist to
+      Added `HalEnvelopeFixtures.java` with `shape1Envelope`, `shape2Envelope` (each with an
+      overload for the optional properties), and `openApiWithSchemas`.
+- [x] 3.2 Migrate the positive-case fixtures in all four test files onto the builder.
+      Migrated across `HalEnvelopeDetectorShape1Test` (3/5), `HalEnvelopeDetectorShape2Test` (4/8),
+      `KlabisSpringCodegenHandleMethodResponseTest` (6/10, plus deleted its now-redundant local
+      `openApiWithSchemas` helper), `KlabisSpringCodegenGetContentTest` (2/4).
+- [x] 3.3 Leave the negative-case fixtures hand-built and add a comment saying why: they exist to
       deviate from the canonical shape, and routing them through a builder would hide which
       property makes them invalid.
-- [ ] 3.4 Run the buildSrc unit tests — same count, same outcomes. No production code changes in
+      Added a one-line "why hand-built" comment above each file's negative-case block.
+- [x] 3.4 Run the buildSrc unit tests — same count, same outcomes. No production code changes in
       this section, so no regeneration is needed.
+      29/29 buildSrc tests pass, same count as before migration. Confirmed no production code
+      touched (`git diff --stat buildSrc/src/main/` empty).
 
 ## 4. Close out
 

@@ -21,10 +21,7 @@ class HalEnvelopeDetectorShape2Test {
 
     private static Schema<?> entityModelMemberSummaryResponse() {
         // EntityModelMemberSummaryResponse: allOf [$ref MemberSummaryResponse, {_links}] — itself Shape 1.
-        return new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/MemberSummaryResponse"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
+        return HalEnvelopeFixtures.shape1Envelope("MemberSummaryResponse");
     }
 
     @Test
@@ -39,14 +36,8 @@ class HalEnvelopeDetectorShape2Test {
         schemas.put("MemberSummaryResponse", memberSummaryResponse);
         schemas.put("EntityModelMemberSummaryResponse", entityModelMemberSummaryResponse());
 
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EntityModelMemberSummaryResponse")));
-
-        Schema<?> envelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-            .addProperty("page", new Schema<>().$ref("#/components/schemas/PageMetadata"));
+        Schema<?> envelope = HalEnvelopeFixtures.shape2Envelope(
+            "memberSummaryResponseList", "EntityModelMemberSummaryResponse", true);
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
 
@@ -62,22 +53,14 @@ class HalEnvelopeDetectorShape2Test {
         // CollectionModelEntityModelFamilyGroupSummaryResponse: same shape, but no "page" property —
         // must resolve identically to the "page" present case above (isCollection=true, same payload).
         Schema<?> familyGroupSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> entityModelWrapper = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/FamilyGroupSummaryResponse"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
+        Schema<?> entityModelWrapper = HalEnvelopeFixtures.shape1Envelope("FamilyGroupSummaryResponse");
 
         Map<String, Schema> schemas = new HashMap<>();
         schemas.put("FamilyGroupSummaryResponse", familyGroupSummaryResponse);
         schemas.put("EntityModelFamilyGroupSummaryResponse", entityModelWrapper);
 
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("familyGroupSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EntityModelFamilyGroupSummaryResponse")));
-
-        Schema<?> envelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> envelope = HalEnvelopeFixtures.shape2Envelope(
+            "familyGroupSummaryResponseList", "EntityModelFamilyGroupSummaryResponse");
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
 
@@ -97,13 +80,7 @@ class HalEnvelopeDetectorShape2Test {
         Map<String, Schema> schemas = new HashMap<>();
         schemas.put("AccommodationListItemDto", accommodationListItemDto);
 
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("accommodationListItemDtoList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/AccommodationListItemDto")));
-
-        Schema<?> envelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> envelope = HalEnvelopeFixtures.shape2Envelope("accommodationListItemDtoList", "AccommodationListItemDto");
 
         Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
 
@@ -151,15 +128,15 @@ class HalEnvelopeDetectorShape2Test {
         // string every other fixture in this file uses. Not emitted by the current spec bundle, but
         // asSingleArrayOfRefProperty() must still recognize it — see proposal.md item 2.
         Schema<?> familyGroupSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> entityModelWrapper = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/FamilyGroupSummaryResponse"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
+        Schema<?> entityModelWrapper = HalEnvelopeFixtures.shape1Envelope("FamilyGroupSummaryResponse");
 
         Map<String, Schema> schemas = new HashMap<>();
         schemas.put("FamilyGroupSummaryResponse", familyGroupSummaryResponse);
         schemas.put("EntityModelFamilyGroupSummaryResponse", entityModelWrapper);
 
+        // The array property itself is deliberately hand-built (not via HalEnvelopeFixtures): its
+        // OpenAPI 3.1 `type: [array]` list form, rather than the scalar `type: "array"` every
+        // canonical fixture uses, is exactly what this test exercises.
         // JsonSchema (OpenAPI 3.1 model) is the only Schema subtype ModelUtils.getType() reads
         // getTypes() from — a plain Schema with setTypes() called on it is not recognized as 3.1.
         JsonSchema arrayProperty = new JsonSchema();
@@ -179,6 +156,10 @@ class HalEnvelopeDetectorShape2Test {
         assertThat(result.get().isCollection()).isTrue();
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/FamilyGroupSummaryResponse");
     }
+
+    // Negative-case fixtures below are deliberately hand-built, not routed through
+    // HalEnvelopeFixtures: each one exists specifically to deviate from the canonical shape the
+    // builder produces, so building it via the builder would hide which property makes it invalid.
 
     @Test
     void rejectsMarkerTypeWithOnlyLinksAndNoEmbedded() {

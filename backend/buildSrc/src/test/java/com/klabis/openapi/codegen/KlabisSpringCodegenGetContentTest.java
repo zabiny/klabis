@@ -51,12 +51,7 @@ class KlabisSpringCodegenGetContentTest {
         // it adds an import for the envelope too, even though handleMethodResponse()/fromResponse()
         // only ever unwrap the FIRST content entry.
         Schema<?> eventTypeDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("eventTypeDtoList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EventTypeDto")));
-        Schema<?> collectionEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> collectionEnvelope = HalEnvelopeFixtures.shape2Envelope("eventTypeDtoList", "EventTypeDto");
         Schema<?> bareArray = new Schema<>().type("array").items(new Schema<>().$ref("#/components/schemas/EventTypeDto"));
 
         Map<String, Schema> schemas = new LinkedHashMap<>();
@@ -82,10 +77,7 @@ class KlabisSpringCodegenGetContentTest {
         // Mirrors groupsFamily/groupsFree/groupsTraining: a SOLE application/prs.hal-forms+json
         // entry, no application/json sibling — Shape 1 envelope.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> envelope = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/MemberSummaryResponse"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("MemberSummaryResponse");
 
         Map<String, Schema> schemas = new LinkedHashMap<>();
         schemas.put("MemberSummaryResponse", memberSummaryResponse);
@@ -112,16 +104,8 @@ class KlabisSpringCodegenGetContentTest {
         // top-level component ($ref, not inline) — the case that originally caught this bug. Now that
         // getContent() unwraps before super sees it, no leftover import should reach op.imports either.
         Schema<?> eventTypeDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
-        Schema<?> entityModelEventTypeDto = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/EventTypeDto"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("eventTypeDtoList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EntityModelEventTypeDto")));
-        Schema<?> collectionEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> entityModelEventTypeDto = HalEnvelopeFixtures.shape1Envelope("EventTypeDto");
+        Schema<?> collectionEnvelope = HalEnvelopeFixtures.shape2Envelope("eventTypeDtoList", "EntityModelEventTypeDto");
         Schema<?> bareArray = new Schema<>().type("array").items(new Schema<>().$ref("#/components/schemas/EventTypeDto"));
 
         Map<String, Schema> schemas = new LinkedHashMap<>();

@@ -1,6 +1,5 @@
 package com.klabis.openapi.codegen;
 
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Content;
@@ -15,7 +14,6 @@ import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.languages.SpringCodegen;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,17 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class KlabisSpringCodegenHandleMethodResponseTest {
 
-    private static OpenAPI openApiWithSchemas(Map<String, Schema> schemas) {
-        OpenAPI openAPI = new OpenAPI();
-        Components components = new Components();
-        schemas.forEach(components::addSchemas);
-        openAPI.setComponents(components);
-        return openAPI;
-    }
-
     private static KlabisSpringCodegen newCodegen(Map<String, Schema> schemas) {
         KlabisSpringCodegen codegen = new KlabisSpringCodegen();
-        codegen.setOpenAPI(openApiWithSchemas(schemas));
+        codegen.setOpenAPI(HalEnvelopeFixtures.openApiWithSchemas(schemas));
         return codegen;
     }
 
@@ -83,10 +73,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         // 4.1 — EntityModelEventDtoWithRegistrations-style envelope resolves to the unwrapped payload,
         // with no explicit schemaMappings entry.
         Schema<?> eventDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
-        Schema<?> envelope = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/EventDto"),
-            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-        ));
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("EventDto");
 
         Map<String, Schema> schemas = Map.of("EventDto", eventDto, "EntityModelEventDto", envelope);
         KlabisSpringCodegen codegen = newCodegen(schemas);
@@ -112,12 +99,10 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         // $ref) behavior — a real regression only the parity check against membershipfees caught, not
         // any of the fixtures above (which all inline the envelope's allOf directly).
         Schema<?> membershipFeeGroupResponse = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
-        Schema<?> envelope = new Schema<>().allOf(List.of(
-            new Schema<>().$ref("#/components/schemas/MembershipFeeGroupResponse"),
-            new Schema<>().type("object")
-                .addProperty("_embedded", new Schema<>().type("object"))
-                .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-                .addProperty("_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates"))
+        Schema<?> envelope = HalEnvelopeFixtures.shape1Envelope("MembershipFeeGroupResponse", Map.of(
+            "_embedded", new Schema<>().type("object"),
+            "_links", new Schema<>().$ref("#/components/schemas/Links"),
+            "_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates")
         ));
 
         Map<String, Schema> schemas = Map.of(
@@ -142,12 +127,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
     void shape2EnvelopeWithPaginationProducesPageContainer() {
         // 4.2 — Shape 2 envelope on an x-spring-paginated: true operation -> Page<X>.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse")));
-        Schema<?> pagedEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> pagedEnvelope = HalEnvelopeFixtures.shape2Envelope("memberSummaryResponseList", "MemberSummaryResponse");
 
         Map<String, Schema> schemas = Map.of(
             "MemberSummaryResponse", memberSummaryResponse,
@@ -178,12 +158,8 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         // 4.3 — Shape 2 envelope, NOT paginated -> stock List<X> behavior, confirming the
         // no-pagination path still delegates correctly.
         Schema<?> familyGroupSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("familyGroupSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/FamilyGroupSummaryResponse")));
-        Schema<?> collectionEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> collectionEnvelope = HalEnvelopeFixtures.shape2Envelope(
+            "familyGroupSummaryResponseList", "FamilyGroupSummaryResponse");
 
         Map<String, Schema> schemas = Map.of(
             "FamilyGroupSummaryResponse", familyGroupSummaryResponse,
@@ -235,12 +211,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         Schema<?> eventSummaryDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
         Schema<?> bareArray = new Schema<>().type("array").items(new Schema<>().$ref("#/components/schemas/EventSummaryDto"));
 
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("eventSummaryDtoList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EventSummaryDto")));
-        Schema<?> halEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> halEnvelope = HalEnvelopeFixtures.shape2Envelope("eventSummaryDtoList", "EventSummaryDto");
 
         Map<String, Schema> schemas = Map.of("EventSummaryDto", eventSummaryDto);
         KlabisSpringCodegen codegen = newCodegen(schemas);
@@ -266,12 +237,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         // restapi package (e.g. com.klabis.members.infrastructure.restapi.Page) instead of Spring
         // Data's Page, which fails to compile.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse")));
-        Schema<?> pagedEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> pagedEnvelope = HalEnvelopeFixtures.shape2Envelope("memberSummaryResponseList", "MemberSummaryResponse");
 
         Map<String, Schema> schemas = Map.of(
             "MemberSummaryResponse", memberSummaryResponse,
@@ -296,12 +262,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         // emit that block in the first place for a paginated response: fromResponse()'s
         // CodegenResponse.baseType gates {{#baseType}} in api.mustache, so it must stay unset here.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse")));
-        Schema<?> pagedEnvelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+        Schema<?> pagedEnvelope = HalEnvelopeFixtures.shape2Envelope("memberSummaryResponseList", "MemberSummaryResponse");
 
         Map<String, Schema> schemas = Map.of(
             "MemberSummaryResponse", memberSummaryResponse,
@@ -393,7 +354,7 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         Schema<?> registerMemberRequest = new Schema<>().type("object").addProperty("email", new Schema<>().type("string"));
 
         Map<String, Schema> schemas = Map.of("RegisterMemberRequest", registerMemberRequest);
-        OpenAPI openAPI = openApiWithSchemas(schemas);
+        OpenAPI openAPI = HalEnvelopeFixtures.openApiWithSchemas(schemas);
 
         KlabisSpringCodegen codegen = new KlabisSpringCodegen();
         codegen.setOpenAPI(openAPI);
