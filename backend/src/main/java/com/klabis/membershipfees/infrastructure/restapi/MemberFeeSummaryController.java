@@ -47,7 +47,7 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
                 new MemberId(memberId), year);
-        MemberFeeSummaryResponse response = MemberFeeSummaryResponse.from(info);
+        MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info);
 
         List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
                 .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
@@ -71,7 +71,7 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
             UUID memberId,
             @ActingMember MemberId actingMember) {
 
-        MemberFeeHistoryResponse response = MemberFeeHistoryResponse.from(
+        MemberFeeHistoryResponse response = MembershipFeesResponseMapper.toResponse(
                 memberFeeHistoryPort.getLevelHistory(new MemberId(memberId)));
 
         HalResponseContext.setDomain(memberId);

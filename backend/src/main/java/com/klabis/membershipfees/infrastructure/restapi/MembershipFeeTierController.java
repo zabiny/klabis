@@ -68,7 +68,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     public ResponseEntity<List<MembershipFeeTierSummaryResponse>> listTiers() {
         List<MembershipFeeTier> tiers = managementPort.listTiers();
         List<MembershipFeeTierSummaryResponse> items = tiers.stream()
-                .map(MembershipFeeTierSummaryResponse::from)
+                .map(MembershipFeesResponseMapper::toSummaryResponse)
                 .toList();
 
         // isAdmin() gate mirrors the original controller's behaviour: the extra links are only
@@ -93,7 +93,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         HalResponseContext.setDomain(tier);
-        return ResponseEntity.ok(MembershipFeeTierResponse.from(tier));
+        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(tier));
     }
 
     @Override
@@ -113,7 +113,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .map(rule -> new PaymentRuleDomain(new MembershipFeeTierId(id), rule))
                 .toList();
         List<PaymentRuleResponse> items = domains.stream()
-                .map(d -> PaymentRuleResponse.from(d.rule()))
+                .map(d -> MembershipFeesResponseMapper.toResponse(d.rule()))
                 .toList();
 
         MembershipFeeTierListRulesPostprocessor.setOptions(
@@ -133,7 +133,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .findFirst()
                 .orElseThrow(() -> new PaymentRuleNotFoundException(EventTypeReference.of(eventTypeId), ranking));
         HalResponseContext.setDomain(new PaymentRuleDomain(new MembershipFeeTierId(id), rule));
-        return ResponseEntity.ok(PaymentRuleResponse.from(rule));
+        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(rule));
     }
 
     record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {

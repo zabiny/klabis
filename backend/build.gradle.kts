@@ -431,7 +431,26 @@ openApiModule(
         "ChangeDeadlineRequest",
         "EditGroupSnapshotRequest",
         "AdminAssignMemberRequest",
-        "ChooseFeeChoiceRequest"
+        "ChooseFeeChoiceRequest",
+        "FeeSelectionCampaignResponse",
+        "MembershipFeeTierResponse",
+        "MembershipFeeTierSummaryResponse",
+        "PaymentRuleResponse",
+        "MemberFeeChoiceResponse",
+        "MemberFeeHistoryResponse",
+        "FeeAssignmentResponse",
+        "MemberFeeSummaryResponse",
+        "CurrentGroupResponse",
+        "MembershipFeeGroupResponse",
+        "MemberInGroupResponse",
+        // Inline enums promoted to named schemas by resolveInlineEnums (see EventImportEntry_status
+        // precedent in the events module). PaymentRuleResponse.ruleType is standalone;
+        // MembershipFeeGroupResponse.status is standalone; FeeAssignmentResponse.source and
+        // MemberInGroupResponse.source share the identical [MEMBER_CHOICE, ADMIN_ASSIGNMENT] enum
+        // and are deduplicated onto the same generated type, named after FeeAssignmentResponse.
+        "PaymentRuleResponse_ruleType",
+        "MembershipFeeGroupResponse_status",
+        "FeeAssignmentResponse_source"
     ),
     mappings = emptyMap()
 )

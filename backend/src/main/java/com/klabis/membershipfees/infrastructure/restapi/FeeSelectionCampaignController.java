@@ -64,7 +64,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
         CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
         List<FeeSelectionCampaignResponse> items = publications.stream()
-                .map(FeeSelectionCampaignResponse::from)
+                .map(MembershipFeesResponseMapper::toResponse)
                 .toList();
 
         List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
@@ -81,7 +81,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
             UUID id) {
         FeeSelectionCampaign publication = managementPort.getPublication(new FeeSelectionCampaignId(id));
         HalResponseContext.setDomain(publication);
-        return ResponseEntity.ok(FeeSelectionCampaignResponse.from(publication));
+        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(publication));
     }
 
     @Override
@@ -90,7 +90,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
         FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id),
                 MembershipFeesRequestMapper.toCommand(request));
         HalResponseContext.setDomain(updated);
-        return ResponseEntity.ok(FeeSelectionCampaignResponse.from(updated));
+        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(updated));
     }
 
     @Override
@@ -104,7 +104,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
             Integer year) {
         List<MembershipFeeGroup> groups = managementPort.listGroupsForYear(year);
         List<MembershipFeeGroupResponse> items = groups.stream()
-                .map(MembershipFeeGroupResponse::from)
+                .map(MembershipFeesResponseMapper::toResponse)
                 .toList();
 
         HalResponseContext.setDomainList(groups);

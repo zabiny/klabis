@@ -143,24 +143,60 @@
 
 ## 5. Category A — `membershipfees` module
 
-- [ ] 5.1 Add `FeeSelectionCampaignResponse`, `MembershipFeeTierResponse`,
+- [x] 5.1 Add `FeeSelectionCampaignResponse`, `MembershipFeeTierResponse`,
       `MembershipFeeTierSummaryResponse`, `PaymentRuleResponse`, `MemberFeeChoiceResponse`,
       `MemberFeeHistoryResponse`, `AssignmentResponse`, `MemberFeeSummaryResponse`,
       `CurrentGroupResponse`, `MembershipFeeGroupResponse` to `membershipfees`'s `models` list.
-- [ ] 5.2 Generate, diff each against its hand-written counterpart; confirm
+      **Correction found during migration:** the spec's nested-assignment schema is named
+      `FeeAssignmentResponse`, not `AssignmentResponse` (the hand-written nested class name) — added
+      under its real spec name. Also required three inline-enum-promoted schemas not listed in this
+      task (`PaymentRuleResponse_ruleType`, `MembershipFeeGroupResponse_status`,
+      `FeeAssignmentResponse_source`) — `resolveInlineEnums` promotes each enum property to its own
+      named model, and the generator fails to compile without them on the `models` list (same
+      `EventImportEntry_status` precedent as the `events` module). Also required adding
+      `MemberInGroupResponse` to the `models` list — see 5.2 correction below.
+- [x] 5.2 Generate, diff each against its hand-written counterpart; confirm
       `MembershipFeeGroupResponse` generates as a flat record (no `members` property — it stays a
       runtime `_embedded` addition, same as `EventDto`).
-- [ ] 5.2a Field-security check (design.md Decision 0): grep all nine hand-written classes for
-      `@OwnerId`/`@OwnerVisible`/`@HasAuthority`/`@HalForms`/`@JsonIgnore` at the component level
-      (none expected on any of the nine as of this exploration — `membershipfees` response DTOs
-      carry no field-level security today) and confirm the generated spec/Java doesn't silently
-      introduce or drop any such annotation relative to the hand-written source.
-- [ ] 5.3 Delete all nine hand-written classes — only after 5.2a passes; fix imports in
-      `MembershipFeeTierController`/`MembershipFeeGroupController`/`FeeSelectionCampaignController`/
-      `MemberFeeChoiceController`/`MemberFeeSummaryController` and their mappers/postprocessors.
-- [ ] 5.4 Add/confirm an integration test that `GET /api/membership-fee-groups/{id}` still returns
-      `_embedded.members` unchanged.
-- [ ] 5.5 Run `membershipfees` module tests via the test-runner agent.
+      **Correction found during migration:** the hand-written `MembershipFeeGroupResponse` has a
+      nested `MemberInGroupResponse` record carrying `@Relation(collectionRelation = "members")` —
+      this is Category B behavior (a non-default `@Relation`), not pure Category A as this task
+      assumed. Spring HATEOAS's `HalModelBuilder.embed(...)` (called from
+      `HalResponseBodyAdvice.applyEmbeddeds`) derives the `_embedded` key from this annotation, so
+      it is load-bearing, not cosmetic — without it the key would fall back to the
+      class-name-derived default (`memberInGroupResponseList`) instead of `members`. Added
+      `x-klabis-relation: {collectionRelation: members}` to `MemberInGroupResponse` in
+      `membershipfees.yaml` (pojo.mustache's render rule from Decision 2/task 3.3 already covers
+      this — no template change needed) before generating. Generated Java correctly renders
+      `@org.springframework.hateoas.server.core.Relation(collectionRelation = "members")`. All
+      eleven generated records (nine listed classes + `FeeAssignmentResponse` under its real name +
+      `MemberInGroupResponse`) are shape-equivalent to their hand-written counterparts. Enum fields
+      (`PaymentRuleResponse.ruleType`, `MembershipFeeGroupResponse.status`,
+      `FeeAssignmentResponse.source`/`MemberInGroupResponse.source`) generate as real enum types
+      instead of the hand-written `String`, but serialize to the identical wire strings via
+      `@JsonValue` — no wire-shape change.
+- [x] 5.2a Field-security check (design.md Decision 0): grepped all nine hand-written classes for
+      `@OwnerId`/`@OwnerVisible`/`@HasAuthority`/`@HalForms`/`@JsonIgnore` at the component level —
+      **confirmed none present on any of the nine**, and the generated Java introduces none either
+      (only `@RecordBuilder`/`@JsonInclude(NON_NULL)`/`@HandleAuthorizationDenied(NullDeniedHandler)`
+      from `additionalModelTypeAnnotations`, applied uniformly to every generated model, matching
+      the hand-written classes' behavior). PASS.
+- [x] 5.3 Deleted all nine hand-written classes (via `git rm`) — after 5.2a passed. Their static
+      factory methods (`.from(...)`/`.of(...)`) had no home on the generated records, so their
+      mapping logic was moved to a new `MembershipFeesResponseMapper` (plain static-method final
+      class, mirroring the existing `MembershipFeesRequestMapper` convention) in
+      `com.klabis.membershipfees.infrastructure.restapi`. Fixed call sites in
+      `MembershipFeeTierController`, `FeeSelectionCampaignController`, `MemberFeeChoiceController`,
+      `MemberFeeSummaryController`, `MembershipFeeGroupController` (including the
+      `MembershipFeeGroupResponse.MemberInGroupResponse` nested-type reference, now the top-level
+      generated `MemberInGroupResponse`). No postprocessor referenced the deleted classes by
+      constructor. `./gradlew compileJava` succeeds.
+- [x] 5.4 `_embedded.members` regression coverage already exists and passes unchanged:
+      `MembershipFeeGroupControllerTest$GetGroupTests.shouldReturnEmbeddedMembersWithDetails` and
+      `.shouldNotEmbedMembersWhenGroupHasNoMembers` assert the full `_embedded.members[...]` shape
+      (memberId/firstName/lastName/registrationNumber/source/joinedAt) and the empty-collection
+      case — no new test needed.
+- [x] 5.5 Ran `membershipfees` module tests via the test-runner skill: 616/616 passed.
 
 ## 6. Category B+C — `groupsFamily`, `groupsFree` modules (named item schemas already exist)
 
