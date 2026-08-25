@@ -391,10 +391,9 @@ openApiModule(
         // getEvent returns the payload; the _embedded.registrationDtoList block in the
         // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
         // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
-        // This is a hand-written override the generator cannot infer from spec structure alone
-        // (it stays a Shape 1 envelope by shape, but the target Java class carries no _embedded
-        // block) — schema name differs from the target Java class (EventDto), so this mapping stays.
-        "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
+        // EntityModelEventDtoWithRegistrations is a plain Shape 1 envelope (allOf[$ref EventDto,
+        // {_embedded, _links, _templates}]), so KlabisSpringCodegen already unwraps it to the
+        // EventDto $ref structurally — no mappings entry needed here.
         // BulkSyncResult/BulkImportResult are application-layer types, not restapi DTOs — the
         // envelope and application/json-sibling schema names never match the target package, so both
         // stay mapped (otherwise springdoc's @Schema(implementation = ...) resolves against pkg,
