@@ -114,10 +114,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
         // schema, not on a {$ref: "..."} pointer — the response's content almost always names the
         // envelope by $ref (e.g. getFeeGroup's sole application/prs.hal-forms+json entry), so the
         // detector would see an empty wrapper object and never find the allOf it is looking for.
-        Schema<?> resolvedForDetection = HalEnvelopeDetector.resolveRef(responseSchema, schemas);
-        Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
-            ? Optional.empty()
-            : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
+        Optional<EnvelopeUnwrap> unwrap = detectUnwrap(responseSchema, schemas);
 
         ApiResponse resolved = unwrap
             .map(u -> withSchema(methodResponse, unwrappedResponseSchema(u)))
@@ -161,10 +158,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
         for (Map.Entry<String, MediaType> entry : content.entrySet()) {
             MediaType mediaType = entry.getValue();
             Schema<?> schema = mediaType == null ? null : mediaType.getSchema();
-            Schema<?> resolvedForDetection = HalEnvelopeDetector.resolveRef(schema, schemas);
-            Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
-                ? Optional.empty()
-                : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
+            Optional<EnvelopeUnwrap> unwrap = detectUnwrap(schema, schemas);
 
             MediaType rewritten = unwrap
                 .map(u -> new MediaType().schema(unwrappedResponseSchema(u)))
@@ -253,6 +247,16 @@ public class KlabisSpringCodegen extends SpringCodegen {
         }
         MediaType first = content.values().iterator().next();
         return first == null ? null : first.getSchema();
+    }
+
+    /**
+     * Resolves {@code schema} through any {@code $ref} and runs {@link HalEnvelopeDetector} on the
+     * result — the detector inspects allOf/properties structure, which lives on the resolved
+     * schema, not on a {@code {$ref: "..."}} pointer.
+     */
+    private static Optional<EnvelopeUnwrap> detectUnwrap(Schema<?> schema, Map<String, Schema> schemas) {
+        Schema<?> resolved = HalEnvelopeDetector.resolveRef(schema, schemas);
+        return resolved == null ? Optional.empty() : HalEnvelopeDetector.detect(resolved, schemas);
     }
 
     /**

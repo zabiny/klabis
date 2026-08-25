@@ -1,7 +1,5 @@
 package com.klabis.openapi.codegen;
 
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
@@ -32,13 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class KlabisSpringCodegenGetContentTest {
 
     private static KlabisSpringCodegen newCodegen(Map<String, Schema> schemas) {
-        OpenAPI openAPI = new OpenAPI();
-        Components components = new Components();
-        schemas.forEach(components::addSchemas);
-        openAPI.setComponents(components);
-
         KlabisSpringCodegen codegen = new KlabisSpringCodegen();
-        codegen.setOpenAPI(openAPI);
+        codegen.setOpenAPI(HalEnvelopeFixtures.openApiWithSchemas(schemas));
         codegen.setModelPackage("com.klabis.events.infrastructure.restapi");
         return codegen;
     }
