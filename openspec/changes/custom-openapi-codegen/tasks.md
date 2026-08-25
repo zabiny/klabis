@@ -47,24 +47,27 @@
 
 ## 4. `handleMethodResponse()` override
 
-- [ ] 4.1 Write failing test at the `CodegenOperation` level (using a minimal in-memory OpenAPI
+- [x] 4.1 Write failing test at the `CodegenOperation` level (using a minimal in-memory OpenAPI
       `Operation`/`ApiResponse` fixture, not a full spec file): an operation whose response
       schema matches Shape 1 produces `op.returnType`/`op.returnBaseType` equal to the unwrapped
       payload type, with no explicit `schemaMappings` entry
-- [ ] 4.2 Same for Shape 2 paginated → `op.returnContainer == "Page"`,
-      `op.returnType == "org.springframework.data.domain.Page<X>"`, `op.isArray == false`
-- [ ] 4.3 Same for Shape 2 non-paginated → `op.returnContainer == "List"` (stock behavior,
-      confirms the no-envelope-detected path still delegates correctly)
-- [ ] 4.4 Write failing test confirming `application/json`-first content selection: an operation
-      with both `application/json` and `application/prs.hal-forms+json` content on the same
-      response resolves return type from the `application/json` schema, while `op.produces`
-      still lists both media types
-- [ ] 4.5 Implement `handleMethodResponse()` override (delegating to `super` after schema
+- [x] 4.2 Same for Shape 2 on an `x-spring-paginated: true` operation → `op.returnContainer ==
+      "Page"`, `op.returnType == "org.springframework.data.domain.Page<X>"`, `op.isArray == false`
+- [x] 4.3 Same for Shape 2 without `x-spring-paginated` → `op.isArray == true` and a non-null
+      `op.returnContainer` (stock behavior; the value is `"array"` rather than `"list"` because
+      the unwrap re-wraps the payload in a synthesized `type: array` schema — both take the same
+      `DefaultCodegen` branch, and `returnContainer` reaches no springdoc-rendered output)
+- [x] 4.4 Write failing test confirming pagination is independent of the response representation
+      (design.md Decision 2): an `x-spring-paginated: true` operation whose response declares
+      ONLY `application/json` (no HAL envelope to detect) still produces `Page<X>`, and an
+      operation declaring both media types resolves the payload from the first content entry
+      while `op.produces` still lists both
+- [x] 4.5 Implement `handleMethodResponse()` override (delegating to `super` after schema
       rewrite, per design.md Decision 1) to make 4.1–4.4 pass
-- [ ] 4.6 Write failing test confirming a response schema matching neither shape (e.g. a bare
+- [x] 4.6 Write failing test confirming a response schema matching neither shape (e.g. a bare
       `RegisterMemberRequest`-style request-response, or an explicitly `mappings`-overridden
       schema) is untouched and produces the same `op.returnType` as stock `SpringCodegen` would
-- [ ] 4.7 Confirm 4.6 passes without additional code (should already hold from the `super`
+- [x] 4.7 Confirm 4.6 passes without additional code (should already hold from the `super`
       delegation fallback in 4.5); if not, fix the fallback path
 
 ## 5. Tag-scoped model/API discovery

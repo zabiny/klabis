@@ -18,7 +18,6 @@ import java.util.Set;
 public final class HalEnvelopeDetector {
 
     private static final Set<String> ENTITY_MODEL_PROPERTIES = Set.of("_links", "_templates", "_embedded");
-    private static final Set<String> PAGE_METADATA_PROPERTIES = Set.of("size", "totalElements", "totalPages", "number");
 
     private HalEnvelopeDetector() {
     }
@@ -58,7 +57,7 @@ public final class HalEnvelopeDetector {
         if (resolveRef(first, schemas) == null) {
             return Optional.empty();
         }
-        return Optional.of(new EnvelopeUnwrap(first, false, false));
+        return Optional.of(new EnvelopeUnwrap(first, false));
     }
 
     /**
@@ -81,10 +80,11 @@ public final class HalEnvelopeDetector {
      * Shape 2 — collection ({@code PagedModel<T>}/{@code CollectionModel<T>}): a plain object
      * schema with exactly one {@code _embedded}-shaped property (an inline object holding exactly
      * one array-of-{@code $ref} property — the {@code _embedded.<name>} block, key name not
-     * matched) plus a property literally named {@code _links}. A property shaped like
-     * {@code PageMetadata} (object with {@code size}/{@code totalElements}/{@code totalPages}/
-     * {@code number}, key name not matched, {@code $ref} or inline) upgrades the result from
-     * {@code List<T>} to {@code Page<T>}.
+     * matched) plus a property literally named {@code _links}. A {@code page} property (present on
+     * {@code PagedModel*} schemas, absent on {@code CollectionModel*}) is deliberately NOT
+     * inspected — see design.md Decision 2: whether the container is {@code Page<T>} or
+     * {@code List<T>} is decided by the caller from the operation's {@code x-spring-paginated}
+     * extension, not from this envelope's own shape.
      */
     private static Optional<EnvelopeUnwrap> detectShape2(Schema<?> schema, Map<String, Schema> schemas) {
         if (schema.getAllOf() != null) {
@@ -98,17 +98,11 @@ public final class HalEnvelopeDetector {
         // The $ref schema itself (e.g. {$ref: "#/components/schemas/EntityModelMemberSummaryResponse"}),
         // kept unresolved for the eventual target — see detectShape1()'s comment on why.
         Schema<?> itemRef = null;
-        boolean paged = false;
         for (Schema<?> property : properties.values()) {
-            if (itemRef == null) {
-                Schema<?> candidate = asSingleArrayOfRefProperty(property);
-                if (candidate != null) {
-                    itemRef = candidate;
-                    continue;
-                }
-            }
-            if (isPageMetadataShaped(property, schemas)) {
-                paged = true;
+            Schema<?> candidate = asSingleArrayOfRefProperty(property);
+            if (candidate != null) {
+                itemRef = candidate;
+                break;
             }
         }
 
@@ -126,7 +120,7 @@ public final class HalEnvelopeDetector {
         Optional<EnvelopeUnwrap> nested = detectShape1(resolvedItem, schemas);
         Schema<?> target = nested.map(EnvelopeUnwrap::targetSchema).orElse(itemRef);
 
-        return Optional.of(new EnvelopeUnwrap(target, true, paged));
+        return Optional.of(new EnvelopeUnwrap(target, true));
     }
 
     /**
@@ -152,20 +146,6 @@ public final class HalEnvelopeDetector {
             return null;
         }
         return items;
-    }
-
-    private static boolean isPageMetadataShaped(Schema<?> candidate, Map<String, Schema> schemas) {
-        Schema<?> resolved = candidate != null && candidate.get$ref() != null
-            ? resolveRef(candidate, schemas)
-            : candidate;
-        if (resolved == null) {
-            return false;
-        }
-        Map<String, Schema> properties = resolved.getProperties();
-        if (properties == null) {
-            return false;
-        }
-        return properties.keySet().containsAll(PAGE_METADATA_PROPERTIES);
     }
 
     private static Schema<?> resolveRef(Schema<?> refSchema, Map<String, Schema> schemas) {

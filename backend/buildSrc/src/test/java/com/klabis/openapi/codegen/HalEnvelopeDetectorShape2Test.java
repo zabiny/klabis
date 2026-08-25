@@ -12,21 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Shape 2 (collection, {@code PagedModel<T>}/{@code CollectionModel<T>}) detection — see
- * design.md Decision 3.
+ * design.md Decision 3. Whether the eventual container is {@code Page<T>} or {@code List<T>} is
+ * NOT this detector's concern (design.md Decision 2) — these tests only assert
+ * {@code isCollection}, never anything about pagination.
  */
 class HalEnvelopeDetectorShape2Test {
 
-    private static Schema<?> pageMetadataSchema() {
-        // PageMetadata: object with size, totalElements, totalPages, number (all required, integer/int64)
-        return new Schema<>().type("object")
-            .addProperty("size", new Schema<>().type("integer").format("int64"))
-            .addProperty("totalElements", new Schema<>().type("integer").format("int64"))
-            .addProperty("totalPages", new Schema<>().type("integer"))
-            .addProperty("number", new Schema<>().type("integer"))
-            .required(List.of("size", "totalElements", "totalPages", "number"));
-    }
-
-    private static Schema<?> entityModelMemberSummaryResponse(Schema<?> memberSummaryResponse) {
+    private static Schema<?> entityModelMemberSummaryResponse() {
         // EntityModelMemberSummaryResponse: allOf [$ref MemberSummaryResponse, {_links}] — itself Shape 1.
         return new Schema<>().allOf(List.of(
             new Schema<>().$ref("#/components/schemas/MemberSummaryResponse"),
@@ -35,16 +27,16 @@ class HalEnvelopeDetectorShape2Test {
     }
 
     @Test
-    void unwrapsPagedCollectionToInnerPayloadViaNestedShape1_refPageMetadata() {
+    void unwrapsCollectionToInnerPayloadViaNestedShape1_withPageProperty() {
         // PagedModelEntityModelMemberSummaryResponse: _embedded.memberSummaryResponseList (array of
         // EntityModelMemberSummaryResponse, itself Shape 1) + _links + page ($ref PageMetadata).
+        // The "page" property is present here on purpose but must have NO effect on the result —
+        // it is deliberately ignored (see design.md Decision 2).
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> entityModelMemberSummaryResponse = entityModelMemberSummaryResponse(memberSummaryResponse);
 
         Map<String, Schema> schemas = new HashMap<>();
         schemas.put("MemberSummaryResponse", memberSummaryResponse);
-        schemas.put("EntityModelMemberSummaryResponse", entityModelMemberSummaryResponse);
-        schemas.put("PageMetadata", pageMetadataSchema());
+        schemas.put("EntityModelMemberSummaryResponse", entityModelMemberSummaryResponse());
 
         Schema<?> embedded = new Schema<>().type("object")
             .addProperty("memberSummaryResponseList", new Schema<>().type("array")
@@ -59,42 +51,15 @@ class HalEnvelopeDetectorShape2Test {
 
         assertThat(result).isPresent();
         assertThat(result.get().isCollection()).isTrue();
-        assertThat(result.get().isPaged()).isTrue();
         // Nested unwrap: the array item is itself a Shape 1 envelope, so the target is the inner
         // payload's $ref (MemberSummaryResponse), not the intermediate envelope's.
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/MemberSummaryResponse");
     }
 
     @Test
-    void unwrapsPagedCollection_inlinePageMetadata() {
-        // Same as above, but "page" is an inline object with PageMetadata's shape rather than a $ref —
-        // both spellings must be detected identically.
-        Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
-        Schema<?> entityModelMemberSummaryResponse = entityModelMemberSummaryResponse(memberSummaryResponse);
-
-        Map<String, Schema> schemas = new HashMap<>();
-        schemas.put("MemberSummaryResponse", memberSummaryResponse);
-        schemas.put("EntityModelMemberSummaryResponse", entityModelMemberSummaryResponse);
-
-        Schema<?> embedded = new Schema<>().type("object")
-            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
-                .items(new Schema<>().$ref("#/components/schemas/EntityModelMemberSummaryResponse")));
-
-        Schema<?> envelope = new Schema<>().type("object")
-            .addProperty("_embedded", embedded)
-            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
-            .addProperty("page", pageMetadataSchema());
-
-        Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
-
-        assertThat(result).isPresent();
-        assertThat(result.get().isPaged()).isTrue();
-        assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/MemberSummaryResponse");
-    }
-
-    @Test
-    void unwrapsNonPagedCollectionToList() {
-        // CollectionModelEntityModelFamilyGroupSummaryResponse: same shape, but no "page" property.
+    void unwrapsCollectionToList_withoutPageProperty() {
+        // CollectionModelEntityModelFamilyGroupSummaryResponse: same shape, but no "page" property —
+        // must resolve identically to the "page" present case above (isCollection=true, same payload).
         Schema<?> familyGroupSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
         Schema<?> entityModelWrapper = new Schema<>().allOf(List.of(
             new Schema<>().$ref("#/components/schemas/FamilyGroupSummaryResponse"),
@@ -117,7 +82,6 @@ class HalEnvelopeDetectorShape2Test {
 
         assertThat(result).isPresent();
         assertThat(result.get().isCollection()).isTrue();
-        assertThat(result.get().isPaged()).isFalse();
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/FamilyGroupSummaryResponse");
     }
 
@@ -144,7 +108,6 @@ class HalEnvelopeDetectorShape2Test {
 
         assertThat(result).isPresent();
         assertThat(result.get().isCollection()).isTrue();
-        assertThat(result.get().isPaged()).isFalse();
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/AccommodationListItemDto");
     }
 

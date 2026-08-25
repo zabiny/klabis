@@ -91,18 +91,18 @@ public class KlabisSpringCodegen extends SpringCodegen {
         Schema<?> responseSchema = resolveResponseSchema(methodResponse); // see Decision 2
         Optional<EnvelopeUnwrap> unwrap = HalEnvelopeDetector.detect(responseSchema, schemas);
 
-        if (unwrap.isEmpty()) {
-            super.handleMethodResponse(operation, schemas, op, methodResponse, schemaMappings);
-            return;
-        }
+        // When an envelope is detected, synthesize an ApiResponse whose schema is the unwrapped
+        // payload; otherwise pass the response through untouched. Either way the stock logic
+        // computes op.returnType/returnContainer/imports — no type resolution is duplicated here.
+        ApiResponse resolved = unwrap
+                .map(u -> withSchema(methodResponse, u.targetSchema()))
+                .orElse(methodResponse);
+        super.handleMethodResponse(operation, schemas, op, resolved, schemaMappings);
 
-        // Synthesize an ApiResponse whose schema is the already-unwrapped type, then delegate to
-        // the stock resolution logic so op.returnType/returnContainer/imports/etc. are all
-        // computed the normal way — no duplicated type-resolution logic here.
-        ApiResponse rewritten = withSchema(methodResponse, unwrap.get().targetSchema());
-        super.handleMethodResponse(operation, schemas, op, rewritten, schemaMappings);
-
-        if (unwrap.get().isPaged()) {
+        // Pagination comes from the operation, not from the response representation — see
+        // Decision 2. Applied whether or not an envelope was detected, so an operation serving
+        // only application/json still gets Page<T>.
+        if (isPaginated(operation)) {
             op.returnContainer = "Page";
             op.returnType = "org.springframework.data.domain.Page<" + op.returnBaseType + ">";
             op.isArray = false;
@@ -132,18 +132,58 @@ the input schema reuses all of the stock generator's existing type-resolution ma
   Gradle-side artifact that must be regenerated and reviewed on every spec change, which is the
   exact friction this proposal removes.
 
-### Decision 2: `application/json`-first content resolution, replacing `--strip-hal`
+### Decision 2: pagination from `x-spring-paginated`, payload from schema structure
 
-`resolveResponseSchema()` picks the `application/json` content entry when present, falling back
-to the first declared content type otherwise (mirroring `bundle.mjs`'s existing sort order,
-where `application/json` already sorts first when both exist — see
-`docs/openapi/spec/events.yaml`'s comment on `getEvent` for the precedent this relies on).
-Critically, this selection is used *only* for return-type resolution; the full response
-`content` map (including `application/prs.hal-forms+json`) is still passed to the `produces`
-clause computation, which is unrelated code (`api.mustache`'s `{{#produces}}` loop reading
-`op.produces`, unaffected by this change). This is what lets `--strip-hal` disappear entirely:
-today's blanking-based workaround and this structural selection produce the same effective
-content-type set for `produces`, but the structural version needs no second document.
+Return-type resolution splits into two independent questions, resolved from two different
+signals:
+
+1. **Payload type** — resolved from the response schema. Content selection stays stock (the
+   first content entry, per `ModelUtils.getSchemaFromContent`; the bundler already sorts
+   `application/json` first wherever it exists), with `HalEnvelopeDetector` unwrapping the
+   selected schema when it is a HAL envelope. Where a response declares both content types, the
+   two agree on the payload type in all 37 cases in the spec; where only HAL is declared (68
+   responses), the detector unwraps it. This is what lets `--strip-hal` disappear: today's
+   blanking-based workaround and this structural unwrap select the same payload, but the
+   structural version needs no second document.
+2. **Container** — `Page<T>` if and only if the operation declares `x-spring-paginated: true`;
+   otherwise `List<T>` for an array/collection shape, or the bare payload type.
+
+**Why the container comes from the extension, not from the envelope's `page` property:**
+pagination is a property of the *operation*, not of one of its response representations. Reading
+it off the HAL envelope would make `Page<T>` conditional on a HAL response existing, so an
+operation serving only `application/json` would generate `List<T>` and lose its pagination
+metadata. `x-spring-paginated` already drives the `Pageable` method parameter, so a single
+signal governs both halves of pagination and the two cannot drift apart.
+
+This reverses proposal.md's note that "the `page` property's presence is a more direct signal
+than the operation-level `x-spring-paginated` extension." That holds only for HAL responses.
+The extension stays in its existing role and gains one more.
+
+Critically, content selection drives *only* return-type resolution; the full response `content`
+map (including `application/prs.hal-forms+json`) is still passed to the `produces` clause
+computation, which is unrelated code (`api.mustache`'s `{{#produces}}` loop reading
+`op.produces`, unaffected by this change).
+
+**Known spec defect surfaced by this decision (out of scope here):** the `application/json`
+siblings of the three paginated operations — `MemberSummaryResponseList`, `EventSummaryDtoList`,
+`TransactionResourcePage` — declare a bare array, but `HalResponseBodyAdvice` deliberately does
+not wrap a `Page` for a non-HAL media type, so Jackson serializes the Spring `Page` object
+directly. Measured against the running application (`GET /api/members` with
+`Accept: application/json`, empty result):
+
+```json
+{"content":[],"empty":true,"first":true,"last":true,"number":0,"numberOfElements":0,
+ "pageable":"INSTANCE","size":0,"sort":{...},"totalElements":0,"totalPages":1}
+```
+
+That is `PageSerializationMode.DIRECT` (spring-data-commons 4.0.4, no explicit
+`@EnableSpringDataWebSupport` setting in the project), not the `VIA_DTO` `{content, page}` shape
+and not the bare array the spec declares. The spec therefore describes those three
+`application/json` responses incorrectly today. Fixing them changes the published wire contract
+— and `pageable: "INSTANCE"` suggests the honest fix is to settle the serialization mode first
+— so it belongs in its own spec-driven proposal, not in this refactor, which promises no
+behavior change. This decision is unaffected either way: the container comes from
+`x-spring-paginated`, so `Page<T>` is generated regardless of how the payload schema is spelled.
 
 ### Decision 3: Shape detection — `HalEnvelopeDetector`
 
@@ -175,19 +215,22 @@ schema.properties has exactly one property whose value is
   `type: object` with exactly one property that is `type: array, items: {$ref}`
   (this is the `_embedded.<pluralName>` property — key name is NOT matched, only shape), AND
 schema.properties contains `_links`
-  → unwrap to List<item $ref target>
-  → OR, if schema.properties also contains a property matching PageMetadata's shape
-    (object with `size`, `totalElements`, `totalPages`, `number` — the `page` property, key name
-    not matched, only shape) → unwrap to Page<item $ref target> instead
+  → unwrap to the item $ref target, flagged as a collection
 ```
 
+The detector reports only *what the payload is* and *that it is a collection*. Whether the
+container is `Page<T>` or `List<T>` is decided by the caller from `x-spring-paginated`
+(Decision 2), not by the detector.
+
 Matches `PagedModelEntityModelMemberSummaryResponse` (`_embedded.memberSummaryResponseList` +
-`_links` + `page` → `Page<MemberSummaryResponse>`) and every named `*ResponseList`/
-`CollectionModel*`/`PagedModel*` schema with this shape. The `page` property's presence
-supersedes the operation-level `x-spring-paginated` extension for *this* decision — that
-extension's existing role (adding the `Pageable` method parameter, stripping `page`/`size`/
-`sort` query params) is untouched, since it lives in `fromOperation()`'s parameter-handling path,
-not `handleMethodResponse()`.
+`_links` + `page` → payload `MemberSummaryResponse`, collection) and every named
+`CollectionModel*`/`PagedModel*` schema with this shape. A `page` property may be present or
+absent; the detector ignores it, because an operation's pagination is not a property of one of
+its response representations (see Decision 2).
+
+The detector composes with itself: when the array's item `$ref` points at a Shape 1 envelope
+(`EntityModelMemberSummaryResponse`), the payload is that envelope's own unwrap target
+(`MemberSummaryResponse`), not the intermediate envelope.
 
 **Matching by shape, not by name or `x-` extension, is deliberate:** it is the only approach
 that requires zero spec changes (no new extension to add across ~15 existing envelope schemas)
@@ -201,9 +244,11 @@ flowchart TD
     B -- yes --> C["Shape 1: unwrap to member[0] target"]
     B -- no --> D{"type: object with one\n_embedded.X: array[$ref] property\n+ _links?"}
     D -- no --> E["No envelope detected —\ndelegate to stock SpringCodegen"]
-    D -- yes --> F{"Also has a PageMetadata-shaped\nproperty (size/totalElements/\ntotalPages/number)?"}
-    F -- yes --> G["Shape 2a: unwrap to Page&lt;T&gt;"]
-    F -- no --> H["Shape 2b: unwrap to List&lt;T&gt;"]
+    D -- yes --> F["Shape 2: unwrap to item payload,\nflagged as collection"]
+    C --> I{"Operation declares\nx-spring-paginated: true?"}
+    F --> I
+    I -- yes --> G["returnType = Page&lt;T&gt;"]
+    I -- no --> H["returnType = List&lt;T&gt; (collection)\nor bare T (single)"]
 ```
 
 ### Decision 4: No `@Schema(implementation = Generic<X>.class)` is ever emitted

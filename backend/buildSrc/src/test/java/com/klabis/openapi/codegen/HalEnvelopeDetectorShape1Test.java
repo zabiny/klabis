@@ -33,7 +33,6 @@ class HalEnvelopeDetectorShape1Test {
         // targetSchema must stay an unresolved $ref — handleMethodResponse() needs the schema
         // *name* (via the stock generator's own $ref resolution) to map onto the Java class.
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/EventDto");
-        assertThat(result.get().isPaged()).isFalse();
         assertThat(result.get().isCollection()).isFalse();
     }
 
