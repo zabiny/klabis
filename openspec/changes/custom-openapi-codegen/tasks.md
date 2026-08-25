@@ -15,34 +15,34 @@
 
 ## 2. `HalEnvelopeDetector` — Shape 1 (single entity)
 
-- [ ] 2.1 Write failing unit test: given a `Schema` tree equivalent to
+- [x] 2.1 Write failing unit test: given a `Schema` tree equivalent to
       `EntityModelEventDtoWithRegistrations` (`allOf: [$ref EventDto, {_links, _templates,
       _embedded}]`), `HalEnvelopeDetector.detect(...)` returns an unwrap result targeting
       `EventDto`
-- [ ] 2.2 Write failing unit test: given `EntityModelPaymentRuleResponse` (`allOf: [$ref
+- [x] 2.2 Write failing unit test: given `EntityModelPaymentRuleResponse` (`allOf: [$ref
       PaymentRuleResponse, {_links, _templates}]`, no `_embedded`), detector unwraps to
       `PaymentRuleResponse`
-- [ ] 2.3 Write failing negative unit test: an `allOf` schema whose second member has a property
+- [x] 2.3 Write failing negative unit test: an `allOf` schema whose second member has a property
       *not* in `{_links, _templates, _embedded}` (e.g. a genuine multi-parent composition) is
       NOT detected as Shape 1
-- [ ] 2.4 Implement Shape 1 detection to make 2.1–2.3 pass
-- [ ] 2.5 Refactor: extract shared "is this an inline object with properties ⊆ given set" helper
+- [x] 2.4 Implement Shape 1 detection to make 2.1–2.3 pass
+- [x] 2.5 Refactor: extract shared "is this an inline object with properties ⊆ given set" helper
       for reuse by Shape 2
 
 ## 3. `HalEnvelopeDetector` — Shape 2 (collection)
 
-- [ ] 3.1 Write failing unit test: given `PagedModelEntityModelMemberSummaryResponse`'s shape
+- [x] 3.1 Write failing unit test: given `PagedModelEntityModelMemberSummaryResponse`'s shape
       (`type: object`, `_embedded.memberSummaryResponseList: array[$ref
       EntityModelMemberSummaryResponse]`, `_links`, `page: PageMetadata`), detector unwraps to
       `Page<T>` where `T` is the *inner* payload (resolving through the nested
       `EntityModelMemberSummaryResponse` via Shape 1, not left as the envelope type)
-- [ ] 3.2 Write failing unit test: same shape without a `page`-shaped property → detector
+- [x] 3.2 Write failing unit test: same shape without a `page`-shaped property → detector
       unwraps to `List<T>` instead of `Page<T>`
-- [ ] 3.3 Write failing negative unit test: a plain `object` schema with an array property and
+- [x] 3.3 Write failing negative unit test: a plain `object` schema with an array property and
       `_links` but where the array item is NOT a `$ref` (inline object) — NOT detected as Shape 2
-- [ ] 3.4 Write failing negative unit test: a schema with exactly one property that happens to be
+- [x] 3.4 Write failing negative unit test: a schema with exactly one property that happens to be
       named `_embedded` but is not itself `{single array-of-$ref property}`-shaped — NOT detected
-- [ ] 3.5 Implement Shape 2 detection (including the nested-unwrap composition with Shape 1 from
+- [x] 3.5 Implement Shape 2 detection (including the nested-unwrap composition with Shape 1 from
       3.1) to make 3.1–3.4 pass
 
 ## 4. `handleMethodResponse()` override
