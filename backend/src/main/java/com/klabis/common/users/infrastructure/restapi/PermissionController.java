@@ -46,9 +46,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class PermissionController implements PermissionsApi {
 
     private final PermissionService permissionService;
+    private final AuthorityMapper authorityMapper;
 
-    public PermissionController(PermissionService permissionService) {
+    public PermissionController(PermissionService permissionService, AuthorityMapper authorityMapper) {
         this.permissionService = permissionService;
+        this.authorityMapper = authorityMapper;
     }
 
     /**
@@ -82,7 +84,7 @@ public class PermissionController implements PermissionsApi {
     @Override
     public ResponseEntity<Void> updatePermissions(UUID id, UpdatePermissionsRequest request) {
 
-        permissionService.updateUserPermissions(new UserId(id), request.authorities());
+        permissionService.updateUserPermissions(new UserId(id), authorityMapper.toDomainSet(request.authorities()));
 
         URI location = klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(id))
                 .map(link -> URI.create(link.toUri().toString()))

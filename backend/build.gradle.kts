@@ -356,32 +356,24 @@ openApiModule(
         "CreateEventCategoryRequest",
         // Enum schema — must be listed explicitly so the generator emits it (see the mapping comment
         // below for why it's no longer redirected onto the domain enum).
-        "EventStatus"
+        "EventStatus",
+        // BulkSyncResult/BulkImportResult are now generated as real restapi DTOs (decoupled from the
+        // application-layer com.klabis.events.application.BulkSyncResult/BulkImportResult) and
+        // bridged via BulkResultMapper (MapStruct). Their EntityModel* envelopes are plain Shape 1
+        // HAL envelopes (allOf[$ref, {_links}]), already unwrapped structurally by
+        // KlabisSpringCodegen — no mappings/models entry needed for those.
+        "BulkSyncResult",
+        "BulkImportResult",
+        "EventSyncEntry",
+        "EventImportEntry",
+        // Inline enum on EventSyncEntry.status/EventImportEntry.status, promoted to a named schema
+        // by RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent in the members module).
+        // Both properties share the identical [SUCCESS, FAILED] enum, so the generator deduplicates
+        // them into a single class named after the second occurrence, EventImportEntry_status —
+        // EventSyncEntry.status ends up typed as EventImportEntryStatus too.
+        "EventImportEntry_status"
     ),
-    mappings = mapOf(
-        // EventStatus used to be redirected here onto the hand-written domain enum
-        // com.klabis.events.domain.EventStatus. Now that model.mustache renders a real enumOuterClass
-        // for a top-level enum schema, the generator synthesizes its own DTO enum instead — see
-        // EventDto/EventSummaryDto/EventController for the explicit conversion to/from the domain enum.
-        // listEvents' PagedModelEntityModelEventSummaryDto (Shape 2 HAL envelope) and its
-        // application/json sibling EventSummaryDtoList (a named array schema) are now both resolved
-        // to Page<EventSummaryDto> by KlabisSpringCodegen from x-spring-paginated, with no mappings
-        // entry needed — see custom-openapi-codegen design.md Decision 2.
-        // getEvent returns the payload; the _embedded.registrationDtoList block in the
-        // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
-        // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
-        // EntityModelEventDtoWithRegistrations is a plain Shape 1 envelope (allOf[$ref EventDto,
-        // {_embedded, _links, _templates}]), so KlabisSpringCodegen already unwraps it to the
-        // EventDto $ref structurally — no mappings entry needed here.
-        // BulkSyncResult/BulkImportResult are application-layer types, not restapi DTOs — the
-        // envelope and application/json-sibling schema names never match the target package, so both
-        // stay mapped (otherwise springdoc's @Schema(implementation = ...) resolves against pkg,
-        // where no such class exists).
-        "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
-        "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
-        "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
-        "BulkImportResult" to "com.klabis.events.application.BulkImportResult"
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -483,7 +475,11 @@ openApiModule(
         "PasswordSetupResponse",
         "TokenRequestRequest",
         "TokenRequestResponse",
-        "UpdatePermissionsRequest"
+        "UpdatePermissionsRequest",
+        // Referenced only via $ref from UpdatePermissionsRequest.authorities; must be listed
+        // explicitly so the generator emits it now that it's no longer redirected onto the domain
+        // enum (see the mapping comment above and AuthorityMapper).
+        "Authority"
     ),
     mappings = mapOf(
         // PermissionsResponse is hand-written (not in `models`, so never regenerated). The
@@ -491,7 +487,11 @@ openApiModule(
         // name, which already matches the target Java class — so only this bare mapping is needed;
         // the envelope schema EntityModelPermissionsResponse never needs its own mapping.
         "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        "Authority" to "com.klabis.common.users.Authority",
+        // Authority is now generated as a real restapi DTO enum (decoupled from the domain
+        // com.klabis.common.users.Authority) and bridged via AuthorityMapper (MapStruct). The two
+        // enums' constant names line up 1:1, so the mapper is a trivial name-based conversion; the
+        // colon-separated wire format (MEMBERS:MANAGE) is a Jackson concern (@JsonValue/@JsonCreator
+        // on the generated enum), independent of the MapStruct mapping.
         // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
         // other migrated module: the generated interface returns the plain RootModel/DashboardModel
         // marker record, and the controller populates HalResponseContext.setDomain(...) with a

@@ -2,8 +2,6 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
-import com.klabis.events.application.BulkImportResult;
-import com.klabis.events.application.BulkSyncResult;
 import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
@@ -30,13 +28,16 @@ class OrisEventController implements OrisEventsApi {
     private final OrisEventImportPort orisEventImportPort;
     private final OrisEventBulkImportPort orisEventBulkImportPort;
     private final OrisBulkSyncPort orisBulkSyncPort;
+    private final BulkResultMapper bulkResultMapper;
 
     OrisEventController(OrisEventImportPort orisEventImportPort,
                         OrisEventBulkImportPort orisEventBulkImportPort,
-                        OrisBulkSyncPort orisBulkSyncPort) {
+                        OrisBulkSyncPort orisBulkSyncPort,
+                        BulkResultMapper bulkResultMapper) {
         this.orisEventImportPort = orisEventImportPort;
         this.orisEventBulkImportPort = orisEventBulkImportPort;
         this.orisBulkSyncPort = orisBulkSyncPort;
+        this.bulkResultMapper = bulkResultMapper;
     }
 
     @Override
@@ -60,15 +61,15 @@ class OrisEventController implements OrisEventsApi {
 
     @Override
     public ResponseEntity<BulkSyncResult> syncAllUpcomingFromOris() {
-        BulkSyncResult result = orisBulkSyncPort.syncAllUpcoming();
-        return ResponseEntity.ok(result);
+        var result = orisBulkSyncPort.syncAllUpcoming();
+        return ResponseEntity.ok(bulkResultMapper.toDto(result));
     }
 
     @Override
     public ResponseEntity<BulkImportResult> importEventsBatch(
             ImportBatchRequest request) {
 
-        BulkImportResult result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
-        return ResponseEntity.ok(result);
+        var result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
+        return ResponseEntity.ok(bulkResultMapper.toDto(result));
     }
 }
