@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.application.FinanceAccountLinkSupport;
-import com.klabis.members.MemberId;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,11 +41,7 @@ class RegistrationRecordTransactionLinkProcessor implements RepresentationModelP
         if (dto == null || dto.registeredMemberId() == null) {
             return model;
         }
-        MemberId memberId = dto.registeredMemberId();
-        UUID memberUuid = memberId.uuid();
-        if (memberUuid == null) {
-            return model;
-        }
+        UUID memberUuid = dto.registeredMemberId();
         financeAccountLinkSupport.accountLink(memberUuid)
                 .map(link -> link.withRel("recordTransaction"))
                 .ifPresent(model::add);

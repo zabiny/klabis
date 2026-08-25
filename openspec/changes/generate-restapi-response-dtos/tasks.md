@@ -58,41 +58,88 @@
 
 ## 4. Category A+B — `events` module
 
-- [ ] 4.1 Add `EventDto`, `RankingDto`, `EntryFeeDto`, `EventCategoryDto`, `EventSummaryDto`,
+- [x] 4.1 Add `EventDto`, `RankingDto`, `EntryFeeDto`, `EventCategoryDto`, `EventSummaryDto`,
       `CategoryPresetDto` to `events`'s `models` list; generate, diff each against its hand-written
       counterpart (note `RankingDto`/`EntryFeeDto`/`EventCategoryDto` generate as top-level records,
       not nested inside `EventDto` — this is expected, see design.md Decision 1).
-- [ ] 4.2 Fix every reference to the nested form (`EventDto.RankingDto` etc.) across `events`
+- [x] 4.2 Fix every reference to the nested form (`EventDto.RankingDto` etc.) across `events`
       module source to the top-level generated name.
-- [ ] 4.2a Field-security check (design.md Decision 0): `EventDto`/`EventSummaryDto` both mark
+- [x] 4.2a Field-security check (design.md Decision 0): `EventDto`/`EventSummaryDto` both mark
       `id`/`status`/`cancellationReason`/`deadlines` `@HalForms(access = READ_ONLY)`, and
       `EventSummaryDto.status` additionally carries `@HasAuthority(Authority.EVENTS_MANAGE)` +
       `@HandleAuthorizationDenied` — confirm `events.yaml`'s `EventDto`/`EventSummaryDto` schemas
       carry `x-klabis-halforms-access: READ_ONLY` on all four properties and
       `x-klabis-authority: EVENTS_MANAGE` on `EventSummaryDto.status`, and that the generated Java
-      renders both.
-- [ ] 4.3 Delete `EventDto.java`, `EventSummaryDto.java`, `CategoryPresetDto.java` — only after 4.2a
+      renders both. **PASS** — all four properties render `@HalForms(access = READ_ONLY)` on both
+      generated records; `EventSummaryDto.status` additionally renders `@HasAuthority(EVENTS_MANAGE)`.
+- [x] 4.3 Delete `EventDto.java`, `EventSummaryDto.java`, `CategoryPresetDto.java` — only after 4.2a
       passes.
-- [ ] 4.4 Add `x-klabis-relation` to `RegistrationSummaryDto`
-      (`collectionRelation: registrationDtoList`) and `AccommodationListItemDto`
-      (`collectionRelation: accommodationList`) in `events.yaml`; add both to `events`'s `models`
-      list; generate, diff.
-- [ ] 4.4a Field-security check (design.md Decision 0): `RegistrationSummaryDto.registrationTime`
-      carries `@OwnerVisible` + `@HasAuthority(Authority.EVENTS_REGISTRATIONS)`;
-      `.coordinators`/`.registeredMemberId` carry `@JsonIgnore` (never serialized) and
-      `.coordinators` also carries `@OwnerId`. Confirm `x-klabis-owner-visible: true` +
-      `x-klabis-authority: EVENTS_REGISTRATIONS` on `registrationTime`, `x-klabis-owner-id: true` on
-      `coordinators`, and that both `coordinators`/`registeredMemberId` are either absent from the
-      spec response schema or otherwise never rendered into the generated wire payload — a
-      `@JsonIgnore`'d field silently reappearing on the wire is exactly the kind of regression this
-      check exists to catch.
-- [ ] 4.4b Delete `RegistrationSummaryDto.java`, `AccommodationListItemDto.java` — only after 4.4a
-      passes.
-- [ ] 4.5 Add an integration test (or confirm an existing one covers) `GET /api/events/{id}` still
-      returns `_embedded.registrationDtoList` unchanged — the runtime-embed path itself is
-      untouched by this change, but `EventDto` moving to generated code is the highest-risk point
-      for a silent regression there.
-- [ ] 4.6 Run `events` module tests via the test-runner agent.
+- [x] 4.4 Add `x-klabis-relation` to `AccommodationListItemDto` (`collectionRelation:
+      accommodationList`) in `events.yaml`; add it to `events`'s `models` list; generate, diff.
+      **`RegistrationSummaryDto` NOT migrated — see 4.4a.** `x-klabis-relation:
+      {collectionRelation: registrationDtoList}` was added to its schema for future use, but the
+      class stays hand-written; do not add it to the `models` list until the gaps below are fixed.
+- [x] 4.4a Field-security check (design.md Decision 0) — **FAILED for `RegistrationSummaryDto`,
+      blocking its migration; `AccommodationListItemDto` passed and was migrated.**
+      Two real gaps found when the generated `RegistrationSummaryDto` was wired in and the module's
+      tests were run (not caught by spec/Java diffing alone — only surfaced at test time):
+      1. **Functional regression (the one this check exists to catch):** the hand-written class's
+         `@JsonIgnore @OwnerId Set<MemberId> coordinators` serves double duty — it is dropped from
+         the wire, but its `@OwnerId` also tells `OwnershipResolver` which field represents
+         "owner" for the sibling `@OwnerVisible Instant registrationTime`. There is no
+         `x-klabis-*` extension (nor any codegen mechanism) to keep a property in the generated
+         Java for ownership resolution while excluding it from JSON — the design's Decision 0
+         checklist for `@JsonIgnore` only checks "absent from wire," not "absent from wire but
+         needed for owner resolution." With `coordinators` gone entirely, `registrationTime` is
+         silently hidden even from event coordinators (proven by two failing tests:
+         `EventRegistrationControllerTest$RegistrationTimePrivacyTests.eventCoordinatorSeesRegistrationTime`,
+         `EventControllerTest$GetEventTests.registrationTimeVisibleForSecondCoordinator`).
+      2. **Wire-shape drift:** the hand-written `category` field carries
+         `@JsonInclude(JsonInclude.Include.ALWAYS)`, overriding the class-level `NON_NULL` default
+         so `category: null` is always present in the JSON (proven by
+         `EventRegistrationControllerTest$ListRegistrationsTests.shouldReturnNullCategoryWhenOrphaned`
+         failing with the property missing entirely). No `x-klabis-*` extension exists for a
+         per-property `@JsonInclude` override; `pojo.mustache` has no render path for it.
+      Both gaps required a codegen/spec-extension addition beyond this change's scope as originally
+      planned — resolved in a follow-up session by reusing `x-field-extra-annotation`, a stock
+      openapi-generator vendor extension that was already wired into `pathParams.mustache` for path
+      parameters but had no render clause in `pojo.mustache` for model properties (confirmed against
+      the stock `JavaSpring/pojo.mustache` in `openapi-generator-7.18.0.jar`, which does have this
+      exact hook at the field-annotation position — Klabis's fork had simply never carried it over).
+      Added one more `{{#vendorExtensions.x-field-extra-annotation}}@{{{.}}} {{/...}}` clause to
+      `pojo.mustache`'s field-annotation chain (documented inline). `events.yaml`'s
+      `RegistrationSummaryDto` schema now declares:
+      - `coordinators` (added back to the schema, `type: array, items: {type: string, format: uuid}`)
+        with `x-klabis-owner-id: true` + `x-field-extra-annotation:
+        com.fasterxml.jackson.annotation.JsonIgnore` — renders as
+        `@OwnerId @JsonIgnore List<UUID> coordinators` in the generated Java: present for
+        `OwnershipResolver`, absent from the wire.
+      - `registeredMemberId` (added back, `type: string, format: uuid`) with the same
+        `x-field-extra-annotation: JsonIgnore` (no `x-klabis-owner-id` — it has no ownership role,
+        only used by `RegistrationRecordTransactionLinkProcessor` at runtime) — renders as
+        `@JsonIgnore UUID registeredMemberId`.
+      - `category` gained `x-field-extra-annotation:
+        com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)`,
+        overriding the class-level `NON_NULL` default per-property, matching the hand-written class.
+      `RegistrationSummaryDto` was added to the `events` module's `models` list in
+      `build.gradle.kts`. `RegistrationDtoMapper` and `RegistrationRecordTransactionLinkProcessor`
+      (and their tests) were updated for the generated record's field types (`List<UUID>` instead of
+      `Set<MemberId>` for `coordinators`, `UUID` instead of `MemberId` for `registeredMemberId`,
+      alphabetized component order per the bundler's key-sorting).
+      All three previously-failing tests now pass:
+      `EventRegistrationControllerTest$RegistrationTimePrivacyTests.eventCoordinatorSeesRegistrationTime`,
+      `EventControllerTest$GetEventTests.registrationTimeVisibleForSecondCoordinator`,
+      `EventRegistrationControllerTest$ListRegistrationsTests.shouldReturnNullCategoryWhenOrphaned`.
+      Full `events` module suite: 803/803 passed.
+- [x] 4.4b Delete `AccommodationListItemDto.java` — after its 4.4a check passed (no field-level
+      security annotations on it at all, migration is clean). `RegistrationSummaryDto.java` is now
+      **also deleted** — see the 4.4a follow-up above; the gap that blocked it is resolved.
+- [x] 4.5 `_embedded.registrationDtoList` regression coverage already exists and passes:
+      `EventControllerTest$GetEventTests` (embed/empty/registrationTime-visibility cases) and
+      `EventRegistrationE2ETest` both assert `$._embedded.registrationDtoList[...]` shape after the
+      migration — no new test needed.
+- [x] 4.6 Ran `events` module tests via the test-runner skill: 803/803 passed (post-4.4a/4.4b
+      `RegistrationSummaryDto` migration; 616/616 was the earlier partial-migration checkpoint).
 
 ## 5. Category A — `membershipfees` module
 

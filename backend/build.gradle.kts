@@ -384,7 +384,15 @@ openApiModule(
         // Both properties share the identical [SUCCESS, FAILED] enum, so the generator deduplicates
         // them into a single class named after the second occurrence, EventImportEntry_status —
         // EventSyncEntry.status ends up typed as EventImportEntryStatus too.
-        "EventImportEntry_status"
+        "EventImportEntry_status",
+        "EventDto",
+        "RankingDto",
+        "EntryFeeDto",
+        "EventCategoryDto",
+        "EventSummaryDto",
+        "CategoryPresetDto",
+        "AccommodationListItemDto",
+        "RegistrationSummaryDto"
     ),
     mappings = emptyMap()
 )

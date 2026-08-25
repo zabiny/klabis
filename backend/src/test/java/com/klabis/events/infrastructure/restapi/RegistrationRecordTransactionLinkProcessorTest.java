@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.finance.application.FinanceAccountLinkSupport;
-import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,7 +84,12 @@ class RegistrationRecordTransactionLinkProcessorTest {
     @Test
     @DisplayName("does not add recordTransaction link when registeredMemberId is null")
     void shouldNotAddLinkWhenRegisteredMemberIdIsNull() {
-        RegistrationSummaryDto dto = new RegistrationSummaryDto("John", "Doe", null, Instant.now(), Set.of(), null);
+        RegistrationSummaryDto dto = RegistrationSummaryDtoBuilder.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .registrationTime(Instant.now())
+                .coordinators(List.of())
+                .build();
         EntityModel<RegistrationSummaryDto> model = EntityModel.of(dto);
 
         mockSecurityContext(List.of(new SimpleGrantedAuthority("FINANCE:MANAGE")));
@@ -97,9 +100,14 @@ class RegistrationRecordTransactionLinkProcessorTest {
     }
 
     private EntityModel<RegistrationSummaryDto> modelFor(UUID memberUuid) {
-        RegistrationSummaryDto dto = new RegistrationSummaryDto(
-                "Jan", "Novák", new EventDto.EventCategoryDto(null, "M21", null), Instant.now(), Set.of(), new MemberId(memberUuid)
-        );
+        RegistrationSummaryDto dto = RegistrationSummaryDtoBuilder.builder()
+                .firstName("Jan")
+                .lastName("Novák")
+                .category(new EventCategoryDto(null, null, "M21"))
+                .registrationTime(Instant.now())
+                .coordinators(List.of())
+                .registeredMemberId(memberUuid)
+                .build();
         return EntityModel.of(dto);
     }
 
