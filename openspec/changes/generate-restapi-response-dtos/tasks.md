@@ -1,31 +1,31 @@
 ## 1. Spike: property-level unwrap hook (blocks Phase 6 only)
 
-- [ ] 1.1 Read `openapi-generator-7.18.0-sources.jar` for `DefaultCodegen.fromProperty(...)` and
+- [x] 1.1 Read `openapi-generator-7.18.0-sources.jar` for `DefaultCodegen.fromProperty(...)` and
       `postProcessModelProperty(...)` — confirm call order, whether the property's `Schema` can be
       rewritten before `super`'s own type/import resolution runs, and whether it receives the
       `schemas` map needed to resolve a `$ref`.
-- [ ] 1.2 Build a throwaway fixture schema (array of `$ref` to `allOf[inline-payload, {_links}]`,
+- [x] 1.2 Build a throwaway fixture schema (array of `$ref` to `allOf[inline-payload, {_links}]`,
       mirroring `EntityModelTrainerResponse`) and a unit test proving the chosen hook rewrites it to
       `List<Payload>` with no `EntityModel` in the resolved type.
-- [ ] 1.3 Widen `HalEnvelopeDetector.detectShape1` to package-private (or extract its structural
+- [x] 1.3 Widen `HalEnvelopeDetector.detectShape1` to package-private (or extract its structural
       check into a method reusable from the new property-level path) so both call sites share one
       rule instead of duplicating it.
 
 ## 2. Category A — `calendar` module (smallest, proves the recipe)
 
-- [ ] 2.1 Add `CalendarItemDto`, `IcalTokenResponse` to the `calendar` module's `models` list in
+- [x] 2.1 Add `CalendarItemDto`, `IcalTokenResponse` to the `calendar` module's `models` list in
       `backend/build.gradle.kts`.
-- [ ] 2.2 Generate, diff the generated records against `CalendarItemDto.java` and the nested
+- [x] 2.2 Generate, diff the generated records against `CalendarItemDto.java` and the nested
       `IcalTokenResponse` in `IcalTokenController.java` (field names/types, `@HalForms` ↔
       `x-klabis-halforms-access` parity).
-- [ ] 2.2a Field-security check (design.md Decision 0): list every field-level annotation on both
+- [x] 2.2a Field-security check (design.md Decision 0): list every field-level annotation on both
       hand-written records (`@HalForms` on `CalendarItemDto.id`/`.eventId`; none on
       `IcalTokenResponse`), confirm each has a matching `x-klabis-*` extension in the generated
       spec/Java, confirm none is silently missing. Gate 2.3 on this passing.
-- [ ] 2.3 Delete both hand-written declarations; confirm `CalendarController`,
+- [x] 2.3 Delete both hand-written declarations; confirm `CalendarController`,
       `IcalTokenController`, and their postprocessors compile unchanged (same package, same simple
       name).
-- [ ] 2.4 Run `calendar` module's backend tests via the test-runner agent — no assertion changes
+- [x] 2.4 Run `calendar` module's backend tests via the test-runner agent — no assertion changes
       expected.
 
 ## 3. Category A — `common`, `finance`, `members` modules

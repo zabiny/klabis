@@ -380,10 +380,11 @@ openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
     apis = listOf("Calendar", "IcalToken", "IcalFeed"),
-    // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
     models = listOf(
         "CreateCalendarItemRequest",
-        "UpdateCalendarItemRequest"
+        "UpdateCalendarItemRequest",
+        "CalendarItemDto",
+        "IcalTokenResponse"
     ),
     mappings = emptyMap()
 )
