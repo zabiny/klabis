@@ -482,25 +482,6 @@ openApiModule(
         "Authority"
     ),
     mappings = mapOf(
-        // PermissionsResponse is hand-written (not in `models`, so never regenerated). The
-        // application/json sibling on getUserPermissions references it directly by its own schema
-        // name, which already matches the target Java class — so only this bare mapping is needed;
-        // the envelope schema EntityModelPermissionsResponse never needs its own mapping.
-        "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        // Authority is now generated as a real restapi DTO enum (decoupled from the domain
-        // com.klabis.common.users.Authority) and bridged via AuthorityMapper (MapStruct). The two
-        // enums' constant names line up 1:1, so the mapper is a trivial name-based conversion; the
-        // colon-separated wire format (MEMBERS:MANAGE) is a Jackson concern (@JsonValue/@JsonCreator
-        // on the generated enum), independent of the MapStruct mapping.
-        // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
-        // other migrated module: the generated interface returns the plain RootModel/DashboardModel
-        // marker record, and the controller populates HalResponseContext.setDomain(...) with a
-        // non-null placeholder so HalResponseBodyAdvice.wrapSingle() wraps it into
-        // EntityModelWithDomain<RootModel, String> (which extends EntityModel<RootModel>) and runs it
-        // through the postprocessor pipeline. The nine RepresentationModelProcessor<EntityModel<RootModel>>
-        // beans (plus the DashboardModel one) are typed on the CONTENT (EntityModel<RootModel>), not
-        // on the domain type parameter, so they still bind correctly. See RootController/
-        // DashboardController for the actual setDomain(...) call and value chosen.
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
         "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
     )
@@ -522,5 +503,5 @@ openApiModule(
     // everything" branch never triggers) while matching nothing, so only the interface
     // (OrisImportApi) is produced.
     models = listOf("_NoGeneratedModelsForOris"),
-    mappings = mapOf()
+    mappings = emptyMap()
 )
