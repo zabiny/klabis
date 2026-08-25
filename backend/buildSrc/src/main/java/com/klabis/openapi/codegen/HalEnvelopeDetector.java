@@ -1,6 +1,7 @@
 package com.klabis.openapi.codegen;
 
 import io.swagger.v3.oas.models.media.Schema;
+import org.openapitools.codegen.utils.ModelUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -155,7 +156,7 @@ public final class HalEnvelopeDetector {
             return null;
         }
         Schema<?> arrayProperty = innerProperties.values().iterator().next();
-        if (arrayProperty == null || !"array".equals(arrayProperty.getType())) {
+        if (arrayProperty == null || !ModelUtils.isArraySchema(arrayProperty)) {
             return null;
         }
         Schema<?> items = arrayProperty.getItems();

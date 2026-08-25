@@ -1,5 +1,6 @@
 package com.klabis.openapi.codegen;
 
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.junit.jupiter.api.Test;
 
@@ -142,6 +143,41 @@ class HalEnvelopeDetectorShape2Test {
         assertThat(result).isPresent();
         assertThat(result.get().isCollection()).isTrue();
         assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/EventTypeDto");
+    }
+
+    @Test
+    void unwrapsCollectionWhoseArrayPropertyUsesOpenApi31ListTypeForm() {
+        // OpenAPI 3.1 permits `type: [array]` (a Set<String>) instead of the scalar `type: "array"`
+        // string every other fixture in this file uses. Not emitted by the current spec bundle, but
+        // asSingleArrayOfRefProperty() must still recognize it — see proposal.md item 2.
+        Schema<?> familyGroupSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
+        Schema<?> entityModelWrapper = new Schema<>().allOf(List.of(
+            new Schema<>().$ref("#/components/schemas/FamilyGroupSummaryResponse"),
+            new Schema<>().type("object").addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
+        ));
+
+        Map<String, Schema> schemas = new HashMap<>();
+        schemas.put("FamilyGroupSummaryResponse", familyGroupSummaryResponse);
+        schemas.put("EntityModelFamilyGroupSummaryResponse", entityModelWrapper);
+
+        // JsonSchema (OpenAPI 3.1 model) is the only Schema subtype ModelUtils.getType() reads
+        // getTypes() from — a plain Schema with setTypes() called on it is not recognized as 3.1.
+        JsonSchema arrayProperty = new JsonSchema();
+        arrayProperty.setTypes(java.util.Set.of("array"));
+        arrayProperty.setItems(new Schema<>().$ref("#/components/schemas/EntityModelFamilyGroupSummaryResponse"));
+
+        Schema<?> embedded = new Schema<>().type("object")
+            .addProperty("familyGroupSummaryResponseList", arrayProperty);
+
+        Schema<?> envelope = new Schema<>().type("object")
+            .addProperty("_embedded", embedded)
+            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+
+        Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().isCollection()).isTrue();
+        assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/FamilyGroupSummaryResponse");
     }
 
     @Test
