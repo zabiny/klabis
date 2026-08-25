@@ -1,14 +1,14 @@
 ## 1. Codegen module scaffolding
 
-- [ ] 1.1 Create `backend/buildSrc/` (if not already present) with a Gradle Java/Kotlin source
+- [x] 1.1 Create `backend/buildSrc/` (if not already present) with a Gradle Java/Kotlin source
       set, add `openapi-generator` as a `compileOnly`/`implementation` dependency at the version
       pinned in `backend/build.gradle.kts` (7.18.0)
-- [ ] 1.2 Add empty `KlabisSpringCodegen extends SpringCodegen` class (package
+- [x] 1.2 Add empty `KlabisSpringCodegen extends SpringCodegen` class (package
       `com.klabis.openapi.codegen` or similar under `buildSrc/src/main/java`), overriding only
       `getName()` to return `"klabis-spring"`
-- [ ] 1.3 Register it via `buildSrc/src/main/resources/META-INF/services/
+- [x] 1.3 Register it via `buildSrc/src/main/resources/META-INF/services/
       org.openapitools.codegen.CodegenConfig`
-- [ ] 1.4 Verify `generatorName.set("klabis-spring")` is resolvable from
+- [x] 1.4 Verify `generatorName.set("klabis-spring")` is resolvable from
       `backend/build.gradle.kts` by pointing one *unused* trial `openApiModule(...)`-like
       `GenerateTask` at it and confirming it runs (produces stock-equivalent output, since no
       overrides exist yet) — remove the trial task once confirmed
