@@ -44,11 +44,11 @@ schema to its real payload type on its own.
   `produces` clause, remove the `--strip-hal` flag, `stripHalForCodegen()` in
   `tools/openapi-bundle/lib/stripHal.mjs`, and the separate `bundleSpecForCodegen` Gradle task —
   generate directly from the same `docs/openapi/klabis-full.json` the frontend already consumes.
-- Replace each module's explicit `models`/`apis` whitelist with tag-scoped auto-discovery: given
-  a module's `apis` tag list, generate every schema reachable from those tagged operations,
-  removing the need to add each new request/response DTO by name. (The `apis` tag list itself
-  stays — a module boundary still has to name which tags belong to it — but no separate `models`
-  enumeration is needed once schemas are discovered by reachability.)
+- ~~Replace each module's explicit `models`/`apis` whitelist with tag-scoped auto-discovery.~~
+  **Dropped during implementation — see design.md Decision 5.** Model selection is decided by
+  `DefaultGenerator.modelKeys()` (private), not by the `CodegenConfig` this change subclasses, so
+  there is no override point; reaching it would mean replacing the Gradle plugin's generator task
+  outright. Per-module `models` lists stay as they are today.
 - Keep explicit `mappings` **only** for genuine hand-written Java DTO overrides that are not
   inferable from spec structure: nested classes (e.g. `PaymentRuleResponse` →
   `MembershipFeeTierResponse.PaymentRuleResponse`), domain enum redirection (e.g. `EventStatus`
@@ -105,9 +105,11 @@ beyond that is a regression, not an intended outcome.
 - **`tools/openapi-bundle`:** removes `--strip-hal` CLI flag, `stripHalForCodegen()` in
   `lib/stripHal.mjs` (and its test file), and the `bundleSpecForCodegen` Gradle task; backend
   codegen input becomes `docs/openapi/klabis-full.json` directly.
-- **Developer workflow:** adding a new endpoint/DTO to an existing module's `.yaml` file and
-  running `./gradlew openapiBundle` + a build is sufficient — no `build.gradle.kts` edit needed
-  unless the new schema needs a hand-written-override mapping.
+- **Developer workflow:** adding a new endpoint/DTO to an existing module still requires listing
+  its schemas in that module's `models` (the auto-discovery goal was dropped, above). What does
+  go away is the envelope bookkeeping: a HAL response no longer needs a `schemaMappings` /
+  `extraImportMappings` pair to unwrap it, so a new paginated or entity endpoint costs one
+  `models` entry per new schema instead of a mapping pair plus an import mapping.
 - **No impact** on `frontend/`, on any REST endpoint's wire contract, or on
   `docs/openapi/klabis-full.json`'s own content (still produced by the existing `bundle.mjs`
   unchanged).

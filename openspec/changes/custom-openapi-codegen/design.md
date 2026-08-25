@@ -44,8 +44,10 @@ adjusting the result.
 - Resolve HAL envelope schemas (`EntityModel<T>`, `PagedModel<T>`/`CollectionModel<T>`) to their
   real payload/`Page<T>`/`List<T>` return type by inspecting schema *structure*, with no
   per-envelope `mappings` entry and no new `x-klabis-*` spec extension.
-- Discover generated models/APIs by tag reachability instead of explicit `models` whitelists, so
-  a new request/response DTO on an already-covered tag needs no `build.gradle.kts` edit.
+- ~~Discover generated models/APIs by tag reachability instead of explicit `models` whitelists, so
+  a new request/response DTO on an already-covered tag needs no `build.gradle.kts` edit.~~
+  **Dropped — see Decision 5.** Adding a new endpoint to an existing module still needs its
+  schemas listed in that module's `models`; everything else in this goal list holds.
 - Emit only `@Schema` annotations that are legal Java, eliminating the need for any post-process
   patch.
 - Generate directly from `docs/openapi/klabis-full.json` (the same bundle the frontend consumes)
@@ -262,15 +264,35 @@ populates from `ModelUtils.getSchemaItems(...)` for a plain array response today
 change is needed. The illegal generic class-literal never exists in the first place, and the
 `doLast` regex patch in `build.gradle.kts` is deleted outright rather than replaced.
 
-### Decision 5: Tag-scoped model discovery replaces `models` whitelists
+### Decision 5: Tag-scoped model discovery — WITHDRAWN
 
-`KlabisSpringCodegen` overrides model/schema discovery to include every schema transitively
-reachable (via `$ref`, including through `allOf`/`oneOf`/array `items`) from the operations whose
-tags are in the module's `apis` list — the same list already required today, just no longer
-paired with a separate `models` enumeration. A schema explicitly consumed by `mappings` (a
-hand-written override) is excluded from generation, same as today. The `oris` module's
-`_NoGeneratedModelsForOris` placeholder becomes unnecessary: a module whose only tag has no
-generatable schemas (all mapped) simply generates nothing, with no special-cased sentinel needed.
+Originally: "`KlabisSpringCodegen` overrides model/schema discovery to include every schema
+transitively reachable from the operations whose tags are in the module's `apis` list." Withdrawn
+during implementation — **the generator exposes no such override point.**
+
+Model filtering lives entirely in `DefaultGenerator`, not in `CodegenConfig`: `modelKeys()`
+(private, line 646 of the 7.18.0 sources) reads the `models` global property and is called from
+`generateModels()`. `KlabisSpringCodegen` is a `CodegenConfig` — the object the generator consults
+about *how* to render, not *what* to select — and the Gradle plugin instantiates `DefaultGenerator`
+itself. There is nothing to override.
+
+The stock `generateRecursiveDependentModels` global property was evaluated as a substitute and
+rejected: it walks model *properties* (`generateModelsForVariable`), so it never reaches a request
+DTO referenced only from an operation's `requestBody`. Measured on `event-types` with `models` cut
+to a single root — `EventTypeDto` was generated, `CreateEventTypeRequest` and
+`UpdateEventTypeRequest` were not.
+
+Delivering this would mean subclassing `DefaultGenerator` and replacing the Gradle plugin's
+`GenerateTask` — a larger permanent maintenance surface than the `models` lists it would remove,
+and a much bigger commitment than the two narrow `CodegenConfig` overrides the rest of this design
+rests on. Per-module `models` lists stay; the `oris` module keeps its
+`_NoGeneratedModelsForOris` placeholder.
+
+The other three compensating mechanisms are unaffected and still go away: `--strip-hal`, the
+`doLast` regex patch, and per-envelope `mappings` entries. One incidental confirmation: a schema
+consumed by `mappings` is already excluded from generation by stock `DefaultGenerator`, which
+checks `config.schemaMapping().containsKey(name)` at both of its generation sites — that half of
+the original decision needed no code at all.
 
 ## Risks / Trade-offs
 

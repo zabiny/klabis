@@ -70,17 +70,27 @@
 - [x] 4.7 Confirm 4.6 passes without additional code (should already hold from the `super`
       delegation fallback in 4.5); if not, fix the fallback path
 
-## 5. Tag-scoped model/API discovery
+## 5. Tag-scoped model/API discovery — DROPPED (out of scope)
 
-- [ ] 5.1 Write failing test: given a module's `apis` tag list and a spec fixture with schemas
-      reachable (via `$ref`, `allOf`, `oneOf`, array `items`) from those tagged operations plus
-      unrelated schemas belonging to other tags, discovery includes only the reachable set
-- [ ] 5.2 Write failing test: a schema present in the module's `mappings` (hand-written override)
-      is excluded from generation even though it is reachable
-- [ ] 5.3 Implement discovery override to make 5.1–5.2 pass
-- [ ] 5.4 Confirm no explicit `models` list is required for discovery to work end-to-end
-      (verified fully in section 7's per-module migration, but sanity-check here against one
-      fixture first)
+Cut after investigation: the generator offers no extension point for this. Model filtering lives
+entirely in `DefaultGenerator` — `modelKeys()` (private, line 646 of the 7.18.0 sources) reads the
+`models` global property and is called from `generateModels()`. `KlabisSpringCodegen` is a
+`CodegenConfig`, not a generator, so it cannot reach that decision; the Gradle plugin instantiates
+`DefaultGenerator` directly. Design.md's Decision 5 ("`KlabisSpringCodegen` overrides model/schema
+discovery") assumed a hook that does not exist.
+
+The stock `generateRecursiveDependentModels` global property was tried as a substitute and
+rejected: it walks model *properties*, so it never reaches a request DTO referenced only from an
+operation's `requestBody`. Measured on `event-types` with `models` cut to a single root —
+`EventTypeDto` was generated, `CreateEventTypeRequest`/`UpdateEventTypeRequest` were not.
+
+Reaching this would mean subclassing `DefaultGenerator` and replacing the Gradle plugin's task,
+a far larger maintenance surface than the `models` lists it would remove. The other three
+compensating mechanisms (`--strip-hal`, the `doLast` patch, per-envelope `mappings`) still go
+away, which is where the bulk of the value is. Per-module `models` lists stay.
+
+Note: task 5.2's goal holds for free — `DefaultGenerator` already skips any schema present in
+`schemaMapping()`, at both of its generation sites. No code was ever needed for it.
 
 ## 6. Migrate `membershipfees` module (first real module, per design.md's migration plan)
 
