@@ -508,6 +508,9 @@ components:
     TransactionResource:
       type: object
       description: A single transaction on a member's finance account.
+      x-klabis-relation:
+        collectionRelation: transactions
+        itemRelation: transaction
       properties:
         id:
           type: string

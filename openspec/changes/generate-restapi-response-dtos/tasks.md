@@ -30,31 +30,31 @@
 
 ## 3. Category A — `common`, `finance`, `members` modules
 
-- [ ] 3.1 Add `PermissionsResponse` to `common`'s `models` list; generate, diff, delete
+- [x] 3.1 Add `PermissionsResponse` to `common`'s `models` list; generate, diff, delete
       hand-written class, fix `PermissionController` import if needed.
-- [ ] 3.2 Add `MemberAccountResource` to `finance`'s `models` list; move its `fromBalance(...)`
+- [x] 3.2 Add `MemberAccountResource` to `finance`'s `models` list; move its `fromBalance(...)`
       mapping logic out of the record into a MapStruct mapper or a plain static helper in
       `MemberAccountController`; generate, diff, delete hand-written class.
-- [ ] 3.3 Add `x-klabis-relation: {collectionRelation: transactions, itemRelation: transaction}` to
+- [x] 3.3 Add `x-klabis-relation: {collectionRelation: transactions, itemRelation: transaction}` to
       `TransactionResource` in `finance.yaml`; extend `pojo.mustache` with the `x-klabis-relation`
       render rule (Decision 2) — first real use, verify the annotation compiles and the `_embedded`
       key is unchanged.
-- [ ] 3.4 Add `TransactionResource` to `finance`'s `models` list; move its `from(...)` mapping logic
+- [x] 3.4 Add `TransactionResource` to `finance`'s `models` list; move its `from(...)` mapping logic
       to a mapper; generate, diff, delete hand-written class.
-- [ ] 3.5 Add `MemberSummaryResponse`, `MemberOptionResponse` to `members`'s `models` list;
+- [x] 3.5 Add `MemberSummaryResponse`, `MemberOptionResponse` to `members`'s `models` list;
       generate, diff.
-- [ ] 3.5a Field-security check (design.md Decision 0): `MemberSummaryResponse.email`/`.active`
+- [x] 3.5a Field-security check (design.md Decision 0): `MemberSummaryResponse.email`/`.active`
       carry `@HasAuthority(Authority.MEMBERS_MANAGE)` — confirm `members.yaml`'s
       `MemberSummaryResponse` has `x-klabis-authority: MEMBERS_MANAGE` on both properties and the
       generated Java actually renders `@HasAuthority`, not just that the spec has the extension.
-- [ ] 3.5b Delete `MemberSummaryResponse.java`/`MemberOptionResponse.java` — only after 3.5a passes.
-- [ ] 3.6 Add `SuspensionBlockedWarning`, `OutstandingDebtWarning`, `LastOwnerWarning`,
+- [x] 3.5b Delete `MemberSummaryResponse.java`/`MemberOptionResponse.java` — only after 3.5a passes.
+- [x] 3.6 Add `SuspensionBlockedWarning`, `OutstandingDebtWarning`, `LastOwnerWarning`,
       `AffectedGroup` to `members`'s `models` list; correct the stale comment in `members.yaml`
       (lines ~815-816) that still references the removed `schemaMapping` mechanism; generate, diff,
       delete hand-written classes (including the nested ones in `MembersExceptionHandler`) — none of
       these four carry field-level security annotations today, so Decision 0's check here is
       confirming that absence stays true in the generated form, not adding anything.
-- [ ] 3.7 Run `common`, `finance`, `members` module tests via the test-runner agent.
+- [x] 3.7 Run `common`, `finance`, `members` module tests via the test-runner agent.
 
 ## 4. Category A+B — `events` module
 

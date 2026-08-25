@@ -24,6 +24,11 @@
     carry arguments. See x-klabis-class-constraint in the klabis-api-spec skill. }}
 {{#vendorExtensions.x-klabis-class-constraint}}@{{.}}
 {{/vendorExtensions.x-klabis-class-constraint}}
+{{! Schema-level, same rendering position as x-klabis-class-constraint above. Names the _embedded
+    collection key for Spring HATEOAS, overriding the decapitalize(ClassName) + "List" default —
+    see x-klabis-relation in the klabis-api-spec skill / design.md Decision 2. }}
+{{#vendorExtensions.x-klabis-relation}}@org.springframework.hateoas.server.core.Relation(collectionRelation = "{{collectionRelation}}"{{#itemRelation}}, itemRelation = "{{itemRelation}}"{{/itemRelation}})
+{{/vendorExtensions.x-klabis-relation}}
 {{>generatedAnnotation}}
 public record {{classname}}(
     {{! Field-level security: x-klabis-* extensions on the spec property map 1:1 onto the

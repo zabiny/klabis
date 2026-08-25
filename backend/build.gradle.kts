@@ -288,9 +288,22 @@ openApiModule(
         "DeactivationReason",
         "DrivingLicenseGroup",
         "TrainerLicenseDto_level",
-        "RefereeLicenseDto_level"
+        "RefereeLicenseDto_level",
+        "MemberSummaryResponse",
+        "MemberOptionResponse",
+        "SuspensionBlockedWarning",
+        "OutstandingDebtWarning",
+        "LastOwnerWarning",
+        "AffectedGroup",
+        // Inline enum on AffectedGroup.groupType, promoted to a named schema by
+        // RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent above).
+        "AffectedGroup_groupType"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        // MonetaryAmount is a public root-level type shared with other modules (finance fills it via
+        // MemberFinancialStatePort) — redirect onto it rather than generating a duplicate.
+        "MonetaryAmount" to "com.klabis.members.MonetaryAmount"
+    )
 )
 
 openApiModule(
@@ -309,12 +322,12 @@ openApiModule(
     module = "finance",
     pkg = "com.klabis.finance.infrastructure.restapi",
     apis = listOf("Finance"),
-    // MemberAccountResource/TransactionResource are hand-written (mapper logic onto Money/Transaction
-    // domain types) and stay that way — only the request DTOs are generated fresh.
     models = listOf(
         "DepositRequest",
         "ChargeRequest",
-        "ReverseRequest"
+        "ReverseRequest",
+        "MemberAccountResource",
+        "TransactionResource"
     ),
     mappings = emptyMap()
 )
@@ -480,7 +493,8 @@ openApiModule(
         // Referenced only via $ref from UpdatePermissionsRequest.authorities; must be listed
         // explicitly so the generator emits it now that it's no longer redirected onto the domain
         // enum (see the mapping comment above and AuthorityMapper).
-        "Authority"
+        "Authority",
+        "PermissionsResponse"
     ),
     mappings = mapOf(
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",

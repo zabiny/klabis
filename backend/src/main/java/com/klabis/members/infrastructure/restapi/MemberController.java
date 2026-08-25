@@ -111,10 +111,10 @@ public class MemberController implements MembersApi {
     @Override
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
         List<MemberOptionResponse> options = memberRepository.findAll(MemberFilter.activeOnly()).stream()
-                .map(member -> new MemberOptionResponse(
-                        member.getId().uuid().toString(),
-                        "%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue())
-                ))
+                .map(member -> MemberOptionResponseBuilder.builder()
+                        .prompt("%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue()))
+                        .value(member.getId().uuid().toString())
+                        .build())
                 .toList();
         return ResponseEntity.ok(options);
     }

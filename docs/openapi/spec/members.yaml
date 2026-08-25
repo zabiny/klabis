@@ -812,8 +812,7 @@ components:
     # The 409 body of suspendMember. Both blockers are independent (a member can simultaneously
     # owe money AND be a group's last owner), so this is a plain object carrying each as an
     # optional attribute rather than a oneOf — a oneOf can only ever report one blocker at a time,
-    # forcing the caller to fix issues one round-trip at a time. See the schemaMapping in
-    # backend/build.gradle.kts for why it is mapped away rather than generated.
+    # forcing the caller to fix issues one round-trip at a time.
     SuspensionBlockedWarning:
       type: object
       description: |
