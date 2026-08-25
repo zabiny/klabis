@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 import org.openapitools.codegen.CodegenModelFactory;
 import org.openapitools.codegen.CodegenModelType;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.languages.SpringCodegen;
 import org.junit.jupiter.api.Test;
 
@@ -159,7 +160,15 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         CodegenOperation op = newOp();
         codegen.handleMethodResponse(operation, schemas, op, operation.getResponses().get("200"), Map.<String, String>of());
 
-        assertThat(op.returnContainer).isEqualTo("Page");
+        // returnContainer MUST stay unset (not "Page"): JavaSpring/returnTypes.mustache only
+        // renders `{{{returnContainer}}}<{{{returnType}}}>` inside the `{{#isArray}}` branch — for
+        // a non-array response (isArray=false, as pagination requires here) it instead takes the
+        // `{{^returnContainer}}` branch, which is SKIPPED entirely once returnContainer is set to
+        // anything truthy. Setting both isArray=false AND returnContainer="Page" produces neither
+        // branch's output — an empty `ResponseEntity<>` that fails to compile. returnType already
+        // carries the full `Page<X>` string, so leaving returnContainer null lets the
+        // `{{^returnContainer}}{{#useResponseEntity}}{{{returnType}}}` fallback render it verbatim.
+        assertThat(op.returnContainer).isNull();
         assertThat(op.returnType).isEqualTo("org.springframework.data.domain.Page<MemberSummaryResponse>");
         assertThat(op.isArray).isFalse();
     }
@@ -211,7 +220,9 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         CodegenOperation op = newOp();
         codegen.handleMethodResponse(operation, schemas, op, operation.getResponses().get("200"), Map.<String, String>of());
 
-        assertThat(op.returnContainer).isEqualTo("Page");
+        // See shape2EnvelopeWithPaginationProducesPageContainer()'s comment: returnContainer must
+        // stay unset for a non-array Page<T> return type to render at all.
+        assertThat(op.returnContainer).isNull();
         assertThat(op.returnType).isEqualTo("org.springframework.data.domain.Page<EventSummaryDto>");
         assertThat(op.isArray).isFalse();
     }
@@ -240,9 +251,106 @@ class KlabisSpringCodegenHandleMethodResponseTest {
         CodegenOperation op = newOp();
         codegen.handleMethodResponse(operation, schemas, op, response, Map.<String, String>of());
 
-        assertThat(op.returnContainer).isEqualTo("Page");
+        assertThat(op.returnContainer).isNull();
         assertThat(op.returnType).isEqualTo("org.springframework.data.domain.Page<EventSummaryDto>");
         assertThat(response.getContent()).containsKeys("application/json", "application/prs.hal-forms+json");
+    }
+
+    @Test
+    void paginatedResponseImportsSpringDataPageNotModelPackagePage() {
+        // Regression (members parity diff): op.imports.add("Page") in handleMethodResponse() adds
+        // only the simple name "Page". DefaultGenerator resolves a simple import name via
+        // config.importMapping() first, falling back to modelPackage + "." + name when absent — so
+        // without a "Page" -> org.springframework.data.domain.Page entry in importMapping(), the
+        // generated import statement silently names a nonexistent class in the module's OWN
+        // restapi package (e.g. com.klabis.members.infrastructure.restapi.Page) instead of Spring
+        // Data's Page, which fails to compile.
+        Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
+        Schema<?> embedded = new Schema<>().type("object")
+            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
+                .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse")));
+        Schema<?> pagedEnvelope = new Schema<>().type("object")
+            .addProperty("_embedded", embedded)
+            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+
+        Map<String, Schema> schemas = Map.of(
+            "MemberSummaryResponse", memberSummaryResponse,
+            "PagedModelEntityModelMemberSummaryResponse", pagedEnvelope
+        );
+        KlabisSpringCodegen codegen = newCodegen(schemas);
+
+        assertThat(codegen.importMapping()).containsEntry("Page", "org.springframework.data.domain.Page");
+    }
+
+    @Test
+    void paginatedResponseDocBlockHasNoGenericSchemaContent() {
+        // Regression (members parity diff): fromResponse() rewrites a paginated Shape 2 response's
+        // schema to a synthesized `type: array` wrapper so handleMethodResponse() can detect the
+        // collection — but fromResponse() also feeds api.mustache's per-response @ApiResponse doc
+        // block, which then wrongly rendered @ArraySchema(schema = @Schema(implementation =
+        // MemberSummaryResponse.class)) for EVERY produced media type, including
+        // application/problem+json. Before this migration, the equivalent case (an envelope
+        // schemaMappings'd onto Page<X>) produced NO content block at all — see design.md Decision 4:
+        // a generic Page<X> baseType is not legal in a @Schema(implementation = ...) class literal,
+        // so the doLast regex patch stripped the whole content block. KlabisSpringCodegen must not
+        // emit that block in the first place for a paginated response: fromResponse()'s
+        // CodegenResponse.baseType gates {{#baseType}} in api.mustache, so it must stay unset here.
+        Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
+        Schema<?> embedded = new Schema<>().type("object")
+            .addProperty("memberSummaryResponseList", new Schema<>().type("array")
+                .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse")));
+        Schema<?> pagedEnvelope = new Schema<>().type("object")
+            .addProperty("_embedded", embedded)
+            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+
+        Map<String, Schema> schemas = Map.of(
+            "MemberSummaryResponse", memberSummaryResponse,
+            "PagedModelEntityModelMemberSummaryResponse", pagedEnvelope
+        );
+        KlabisSpringCodegen codegen = newCodegen(schemas);
+
+        Operation operation = operationWithResponse(halResponse(pagedEnvelope), true);
+        ApiResponse response = operation.getResponses().get("200");
+
+        // fromResponse(code, response) has no access to the enclosing Operation — exercised through
+        // fromOperation() (like the stock flow) rather than called directly, so the paginated-ness
+        // recorded from the surrounding operation is actually in effect.
+        CodegenOperation op = codegen.fromOperation("/api/members", "get", operation, null);
+        CodegenResponse r = op.responses.stream()
+            .filter(candidate -> "200".equals(candidate.code))
+            .findFirst()
+            .orElseThrow();
+
+        assertThat(r.baseType).isNull();
+    }
+
+    @Test
+    void paginatedResponseDocBlockSuppressedEvenForBareArraySibling() {
+        // Regression (members real-spec parity diff, not covered by the envelope-shaped fixture
+        // above): listMembers' bundled spec lists application/json BEFORE
+        // application/prs.hal-forms+json (bundler sort order), and its application/json schema is
+        // MemberSummaryResponseList — a plain `type: array, items: $ref` sibling, which does NOT
+        // match HalEnvelopeDetector's Shape 2 (no _links/_embedded). resolveResponseSchema() picks
+        // this first content entry, so unwrap comes back empty and the paginated-suppression branch
+        // above (gated on unwrap.get().isCollection()) was never reached — the array doc block
+        // rendered anyway. Suppression must also trigger for a bare array schema on a paginated
+        // operation, not only for a detected HAL envelope.
+        Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));
+        Schema<?> bareArraySibling = new Schema<>().type("array")
+            .items(new Schema<>().$ref("#/components/schemas/MemberSummaryResponse"));
+
+        Map<String, Schema> schemas = Map.of("MemberSummaryResponse", memberSummaryResponse);
+        KlabisSpringCodegen codegen = newCodegen(schemas);
+
+        Operation operation = operationWithResponse(jsonResponse(bareArraySibling), true);
+
+        CodegenOperation op = codegen.fromOperation("/api/members", "get", operation, null);
+        CodegenResponse r = op.responses.stream()
+            .filter(candidate -> "200".equals(candidate.code))
+            .findFirst()
+            .orElseThrow();
+
+        assertThat(r.baseType).isNull();
     }
 
     @Test

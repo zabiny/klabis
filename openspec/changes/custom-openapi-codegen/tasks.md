@@ -120,30 +120,43 @@ Note: task 5.2's goal holds for free — `DefaultGenerator` already skips any sc
 
 ## 7. Migrate remaining modules (one vertical slice per module)
 
-- [ ] 7.1 Migrate `events` — includes Shape 1 (`EntityModelEventDtoWithRegistrations`), Shape 2
+- [x] 7.1 Migrate `events` — includes Shape 1 (`EntityModelEventDtoWithRegistrations`), Shape 2
       paginated (`PagedModelEntityModelEventSummaryDto`/`EventSummaryDtoList`), and hand-written
       overrides (`EventStatus` domain enum, `BulkSyncResult`/`BulkImportResult` application
       types) that must keep working unchanged; baseline-diff and run tests as in 6.1/6.3/6.4
-- [ ] 7.2 Migrate `members` — includes Shape 2 paginated (`PagedModelEntityModelMemberSummaryResponse`)
+- [x] 7.2 Migrate `members` — includes Shape 2 paginated (`PagedModelEntityModelMemberSummaryResponse`)
       and confirms this migration also fixes the currently-broken `MemberSummaryResponse`
       duplicate-class regression from the empty `models`/`mappings` (this module's real-world
       motivating bug); baseline-diff and run tests
-- [ ] 7.3 Migrate `finance` — includes Shape 2 paginated with a named-array
+- [x] 7.3 Migrate `finance` — includes Shape 2 paginated with a named-array
       `application/json` sibling (`TransactionResourcePage`) alongside the envelope
       (`PagedModelEntityModelTransactionResource`) resolving to the same `Page<T>`; baseline-diff
       and run tests
-- [ ] 7.4 Migrate `groupsFamily`, `groupsFree`, `groupsTraining` (three `openApiModule()`
+- [x] 7.4 Migrate `groupsFamily`, `groupsFree`, `groupsTraining` (three `openApiModule()`
       registrations against one spec file — package routing stays manual per design.md's
       Non-Goals); each includes Shape 1 envelopes with per-item `_links` that have no
       `application/json` sibling; baseline-diff and run tests for all three
-- [ ] 7.5 Migrate `common` — includes hand-written overrides (`PermissionsResponse`, `Authority`
+- [x] 7.5 Migrate `common` — includes hand-written overrides (`PermissionsResponse`, `Authority`
       domain enum, `RootModel`/`DashboardModel` marker types) that must keep working unchanged;
       baseline-diff and run tests
-- [ ] 7.6 Migrate `oris` — confirms the `_NoGeneratedModelsForOris` placeholder can be deleted
-      and the module still generates only `OrisImportApi` with no models; baseline-diff and run
-      tests
-- [ ] 7.7 Migrate `event-types` and `calendar` (no envelope/pagination complexity — confirms the
+- [x] 7.6 Migrate `oris` — the `_NoGeneratedModelsForOris` placeholder **stays**: deleting it
+      depended on tag-scoped discovery, which was dropped (see section 5). The module generates
+      only `OrisImportApi` with no models, exactly as before; baseline-diff and run tests
+- [x] 7.7 Migrate `event-types` and `calendar` (no envelope/pagination complexity — confirms the
       simple case stays simple); baseline-diff and run tests
+
+**Parity result across all 11 modules:** `event-types`, `calendar`, `common` and `oris` are
+byte-for-byte identical to the stock output. The other seven differ only in name qualification —
+the stock pipeline emitted fully-qualified names because the envelope `mappings` carried FQNs,
+while the generator now imports the type and uses its simple name. Normalizing the package
+prefixes away pairs off every remaining diff line exactly, so the change is semantically empty.
+
+Three generator bugs surfaced and were fixed in `KlabisSpringCodegen` rather than worked around
+in module config: a `Page` import resolved against the module package instead of Spring Data; a
+bare `ResponseEntity<>` caused by setting `returnContainer` alongside `isArray = false` (the
+JavaSpring template renders the container only inside its `isArray` branch); and a missing
+`@ApiResponse` content suppression for paginated responses, which the `doLast` patch used to
+handle. The last two are precisely what section 8 removes, so they had to be fixed first.
 
 ## 8. Remove obsolete mechanisms
 

@@ -452,12 +452,10 @@ openApiModule(
         // enumOuterClass for a promoted/$ref'd top-level enum, the generator synthesizes its own DTO
         // enum for each of these instead — see MemberMapper/UpdateMemberRequestMapper for the explicit
         // conversion between the generated DTO enum and the domain enum at the REST boundary.
-        // getMember's application/json response references MemberDetailsResponse directly (see
-        // members.yaml) — no envelope redirection needed since the schema name already matches the
-        // Java type. listMembers still needs one: its application/json response is a bare array
-        // (MemberSummaryResponseList), which the generator would otherwise turn into List<...>, but
-        // the controller returns Page<...> for pagination metadata that a bare array can't carry.
-        "MemberSummaryResponseList" to "org.springframework.data.domain.Page<com.klabis.members.infrastructure.restapi.MemberSummaryResponse>",
+        // listMembers' PagedModelEntityModelMemberSummaryResponse (Shape 2) and its application/json
+        // sibling MemberSummaryResponseList are now both resolved to Page<MemberSummaryResponse> by
+        // KlabisSpringCodegen from x-spring-paginated, with no mappings entry needed — see
+        // custom-openapi-codegen design.md Decision 2.
         // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
         // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
         // for the union. Object is the honest answer, and it also stops the generator importing a
@@ -468,10 +466,7 @@ openApiModule(
         // doLast below drops the `"type": "string"` springdoc would otherwise infer from Object.
         "SuspensionBlockedWarning" to "java.lang.Object"
     ),
-    // The generic Page<T> mapping above carries type arguments that the import statement must not repeat.
-    extraImportMappings = mapOf(
-        "MemberSummaryResponseList" to "org.springframework.data.domain.Page"
-    )
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -483,7 +478,8 @@ openApiModule(
         "CreateEventTypeRequest",
         "UpdateEventTypeRequest"
     ),
-    mappings = mapOf()
+    mappings = mapOf(),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -497,20 +493,12 @@ openApiModule(
         "ChargeRequest",
         "ReverseRequest"
     ),
-    mappings = mapOf(
-        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>",
-        // listTransactions' application/json sibling is a named array schema (TransactionResourcePage),
-        // not an inline one — an inline array has no schema name for the generator to key a type
-        // resolution off, and it would otherwise infer List<TransactionResource> straight from that
-        // sibling (it wins over the emptied HAL schema during type resolution), bypassing this mapping.
-        // Confirmed by removing it: listTransactions degrades to ResponseEntity<List<TransactionResource>>.
-        "TransactionResourcePage" to "org.springframework.data.domain.Page<com.klabis.finance.infrastructure.restapi.TransactionResource>"
-    ),
-    // The generic Page<T> mappings above carry type arguments that the import must not repeat.
-    extraImportMappings = mapOf(
-        "PagedModelEntityModelTransactionResource" to "org.springframework.data.domain.Page",
-        "TransactionResourcePage" to "org.springframework.data.domain.Page"
-    )
+    // listTransactions' PagedModelEntityModelTransactionResource (Shape 2 HAL envelope) and its
+    // application/json sibling TransactionResourcePage (a named array schema) are now both resolved
+    // to Page<TransactionResource> by KlabisSpringCodegen from x-spring-paginated, with no mappings
+    // entry needed — see custom-openapi-codegen design.md Decision 2.
+    mappings = mapOf(),
+    generator = "klabis-spring"
 )
 openApiModule(
     module = "events",
@@ -557,16 +545,16 @@ openApiModule(
         // com.klabis.events.domain.EventStatus. Now that model.mustache renders a real enumOuterClass
         // for a top-level enum schema, the generator synthesizes its own DTO enum instead — see
         // EventDto/EventSummaryDto/EventController for the explicit conversion to/from the domain enum.
-        // listEvents is genuinely paginated (x-spring-paginated: true) — no array shape carries
-        // pagination metadata, so both the envelope and the named array sibling stay mapped onto
-        // Page<T> (finance module precedent: removing either one degrades the generated return type
-        // to List<T>, since the plain-JSON sibling's inferred type wins resolution otherwise).
-        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
-        "EventSummaryDtoList" to "org.springframework.data.domain.Page<com.klabis.events.infrastructure.restapi.EventSummaryDto>",
+        // listEvents' PagedModelEntityModelEventSummaryDto (Shape 2 HAL envelope) and its
+        // application/json sibling EventSummaryDtoList (a named array schema) are now both resolved
+        // to Page<EventSummaryDto> by KlabisSpringCodegen from x-spring-paginated, with no mappings
+        // entry needed — see custom-openapi-codegen design.md Decision 2.
         // getEvent returns the payload; the _embedded.registrationDtoList block in the
         // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
         // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
-        // Schema name differs from the target Java class (EventDto), so this mapping stays.
+        // This is a hand-written override the generator cannot infer from spec structure alone
+        // (it stays a Shape 1 envelope by shape, but the target Java class carries no _embedded
+        // block) — schema name differs from the target Java class (EventDto), so this mapping stays.
         "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
         // BulkSyncResult/BulkImportResult are application-layer types, not restapi DTOs — the
         // envelope and application/json-sibling schema names never match the target package, so both
@@ -577,11 +565,7 @@ openApiModule(
         "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "BulkImportResult" to "com.klabis.events.application.BulkImportResult"
     ),
-    // The generic Page<T> mappings above carry type arguments that the import must not repeat.
-    extraImportMappings = mapOf(
-        "PagedModelEntityModelEventSummaryDto" to "org.springframework.data.domain.Page",
-        "EventSummaryDtoList" to "org.springframework.data.domain.Page"
-    )
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -596,7 +580,8 @@ openApiModule(
     // No mappings: listCalendarItems' CalendarItemDtoList is a named array schema -> List<CalendarItemDto>
     // directly, and getCalendarItem/getTokenState/generateToken's application/json siblings already
     // match their target Java class names — nothing to redirect. No pagination in this module.
-    mappings = mapOf()
+    mappings = mapOf(),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -656,11 +641,12 @@ openApiModule(
         // in the events module. Verified empirically: removing it degrades getFamilyGroup's return
         // type to the ungenerated envelope, breaking the controller's @Override.
         "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
-        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is stripped
-        // by --strip-hal since FamilyGroupSummaryResponseList (application/json sibling) exists; that
-        // named array schema generates List<FamilyGroupSummaryResponse> directly with no mapping
-        // needed, so the controller was migrated from Collection<T> to List<T> instead of mapping it.
-    )
+        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is now
+        // auto-unwrapped by KlabisSpringCodegen from its array/_embedded shape (Shape 2, non-paginated
+        // -> List<T>) — no mapping needed, matching the FamilyGroupSummaryResponseList sibling it used
+        // to be stripped down to.
+    ),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -682,11 +668,12 @@ openApiModule(
         // so backend codegen still sees the full envelope schema. EntityModelGroupResponse's name
         // differs from the target Java class, so this mapping stays.
         "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse"
-        // listGroups' and getPendingInvitations' envelopes are stripped by --strip-hal since their
-        // application/json siblings (GroupSummaryResponseList, PendingInvitationResponseList) exist;
-        // those named array schemas generate List<T> directly with no mapping needed, so both
-        // controllers were migrated from Collection<T> to List<T> instead of mapping them.
-    )
+        // listGroups' and getPendingInvitations' envelopes are now auto-unwrapped by KlabisSpringCodegen
+        // from their array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed,
+        // matching the GroupSummaryResponseList/PendingInvitationResponseList siblings they used to be
+        // stripped down to.
+    ),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -708,11 +695,11 @@ openApiModule(
         // still sees the full envelope schema. EntityModelTrainingGroupResponse's name differs from
         // the target Java class, so this mapping stays.
         "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
-        // listTrainingGroups' envelope is stripped by --strip-hal since its application/json sibling
-        // (TrainingGroupSummaryResponseList) exists; that named array schema generates
-        // List<TrainingGroupSummaryResponse> directly with no mapping needed, so the controller was
-        // migrated from Collection<T> to List<T> instead of mapping it.
-    )
+        // listTrainingGroups' envelope is now auto-unwrapped by KlabisSpringCodegen from its
+        // array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed, matching the
+        // TrainingGroupSummaryResponseList sibling it used to be stripped down to.
+    ),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -746,7 +733,8 @@ openApiModule(
         // DashboardController for the actual setDomain(...) call and value chosen.
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
         "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
-    )
+    ),
+    generator = "klabis-spring"
 )
 
 openApiModule(
@@ -766,5 +754,6 @@ openApiModule(
     models = listOf("_NoGeneratedModelsForOris"),
     mappings = mapOf(
         "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
-    )
+    ),
+    generator = "klabis-spring"
 )

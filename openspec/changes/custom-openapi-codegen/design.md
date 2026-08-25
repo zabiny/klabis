@@ -105,14 +105,28 @@ public class KlabisSpringCodegen extends SpringCodegen {
         // Decision 2. Applied whether or not an envelope was detected, so an operation serving
         // only application/json still gets Page<T>.
         if (isPaginated(operation)) {
-            op.returnContainer = "Page";
+            // returnContainer stays null — see the note below on returnTypes.mustache.
             op.returnType = "org.springframework.data.domain.Page<" + op.returnBaseType + ">";
+            op.returnContainer = null;
             op.isArray = false;
             op.imports.add("Page");
         }
     }
 }
 ```
+
+**Two mechanics this sketch depends on, both found during migration:**
+
+- `returnContainer` must stay `null`, not `"Page"`. `JavaSpring/returnTypes.mustache` renders
+  `{{{returnContainer}}}<{{{returnType}}}>` only inside its `{{#isArray}}` branch; a non-array
+  response falls through to `{{^returnContainer}}`, which a truthy `returnContainer` skips. Set
+  both and neither branch renders, producing a bare `ResponseEntity<>`. `op.returnType` already
+  carries the complete `Page<X>` string, so it renders verbatim through the fallthrough.
+- `"Page"` needs an `importMapping` entry. `op.imports` holds simple names, and
+  `DefaultGenerator.getAllImportsMappings()` falls back to `modelPackage + "." + name` for any
+  name `importMapping` does not know — emitting `import com.klabis.<module>.restapi.Page;`.
+  Registering `importMapping.put("Page", "org.springframework.data.domain.Page")` in the
+  constructor is the same thing `SpringCodegen` does for `"Pageable"`.
 
 **Why override `handleMethodResponse()` specifically** (vs. `fromOperation()` or a
 post-processing hook): it is the exact method that computes `returnType`/`returnContainer`

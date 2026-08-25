@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.servers.Server;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.model.ModelMap;
@@ -29,9 +30,40 @@ import java.util.Optional;
  */
 public class KlabisSpringCodegen extends SpringCodegen {
 
+    /**
+     * Set by {@link #fromOperation} before delegating to {@code super}, cleared in a
+     * {@code finally} block; consulted by {@link #fromResponse} to know whether the response it
+     * is currently building belongs to a paginated operation. {@code fromResponse(String,
+     * ApiResponse)}'s signature (inherited, cannot be widened) carries no operation reference, and
+     * {@code DefaultCodegen.fromOperation()} calls it once per response code (200, 400, 401, ...)
+     * from inside its own loop — an instance field set around that one call is the only way to
+     * thread the signal through without duplicating the whole loop here.
+     */
+    private Operation currentOperation;
+
+    public KlabisSpringCodegen() {
+        // "Page" is the simple name handleMethodResponse() adds to op.imports when an operation is
+        // paginated (see the override below). DefaultGenerator resolves a simple import name via
+        // importMapping() first, falling back to modelPackage + "." + name when absent — without
+        // this entry the generated import silently named a nonexistent class in the module's own
+        // restapi package instead of Spring Data's Page, which failed to compile. Same registration
+        // point SpringCodegen itself uses for "Pageable" (see SpringCodegen.processOpts()).
+        importMapping.put("Page", "org.springframework.data.domain.Page");
+    }
+
     @Override
     public String getName() {
         return "klabis-spring";
+    }
+
+    @Override
+    public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, List<Server> servers) {
+        currentOperation = operation;
+        try {
+            return super.fromOperation(path, httpMethod, operation, servers);
+        } finally {
+            currentOperation = null;
+        }
     }
 
     /**
@@ -75,8 +107,13 @@ public class KlabisSpringCodegen extends SpringCodegen {
         // Decision 2. Applied whether or not an envelope was detected, so an operation serving
         // only application/json still gets Page<T>.
         if (isPaginated(operation)) {
-            op.returnContainer = "Page";
+            // returnContainer stays UNSET (not "Page"): JavaSpring/returnTypes.mustache only
+            // renders `{{{returnContainer}}}<{{{returnType}}}>` inside the `{{#isArray}}` branch.
+            // For this non-array response it must fall through `{{^returnContainer}}` instead,
+            // which renders `{{{returnType}}}` verbatim — so returnType already carries the full
+            // `Page<X>` string rather than relying on returnContainer to wrap it.
             op.returnType = "org.springframework.data.domain.Page<" + op.returnBaseType + ">";
+            op.returnContainer = null;
             op.isArray = false;
             op.imports.add("Page");
         }
@@ -134,6 +171,28 @@ public class KlabisSpringCodegen extends SpringCodegen {
         Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
             ? Optional.empty()
             : HalEnvelopeDetector.detect(resolvedForDetection, ModelUtils.getSchemas(openAPI));
+
+        boolean paginated = currentOperation != null && isPaginated(currentOperation);
+        // A collection response (whether a Shape 2 envelope OR a bare array schema — e.g.
+        // listMembers' application/json sibling MemberSummaryResponseList, which resolveResponseSchema
+        // picks first per the bundler's sort order and which does NOT match HalEnvelopeDetector at
+        // all) resolves to Page<T> on a paginated operation, per Decision 2 — pagination is a
+        // property of the operation, independent of which response representation is used. Page<T>
+        // is a generic type, not legal in @Schema(implementation = ...) (JLS 15.8.2, Decision 4).
+        // Rather than generating an illegal class literal and patching it back out (the old doLast
+        // regex, now removed), suppress the doc content block entirely by leaving CodegenResponse's
+        // baseType unset: api.mustache's `{{#baseType}}...{{/baseType}}` around the whole
+        // `content = {...}` block never opens. This mirrors what the prior schemaMappings ->
+        // Page<X> pipeline produced (no content block for this response at all).
+        boolean isCollectionShape = unwrap.map(EnvelopeUnwrap::isCollection)
+            .orElseGet(() -> resolvedForDetection != null && ModelUtils.isArraySchema(resolvedForDetection));
+        if (paginated && isCollectionShape) {
+            CodegenResponse r = unwrap.isPresent()
+                ? super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())))
+                : super.fromResponse(responseCode, response);
+            r.baseType = null;
+            return r;
+        }
 
         if (unwrap.isEmpty()) {
             return super.fromResponse(responseCode, response);
