@@ -354,6 +354,35 @@ class KlabisSpringCodegenHandleMethodResponseTest {
     }
 
     @Test
+    void schemaMappedOntoJavaLangObjectHasNoDocBlockContent() {
+        // Regression (members real-spec parity diff after removing --strip-hal, iteration 7):
+        // suspendMember's 409 response is schemaMappings'd onto java.lang.Object (see build.gradle.kts
+        // — SuspensionBlockedWarning has no Java type standing for its oneOf union). Before this
+        // migration, --strip-hal never touched this (it only strips HAL responses with an
+        // application/json sibling), but the doLast regex patch matched `implementation =
+        // java\.lang\.Object\b` and stripped the whole content block, because springdoc renders
+        // Object.class as {"type": "string"} — worse than no content block at all (see design.md
+        // Decision 4's sibling case for Page<X>). Now that the doLast patch is gone,
+        // KlabisSpringCodegen itself must suppress this doc block, the same way it already suppresses
+        // one for a paginated Page<X> response.
+        Schema<?> suspensionBlockedWarning = new Schema<>().type("object").addProperty("reason", new Schema<>().type("string"));
+        Map<String, Schema> schemas = Map.of("SuspensionBlockedWarning", suspensionBlockedWarning);
+        KlabisSpringCodegen codegen = newCodegen(schemas);
+        codegen.schemaMapping().put("SuspensionBlockedWarning", "java.lang.Object");
+
+        ApiResponse response = jsonResponse(new Schema<>().$ref("#/components/schemas/SuspensionBlockedWarning"));
+        Operation operation = operationWithResponse(response, false);
+
+        CodegenOperation op = codegen.fromOperation("/api/members/{id}/suspend", "post", operation, null);
+        CodegenResponse r = op.responses.stream()
+            .filter(candidate -> "200".equals(candidate.code))
+            .findFirst()
+            .orElseThrow();
+
+        assertThat(r.baseType).isNull();
+    }
+
+    @Test
     void nonEnvelopeSchemaIsUntouchedAndMatchesStockBehavior() {
         // 4.6 — a bare, non-envelope schema (e.g. a hand-written mappings-overridden type or a plain
         // request-response record) is untouched: same op.returnType as stock SpringCodegen would

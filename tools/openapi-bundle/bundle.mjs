@@ -2,15 +2,13 @@
 /**
  * Bundles docs/openapi/spec/ into a single OpenAPI document.
  *
- * Usage: node bundle.mjs [--out <file>] [--check] [--strip-hal]
+ * Usage: node bundle.mjs [--out <file>] [--check]
  *   --out        destination (default: docs/openapi/klabis-full.json)
  *   --check      validate and bundle, but do not write
- *   --strip-hal  drop HAL/HAL+FORMS response content (and x-hal-links/x-hal-templates) from any
- *                response that also declares application/json — backend codegen input only, never
- *                used for the frontend-facing klabis-full.json
  *
- * This is the sole producer of docs/openapi/klabis-full.json, which the frontend generates its
- * TypeScript types from. Run it via `./gradlew openapiBundle` from backend/, or directly.
+ * This is the sole producer of docs/openapi/klabis-full.json, which both the frontend's TypeScript
+ * types and the backend's KlabisSpringCodegen-based Java codegen generate from directly — see
+ * custom-openapi-codegen design.md. Run it via `./gradlew openapiBundle` from backend/, or directly.
  * See docs/openapi/spec/README.md.
  */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
@@ -19,7 +17,6 @@ import {fileURLToPath} from 'node:url';
 import {parse} from 'yaml';
 
 import {bundleSpec, countOperations} from './lib/bundle.mjs';
-import {stripHalForCodegen} from './lib/stripHal.mjs';
 import {loadAuthorities, moduleFileNames, validateModuleDocuments, validateSpec} from './lib/validate.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -30,11 +27,10 @@ const AUTHORITY_JAVA = resolve(repoRoot, 'backend/src/main/java/com/klabis/commo
 const DEFAULT_OUT = resolve(repoRoot, 'docs/openapi/klabis-full.json');
 
 function parseArgs(argv) {
-    const args = {out: DEFAULT_OUT, check: false, stripHal: false};
+    const args = {out: DEFAULT_OUT, check: false};
     for (let i = 0; i < argv.length; i++) {
         if (argv[i] === '--out') args.out = resolve(repoRoot, argv[++i]);
         else if (argv[i] === '--check') args.check = true;
-        else if (argv[i] === '--strip-hal') args.stripHal = true;
     }
     return args;
 }
@@ -87,10 +83,7 @@ function main() {
         return;
     }
 
-    // Runs after validation so x-hal-links/x-hal-templates operation refs are still checked against
-    // the full document; codegen input is a derived view, not an alternate source of truth.
-    const outputDocument = args.stripHal ? stripHalForCodegen(document) : document;
-    const serialized = `${JSON.stringify(outputDocument, null, 1)}\n`;
+    const serialized = `${JSON.stringify(document, null, 1)}\n`;
 
     // Only write on change — this file is committed and rewriting it churns 400+ KB of diff.
     if (existsSync(args.out) && readFileSync(args.out, 'utf8') === serialized) {

@@ -14,6 +14,11 @@ import java.util.Set;
  *
  * <p>Matches by schema <em>shape</em>, never by schema name or an {@code x-klabis-*} extension:
  * this is what lets a new module's HAL envelope be recognized with zero spec changes.
+ *
+ * <p>A shape's properties may themselves be {@code $ref}s to promoted named schemas, not only
+ * inline objects — the generator's own inline-schema resolution sometimes promotes a nested inline
+ * object (e.g. Shape 2's {@code _embedded} block) into its own top-level component. Both forms
+ * resolve identically; see {@code asSingleArrayOfRefProperty}.
  */
 public final class HalEnvelopeDetector {
 
@@ -99,7 +104,7 @@ public final class HalEnvelopeDetector {
         // kept unresolved for the eventual target — see detectShape1()'s comment on why.
         Schema<?> itemRef = null;
         for (Schema<?> property : properties.values()) {
-            Schema<?> candidate = asSingleArrayOfRefProperty(property);
+            Schema<?> candidate = asSingleArrayOfRefProperty(property, schemas);
             if (candidate != null) {
                 itemRef = candidate;
                 break;
@@ -124,12 +129,24 @@ public final class HalEnvelopeDetector {
     }
 
     /**
-     * If {@code candidate} is an inline object with exactly one property that is
-     * {@code type: array, items: {$ref}}, returns that item's {@code $ref} schema. Otherwise
-     * {@code null}. This is the shape of the {@code _embedded.<pluralName>} block — the outer
-     * property's own name is deliberately not checked by the caller.
+     * If {@code candidate} is an inline object — or a {@code $ref} to one — with exactly one
+     * property that is {@code type: array, items: {$ref}}, returns that item's {@code $ref} schema.
+     * Otherwise {@code null}. This is the shape of the {@code _embedded.<pluralName>} block — the
+     * outer property's own name is deliberately not checked by the caller.
+     *
+     * <p>The openapi-generator's own inline-schema resolution sometimes promotes this property from
+     * an inline object into its own top-level named component, replacing it with a {@code $ref}
+     * (observed on {@code CollectionModelEntityModelEventTypeDto}'s {@code _embedded} property,
+     * generated as {@code $ref: ".../CollectionModelEntityModelEventTypeDto__embedded"}) — resolving
+     * one level of {@code $ref} here handles both shapes identically.
      */
-    private static Schema<?> asSingleArrayOfRefProperty(Schema<?> candidate) {
+    private static Schema<?> asSingleArrayOfRefProperty(Schema<?> candidate, Map<String, Schema> schemas) {
+        if (candidate == null) {
+            return null;
+        }
+        if (candidate.get$ref() != null) {
+            candidate = resolveRef(candidate, schemas);
+        }
         if (candidate == null || candidate.get$ref() != null) {
             return null;
         }

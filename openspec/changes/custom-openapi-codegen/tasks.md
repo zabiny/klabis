@@ -160,27 +160,35 @@ handle. The last two are precisely what section 8 removes, so they had to be fix
 
 ## 8. Remove obsolete mechanisms
 
-- [ ] 8.1 Remove the `doLast` regex-patch block from `openApiModule(...)` in
+- [x] 8.1 Remove the `doLast` regex-patch block from `openApiModule(...)` in
       `backend/build.gradle.kts`
-- [ ] 8.2 Remove `--strip-hal` CLI flag and `stripHalForCodegen()` from
+- [x] 8.2 Remove `--strip-hal` CLI flag and `stripHalForCodegen()` from
       `tools/openapi-bundle/lib/stripHal.mjs` (and the file itself if nothing else uses it),
       remove its test file `tools/openapi-bundle/test/stripHal.test.mjs`
-- [ ] 8.3 Remove the `bundleSpecForCodegen` Gradle task; point each `openApiModule(...)`'s
+- [x] 8.3 Remove the `bundleSpecForCodegen` Gradle task; point each `openApiModule(...)`'s
       `inputSpec` directly at `docs/openapi/klabis-full.json` (produced by the existing
       `openapiBundle` task, unchanged)
-- [ ] 8.4 Remove now-empty `models` parameter from `openApiModule(...)`'s function signature in
-      `build.gradle.kts` (or confirm it is fully unused and delete it) and update its KDoc comment
-- [ ] 8.5 Run the full backend test suite (unit + Modulith integration) once more after all
+- [x] 8.4 The `models` parameter **stays** — it never became empty, because tag-scoped discovery
+      was dropped (section 5). KDoc updated instead: `mappings` no longer describes envelope
+      redirection (only hand-written overrides), and the new `generator` parameter is documented
+- [x] 8.5 Run the full backend test suite (unit + Modulith integration) once more after all
       removals, confirming zero regressions
+
+**Result:** with all three mechanisms gone, a from-scratch regeneration off the full
+`klabis-full.json` produces output byte-for-byte identical to the previous `--strip-hal` pipeline
+across all 11 modules. Two more generator bugs surfaced here, both masked until now by the emptied
+HAL content: a Shape 2 `_embedded` property promoted by the generator's own inline-schema
+resolution into a named `$ref` (the detector only handled the inline form), and a
+`@Schema(implementation = java.lang.Object.class)` doc block that the `doLast` regex used to strip.
 
 ## 9. Documentation
 
-- [ ] 9.1 Update the `klabis-api-spec` skill to describe the new zero-mapping default for HAL
+- [x] 9.1 Update the `klabis-api-spec` skill to describe the new zero-mapping default for HAL
       envelopes and clarify when a `mappings` entry is still required (hand-written overrides
       only)
-- [ ] 9.2 Add/update a header comment in `backend/buildSrc/` pointing to
+- [x] 9.2 Add/update a header comment in `backend/buildSrc/` pointing to
       `openspec/changes/custom-openapi-codegen/design.md` for the shape-detection rationale, per
       the same "vendor fork, diff on upgrade" convention already used in `api.mustache`
-- [ ] 9.3 Update `docs/openapi/spec/README.md` (or wherever the spec-first workflow is
+- [x] 9.3 Update `docs/openapi/spec/README.md` (or wherever the spec-first workflow is
       documented) to remove references to `--strip-hal`/`bundleSpecForCodegen` and describe the
       single-bundle flow

@@ -112,6 +112,39 @@ class HalEnvelopeDetectorShape2Test {
     }
 
     @Test
+    void unwrapsCollectionWhoseEmbeddedPropertyIsPromotedToItsOwnNamedSchema() {
+        // Regression (event-types real-spec parity diff after removing --strip-hal): the openapi-
+        // generator's own inline-schema resolution sometimes promotes a nested inline object into
+        // its own top-level named component and replaces the property with a $ref to it — observed
+        // on CollectionModelEntityModelEventTypeDto's "_embedded" property, which the real generated
+        // spec renders as {$ref: "#/components/schemas/CollectionModelEntityModelEventTypeDto__embedded"}
+        // instead of the inline object every other Shape 2 envelope in the spec uses. --strip-hal
+        // masked this: it blanked out the whole HAL response content before the generator's
+        // preprocessing ran, so this promoted-$ref shape never reached HalEnvelopeDetector before.
+        // asSingleArrayOfRefProperty() must resolve a $ref'd "_embedded" property the same way it
+        // reads an inline one.
+        Schema<?> eventTypeDto = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
+
+        Schema<?> promotedEmbedded = new Schema<>().type("object")
+            .addProperty("eventTypeDtoList", new Schema<>().type("array")
+                .items(new Schema<>().$ref("#/components/schemas/EventTypeDto")));
+
+        Map<String, Schema> schemas = new HashMap<>();
+        schemas.put("EventTypeDto", eventTypeDto);
+        schemas.put("CollectionModelEntityModelEventTypeDto__embedded", promotedEmbedded);
+
+        Schema<?> envelope = new Schema<>().type("object")
+            .addProperty("_embedded", new Schema<>().$ref("#/components/schemas/CollectionModelEntityModelEventTypeDto__embedded"))
+            .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"));
+
+        Optional<EnvelopeUnwrap> result = HalEnvelopeDetector.detect(envelope, schemas);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().isCollection()).isTrue();
+        assertThat(result.get().targetSchema().get$ref()).isEqualTo("#/components/schemas/EventTypeDto");
+    }
+
+    @Test
     void rejectsMarkerTypeWithOnlyLinksAndNoEmbedded() {
         // EntityModelRootModel / EntityModelDashboardModel from the real spec: {type: object,
         // properties: {_links}} — has _links but no _embedded-shaped property at all. Must NOT be

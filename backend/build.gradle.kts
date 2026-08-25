@@ -260,20 +260,12 @@ val openapiBundle by tasks.registering(Exec::class) {
 //
 // Each module generates into the same package as its hand-written controller/mapper, because
 // cross-module link processors depend on those packages via Modulith named interfaces.
+//
+// Generates directly from docs/openapi/klabis-full.json — the same bundle openapiBundle produces
+// for the frontend. KlabisSpringCodegen resolves HAL envelope schemas to their payload type
+// structurally (see custom-openapi-codegen design.md), so no separate codegen-only bundle with HAL
+// content blanked out is needed anymore.
 // ---------------------------------------------------------------------------
-
-val bundleSpecForCodegen by tasks.registering(Exec::class) {
-    group = "openapi"
-    description = "Bundles docs/openapi/spec/ into a single document for the model generator"
-    workingDir = openapiToolDir.asFile
-    val out = layout.buildDirectory.file("generated/openapi/bundled.json").get().asFile
-    doFirst { out.parentFile.mkdirs() }
-    // --strip-hal drops HAL/HAL+FORMS response content (and x-hal-links/x-hal-templates) from any
-    // response that also declares application/json, so the generator sees the bare payload schema
-    // directly and needs no envelope -> payload schemaMappings redirection. klabis-full.json (the
-    // frontend-facing bundle from openapiBundle) is unaffected — this flag only applies here.
-    commandLine(runNodeScript, "bundle.mjs", "--out", out.absolutePath, "--strip-hal")
-}
 
 /**
  * Registers a spec-first codegen task for one module and wires its output into the main sourceSet.
@@ -284,7 +276,15 @@ val bundleSpecForCodegen by tasks.registering(Exec::class) {
  *                 global property generates EVERY tag when left empty, so without this filter each
  *                 module's task would emit every other module's *Api.java into its own package.
  * @param models   payload schemas to generate as Java records (envelopes stay spec-only)
- * @param mappings schema name -> existing Java type, for types reused instead of regenerated
+ * @param mappings schema name to existing Java type, for types reused instead of regenerated. HAL
+ *                 envelope schemas no longer need an entry here — KlabisSpringCodegen unwraps them
+ *                 structurally, see custom-openapi-codegen design.md. Only hand-written overrides
+ *                 the generator cannot infer from spec structure alone still need one: nested
+ *                 classes, domain-enum redirection, cross-module application types, and marker
+ *                 types shaped as a plain object with only a links property (no allOf, no embedded
+ *                 block — deliberately not matched by HalEnvelopeDetector).
+ * @param generator openapi-generator name; every module uses klabis-spring, i.e.
+ *                 com.klabis.openapi.codegen.KlabisSpringCodegen, registered in buildSrc.
  */
 fun openApiModule(
     module: String,
@@ -293,10 +293,7 @@ fun openApiModule(
     models: List<String>,
     mappings: Map<String, String>,
     extraImportMappings: Map<String, String> = emptyMap(),
-    // Per-module override for the migration from "spring" to "klabis-spring" (custom-openapi-codegen).
-    // Defaults to "spring" so unmigrated modules are unaffected; each module switches independently
-    // per design.md's migration plan (parity-checked one module at a time).
-    generator: String = "spring"
+    generator: String = "klabis-spring"
 ) {
     val outputDir = layout.buildDirectory.dir("generated/openapi/$module")
 
@@ -305,7 +302,7 @@ fun openApiModule(
     ) {
         group = "openapi"
         description = "Generates spec-first DTOs and API interfaces for the $module module"
-        dependsOn(bundleSpecForCodegen)
+        dependsOn(openapiBundle)
 
         // The generator only writes files; it never removes ones it no longer produces. Without
         // this, a schema renamed or dropped in the spec leaves its old record behind in build/ —
@@ -315,7 +312,17 @@ fun openApiModule(
         doFirst { delete(outputDir) }
 
         generatorName.set(generator)
-        inputSpec.set(layout.buildDirectory.file("generated/openapi/bundled.json").map { it.asFile.absolutePath })
+        // The committed frontend-facing bundle — openapiBundle's default (no -PopenapiOut/-PopenapiCheck)
+        // writes exactly here, so a plain `dependsOn(openapiBundle)` is enough to keep this fresh.
+        // Codegen and the frontend read the same document now; the separate --strip-hal bundle is
+        // gone, since KlabisSpringCodegen resolves HAL envelopes structurally instead.
+        //
+        // Caveat: -PopenapiCheck makes openapiBundle validate without writing, so pairing it with a
+        // build task leaves codegen reading whatever is committed rather than a freshly bundled
+        // spec. Harmless as things stand — CI keeps the two apart (publish-api.yaml bundles via
+        // node directly, backend-tests.yml runs plain `./gradlew test`) — but do not pair
+        // -PopenapiCheck with compileJava expecting a regeneration.
+        inputSpec.set(layout.projectDirectory.file("../docs/openapi/klabis-full.json").asFile.absolutePath)
         this.outputDir.set(outputDir.map { it.asFile.absolutePath })
         templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
         modelPackage.set(pkg)
@@ -365,52 +372,18 @@ fun openApiModule(
         // the rest of the codebase (see backend-patterns: ZonedDateTime/Instant in domain, LocalDate in API).
         typeMappings.set(mapOf("DateTime" to "Instant"))
 
-        // Envelope schemas (EntityModel*/PagedModel*/CollectionModel*) and hand-written request DTOs
-        // are redirected to existing Java types rather than regenerated — see klabis-api-spec skill:
-        // "Payload and envelope are separate schemas". The API interface signature must match what
-        // HalResponseBodyAdvice expects (plain payload DTO / Page<T> / List<T>, see ADR-002).
+        // Envelope schemas (EntityModel*/PagedModel*/CollectionModel*) are auto-unwrapped structurally
+        // by KlabisSpringCodegen (see custom-openapi-codegen design.md) — only hand-written overrides
+        // the generator cannot infer from spec structure alone (nested classes, domain-enum
+        // redirection, cross-module application types, marker types with no allOf/_embedded shape)
+        // need a mappings entry here. The API interface signature must match what HalResponseBodyAdvice
+        // expects (plain payload DTO / Page<T> / List<T>, see ADR-002). KlabisSpringCodegen also never
+        // emits an illegal generic class literal (e.g. `Page<X>.class`) in the springdoc `@Schema`
+        // annotations it generates, so no post-process patch is needed for that either (see design.md
+        // Decision 4).
         val commonMappings = mapOf("ProblemDetail" to "org.springframework.http.ProblemDetail")
         schemaMappings.set(mappings + commonMappings)
         importMappings.set(mappings + commonMappings + extraImportMappings + mapOf("Instant" to "java.time.Instant"))
-
-        // `documentationProvider=springdoc` renders each response's baseType into
-        // `@Schema(implementation = <baseType>.class)`. For the envelope schemaMappings above that
-        // baseType carries type arguments — `Page<MemberSummaryResponse>.class` — which is not
-        // legal Java (JLS 15.8.2: a class literal takes a raw type). The generator has no hook for
-        // this: the stock api.mustache emits {{{baseType}}} verbatim, Mustache cannot transform a
-        // string, and registering a lambda would mean subclassing SpringCodegen.
-        //
-        // Drop the response's whole `content = {...}` block, not just the offending `@Schema`.
-        // Springdoc derives the schema from the method's *return type* — which still carries the
-        // type argument — but only for an @ApiResponse that declares no content at all. Anything
-        // left behind wins over that fallback and makes the document worse than before: a raw
-        // `Page.class` flattens to a bare `Page` (and `Collection.class` to `"type": "string"`),
-        // while a bare `@Content(mediaType = ...)` yields an empty `{}`. Measured over all three
-        // variants; only removing the block keeps `PageMemberSummaryResponse` and the array shapes.
-        //
-        // `java.lang.Object` — what a schemaMapping falls back to when no Java type names the
-        // response body — gets the same treatment for the same reason: springdoc renders it as
-        // `"type": "string"`, which is worse than saying nothing.
-        //
-        // Anchored on `content = {` … `}` containing an unusable class literal. `[^{}]*` cannot
-        // span the block's own braces, so the match stops at the right `}`.
-        val unusableResponseContent =
-            Regex(""",\s*content = \{[^{}]*implementation = (?:[\w.]+<|java\.lang\.Object\b)[^{}]*\}""")
-
-        // GenerateTask is @CacheableTask, and Gradle fingerprints only declared inputs — never the
-        // body of a doLast closure. Without this the task could be restored from the build cache
-        // with the output of an *older* version of the patch below, and the edit would never run.
-        inputs.property("unusableResponseContent", unusableResponseContent.pattern)
-
-        doLast {
-            outputDir.get().asFile.walkTopDown()
-                .filter { it.isFile && it.name.endsWith("Api.java") }
-                .forEach { file ->
-                    val original = file.readText()
-                    val patched = original.replace(unusableResponseContent, "")
-                    if (patched != original) file.writeText(patched)
-                }
-        }
     }
 
     // Part of the main sourceSet (not a separate one) so Lombok -> MapStruct -> RecordBuilder
@@ -462,8 +435,9 @@ openApiModule(
         // model it was not asked to generate. Generating the union instead does not work — the
         // generator flattens a discriminator-less oneOf into one record holding every branch's
         // fields, each @NotNull, which nothing can satisfy. The published contract in
-        // klabis-full.json still carries the full oneOf; only /v3/api-docs goes without, since the
-        // doLast below drops the `"type": "string"` springdoc would otherwise infer from Object.
+        // klabis-full.json still carries the full oneOf; only /v3/api-docs goes without, since
+        // KlabisSpringCodegen suppresses the doc-block content for a java.lang.Object mapping
+        // (springdoc would otherwise infer `"type": "string"`, which is worse than saying nothing).
         "SuspensionBlockedWarning" to "java.lang.Object"
     ),
     generator = "klabis-spring"

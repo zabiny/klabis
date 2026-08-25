@@ -21,12 +21,33 @@ import java.util.Optional;
 /**
  * Klabis-specific fork of the stock {@code spring} OpenAPI generator.
  *
- * <p>Vendor fork, diff on upgrade: this class overrides specific protected extension points of
- * {@link SpringCodegen} to teach the generator Klabis's own HAL conventions (envelope schemas,
- * tag-scoped model discovery) natively, instead of compensating for their absence with Gradle-side
- * whitelists, {@code schemaMappings}, and post-process patches. See
- * {@code openspec/changes/custom-openapi-codegen/design.md} for the full rationale and the
- * shape-detection rules this class implements.
+ * <p>Vendor fork, diff on upgrade: this class overrides specific protected/public extension points
+ * of {@link SpringCodegen} to teach the generator Klabis's own HAL envelope conventions natively,
+ * instead of compensating for their absence with Gradle-side {@code schemaMappings}, a
+ * {@code --strip-hal} pre-process bundle, and a {@code doLast} regex post-process — all three now
+ * removed. See {@code openspec/changes/custom-openapi-codegen/design.md} for the full rationale and
+ * the shape-detection rules {@link HalEnvelopeDetector} implements.
+ *
+ * <p>Every override here exists to keep one property true: the method signature and its Javadoc/doc
+ * comment always agree about the return type.
+ * <ul>
+ *     <li>{@link #handleMethodResponse} — resolves {@code op.returnType} (the method signature) by
+ *     unwrapping a detected envelope and applying {@code Page<T>} for a paginated operation.</li>
+ *     <li>{@link #fromResponse} — resolves each documented {@code CodegenResponse} (the
+ *     {@code @Schema(implementation = ...)} springdoc emits) the same way, and additionally
+ *     suppresses that doc block entirely wherever the true type is not a legal Java class literal
+ *     ({@code Page<T>}, or a {@code schemaMappings} target of {@code java.lang.Object}).</li>
+ *     <li>{@link #fromOperation} — records the current {@link Operation} in an instance field so
+ *     {@link #fromResponse} (which the stock signature gives no operation context) can still read
+ *     {@code x-spring-paginated} off it.</li>
+ *     <li>{@link #postProcessOperationsWithModels} — drops any leftover {@code import} of an
+ *     envelope class once every operation in a tag is final; a class the generator never produces
+ *     would otherwise fail the build.</li>
+ * </ul>
+ * Discovering which schemas/tags to generate at all ({@code models}/{@code apis} allow-lists) is
+ * NOT something this class controls — that lives entirely in {@code DefaultGenerator}, outside any
+ * {@code CodegenConfig} hook (design.md Decision 5, withdrawn). Per-module {@code models} lists in
+ * {@code build.gradle.kts} stay required.
  */
 public class KlabisSpringCodegen extends SpringCodegen {
 
@@ -194,10 +215,26 @@ public class KlabisSpringCodegen extends SpringCodegen {
             return r;
         }
 
-        if (unwrap.isEmpty()) {
-            return super.fromResponse(responseCode, response);
+        CodegenResponse r = unwrap.isEmpty()
+            ? super.fromResponse(responseCode, response)
+            : super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())));
+        return suppressUnusableObjectDocBlock(r);
+    }
+
+    /**
+     * A schemaMappings target of {@code java.lang.Object} (e.g. {@code SuspensionBlockedWarning} —
+     * a discriminator-less {@code oneOf} no single Java type stands for) is not legal in
+     * {@code @Schema(implementation = ...)} either, for the same reason as a generic {@code Page<X>}
+     * class literal is not (Decision 4): springdoc renders {@code Object.class} as
+     * {@code "type": "string"}, which is worse than omitting the block. Suppressing it here — by
+     * leaving {@code baseType} unset, the same mechanism the paginated-response branch above uses —
+     * replaces what the old {@code doLast} regex patch did for this case.
+     */
+    private static CodegenResponse suppressUnusableObjectDocBlock(CodegenResponse r) {
+        if ("Object".equals(r.baseType) || "java.lang.Object".equals(r.baseType)) {
+            r.baseType = null;
         }
-        return super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())));
+        return r;
     }
 
     /**
