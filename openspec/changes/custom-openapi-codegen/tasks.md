@@ -84,19 +84,27 @@
 
 ## 6. Migrate `membershipfees` module (first real module, per design.md's migration plan)
 
-- [ ] 6.1 Capture current generated output for `membershipfees` (stock `spring` generator +
+- [x] 6.1 Capture current generated output for `membershipfees` (stock `spring` generator +
       `--strip-hal` + regex patch) as a baseline snapshot for diffing
-- [ ] 6.2 Switch `membershipfees`'s `openApiModule(...)` call to
+- [x] 6.2 Switch `membershipfees`'s `openApiModule(...)` call to
       `generatorName = "klabis-spring"`, remove its `models` list, remove envelope-unwrap
       `mappings` entries (`EntityModelPaymentRuleResponse` etc.), keep the hand-written
       nested-class override (`PaymentRuleResponse` →
       `MembershipFeeTierResponse.PaymentRuleResponse`)
-- [ ] 6.3 Generate and diff against the 6.1 baseline; resolve any non-import-order difference as
+- [x] 6.3 Generate and diff against the 6.1 baseline; resolve any non-import-order difference as
       a bug in `KlabisSpringCodegen` (per proposal.md's acceptance bar), not by adjusting the
       module's config
-- [ ] 6.4 Run `membershipfees` module's backend tests (via test-runner agent); confirm all pass
+      — surfaced three real generator bugs, all fixed in `KlabisSpringCodegen`: (a) the detector
+      was handed the raw `{$ref: ...}` pointer instead of the resolved schema, so it never matched
+      anything (`resolveIfRef`); (b) `fromOperation()` builds each `CodegenResponse` from the
+      still-enveloped schema *before* `handleMethodResponse()` runs, so `@Schema(implementation =
+      ...)` named the never-generated envelope class (`fromResponse` override); (c) the same
+      ordering left an import of that envelope class behind, which failed to compile
+      (`postProcessOperationsWithModels` override). (b) and (c) are exactly what `--strip-hal` and
+      the `doLast` regex patch mask today — removing them in section 8 depends on these fixes.
+- [x] 6.4 Run `membershipfees` module's backend tests (via test-runner agent); confirm all pass
       unmodified
-- [ ] 6.5 Confirm the nested-class mapping (`PaymentRuleResponse`) still resolves correctly —
+- [x] 6.5 Confirm the nested-class mapping (`PaymentRuleResponse`) still resolves correctly —
       the one case Shape 1/Shape 2 must NOT auto-unwrap (it's a top-level schema, not an
       envelope)
 

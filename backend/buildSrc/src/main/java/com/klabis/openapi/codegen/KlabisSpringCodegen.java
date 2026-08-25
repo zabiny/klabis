@@ -6,8 +6,14 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenResponse;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.languages.SpringCodegen;
+import org.openapitools.codegen.utils.ModelUtils;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,9 +57,14 @@ public class KlabisSpringCodegen extends SpringCodegen {
                                       ApiResponse methodResponse,
                                       Map<String, String> schemaMappings) {
         Schema<?> responseSchema = resolveResponseSchema(methodResponse);
-        Optional<EnvelopeUnwrap> unwrap = responseSchema == null
+        // HalEnvelopeDetector inspects allOf/properties structure, which lives on the RESOLVED
+        // schema, not on a {$ref: "..."} pointer — the response's content almost always names the
+        // envelope by $ref (e.g. getFeeGroup's sole application/prs.hal-forms+json entry), so the
+        // detector would see an empty wrapper object and never find the allOf it is looking for.
+        Schema<?> resolvedForDetection = resolveIfRef(responseSchema, schemas);
+        Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
             ? Optional.empty()
-            : HalEnvelopeDetector.detect(responseSchema, schemas);
+            : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
 
         ApiResponse resolved = unwrap
             .map(u -> withSchema(methodResponse, unwrappedResponseSchema(u)))
@@ -69,6 +80,65 @@ public class KlabisSpringCodegen extends SpringCodegen {
             op.isArray = false;
             op.imports.add("Page");
         }
+    }
+
+    /**
+     * Drops imports naming a HAL envelope schema, which is never generated as a Java class.
+     *
+     * <p>{@code fromOperation()} adds an import for each response's {@code baseType} while
+     * assembling the operation, using the raw (still-enveloped) schema and running before either
+     * {@link #fromResponse} or {@link #handleMethodResponse} can unwrap it. The unwrapped type is
+     * imported too, so the envelope import is left over — and referencing a class the generator
+     * was never asked to produce makes the API interface fail to compile.
+     *
+     * <p>Runs last, once every operation and its imports are final, which is why it belongs here
+     * rather than in the two unwrap hooks.
+     */
+    @Override
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        OperationsMap processed = super.postProcessOperationsWithModels(objs, allModels);
+
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        for (Iterator<Map<String, String>> it = processed.getImports().iterator(); it.hasNext(); ) {
+            String imported = it.next().get("import");
+            if (imported == null) {
+                continue;
+            }
+            String simpleName = imported.substring(imported.lastIndexOf('.') + 1);
+            Schema<?> schema = schemas.get(simpleName);
+            if (schema != null && HalEnvelopeDetector.detect(schema, schemas).isPresent()) {
+                it.remove();
+            }
+        }
+        return processed;
+    }
+
+    /**
+     * Applies the same envelope unwrap to each documented response as {@code
+     * handleMethodResponse()} applies to the method's return type.
+     *
+     * <p>Needed because {@code fromOperation()} builds every {@code CodegenResponse} — which is
+     * what {@code api.mustache} renders into {@code @ApiResponse(content = @Content(schema =
+     * @Schema(implementation = ...)))} — from the raw response schema, and does so BEFORE
+     * {@code handleMethodResponse()} runs. Without this override the method signature would
+     * correctly say {@code MembershipFeeGroupResponse} while its {@code @Schema} still named the
+     * envelope {@code EntityModelMembershipFeeGroupResponseWithMembers}, which is never generated
+     * as a Java class — the interface would not compile. Previously the {@code --strip-hal}
+     * pre-process and the {@code doLast} regex patch kept these two in step; resolving the
+     * envelope here is what lets both go away.
+     */
+    @Override
+    public CodegenResponse fromResponse(String responseCode, ApiResponse response) {
+        Schema<?> responseSchema = resolveResponseSchema(response);
+        Schema<?> resolvedForDetection = resolveIfRef(responseSchema, ModelUtils.getSchemas(openAPI));
+        Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
+            ? Optional.empty()
+            : HalEnvelopeDetector.detect(resolvedForDetection, ModelUtils.getSchemas(openAPI));
+
+        if (unwrap.isEmpty()) {
+            return super.fromResponse(responseCode, response);
+        }
+        return super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())));
     }
 
     /**
@@ -114,6 +184,15 @@ public class KlabisSpringCodegen extends SpringCodegen {
         rewritten.setHeaders(response.getHeaders());
         rewritten.setContent(new Content().addMediaType("application/json", new MediaType().schema(targetSchema)));
         return rewritten;
+    }
+
+    private static Schema<?> resolveIfRef(Schema<?> schema, Map<String, Schema> schemas) {
+        if (schema == null || schema.get$ref() == null) {
+            return schema;
+        }
+        String ref = schema.get$ref();
+        String name = ref.substring(ref.lastIndexOf('/') + 1);
+        return schemas.get(name);
     }
 
     private static boolean isPaginated(Operation operation) {

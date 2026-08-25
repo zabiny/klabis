@@ -102,6 +102,42 @@ class KlabisSpringCodegenHandleMethodResponseTest {
     }
 
     @Test
+    void shape1EnvelopeReferencedByRefIsResolvedBeforeDetection() {
+        // Regression: getFeeGroup (membershipfees module, real spec) has a SINGLE content entry
+        // whose schema is {$ref: "#/components/schemas/EntityModelMembershipFeeGroupResponseWithMembers"}
+        // — the response never inlines the envelope's allOf structure, it just points at it. A first
+        // implementation of resolveResponseSchema() fed that raw $ref wrapper straight into
+        // HalEnvelopeDetector, which found no allOf on it and silently fell through to stock (bare
+        // $ref) behavior — a real regression only the parity check against membershipfees caught, not
+        // any of the fixtures above (which all inline the envelope's allOf directly).
+        Schema<?> membershipFeeGroupResponse = new Schema<>().type("object").addProperty("id", new Schema<>().type("string"));
+        Schema<?> envelope = new Schema<>().allOf(List.of(
+            new Schema<>().$ref("#/components/schemas/MembershipFeeGroupResponse"),
+            new Schema<>().type("object")
+                .addProperty("_embedded", new Schema<>().type("object"))
+                .addProperty("_links", new Schema<>().$ref("#/components/schemas/Links"))
+                .addProperty("_templates", new Schema<>().$ref("#/components/schemas/HalFormsTemplates"))
+        ));
+
+        Map<String, Schema> schemas = Map.of(
+            "MembershipFeeGroupResponse", membershipFeeGroupResponse,
+            "EntityModelMembershipFeeGroupResponseWithMembers", envelope
+        );
+        KlabisSpringCodegen codegen = newCodegen(schemas);
+
+        // The response schema is a $ref POINTING AT the envelope schema name, not the envelope
+        // itself inlined — this is what every real spec response actually looks like.
+        Schema<?> refToEnvelope = new Schema<>().$ref("#/components/schemas/EntityModelMembershipFeeGroupResponseWithMembers");
+        Operation operation = operationWithResponse(halResponse(refToEnvelope), false);
+
+        CodegenOperation op = newOp();
+        codegen.handleMethodResponse(operation, schemas, op, operation.getResponses().get("200"), Map.<String, String>of());
+
+        assertThat(op.returnBaseType).isEqualTo("MembershipFeeGroupResponse");
+        assertThat(op.returnType).isEqualTo("MembershipFeeGroupResponse");
+    }
+
+    @Test
     void shape2EnvelopeWithPaginationProducesPageContainer() {
         // 4.2 — Shape 2 envelope on an x-spring-paginated: true operation -> Page<X>.
         Schema<?> memberSummaryResponse = new Schema<>().type("object").addProperty("name", new Schema<>().type("string"));

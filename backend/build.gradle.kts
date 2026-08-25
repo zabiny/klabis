@@ -292,7 +292,11 @@ fun openApiModule(
     apis: List<String>,
     models: List<String>,
     mappings: Map<String, String>,
-    extraImportMappings: Map<String, String> = emptyMap()
+    extraImportMappings: Map<String, String> = emptyMap(),
+    // Per-module override for the migration from "spring" to "klabis-spring" (custom-openapi-codegen).
+    // Defaults to "spring" so unmigrated modules are unaffected; each module switches independently
+    // per design.md's migration plan (parity-checked one module at a time).
+    generator: String = "spring"
 ) {
     val outputDir = layout.buildDirectory.dir("generated/openapi/$module")
 
@@ -310,7 +314,7 @@ fun openApiModule(
         // fails.
         doFirst { delete(outputDir) }
 
-        generatorName.set("spring")
+        generatorName.set(generator)
         inputSpec.set(layout.buildDirectory.file("generated/openapi/bundled.json").map { it.asFile.absolutePath })
         this.outputDir.set(outputDir.map { it.asFile.absolutePath })
         templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
@@ -600,10 +604,11 @@ openApiModule(
     pkg = "com.klabis.membershipfees.infrastructure.restapi",
     // getFeeGroup (MembershipFeeGroups) is generated like any other operation; it is only its
     // *response schema* that is documentation-only. EntityModelMembershipFeeGroupResponseWithMembers
-    // is mapped down to the bare payload below, so the generated method does not try to express the
-    // second, independently-shaped collection (group members) the controller embeds via
-    // HalModelBuilder — HalResponseContext only supports a single domain object or a flat list.
-    // Same precedent as EventController's getEvent in the events module.
+    // is a Shape 1 HAL envelope (allOf[$ref MembershipFeeGroupResponse, {_links, _embedded}]),
+    // auto-unwrapped by KlabisSpringCodegen/HalEnvelopeDetector — see custom-openapi-codegen — so the
+    // generated method does not try to express the second, independently-shaped collection (group
+    // members) the controller embeds via HalModelBuilder. HalResponseContext only supports a single
+    // domain object or a flat list. Same precedent as EventController's getEvent in the events module.
     apis = listOf("MembershipFeeTiers", "FeeSelectionCampaigns", "MembershipFeeGroups", "MemberFeeChoice", "MemberFeeSummary"),
     models = listOf(
         "CreateMembershipFeeTierRequest",
@@ -621,17 +626,11 @@ openApiModule(
         // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); its
         // application/json bare-payload sibling (schema name PaymentRuleResponse, for getRule) would
         // otherwise resolve to a top-level PaymentRuleResponse class rather than the nested one, so
-        // this mapping stays.
-        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse",
-        // getFeeGroup returns the payload; the _embedded.members block in the WithMembers schema is
-        // contributed by the controller via HalResponseContext.embed(...) and assembled by
-        // HalResponseBodyAdvice, so it does not belong in the Java return type. No application/json
-        // sibling was added for getFeeGroup's response — same precedent as EventController's getEvent:
-        // the bundler sorts "application/json" first, so a bare-payload sibling would win type
-        // resolution over EntityModelMembershipFeeGroupResponseWithMembers and silently drop
-        // _embedded.members from the frontend's GetFeeGroupResource type.
-        "EntityModelMembershipFeeGroupResponseWithMembers" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeGroupResponse"
-    )
+        // this mapping stays — it is a hand-written override the generator cannot infer from spec
+        // structure alone, unlike the envelope unwrap above.
+        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse"
+    ),
+    generator = "klabis-spring"
 )
 
 // The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
