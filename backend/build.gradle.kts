@@ -290,23 +290,7 @@ openApiModule(
         "TrainerLicenseDto_level",
         "RefereeLicenseDto_level"
     ),
-    mappings = mapOf(
-        // Gender/DeactivationReason/DrivingLicenseGroup/TrainerLicenseDto_level/RefereeLicenseDto_level
-        // used to be redirected here onto the hand-written domain enums (Gender, DeactivationReason,
-        // DrivingLicenseGroup, TrainerLevel, RefereeLevel). Now that model.mustache renders a real
-        // enumOuterClass for a promoted/$ref'd top-level enum, the generator synthesizes its own DTO
-        // enum for each of these instead — see MemberMapper/UpdateMemberRequestMapper for the explicit
-        // conversion between the generated DTO enum and the domain enum at the REST boundary.
-        // listMembers' PagedModelEntityModelMemberSummaryResponse (Shape 2) and its application/json
-        // sibling MemberSummaryResponseList are now both resolved to Page<MemberSummaryResponse> by
-        // KlabisSpringCodegen from x-spring-paginated, with no mappings entry needed — see
-        // custom-openapi-codegen design.md Decision 2.
-        // suspendMember's 409 body: a plain object (debt + groups, both optional/independent —
-        // see members.yaml) that MembersExceptionHandler builds directly and the interface never
-        // names (it returns ResponseEntity<Void>). SuspensionBlockedWarning is a plain top-level
-        // hand-written record in this package, matching the generated schema name, so no mapping
-        // is needed.
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -318,7 +302,7 @@ openApiModule(
         "CreateEventTypeRequest",
         "UpdateEventTypeRequest"
     ),
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -332,11 +316,7 @@ openApiModule(
         "ChargeRequest",
         "ReverseRequest"
     ),
-    // listTransactions' PagedModelEntityModelTransactionResource (Shape 2 HAL envelope) and its
-    // application/json sibling TransactionResourcePage (a named array schema) are now both resolved
-    // to Page<TransactionResource> by KlabisSpringCodegen from x-spring-paginated, with no mappings
-    // entry needed — see custom-openapi-codegen design.md Decision 2.
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 openApiModule(
     module = "events",
@@ -413,10 +393,7 @@ openApiModule(
         "CreateCalendarItemRequest",
         "UpdateCalendarItemRequest"
     ),
-    // No mappings: listCalendarItems' CalendarItemDtoList is a named array schema -> List<CalendarItemDto>
-    // directly, and getCalendarItem/getTokenState/generateToken's application/json siblings already
-    // match their target Java class names — nothing to redirect. No pagination in this module.
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -442,7 +419,7 @@ openApiModule(
         "AdminAssignMemberRequest",
         "ChooseFeeChoiceRequest"
     ),
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 
 // The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
@@ -460,19 +437,7 @@ openApiModule(
         "CreateFamilyGroupRequest",
         "AddMemberRequest"
     ),
-    mappings = mapOf(
-        // getFamilyGroup has no application/json sibling (its response's per-item _links can't be
-        // expressed in a bare payload — see groups.yaml header comment), so backend codegen still
-        // sees the full envelope schema. EntityModelFamilyGroupResponse's name differs from the
-        // target Java class, so this mapping stays — same precedent as EntityModelEventDtoWithRegistrations
-        // in the events module. Verified empirically: removing it degrades getFamilyGroup's return
-        // type to the ungenerated envelope, breaking the controller's @Override.
-        "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
-        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is now
-        // auto-unwrapped by KlabisSpringCodegen from its array/_embedded shape (Shape 2, non-paginated
-        // -> List<T>) — no mapping needed, matching the FamilyGroupSummaryResponseList sibling it used
-        // to be stripped down to.
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -488,17 +453,7 @@ openApiModule(
         "InviteMemberRequest",
         "CancelInvitationRequest"
     ),
-    mappings = mapOf(
-        // getGroup has no application/json sibling (per-item _links on owners/members/
-        // pendingInvitations can't be expressed in a bare payload — see groups.yaml header comment),
-        // so backend codegen still sees the full envelope schema. EntityModelGroupResponse's name
-        // differs from the target Java class, so this mapping stays.
-        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse"
-        // listGroups' and getPendingInvitations' envelopes are now auto-unwrapped by KlabisSpringCodegen
-        // from their array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed,
-        // matching the GroupSummaryResponseList/PendingInvitationResponseList siblings they used to be
-        // stripped down to.
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -514,16 +469,7 @@ openApiModule(
         "AgeRangeRequest",
         "UpdateTrainingGroupRequest"
     ),
-    mappings = mapOf(
-        // getTrainingGroup has no application/json sibling (per-item _links on trainers/members
-        // can't be expressed in a bare payload — see groups.yaml header comment), so backend codegen
-        // still sees the full envelope schema. EntityModelTrainingGroupResponse's name differs from
-        // the target Java class, so this mapping stays.
-        "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
-        // listTrainingGroups' envelope is now auto-unwrapped by KlabisSpringCodegen from its
-        // array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed, matching the
-        // TrainingGroupSummaryResponseList sibling it used to be stripped down to.
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
