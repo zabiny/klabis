@@ -599,9 +599,11 @@ components:
           example: ZBM0501
         email:
           type: string
+          x-klabis-authority: MEMBERS_MANAGE
           description: Member's email address (visible to admins only)
         active:
           type: boolean
+          x-klabis-authority: MEMBERS_MANAGE
           description: Whether the member is active (visible to admins only)
 
     PagedModelEntityModelMemberSummaryResponse:
