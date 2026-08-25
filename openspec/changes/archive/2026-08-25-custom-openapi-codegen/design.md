@@ -343,6 +343,8 @@ the original decision needed no code at all.
 
 ## Known follow-ups (deliberately not done here)
 
+All three items below were implemented in `openspec/changes/openapi-codegen-followups` (2026-08-25).
+
 Surfaced by the closing quality review, judged out of scope for this change because each would
 alter behavior or reach well beyond the diff, and the acceptance bar here is byte-for-byte
 identical generated output:

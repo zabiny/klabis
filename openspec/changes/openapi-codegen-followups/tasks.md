@@ -77,11 +77,17 @@
 
 ## 4. Close out
 
-- [ ] 4.1 Full backend test suite plus a from-scratch regeneration (`rm -rf build/generated/openapi`)
+- [x] 4.1 Full backend test suite plus a from-scratch regeneration (`rm -rf build/generated/openapi`)
       diffed against 0.1 across all 11 modules.
-- [ ] 4.2 Update the `KlabisSpringCodegen` class Javadoc: it lists four overrides, and the set
+      Forced fresh regen (`--rerun-tasks`) and test run (`--rerun`): all 11 modules / 115 files diff
+      clean (only `@Generated` timestamp). Full suite: 3200 tests, 14 skipped, 0 failures.
+- [x] 4.2 Update the `KlabisSpringCodegen` class Javadoc: it lists four overrides, and the set
       changes here (`postProcessOperationsWithModels` out, `getContent` in). The note that
       model/API discovery is not this class's concern stays.
-- [ ] 4.3 Remove the "Known follow-ups" section from the archived
+      Already correct from iteration 2 — verified, no edit needed.
+- [x] 4.3 Remove the "Known follow-ups" section from the archived
       `openspec/changes/archive/2026-08-25-custom-openapi-codegen/design.md`, or annotate it with
       a pointer to this change — whichever the project prefers for archived documents.
+      No existing precedent found in other archived design.md files, so annotated (lightest option):
+      added a one-line pointer to `openapi-codegen-followups` under the heading; original three
+      bullets left untouched as historical record.
