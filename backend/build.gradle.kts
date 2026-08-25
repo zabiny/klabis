@@ -303,10 +303,9 @@ openApiModule(
         // custom-openapi-codegen design.md Decision 2.
         // suspendMember's 409 body: a plain object (debt + groups, both optional/independent —
         // see members.yaml) that MembersExceptionHandler builds directly and the interface never
-        // names (it returns ResponseEntity<Void>). MembersExceptionHandler declares its own
-        // SuspensionBlockedWarning record rather than using a generated one, so this mapping
-        // redirects onto that hand-written type.
-        "SuspensionBlockedWarning" to "com.klabis.members.infrastructure.restapi.MembersExceptionHandler.SuspensionBlockedWarning"
+        // names (it returns ResponseEntity<Void>). SuspensionBlockedWarning is a plain top-level
+        // hand-written record in this package, matching the generated schema name, so no mapping
+        // is needed.
     )
 )
 
@@ -443,14 +442,7 @@ openApiModule(
         "AdminAssignMemberRequest",
         "ChooseFeeChoiceRequest"
     ),
-    mappings = mapOf(
-        // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); its
-        // application/json bare-payload sibling (schema name PaymentRuleResponse, for getRule) would
-        // otherwise resolve to a top-level PaymentRuleResponse class rather than the nested one, so
-        // this mapping stays — it is a hand-written override the generator cannot infer from spec
-        // structure alone, unlike the envelope unwrap above.
-        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse"
-    )
+    mappings = mapOf()
 )
 
 // The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
@@ -576,14 +568,13 @@ openApiModule(
     // OrisEventsApi's operations in here instead of/alongside this module's own. See oris.yaml
     // header comment.
     apis = listOf("OrisImport"),
-    // No real model to generate: OrisEventSummary is mapped below onto the hand-written record
-    // already on the controller. An empty `models` list is NOT safe here — like the `apis` global
-    // property, the generator's "models" property generates every schema in the bundled document
-    // when given an empty string, not none. A single nonexistent placeholder name keeps the
-    // "models" property non-empty (so the "generate everything" branch never triggers) while
-    // matching nothing, so only the interface (OrisImportApi) is produced.
+    // No real model to generate: OrisEventSummary is a plain top-level hand-written record in this
+    // package, matching the generated schema name, so no mapping is needed. An empty `models` list
+    // is NOT safe here — like the `apis` global property, the generator's "models" property
+    // generates every schema in the bundled document when given an empty string, not none. A single
+    // nonexistent placeholder name keeps the "models" property non-empty (so the "generate
+    // everything" branch never triggers) while matching nothing, so only the interface
+    // (OrisImportApi) is produced.
     models = listOf("_NoGeneratedModelsForOris"),
-    mappings = mapOf(
-        "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
-    )
+    mappings = mapOf()
 )

@@ -13,9 +13,6 @@ import java.util.List;
 @RestControllerAdvice
 class MembersExceptionHandler {
 
-    record SuspensionBlockedWarning(OutstandingDebtWarning debt, LastOwnerWarning groups) {
-    }
-
     record LastOwnerWarning(String message, List<AffectedGroup> affectedGroups) {
         record AffectedGroup(String groupId, String groupName, String groupType) {
         }
