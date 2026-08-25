@@ -15,6 +15,7 @@ export interface paths {
          * API root navigation
          * @description HAL+JSON root resource. Its only purpose is to be the starting node for a HAL browser —
          *     every link in the response is added by per-module postprocessors, not by this operation.
+         *
          */
         get: operations["rootNavigation"];
         put?: never;
@@ -41,6 +42,7 @@ export interface paths {
          *     Deliberately public — see validatePasswordSetupToken above; permitAll() in
          *     WebSecurityCommonConfiguration, secured by the setup token in the request body, not by an
          *     authority.
+         *
          */
         post: operations["completePasswordSetup"];
         delete?: never;
@@ -67,6 +69,7 @@ export interface paths {
          *     Deliberately public — see validatePasswordSetupToken above; permitAll() in
          *     WebSecurityCommonConfiguration. There is no token to check yet at this step (that's the
          *     point of the endpoint), so the only guard is rate limiting, not an authority.
+         *
          */
         post: operations["requestNewPasswordSetupToken"];
         delete?: never;
@@ -90,6 +93,7 @@ export interface paths {
          *     `/api/auth/password-setup/**` unconditionally (`.permitAll()`). This is an
          *     account-activation endpoint used before the user has a password at all; the token in the
          *     request is the security, not an authority. Do NOT add x-klabis-authority here.
+         *
          */
         get: operations["validatePasswordSetupToken"];
         put?: never;
@@ -115,6 +119,7 @@ export interface paths {
          *     Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
          *     When mySchedule=true, returns only EVENT_DATE items linked to events where the current
          *     user is an active participant or event coordinator.
+         *
          */
         get: operations["listCalendarItems"];
         put?: never;
@@ -122,6 +127,7 @@ export interface paths {
          * Create a new manual calendar item
          * @description Creates a new manual calendar item (not linked to an event). Manual items can be updated
          *     and deleted. Returns Location header pointing to the created resource.
+         *
          */
         post: operations["createCalendarItem"];
         delete?: never;
@@ -141,12 +147,14 @@ export interface paths {
          * Get calendar item by ID
          * @description Retrieves detailed calendar item information by ID. Returns HATEOAS links based on whether
          *     the item is manually created or event-linked.
+         *
          */
         get: operations["getCalendarItem"];
         /**
          * Update a manual calendar item
          * @description Updates calendar item information. Only allowed for manual items (not event-linked).
          *     Event-linked items are read-only and managed automatically.
+         *
          */
         put: operations["updateCalendarItem"];
         post?: never;
@@ -154,6 +162,7 @@ export interface paths {
          * Delete a manual calendar item
          * @description Deletes a manual calendar item. Only allowed for manual items (not event-linked).
          *     Event-linked items are read-only and managed automatically.
+         *
          */
         delete: operations["deleteCalendarItem"];
         options?: never;
@@ -224,6 +233,7 @@ export interface paths {
          * Dashboard widget link index
          * @description HAL+JSON link index for dashboard widgets. Carries no payload data of its own — every
          *     widget link is added by per-module postprocessors.
+         *
          */
         get: operations["dashboard"];
         put?: never;
@@ -301,6 +311,7 @@ export interface paths {
          *     registeredBy and notRegisteredBy currently accept only the literal value "me" — any other
          *     value is a 400. When "me" is requested but the caller has no member profile, an empty page
          *     is returned rather than an error.
+         *
          */
         get: operations["listEvents"];
         put?: never;
@@ -308,6 +319,7 @@ export interface paths {
          * Create a new event
          * @description Creates a new event in DRAFT status. Returns Location header pointing to the created
          *     resource.
+         *
          */
         post: operations["createEvent"];
         delete?: never;
@@ -350,6 +362,7 @@ export interface paths {
          * @description Imports multiple ORIS events in a single request. Each event is processed independently; a
          *     failure to import one event does not prevent the others from being imported. Always returns
          *     200 — check failureCount in the response body for partial failures.
+         *
          */
         post: operations["importEventsBatch"];
         delete?: never;
@@ -372,6 +385,7 @@ export interface paths {
          * @description Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID.
          *     Processes each event sequentially; partial failures are collected and returned in the
          *     summary. Always returns 200 — check failureCount in the response body.
+         *
          */
         post: operations["syncAllUpcomingFromOris"];
         delete?: never;
@@ -396,6 +410,7 @@ export interface paths {
          *     This operation also supports `Accept: text/csv`, returning a UTF-8 BOM, semicolon-delimited
          *     CSV file with Czech headers (Content-Disposition: attachment) instead of the JSON
          *     representation described below.
+         *
          */
         get: operations["getAccommodationList"];
         put?: never;
@@ -420,6 +435,7 @@ export interface paths {
          *     Default sort: registrationTime ASC. sort=registrationTime is silently ignored for members
          *     without EVENTS:REGISTRATIONS authority who are not the event coordinator. Unknown sort
          *     fields also fall back to default.
+         *
          */
         get: operations["listRegistrations"];
         put?: never;
@@ -427,11 +443,13 @@ export interface paths {
          * Register for an event
          * @description Register the authenticated member for an event with SI card number. Only allowed for ACTIVE
          *     events. Returns Location header pointing to the registration.
+         *
          */
         post: operations["registerForEvent"];
         /**
          * Unregister from an event
          * @description Unregister the authenticated member from an event. Only allowed before the event date.
+         *
          */
         delete: operations["unregisterFromEvent"];
         options?: never;
@@ -452,6 +470,7 @@ export interface paths {
          *     themselves or a user with EVENTS:REGISTRATIONS authority. When new=true, returns prefilled
          *     defaults (siCardNumber from profile) for a not-yet-existing registration — this still
          *     requires the caller to be the target member themselves regardless of authority.
+         *
          */
         get: operations["getRegistration"];
         /**
@@ -459,6 +478,7 @@ export interface paths {
          * @description Update SI card number and/or category for a member's registration. Accessible by the
          *     member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when
          *     registrations are open.
+         *
          */
         put: operations["editRegistration"];
         post?: never;
@@ -479,6 +499,7 @@ export interface paths {
          * Get event by ID
          * @description Retrieves detailed event information by ID. Returns HATEOAS links based on event status and
          *     includes embedded registrations.
+         *
          */
         get: operations["getEvent"];
         put?: never;
@@ -490,6 +511,7 @@ export interface paths {
          * Update an event
          * @description Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields
          *     may be provided; absent fields are left unchanged.
+         *
          */
         patch: operations["updateEvent"];
         trace?: never;
@@ -506,6 +528,7 @@ export interface paths {
         /**
          * Cancel an event
          * @description Transitions event to CANCELLED status. An optional cancellation reason may be provided.
+         *
          */
         post: operations["cancelEvent"];
         delete?: never;
@@ -547,6 +570,7 @@ export interface paths {
          * Sync event from ORIS
          * @description Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and
          *     ACTIVE events with an orisId.
+         *
          */
         post: operations["syncEventFromOris"];
         delete?: never;
@@ -590,6 +614,7 @@ export interface paths {
          * Get family group details
          * @description Returns family group details including parents and children with their own hypermedia links.
          *     Requires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.
+         *
          */
         get: operations["getFamilyGroup"];
         put?: never;
@@ -695,6 +720,7 @@ export interface paths {
          * List fee year publications, optionally filtered by status
          * @description Lists fee selection campaigns (one per calendar year). status=closed returns only past
          *     campaigns; omitted returns all.
+         *
          */
         get: operations["listPublications"];
         put?: never;
@@ -702,6 +728,7 @@ export interface paths {
          * Publish fee levels for a calendar year
          * @description Opens a fee selection campaign for a calendar year, publishing a snapshot of the given
          *     membership fee tiers as fee groups members can choose from.
+         *
          */
         post: operations["publishYear"];
         delete?: never;
@@ -743,6 +770,7 @@ export interface paths {
          * Manually close a campaign
          * @description Processes a campaign immediately, regardless of its voting deadline — finalising member
          *     assignments to fee groups for the campaign's year.
+         *
          */
         post: operations["closeCampaign"];
         delete?: never;
@@ -826,6 +854,7 @@ export interface paths {
          * Get group details (owner or member only)
          * @description Returns group details including owners, members and — for owners only — pending invitations,
          *     each with its own hypermedia links. Caller must be an owner or a member of this group.
+         *
          */
         get: operations["getGroup"];
         put?: never;
@@ -1018,6 +1047,7 @@ export interface paths {
          *     last set. The URL is masked — the full raw token is never stored and can only be revealed
          *     at generation time. Use the 'regenerate' affordance (POST) to create or rotate the token
          *     and receive the full URL once. If no token exists, returns url=null.
+         *
          */
         get: operations["getTokenState"];
         put?: never;
@@ -1027,6 +1057,7 @@ export interface paths {
          *     one already exists. The previous subscribe URL immediately stops working.
          *     Returns the full subscribe URL exactly once — it cannot be recovered afterwards.
          *     Store it securely and add it to your calendar application.
+         *
          */
         post: operations["generateToken"];
         delete?: never;
@@ -1050,6 +1081,7 @@ export interface paths {
          *     user is always the caller — resolved from the Authentication token
          *     (KlabisJwtAuthenticationToken.getUserId()) — so this operation carries no authority and no
          *     ownership extension; it can only ever act on the caller's own account.
+         *
          */
         post: operations["changePassword"];
         delete?: never;
@@ -1070,6 +1102,7 @@ export interface paths {
          * @description Paginated list of members with summary information. Supports fulltext search and status
          *     filtering. Callers without MEMBERS:MANAGE are silently restricted to active members, and
          *     the admin-only fields (email, active) are omitted from the response.
+         *
          */
         get: operations["listMembers"];
         put?: never;
@@ -1082,6 +1115,7 @@ export interface paths {
          *     Responds with a Location header pointing at the created member. When the birth number is
          *     inconsistent with the other personal data, warnings are returned in the X-Warnings header
          *     — the member is still created.
+         *
          */
         post: operations["registerMember"];
         delete?: never;
@@ -1122,6 +1156,7 @@ export interface paths {
          * @description Detailed member information. Which fields are present depends on the caller: fields marked
          *     with x-klabis-authority / x-klabis-owner-visible are omitted unless the caller holds
          *     MEMBERS:MANAGE or is the member themselves.
+         *
          */
         get: operations["getMember"];
         put?: never;
@@ -1134,6 +1169,7 @@ export interface paths {
          * @description Partial update — only the fields present in the request body are changed. Each field is a
          *     JsonNullable wrapper, so omitting a field and setting it to null are different operations.
          *     Fields the caller is not authorized to change are rejected.
+         *
          */
         patch: operations["updateMember"];
         trace?: never;
@@ -1150,6 +1186,7 @@ export interface paths {
         /**
          * Resume a suspended membership
          * @description Reactivates a suspended membership. Refused when the membership is already active.
+         *
          */
         post: operations["resumeMember"];
         delete?: never;
@@ -1172,6 +1209,7 @@ export interface paths {
          * @description Suspends an active membership. Refused when the member still has outstanding debt on their
          *     finance account, or when they are the sole owner of at least one group — a successor must
          *     be designated first.
+         *
          */
         post: operations["suspendMember"];
         delete?: never;
@@ -1211,6 +1249,7 @@ export interface paths {
          * List a member's account transactions
          * @description Paginated, filterable transaction history for a member's finance account. Supports
          *     filtering by occurred-date range and transaction type.
+         *
          */
         get: operations["listTransactions"];
         put?: never;
@@ -1278,6 +1317,7 @@ export interface paths {
          * Reverse an account transaction
          * @description Creates a reversal transaction offsetting the original. Fails with 409 when the transaction
          *     has already been reversed.
+         *
          */
         post: operations["reverse"];
         delete?: never;
@@ -1297,6 +1337,7 @@ export interface paths {
          * Get member's current fee level choice for a year
          * @description Returns the member's current fee group choice and the recommended tier for the year, if
          *     any.
+         *
          */
         get: operations["getChoice"];
         put?: never;
@@ -1346,6 +1387,7 @@ export interface paths {
          * Get member's current fee level summary for a year
          * @description Returns the member's current fee group (if assigned), the recommended level, and whether
          *     voting is currently open for the year.
+         *
          */
         get: operations["getFeeSummary"];
         put?: never;
@@ -1369,6 +1411,7 @@ export interface paths {
          * Assign a member to a fee group
          * @description Admin emergency assignment: adds a member directly to a published fee group for a given
          *     year, bypassing the normal self-service choice flow.
+         *
          */
         post: operations["assignMember"];
         delete?: never;
@@ -1388,6 +1431,7 @@ export interface paths {
          * Get membership fee group details with snapshot and member count
          * @description Returns a published fee group's snapshot (yearly fee, payment rules) and its members,
          *     embedded under "members".
+         *
          */
         get: operations["getFeeGroup"];
         put?: never;
@@ -1399,6 +1443,7 @@ export interface paths {
          * Edit yearly fee and payment rules of a published level
          * @description Updates the yearly fee amount and/or payment rules snapshot of a published fee group. Only
          *     allowed while the group's status is EDITABLE.
+         *
          */
         patch: operations["editSnapshot"];
         trace?: never;
@@ -1472,6 +1517,7 @@ export interface paths {
          * Edit a membership fee tier
          * @description Partial update of a tier's name, yearly fee and/or payment rules. Fields omitted from the
          *     request are left unchanged.
+         *
          */
         patch: operations["editTier"];
         trace?: never;
@@ -1493,6 +1539,7 @@ export interface paths {
          * Add a payment rule to a membership fee tier
          * @description Adds a new payment rule (percentage or fixed amount) for an event type/ranking combination.
          *     Returns Location header pointing to the created rule.
+         *
          */
         post: operations["addRule"];
         delete?: never;
@@ -1540,6 +1587,7 @@ export interface paths {
          * List upcoming ORIS events
          * @description Returns events from ORIS available for import. Accepts multiple region parameters (ORIS
          *     region enum names) to combine results. Already-imported events are filtered out.
+         *
          */
         get: operations["listOrisEvents"];
         put?: never;
@@ -1586,6 +1634,7 @@ export interface paths {
          * @description Returns training group details including trainers and members with their own hypermedia
          *     links. Requires GROUPS:TRAINING, or the caller must be a member or trainer of this group (in
          *     which case a reduced response — name and trainers only — is returned).
+         *
          */
         get: operations["getTrainingGroup"];
         put?: never;
@@ -1720,6 +1769,7 @@ export interface paths {
          * @description Returns an iCalendar (RFC 5545) feed for the authenticated user's personal schedule.
          *     Includes events where the user is an active participant OR acts as coordinator.
          *     Authenticate via the ?token= query parameter (Personal Access Token).
+         *
          */
         get: operations["getMySchedule"];
         put?: never;
@@ -1991,8 +2041,7 @@ export interface components {
             fee?: components["schemas"]["EntryFeeRequest"];
             name: string;
         };
-        /**
-         * @description Accepts deadlines as a list of dates (max 3) and coordinators/categories inline. Category
+        /** @description Accepts deadlines as a list of dates (max 3) and coordinators/categories inline. Category
          *     `id` is never supplied on create — the server always assigns a fresh id. Deadlines must be
          *     in non-decreasing order.
          *
@@ -2000,7 +2049,7 @@ export interface components {
          *     `categories`, which the hand-written predecessor lacked. A blank category name used to reach
          *     the domain and fail its `Assert.hasText` as a 500; a negative fee amount was not checked
          *     anywhere at all. Both are now a 400 with field errors.
-         */
+         *      */
         CreateEventRequest: {
             categories?: components["schemas"]["CreateEventCategoryRequest"][];
             coordinators?: string[];
@@ -2074,10 +2123,9 @@ export interface components {
             /** @description Defaults to CZK when omitted. */
             yearlyFeeCurrency?: string;
         };
-        /**
-         * @description Partial update. Fields omitted from the request are left unchanged. When rules is
+        /** @description Partial update. Fields omitted from the request are left unchanged. When rules is
          *     provided, it replaces the tier's entire rule set.
-         */
+         *      */
         EditMembershipFeeTierRequest: {
             name?: string;
             rules?: components["schemas"]["PaymentRuleRequest"][];
@@ -2318,10 +2366,9 @@ export interface components {
         };
         /** @enum {string} */
         EventStatus: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-        /**
-         * @description Event summary for list views. The status field is only visible to callers with
+        /** @description Event summary for list views. The status field is only visible to callers with
          *     EVENTS:MANAGE authority.
-         */
+         *      */
         EventSummaryDto: {
             cancellationReason?: string;
             categories?: components["schemas"]["EventCategoryDto"][];
@@ -2461,10 +2508,9 @@ export interface components {
             maxLength?: number;
             min?: number;
             minLength?: number;
-            /**
-             * @description Non-standard shorthand currently emitted by HalFormsSupport instead of `multiple`.
+            /** @description Non-standard shorthand currently emitted by HalFormsSupport instead of `multiple`.
              *     Tracked as a backend defect; kept here so the spec matches what is actually sent.
-             */
+             *      */
             multi?: boolean;
             multiple?: boolean;
             name: string;
@@ -2486,17 +2532,15 @@ export interface components {
             target?: string;
             title?: string;
         };
-        /**
-         * @description Map of template name to template. Which templates appear is authorization- and
+        /** @description Map of template name to template. Which templates appear is authorization- and
          *     state-dependent — see x-hal-templates on each response.
-         */
+         *      */
         HalFormsTemplates: {
             [key: string]: components["schemas"]["HalFormsTemplate"];
         };
-        /**
-         * @description Current state of the caller's personal iCal feed token. `url` is masked except immediately
+        /** @description Current state of the caller's personal iCal feed token. `url` is masked except immediately
          *     after generateToken, when it carries the full subscribe URL exactly once.
-         */
+         *      */
         IcalTokenResponse: {
             /** Format: date-time */
             lastSetAt?: string;
@@ -2519,10 +2563,9 @@ export interface components {
             /** Format: uuid */
             memberId: string;
         };
-        /**
-         * @description The member is the sole owner of the listed groups. Each one needs another owner (or must be
+        /** @description The member is the sole owner of the listed groups. Each one needs another owner (or must be
          *     dissolved) before the suspension can go through.
-         */
+         *      */
         LastOwnerWarning: {
             affectedGroups: components["schemas"]["AffectedGroup"][];
             message: string;
@@ -2537,10 +2580,9 @@ export interface components {
             title?: string;
             type?: string;
         };
-        /**
-         * @description Map of link relation name to a link (or array of links).
+        /** @description Map of link relation name to a link (or array of links).
          *     Which relations appear is authorization-dependent — see x-hal-links on each response.
-         */
+         *      */
         Links: {
             [key: string]: components["schemas"]["Link"] | components["schemas"]["Link"][];
         };
@@ -2557,11 +2599,10 @@ export interface components {
             /** Format: uuid */
             memberId?: string;
         };
-        /**
-         * @description Detailed member representation. Fields carrying x-klabis-authority are omitted for callers
+        /** @description Detailed member representation. Fields carrying x-klabis-authority are omitted for callers
          *     without that authority; x-klabis-owner-visible additionally grants access to the member
          *     themselves.
-         */
+         *      */
         MemberDetailsResponse: {
             active?: boolean;
             address?: components["schemas"]["AddressResponse"];
@@ -2781,10 +2822,9 @@ export interface components {
             rankingShortName: string;
             ruleType: string;
         };
-        /**
-         * @description A single payment rule. percentage is present when ruleType is PERCENTAGE; fixedAmount/
+        /** @description A single payment rule. percentage is present when ruleType is PERCENTAGE; fixedAmount/
          *     fixedCurrency are present when ruleType is FIXED_AMOUNT.
-         */
+         *      */
         PaymentRuleResponse: {
             /** Format: uuid */
             eventTypeId?: string;
@@ -2906,10 +2946,9 @@ export interface components {
             registeredAt?: string;
             siCardNumber?: string;
         };
-        /**
-         * @description Registration summary for list views. SI card numbers are not included. registrationTime is
+        /** @description Registration summary for list views. SI card numbers are not included. registrationTime is
          *     visible to the registered member OR callers with EVENTS:REGISTRATIONS.
-         */
+         *      */
         RegistrationSummaryDto: {
             category?: components["schemas"]["EventCategoryDto"];
             firstName?: string;
@@ -2941,7 +2980,13 @@ export interface components {
             note?: string;
             reason: components["schemas"]["DeactivationReason"];
         };
-        SuspensionBlockedWarning: components["schemas"]["OutstandingDebtWarning"] | components["schemas"]["LastOwnerWarning"];
+        /** @description Suspension is blocked by one or both independent reasons. Both `debt` and `groups` are
+         *     checked and reported together, not exclusively.
+         *      */
+        SuspensionBlockedWarning: {
+            debt?: components["schemas"]["OutstandingDebtWarning"] | null;
+            groups?: components["schemas"]["LastOwnerWarning"] | null;
+        };
         TokenRequestRequest: {
             /** Format: email */
             email: string;
@@ -3027,8 +3072,7 @@ export interface components {
             name: string;
             shortName: string;
         };
-        /**
-         * @description Partial update request. Every property is a JsonNullable wrapper: an absent property is left
+        /** @description Partial update request. Every property is a JsonNullable wrapper: an absent property is left
          *     untouched, whereas an explicitly null value clears the field (where the underlying field is
          *     optional). Category `id` present = update an existing category (must belong to this event);
          *     absent = a new category, server assigns a fresh id. Deadlines, when provided, must be in
@@ -3037,7 +3081,7 @@ export interface components {
          *     Properties are inlined rather than sharing PatchField* wrapper schemas: a shared schema
          *     cannot carry per-property constraints, and the generator drops maxLength/pattern from a
          *     mapped schema. See the klabis-api-spec skill.
-         */
+         *      */
         UpdateEventRequest: {
             baseEntryFee?: components["schemas"]["EntryFeeRequest"] | null;
             categories?: components["schemas"]["UpdateEventCategoryRequest"][] | null;
@@ -3064,15 +3108,14 @@ export interface components {
              */
             sortOrder?: number;
         };
-        /**
-         * @description Partial update request. An absent property is left untouched, whereas an explicitly null
+        /** @description Partial update request. An absent property is left untouched, whereas an explicitly null
          *     value clears the field — where the underlying field is optional.
          *
          *     Clearing a field the domain requires is rejected. firstName, lastName, dateOfBirth and
          *     gender have no cleared state, so a null there is treated as "leave alone". An explicit null
          *     is refused for email or phone unless a guardian still covers that contact, for guardian
          *     when the member is a minor, and for birthNumber when the member is a Czech national.
-         */
+         *      */
         UpdateMemberRequest: {
             address?: components["schemas"]["AddressRequest"] | null;
             bankAccountNumber?: string | null;
@@ -3098,11 +3141,10 @@ export interface components {
         UpdatePermissionsRequest: {
             authorities?: components["schemas"]["Authority"][];
         };
-        /**
-         * @description Partial update request. An absent property is left untouched, whereas an explicitly null
+        /** @description Partial update request. An absent property is left untouched, whereas an explicitly null
          *     value is rejected by the domain (name/ageRange cannot be cleared). trainers, when provided,
          *     replaces the full trainer set.
-         */
+         *      */
         UpdateTrainingGroupRequest: {
             ageRange?: components["schemas"]["AgeRangeRequest"] | null;
             name?: string | null;
@@ -3184,10 +3226,9 @@ export interface components {
         CategoryPresetIdParam: string;
         /** @description Event UUID */
         EventIdParam: string;
-        /**
-         * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
+        /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
          *     location, organizer, status, registrationDeadline.
-         */
+         *      */
         EventSortParam: string[];
         /** @description Event type UUID */
         EventTypeIdParam: string;
@@ -3223,19 +3264,17 @@ export interface components {
         RuleRankingParam: string;
         /** @description The size of the page to be returned */
         SizeParam: number;
-        /**
-         * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: firstName, lastName,
+        /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: firstName, lastName,
          *     registrationNumber.
-         */
+         *      */
         SortParam: string[];
         /** @description Membership fee tier UUID */
         TierIdParam: string;
         /** @description Training group UUID */
         TrainingGroupIdParam: string;
-        /**
-         * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,
+        /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,
          *     recordedAt, amount, type.
-         */
+         *      */
         TransactionSortParam: string[];
         /** @description Transaction UUID */
         TxIdParam: string;
@@ -3379,10 +3418,9 @@ export interface operations {
                 endDate?: string;
                 /** @description Sorting parameters (default: startDate,asc) */
                 sort?: string;
-                /**
-                 * @description When true, restricts results to EVENT_DATE items for events where the current user is
+                /** @description When true, restricts results to EVENT_DATE items for events where the current user is
                  *     a participant or coordinator
-                 */
+                 *      */
                 mySchedule?: boolean;
             };
             header?: never;
@@ -3885,10 +3923,9 @@ export interface operations {
                 page?: components["parameters"]["PageParam"];
                 /** @description The size of the page to be returned */
                 size?: components["parameters"]["SizeParam"];
-                /**
-                 * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
+                /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
                  *     location, organizer, status, registrationDeadline.
-                 */
+                 *      */
                 sort?: components["parameters"]["EventSortParam"];
                 /** @description Filter by event status */
                 status?: components["schemas"]["EventStatus"];
@@ -3904,10 +3941,9 @@ export interface operations {
                 dateFrom?: string;
                 /** @description Filter events up to this date (inclusive) */
                 dateTo?: string;
-                /**
-                 * @description Return events whose nearest future registration deadline falls within
+                /** @description Return events whose nearest future registration deadline falls within
                  *     [today, today+period] (ISO-8601 duration, e.g. P7D)
-                 */
+                 *      */
                 deadlineWithin?: string;
                 /** @description Exclude events where the given member is registered: only 'me' is currently accepted */
                 notRegisteredBy?: string;
@@ -4207,10 +4243,9 @@ export interface operations {
     getRegistration: {
         parameters: {
             query?: {
-                /**
-                 * @description When true, returns default prefilled registration data instead of looking up an
+                /** @description When true, returns default prefilled registration data instead of looking up an
                  *     existing registration
-                 */
+                 *      */
                 newRegistration?: boolean;
             };
             header?: never;
@@ -4236,10 +4271,9 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            /**
-             * @description Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with
+            /** @description Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with
              *     mismatched memberId
-             */
+             *      */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -5386,10 +5420,9 @@ export interface operations {
                 page?: components["parameters"]["PageParam"];
                 /** @description The size of the page to be returned */
                 size?: components["parameters"]["SizeParam"];
-                /**
-                 * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: firstName, lastName,
+                /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: firstName, lastName,
                  *     registrationNumber.
-                 */
+                 *      */
                 sort?: components["parameters"]["SortParam"];
                 /** @description Fulltext search over firstName, lastName, registrationNumber (min 2 chars) */
                 q?: string;
@@ -5602,10 +5635,9 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /**
-             * @description Suspension is blocked — either the member owes money on their finance account, or they
+            /** @description Suspension is blocked — either the member owes money on their finance account, or they
              *     are the sole owner of at least one group.
-             */
+             *      */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5654,10 +5686,9 @@ export interface operations {
                 page?: components["parameters"]["PageParam"];
                 /** @description The size of the page to be returned */
                 size?: components["parameters"]["SizeParam"];
-                /**
-                 * @description Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,
+                /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,
                  *     recordedAt, amount, type.
-                 */
+                 *      */
                 sort?: components["parameters"]["TransactionSortParam"];
                 /** @description Only include transactions occurred on or after this date */
                 occurredAtFrom?: string;
@@ -6842,10 +6873,9 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /**
-             * @description Conflict - would remove the last user able to manage permissions, or an admin lockout
+            /** @description Conflict - would remove the last user able to manage permissions, or an admin lockout
              *     would result
-             */
+             *      */
             409: {
                 headers: {
                     [name: string]: unknown;

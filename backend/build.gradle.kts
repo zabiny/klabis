@@ -301,16 +301,12 @@ openApiModule(
         // sibling MemberSummaryResponseList are now both resolved to Page<MemberSummaryResponse> by
         // KlabisSpringCodegen from x-spring-paginated, with no mappings entry needed — see
         // custom-openapi-codegen design.md Decision 2.
-        // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
-        // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
-        // for the union. Object is the honest answer, and it also stops the generator importing a
-        // model it was not asked to generate. Generating the union instead does not work — the
-        // generator flattens a discriminator-less oneOf into one record holding every branch's
-        // fields, each @NotNull, which nothing can satisfy. The published contract in
-        // klabis-full.json still carries the full oneOf; only /v3/api-docs goes without, since
-        // KlabisSpringCodegen suppresses the doc-block content for a java.lang.Object mapping
-        // (springdoc would otherwise infer `"type": "string"`, which is worse than saying nothing).
-        "SuspensionBlockedWarning" to "java.lang.Object"
+        // suspendMember's 409 body: a plain object (debt + groups, both optional/independent —
+        // see members.yaml) that MembersExceptionHandler builds directly and the interface never
+        // names (it returns ResponseEntity<Void>). MembersExceptionHandler declares its own
+        // SuspensionBlockedWarning record rather than using a generated one, so this mapping
+        // redirects onto that hand-written type.
+        "SuspensionBlockedWarning" to "com.klabis.members.infrastructure.restapi.MembersExceptionHandler.SuspensionBlockedWarning"
     )
 )
 

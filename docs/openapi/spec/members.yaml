@@ -809,14 +809,21 @@ components:
           type: string
           maxLength: 500
 
-    # The 409 body of suspendMember, one of two shapes — see the schemaMapping in
-    # backend/build.gradle.kts for why it is mapped away rather than generated. Named rather than
-    # left inline: an inline oneOf makes the generator synthesise a `SuspendMember409Response`
-    # type and import it into MembersApi, and there would be no schema name to map that onto.
+    # The 409 body of suspendMember. Both blockers are independent (a member can simultaneously
+    # owe money AND be a group's last owner), so this is a plain object carrying each as an
+    # optional attribute rather than a oneOf — a oneOf can only ever report one blocker at a time,
+    # forcing the caller to fix issues one round-trip at a time. See the schemaMapping in
+    # backend/build.gradle.kts for why it is mapped away rather than generated.
     SuspensionBlockedWarning:
-      oneOf:
-        - $ref: '#/components/schemas/OutstandingDebtWarning'
-        - $ref: '#/components/schemas/LastOwnerWarning'
+      type: object
+      description: |
+        Suspension is blocked by one or both independent reasons. Both `debt` and `groups` are
+        checked and reported together, not exclusively.
+      properties:
+        debt:
+          $ref: '#/components/schemas/OutstandingDebtWarning'
+        groups:
+          $ref: '#/components/schemas/LastOwnerWarning'
 
     OutstandingDebtWarning:
       type: object

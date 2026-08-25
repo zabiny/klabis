@@ -6,13 +6,16 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.*;
-import com.klabis.members.application.*;
-import com.klabis.members.domain.*;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.DeactivationReason;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.members.MemberId;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.MonetaryAmount;
+import com.klabis.members.OwnedGroup;
+import com.klabis.members.application.*;
+import com.klabis.members.domain.*;
+import com.klabis.members.domain.DeactivationReason;
+import com.klabis.members.domain.Gender;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -1824,7 +1827,7 @@ class MemberControllerApiTest {
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new MemberIsLastGroupOwnerException(groups));
+                    .thenThrow(new SuspensionBlockedException(groups, null));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -1832,9 +1835,10 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.affectedGroups").isArray())
-                    .andExpect(jsonPath("$.affectedGroups[0].groupName").value("Trail Runners"))
-                    .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FREE"));
+                    .andExpect(jsonPath("$.groups.affectedGroups").isArray())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value("FREE"))
+                    .andExpect(jsonPath("$.debt").doesNotExist());
         }
 
         @Test
@@ -1848,7 +1852,7 @@ class MemberControllerApiTest {
                     true);
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new MemberHasOutstandingDebtException(snapshot));
+                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -1856,9 +1860,38 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().is(409))
-                    .andExpect(jsonPath("$.balance.amount").value(-250))
-                    .andExpect(jsonPath("$.balance.currency").value("CZK"))
-                    .andExpect(jsonPath("$.accountLink").value(
+                    .andExpect(jsonPath("$.debt.balance.amount").value(-250))
+                    .andExpect(jsonPath("$.debt.balance.currency").value("CZK"))
+                    .andExpect(jsonPath("$.debt.accountLink").value(
+                            "http://localhost/api/members/%s/account".formatted(memberId)))
+                    .andExpect(jsonPath("$.groups").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should return 409 with both debt and groups when member has both blockers")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WithBothBlockersWhenBothApply() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            List<OwnedGroup> groups = List.of(
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+            );
+            var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                    new MemberId(memberId),
+                    new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
+                    true);
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
+                    .thenThrow(new SuspensionBlockedException(groups, snapshot));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
+                    .andExpect(jsonPath("$.debt.balance.amount").value(-250))
+                    .andExpect(jsonPath("$.debt.accountLink").value(
                             "http://localhost/api/members/%s/account".formatted(memberId)));
         }
     }

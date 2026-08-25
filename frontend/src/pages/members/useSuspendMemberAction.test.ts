@@ -1,5 +1,5 @@
-import {renderHook, act} from '@testing-library/react';
-import {vi, describe, it, expect, beforeEach} from 'vitest';
+import {act, renderHook} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {useSuspendMemberAction} from './useSuspendMemberAction';
 import {FetchError} from '../../api/authorizedFetch';
 
@@ -10,8 +10,11 @@ const makeAffectedGroups409 = () =>
         'Conflict',
         new Headers(),
         JSON.stringify({
-            message: 'member is last owner',
-            affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
+            groups: {
+                message: 'member is last owner',
+                affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
+            },
+            debt: null,
         }),
     );
 
@@ -22,8 +25,29 @@ const makeNegativeBalance409 = () =>
         'Conflict',
         new Headers(),
         JSON.stringify({
-            balance: {amount: -350, currency: 'CZK'},
-            accountLink: '/api/members/abc-123/account',
+            debt: {
+                balance: {amount: -350, currency: 'CZK'},
+                accountLink: '/api/members/abc-123/account',
+            },
+            groups: null,
+        }),
+    );
+
+const makeBothBlockers409 = () =>
+    new FetchError(
+        '409 Conflict',
+        409,
+        'Conflict',
+        new Headers(),
+        JSON.stringify({
+            debt: {
+                balance: {amount: -350, currency: 'CZK'},
+                accountLink: '/api/members/abc-123/account',
+            },
+            groups: {
+                message: 'member is last owner',
+                affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
+            },
         }),
     );
 
@@ -138,6 +162,51 @@ describe('useSuspendMemberAction', () => {
             });
 
             expect(result.current.negativeBalanceWarning).toBeNull();
+        });
+    });
+
+    describe('both blockers present (debt + groups)', () => {
+        it('returns true (handled) and sets both warning states', () => {
+            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+
+            let returnValue: true | undefined;
+            act(() => {
+                returnValue = result.current.onSubmitError(makeBothBlockers409());
+            });
+
+            expect(returnValue).toBe(true);
+            expect(result.current.negativeBalanceWarning).toEqual({
+                balance: {amount: -350, currency: 'CZK'},
+                accountLink: '/api/members/abc-123/account',
+            });
+            expect(result.current.suspensionWarning).toEqual([
+                {groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'},
+            ]);
+        });
+
+        it('closes the action modal (debt blocker present)', () => {
+            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+
+            act(() => {
+                result.current.onSubmitError(makeBothBlockers409());
+            });
+
+            expect(closeActionModal).toHaveBeenCalledTimes(1);
+        });
+
+        it('clearing one warning leaves the other intact', () => {
+            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+
+            act(() => {
+                result.current.onSubmitError(makeBothBlockers409());
+            });
+
+            act(() => {
+                result.current.clearNegativeBalanceWarning();
+            });
+
+            expect(result.current.negativeBalanceWarning).toBeNull();
+            expect(result.current.suspensionWarning).not.toBeNull();
         });
     });
 
