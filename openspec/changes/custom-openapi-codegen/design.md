@@ -341,6 +341,31 @@ the original decision needed no code at all.
   by the shape-detection flowchart above and by keeping `HalEnvelopeDetector` as a small,
   independently unit-testable class rather than logic buried inside the codegen override.
 
+## Known follow-ups (deliberately not done here)
+
+Surfaced by the closing quality review, judged out of scope for this change because each would
+alter behavior or reach well beyond the diff, and the acceptance bar here is byte-for-byte
+identical generated output:
+
+- **`postProcessOperationsWithModels` removes envelope imports after the fact.** The site that
+  *adds* them is `DefaultCodegen.getContent()` (protected, sources line 7864), which walks every
+  media type of the raw response — including the HAL variant — and imports each one's type.
+  Overriding `getContent` to unwrap before `super` would prevent the import instead of subtracting
+  it, and would remove the one name-based rule in the class (the cleanup matches an import's simple
+  name against a schema name, in a design that otherwise matches by shape — Decision 3). Not done
+  because `getContent` also populates `CodegenResponse.content`, so overriding it reaches further
+  than the targeted import cleanup; `api.mustache` reads `baseType`/`produces`/`isArray` rather
+  than `content`, so the risk is low but not zero.
+- **`HalEnvelopeDetector` tests `"array".equals(schema.getType())` directly** where the rest of the
+  pipeline goes through `ModelUtils.isArraySchema`, which also handles the OpenAPI 3.1
+  `type: ["array"]` spelling. The bundle currently emits scalar `type` strings, so this is latent
+  rather than active — but a future `_embedded` array written in list form would silently stop
+  being detected.
+- **Test fixtures build the two envelope shapes by hand in 22 places** across the four test files.
+  Since the detector's rules *are* structural, those fixtures are the specification of the rules; a
+  shared builder would keep them from drifting as rules change. The negative-case fixtures should
+  stay hand-built — deviating from the canonical shape is exactly what they test.
+
 ## Migration Plan
 
 1. Build `KlabisSpringCodegen` + `HalEnvelopeDetector` with unit tests against schema fixtures

@@ -283,8 +283,6 @@ val openapiBundle by tasks.registering(Exec::class) {
  *                 classes, domain-enum redirection, cross-module application types, and marker
  *                 types shaped as a plain object with only a links property (no allOf, no embedded
  *                 block — deliberately not matched by HalEnvelopeDetector).
- * @param generator openapi-generator name; every module uses klabis-spring, i.e.
- *                 com.klabis.openapi.codegen.KlabisSpringCodegen, registered in buildSrc.
  */
 fun openApiModule(
     module: String,
@@ -292,8 +290,7 @@ fun openApiModule(
     apis: List<String>,
     models: List<String>,
     mappings: Map<String, String>,
-    extraImportMappings: Map<String, String> = emptyMap(),
-    generator: String = "klabis-spring"
+    extraImportMappings: Map<String, String> = emptyMap()
 ) {
     val outputDir = layout.buildDirectory.dir("generated/openapi/$module")
 
@@ -311,7 +308,9 @@ fun openApiModule(
         // fails.
         doFirst { delete(outputDir) }
 
-        generatorName.set(generator)
+        // com.klabis.openapi.codegen.KlabisSpringCodegen, registered in buildSrc via
+        // META-INF/services. Resolves HAL envelopes structurally — see its class Javadoc.
+        generatorName.set("klabis-spring")
         // The committed frontend-facing bundle — openapiBundle's default (no -PopenapiOut/-PopenapiCheck)
         // writes exactly here, so a plain `dependsOn(openapiBundle)` is enough to keep this fresh.
         // Codegen and the frontend read the same document now; the separate --strip-hal bundle is
@@ -439,8 +438,7 @@ openApiModule(
         // KlabisSpringCodegen suppresses the doc-block content for a java.lang.Object mapping
         // (springdoc would otherwise infer `"type": "string"`, which is worse than saying nothing).
         "SuspensionBlockedWarning" to "java.lang.Object"
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -452,8 +450,7 @@ openApiModule(
         "CreateEventTypeRequest",
         "UpdateEventTypeRequest"
     ),
-    mappings = mapOf(),
-    generator = "klabis-spring"
+    mappings = mapOf()
 )
 
 openApiModule(
@@ -471,8 +468,7 @@ openApiModule(
     // application/json sibling TransactionResourcePage (a named array schema) are now both resolved
     // to Page<TransactionResource> by KlabisSpringCodegen from x-spring-paginated, with no mappings
     // entry needed — see custom-openapi-codegen design.md Decision 2.
-    mappings = mapOf(),
-    generator = "klabis-spring"
+    mappings = mapOf()
 )
 openApiModule(
     module = "events",
@@ -538,8 +534,7 @@ openApiModule(
         "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
         "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
         "BulkImportResult" to "com.klabis.events.application.BulkImportResult"
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -554,8 +549,7 @@ openApiModule(
     // No mappings: listCalendarItems' CalendarItemDtoList is a named array schema -> List<CalendarItemDto>
     // directly, and getCalendarItem/getTokenState/generateToken's application/json siblings already
     // match their target Java class names — nothing to redirect. No pagination in this module.
-    mappings = mapOf(),
-    generator = "klabis-spring"
+    mappings = mapOf()
 )
 
 openApiModule(
@@ -588,8 +582,7 @@ openApiModule(
         // this mapping stays — it is a hand-written override the generator cannot infer from spec
         // structure alone, unlike the envelope unwrap above.
         "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse"
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 // The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
@@ -619,8 +612,7 @@ openApiModule(
         // auto-unwrapped by KlabisSpringCodegen from its array/_embedded shape (Shape 2, non-paginated
         // -> List<T>) — no mapping needed, matching the FamilyGroupSummaryResponseList sibling it used
         // to be stripped down to.
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -646,8 +638,7 @@ openApiModule(
         // from their array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed,
         // matching the GroupSummaryResponseList/PendingInvitationResponseList siblings they used to be
         // stripped down to.
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -672,8 +663,7 @@ openApiModule(
         // listTrainingGroups' envelope is now auto-unwrapped by KlabisSpringCodegen from its
         // array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed, matching the
         // TrainingGroupSummaryResponseList sibling it used to be stripped down to.
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -707,8 +697,7 @@ openApiModule(
         // DashboardController for the actual setDomain(...) call and value chosen.
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
         "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
-    ),
-    generator = "klabis-spring"
+    )
 )
 
 openApiModule(
@@ -728,6 +717,5 @@ openApiModule(
     models = listOf("_NoGeneratedModelsForOris"),
     mappings = mapOf(
         "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
-    ),
-    generator = "klabis-spring"
+    )
 )

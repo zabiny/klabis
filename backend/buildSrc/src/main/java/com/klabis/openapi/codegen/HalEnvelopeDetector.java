@@ -165,7 +165,20 @@ public final class HalEnvelopeDetector {
         return items;
     }
 
-    private static Schema<?> resolveRef(Schema<?> refSchema, Map<String, Schema> schemas) {
+    /**
+     * Resolves a {@code $ref} schema against {@code schemas}, returning {@code null} when it names
+     * nothing in the document. That {@code null} is load-bearing: callers treat an unresolvable
+     * {@code $ref} as "not an envelope" rather than accepting the ref wrapper itself. This is why
+     * {@code ModelUtils.getReferencedSchema} is NOT used — it returns the original schema on an
+     * unresolvable ref, which would make a dangling {@code $ref} register as a valid envelope.
+     *
+     * <p>Package-private so {@link KlabisSpringCodegen} shares this one copy of the ref-parsing
+     * convention rather than keeping its own.
+     */
+    static Schema<?> resolveRef(Schema<?> refSchema, Map<String, Schema> schemas) {
+        if (refSchema == null) {
+            return null;
+        }
         String ref = refSchema.get$ref();
         if (ref == null) {
             return refSchema;

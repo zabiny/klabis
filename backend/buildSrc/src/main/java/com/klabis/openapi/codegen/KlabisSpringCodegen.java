@@ -114,7 +114,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
         // schema, not on a {$ref: "..."} pointer — the response's content almost always names the
         // envelope by $ref (e.g. getFeeGroup's sole application/prs.hal-forms+json entry), so the
         // detector would see an empty wrapper object and never find the allOf it is looking for.
-        Schema<?> resolvedForDetection = resolveIfRef(responseSchema, schemas);
+        Schema<?> resolvedForDetection = HalEnvelopeDetector.resolveRef(responseSchema, schemas);
         Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
             ? Optional.empty()
             : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
@@ -187,51 +187,49 @@ public class KlabisSpringCodegen extends SpringCodegen {
      */
     @Override
     public CodegenResponse fromResponse(String responseCode, ApiResponse response) {
-        Schema<?> responseSchema = resolveResponseSchema(response);
-        Schema<?> resolvedForDetection = resolveIfRef(responseSchema, ModelUtils.getSchemas(openAPI));
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        Schema<?> resolvedForDetection = HalEnvelopeDetector.resolveRef(resolveResponseSchema(response), schemas);
         Optional<EnvelopeUnwrap> unwrap = resolvedForDetection == null
             ? Optional.empty()
-            : HalEnvelopeDetector.detect(resolvedForDetection, ModelUtils.getSchemas(openAPI));
+            : HalEnvelopeDetector.detect(resolvedForDetection, schemas);
 
-        boolean paginated = currentOperation != null && isPaginated(currentOperation);
-        // A collection response (whether a Shape 2 envelope OR a bare array schema — e.g.
-        // listMembers' application/json sibling MemberSummaryResponseList, which resolveResponseSchema
-        // picks first per the bundler's sort order and which does NOT match HalEnvelopeDetector at
-        // all) resolves to Page<T> on a paginated operation, per Decision 2 — pagination is a
-        // property of the operation, independent of which response representation is used. Page<T>
-        // is a generic type, not legal in @Schema(implementation = ...) (JLS 15.8.2, Decision 4).
-        // Rather than generating an illegal class literal and patching it back out (the old doLast
-        // regex, now removed), suppress the doc content block entirely by leaving CodegenResponse's
-        // baseType unset: api.mustache's `{{#baseType}}...{{/baseType}}` around the whole
-        // `content = {...}` block never opens. This mirrors what the prior schemaMappings ->
-        // Page<X> pipeline produced (no content block for this response at all).
-        boolean isCollectionShape = unwrap.map(EnvelopeUnwrap::isCollection)
-            .orElseGet(() -> resolvedForDetection != null && ModelUtils.isArraySchema(resolvedForDetection));
-        if (paginated && isCollectionShape) {
-            CodegenResponse r = unwrap.isPresent()
-                ? super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())))
-                : super.fromResponse(responseCode, response);
-            r.baseType = null;
-            return r;
-        }
+        ApiResponse effective = unwrap
+            .map(u -> withSchema(response, unwrappedResponseSchema(u)))
+            .orElse(response);
+        CodegenResponse r = super.fromResponse(responseCode, effective);
 
-        CodegenResponse r = unwrap.isEmpty()
-            ? super.fromResponse(responseCode, response)
-            : super.fromResponse(responseCode, withSchema(response, unwrappedResponseSchema(unwrap.get())));
-        return suppressUnusableObjectDocBlock(r);
+        // A collection response — whether a Shape 2 envelope OR a bare array schema (e.g.
+        // listMembers' application/json sibling MemberSummaryResponseList, which
+        // resolveResponseSchema picks first per the bundler's sort order and which does NOT match
+        // HalEnvelopeDetector at all) — resolves to Page<T> on a paginated operation, per
+        // Decision 2: pagination is a property of the operation, independent of which response
+        // representation is used.
+        boolean paginatedCollection = currentOperation != null
+            && isPaginated(currentOperation)
+            && unwrap.map(EnvelopeUnwrap::isCollection)
+                .orElseGet(() -> resolvedForDetection != null && ModelUtils.isArraySchema(resolvedForDetection));
+
+        return suppressUnrenderableDocBlock(r, paginatedCollection);
     }
 
     /**
-     * A schemaMappings target of {@code java.lang.Object} (e.g. {@code SuspensionBlockedWarning} —
-     * a discriminator-less {@code oneOf} no single Java type stands for) is not legal in
-     * {@code @Schema(implementation = ...)} either, for the same reason as a generic {@code Page<X>}
-     * class literal is not (Decision 4): springdoc renders {@code Object.class} as
-     * {@code "type": "string"}, which is worse than omitting the block. Suppressing it here — by
-     * leaving {@code baseType} unset, the same mechanism the paginated-response branch above uses —
-     * replaces what the old {@code doLast} regex patch did for this case.
+     * Clears {@code baseType} whenever the response's true type cannot be written as a Java class
+     * literal, which is what {@code @Schema(implementation = ...)} requires (JLS 15.8.2,
+     * Decision 4). Two cases reach this today, and they are one rule rather than two:
+     * <ul>
+     *     <li>a paginated collection, whose true type is the generic {@code Page<T>};</li>
+     *     <li>a {@code schemaMappings} target of {@code java.lang.Object} (e.g.
+     *     {@code SuspensionBlockedWarning}, a discriminator-less {@code oneOf} no single Java type
+     *     stands for) — springdoc renders {@code Object.class} as {@code "type": "string"}, which
+     *     is worse than omitting the block.</li>
+     * </ul>
+     * Leaving {@code baseType} unset means {@code api.mustache}'s
+     * {@code &#123;&#123;#baseType&#125;&#125;} section around the whole {@code content = &#123;...&#125;}
+     * block never opens, so no illegal literal is emitted in the first place — which is what the
+     * old {@code doLast} regex patch used to remove after the fact.
      */
-    private static CodegenResponse suppressUnusableObjectDocBlock(CodegenResponse r) {
-        if ("Object".equals(r.baseType) || "java.lang.Object".equals(r.baseType)) {
+    private static CodegenResponse suppressUnrenderableDocBlock(CodegenResponse r, boolean paginatedCollection) {
+        if (paginatedCollection || "Object".equals(r.baseType) || "java.lang.Object".equals(r.baseType)) {
             r.baseType = null;
         }
         return r;
@@ -282,14 +280,6 @@ public class KlabisSpringCodegen extends SpringCodegen {
         return rewritten;
     }
 
-    private static Schema<?> resolveIfRef(Schema<?> schema, Map<String, Schema> schemas) {
-        if (schema == null || schema.get$ref() == null) {
-            return schema;
-        }
-        String ref = schema.get$ref();
-        String name = ref.substring(ref.lastIndexOf('/') + 1);
-        return schemas.get(name);
-    }
 
     private static boolean isPaginated(Operation operation) {
         if (operation.getExtensions() == null) {
