@@ -27,11 +27,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("Member Controller Mapping Tests")
 @ExtendWith(SpringExtension.class)
-@Import(MemberMapperImpl.class)
+@Import({MemberMapperImpl.class, MemberSummaryConverterImpl.class, MemberDetailsConverterImpl.class})
 class MemberMappingTests {
 
     @Autowired
     private MemberMapper testedSubject;
+
+    @Autowired
+    private MemberSummaryConverter summaryConverter;
+
+    @Autowired
+    private MemberDetailsConverter detailsConverter;
 
     @Nested
     @DisplayName("mapToIdentityCardDto()")
@@ -194,7 +200,7 @@ class MemberMappingTests {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto).isNotNull();
             assertThat(dto.id()).isEqualTo(memberId);
@@ -211,7 +217,7 @@ class MemberMappingTests {
                     .withName("Petra", "Nováková")
                     .build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto.firstName()).isEqualTo("Petra");
             assertThat(dto.lastName()).isEqualTo("Nováková");
@@ -225,7 +231,7 @@ class MemberMappingTests {
                     .withRegistrationNumber("ZBM9999")
                     .build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto.registrationNumber()).isEqualTo("ZBM9999");
         }
@@ -256,7 +262,7 @@ class MemberMappingTests {
                     .withDietaryRestrictions("No restrictions")
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto).isNotNull();
             assertThat(dto.id()).isEqualTo(memberId);
@@ -285,7 +291,7 @@ class MemberMappingTests {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto).isNotNull();
             assertThat(dto.chipNumber()).isNull();
@@ -306,7 +312,7 @@ class MemberMappingTests {
                     .withIdentityCard(identityCard)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNotNull();
             assertThat(dto.identityCard().cardNumber()).isEqualTo("ONLY-IC");
@@ -327,7 +333,7 @@ class MemberMappingTests {
                     .withMedicalCourse(medicalCourse)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNotNull();
@@ -345,7 +351,7 @@ class MemberMappingTests {
                     .withTrainerLicense(trainerLicense)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNull();
@@ -370,7 +376,7 @@ class MemberMappingTests {
                     .withTrainerLicense(trainerLicense)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNotNull();
             assertThat(dto.medicalCourse()).isNotNull();

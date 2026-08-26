@@ -11,6 +11,8 @@ import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -46,11 +49,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class PermissionController implements PermissionsApi {
 
     private final PermissionService permissionService;
-    private final AuthorityMapper authorityMapper;
+    private final ConversionService conversionService;
 
-    public PermissionController(PermissionService permissionService, AuthorityMapper authorityMapper) {
+    public PermissionController(PermissionService permissionService, ConversionService conversionService) {
         this.permissionService = permissionService;
-        this.authorityMapper = authorityMapper;
+        this.conversionService = conversionService;
     }
 
     /**
@@ -84,7 +87,13 @@ public class PermissionController implements PermissionsApi {
     @Override
     public ResponseEntity<Void> updatePermissions(UUID id, UpdatePermissionsRequest request) {
 
-        permissionService.updateUserPermissions(new UserId(id), authorityMapper.toDomainSet(request.authorities()));
+        @SuppressWarnings("unchecked")
+        Set<com.klabis.common.users.Authority> authorities = (Set<com.klabis.common.users.Authority>) conversionService.convert(
+                request.authorities(),
+                TypeDescriptor.collection(Set.class, TypeDescriptor.valueOf(Authority.class)),
+                TypeDescriptor.collection(Set.class, TypeDescriptor.valueOf(com.klabis.common.users.Authority.class)));
+
+        permissionService.updateUserPermissions(new UserId(id), authorities);
 
         URI location = klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(id))
                 .map(link -> URI.create(link.toUri().toString()))

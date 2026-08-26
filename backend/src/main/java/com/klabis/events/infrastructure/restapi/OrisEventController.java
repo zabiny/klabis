@@ -8,6 +8,7 @@ import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.oris.OrisIntegrationComponent;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,16 +29,16 @@ class OrisEventController implements OrisEventsApi {
     private final OrisEventImportPort orisEventImportPort;
     private final OrisEventBulkImportPort orisEventBulkImportPort;
     private final OrisBulkSyncPort orisBulkSyncPort;
-    private final BulkResultMapper bulkResultMapper;
+    private final ConversionService conversionService;
 
     OrisEventController(OrisEventImportPort orisEventImportPort,
                         OrisEventBulkImportPort orisEventBulkImportPort,
                         OrisBulkSyncPort orisBulkSyncPort,
-                        BulkResultMapper bulkResultMapper) {
+                        ConversionService conversionService) {
         this.orisEventImportPort = orisEventImportPort;
         this.orisEventBulkImportPort = orisEventBulkImportPort;
         this.orisBulkSyncPort = orisBulkSyncPort;
-        this.bulkResultMapper = bulkResultMapper;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -62,7 +63,7 @@ class OrisEventController implements OrisEventsApi {
     @Override
     public ResponseEntity<BulkSyncResult> syncAllUpcomingFromOris() {
         var result = orisBulkSyncPort.syncAllUpcoming();
-        return ResponseEntity.ok(bulkResultMapper.toDto(result));
+        return ResponseEntity.ok(conversionService.convert(result, BulkSyncResult.class));
     }
 
     @Override
@@ -70,6 +71,6 @@ class OrisEventController implements OrisEventsApi {
             ImportBatchRequest request) {
 
         var result = orisEventBulkImportPort.importEventsFromOris(request.orisIds());
-        return ResponseEntity.ok(bulkResultMapper.toDto(result));
+        return ResponseEntity.ok(conversionService.convert(result, BulkImportResult.class));
     }
 }
