@@ -287,26 +287,6 @@ openApiModule(
 openApiModule(
     module = "events",
     pkg = "com.klabis.events.infrastructure.restapi",
-    // OrisEvents is its own tag (not "Events") so it gets its own generated interface even though
-    // OrisEventController shares the /api/events URL prefix with EventController — see
-    // klabis-api-spec skill: "one *Api interface per tag" and events.yaml header comment.
-    // "EventRegistrations" replaces the original multi-word @Tag "Event Registrations", which the
-    // generator silently drops.
-    //
-    // Two operations on this tag need a note:
-    //   - getEvent returns EventDto; its _embedded.registrationDtoList is contributed by
-    //     the controller via HalResponseContext.embed(...) and assembled by HalResponseBodyAdvice,
-    //     so the _embedded block never appears in the Java return type.
-    //   - the accommodation-list path answers with two produces variants (HAL JSON and text/csv) on
-    //     one operation; the generator emits ONE Java method (getAccommodationList) whose inherited
-    //     produces lists both content types. The hand-written getAccommodationList (JSON) DOES
-    //     implement that generated method — its own @GetMapping narrows produces down to the HAL
-    //     variant, because Spring refuses to dispatch when getAccommodationList and the separate
-    //     hand-written getAccommodationListAsCsv (text/csv) both claim to serve text/csv
-    //     ("Ambiguous handler methods"). getAccommodationListAsCsv itself has no interface
-    //     counterpart — see the comment on that method in EventController.
-    // Same precedent as IcalFeedController in the calendar module.
-    // Also covers the EventTypes tag, merged from event-types.yaml into events.yaml.
     specFile = "events.yaml",
     mappings = emptyMap()
 )
@@ -321,36 +301,15 @@ openApiModule(
 openApiModule(
     module = "membershipfees",
     pkg = "com.klabis.membershipfees.infrastructure.restapi",
-    // getFeeGroup (MembershipFeeGroups) is generated like any other operation; it is only its
-    // *response schema* that is documentation-only. EntityModelMembershipFeeGroupResponseWithMembers
-    // is a Shape 1 HAL envelope (allOf[$ref MembershipFeeGroupResponse, {_links, _embedded}]),
-    // auto-unwrapped by KlabisSpringCodegen/HalEnvelopeDetector — see custom-openapi-codegen — so the
-    // generated method does not try to express the second, independently-shaped collection (group
-    // members) the controller embeds via HalModelBuilder. HalResponseContext only supports a single
-    // domain object or a flat list. Same precedent as EventController's getEvent in the events module.
     specFile = "membershipfees.yaml",
     mappings = emptyMap()
 )
 
-// The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
-// own controller, but they all generate into ONE shared package now
-// (com.klabis.groups.infrastructure.restapi) via a single call against the ONE groups.yaml spec
-// file — see design.md Decision 1. Hand-written controllers stay in their per-aggregate packages
-// and reference the generated types via explicit import.
 openApiModule(
     module = "groups",
     pkg = "com.klabis.groups.infrastructure.restapi",
-    // getFamilyGroup/getGroup/getTrainingGroup are each generated via the application/json content
-    // sibling (see groups.yaml) — their own top level has no allOf/_links shape, so response-level
-    // envelope detection is a no-op for them. parents/members/trainers resolve to
-    // List<EntityModel<X>> because EntityModelParentResponse/EntityModelFamilyGroupMembershipResponse/
-    // EntityModelOwnerResponse/EntityModelFreeGroupMembershipResponse/EntityModelPendingInvitationResponse/
-    // EntityModelTrainerResponse/EntityModelGroupMembershipResponse are redirected via mappings
-    // straight onto EntityModel<X> — see KlabisSpringCodegen.fromProperty's isMappedEnvelopeItem
-    // guard, which steps aside for any array item schema present in schemaMapping() instead of
-    // applying its own default strip-to-bare-payload rewrite. ageRange is a plain $ref property
-    // (Category A, not array-wrapped), so it needs no mapping.
     specFile = "groups.yaml",
+    // mappings and imports needed because of using EntityModel<T> as 2nd level attribute in responses (group.members, etc.. )
     mappings = mapOf(
         "EntityModelParentResponse" to "org.springframework.hateoas.EntityModel<ParentResponse>",
         "EntityModelFamilyGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>",
@@ -384,10 +343,6 @@ openApiModule(
 openApiModule(
     module = "oris",
     pkg = "com.klabis.oris",
-    // oris.yaml's "OrisImport" tag used to need an explicit apis filter because the generator's
-    // substring tag-matching would otherwise also pull in events.yaml's "OrisEvents" tag from the
-    // shared bundle. Now that inputSpec is scoped to oris.yaml alone, no other tag exists in that
-    // file to collide with (confirmed via grep tags: oris.yaml).
     specFile = "oris.yaml",
     mappings = emptyMap()
 )
