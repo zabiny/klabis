@@ -11,6 +11,7 @@ import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.EventType;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -40,9 +41,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class EventTypeController implements EventTypesApi {
 
     private final EventTypeManagementPort eventTypeManagementService;
+    private final ConversionService conversionService;
 
-    EventTypeController(EventTypeManagementPort eventTypeManagementService) {
+    EventTypeController(EventTypeManagementPort eventTypeManagementService, ConversionService conversionService) {
         this.eventTypeManagementService = eventTypeManagementService;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class EventTypeController implements EventTypesApi {
         List<EventType> eventTypes = eventTypeManagementService.listAllSorted();
 
         List<EventTypeDto> payload = eventTypes.stream()
-                .map(EventTypeDtoMapper::toDto)
+                .map(eventType -> conversionService.convert(eventType, EventTypeDto.class))
                 .toList();
 
         HalResponseContext.setDomainList(eventTypes);
@@ -64,14 +67,15 @@ public class EventTypeController implements EventTypesApi {
         EventType eventType = eventTypeManagementService.getEventType(new EventTypeId(id));
 
         HalResponseContext.setDomain(eventType);
-        return ResponseEntity.ok(EventTypeDtoMapper.toDto(eventType));
+        return ResponseEntity.ok(conversionService.convert(eventType, EventTypeDto.class));
     }
 
     @Override
     public ResponseEntity<Void> createEventType(
             CreateEventTypeRequest request) {
 
-        EventType created = eventTypeManagementService.createEventType(EventTypeRequestMapper.toCommand(request));
+        EventType created = eventTypeManagementService.createEventType(
+                conversionService.convert(request, EventType.CreateEventType.class));
         return ResponseEntity
                 .created(linkTo(methodOn(EventTypesApi.class).getEventType(created.getId().value())).toUri())
                 .build();
@@ -82,7 +86,8 @@ public class EventTypeController implements EventTypesApi {
             @PathVariable UUID id,
             UpdateEventTypeRequest request) {
 
-        eventTypeManagementService.updateEventType(new EventTypeId(id), EventTypeRequestMapper.toCommand(request));
+        eventTypeManagementService.updateEventType(new EventTypeId(id),
+                conversionService.convert(request, EventType.UpdateEventType.class));
         return ResponseEntity.noContent().build();
     }
 
