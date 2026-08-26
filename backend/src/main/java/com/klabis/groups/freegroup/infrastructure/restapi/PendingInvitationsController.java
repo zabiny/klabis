@@ -8,11 +8,11 @@ import com.klabis.groups.freegroup.application.PendingInvitationView;
 import com.klabis.groups.infrastructure.restapi.GroupsApi;
 import com.klabis.groups.infrastructure.restapi.InvitationsApi;
 import com.klabis.groups.infrastructure.restapi.PendingInvitationResponse;
-import com.klabis.groups.infrastructure.restapi.PendingInvitationResponseBuilder;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
@@ -36,9 +36,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class PendingInvitationsController implements InvitationsApi {
 
     private final FreeGroupManagementPort membersGroupManagementService;
+    private final ConversionService conversionService;
 
-    PendingInvitationsController(FreeGroupManagementPort membersGroupManagementService) {
+    PendingInvitationsController(FreeGroupManagementPort membersGroupManagementService, ConversionService conversionService) {
         this.membersGroupManagementService = membersGroupManagementService;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -49,12 +51,7 @@ class PendingInvitationsController implements InvitationsApi {
 
         HalResponseContext.setDomainList(views);
         return ResponseEntity.ok(views.stream()
-                .map(view -> PendingInvitationResponseBuilder.builder()
-                        .groupId(view.groupId().uuid())
-                        .groupName(view.groupName())
-                        .invitationId(view.invitation().getId().value())
-                        .invitedBy(view.invitation().getInvitedBy().uuid())
-                        .build())
+                .map(view -> conversionService.convert(view, PendingInvitationResponse.class))
                 .toList());
     }
 }
