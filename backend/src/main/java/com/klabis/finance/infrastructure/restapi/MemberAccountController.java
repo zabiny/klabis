@@ -19,6 +19,7 @@ import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
@@ -47,16 +48,19 @@ class MemberAccountController implements FinanceApi {
     private final ReversePort reversePort;
     private final MemberAccountRepository memberAccountRepository;
     private final TransactionQueryPort transactionQueryPort;
+    private final ConversionService conversionService;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
                             ReversePort reversePort,
                             MemberAccountRepository memberAccountRepository,
-                            TransactionQueryPort transactionQueryPort) {
+                            TransactionQueryPort transactionQueryPort,
+                            ConversionService conversionService) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
         this.reversePort = reversePort;
         this.memberAccountRepository = memberAccountRepository;
         this.transactionQueryPort = transactionQueryPort;
+        this.conversionService = conversionService;
     }
 
     @Transactional(readOnly = true)
@@ -67,31 +71,10 @@ class MemberAccountController implements FinanceApi {
         MemberId id = new MemberId(memberId);
         Money balance = memberAccountRepository.findBalanceById(id)
                 .orElseThrow(() -> new MemberAccountNotFoundException(id));
-        MemberAccountResource resource = toMemberAccountResource(id, balance);
+        MemberAccountResource resource = conversionService.convert(
+                new MemberAccountResourceConverter.MemberBalance(id, balance), MemberAccountResource.class);
         HalResponseContext.setDomain(id);
         return ResponseEntity.ok(resource);
-    }
-
-    private static MemberAccountResource toMemberAccountResource(MemberId memberId, Money balance) {
-        return MemberAccountResourceBuilder.builder()
-                .memberId(memberId.uuid())
-                .balance(balance.amount())
-                .currency(balance.currency().getCurrencyCode())
-                .build();
-    }
-
-    private static TransactionResource toTransactionResource(Transaction tx) {
-        return TransactionResourceBuilder.builder()
-                .id(tx.getId().value())
-                .type(tx.getType().name())
-                .amount(tx.getAmount().amount())
-                .currency(tx.getAmount().currency().getCurrencyCode())
-                .note(tx.getNote())
-                .recordedAt(tx.getRecordedAt())
-                .occurredAt(tx.getOccurredAt())
-                .recordedBy(tx.getRecordedBy().uuid())
-                .reversesTransactionId(tx.getReversesTransactionId() != null ? tx.getReversesTransactionId().value() : null)
-                .build();
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +95,7 @@ class MemberAccountController implements FinanceApi {
         HalResponseContext.setDomainList(page.getContent().stream()
                 .map(twr -> new AccountTransaction(id, twr))
                 .toList());
-        return ResponseEntity.ok(page.map(twr -> toTransactionResource(twr.transaction())));
+        return ResponseEntity.ok(page.map(twr -> conversionService.convert(twr.transaction(), TransactionResource.class)));
     }
 
     @Transactional(readOnly = true)
@@ -129,7 +112,7 @@ class MemberAccountController implements FinanceApi {
                 .orElseGet(() -> TransactionWithReversal.withoutReversal(tx));
 
         HalResponseContext.setDomain(new AccountTransaction(id, twr));
-        return ResponseEntity.ok(toTransactionResource(tx));
+        return ResponseEntity.ok(conversionService.convert(tx, TransactionResource.class));
     }
 
     @Override
