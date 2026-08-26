@@ -155,12 +155,12 @@ class FamilyGroupController implements FamilyGroupsApi {
                 .map(m -> buildChildModel(m, groupUuid, hasMembersManage))
                 .toList();
 
-        return new FamilyGroupResponse(group.getId(), group.getName(), parentModels, memberModels);
+        return new FamilyGroupResponse(group.getId().uuid(), memberModels, group.getName(), parentModels);
     }
 
     private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership membership, UUID groupUuid, boolean hasMembersManage) {
         MemberId memberId = membership.memberId();
-        FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
+        FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(membership.joinedAt(), memberId.uuid());
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))

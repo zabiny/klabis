@@ -186,7 +186,13 @@ the default. Relying on "the default happens to match" is a silent trap the mome
 renamed; an explicit `x-klabis-relation` makes the `_embedded` key a spec-visible contract instead
 of an accident of Java naming, and costs one YAML block per schema.
 
-### Decision 3 (Category C): property-level unwrap, no `EntityModel<T>` in generated Java
+### Decision 3 (Category C): property-level unwrap, no `EntityModel<T>` in generated Java (SUPERSEDED for `FamilyGroupResponse`/`GroupResponse` — see Decision 3a below)
+
+**Status: this section describes the originally-designed mechanism, which turned out to conflict
+with real controller code once wired in (tasks.md 6.3's blocker). It still applies as-is to any
+future property-level unwrap where the controller does NOT need per-item `EntityModel<X>` — e.g. if
+`TrainingGroupResponse` (Phase 7) turns out not to need per-item links after all. For
+`FamilyGroupResponse`/`GroupResponse`, Decision 3a is what actually shipped.**
 
 **Extension point.** `HalEnvelopeDetector.detect(schema, schemas)` is a pure function already
 independent of any per-operation state — it takes a `Schema` and the document's schema map. It
@@ -268,6 +274,84 @@ plain value carriers today with no `@OwnerVisible`/`@HasAuthority` — Decision 
 applies (confirm none is silently introduced as a gap, i.e. confirm the *absence* of any
 field-security annotation on the hand-written class before treating the promoted spec schema as
 equivalent, not just its presence).
+
+### Decision 3a (supersedes 3 for `FamilyGroupResponse`/`GroupResponse`): `application/json` sibling + `schemaMappings` onto a real generic type
+
+tasks.md 6.3 found the real blocker Decision 3 did not anticipate: `FamilyGroupController` and
+`FreeGroupController` build each collection item as `EntityModel.of(new ParentResponse(...))`
+**on purpose** — every item carries its own conditionally-present `_links`/affordances (a `member`
+link, plus an owner/manager-gated self+DELETE affordance), which the frontend
+(`FamilyGroupDetailPage.tsx`/`GroupDetailPage.tsx`) reads directly to render per-row remove buttons
+and compute mutation URLs. Rewriting the property to bare `List<Payload>` (Decision 3's mechanism)
+makes the controller fail to compile — `EntityModel<T>` does not implement `T`, Java generics are
+invariant — and there is no existing runtime mechanism that attaches per-item HAL links to a nested
+collection property the way `HalResponseBodyAdvice`/postprocessors do for a top-level
+`EntityModel`/`PagedModel`. Decision 3's own text acknowledged this risk in the abstract
+("HAL linking is exclusively Spring HATEOAS's runtime concern") but the concrete controllers already
+depend on `EntityModel<Payload>` being the field's own static type, not something added later.
+
+**The fix actually used, confirmed against real generated output (not just the design):**
+
+1. **Response-level:** add an `application/json` content entry alongside
+   `application/prs.hal-forms+json` on `getFamilyGroup`/`getGroup`, pointing directly at the bare
+   payload schema (`FamilyGroupResponse`/`GroupResponse`, not their `EntityModelX` envelope). The
+   bundler's alphabetical content-type sort places `application/json` first, and
+   `KlabisSpringCodegen#resolveResponseSchema` reads the first content entry to feed
+   `HalEnvelopeDetector` — confirmed by inspecting the generated `FamilyGroupsApi`/`GroupsApi`
+   springdoc `@Schema` annotations: both content entries now correctly name the bare payload class,
+   proving response-level Shape 1 detection is fully suppressed for these two responses (their own
+   top level has no `allOf`/`_links` shape to detect in the first place — this is a no-op, not a
+   new unwrap path).
+2. **Property-level:** for each `EntityModelX` envelope schema still referenced from a
+   `parents`/`members`/`owners`/`pendingInvitations` array property, add a `schemaMappings` entry
+   in `build.gradle.kts` redirecting the envelope schema name directly onto the literal string
+   `org.springframework.hateoas.EntityModel<X>` — a real, legal Java generic type, not a name the
+   generator needs to understand structurally. A paired `extraImportMappings` entry
+   (`"org.springframework.hateoas.EntityModel<X>" to "org.springframework.hateoas.EntityModel"`)
+   makes the emitted `import` line resolve correctly, since `importMapping` is a plain string-keyed
+   map — the key does not need to be a legal Java identifier, only to match exactly the string that
+   ends up in the property's `complexType`/`baseType`.
+3. **`KlabisSpringCodegen.fromProperty` needed one guard added:** Decision 3's `fromProperty`
+   override runs its structural Shape 1-item detection unconditionally, which rewrites the array
+   item's `$ref` from `EntityModelX` to the bare payload's `$ref` *before* `super.fromProperty` ever
+   runs — so `schemaMapping`'s substitution (step 2) never fires, since by the time `super` resolves
+   the item schema, its `$ref` no longer names `EntityModelX` at all. Confirmed empirically: without
+   the guard, `FamilyGroupResponse.parents` generated as `List<@Valid ParentResponse>` (Decision 3's
+   default), not `List<EntityModel<ParentResponse>>`. The fix: `fromProperty` now checks whether the
+   array item's `$ref` schema name is already a key in `schemaMapping()` — if so, it steps aside
+   entirely and delegates the *original*, unrewritten property to `super`, letting the stock
+   generator's own `schemaMapping` substitution take over. This makes the two mechanisms mutually
+   exclusive per schema: a schema absent from `schemaMapping` gets Decision 3's default
+   strip-to-bare-payload behavior; a schema explicitly `schemaMappings`-redirected gets whatever
+   Java type string that mapping names, verbatim, including a generic one.
+
+**Generated output actually produced** (verified, not assumed):
+
+```java
+public record FamilyGroupResponse(
+    @Valid UUID id,
+    @Valid List<org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>> members,
+    String name,
+    @Valid List<org.springframework.hateoas.EntityModel<ParentResponse>> parents
+) { }
+```
+
+Field-for-field equivalent to the hand-written class except: `UUID id` instead of `FamilyGroupId id`
+(DTOs carry wire types — klabis-api-spec's existing rule, the hand-written class had drifted from
+it), and alphabetized constructor-parameter order (an existing, already-documented generator
+behavior — see "Anti-patterns" in the klabis-api-spec skill on constructing generated records
+positionally). Both controllers needed only mechanical fixes: `group.getId()` → `group.getId().uuid()`,
+and reordering positional constructor arguments to match the alphabetized field order — zero change
+to the per-item `EntityModel.of(...)`/`klabisLinkTo`/`klabisAfford` logic itself.
+
+**Why this is not "just Decision 3 with extra steps":** Decision 3's `fromProperty` rewrite is a
+structural default with no spec-visible opt-out — every Shape 1-item property gets stripped to bare
+`List<Payload>` unconditionally. Decision 3a is an explicit, per-schema override
+(`schemaMappings`) layered on top, only for the specific `EntityModelX` schemas whose controller
+genuinely needs the item type to stay `EntityModel<X>`. `TrainingGroupResponse` (Phase 7) is
+expected to use Decision 3's original default, if its own controller turns out not to need per-item
+links the same way — that determination has not been made yet (Phase 7 is unscoped from this
+session).
 
 ## Risks / Trade-offs
 

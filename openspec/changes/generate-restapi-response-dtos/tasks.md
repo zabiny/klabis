@@ -213,46 +213,56 @@
       domain ID types generate as raw `UUID` (`.uuid()`/`.value()` needed at call sites) and generated
       record field order is alphabetized, not declaration order.
 
-- [ ] 6.3 **BLOCKED/DEFERRED** — Category C's property-level unwrap itself was implemented and
-      proven correct in isolation (`KlabisSpringCodegen.fromProperty` override + 3 passing unit tests
-      in `KlabisSpringCodegenFromPropertyTest`, mirroring `handleMethodResponse`'s rewrite-then-
-      delegate shape; full buildSrc suite 36/36 green). The four inline payload halves
-      (`ParentResponse`, `FamilyGroupMembershipResponse`, `OwnerResponse`,
-      `FreeGroupMembershipResponse`) were promoted to named schemas in `groups.yaml` as designed.
-      Generating `FamilyGroupResponse`/`GroupResponse` with these six models on the `models` list
-      confirms the codegen mechanism works exactly as specified: `parents`/`members`/`owners`/
-      `pendingInvitations` all resolve to `List<Payload>`, never `List<EntityModel<Payload>>`.
-      **However, wiring this into the actual module is blocked**: once the record's field type is
-      `List<Payload>`, `FamilyGroupController`/`FreeGroupController` can no longer compile, because
-      `EntityModel<T>` does not implement `T` (Java generics are invariant) — and building each item
-      as `EntityModel<X>` is not incidental, it is how the controller attaches conditionally-present
-      per-item `_links`/affordances (a "member" link, plus an owner/manager-conditional self+DELETE
-      affordance) that the frontend consumes directly. No existing runtime mechanism
-      (`HalResponseBodyAdvice`, `ModelWithDomainPostprocessor`, or any `RepresentationModelProcessor`
-      in the codebase) attaches per-item HAL links to a *nested* collection property inside another
-      DTO — every existing one only wraps a top-level `EntityModel`/`PagedModel`/`CollectionModel`
-      return value. A frontend investigation confirmed these per-item links/templates encode real
-      conditional authorization with no other representation today, so this is not dead weight to
-      drop — it needs a new architecture piece (e.g. a generic nested-collection-item-links
-      mechanism) that is out of scope for this change. Deferred to a separate design effort.
-      `fromProperty` implementation + its test are KEPT in buildSrc (harmless, proven-correct,
-      reusable once the new architecture lands) but NOT wired into any module's `models` list for
-      the root records.
-- [ ] 6.4 **DEFERRED** — see 6.3. Not attempted: adding `FamilyGroupResponse`, `ParentResponse`,
-      `FamilyGroupMembershipResponse`, `GroupResponse`, `OwnerResponse`,
-      `FreeGroupMembershipResponse` to the `models` lists is blocked on the same per-item-links gap.
-- [ ] 6.4a **DEFERRED** — see 6.3. Field-security check not performed since 6.4 was not attempted
-      (for the record: grepping the six hand-written classes shows none carry field-level security
-      annotations today, same as design.md predicted — this fact stands ready for whenever 6.4 is
-      unblocked).
-- [ ] 6.4b **DEFERRED** — see 6.3. The six hand-written classes stay in place.
-- [x] 6.5 Ran `groupsFamily`, `groupsFree` module tests via the test-runner skill against the
-      CURRENT (Category B only) checkpoint: 616/616 passed
-      (`FamilyGroupManagementServiceTest`, `FamilyGroupTest`, `FamilyGroupPersistenceTest`,
-      `FamilyGroupControllerTest`, `FamilyGroupsNavigationTest`, `FreeGroupManagementServiceTest`,
-      `FreeGroupTest`, `FreeGroupPersistenceTest`, `FreeGroupControllerTest`,
-      `MemberSuspendedEventIntegrationTest`, `MemberSuspendedListenerTest`). This is a safe, complete
-      checkpoint — Category B deletions are the only production-code change in scope.
+- [x] 6.3 **UNBLOCKED — resolved via Decision 3a (design.md).** The blocker recorded in the previous
+      session (Category C's `fromProperty` strip-to-bare-payload rewrite is incompatible with
+      `FamilyGroupController`/`FreeGroupController`'s genuine need for `EntityModel<X>` items
+      carrying per-item conditional `_links`/affordances) is real, but has a different fix than "new
+      architecture piece": redirect the specific `EntityModelX` envelope schemas onto the real
+      generic Java type `org.springframework.hateoas.EntityModel<X>` via `schemaMappings` +
+      `extraImportMappings` (paired, since `importMapping` is a plain string-keyed map and the key
+      can be any string, including one with `<...>`), and add a response-level `application/json`
+      sibling on `getFamilyGroup`/`getGroup` so response-level envelope detection is a no-op for
+      these two responses (their own top level has no `allOf`/`_links` shape to unwrap in the first
+      place). One `KlabisSpringCodegen.fromProperty` guard was needed: skip the Category C
+      strip-rewrite entirely when the array item's `$ref` schema name is already a key in
+      `schemaMapping()`, since otherwise the rewrite runs first and the envelope `$ref` is gone by
+      the time `super.fromProperty` would consult `schemaMapping`. Verified empirically at every
+      step — see design.md Decision 3a for the full mechanism and the actual generated
+      `FamilyGroupResponse` source.
+- [x] 6.4 `FamilyGroupResponse`, `ParentResponse`, `FamilyGroupMembershipResponse` added to
+      `groupsFamily`'s `models` list; `GroupResponse`, `OwnerResponse`, `FreeGroupMembershipResponse`
+      added to `groupsFree`'s `models` list (`PendingInvitationResponse` was already there from
+      Phase 6.2). `EntityModelParentResponse`/`EntityModelFamilyGroupMembershipResponse` (groupsFamily)
+      and `EntityModelOwnerResponse`/`EntityModelFreeGroupMembershipResponse`/
+      `EntityModelPendingInvitationResponse` (groupsFree — the third one was missed in the original
+      plan and found only once `GroupResponse` was actually generated and diffed) redirected via
+      `mappings`/`extraImportMappings` in `build.gradle.kts`. Generated output diffed field-for-field
+      against the hand-written classes: identical except `UUID id` (generated) vs. `FamilyGroupId
+      id`/`FreeGroupId id` (hand-written — the hand-written classes had drifted from
+      klabis-api-spec's "DTOs carry wire types" rule) and alphabetized constructor-parameter order.
+      Six hand-written classes deleted (`git rm`): `FamilyGroupResponse.java`, `ParentResponse.java`,
+      `FamilyGroupMembershipResponse.java`, `GroupResponse.java`, `OwnerResponse.java`,
+      `FreeGroupMembershipResponse.java`. `FamilyGroupController`/`FreeGroupController` fixed:
+      `group.getId()` → `group.getId().uuid()` in both `toFamilyGroupResponse`/`toGroupResponse`, and
+      positional constructor arguments reordered to match each generated record's alphabetized field
+      order (`FamilyGroupMembershipResponse(joinedAt, memberId)`,
+      `FreeGroupMembershipResponse(joinedAt, memberId)`,
+      `FamilyGroupResponse(id, members, name, parents)`,
+      `GroupResponse(id, members, name, owners, pendingInvitations)`) — per-item
+      `EntityModel.of(...)`/`klabisLinkTo`/`klabisAfford` construction logic itself is untouched.
+      `./gradlew compileJava` succeeds.
+- [x] 6.4a Field-security check (design.md Decision 0): grepped all six hand-written classes for
+      `@OwnerId`/`@OwnerVisible`/`@HasAuthority`/`@HalForms`/`@JsonIgnore` at the component level —
+      confirmed none present, matching design.md's prediction. Generated Java introduces none either
+      beyond the uniform `additionalModelTypeAnnotations` (`@RecordBuilder`/`@JsonInclude(NON_NULL)`/
+      `@HandleAuthorizationDenied(NullDeniedHandler)`), same as every other generated model. PASS.
+- [x] 6.4b The six hand-written classes deleted — see 6.4 (done together with the models-list wiring
+      in this session, since the field-security check in 6.4a is a pure confirmation of an already
+      well-known absence, not new information requiring a separate gate).
+- [x] 6.5 Re-ran `groupsFamily`, `groupsFree` module tests via the test-runner skill after the
+      Category C wiring in 6.3/6.4 above (superseding the earlier Category-B-only checkpoint):
+      616/616 passed. `./gradlew compileJava` (full backend) and `./gradlew :buildSrc:test` (36/36)
+      also green.
 
 ## 7. Category B+C — `groupsTraining` module (needs inline-to-named schema promotion)
 

@@ -461,24 +461,44 @@ openApiModule(
 openApiModule(
     module = "groupsFamily",
     pkg = "com.klabis.groups.familygroup.infrastructure.restapi",
-    // getFamilyGroup IS generated onto FamilyGroupsApi; only its response schema is
-    // documentation-only, because the record's parents/members are List<EntityModel<X>> whose items
-    // carry their own _links. See groups.yaml header comment and the comment on that method in
-    // FamilyGroupController.
+    // getFamilyGroup IS generated onto FamilyGroupsApi via the application/json content sibling
+    // (see groups.yaml) — its own top level has no allOf/_links shape, so response-level envelope
+    // detection is a no-op for it. FamilyGroupResponse itself IS generated (models list below):
+    // parents/members resolve to List<EntityModel<X>> because EntityModelParentResponse /
+    // EntityModelFamilyGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<ParentResponse> / EntityModel<FamilyGroupMembershipResponse> — see
+    // KlabisSpringCodegen.fromProperty's isMappedEnvelopeItem guard, which steps aside for any
+    // array item schema present in schemaMapping() instead of applying its own default
+    // strip-to-bare-payload rewrite. ParentResponse/FamilyGroupMembershipResponse (the X payload
+    // types) are ordinary generated models. See groups.yaml header comment and the comment on
+    // getFamilyGroup in FamilyGroupController.
     apis = listOf("FamilyGroups"),
     models = listOf(
         "CreateFamilyGroupRequest",
         "AddMemberRequest",
-        "FamilyGroupSummaryResponse"
+        "FamilyGroupSummaryResponse",
+        "ParentResponse",
+        "FamilyGroupMembershipResponse",
+        "FamilyGroupResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelParentResponse" to "org.springframework.hateoas.EntityModel<ParentResponse>",
+        "EntityModelFamilyGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<ParentResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(
     module = "groupsFree",
     pkg = "com.klabis.groups.freegroup.infrastructure.restapi",
-    // getGroup (Groups) is generated; only its response schema is documentation-only — same reason
-    // as getFamilyGroup above. See groups.yaml header comment.
+    // getGroup (Groups) is generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup above. GroupResponse itself IS generated (models list below);
+    // OwnerResponse/FreeGroupMembershipResponse/PendingInvitationResponse are ordinary generated
+    // payload models, and their EntityModelX envelope schemas are redirected onto EntityModel<X>
+    // the same way as groupsFamily.
     apis = listOf("Groups", "Invitations"),
     models = listOf(
         "CreateGroupRequest",
@@ -487,9 +507,21 @@ openApiModule(
         "InviteMemberRequest",
         "CancelInvitationRequest",
         "GroupSummaryResponse",
-        "PendingInvitationResponse"
+        "PendingInvitationResponse",
+        "OwnerResponse",
+        "FreeGroupMembershipResponse",
+        "GroupResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelOwnerResponse" to "org.springframework.hateoas.EntityModel<OwnerResponse>",
+        "EntityModelFreeGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>",
+        "EntityModelPendingInvitationResponse" to "org.springframework.hateoas.EntityModel<PendingInvitationResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<OwnerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<PendingInvitationResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(

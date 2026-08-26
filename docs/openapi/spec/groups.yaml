@@ -7,16 +7,34 @@
 # file (groupsFamily / groupsFree / groupsTraining), one per package, each scoped to its own tags —
 # see klabis-api-spec skill: "Registering a module for codegen".
 #
-# getFamilyGroup (FamilyGroups), getGroup (Groups) and getTrainingGroup (TrainingGroups) are fully
-# specified here and their generated interface methods return the payload DTO, like every other
-# operation: EntityModelX = allOf[X, envelope], with schemaMappings pointing at X so the envelope
-# stays a runtime concern of HalResponseBodyAdvice.
+# getFamilyGroup (FamilyGroups) and getGroup (Groups) are fully specified here and their generated
+# interface methods return the payload DTO, like every other operation. Each response also declares
+# an application/json content sibling pointing directly at the bare payload (FamilyGroupResponse /
+# GroupResponse) — sorted before application/prs.hal-forms+json by the bundler's alphabetical
+# content-type sort, which is what KlabisSpringCodegen#resolveResponseSchema reads first. Since
+# FamilyGroupResponse/GroupResponse have no allOf/_links shape at their OWN top level, this
+# suppresses response-level HAL envelope detection for these two responses entirely — no
+# schemaMappings entry is needed at the response level, unlike TrainingGroupResponse below.
 #
-# The X records (FamilyGroupResponse / GroupResponse / TrainingGroupResponse) are hand-written rather
-# than generated, because their collection fields
-# (parents/children/owners/members/trainers/pendingInvitations) are List<EntityModel<Item>> — every
-# item carries its own _links/_templates, which the generator cannot express and the frontend reads
-# directly. The item schemas below therefore keep the EntityModel* form.
+# FamilyGroupResponse and GroupResponse ARE fully generated (unlike TrainingGroupResponse, still
+# hand-written — see its own module note). Their collection fields
+# (parents/members/owners/pendingInvitations) are List<EntityModel<Item>> — every item carries its
+# own _links/_templates, which is expressed via a per-schema schemaMappings entry in
+# build.gradle.kts redirecting each EntityModelX envelope schema straight onto the real generic Java
+# type org.springframework.hateoas.EntityModel<X> (paired with an importMapping entry so the import
+# resolves correctly). KlabisSpringCodegen#fromProperty steps aside for any array item whose $ref
+# schema name is present in schemaMapping(), deferring to the stock generator's own schemaMapping
+# substitution instead of applying its default Category C strip-to-bare-payload rewrite — see that
+# method's doc comment for why the two mechanisms are mutually exclusive per schema. Confirmed
+# against actual generated output: FamilyGroupResponse.parents resolves to
+# List<EntityModel<ParentResponse>>, not List<ParentResponse> — matching the hand-written controllers
+# (FamilyGroupController, FreeGroupController) exactly, so they needed zero changes beyond
+# UUID-vs-domain-ID field types and RecordBuilder-alphabetized constructor argument order.
+#
+# TrainingGroupResponse is still hand-written, because its item schemas
+# (EntityModelTrainerResponse/EntityModelGroupMembershipResponse) still inline their payload half —
+# the promotion needed before the same mechanism above could apply to them has not been done yet.
+# See the groupsTraining module note in build.gradle.kts.
 #
 # Three different authorization patterns coexist in this module — transcribed here exactly as found,
 # never normalized:
@@ -168,6 +186,17 @@ paths:
         '200':
           description: Family group found
           content:
+            # Sorted before application/prs.hal-forms+json by the bundler's alphabetical key sort,
+            # which is what the generator's response-schema resolution reads first (see
+            # KlabisSpringCodegen#resolveResponseSchema). FamilyGroupResponse's own top level has no
+            # allOf/_links shape, so HalEnvelopeDetector's response-level Shape 1 check does not fire
+            # for this response at all once this entry is present — the envelope resolution that used
+            # to happen at the response level becomes a no-op, and parents/members resolve purely via
+            # the property-level Shape 1-item unwrap (see ParentResponse/FamilyGroupMembershipResponse
+            # below).
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyGroupResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelFamilyGroupResponse'
@@ -471,6 +500,11 @@ paths:
         '200':
           description: Group found
           content:
+            # See getFamilyGroup's application/json entry above for the rationale — sorted first by
+            # the bundler, which suppresses response-level Shape 1 detection for GroupResponse.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelGroupResponse'

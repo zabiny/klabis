@@ -180,7 +180,7 @@ class FreeGroupController implements GroupsApi {
                     .toList();
         }
 
-        return new GroupResponse(group.getId(), group.getName(), ownerModels, memberModels, pendingInvitationModels);
+        return new GroupResponse(group.getId().uuid(), memberModels, group.getName(), ownerModels, pendingInvitationModels);
     }
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {
@@ -201,7 +201,7 @@ class FreeGroupController implements GroupsApi {
             GroupMembership membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
 
         MemberId memberId = membership.memberId();
-        FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(memberId.uuid(), membership.joinedAt());
+        FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(membership.joinedAt(), memberId.uuid());
 
         EntityModel<FreeGroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
