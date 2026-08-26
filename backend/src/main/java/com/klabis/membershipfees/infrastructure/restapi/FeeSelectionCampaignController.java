@@ -12,6 +12,7 @@ import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
@@ -41,13 +42,16 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
     private final FeeSelectionCampaignManagementPort managementPort;
     private final MembershipFeeTierManagementPort levelManagementPort;
     private final ManualCampaignClosePort manualCampaignClosePort;
+    private final ConversionService conversionService;
 
     FeeSelectionCampaignController(FeeSelectionCampaignManagementPort managementPort,
                                    MembershipFeeTierManagementPort levelManagementPort,
-                                   ManualCampaignClosePort manualCampaignClosePort) {
+                                   ManualCampaignClosePort manualCampaignClosePort,
+                                   ConversionService conversionService) {
         this.managementPort = managementPort;
         this.levelManagementPort = levelManagementPort;
         this.manualCampaignClosePort = manualCampaignClosePort;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -64,7 +68,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
         CampaignStatusFilter filter = status != null ? CampaignStatusFilter.valueOf(status.toUpperCase()) : CampaignStatusFilter.ALL;
         List<FeeSelectionCampaign> publications = managementPort.listPublications(filter);
         List<FeeSelectionCampaignResponse> items = publications.stream()
-                .map(MembershipFeesResponseMapper::toResponse)
+                .map(publication -> conversionService.convert(publication, FeeSelectionCampaignResponse.class))
                 .toList();
 
         List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
@@ -81,7 +85,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
             UUID id) {
         FeeSelectionCampaign publication = managementPort.getPublication(new FeeSelectionCampaignId(id));
         HalResponseContext.setDomain(publication);
-        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(publication));
+        return ResponseEntity.ok(conversionService.convert(publication, FeeSelectionCampaignResponse.class));
     }
 
     @Override
@@ -90,7 +94,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
         FeeSelectionCampaign updated = managementPort.changeDeadline(new FeeSelectionCampaignId(id),
                 MembershipFeesRequestMapper.toCommand(request));
         HalResponseContext.setDomain(updated);
-        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(updated));
+        return ResponseEntity.ok(conversionService.convert(updated, FeeSelectionCampaignResponse.class));
     }
 
     @Override

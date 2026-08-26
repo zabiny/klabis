@@ -5,9 +5,7 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jspecify.annotations.Nullable;
 
@@ -21,34 +19,6 @@ import java.util.UUID;
 final class MembershipFeesResponseMapper {
 
     private MembershipFeesResponseMapper() {
-    }
-
-    static FeeSelectionCampaignResponse toResponse(FeeSelectionCampaign publication) {
-        return FeeSelectionCampaignResponseBuilder.builder()
-                .id(publication.getId().value())
-                .year(publication.getYear())
-                .votingDeadline(publication.getVotingDeadline())
-                .deadlineProcessedAt(publication.getDeadlineProcessedAt())
-                .build();
-    }
-
-    static MembershipFeeTierResponse toResponse(MembershipFeeTier level) {
-        return MembershipFeeTierResponseBuilder.builder()
-                .id(level.getId().value())
-                .name(level.getName())
-                .yearlyFeeAmount(level.getYearlyFee().amount())
-                .yearlyFeeCurrency(level.getYearlyFee().currency().getCurrencyCode())
-                .build();
-    }
-
-    static MembershipFeeTierSummaryResponse toSummaryResponse(MembershipFeeTier level) {
-        return MembershipFeeTierSummaryResponseBuilder.builder()
-                .id(level.getId().value())
-                .name(level.getName())
-                .yearlyFeeAmount(level.getYearlyFee().amount())
-                .yearlyFeeCurrency(level.getYearlyFee().currency().getCurrencyCode())
-                .ruleCount(level.getRules().size())
-                .build();
     }
 
     static PaymentRuleResponse toResponse(MembershipPaymentRule rule) {
