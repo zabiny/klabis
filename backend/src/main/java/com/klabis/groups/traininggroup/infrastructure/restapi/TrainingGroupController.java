@@ -107,7 +107,7 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .toList();
 
         return new TrainingGroupResponse(
-                group.getId(), group.getName(), null, trainerModels, null);
+                null, group.getId().uuid(), null, group.getName(), trainerModels);
     }
 
     @Override
@@ -179,9 +179,9 @@ class TrainingGroupController implements TrainingGroupsApi {
 
     private TrainingGroupSummaryResponse toSummaryResponse(TrainingGroup group) {
         return new TrainingGroupSummaryResponse(
-                group.getId(), group.getName(),
-                group.getAgeRange().minAge(), group.getAgeRange().maxAge(),
-                group.getMembers().size());
+                group.getId().uuid(), group.getAgeRange().maxAge(),
+                group.getMembers().size(), group.getAgeRange().minAge(),
+                group.getName());
     }
 
     private TrainingGroupResponse toTrainingGroupResponse(TrainingGroup group, UUID groupUuid, boolean hasTrainingAuthority) {
@@ -208,16 +208,15 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .toList();
 
         return new TrainingGroupResponse(
-                group.getId(), group.getName(),
-                new AgeRangeResponse(group.getAgeRange().minAge(), group.getAgeRange().maxAge()),
-                trainerModels, memberModels);
+                new AgeRangeResponse(group.getAgeRange().maxAge(), group.getAgeRange().minAge()),
+                group.getId().uuid(), memberModels, group.getName(), trainerModels);
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(
             GroupMembership membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
 
         MemberId memberId = membership.memberId();
-        GroupMembershipResponse response = new GroupMembershipResponse(memberId.uuid(), membership.joinedAt());
+        GroupMembershipResponse response = new GroupMembershipResponse(membership.joinedAt(), memberId.uuid());
         EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))

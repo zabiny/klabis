@@ -266,23 +266,44 @@
 
 ## 7. Category B+C — `groupsTraining` module (needs inline-to-named schema promotion)
 
-- [ ] 7.1 Promote `EntityModelTrainerResponse`'s inline `{memberId}` half to a named `TrainerResponse`
+- [x] 7.1 Promoted `EntityModelTrainerResponse`'s inline `{memberId}` half to a named `TrainerResponse`
       schema in `groups.yaml`; same for `EntityModelGroupMembershipResponse`'s `{memberId,
       joinedAt}` half → `GroupMembershipResponse`.
-- [ ] 7.2 Add `x-klabis-relation` to `TrainingGroupSummaryResponse`
-      (`collectionRelation: trainingGroupSummaryResponseList`); add it to `groupsTraining`'s
-      `models` list; generate, diff, delete hand-written class.
-- [ ] 7.3 Add `TrainingGroupResponse`, `TrainerResponse`, `GroupMembershipResponse`,
-      `AgeRangeResponse` to `groupsTraining`'s `models` list; generate; confirm `trainers`/`members`
-      resolve to `List<TrainerResponse>`/`List<GroupMembershipResponse>` and `ageRange` resolves as
-      a plain `$ref` property (Category A, confirmed no array unwrap needed for it).
-- [ ] 7.3a Field-security check (design.md Decision 0): none of these four carry field-level
-      security annotations today — confirm that stays true in the generated form.
-- [ ] 7.4 Delete the five hand-written classes — only after 7.3a passes; fix imports in
-      `TrainingGroupController` and its postprocessors (per-item
-      `EntityModel.of(new TrainerResponse(...))` calls stay — only the payload type is now
-      generated).
-- [ ] 7.5 Run `groupsTraining` module tests via the test-runner agent.
+- [x] 7.2 Added `x-klabis-relation` to `TrainingGroupSummaryResponse`
+      (`collectionRelation: trainingGroupSummaryResponseList`); added it to `groupsTraining`'s
+      `models` list; generated, diffed — shape-equivalent (generated fields boxed `Integer` vs.
+      hand-written primitive `int`, cosmetic only). Deleted hand-written class.
+- [x] 7.3 Added `TrainingGroupResponse`, `TrainerResponse`, `GroupMembershipResponse`,
+      `AgeRangeResponse` to `groupsTraining`'s `models` list. **Used Decision 3a (not Decision 3's
+      original default), matching groupsFamily/groupsFree**: `TrainingGroupController` builds each
+      trainer/member item as `EntityModel.of(new TrainerResponse(...))` on purpose (conditional
+      per-item `member`/`self`+DELETE affordances), so the array items had to stay
+      `EntityModel<X>`, not bare `List<X>`. Added an `application/json` content sibling on
+      `getTrainingGroup`'s 200 response pointing at bare `TrainingGroupResponse`, plus
+      `mappings`/`extraImportMappings` in `build.gradle.kts` redirecting
+      `EntityModelTrainerResponse`/`EntityModelGroupMembershipResponse` onto
+      `EntityModel<TrainerResponse>`/`EntityModel<GroupMembershipResponse>`. Generated output
+      confirmed (read the actual `.java`, not assumed): `trainers` resolves to
+      `List<EntityModel<TrainerResponse>>`, `members` to
+      `List<EntityModel<GroupMembershipResponse>>`, and `ageRange` resolves as a plain
+      `AgeRangeResponse` field (Category A — confirmed no array unwrap needed for it, and
+      `isMappedEnvelopeItem` is not confused by a non-array `$ref` property).
+- [x] 7.3a Field-security check (design.md Decision 0): grepped all five hand-written classes for
+      `@OwnerId`/`@OwnerVisible`/`@HasAuthority`/`@HalForms`/`@JsonIgnore` at the component level —
+      confirmed none present. Generated Java introduces none either beyond the uniform
+      `additionalModelTypeAnnotations`. PASS.
+- [x] 7.4 Deleted the five hand-written classes (`git rm`) — after 7.3a passed. `TrainingGroupController`
+      fixed: `group.getId()` → `group.getId().uuid()` in `toTrainingGroupResponse`/
+      `buildLimitedGroupResponse`/`toSummaryResponse`; positional constructor arguments reordered to
+      match each generated record's alphabetized field order
+      (`AgeRangeResponse(maxAge, minAge)`, `GroupMembershipResponse(joinedAt, memberId)`,
+      `TrainingGroupResponse(ageRange, id, members, name, trainers)`,
+      `TrainingGroupSummaryResponse(id, maxAge, memberCount, minAge, name)`) — per-item
+      `EntityModel.of(...)`/`klabisLinkTo`/`klabisAfford` construction logic itself untouched.
+      `./gradlew compileJava` (full backend) succeeds.
+- [x] 7.5 Ran `groupsTraining`-related tests (`TrainingGroupManagementServiceTest`, `AgeRangeTest`,
+      `TrainingGroupTest`, `TrainingGroupPersistenceTest`, `TrainingGroupControllerTest`) via the
+      test-runner skill: 616/616 passed.
 
 ## 8. Closeout
 

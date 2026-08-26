@@ -527,17 +527,34 @@ openApiModule(
 openApiModule(
     module = "groupsTraining",
     pkg = "com.klabis.groups.traininggroup.infrastructure.restapi",
-    // getTrainingGroup is generated; only its response schema is documentation-only — same reason as
-    // getFamilyGroup above. See groups.yaml header comment.
+    // getTrainingGroup IS generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup/getGroup above. TrainingGroupResponse itself IS generated (models
+    // list below); trainers/members resolve to List<EntityModel<X>> because EntityModelTrainerResponse
+    // / EntityModelGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<TrainerResponse> / EntityModel<GroupMembershipResponse> — same mechanism as
+    // groupsFamily/groupsFree. ageRange is a plain $ref property (Category A, not array-wrapped), so
+    // it needs no mapping and resolves as a normal AgeRangeResponse field.
     apis = listOf("TrainingGroups"),
     models = listOf(
         "CreateTrainingGroupRequest",
         "TrainingGroupAddMemberRequest",
         "AddTrainerRequest",
         "AgeRangeRequest",
-        "UpdateTrainingGroupRequest"
+        "UpdateTrainingGroupRequest",
+        "TrainingGroupSummaryResponse",
+        "TrainingGroupResponse",
+        "TrainerResponse",
+        "GroupMembershipResponse",
+        "AgeRangeResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelTrainerResponse" to "org.springframework.hateoas.EntityModel<TrainerResponse>",
+        "EntityModelGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<GroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<TrainerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<GroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(

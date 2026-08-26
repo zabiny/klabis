@@ -16,25 +16,26 @@
 # suppresses response-level HAL envelope detection for these two responses entirely — no
 # schemaMappings entry is needed at the response level, unlike TrainingGroupResponse below.
 #
-# FamilyGroupResponse and GroupResponse ARE fully generated (unlike TrainingGroupResponse, still
-# hand-written — see its own module note). Their collection fields
-# (parents/members/owners/pendingInvitations) are List<EntityModel<Item>> — every item carries its
-# own _links/_templates, which is expressed via a per-schema schemaMappings entry in
-# build.gradle.kts redirecting each EntityModelX envelope schema straight onto the real generic Java
-# type org.springframework.hateoas.EntityModel<X> (paired with an importMapping entry so the import
-# resolves correctly). KlabisSpringCodegen#fromProperty steps aside for any array item whose $ref
-# schema name is present in schemaMapping(), deferring to the stock generator's own schemaMapping
-# substitution instead of applying its default Category C strip-to-bare-payload rewrite — see that
-# method's doc comment for why the two mechanisms are mutually exclusive per schema. Confirmed
-# against actual generated output: FamilyGroupResponse.parents resolves to
-# List<EntityModel<ParentResponse>>, not List<ParentResponse> — matching the hand-written controllers
-# (FamilyGroupController, FreeGroupController) exactly, so they needed zero changes beyond
-# UUID-vs-domain-ID field types and RecordBuilder-alphabetized constructor argument order.
+# FamilyGroupResponse, GroupResponse and TrainingGroupResponse are ALL fully generated. Their
+# collection fields (parents/members/owners/pendingInvitations/trainers) are List<EntityModel<Item>>
+# — every item carries its own _links/_templates, which is expressed via a per-schema schemaMappings
+# entry in build.gradle.kts redirecting each EntityModelX envelope schema straight onto the real
+# generic Java type org.springframework.hateoas.EntityModel<X> (paired with an importMapping entry so
+# the import resolves correctly). KlabisSpringCodegen#fromProperty steps aside for any array item
+# whose $ref schema name is present in schemaMapping(), deferring to the stock generator's own
+# schemaMapping substitution instead of applying its default Category C strip-to-bare-payload rewrite
+# — see that method's doc comment for why the two mechanisms are mutually exclusive per schema.
+# Confirmed against actual generated output: FamilyGroupResponse.parents resolves to
+# List<EntityModel<ParentResponse>>, TrainingGroupResponse.trainers resolves to
+# List<EntityModel<TrainerResponse>>, not List<ParentResponse>/List<TrainerResponse> — matching the
+# hand-written controllers (FamilyGroupController, FreeGroupController, TrainingGroupController)
+# exactly, so they needed zero changes beyond UUID-vs-domain-ID field types and
+# RecordBuilder-alphabetized constructor argument order.
 #
-# TrainingGroupResponse is still hand-written, because its item schemas
-# (EntityModelTrainerResponse/EntityModelGroupMembershipResponse) still inline their payload half —
-# the promotion needed before the same mechanism above could apply to them has not been done yet.
-# See the groupsTraining module note in build.gradle.kts.
+# TrainingGroupResponse's item schemas (EntityModelTrainerResponse/EntityModelGroupMembershipResponse)
+# used to inline their payload half; both are now promoted to named schemas (TrainerResponse /
+# GroupMembershipResponse) so the mechanism above applies to them the same way it applies to
+# groupsFamily/groupsFree.
 #
 # Three different authorization patterns coexist in this module — transcribed here exactly as found,
 # never normalized:
@@ -989,6 +990,9 @@ paths:
         '200':
           description: Training group found
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroupResponse'
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelTrainingGroupResponse'
@@ -1751,6 +1755,8 @@ components:
 
     TrainingGroupSummaryResponse:
       type: object
+      x-klabis-relation:
+        collectionRelation: trainingGroupSummaryResponseList
       properties:
         id:
           type: string
@@ -1815,27 +1821,33 @@ components:
 
     EntityModelTrainerResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
+        - $ref: '#/components/schemas/TrainerResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
 
+    TrainerResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
     EntityModelGroupMembershipResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
-            joinedAt:
-              type: string
-              format: date-time
+        - $ref: '#/components/schemas/GroupMembershipResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    GroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time
