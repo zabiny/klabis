@@ -39,7 +39,7 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
 - [ ] Implement role-based command routing (admin vs. self-update)
 - [ ] Add state-driven HATEOAS affordances using `klabisLinkTo()` / `klabisAfford()`, passing the
       generated `*Api` interface to `methodOn(...)` — never the controller class, or the template
-      loses its input metadata (see SKILL.md, "HATEOAS Rules")
+      loses its input metadata (see references/rest-adapter.md, "HATEOAS Rules")
 - [ ] Leave `@RequestBody` and Bean Validation constraints on the interface; the override declares
       only `@Parameter` / `@Operation` for springdoc
 - [ ] Create MapStruct `@Mapper` for simple DTO mapping
