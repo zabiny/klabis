@@ -14,11 +14,11 @@
 
 ## 3. Slice: BulkResultMapper -> ConversionService
 
-- [ ] 3.1 Create `Converter<BulkSyncResult, BulkSyncResultDto>` (name e.g. `BulkSyncResultConverter`) and `Converter<BulkImportResult, BulkImportResultDto>` (name e.g. `BulkImportResultConverter`), both delegating nested `EventSyncEntry`/`SyncStatus`/`ImportStatus` mappings via internal MapStruct `default`/generated methods as today
-- [ ] 3.2 Update `OrisEventController` to inject `ConversionService` instead of `BulkResultMapper`; replace both `bulkResultMapper.toDto(result)` call sites with `conversionService.convert(result, TargetDto.class)`
-- [ ] 3.3 Decide whether `BulkResultMapper` interface can be deleted (if no internal-only helpers remain) or kept as a container for nested mappings
-- [ ] 3.4 Update/remove obsolete test-side `BulkResultMapper` wiring found in 1.1
-- [ ] 3.5 Run `OrisEventControllerTest` — confirm behavior unchanged
+- [x] 3.1 Create `Converter<BulkSyncResult, BulkSyncResultDto>` (name e.g. `BulkSyncResultConverter`) and `Converter<BulkImportResult, BulkImportResultDto>` (name e.g. `BulkImportResultConverter`), both delegating nested `EventSyncEntry`/`SyncStatus`/`ImportStatus` mappings via internal MapStruct `default`/generated methods as today
+- [x] 3.2 Update `OrisEventController` to inject `ConversionService` instead of `BulkResultMapper`; replace both `bulkResultMapper.toDto(result)` call sites with `conversionService.convert(result, TargetDto.class)`
+- [x] 3.3 Decide whether `BulkResultMapper` interface can be deleted (if no internal-only helpers remain) or kept as a container for nested mappings
+- [x] 3.4 Update/remove obsolete test-side `BulkResultMapper` wiring found in 1.1
+- [x] 3.5 Run `OrisEventControllerTest` — confirm behavior unchanged
 
 ## 4. Slice: MemberMapper -> ConversionService
 

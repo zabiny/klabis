@@ -6,6 +6,11 @@ import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ValueMapping;
 
+/**
+ * Internal helper mapper for the nested entry/status mapping used by
+ * {@link BulkSyncResultConverter} and {@link BulkImportResultConverter}.
+ * Not injected directly — MapStruct wires it in via {@code uses = BulkResultMapper.class}.
+ */
 @Mapper(
         componentModel = "spring",
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
@@ -13,15 +18,11 @@ import org.mapstruct.ValueMapping;
 )
 interface BulkResultMapper {
 
-    BulkSyncResult toDto(com.klabis.events.application.BulkSyncResult result);
-
     @Mapping(target = "eventId", source = "eventId.value")
     EventSyncEntry toDto(com.klabis.events.application.BulkSyncResult.EventSyncEntry entry);
 
     @ValueMapping(source = "SYNCED", target = "SUCCESS")
     EventImportEntryStatus toDto(com.klabis.events.application.BulkSyncResult.SyncStatus status);
-
-    BulkImportResult toDto(com.klabis.events.application.BulkImportResult result);
 
     EventImportEntry toDto(com.klabis.events.application.BulkImportResult.EventImportEntry entry);
 
