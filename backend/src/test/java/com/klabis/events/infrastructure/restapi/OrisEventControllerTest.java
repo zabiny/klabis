@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("OrisEventController API tests")
 @WebMvcTest(controllers = {EventController.class, OrisEventController.class, EventsExceptionHandler.class})
 @ActiveProfiles("oris")
-@Import({EncryptionConfiguration.class, HalFormsSupport.class, BulkResultMapperImpl.class})
+@Import({EncryptionConfiguration.class, HalFormsSupport.class})
 @WithPostprocessors
 class OrisEventControllerTest {
 
