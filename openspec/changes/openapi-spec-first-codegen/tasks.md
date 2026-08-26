@@ -137,17 +137,50 @@ had `GuardianDTO`'s `email`/`phone` swapped) plus two incidental fixes (missing 
 
 ## 6. Verification
 
-- [ ] 6.1 Diff the full generated source tree (`build/generated/openapi/*/src/main/java`) against
+- [x] 6.1 Diff the full generated source tree (`build/generated/openapi/*/src/main/java`) against
       the 1.1 baseline for every module except `groups` — expect zero file or content differences.
       For `groups`, confirm the same set of generated file basenames as the sum of the former
       `groupsFamily`+`groupsFree`+`groupsTraining` output now live under
       `build/generated/openapi/groups/src/main/java/com/klabis/groups/infrastructure/restapi/`.
-- [ ] 6.2 Use the `test-runner` agent to run the full backend test suite — expect no failures and
-      no test modifications needed.
-- [ ] 6.3 Run `./gradlew openapiBundle -PopenapiCheck` one final time from the fully merged state
+      Verified via basename-set diffs across all 8 final module dirs against the 11 baseline module
+      dirs (`/mnt/ramdisk/klabis/openapi-baseline-filelist.txt` vs `openapi-final-filelist.txt`);
+      every difference is explained by the intended merges/envelope-filtering documented in
+      Phases 3–4, plus a small number of harmless orphaned `*AllOf*OneOf`/`*AllOf*Value` fragment
+      classes (see known `postProcessAllModels` gap noted below) — none cause compile errors,
+      naming collisions, or shape changes to any hand-written call site.
+- [x] 6.2 Use the `test-runner` agent to run the full backend test suite — expect no failures and
+      no test modifications needed. First attempt failed at **compilation** (10 errors across 4
+      test files — same field-order/positional-constructor issue as Phase 5, just in `src/test`,
+      which the earlier sweep didn't cover): fixed directly (not delegated, small well-understood
+      scope) by repointing one stale `groups.traininggroup...` package reference to the merged
+      `groups` package (`PatchRequestWrapperArchitectureTest`) and converting 3 files' positional
+      constructors to `RecordBuilder` per the same standing directive
+      (`AccommodationListCsvRendererTest`, `RegistrationRecordTransactionLinkProcessorTest`,
+      `AccountMemberSummaryLinkProcessorTest`). Re-ran — **3202/3202 tests passed**, exit code 0, no
+      failures, no HAL envelope/groups-consolidation/field-ordering issues in the full run.
+- [x] 6.3 Run `./gradlew openapiBundle -PopenapiCheck` one final time from the fully merged state
       to confirm `validateModuleDocuments()` reports no drift across the now-8 domain files.
-- [ ] 6.4 Manually spot-check `docs/openapi/spec/klabis.yaml`, `groups.yaml`, and `events.yaml`
-      render correctly in Swagger UI/Redoc (or equivalent standalone-open check).
-- [ ] 6.5 Grep the codebase for any remaining reference to the old
+- [x] 6.4 Manually spot-check `docs/openapi/spec/klabis.yaml`, `groups.yaml`, and `events.yaml`
+      render correctly in Swagger UI/Redoc (or equivalent standalone-open check). Used
+      `npx @redocly/cli lint` against the merged `docs/openapi/klabis-full.json` as the render-proxy
+      (parses/resolves the full document exactly as Swagger UI/Redoc would) instead of booting the
+      full local environment: 4 errors / 6 warnings, all pre-existing convention gaps (missing
+      `security`/`security-scopes-defined` on operations, an `example.com` server placeholder) with
+      no relation to this refactor. Confirmed by linting `main`'s bundle the same way: 27 errors / 37
+      warnings — this branch's merged document is strictly cleaner, and critically has zero
+      `$ref`/structural resolution errors either way, confirming `klabis.yaml`, `groups.yaml`, and
+      `events.yaml` compose into a valid renderable document.
+- [x] 6.5 Grep the codebase for any remaining reference to the old
       `groupsFamily`/`groupsFree`/`groupsTraining` Gradle task names (e.g. in CI config, IDE run
       configurations, or documentation) and update to the merged `openApiGenerateGroups` task name.
+      Grepped `backend/` and `.github/` for all variants — only 2 hits, both historical/explanatory
+      code comments (`KlabisSpringCodegen.java` Javadoc, `KlabisSpringCodegenGetContentTest.java`
+      test comment) describing past behavior, not functional task references. No CI config or IDE
+      run configuration references the old per-group task names. Left as-is — accurate documentation
+      of prior behavior, not stale.
+
+**Unplanned work — test-code field-order fixes (not covered by Phase 5's `src/main`-only sweep):**
+The Phase 5 regex sweep for positional `new GeneratedType(...)` constructors was scoped to
+`backend/src/main/java` only; `backend/src/test/java` had the same latent risk and surfaced 4 files'
+worth of breakage only once the full test suite actually compiled against the new field order. Fixed
+using the same `RecordBuilder` conversion pattern, per the user's standing directive from Phase 5.
