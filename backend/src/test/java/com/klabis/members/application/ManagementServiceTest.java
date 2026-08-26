@@ -14,12 +14,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -265,7 +264,7 @@ class ManagementServiceTest {
         class LastGroupOwnerTests {
 
             @Test
-            @DisplayName("should throw MemberIsLastGroupOwnerException when member is the sole owner of a group")
+            @DisplayName("should throw SuspensionBlockedException when member is the sole owner of a group")
             void shouldThrowWhenMemberIsLastGroupOwner() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 doAnswer(inv -> {
@@ -282,12 +281,13 @@ class ManagementServiceTest {
                         .build();
 
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
-                        .isInstanceOf(MemberIsLastGroupOwnerException.class)
+                        .isInstanceOf(SuspensionBlockedException.class)
                         .satisfies(ex -> {
-                            var e = (MemberIsLastGroupOwnerException) ex;
-                            assertThat(e.getGroups()).hasSize(2);
-                            assertThat(e.getGroups()).extracting(OwnedGroup::groupName)
+                            var e = (SuspensionBlockedException) ex;
+                            assertThat(e.getBlockingGroups()).hasSize(2);
+                            assertThat(e.getBlockingGroups()).extracting(OwnedGroup::groupName)
                                     .containsExactlyInAnyOrder("Trail Runners", "Juniors");
+                            assertThat(e.getDebtSnapshot()).isNull();
                         });
 
                 verify(memberRepository, never()).save(any(Member.class));
@@ -319,7 +319,7 @@ class ManagementServiceTest {
         class OutstandingDebtPreCheckTests {
 
             @Test
-            @DisplayName("should throw MemberHasOutstandingDebtException when member has negative balance")
+            @DisplayName("should throw SuspensionBlockedException when member has negative balance")
             void shouldThrowWhenMemberHasNegativeBalance() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
@@ -335,11 +335,12 @@ class ManagementServiceTest {
                         .build();
 
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
-                        .isInstanceOf(MemberHasOutstandingDebtException.class)
+                        .isInstanceOf(SuspensionBlockedException.class)
                         .satisfies(ex -> {
-                            var e = (MemberHasOutstandingDebtException) ex;
-                            assertThat(e.getSnapshot().hasOutstandingDebt()).isTrue();
-                            assertThat(e.getSnapshot().balance().amount()).isEqualByComparingTo(new BigDecimal("-250"));
+                            var e = (SuspensionBlockedException) ex;
+                            assertThat(e.getDebtSnapshot().hasOutstandingDebt()).isTrue();
+                            assertThat(e.getDebtSnapshot().balance().amount()).isEqualByComparingTo(new BigDecimal("-250"));
+                            assertThat(e.getBlockingGroups()).isEmpty();
                         });
 
                 verify(memberRepository, never()).save(any(Member.class));
@@ -390,6 +391,43 @@ class ManagementServiceTest {
 
                 assertThat(result.isActive()).isFalse();
                 verify(memberRepository).save(any(Member.class));
+            }
+
+            @Test
+            @DisplayName("should report both blockers when member is last group owner AND has outstanding debt")
+            void shouldReportBothBlockersWhenBothConditionsApply() {
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                doAnswer(inv -> {
+                    MemberSuspensionRequestedEvent event = inv.getArgument(0);
+                    event.addBlockingGroup("group-id-1", "Trail Runners", "FREE");
+                    return null;
+                }).when(eventPublisher).publishEvent(any(MemberSuspensionRequestedEvent.class));
+                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                        new MemberId(testMemberId),
+                        new MonetaryAmount(new BigDecimal("-250"), "CZK"),
+                        true);
+                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
+
+                var command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.ODHLASKA)
+                        .note(null)
+                        .build();
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                        .isInstanceOf(SuspensionBlockedException.class)
+                        .satisfies(ex -> {
+                            var e = (SuspensionBlockedException) ex;
+                            assertThat(e.getBlockingGroups()).hasSize(1);
+                            assertThat(e.getBlockingGroups()).extracting(OwnedGroup::groupName)
+                                    .containsExactly("Trail Runners");
+                            assertThat(e.getDebtSnapshot()).isNotNull();
+                            assertThat(e.getDebtSnapshot().hasOutstandingDebt()).isTrue();
+                            assertThat(e.getDebtSnapshot().balance().amount()).isEqualByComparingTo(new BigDecimal("-250"));
+                        });
+
+                verify(memberRepository, never()).save(any(Member.class));
+                verify(userService, never()).suspendUser(any(UserId.class));
             }
         }
 

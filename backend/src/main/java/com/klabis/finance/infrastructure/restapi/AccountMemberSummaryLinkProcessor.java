@@ -5,8 +5,6 @@ import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
-import java.util.UUID;
-
 import static com.klabis.finance.infrastructure.restapi.FinanceSecurityHelper.callerHasFinanceManage;
 
 /**
@@ -25,11 +23,7 @@ class AccountMemberSummaryLinkProcessor implements RepresentationModelProcessor<
         if (response == null || response.id() == null) {
             return model;
         }
-        UUID memberUuid = response.id().uuid();
-        if (memberUuid == null) {
-            return model;
-        }
-        FinanceLinks.accountLink(memberUuid).ifPresent(model::add);
+        FinanceLinks.accountLink(response.id()).ifPresent(model::add);
         return model;
     }
 

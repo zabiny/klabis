@@ -9,6 +9,7 @@ import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
+import com.klabis.common.users.infrastructure.restapi.AuthorityMapperImpl;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PermissionController.class)
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class, AuthorityMapperImpl.class})
 @DisplayName("PermissionController permissions endpoints tests")
 @WithPostprocessors
 class PermissionControllerTest {
@@ -141,8 +142,8 @@ class PermissionControllerTest {
         void shouldReturn204WhenAuthorized() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
-                            Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE,
+                            com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
@@ -161,8 +162,8 @@ class PermissionControllerTest {
         void shouldReturnLocationHeaderPointingToPermissionsResource() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
-                            Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE,
+                            com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
@@ -183,7 +184,7 @@ class PermissionControllerTest {
         void shouldReturn204WithNoBody() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
@@ -203,7 +204,7 @@ class PermissionControllerTest {
         void shouldReturn409WhenRemovingLastAdmin() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new AuthorizationPolicy.AdminLockoutException(
@@ -227,7 +228,7 @@ class PermissionControllerTest {
         void shouldReturn400ForInvalidAuthority() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_PERMISSIONS));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_PERMISSIONS));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new IllegalArgumentException(
@@ -305,7 +306,7 @@ class PermissionControllerTest {
         void shouldAcceptGroupsTrainingWhenEnabled() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.GROUPS_TRAINING, com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ)));
@@ -324,7 +325,7 @@ class PermissionControllerTest {
         void shouldRemoveGroupsTrainingWhenDisabled() throws Exception {
             // Given
             UpdatePermissionsRequest request =
-                    new UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ));
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE, com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));

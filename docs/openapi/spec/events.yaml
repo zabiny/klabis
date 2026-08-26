@@ -1701,6 +1701,8 @@ components:
       description: |
         Registration summary for list views. SI card numbers are not included. registrationTime is
         visible to the registered member OR callers with EVENTS:REGISTRATIONS.
+      x-klabis-relation:
+        collectionRelation: registrationDtoList
       properties:
         firstName:
           type: string
@@ -1708,11 +1710,29 @@ components:
           type: string
         category:
           $ref: '#/components/schemas/EventCategoryDto'
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)
         registrationTime:
           type: string
           format: date-time
           x-klabis-authority: EVENTS_REGISTRATIONS
           x-klabis-owner-visible: true
+        # Kept off the wire (@JsonIgnore) but present in the generated Java: coordinators doubles
+        # as the @OwnerId source OwnershipResolver needs to evaluate registrationTime's
+        # @OwnerVisible. See design.md Decision 0 / x-field-extra-annotation for why plain omission
+        # from this schema (the approach used elsewhere for @JsonIgnore) does not work here.
+        coordinators:
+          type: array
+          items:
+            type: string
+            format: uuid
+          x-klabis-owner-id: true
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
+        # Needed only by RegistrationRecordTransactionLinkProcessor at runtime (never on the wire);
+        # no ownership role, unlike coordinators above.
+        registeredMemberId:
+          type: string
+          format: uuid
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
 
     EntityModelRegistrationDto:
       allOf:
@@ -1776,6 +1796,8 @@ components:
     AccommodationListItemDto:
       type: object
       description: Fields not recorded for a member are returned as null.
+      x-klabis-relation:
+        collectionRelation: accommodationList
       properties:
         firstName:
           type: string

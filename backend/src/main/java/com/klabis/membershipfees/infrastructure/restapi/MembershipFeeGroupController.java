@@ -57,12 +57,11 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         // port, and MembershipFeeGroupDetailsPostprocessor is shared with
         // FeeSelectionCampaignController.listGroupsForYear, whose items carry no such collection.
         HalResponseContext.setDomain(group);
-        HalResponseContext.embed(buildGroupMembers(group),
-                MembershipFeeGroupResponse.MemberInGroupResponse.class);
-        return ResponseEntity.ok(MembershipFeeGroupResponse.from(group));
+        HalResponseContext.embed(buildGroupMembers(group), MemberInGroupResponse.class);
+        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(group));
     }
 
-    private List<MembershipFeeGroupResponse.MemberInGroupResponse> buildGroupMembers(MembershipFeeGroup group) {
+    private List<MemberInGroupResponse> buildGroupMembers(MembershipFeeGroup group) {
         Set<FeeGroupMembership> memberships = group.getMemberships();
         if (memberships.isEmpty()) {
             return List.of();
@@ -70,7 +69,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         Set<MemberId> memberIds = memberships.stream().map(FeeGroupMembership::memberId).collect(Collectors.toSet());
         Map<MemberId, MemberDto> memberDtos = members.findByIds(memberIds);
         return memberships.stream()
-                .map(membership -> MembershipFeeGroupResponse.MemberInGroupResponse.from(membership, memberDtos.get(membership.memberId())))
+                .map(membership -> MembershipFeesResponseMapper.toResponse(membership, memberDtos.get(membership.memberId())))
                 .toList();
     }
 
@@ -83,11 +82,11 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     }
 
     @Override
-    public ResponseEntity<List<MembershipFeeTierResponse.PaymentRuleResponse>> listGroupRules(
+    public ResponseEntity<List<PaymentRuleResponse>> listGroupRules(
             UUID id) {
         MembershipFeeGroup group = managementPort.getGroup(new MembershipFeeGroupId(id));
-        List<MembershipFeeTierResponse.PaymentRuleResponse> items = group.getRulesSnapshot().stream()
-                .map(MembershipFeeTierResponse.PaymentRuleResponse::from)
+        List<PaymentRuleResponse> items = group.getRulesSnapshot().stream()
+                .map(MembershipFeesResponseMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(items);
     }

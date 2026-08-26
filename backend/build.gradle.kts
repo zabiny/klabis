@@ -288,30 +288,21 @@ openApiModule(
         "DeactivationReason",
         "DrivingLicenseGroup",
         "TrainerLicenseDto_level",
-        "RefereeLicenseDto_level"
+        "RefereeLicenseDto_level",
+        "MemberSummaryResponse",
+        "MemberOptionResponse",
+        "SuspensionBlockedWarning",
+        "OutstandingDebtWarning",
+        "LastOwnerWarning",
+        "AffectedGroup",
+        // Inline enum on AffectedGroup.groupType, promoted to a named schema by
+        // RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent above).
+        "AffectedGroup_groupType",
+        // Generated REST DTO, distinct from the domain-shared com.klabis.members.MonetaryAmount
+        // (MemberFinancialStatePort) — MemberMapper converts between them at the REST boundary.
+        "MonetaryAmount"
     ),
-    mappings = mapOf(
-        // Gender/DeactivationReason/DrivingLicenseGroup/TrainerLicenseDto_level/RefereeLicenseDto_level
-        // used to be redirected here onto the hand-written domain enums (Gender, DeactivationReason,
-        // DrivingLicenseGroup, TrainerLevel, RefereeLevel). Now that model.mustache renders a real
-        // enumOuterClass for a promoted/$ref'd top-level enum, the generator synthesizes its own DTO
-        // enum for each of these instead — see MemberMapper/UpdateMemberRequestMapper for the explicit
-        // conversion between the generated DTO enum and the domain enum at the REST boundary.
-        // listMembers' PagedModelEntityModelMemberSummaryResponse (Shape 2) and its application/json
-        // sibling MemberSummaryResponseList are now both resolved to Page<MemberSummaryResponse> by
-        // KlabisSpringCodegen from x-spring-paginated, with no mappings entry needed — see
-        // custom-openapi-codegen design.md Decision 2.
-        // suspendMember's 409 body: a oneOf of two records that MembersExceptionHandler declares
-        // and the interface never names (it returns ResponseEntity<Void>), so no Java type stands
-        // for the union. Object is the honest answer, and it also stops the generator importing a
-        // model it was not asked to generate. Generating the union instead does not work — the
-        // generator flattens a discriminator-less oneOf into one record holding every branch's
-        // fields, each @NotNull, which nothing can satisfy. The published contract in
-        // klabis-full.json still carries the full oneOf; only /v3/api-docs goes without, since
-        // KlabisSpringCodegen suppresses the doc-block content for a java.lang.Object mapping
-        // (springdoc would otherwise infer `"type": "string"`, which is worse than saying nothing).
-        "SuspensionBlockedWarning" to "java.lang.Object"
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -323,25 +314,21 @@ openApiModule(
         "CreateEventTypeRequest",
         "UpdateEventTypeRequest"
     ),
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 
 openApiModule(
     module = "finance",
     pkg = "com.klabis.finance.infrastructure.restapi",
     apis = listOf("Finance"),
-    // MemberAccountResource/TransactionResource are hand-written (mapper logic onto Money/Transaction
-    // domain types) and stay that way — only the request DTOs are generated fresh.
     models = listOf(
         "DepositRequest",
         "ChargeRequest",
-        "ReverseRequest"
+        "ReverseRequest",
+        "MemberAccountResource",
+        "TransactionResource"
     ),
-    // listTransactions' PagedModelEntityModelTransactionResource (Shape 2 HAL envelope) and its
-    // application/json sibling TransactionResourcePage (a named array schema) are now both resolved
-    // to Page<TransactionResource> by KlabisSpringCodegen from x-spring-paginated, with no mappings
-    // entry needed — see custom-openapi-codegen design.md Decision 2.
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 openApiModule(
     module = "events",
@@ -381,48 +368,46 @@ openApiModule(
         "CreateEventCategoryRequest",
         // Enum schema — must be listed explicitly so the generator emits it (see the mapping comment
         // below for why it's no longer redirected onto the domain enum).
-        "EventStatus"
+        "EventStatus",
+        // BulkSyncResult/BulkImportResult are now generated as real restapi DTOs (decoupled from the
+        // application-layer com.klabis.events.application.BulkSyncResult/BulkImportResult) and
+        // bridged via BulkResultMapper (MapStruct). Their EntityModel* envelopes are plain Shape 1
+        // HAL envelopes (allOf[$ref, {_links}]), already unwrapped structurally by
+        // KlabisSpringCodegen — no mappings/models entry needed for those.
+        "BulkSyncResult",
+        "BulkImportResult",
+        "EventSyncEntry",
+        "EventImportEntry",
+        // Inline enum on EventSyncEntry.status/EventImportEntry.status, promoted to a named schema
+        // by RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent in the members module).
+        // Both properties share the identical [SUCCESS, FAILED] enum, so the generator deduplicates
+        // them into a single class named after the second occurrence, EventImportEntry_status —
+        // EventSyncEntry.status ends up typed as EventImportEntryStatus too.
+        "EventImportEntry_status",
+        "EventDto",
+        "RankingDto",
+        "EntryFeeDto",
+        "EventCategoryDto",
+        "EventSummaryDto",
+        "CategoryPresetDto",
+        "AccommodationListItemDto",
+        "RegistrationSummaryDto",
+        "RegistrationDto"
     ),
-    mappings = mapOf(
-        // EventStatus used to be redirected here onto the hand-written domain enum
-        // com.klabis.events.domain.EventStatus. Now that model.mustache renders a real enumOuterClass
-        // for a top-level enum schema, the generator synthesizes its own DTO enum instead — see
-        // EventDto/EventSummaryDto/EventController for the explicit conversion to/from the domain enum.
-        // listEvents' PagedModelEntityModelEventSummaryDto (Shape 2 HAL envelope) and its
-        // application/json sibling EventSummaryDtoList (a named array schema) are now both resolved
-        // to Page<EventSummaryDto> by KlabisSpringCodegen from x-spring-paginated, with no mappings
-        // entry needed — see custom-openapi-codegen design.md Decision 2.
-        // getEvent returns the payload; the _embedded.registrationDtoList block in the
-        // WithRegistrations schema is contributed by the controller via HalResponseContext.embed(...)
-        // and assembled by HalResponseBodyAdvice, so it does not belong in the Java return type.
-        // This is a hand-written override the generator cannot infer from spec structure alone
-        // (it stays a Shape 1 envelope by shape, but the target Java class carries no _embedded
-        // block) — schema name differs from the target Java class (EventDto), so this mapping stays.
-        "EntityModelEventDtoWithRegistrations" to "com.klabis.events.infrastructure.restapi.EventDto",
-        // BulkSyncResult/BulkImportResult are application-layer types, not restapi DTOs — the
-        // envelope and application/json-sibling schema names never match the target package, so both
-        // stay mapped (otherwise springdoc's @Schema(implementation = ...) resolves against pkg,
-        // where no such class exists).
-        "EntityModelBulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
-        "EntityModelBulkImportResult" to "com.klabis.events.application.BulkImportResult",
-        "BulkSyncResult" to "com.klabis.events.application.BulkSyncResult",
-        "BulkImportResult" to "com.klabis.events.application.BulkImportResult"
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
     apis = listOf("Calendar", "IcalToken", "IcalFeed"),
-    // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
     models = listOf(
         "CreateCalendarItemRequest",
-        "UpdateCalendarItemRequest"
+        "UpdateCalendarItemRequest",
+        "CalendarItemDto",
+        "IcalTokenResponse"
     ),
-    // No mappings: listCalendarItems' CalendarItemDtoList is a named array schema -> List<CalendarItemDto>
-    // directly, and getCalendarItem/getTokenState/generateToken's application/json siblings already
-    // match their target Java class names — nothing to redirect. No pagination in this module.
-    mappings = mapOf()
+    mappings = emptyMap()
 )
 
 openApiModule(
@@ -446,16 +431,28 @@ openApiModule(
         "ChangeDeadlineRequest",
         "EditGroupSnapshotRequest",
         "AdminAssignMemberRequest",
-        "ChooseFeeChoiceRequest"
+        "ChooseFeeChoiceRequest",
+        "FeeSelectionCampaignResponse",
+        "MembershipFeeTierResponse",
+        "MembershipFeeTierSummaryResponse",
+        "PaymentRuleResponse",
+        "MemberFeeChoiceResponse",
+        "MemberFeeHistoryResponse",
+        "FeeAssignmentResponse",
+        "MemberFeeSummaryResponse",
+        "CurrentGroupResponse",
+        "MembershipFeeGroupResponse",
+        "MemberInGroupResponse",
+        // Inline enums promoted to named schemas by resolveInlineEnums (see EventImportEntry_status
+        // precedent in the events module). PaymentRuleResponse.ruleType is standalone;
+        // MembershipFeeGroupResponse.status is standalone; FeeAssignmentResponse.source and
+        // MemberInGroupResponse.source share the identical [MEMBER_CHOICE, ADMIN_ASSIGNMENT] enum
+        // and are deduplicated onto the same generated type, named after FeeAssignmentResponse.
+        "PaymentRuleResponse_ruleType",
+        "MembershipFeeGroupResponse_status",
+        "FeeAssignmentResponse_source"
     ),
-    mappings = mapOf(
-        // PaymentRuleResponse is a nested class (MembershipFeeTierResponse.PaymentRuleResponse); its
-        // application/json bare-payload sibling (schema name PaymentRuleResponse, for getRule) would
-        // otherwise resolve to a top-level PaymentRuleResponse class rather than the nested one, so
-        // this mapping stays — it is a hand-written override the generator cannot infer from spec
-        // structure alone, unlike the envelope unwrap above.
-        "PaymentRuleResponse" to "com.klabis.membershipfees.infrastructure.restapi.MembershipFeeTierResponse.PaymentRuleResponse"
-    )
+    mappings = emptyMap()
 )
 
 // The groups module spans THREE Java packages (familygroup/freegroup/traininggroup), each with its
@@ -464,78 +461,99 @@ openApiModule(
 openApiModule(
     module = "groupsFamily",
     pkg = "com.klabis.groups.familygroup.infrastructure.restapi",
-    // getFamilyGroup IS generated onto FamilyGroupsApi; only its response schema is
-    // documentation-only, because the record's parents/members are List<EntityModel<X>> whose items
-    // carry their own _links. See groups.yaml header comment and the comment on that method in
-    // FamilyGroupController.
+    // getFamilyGroup IS generated onto FamilyGroupsApi via the application/json content sibling
+    // (see groups.yaml) — its own top level has no allOf/_links shape, so response-level envelope
+    // detection is a no-op for it. FamilyGroupResponse itself IS generated (models list below):
+    // parents/members resolve to List<EntityModel<X>> because EntityModelParentResponse /
+    // EntityModelFamilyGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<ParentResponse> / EntityModel<FamilyGroupMembershipResponse> — see
+    // KlabisSpringCodegen.fromProperty's isMappedEnvelopeItem guard, which steps aside for any
+    // array item schema present in schemaMapping() instead of applying its own default
+    // strip-to-bare-payload rewrite. ParentResponse/FamilyGroupMembershipResponse (the X payload
+    // types) are ordinary generated models. See groups.yaml header comment and the comment on
+    // getFamilyGroup in FamilyGroupController.
     apis = listOf("FamilyGroups"),
     models = listOf(
         "CreateFamilyGroupRequest",
-        "AddMemberRequest"
+        "AddMemberRequest",
+        "FamilyGroupSummaryResponse",
+        "ParentResponse",
+        "FamilyGroupMembershipResponse",
+        "FamilyGroupResponse"
     ),
     mappings = mapOf(
-        // getFamilyGroup has no application/json sibling (its response's per-item _links can't be
-        // expressed in a bare payload — see groups.yaml header comment), so backend codegen still
-        // sees the full envelope schema. EntityModelFamilyGroupResponse's name differs from the
-        // target Java class, so this mapping stays — same precedent as EntityModelEventDtoWithRegistrations
-        // in the events module. Verified empirically: removing it degrades getFamilyGroup's return
-        // type to the ungenerated envelope, breaking the controller's @Override.
-        "EntityModelFamilyGroupResponse" to "com.klabis.groups.familygroup.infrastructure.restapi.FamilyGroupResponse"
-        // listFamilyGroups' CollectionModelEntityModelFamilyGroupSummaryResponse envelope is now
-        // auto-unwrapped by KlabisSpringCodegen from its array/_embedded shape (Shape 2, non-paginated
-        // -> List<T>) — no mapping needed, matching the FamilyGroupSummaryResponseList sibling it used
-        // to be stripped down to.
+        "EntityModelParentResponse" to "org.springframework.hateoas.EntityModel<ParentResponse>",
+        "EntityModelFamilyGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<ParentResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
     )
 )
 
 openApiModule(
     module = "groupsFree",
     pkg = "com.klabis.groups.freegroup.infrastructure.restapi",
-    // getGroup (Groups) is generated; only its response schema is documentation-only — same reason
-    // as getFamilyGroup above. See groups.yaml header comment.
+    // getGroup (Groups) is generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup above. GroupResponse itself IS generated (models list below);
+    // OwnerResponse/FreeGroupMembershipResponse/PendingInvitationResponse are ordinary generated
+    // payload models, and their EntityModelX envelope schemas are redirected onto EntityModel<X>
+    // the same way as groupsFamily.
     apis = listOf("Groups", "Invitations"),
     models = listOf(
         "CreateGroupRequest",
         "RenameGroupRequest",
         "AddOwnerRequest",
         "InviteMemberRequest",
-        "CancelInvitationRequest"
+        "CancelInvitationRequest",
+        "GroupSummaryResponse",
+        "PendingInvitationResponse",
+        "OwnerResponse",
+        "FreeGroupMembershipResponse",
+        "GroupResponse"
     ),
     mappings = mapOf(
-        // getGroup has no application/json sibling (per-item _links on owners/members/
-        // pendingInvitations can't be expressed in a bare payload — see groups.yaml header comment),
-        // so backend codegen still sees the full envelope schema. EntityModelGroupResponse's name
-        // differs from the target Java class, so this mapping stays.
-        "EntityModelGroupResponse" to "com.klabis.groups.freegroup.infrastructure.restapi.GroupResponse"
-        // listGroups' and getPendingInvitations' envelopes are now auto-unwrapped by KlabisSpringCodegen
-        // from their array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed,
-        // matching the GroupSummaryResponseList/PendingInvitationResponseList siblings they used to be
-        // stripped down to.
+        "EntityModelOwnerResponse" to "org.springframework.hateoas.EntityModel<OwnerResponse>",
+        "EntityModelFreeGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>",
+        "EntityModelPendingInvitationResponse" to "org.springframework.hateoas.EntityModel<PendingInvitationResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<OwnerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<PendingInvitationResponse>" to "org.springframework.hateoas.EntityModel"
     )
 )
 
 openApiModule(
     module = "groupsTraining",
     pkg = "com.klabis.groups.traininggroup.infrastructure.restapi",
-    // getTrainingGroup is generated; only its response schema is documentation-only — same reason as
-    // getFamilyGroup above. See groups.yaml header comment.
+    // getTrainingGroup IS generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup/getGroup above. TrainingGroupResponse itself IS generated (models
+    // list below); trainers/members resolve to List<EntityModel<X>> because EntityModelTrainerResponse
+    // / EntityModelGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<TrainerResponse> / EntityModel<GroupMembershipResponse> — same mechanism as
+    // groupsFamily/groupsFree. ageRange is a plain $ref property (Category A, not array-wrapped), so
+    // it needs no mapping and resolves as a normal AgeRangeResponse field.
     apis = listOf("TrainingGroups"),
     models = listOf(
         "CreateTrainingGroupRequest",
         "TrainingGroupAddMemberRequest",
         "AddTrainerRequest",
         "AgeRangeRequest",
-        "UpdateTrainingGroupRequest"
+        "UpdateTrainingGroupRequest",
+        "TrainingGroupSummaryResponse",
+        "TrainingGroupResponse",
+        "TrainerResponse",
+        "GroupMembershipResponse",
+        "AgeRangeResponse"
     ),
     mappings = mapOf(
-        // getTrainingGroup has no application/json sibling (per-item _links on trainers/members
-        // can't be expressed in a bare payload — see groups.yaml header comment), so backend codegen
-        // still sees the full envelope schema. EntityModelTrainingGroupResponse's name differs from
-        // the target Java class, so this mapping stays.
-        "EntityModelTrainingGroupResponse" to "com.klabis.groups.traininggroup.infrastructure.restapi.TrainingGroupResponse"
-        // listTrainingGroups' envelope is now auto-unwrapped by KlabisSpringCodegen from its
-        // array/_embedded shape (Shape 2, non-paginated -> List<T>) — no mapping needed, matching the
-        // TrainingGroupSummaryResponseList sibling it used to be stripped down to.
+        "EntityModelTrainerResponse" to "org.springframework.hateoas.EntityModel<TrainerResponse>",
+        "EntityModelGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<GroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<TrainerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<GroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
     )
 )
 
@@ -550,24 +568,14 @@ openApiModule(
         "PasswordSetupResponse",
         "TokenRequestRequest",
         "TokenRequestResponse",
-        "UpdatePermissionsRequest"
+        "UpdatePermissionsRequest",
+        // Referenced only via $ref from UpdatePermissionsRequest.authorities; must be listed
+        // explicitly so the generator emits it now that it's no longer redirected onto the domain
+        // enum (see the mapping comment above and AuthorityMapper).
+        "Authority",
+        "PermissionsResponse"
     ),
     mappings = mapOf(
-        // PermissionsResponse is hand-written (not in `models`, so never regenerated). The
-        // application/json sibling on getUserPermissions references it directly by its own schema
-        // name, which already matches the target Java class — so only this bare mapping is needed;
-        // the envelope schema EntityModelPermissionsResponse never needs its own mapping.
-        "PermissionsResponse" to "com.klabis.common.users.infrastructure.restapi.PermissionsResponse",
-        "Authority" to "com.klabis.common.users.Authority",
-        // rootNavigation/dashboard follow the standard "returning plain payloads" pattern like every
-        // other migrated module: the generated interface returns the plain RootModel/DashboardModel
-        // marker record, and the controller populates HalResponseContext.setDomain(...) with a
-        // non-null placeholder so HalResponseBodyAdvice.wrapSingle() wraps it into
-        // EntityModelWithDomain<RootModel, String> (which extends EntityModel<RootModel>) and runs it
-        // through the postprocessor pipeline. The nine RepresentationModelProcessor<EntityModel<RootModel>>
-        // beans (plus the DashboardModel one) are typed on the CONTENT (EntityModel<RootModel>), not
-        // on the domain type parameter, so they still bind correctly. See RootController/
-        // DashboardController for the actual setDomain(...) call and value chosen.
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
         "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
     )
@@ -581,14 +589,13 @@ openApiModule(
     // OrisEventsApi's operations in here instead of/alongside this module's own. See oris.yaml
     // header comment.
     apis = listOf("OrisImport"),
-    // No real model to generate: OrisEventSummary is mapped below onto the hand-written record
-    // already on the controller. An empty `models` list is NOT safe here — like the `apis` global
-    // property, the generator's "models" property generates every schema in the bundled document
-    // when given an empty string, not none. A single nonexistent placeholder name keeps the
-    // "models" property non-empty (so the "generate everything" branch never triggers) while
-    // matching nothing, so only the interface (OrisImportApi) is produced.
+    // No real model to generate: OrisEventSummary is a plain top-level hand-written record in this
+    // package, matching the generated schema name, so no mapping is needed. An empty `models` list
+    // is NOT safe here — like the `apis` global property, the generator's "models" property
+    // generates every schema in the bundled document when given an empty string, not none. A single
+    // nonexistent placeholder name keeps the "models" property non-empty (so the "generate
+    // everything" branch never triggers) while matching nothing, so only the interface
+    // (OrisImportApi) is produced.
     models = listOf("_NoGeneratedModelsForOris"),
-    mappings = mapOf(
-        "OrisEventSummary" to "com.klabis.oris.OrisController.OrisEventSummary"
-    )
+    mappings = emptyMap()
 )

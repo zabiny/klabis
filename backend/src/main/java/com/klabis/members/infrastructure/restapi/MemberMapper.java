@@ -17,6 +17,7 @@ import java.time.LocalDate;
 )
 interface MemberMapper {
 
+    @Mapping(target = "id", expression = "java(member.getId().value())")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
     MemberSummaryResponse toSummaryResponse(Member member);
@@ -61,6 +62,8 @@ interface MemberMapper {
     }
 
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
+
+    MonetaryAmount monetaryAmountToDto(com.klabis.members.MonetaryAmount monetaryAmount);
 
     @Mapping(target = "validityDate", expression = "java(medicalCourse.validityDate() != null ? medicalCourse.validityDate().orElse(null) : null)")
     MedicalCourseDto medicalCourseToDto(MedicalCourse medicalCourse);

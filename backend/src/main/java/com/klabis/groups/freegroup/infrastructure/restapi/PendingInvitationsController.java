@@ -46,7 +46,7 @@ class PendingInvitationsController implements InvitationsApi {
         HalResponseContext.setDomainList(views);
         return ResponseEntity.ok(views.stream()
                 .map(view -> new PendingInvitationResponse(
-                        view.groupId(), view.groupName(), view.invitation().getId(),
+                        view.groupId().uuid(), view.groupName(), view.invitation().getId().value(),
                         view.invitation().getInvitedBy().uuid()))
                 .toList());
     }

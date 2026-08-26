@@ -344,15 +344,15 @@ public class EventController implements EventsApi {
             return new AccommodationListItemDto(null, null, null, null, null, null, null, null, null);
         }
         return new AccommodationListItemDto(
+                accommodationData.addressCity(),
+                accommodationData.addressCountry(),
+                accommodationData.addressPostalCode(),
+                accommodationData.addressStreet(),
+                accommodationData.dateOfBirth(),
                 accommodationData.firstName(),
-                accommodationData.lastName(),
                 accommodationData.identityCardNumber(),
                 accommodationData.identityCardValidityDate(),
-                accommodationData.dateOfBirth(),
-                accommodationData.addressStreet(),
-                accommodationData.addressCity(),
-                accommodationData.addressPostalCode(),
-                accommodationData.addressCountry()
+                accommodationData.lastName()
         );
     }
 
