@@ -1,6 +1,5 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
@@ -11,12 +10,12 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -25,8 +24,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
 
-@MvcComponent
-@ControllerAdvice
+@RestControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
 
     private final OwnershipResolver ownershipResolver;
