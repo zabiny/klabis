@@ -6,9 +6,9 @@ class CategoryPresetDtoMapper {
 
     static CategoryPresetDto toDto(CategoryPreset preset) {
         return new CategoryPresetDto(
-                preset.getId(),
-                preset.getName(),
-                preset.getCategories()
+                preset.getCategories(),
+                preset.getId().value(),
+                preset.getName()
         );
     }
 

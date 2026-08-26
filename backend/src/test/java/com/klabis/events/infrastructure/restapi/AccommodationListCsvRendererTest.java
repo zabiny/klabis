@@ -47,9 +47,9 @@ class AccommodationListCsvRendererTest {
     @Test
     void shouldMapFirstNameAndLastName() {
         var item = new AccommodationListItemDto(
-                "Jana", "Novotná", "AB123456", LocalDate.of(2028, 12, 31),
+                "Praha", "CZ", "10000", "Hlavní 1",
                 LocalDate.of(1990, 5, 15),
-                "Hlavní 1", "Praha", "10000", "CZ"
+                "Jana", "AB123456", LocalDate.of(2028, 12, 31), "Novotná"
         );
 
         String csv = render(List.of(item));
@@ -61,9 +61,9 @@ class AccommodationListCsvRendererTest {
     @Test
     void shouldCombineAddressIntoSingleColumn() {
         var item = new AccommodationListItemDto(
-                "Jana", "Novotná", "AB123456", LocalDate.of(2028, 12, 31),
+                "Praha", "CZ", "10000", "Hlavní 1",
                 LocalDate.of(1990, 5, 15),
-                "Hlavní 1", "Praha", "10000", "CZ"
+                "Jana", "AB123456", LocalDate.of(2028, 12, 31), "Novotná"
         );
 
         String csv = render(List.of(item));
@@ -76,9 +76,9 @@ class AccommodationListCsvRendererTest {
     @Test
     void shouldOmitAddressPartsWhenNull() {
         var item = new AccommodationListItemDto(
-                "Jana", "Novotná", "AB123456", LocalDate.of(2028, 12, 31),
+                "Praha", null, "10000", null,
                 LocalDate.of(1990, 5, 15),
-                null, "Praha", "10000", null
+                "Jana", "AB123456", LocalDate.of(2028, 12, 31), "Novotná"
         );
 
         String csv = render(List.of(item));
@@ -92,8 +92,9 @@ class AccommodationListCsvRendererTest {
     @Test
     void shouldRenderEmptyCellForMissingIdentityCardNumber() {
         var item = new AccommodationListItemDto(
-                "Jana", "Novotná", null, null, null,
-                "Hlavní 1", "Praha", "10000", "CZ"
+                "Praha", "CZ", "10000", "Hlavní 1",
+                null,
+                "Jana", null, null, "Novotná"
         );
 
         String csv = render(List.of(item));
@@ -110,8 +111,9 @@ class AccommodationListCsvRendererTest {
     @Test
     void shouldNotRenderNeuvedenoForMissingValues() {
         var item = new AccommodationListItemDto(
-                "Jana", "Novotná", null, null, null,
-                "Hlavní 1", "Praha", "10000", "CZ"
+                "Praha", "CZ", "10000", "Hlavní 1",
+                null,
+                "Jana", null, null, "Novotná"
         );
 
         String csv = render(List.of(item));
@@ -163,9 +165,9 @@ class AccommodationListCsvRendererTest {
 
     private AccommodationListItemDto itemWithFullAddress() {
         return new AccommodationListItemDto(
-                "Jan", "Novák", "AB123456", LocalDate.of(2028, 12, 31),
+                "Brno", "CZ", "60200", "Náměstí 5",
                 LocalDate.of(1985, 3, 20),
-                "Náměstí 5", "Brno", "60200", "CZ"
+                "Jan", "AB123456", LocalDate.of(2028, 12, 31), "Novák"
         );
     }
 }

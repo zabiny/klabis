@@ -1,6 +1,5 @@
 package com.klabis.finance.infrastructure.restapi;
 
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -87,12 +86,12 @@ class AccountMemberSummaryLinkProcessorTest {
 
     private EntityModel<MemberSummaryResponse> modelFor(UUID memberUuid, boolean active) {
         MemberSummaryResponse response = new MemberSummaryResponse(
-                new MemberId(memberUuid),
-                "Jan",
-                "Novák",
-                "ZBM0101",
+                active,
                 "test@example.com",
-                active
+                "Jan",
+                memberUuid,
+                "Novák",
+                "ZBM0101"
         );
         return EntityModel.of(response);
     }

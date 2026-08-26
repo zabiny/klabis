@@ -37,11 +37,54 @@ public final class HalEnvelopeDetector {
     }
 
     /**
+     * Shape 1-item — a model <em>property</em> (not an operation's response) shaped as
+     * {@code array of $ref, where the $ref resolves to allOf[payload, {_links,_templates,_embedded}]}
+     * (Shape 1's own structural rule, just reached from a property's {@code items} instead of a
+     * response's top level). Design.md Decision 3 — Category C.
+     *
+     * <p>Confirmed real-spec example: {@code TrainingGroupResponse.trainers} typed as
+     * {@code array of $ref EntityModelTrainerResponse}, where
+     * {@code EntityModelTrainerResponse = allOf[{memberId}, {_links}]}.
+     *
+     * <p>Deliberately reuses {@link #detectShape1} rather than re-implementing the
+     * {@code allOf}/{@code {_links,_templates,_embedded}} check, so the response-level and
+     * property-level call sites cannot drift into two different rules for what is structurally the
+     * same shape (tasks.md 1.3 / design.md's "second copy" risk mitigation).
+     *
+     * @param propertySchema the raw property schema as seen by {@code fromProperty} — must be
+     *                        {@code type: array} with a {@code $ref} items schema
+     * @return the unwrap target (always {@code isCollection() == true}) when the items schema
+     *         resolves to a Shape 1 envelope; empty otherwise (including when the property is not
+     *         an array at all, or its items are not a {@code $ref})
+     */
+    public static Optional<EnvelopeUnwrap> detectPropertyItemUnwrap(Schema<?> propertySchema, Map<String, Schema> schemas) {
+        if (propertySchema == null || !ModelUtils.isArraySchema(propertySchema)) {
+            return Optional.empty();
+        }
+        Schema<?> items = propertySchema.getItems();
+        if (items == null || items.get$ref() == null) {
+            return Optional.empty();
+        }
+        Schema<?> resolvedItems = resolveRef(items, schemas);
+        if (resolvedItems == null) {
+            return Optional.empty();
+        }
+        return detectShape1(resolvedItems, schemas)
+            .map(unwrap -> new EnvelopeUnwrap(unwrap.targetSchema(), true));
+    }
+
+    /**
      * Shape 1 — single entity ({@code EntityModel<T>}): an {@code allOf} of exactly two members
      * where member[0] is a {@code $ref} and member[1]'s properties are a subset of
      * {@code {_links, _templates, _embedded}}.
+     *
+     * <p>Package-private (not {@code private}) so {@link KlabisSpringCodegen}'s property-level
+     * unwrap path (Shape 1-item — the same {@code allOf[$ref, {_links,...}]} structural rule,
+     * reached from a model property's array {@code items} instead of an operation's response) can
+     * reuse this exact check rather than keeping an independent copy that could drift from it —
+     * design.md Decision 3 / tasks.md 1.3.
      */
-    private static Optional<EnvelopeUnwrap> detectShape1(Schema<?> schema, Map<String, Schema> schemas) {
+    static Optional<EnvelopeUnwrap> detectShape1(Schema<?> schema, Map<String, Schema> schemas) {
         List<Schema> allOf = schema.getAllOf();
         if (allOf == null || allOf.size() != 2) {
             return Optional.empty();

@@ -8,6 +8,8 @@ import com.klabis.members.Members;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 class RegistrationDtoMapper {
 
@@ -18,18 +20,22 @@ class RegistrationDtoMapper {
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
         return new RegistrationSummaryDto(
+                toCategoryDto(registration, event),
+                toCoordinatorUuids(event.getCoordinators()),
                 member.firstName(),
                 member.lastName(),
-                toCategoryDto(registration, event),
-                registration.registeredAt(),
-                event.getCoordinators(),
-                registration.memberId()
+                registration.memberId().uuid(),
+                registration.registeredAt()
         );
     }
 
-    static EventDto.EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
+    private static List<UUID> toCoordinatorUuids(Set<MemberId> coordinators) {
+        return coordinators.stream().map(MemberId::uuid).toList();
+    }
+
+    static EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
         return event.findCategory(registration.categoryId())
-                .map(category -> new EventDto.EventCategoryDto(category.id(), category.name(), null))
+                .map(category -> new EventCategoryDto(null, category.id().value(), category.name()))
                 .orElse(null);
     }
 

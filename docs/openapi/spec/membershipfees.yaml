@@ -1659,6 +1659,8 @@ components:
     MemberInGroupResponse:
       type: object
       description: A member's assignment to a fee group.
+      x-klabis-relation:
+        collectionRelation: members
       properties:
         memberId:
           type: string

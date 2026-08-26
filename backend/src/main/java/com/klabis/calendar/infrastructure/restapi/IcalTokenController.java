@@ -38,7 +38,7 @@ class IcalTokenController implements IcalTokenApi {
     @Override
     public ResponseEntity<IcalTokenResponse> getTokenState(@ActingUser UserId currentUserId) {
         IcalTokenResponse response = icalTokenPort.getTokenState(currentUserId)
-                .map(state -> new IcalTokenResponse(buildMaskedSubscribeUrl(state.tokenLookup()), state.lastSetAt()))
+                .map(state -> new IcalTokenResponse(state.lastSetAt(), buildMaskedSubscribeUrl(state.tokenLookup())))
                 .orElseGet(() -> new IcalTokenResponse(null, null));
         HalResponseContext.setDomain(response);
         return ResponseEntity.ok(response);
@@ -47,7 +47,7 @@ class IcalTokenController implements IcalTokenApi {
     @Override
     public ResponseEntity<IcalTokenResponse> generateToken(@ActingUser UserId currentUserId) {
         IcalTokenPort.GenerateResult result = icalTokenPort.generateOrRotate(currentUserId);
-        IcalTokenResponse response = new IcalTokenResponse(buildSubscribeUrl(result.rawToken()), result.lastSetAt());
+        IcalTokenResponse response = new IcalTokenResponse(result.lastSetAt(), buildSubscribeUrl(result.rawToken()));
         HalResponseContext.setDomain(response);
         return ResponseEntity.ok(response);
     }
@@ -63,8 +63,6 @@ class IcalTokenController implements IcalTokenApi {
         return baseUrl + "/ical/my-schedule.ics?token=••••••••••••••••••••••••••••••••••••••••";
     }
 }
-
-record IcalTokenResponse(String url, Instant lastSetAt) {}
 
 @MvcComponent
 class IcalTokenResponsePostprocessor implements RepresentationModelProcessor<EntityModel<IcalTokenResponse>> {

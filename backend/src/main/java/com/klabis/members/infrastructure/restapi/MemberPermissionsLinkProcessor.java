@@ -3,7 +3,6 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.infrastructure.restapi.PermissionsApi;
-import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -33,7 +32,7 @@ class MemberPermissionsLinkProcessor extends ModelWithDomainPostprocessor<Member
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
         if (member.isActive()) {
-            addPermissionsLink(dtoModel, member.getId());
+            addPermissionsLink(dtoModel, member.getId().uuid());
         }
     }
 }
@@ -76,16 +75,12 @@ final class MemberPermissionsLinkHelper {
 
     private MemberPermissionsLinkHelper() {}
 
-    static void addPermissionsLink(EntityModel<?> model, MemberId memberId) {
+    static void addPermissionsLink(EntityModel<?> model, UUID memberId) {
         if (memberId == null) {
             return;
         }
-        UUID uuid = memberId.uuid();
-        if (uuid == null) {
-            return;
-        }
 
-        klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(uuid))
+        klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(memberId))
                 .ifPresent(link -> model.add(link.withRel("permissions")));
     }
 }
