@@ -12,6 +12,21 @@ import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
+import com.klabis.groups.infrastructure.restapi.AddOwnerRequest;
+import com.klabis.groups.infrastructure.restapi.CancelInvitationRequest;
+import com.klabis.groups.infrastructure.restapi.CreateGroupRequest;
+import com.klabis.groups.infrastructure.restapi.FreeGroupMembershipResponse;
+import com.klabis.groups.infrastructure.restapi.FreeGroupMembershipResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.GroupResponse;
+import com.klabis.groups.infrastructure.restapi.GroupResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.GroupsApi;
+import com.klabis.groups.infrastructure.restapi.GroupSummaryResponse;
+import com.klabis.groups.infrastructure.restapi.GroupSummaryResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.InviteMemberRequest;
+import com.klabis.groups.infrastructure.restapi.OwnerResponse;
+import com.klabis.groups.infrastructure.restapi.OwnerResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.PendingInvitationResponse;
+import com.klabis.groups.infrastructure.restapi.RenameGroupRequest;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
@@ -62,7 +77,7 @@ class FreeGroupController implements GroupsApi {
 
         HalResponseContext.setDomainList(groups);
         return ResponseEntity.ok(groups.stream()
-                .map(group -> new GroupSummaryResponse(group.getId().uuid(), group.getName()))
+                .map(group -> GroupSummaryResponseBuilder.builder().id(group.getId().uuid()).name(group.getName()).build())
                 .toList());
     }
 
@@ -180,11 +195,17 @@ class FreeGroupController implements GroupsApi {
                     .toList();
         }
 
-        return new GroupResponse(group.getId().uuid(), memberModels, group.getName(), ownerModels, pendingInvitationModels);
+        return GroupResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .owners(ownerModels)
+                .members(memberModels)
+                .pendingInvitations(pendingInvitationModels)
+                .build();
     }
 
     private EntityModel<OwnerResponse> buildOwnerModel(MemberId ownerId, UUID groupUuid, boolean requestingUserIsOwner, int ownerCount) {
-        EntityModel<OwnerResponse> model = EntityModel.of(new OwnerResponse(ownerId.uuid()));
+        EntityModel<OwnerResponse> model = EntityModel.of(OwnerResponseBuilder.builder().memberId(ownerId.uuid()).build());
         klabisLinkTo(methodOn(MembersApi.class).getMember(ownerId.uuid(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
@@ -201,7 +222,10 @@ class FreeGroupController implements GroupsApi {
             GroupMembership membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
 
         MemberId memberId = membership.memberId();
-        FreeGroupMembershipResponse response = new FreeGroupMembershipResponse(membership.joinedAt(), memberId.uuid());
+        FreeGroupMembershipResponse response = FreeGroupMembershipResponseBuilder.builder()
+                .memberId(memberId.uuid())
+                .joinedAt(membership.joinedAt())
+                .build();
 
         EntityModel<FreeGroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))

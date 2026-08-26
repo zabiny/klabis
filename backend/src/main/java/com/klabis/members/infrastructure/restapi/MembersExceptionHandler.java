@@ -26,15 +26,17 @@ class MembersExceptionHandler {
         LastOwnerWarning groups = null;
         if (!ex.getBlockingGroups().isEmpty()) {
             List<AffectedGroup> affectedGroups = ex.getBlockingGroups().stream()
-                    .map(info -> new AffectedGroup(
-                            UUID.fromString(info.groupId()),
-                            info.groupName(),
-                            AffectedGroupGroupType.fromValue(info.groupType())))
+                    .map(info -> AffectedGroupBuilder.builder()
+                            .groupId(UUID.fromString(info.groupId()))
+                            .groupName(info.groupName())
+                            .groupType(AffectedGroupGroupType.fromValue(info.groupType()))
+                            .build())
                     .toList();
-            groups = new LastOwnerWarning(
-                    affectedGroups,
-                    "Member is the last owner of %d group(s) — designate a successor before suspension"
-                            .formatted(affectedGroups.size()));
+            groups = LastOwnerWarningBuilder.builder()
+                    .message("Member is the last owner of %d group(s) — designate a successor before suspension"
+                            .formatted(affectedGroups.size()))
+                    .affectedGroups(affectedGroups)
+                    .build();
         }
 
         OutstandingDebtWarning debt = null;
@@ -44,12 +46,14 @@ class MembersExceptionHandler {
                     .path("/api/members/{memberId}/account")
                     .buildAndExpand(snapshot.memberId().uuid())
                     .toUri();
-            debt = new OutstandingDebtWarning(accountLink,
-                    conversionService.convert(snapshot.balance(), MonetaryAmount.class));
+            debt = OutstandingDebtWarningBuilder.builder()
+                    .balance(conversionService.convert(snapshot.balance(), MonetaryAmount.class))
+                    .accountLink(accountLink)
+                    .build();
         }
 
         return ResponseEntity
                 .status(HttpStatusCode.valueOf(409))
-                .body(new SuspensionBlockedWarning(debt, groups));
+                .body(SuspensionBlockedWarningBuilder.builder().debt(debt).groups(groups).build());
     }
 }

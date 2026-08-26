@@ -340,19 +340,19 @@ public class EventController implements EventsApi {
     private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {
         MemberAccommodationDto accommodationData = accommodationIndex.get(registration.memberId());
         if (accommodationData == null) {
-            return new AccommodationListItemDto(null, null, null, null, null, null, null, null, null);
+            return AccommodationListItemDtoBuilder.builder().build();
         }
-        return new AccommodationListItemDto(
-                accommodationData.addressCity(),
-                accommodationData.addressCountry(),
-                accommodationData.addressPostalCode(),
-                accommodationData.addressStreet(),
-                accommodationData.dateOfBirth(),
-                accommodationData.firstName(),
-                accommodationData.identityCardNumber(),
-                accommodationData.identityCardValidityDate(),
-                accommodationData.lastName()
-        );
+        return AccommodationListItemDtoBuilder.builder()
+                .firstName(accommodationData.firstName())
+                .lastName(accommodationData.lastName())
+                .identityCardNumber(accommodationData.identityCardNumber())
+                .identityCardValidityDate(accommodationData.identityCardValidityDate())
+                .dateOfBirth(accommodationData.dateOfBirth())
+                .addressStreet(accommodationData.addressStreet())
+                .addressCity(accommodationData.addressCity())
+                .addressPostalCode(accommodationData.addressPostalCode())
+                .addressCountry(accommodationData.addressCountry())
+                .build();
     }
 
 }

@@ -14,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -38,8 +36,11 @@ class IcalTokenController implements IcalTokenApi {
     @Override
     public ResponseEntity<IcalTokenResponse> getTokenState(@ActingUser UserId currentUserId) {
         IcalTokenResponse response = icalTokenPort.getTokenState(currentUserId)
-                .map(state -> new IcalTokenResponse(state.lastSetAt(), buildMaskedSubscribeUrl(state.tokenLookup())))
-                .orElseGet(() -> new IcalTokenResponse(null, null));
+                .map(state -> IcalTokenResponseBuilder.builder()
+                        .lastSetAt(state.lastSetAt())
+                        .url(buildMaskedSubscribeUrl(state.tokenLookup()))
+                        .build())
+                .orElseGet(() -> IcalTokenResponseBuilder.builder().build());
         HalResponseContext.setDomain(response);
         return ResponseEntity.ok(response);
     }
@@ -47,7 +48,10 @@ class IcalTokenController implements IcalTokenApi {
     @Override
     public ResponseEntity<IcalTokenResponse> generateToken(@ActingUser UserId currentUserId) {
         IcalTokenPort.GenerateResult result = icalTokenPort.generateOrRotate(currentUserId);
-        IcalTokenResponse response = new IcalTokenResponse(result.lastSetAt(), buildSubscribeUrl(result.rawToken()));
+        IcalTokenResponse response = IcalTokenResponseBuilder.builder()
+                .lastSetAt(result.lastSetAt())
+                .url(buildSubscribeUrl(result.rawToken()))
+                .build();
         HalResponseContext.setDomain(response);
         return ResponseEntity.ok(response);
     }

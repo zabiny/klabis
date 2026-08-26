@@ -101,23 +101,39 @@ started generating everything reachable, not documented in design.md):
 
 ## 5. Fix hand-written groups imports
 
-- [ ] 5.1 Run `./gradlew clean compileJava` — expect compile failures only in
+- [x] 5.1 Run `./gradlew clean compileJava` — compile failures found in
       `groups.familygroup.infrastructure.restapi`, `groups.freegroup.infrastructure.restapi`,
       `groups.traininggroup.infrastructure.restapi` for generated types that are no longer
-      package-local.
-- [ ] 5.2 Add explicit imports (`import com.klabis.groups.infrastructure.restapi.X;`) to every
-      file reporting a missing-symbol error. Do not change any logic, method signature, or
-      behavior — this is import-only. Expected files (confirm against the actual compiler output,
-      this list is from static inspection during design):
-      `FamilyGroupController`, `FamilyGroupExceptionHandler`, `FamilyGroupOpenApiConfig`,
-      `FamilyGroupIdMixin`, `MemberFamilyGroupLinkProcessor`, `FreeGroupController`,
-      `PendingInvitationsController`, `FreeGroupExceptionHandler`, `FreeGroupOpenApiConfig`,
-      `FreeGroupIdMixin`, `InvitationIdMixin`, `InvitationModelBuilder`, `TrainingGroupController`,
-      `TrainingGroupExceptionHandler`, `TrainingGroupOpenApiConfig`, `TrainingGroupIdMixin`,
-      `MemberTrainingGroupLinkProcessor`.
-- [ ] 5.3 Re-run `./gradlew clean compileJava` — expect a clean build with zero errors.
-- [ ] 5.4 Confirm the three implementation subpackages themselves are unchanged (no class moved,
+      package-local, as expected.
+- [x] 5.2 Added explicit imports (`import com.klabis.groups.infrastructure.restapi.X;`) to every
+      file reporting a missing-symbol error: `FamilyGroupController`, `FreeGroupController`,
+      `PendingInvitationsController`, `InvitationModelBuilder`, `TrainingGroupController`,
+      `MemberFamilyGroupLinkProcessor`, `MemberTrainingGroupLinkProcessor`. The
+      `*ExceptionHandler`/`*OpenApiConfig`/`*IdMixin` classes design.md expected to need imports
+      turned out not to reference generated types directly — no changes needed there.
+- [x] 5.3 Re-ran `./gradlew clean compileJava` — clean build with zero errors, after also fixing an
+      unplanned issue below.
+- [x] 5.4 Confirmed the three implementation subpackages themselves are unchanged (no class moved,
       renamed, or had its package declaration edited) — only new `import` statements were added.
+
+**Unplanned work — systemic generated-record field-order mismatch (not anticipated by design.md):**
+Fixing imports alone left ~40 "incompatible types"/positional-constructor errors spanning 6 modules
+(calendar, common, events, finance, groups, membershipfees), not just groups. Root cause: the old
+bundle-based codegen (`klabis-full.json`, produced by `bundle.mjs` from JS objects) generated Java
+record fields in a DIFFERENT order than direct-YAML codegen (this change) does — verified by
+regenerating from the pristine pre-refactor commit and diffing `IcalTokenResponse`'s field order
+(`lastSetAt, url` old vs `url, lastSetAt` new, matching the YAML's literal declared property order).
+Every hand-written call site using a positional `new GeneratedType(arg1, arg2, ...)` constructor was
+at risk — worse, a same-type-adjacent-field swap (e.g. two `String`/`UUID` fields) would have
+compiled silently wrong rather than erroring. Per explicit user direction, fixed by converting every
+such call site to the record's already-available `@RecordBuilder`-generated builder
+(`TypeNameBuilder.builder().field(value)....build()`, named setters, immune to field-order drift) —
+22 files, ~45 call sites, backend/src/main/java only. A full sweep (regex over all 208 generated
+record type names) confirmed no remaining positional constructor calls, and caught one genuine silent
+field-order bug already in `main` before this refactor (`MemberDetailsConverter.guardianToResponse`
+had `GuardianDTO`'s `email`/`phone` swapped) plus two incidental fixes (missing imports in the two
+`Member*GroupLinkProcessor` classes; a stale `FeeAssignmentResponseSource` enum reference in
+`MembershipFeesResponseMapper` corrected to the actual generated `MemberInGroupResponseSource`).
 
 ## 6. Verification
 

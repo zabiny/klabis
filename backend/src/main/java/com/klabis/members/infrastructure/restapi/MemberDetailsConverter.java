@@ -58,13 +58,13 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
         if (guardian == null) {
             return null;
         }
-        return new GuardianDTO(
-                guardian.getEmail().value(),
-                guardian.getFirstName(),
-                guardian.getLastName(),
-                guardian.getPhone().value(),
-                guardian.getRelationship()
-        );
+        return GuardianDTOBuilder.builder()
+                .firstName(guardian.getFirstName())
+                .lastName(guardian.getLastName())
+                .relationship(guardian.getRelationship())
+                .email(guardian.getEmail().value())
+                .phone(guardian.getPhone().value())
+                .build();
     }
 
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
