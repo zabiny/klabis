@@ -392,7 +392,8 @@ openApiModule(
         "EventSummaryDto",
         "CategoryPresetDto",
         "AccommodationListItemDto",
-        "RegistrationSummaryDto"
+        "RegistrationSummaryDto",
+        "RegistrationDto"
     ),
     mappings = emptyMap()
 )

@@ -147,11 +147,11 @@ class EventRegistrationController implements EventRegistrationsApi {
             MemberDto memberDto = members.findById(targetMember)
                     .orElseThrow(() -> new IllegalStateException("Member not found: " + targetMember));
             RegistrationDto defaults = new RegistrationDto(
+                    null,
                     memberDto.firstName(),
                     memberDto.lastName(),
-                    memberDto.chipNumber(),
                     null,
-                    null
+                    memberDto.chipNumber()
             );
             Event event = eventManagementService.getEvent(new EventId(eventId), false);
             HalResponseContext.setDomain(new RegistrationView(event, targetMember));
@@ -170,8 +170,8 @@ class EventRegistrationController implements EventRegistrationsApi {
     private RegistrationDto toRegistrationDto(EventRegistration registration, Event event) {
         MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(),
-                RegistrationDtoMapper.toCategoryDto(registration, event), registration.registeredAt());
+        return new RegistrationDto(RegistrationDtoMapper.toCategoryDto(registration, event), member.firstName(),
+                member.lastName(), registration.registeredAt(), registration.siCardNumber().value());
     }
 
     /**

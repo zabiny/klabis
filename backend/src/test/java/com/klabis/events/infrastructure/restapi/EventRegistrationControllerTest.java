@@ -1259,7 +1259,7 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.siCardNumber").value(nullValue()));
+                    .andExpect(jsonPath("$.siCardNumber").doesNotExist());
         }
 
     }
