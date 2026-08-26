@@ -7,6 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
+// public: the generated cross-mapper KlabisConversionServiceAdapter (common.mapping) references
+// this interface and its nested MemberBalance record from outside this package.
 @Mapper(config = MapstructSpringMapperConfig.class)
 public interface MemberAccountResourceConverter extends Converter<MemberAccountResourceConverter.MemberBalance, MemberAccountResource> {
 
