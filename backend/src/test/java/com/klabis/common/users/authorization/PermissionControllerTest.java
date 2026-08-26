@@ -9,7 +9,6 @@ import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
-import com.klabis.common.users.infrastructure.restapi.AuthorityMapperImpl;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PermissionController.class)
-@Import({EncryptionConfiguration.class, AuthorityMapperImpl.class})
+@Import({EncryptionConfiguration.class})
 @DisplayName("PermissionController permissions endpoints tests")
 @WithPostprocessors
 class PermissionControllerTest {
