@@ -44,6 +44,7 @@ repositories {
 }
 
 val mapstructVersion = "1.6.3"
+val mapstructSpringExtensionsVersion = "2.0.0"
 val testcontainersVersion = "1.19.3"
 val springModulithVersion = "2.0.0"
 
@@ -98,6 +99,12 @@ dependencies {
     implementation("org.mapstruct:mapstruct:$mapstructVersion")
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
     testAnnotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
+
+    // MapStruct Spring Extensions (loose coupling between Spring-managed mappers via ConversionService)
+    implementation("org.mapstruct.extensions.spring:mapstruct-spring-annotations:$mapstructSpringExtensionsVersion")
+    annotationProcessor("org.mapstruct.extensions.spring:mapstruct-spring-extensions:$mapstructSpringExtensionsVersion")
+    testAnnotationProcessor("org.mapstruct.extensions.spring:mapstruct-spring-extensions:$mapstructSpringExtensionsVersion")
+    testImplementation("org.mapstruct.extensions.spring:mapstruct-spring-test-extensions:$mapstructSpringExtensionsVersion")
 
     // RecordBuilder for type-safe record builders
     compileOnly("io.soabase.record-builder:record-builder-core:44")
