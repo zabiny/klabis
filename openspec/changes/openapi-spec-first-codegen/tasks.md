@@ -8,17 +8,20 @@
 
 ## 2. Extract `_shared/responses.yaml`
 
-- [ ] 2.1 Create `docs/openapi/spec/_shared/responses.yaml` with the six `responses` entries
+- [x] 2.1 Create `docs/openapi/spec/_shared/responses.yaml` with the six `responses` entries
       (`BadRequest`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `UnprocessableEntity`),
       each `$ref`-ing `./problem.yaml#/components/schemas/ProblemDetail`, matching what's in
       `groups.yaml` today.
-- [ ] 2.2 Repoint the `responses` block in all 9 domain files (`members.yaml`, `events.yaml`,
+- [x] 2.2 Repoint the `responses` block in all 9 domain files (`members.yaml`, `events.yaml`,
       `event-types.yaml`, `finance.yaml`, `calendar.yaml`, `membershipfees.yaml`, `groups.yaml`,
       `common.yaml`, `oris.yaml`) to `$ref: './_shared/responses.yaml#/components/responses/<Name>'`
       instead of local definitions. `oris.yaml` only references the 3 it uses
       (`BadRequest`/`Unauthorized`/`Forbidden`). `groups.yaml`'s content is otherwise untouched —
-      no split.
-- [ ] 2.3 Run `./gradlew openapiBundle -PopenapiCheck` — must report the spec valid with the same
+      no split. Deviation from original plan: local `components.responses` blocks were removed
+      entirely (not kept as ref-stubs) because ref-stubs collide in `bundle.mjs`'s
+      `collectComponents()` — every operation-level `$ref` now points directly at
+      `./_shared/responses.yaml#/components/responses/<Name>`.
+- [x] 2.3 Run `./gradlew openapiBundle -PopenapiCheck` — must report the spec valid with the same
       operation/schema counts as the 1.2 baseline. Run `./gradlew openapiBundle` and diff the
       output `klabis-full.json` against the 1.2 baseline — must be byte-identical.
 

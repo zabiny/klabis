@@ -87,17 +87,17 @@ paths:
             admin:
               description: Present only when authenticated as the hardcoded "admin" username
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/dashboard:
     get:
@@ -128,17 +128,17 @@ paths:
             self:
               description: This dashboard
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/me/password-change:
     post:
@@ -173,11 +173,11 @@ paths:
               schema:
                 $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
 
   /api/auth/password-setup/validate:
     get:
@@ -212,7 +212,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidateTokenResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '410':
           description: Token expired or already used
           content:
@@ -248,7 +248,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordSetupResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '410':
           description: Token expired or already used
           content:
@@ -284,7 +284,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRequestResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
 
   /api/users/{id}/permissions:
     get:
@@ -314,17 +314,17 @@ paths:
             default:
               operation: updatePermissions
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     put:
       operationId: updatePermissions
@@ -355,13 +355,13 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
           description: |
             Conflict - would remove the last user able to manage permissions, or an admin lockout
@@ -371,7 +371,7 @@ paths:
               schema:
                 $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
 components:
   securitySchemes:
@@ -397,44 +397,6 @@ components:
       schema:
         type: string
         format: uuid
-
-  responses:
-    BadRequest:
-      description: Bad request - invalid argument
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Unauthorized:
-      description: Unauthorized - authentication required
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Forbidden:
-      description: Forbidden - insufficient permissions
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    NotFound:
-      description: Resource not found
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Conflict:
-      description: Conflict - concurrent update (optimistic locking failure)
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    UnprocessableEntity:
-      description: Unprocessable entity - request violates a business rule
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
 
   schemas:
 

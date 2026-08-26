@@ -84,17 +84,17 @@ paths:
               operation: registerMember
               description: Present only for callers with MEMBERS:MANAGE
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
       operationId: registerMember
@@ -138,17 +138,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/members/options:
     get:
@@ -174,17 +174,17 @@ paths:
                 items:
                   $ref: '#/components/schemas/MemberOptionResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/members/{id}:
     get:
@@ -240,17 +240,17 @@ paths:
               operation: resumeMember
               description: Present only while the member is suspended
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     patch:
       operationId: updateMember
@@ -281,17 +281,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/members/{id}/suspend:
     post:
@@ -322,13 +322,13 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
           # MembersExceptionHandler answers both suspension blockers with a bespoke JSON body
           # carrying the data the caller needs to resolve them, not with a ProblemDetail — hence
@@ -344,7 +344,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuspensionBlockedWarning'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/members/{id}/resume:
     post:
@@ -366,17 +366,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
 components:
   securitySchemes:
@@ -419,44 +419,6 @@ components:
         default: [lastName,ASC, firstName,ASC]
         items:
           type: string
-
-  responses:
-    BadRequest:
-      description: Bad request - invalid argument
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Unauthorized:
-      description: Unauthorized - authentication required
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Forbidden:
-      description: Forbidden - insufficient permissions
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    NotFound:
-      description: Resource not found
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Conflict:
-      description: Conflict - concurrent update (optimistic locking failure)
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    UnprocessableEntity:
-      description: Unprocessable entity - request violates a business rule
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
 
   schemas:
 
