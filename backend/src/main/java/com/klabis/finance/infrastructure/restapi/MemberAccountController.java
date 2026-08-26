@@ -67,9 +67,31 @@ class MemberAccountController implements FinanceApi {
         MemberId id = new MemberId(memberId);
         Money balance = memberAccountRepository.findBalanceById(id)
                 .orElseThrow(() -> new MemberAccountNotFoundException(id));
-        MemberAccountResource resource = MemberAccountResource.fromBalance(id, balance);
+        MemberAccountResource resource = toMemberAccountResource(id, balance);
         HalResponseContext.setDomain(id);
         return ResponseEntity.ok(resource);
+    }
+
+    private static MemberAccountResource toMemberAccountResource(MemberId memberId, Money balance) {
+        return new MemberAccountResource(
+                balance.amount(),
+                balance.currency().getCurrencyCode(),
+                memberId.uuid()
+        );
+    }
+
+    private static TransactionResource toTransactionResource(Transaction tx) {
+        return new TransactionResource(
+                tx.getAmount().amount(),
+                tx.getAmount().currency().getCurrencyCode(),
+                tx.getId().value(),
+                tx.getNote(),
+                tx.getOccurredAt(),
+                tx.getRecordedAt(),
+                tx.getRecordedBy().uuid(),
+                tx.getReversesTransactionId() != null ? tx.getReversesTransactionId().value() : null,
+                tx.getType().name()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -90,7 +112,7 @@ class MemberAccountController implements FinanceApi {
         HalResponseContext.setDomainList(page.getContent().stream()
                 .map(twr -> new AccountTransaction(id, twr))
                 .toList());
-        return ResponseEntity.ok(page.map(twr -> TransactionResource.from(twr.transaction())));
+        return ResponseEntity.ok(page.map(twr -> toTransactionResource(twr.transaction())));
     }
 
     @Transactional(readOnly = true)
@@ -107,7 +129,7 @@ class MemberAccountController implements FinanceApi {
                 .orElseGet(() -> TransactionWithReversal.withoutReversal(tx));
 
         HalResponseContext.setDomain(new AccountTransaction(id, twr));
-        return ResponseEntity.ok(TransactionResource.from(tx));
+        return ResponseEntity.ok(toTransactionResource(tx));
     }
 
     @Override

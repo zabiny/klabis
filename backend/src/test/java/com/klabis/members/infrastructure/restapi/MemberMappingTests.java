@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.Disabled;
@@ -198,7 +197,7 @@ class MemberMappingTests {
             MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(new MemberId(memberId));
+            assertThat(dto.id()).isEqualTo(memberId);
             assertThat(dto.firstName()).isEqualTo("Jan");
             assertThat(dto.lastName()).isEqualTo("Novák");
             assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");

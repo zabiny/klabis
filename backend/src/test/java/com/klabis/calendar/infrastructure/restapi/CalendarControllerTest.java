@@ -345,7 +345,7 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
                     .andExpect(jsonPath("$.name").value("Training Session"))
                     .andExpect(jsonPath("$.description").value("Weekly training session"))
-                    .andExpect(jsonPath("$.eventId").isEmpty())
+                    .andExpect(jsonPath("$.eventId").doesNotExist())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.collection.href").exists())
                     .andExpect(jsonPath("$._templates.updateCalendarItem.method").exists())

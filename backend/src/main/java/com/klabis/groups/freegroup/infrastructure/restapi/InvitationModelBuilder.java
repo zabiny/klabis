@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.groups.freegroup.domain.Invitation;
-import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.springframework.hateoas.EntityModel;
@@ -23,14 +22,13 @@ class InvitationModelBuilder {
 
     static EntityModel<PendingInvitationResponse> build(FreeGroup group, Invitation invitation) {
         UUID groupUuid = group.getId().uuid();
-        FreeGroupId groupId = group.getId();
         String groupName = group.getName();
         UUID invitationUuid = invitation.getId().value();
         UUID invitedByUuid = invitation.getInvitedBy().uuid();
         UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
 
         PendingInvitationResponse response = new PendingInvitationResponse(
-                groupId, groupName, invitation.getId(), invitedByUuid);
+                groupUuid, groupName, invitationUuid, invitedByUuid);
 
         EntityModel<PendingInvitationResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(invitedMemberUuid, null))

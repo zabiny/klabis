@@ -19,6 +19,7 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-past',
     'x-klabis-url',
     'x-klabis-class-constraint',
+    'x-klabis-relation',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
@@ -182,6 +183,20 @@ export function validateSpec(document, {authorities}) {
                     path: `${path}/${key}`,
                     message: 'must be a fully-qualified annotation class name, without the leading "@"',
                 });
+            }
+
+            // Rendered by pojo.mustache into @Relation(collectionRelation=..., itemRelation=...) on
+            // the schema — collectionRelation is mandatory (the annotation's own required member),
+            // itemRelation optional.
+            if (key === 'x-klabis-relation') {
+                if (!isPlainObject(value) || typeof value.collectionRelation !== 'string' || value.collectionRelation === '') {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'must be an object with a non-empty string "collectionRelation"',
+                    });
+                } else if (value.itemRelation !== undefined && typeof value.itemRelation !== 'string') {
+                    errors.push({path: `${path}/${key}/itemRelation`, message: 'must be a string when present'});
+                }
             }
 
             if (PROPERTY_ONLY_CONSTRAINT_EXTENSIONS.has(key)) {

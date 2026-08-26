@@ -46,7 +46,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
         Optional<MembershipFeeGroupId> currentChoice = memberChoicePort.getCurrentChoice(memberIdObj, year);
         Optional<MembershipFeeTierId> recommended = memberChoicePort.getRecommendedLevelForYear(memberIdObj, year);
 
-        MemberFeeChoiceResponse response = MemberFeeChoiceResponse.of(memberId, year, currentChoice, recommended);
+        MemberFeeChoiceResponse response = MembershipFeesResponseMapper.toResponse(memberId, year, currentChoice, recommended);
         HalResponseContext.setDomain(new FeeChoiceView(memberId, year, currentChoice, recommended));
         return ResponseEntity.ok(response);
     }

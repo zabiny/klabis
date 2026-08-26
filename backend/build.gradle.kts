@@ -288,7 +288,19 @@ openApiModule(
         "DeactivationReason",
         "DrivingLicenseGroup",
         "TrainerLicenseDto_level",
-        "RefereeLicenseDto_level"
+        "RefereeLicenseDto_level",
+        "MemberSummaryResponse",
+        "MemberOptionResponse",
+        "SuspensionBlockedWarning",
+        "OutstandingDebtWarning",
+        "LastOwnerWarning",
+        "AffectedGroup",
+        // Inline enum on AffectedGroup.groupType, promoted to a named schema by
+        // RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent above).
+        "AffectedGroup_groupType",
+        // Generated REST DTO, distinct from the domain-shared com.klabis.members.MonetaryAmount
+        // (MemberFinancialStatePort) — MemberMapper converts between them at the REST boundary.
+        "MonetaryAmount"
     ),
     mappings = emptyMap()
 )
@@ -309,12 +321,12 @@ openApiModule(
     module = "finance",
     pkg = "com.klabis.finance.infrastructure.restapi",
     apis = listOf("Finance"),
-    // MemberAccountResource/TransactionResource are hand-written (mapper logic onto Money/Transaction
-    // domain types) and stay that way — only the request DTOs are generated fresh.
     models = listOf(
         "DepositRequest",
         "ChargeRequest",
-        "ReverseRequest"
+        "ReverseRequest",
+        "MemberAccountResource",
+        "TransactionResource"
     ),
     mappings = emptyMap()
 )
@@ -371,7 +383,16 @@ openApiModule(
         // Both properties share the identical [SUCCESS, FAILED] enum, so the generator deduplicates
         // them into a single class named after the second occurrence, EventImportEntry_status —
         // EventSyncEntry.status ends up typed as EventImportEntryStatus too.
-        "EventImportEntry_status"
+        "EventImportEntry_status",
+        "EventDto",
+        "RankingDto",
+        "EntryFeeDto",
+        "EventCategoryDto",
+        "EventSummaryDto",
+        "CategoryPresetDto",
+        "AccommodationListItemDto",
+        "RegistrationSummaryDto",
+        "RegistrationDto"
     ),
     mappings = emptyMap()
 )
@@ -380,10 +401,11 @@ openApiModule(
     module = "calendar",
     pkg = "com.klabis.calendar.infrastructure.restapi",
     apis = listOf("Calendar", "IcalToken", "IcalFeed"),
-    // CalendarItemDto and IcalTokenResponse are hand-written; only the request DTOs are generated.
     models = listOf(
         "CreateCalendarItemRequest",
-        "UpdateCalendarItemRequest"
+        "UpdateCalendarItemRequest",
+        "CalendarItemDto",
+        "IcalTokenResponse"
     ),
     mappings = emptyMap()
 )
@@ -409,7 +431,26 @@ openApiModule(
         "ChangeDeadlineRequest",
         "EditGroupSnapshotRequest",
         "AdminAssignMemberRequest",
-        "ChooseFeeChoiceRequest"
+        "ChooseFeeChoiceRequest",
+        "FeeSelectionCampaignResponse",
+        "MembershipFeeTierResponse",
+        "MembershipFeeTierSummaryResponse",
+        "PaymentRuleResponse",
+        "MemberFeeChoiceResponse",
+        "MemberFeeHistoryResponse",
+        "FeeAssignmentResponse",
+        "MemberFeeSummaryResponse",
+        "CurrentGroupResponse",
+        "MembershipFeeGroupResponse",
+        "MemberInGroupResponse",
+        // Inline enums promoted to named schemas by resolveInlineEnums (see EventImportEntry_status
+        // precedent in the events module). PaymentRuleResponse.ruleType is standalone;
+        // MembershipFeeGroupResponse.status is standalone; FeeAssignmentResponse.source and
+        // MemberInGroupResponse.source share the identical [MEMBER_CHOICE, ADMIN_ASSIGNMENT] enum
+        // and are deduplicated onto the same generated type, named after FeeAssignmentResponse.
+        "PaymentRuleResponse_ruleType",
+        "MembershipFeeGroupResponse_status",
+        "FeeAssignmentResponse_source"
     ),
     mappings = emptyMap()
 )
@@ -420,48 +461,100 @@ openApiModule(
 openApiModule(
     module = "groupsFamily",
     pkg = "com.klabis.groups.familygroup.infrastructure.restapi",
-    // getFamilyGroup IS generated onto FamilyGroupsApi; only its response schema is
-    // documentation-only, because the record's parents/members are List<EntityModel<X>> whose items
-    // carry their own _links. See groups.yaml header comment and the comment on that method in
-    // FamilyGroupController.
+    // getFamilyGroup IS generated onto FamilyGroupsApi via the application/json content sibling
+    // (see groups.yaml) — its own top level has no allOf/_links shape, so response-level envelope
+    // detection is a no-op for it. FamilyGroupResponse itself IS generated (models list below):
+    // parents/members resolve to List<EntityModel<X>> because EntityModelParentResponse /
+    // EntityModelFamilyGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<ParentResponse> / EntityModel<FamilyGroupMembershipResponse> — see
+    // KlabisSpringCodegen.fromProperty's isMappedEnvelopeItem guard, which steps aside for any
+    // array item schema present in schemaMapping() instead of applying its own default
+    // strip-to-bare-payload rewrite. ParentResponse/FamilyGroupMembershipResponse (the X payload
+    // types) are ordinary generated models. See groups.yaml header comment and the comment on
+    // getFamilyGroup in FamilyGroupController.
     apis = listOf("FamilyGroups"),
     models = listOf(
         "CreateFamilyGroupRequest",
-        "AddMemberRequest"
+        "AddMemberRequest",
+        "FamilyGroupSummaryResponse",
+        "ParentResponse",
+        "FamilyGroupMembershipResponse",
+        "FamilyGroupResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelParentResponse" to "org.springframework.hateoas.EntityModel<ParentResponse>",
+        "EntityModelFamilyGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<ParentResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(
     module = "groupsFree",
     pkg = "com.klabis.groups.freegroup.infrastructure.restapi",
-    // getGroup (Groups) is generated; only its response schema is documentation-only — same reason
-    // as getFamilyGroup above. See groups.yaml header comment.
+    // getGroup (Groups) is generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup above. GroupResponse itself IS generated (models list below);
+    // OwnerResponse/FreeGroupMembershipResponse/PendingInvitationResponse are ordinary generated
+    // payload models, and their EntityModelX envelope schemas are redirected onto EntityModel<X>
+    // the same way as groupsFamily.
     apis = listOf("Groups", "Invitations"),
     models = listOf(
         "CreateGroupRequest",
         "RenameGroupRequest",
         "AddOwnerRequest",
         "InviteMemberRequest",
-        "CancelInvitationRequest"
+        "CancelInvitationRequest",
+        "GroupSummaryResponse",
+        "PendingInvitationResponse",
+        "OwnerResponse",
+        "FreeGroupMembershipResponse",
+        "GroupResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelOwnerResponse" to "org.springframework.hateoas.EntityModel<OwnerResponse>",
+        "EntityModelFreeGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>",
+        "EntityModelPendingInvitationResponse" to "org.springframework.hateoas.EntityModel<PendingInvitationResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<OwnerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<PendingInvitationResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(
     module = "groupsTraining",
     pkg = "com.klabis.groups.traininggroup.infrastructure.restapi",
-    // getTrainingGroup is generated; only its response schema is documentation-only — same reason as
-    // getFamilyGroup above. See groups.yaml header comment.
+    // getTrainingGroup IS generated via the application/json content sibling — same mechanism and
+    // rationale as getFamilyGroup/getGroup above. TrainingGroupResponse itself IS generated (models
+    // list below); trainers/members resolve to List<EntityModel<X>> because EntityModelTrainerResponse
+    // / EntityModelGroupMembershipResponse are redirected via mappings straight onto
+    // EntityModel<TrainerResponse> / EntityModel<GroupMembershipResponse> — same mechanism as
+    // groupsFamily/groupsFree. ageRange is a plain $ref property (Category A, not array-wrapped), so
+    // it needs no mapping and resolves as a normal AgeRangeResponse field.
     apis = listOf("TrainingGroups"),
     models = listOf(
         "CreateTrainingGroupRequest",
         "TrainingGroupAddMemberRequest",
         "AddTrainerRequest",
         "AgeRangeRequest",
-        "UpdateTrainingGroupRequest"
+        "UpdateTrainingGroupRequest",
+        "TrainingGroupSummaryResponse",
+        "TrainingGroupResponse",
+        "TrainerResponse",
+        "GroupMembershipResponse",
+        "AgeRangeResponse"
     ),
-    mappings = emptyMap()
+    mappings = mapOf(
+        "EntityModelTrainerResponse" to "org.springframework.hateoas.EntityModel<TrainerResponse>",
+        "EntityModelGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<GroupMembershipResponse>"
+    ),
+    extraImportMappings = mapOf(
+        "org.springframework.hateoas.EntityModel<TrainerResponse>" to "org.springframework.hateoas.EntityModel",
+        "org.springframework.hateoas.EntityModel<GroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
+    )
 )
 
 openApiModule(
@@ -479,7 +572,8 @@ openApiModule(
         // Referenced only via $ref from UpdatePermissionsRequest.authorities; must be listed
         // explicitly so the generator emits it now that it's no longer redirected onto the domain
         // enum (see the mapping comment above and AuthorityMapper).
-        "Authority"
+        "Authority",
+        "PermissionsResponse"
     ),
     mappings = mapOf(
         "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
