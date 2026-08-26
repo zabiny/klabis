@@ -4,6 +4,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.members.infrastructure.restapi.WithMemberMapper;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import org.springframework.context.annotation.Import;
@@ -32,10 +33,15 @@ import java.lang.annotation.Target;
  * <p>
  * Beans treated as feature flags via {@code Optional<T>} injection (e.g. {@code OrisEventImportPort})
  * must NOT be added here — the mere presence of the mock would activate the feature in every test.
+ * <p>
+ * Also provides {@code MemberMapper} (via {@link WithMemberMapper}), required by
+ * {@code MembersExceptionHandler}, a global {@code @RestControllerAdvice} scanned into every
+ * {@code @WebMvcTest} regardless of the test's {@code controllers} filter.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Import(ClockConfiguration.class)
+@WithMemberMapper
 @MockitoBean(types = {
         FamilyGroupRepository.class,
         TrainingGroupRepository.class,
