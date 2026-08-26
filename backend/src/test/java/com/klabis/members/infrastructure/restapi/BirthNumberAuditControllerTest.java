@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.MediaType;
@@ -42,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Birth Number Audit – Controller Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({MemberMapperImpl.class})
 @WithPostprocessors
 class BirthNumberAuditControllerTest {
 
