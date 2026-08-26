@@ -14,6 +14,7 @@ import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
@@ -44,15 +45,24 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     private final RankingOptionsPort rankingOptionsPort;
     private final EventTypeOptionsPort eventTypeOptionsPort;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
+    private final ConversionService conversionService;
+    // toSummaryResponse is a plain interface method (not the Converter.convert override), so it
+    // isn't reachable via ConversionService.convert(source, TargetClass) — that only dispatches
+    // to the registered Converter<S,T> pair. Inject the generated Converter bean directly for it.
+    private final MembershipFeeTierResponseConverter tierResponseConverter;
 
     MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
                                 RankingOptionsPort rankingOptionsPort,
                                 EventTypeOptionsPort eventTypeOptionsPort,
-                                FeeSelectionCampaignManagementPort campaignManagementPort) {
+                                FeeSelectionCampaignManagementPort campaignManagementPort,
+                                ConversionService conversionService,
+                                MembershipFeeTierResponseConverter tierResponseConverter) {
         this.managementPort = managementPort;
         this.rankingOptionsPort = rankingOptionsPort;
         this.eventTypeOptionsPort = eventTypeOptionsPort;
         this.campaignManagementPort = campaignManagementPort;
+        this.conversionService = conversionService;
+        this.tierResponseConverter = tierResponseConverter;
     }
 
     @Override
@@ -68,7 +78,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     public ResponseEntity<List<MembershipFeeTierSummaryResponse>> listTiers() {
         List<MembershipFeeTier> tiers = managementPort.listTiers();
         List<MembershipFeeTierSummaryResponse> items = tiers.stream()
-                .map(MembershipFeesResponseMapper::toSummaryResponse)
+                .map(tierResponseConverter::toSummaryResponse)
                 .toList();
 
         // isAdmin() gate mirrors the original controller's behaviour: the extra links are only
@@ -93,7 +103,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             UUID id) {
         MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
         HalResponseContext.setDomain(tier);
-        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(tier));
+        return ResponseEntity.ok(conversionService.convert(tier, MembershipFeeTierResponse.class));
     }
 
     @Override
