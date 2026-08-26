@@ -115,17 +115,17 @@ paths:
             default:
               operation: createFamilyGroup
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
       operationId: createFamilyGroup
@@ -154,17 +154,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/family-groups/{id}:
     get:
@@ -208,17 +208,17 @@ paths:
               operation: listFamilyGroups
               description: Present only for callers with MEMBERS:MANAGE
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     delete:
       operationId: deleteFamilyGroup
@@ -236,17 +236,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/family-groups/{id}/parents:
     post:
@@ -272,17 +272,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/family-groups/{id}/parents/{memberId}:
     delete:
@@ -308,17 +308,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/family-groups/{id}/children:
     post:
@@ -344,17 +344,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/family-groups/{id}/children/{memberId}:
     delete:
@@ -380,17 +380,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   # ---------------------------------------------------------------------------------------------
   # Groups (FreeGroupController, /api/groups) — 13 operations
@@ -429,17 +429,17 @@ paths:
             default:
               operation: createGroup
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
       operationId: createGroup
@@ -469,17 +469,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}:
     get:
@@ -516,17 +516,17 @@ paths:
               operation: listGroups
               description: Back to the group list
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     patch:
       operationId: updateGroup
@@ -552,17 +552,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     delete:
       operationId: deleteGroup
@@ -581,17 +581,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/members/{memberId}:
     delete:
@@ -618,17 +618,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/owners:
     post:
@@ -655,17 +655,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/owners/{memberId}:
     delete:
@@ -692,17 +692,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/invitations:
     post:
@@ -729,17 +729,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/invitations/{invitationId}:
     delete:
@@ -767,17 +767,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/invitations/{invitationId}/accept:
     post:
@@ -798,17 +798,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/groups/{id}/invitations/{invitationId}/reject:
     post:
@@ -829,17 +829,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   # ---------------------------------------------------------------------------------------------
   # Invitations (PendingInvitationsController, /api/invitations) — 1 operation
@@ -872,17 +872,17 @@ paths:
             self:
               description: This collection
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   # ---------------------------------------------------------------------------------------------
   # TrainingGroups (TrainingGroupController, /api/training-groups) — 9 operations
@@ -914,17 +914,17 @@ paths:
             default:
               operation: createTrainingGroup
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
       operationId: createTrainingGroup
@@ -953,17 +953,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/training-groups/{id}:
     get:
@@ -1003,17 +1003,17 @@ paths:
               operation: listTrainingGroups
               description: Present only for callers with GROUPS:TRAINING
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     patch:
       operationId: updateTrainingGroup
@@ -1038,17 +1038,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     delete:
       operationId: deleteTrainingGroup
@@ -1066,17 +1066,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/training-groups/{id}/members:
     post:
@@ -1102,17 +1102,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/training-groups/{id}/members/{memberId}:
     delete:
@@ -1138,17 +1138,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/training-groups/{id}/trainers:
     post:
@@ -1174,17 +1174,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/training-groups/{id}/trainers/{memberId}:
     delete:
@@ -1210,17 +1210,17 @@ paths:
           content:
             application/prs.hal-forms+json: {}
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
 components:
   securitySchemes:
@@ -1273,44 +1273,6 @@ components:
       schema:
         type: string
         format: uuid
-
-  responses:
-    BadRequest:
-      description: Bad request - invalid argument
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Unauthorized:
-      description: Unauthorized - authentication required
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Forbidden:
-      description: Forbidden - insufficient permissions
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    NotFound:
-      description: Resource not found
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    Conflict:
-      description: Conflict - concurrent update (optimistic locking failure)
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-    UnprocessableEntity:
-      description: Unprocessable entity - request violates a business rule
-      content:
-        application/problem+json:
-          schema:
-            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
 
   schemas:
 

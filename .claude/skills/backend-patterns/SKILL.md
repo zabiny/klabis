@@ -751,6 +751,7 @@ Spring Boot 4 uses Jackson 3, which moved some packages — but Spring Boot wrap
 - Use `@MvcComponent` annotation on components in the presentation (restapi) layer
 - Do not use Lombok in domain classes — use records or plain Java
 - Use `@RecordBuilder` (from `io.soabase.recordbuilder`) on command records, events, and response DTOs — generates builder classes
+- If object has builder, prefer builder to constructor (especially for generated classes)
 
 ## `@MvcComponent` and `@WebMvcTest`
 

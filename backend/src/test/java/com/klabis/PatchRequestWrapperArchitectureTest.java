@@ -44,7 +44,7 @@ class PatchRequestWrapperArchitectureTest {
 
     private static final List<Class<?>> PATCH_REQUESTS = List.of(
             com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
-            com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class,
+            com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest.class,
             com.klabis.events.infrastructure.restapi.UpdateEventRequest.class);
 
     @Test
@@ -84,7 +84,7 @@ class PatchRequestWrapperArchitectureTest {
     private static final Map<Class<?>, List<String>> EXPECTED_PRIVILEGED_COMPONENTS = Map.of(
             com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
             List.of("birthNumber", "dateOfBirth", "firstName", "gender", "lastName"),
-            com.klabis.groups.traininggroup.infrastructure.restapi.UpdateTrainingGroupRequest.class,
+            com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest.class,
             List.of(),
             com.klabis.events.infrastructure.restapi.UpdateEventRequest.class,
             List.of());

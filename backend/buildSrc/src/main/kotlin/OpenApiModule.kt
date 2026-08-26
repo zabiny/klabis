@@ -15,17 +15,15 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
  * Each module generates into the same package as its hand-written controller/mapper, because
  * cross-module link processors depend on those packages via Modulith named interfaces.
  *
- * Generates directly from docs/openapi/klabis-full.json — the same bundle openapiBundle produces
- * for the frontend. KlabisSpringCodegen resolves HAL envelope schemas to their payload type
- * structurally (see custom-openapi-codegen design.md), so no separate codegen-only bundle with HAL
- * content blanked out is needed anymore.
+ * Generates directly from the module's own `docs/openapi/spec/<specFile>` — each spec file's full
+ * `paths`/`components.schemas` content *is* the module's generation scope now, one file per module.
+ * `openapiBundle`'s merged `docs/openapi/klabis-full.json` still exists for the frontend's
+ * TypeScript codegen and Swagger UI/Redoc, but backend codegen no longer reads it.
  *
  * @param module   short module name; also the build/generated/openapi/<module> output directory
  * @param pkg      target package for both models and APIs
- * @param apis     OpenAPI tags to generate interfaces for. Must be listed explicitly: the "apis"
- *                 global property generates EVERY tag when left empty, so without this filter each
- *                 module's task would emit every other module's *Api.java into its own package.
- * @param models   payload schemas to generate as Java records (envelopes stay spec-only)
+ * @param specFile path under docs/openapi/spec/ this module generates from (its full paths/schemas
+ *                 scope, no models/apis enumeration needed)
  * @param mappings schema name to existing Java type, for types reused instead of regenerated. HAL
  *                 envelope schemas no longer need an entry here — KlabisSpringCodegen unwraps them
  *                 structurally, see custom-openapi-codegen design.md. Only hand-written overrides
@@ -37,8 +35,7 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 fun Project.openApiModule(
     module: String,
     pkg: String,
-    apis: List<String>,
-    models: List<String>,
+    specFile: String,
     mappings: Map<String, String>,
     extraImportMappings: Map<String, String> = emptyMap()
 ) {
@@ -62,17 +59,12 @@ fun Project.openApiModule(
         // com.klabis.openapi.codegen.KlabisSpringCodegen, registered in buildSrc via
         // META-INF/services. Resolves HAL envelopes structurally — see its class Javadoc.
         generatorName.set("klabis-spring")
-        // The committed frontend-facing bundle — openapiBundle's default (no -PopenapiOut/-PopenapiCheck)
-        // writes exactly here, so a plain `dependsOn(openapiBundle)` is enough to keep this fresh.
-        // Codegen and the frontend read the same document now; the separate --strip-hal bundle is
-        // gone, since KlabisSpringCodegen resolves HAL envelopes structurally instead.
-        //
-        // Caveat: -PopenapiCheck makes openapiBundle validate without writing, so pairing it with a
-        // build task leaves codegen reading whatever is committed rather than a freshly bundled
-        // spec. Harmless as things stand — CI keeps the two apart (publish-api.yaml bundles via
-        // node directly, backend-tests.yml runs plain `./gradlew test`) — but do not pair
-        // -PopenapiCheck with compileJava expecting a regeneration.
-        inputSpec.set(layout.projectDirectory.file("../docs/openapi/klabis-full.json").asFile.absolutePath)
+        // Reads the module's own hand-written spec file directly — openapi-generator resolves
+        // relative cross-file $refs (e.g. ./_shared/hal.yaml) the same way bundle.mjs does, so no
+        // pre-bundled document is needed for backend codegen. dependsOn(openapiBundle) above is kept
+        // anyway for its validateSpec/validateModuleDocuments side effect (see design.md Decision 5)
+        // — a domain file drifted from klabis.yaml still fails the build here, not silently.
+        inputSpec.set(layout.projectDirectory.file("../docs/openapi/spec/$specFile").asFile.absolutePath)
         this.outputDir.set(outputDir.map { it.asFile.absolutePath })
         templateDir.set(layout.projectDirectory.dir("src/main/openapi-templates").asFile.absolutePath)
         modelPackage.set(pkg)
@@ -81,10 +73,11 @@ fun Project.openApiModule(
 
         globalProperties.set(
             mapOf(
-                "models" to models.joinToString(","),
-                // Tag names, NOT "true" — the generator silently generates nothing for "apis"="true",
-                // and every tag when given an empty string.
-                "apis" to apis.joinToString(","),
+                // Empty string, NOT an omitted key: the generator's "models"/"apis" GlobalSettings
+                // properties mean "generate all" only when present-but-empty. An omitted key skips
+                // generation entirely (verified via --info: "Skipping generation of models/APIs.").
+                "models" to "",
+                "apis" to "",
                 "supportingFiles" to "false",
                 "modelDocs" to "false",
                 "modelTests" to "false",

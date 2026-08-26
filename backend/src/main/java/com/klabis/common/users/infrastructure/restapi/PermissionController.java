@@ -71,10 +71,10 @@ public class PermissionController implements PermissionsApi {
     }
 
     private PermissionsResponse toPermissionsResponse(UserPermissions permissions) {
-        return new PermissionsResponse(
-                permissions.getManageableAuthorities().stream().map(Authority::getValue).toList(),
-                permissions.getUserId().uuid()
-        );
+        return PermissionsResponseBuilder.builder()
+                .userId(permissions.getUserId().uuid())
+                .authorities(permissions.getManageableAuthorities().stream().map(Authority::getValue).toList())
+                .build();
     }
 
     /**

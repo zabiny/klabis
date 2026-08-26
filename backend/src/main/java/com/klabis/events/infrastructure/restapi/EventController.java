@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
-import com.klabis.common.ui.HalForms;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -341,28 +340,22 @@ public class EventController implements EventsApi {
     private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {
         MemberAccommodationDto accommodationData = accommodationIndex.get(registration.memberId());
         if (accommodationData == null) {
-            return new AccommodationListItemDto(null, null, null, null, null, null, null, null, null);
+            return AccommodationListItemDtoBuilder.builder().build();
         }
-        return new AccommodationListItemDto(
-                accommodationData.addressCity(),
-                accommodationData.addressCountry(),
-                accommodationData.addressPostalCode(),
-                accommodationData.addressStreet(),
-                accommodationData.dateOfBirth(),
-                accommodationData.firstName(),
-                accommodationData.identityCardNumber(),
-                accommodationData.identityCardValidityDate(),
-                accommodationData.lastName()
-        );
+        return AccommodationListItemDtoBuilder.builder()
+                .firstName(accommodationData.firstName())
+                .lastName(accommodationData.lastName())
+                .identityCardNumber(accommodationData.identityCardNumber())
+                .identityCardValidityDate(accommodationData.identityCardValidityDate())
+                .dateOfBirth(accommodationData.dateOfBirth())
+                .addressStreet(accommodationData.addressStreet())
+                .addressCity(accommodationData.addressCity())
+                .addressPostalCode(accommodationData.addressPostalCode())
+                .addressCountry(accommodationData.addressCountry())
+                .build();
     }
 
 }
-
-record CancelEventRequest(
-        @jakarta.validation.constraints.Size(max = 500, message = "Cancellation reason must not exceed 500 characters")
-        @HalForms(formInputType = "textarea")
-        String cancellationReason
-) {}
 
 class EventAffordanceSupport {
 

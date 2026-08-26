@@ -5,6 +5,10 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
+import com.klabis.groups.infrastructure.restapi.GroupsApi;
+import com.klabis.groups.infrastructure.restapi.InvitationsApi;
+import com.klabis.groups.infrastructure.restapi.PendingInvitationResponse;
+import com.klabis.groups.infrastructure.restapi.PendingInvitationResponseBuilder;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
@@ -45,9 +49,12 @@ class PendingInvitationsController implements InvitationsApi {
 
         HalResponseContext.setDomainList(views);
         return ResponseEntity.ok(views.stream()
-                .map(view -> new PendingInvitationResponse(
-                        view.groupId().uuid(), view.groupName(), view.invitation().getId().value(),
-                        view.invitation().getInvitedBy().uuid()))
+                .map(view -> PendingInvitationResponseBuilder.builder()
+                        .groupId(view.groupId().uuid())
+                        .groupName(view.groupName())
+                        .invitationId(view.invitation().getId().value())
+                        .invitedBy(view.invitation().getInvitedBy().uuid())
+                        .build())
                 .toList());
     }
 }

@@ -5,11 +5,11 @@ import com.klabis.events.domain.CategoryPreset;
 class CategoryPresetDtoMapper {
 
     static CategoryPresetDto toDto(CategoryPreset preset) {
-        return new CategoryPresetDto(
-                preset.getCategories(),
-                preset.getId().value(),
-                preset.getName()
-        );
+        return CategoryPresetDtoBuilder.builder()
+                .id(preset.getId().value())
+                .name(preset.getName())
+                .categories(preset.getCategories())
+                .build();
     }
 
     private CategoryPresetDtoMapper() {

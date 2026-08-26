@@ -73,25 +73,25 @@ class MemberAccountController implements FinanceApi {
     }
 
     private static MemberAccountResource toMemberAccountResource(MemberId memberId, Money balance) {
-        return new MemberAccountResource(
-                balance.amount(),
-                balance.currency().getCurrencyCode(),
-                memberId.uuid()
-        );
+        return MemberAccountResourceBuilder.builder()
+                .memberId(memberId.uuid())
+                .balance(balance.amount())
+                .currency(balance.currency().getCurrencyCode())
+                .build();
     }
 
     private static TransactionResource toTransactionResource(Transaction tx) {
-        return new TransactionResource(
-                tx.getAmount().amount(),
-                tx.getAmount().currency().getCurrencyCode(),
-                tx.getId().value(),
-                tx.getNote(),
-                tx.getOccurredAt(),
-                tx.getRecordedAt(),
-                tx.getRecordedBy().uuid(),
-                tx.getReversesTransactionId() != null ? tx.getReversesTransactionId().value() : null,
-                tx.getType().name()
-        );
+        return TransactionResourceBuilder.builder()
+                .id(tx.getId().value())
+                .type(tx.getType().name())
+                .amount(tx.getAmount().amount())
+                .currency(tx.getAmount().currency().getCurrencyCode())
+                .note(tx.getNote())
+                .recordedAt(tx.getRecordedAt())
+                .occurredAt(tx.getOccurredAt())
+                .recordedBy(tx.getRecordedBy().uuid())
+                .reversesTransactionId(tx.getReversesTransactionId() != null ? tx.getReversesTransactionId().value() : null)
+                .build();
     }
 
     @Transactional(readOnly = true)

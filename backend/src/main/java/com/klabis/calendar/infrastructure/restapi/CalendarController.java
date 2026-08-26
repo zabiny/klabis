@@ -162,14 +162,14 @@ class CalendarController implements CalendarApi {
 
     private CalendarItemDto toDto(CalendarItem calendarItem) {
         var eventId = calendarItem instanceof EventCalendarItem linked ? linked.getEventId() : null;
-        return new CalendarItemDto(
-                calendarItem.getDescription(),
-                calendarItem.getEndDate(),
-                eventId != null ? eventId.value() : null,
-                calendarItem.getId().value(),
-                calendarItem.getName(),
-                calendarItem.getStartDate()
-        );
+        return CalendarItemDtoBuilder.builder()
+                .id(calendarItem.getId().value())
+                .name(calendarItem.getName())
+                .description(calendarItem.getDescription())
+                .startDate(calendarItem.getStartDate())
+                .endDate(calendarItem.getEndDate())
+                .eventId(eventId != null ? eventId.value() : null)
+                .build();
     }
 
 }

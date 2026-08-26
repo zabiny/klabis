@@ -146,13 +146,13 @@ class EventRegistrationController implements EventRegistrationsApi {
             }
             MemberDto memberDto = members.findById(targetMember)
                     .orElseThrow(() -> new IllegalStateException("Member not found: " + targetMember));
-            RegistrationDto defaults = new RegistrationDto(
-                    null,
-                    memberDto.firstName(),
-                    memberDto.lastName(),
-                    null,
-                    memberDto.chipNumber()
-            );
+            RegistrationDto defaults = RegistrationDtoBuilder.builder()
+                    .firstName(memberDto.firstName())
+                    .lastName(memberDto.lastName())
+                    .siCardNumber(memberDto.chipNumber())
+                    .category(null)
+                    .registeredAt(null)
+                    .build();
             Event event = eventManagementService.getEvent(new EventId(eventId), false);
             HalResponseContext.setDomain(new RegistrationView(event, targetMember));
             return ResponseEntity.ok(defaults);
@@ -170,8 +170,13 @@ class EventRegistrationController implements EventRegistrationsApi {
     private RegistrationDto toRegistrationDto(EventRegistration registration, Event event) {
         MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
-        return new RegistrationDto(RegistrationDtoMapper.toCategoryDto(registration, event), member.firstName(),
-                member.lastName(), registration.registeredAt(), registration.siCardNumber().value());
+        return RegistrationDtoBuilder.builder()
+                .firstName(member.firstName())
+                .lastName(member.lastName())
+                .siCardNumber(registration.siCardNumber().value())
+                .category(RegistrationDtoMapper.toCategoryDto(registration, event))
+                .registeredAt(registration.registeredAt())
+                .build();
     }
 
     /**

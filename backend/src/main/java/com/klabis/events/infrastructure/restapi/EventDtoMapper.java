@@ -14,39 +14,39 @@ import java.util.stream.Stream;
 class EventDtoMapper {
 
     static EventDto toDto(Event event) {
-        return new EventDto(
-                toEntryFeeDto(event),
-                event.getCancellationReason().orElse(null),
-                toCategoryDtos(event),
-                toCoordinatorIds(event),
-                toDeadlineList(event.getRegistrationDeadlines()),
-                event.getEventDate(),
-                event.getEventTypeId().map(id -> id.value()).orElse(null),
-                event.getId().value(),
-                event.getLocation(),
-                event.getName(),
-                event.getOrganizer(),
-                toRankingDto(event),
-                toApiStatus(event.getStatus()),
-                event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null
-        );
+        return EventDtoBuilder.builder()
+                .id(event.getId().value())
+                .name(event.getName())
+                .eventDate(event.getEventDate())
+                .location(event.getLocation())
+                .organizer(event.getOrganizer())
+                .websiteUrl(event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null)
+                .coordinators(toCoordinatorIds(event))
+                .eventTypeId(event.getEventTypeId().map(id -> id.value()).orElse(null))
+                .status(toApiStatus(event.getStatus()))
+                .categories(toCategoryDtos(event))
+                .cancellationReason(event.getCancellationReason().orElse(null))
+                .deadlines(toDeadlineList(event.getRegistrationDeadlines()))
+                .ranking(toRankingDto(event))
+                .baseEntryFee(toEntryFeeDto(event))
+                .build();
     }
 
     static EventSummaryDto toSummaryDto(Event event) {
-        return new EventSummaryDto(
-                event.getCancellationReason().orElse(null),
-                toCategoryDtos(event),
-                toCoordinatorIds(event),
-                toDeadlineList(event.getRegistrationDeadlines()),
-                event.getEventDate(),
-                event.getEventTypeId().map(id -> id.value()).orElse(null),
-                event.getId().value(),
-                event.getLocation(),
-                event.getName(),
-                event.getOrganizer(),
-                toApiStatus(event.getStatus()),
-                event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null
-        );
+        return EventSummaryDtoBuilder.builder()
+                .id(event.getId().value())
+                .name(event.getName())
+                .eventDate(event.getEventDate())
+                .location(event.getLocation())
+                .organizer(event.getOrganizer())
+                .websiteUrl(event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null)
+                .coordinators(toCoordinatorIds(event))
+                .eventTypeId(event.getEventTypeId().map(id -> id.value()).orElse(null))
+                .status(toApiStatus(event.getStatus()))
+                .categories(toCategoryDtos(event))
+                .cancellationReason(event.getCancellationReason().orElse(null))
+                .deadlines(toDeadlineList(event.getRegistrationDeadlines()))
+                .build();
     }
 
     private static EventStatus toApiStatus(com.klabis.events.domain.EventStatus status) {
@@ -64,28 +64,38 @@ class EventDtoMapper {
     }
 
     private static EventCategoryDto toCategoryDto(EventCategory category) {
-        return new EventCategoryDto(category.fee().map(EventDtoMapper::toEntryFeeDto).orElse(null), category.id().value(), category.name());
+        return EventCategoryDtoBuilder.builder()
+                .id(category.id().value())
+                .name(category.name())
+                .fee(category.fee().map(EventDtoMapper::toEntryFeeDto).orElse(null))
+                .build();
     }
 
     private static EntryFeeDto toEntryFeeDto(Money fee) {
-        return new EntryFeeDto(fee.amount(), fee.currency().getCurrencyCode());
+        return EntryFeeDtoBuilder.builder()
+                .amount(fee.amount())
+                .currency(fee.currency().getCurrencyCode())
+                .build();
     }
 
     private static RankingDto toRankingDto(Event event) {
         if (event.getRanking() == null) {
             return null;
         }
-        return new RankingDto(event.getRanking().name(), event.getRanking().shortName());
+        return RankingDtoBuilder.builder()
+                .shortName(event.getRanking().shortName())
+                .name(event.getRanking().name())
+                .build();
     }
 
     private static EntryFeeDto toEntryFeeDto(Event event) {
         if (event.getBaseEntryFee() == null) {
             return null;
         }
-        return new EntryFeeDto(
-                event.getBaseEntryFee().amount(),
-                event.getBaseEntryFee().currency().getCurrencyCode()
-        );
+        return EntryFeeDtoBuilder.builder()
+                .amount(event.getBaseEntryFee().amount())
+                .currency(event.getBaseEntryFee().currency().getCurrencyCode())
+                .build();
     }
 
     private static List<LocalDate> toDeadlineList(RegistrationDeadlines deadlines) {

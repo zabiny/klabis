@@ -2,6 +2,7 @@ package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupsApi;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;

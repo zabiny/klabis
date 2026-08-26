@@ -12,6 +12,22 @@ import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.groups.infrastructure.restapi.AddTrainerRequest;
+import com.klabis.groups.infrastructure.restapi.AgeRangeRequest;
+import com.klabis.groups.infrastructure.restapi.AgeRangeResponse;
+import com.klabis.groups.infrastructure.restapi.AgeRangeResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.CreateTrainingGroupRequest;
+import com.klabis.groups.infrastructure.restapi.GroupMembershipResponse;
+import com.klabis.groups.infrastructure.restapi.GroupMembershipResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.TrainerResponse;
+import com.klabis.groups.infrastructure.restapi.TrainerResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupAddMemberRequest;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupResponse;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupsApi;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupSummaryResponse;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupSummaryResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -98,7 +114,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     private TrainingGroupResponse buildLimitedGroupResponse(TrainingGroup group, UUID groupUuid) {
         List<EntityModel<TrainerResponse>> trainerModels = group.getTrainers().stream()
                 .map(trainerId -> {
-                    EntityModel<TrainerResponse> model = EntityModel.of(new TrainerResponse(trainerId.uuid()));
+                    EntityModel<TrainerResponse> model = EntityModel.of(TrainerResponseBuilder.builder().memberId(trainerId.uuid()).build());
                     klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
@@ -106,8 +122,13 @@ class TrainingGroupController implements TrainingGroupsApi {
                 })
                 .toList();
 
-        return new TrainingGroupResponse(
-                null, group.getId().uuid(), null, group.getName(), trainerModels);
+        return TrainingGroupResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .ageRange(null)
+                .trainers(trainerModels)
+                .members(null)
+                .build();
     }
 
     @Override
@@ -178,10 +199,13 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     private TrainingGroupSummaryResponse toSummaryResponse(TrainingGroup group) {
-        return new TrainingGroupSummaryResponse(
-                group.getId().uuid(), group.getAgeRange().maxAge(),
-                group.getMembers().size(), group.getAgeRange().minAge(),
-                group.getName());
+        return TrainingGroupSummaryResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .minAge(group.getAgeRange().minAge())
+                .maxAge(group.getAgeRange().maxAge())
+                .memberCount(group.getMembers().size())
+                .build();
     }
 
     private TrainingGroupResponse toTrainingGroupResponse(TrainingGroup group, UUID groupUuid, boolean hasTrainingAuthority) {
@@ -189,7 +213,7 @@ class TrainingGroupController implements TrainingGroupsApi {
 
         List<EntityModel<TrainerResponse>> trainerModels = trainerIds.stream()
                 .map(trainerId -> {
-                    EntityModel<TrainerResponse> model = EntityModel.of(new TrainerResponse(trainerId.uuid()));
+                    EntityModel<TrainerResponse> model = EntityModel.of(TrainerResponseBuilder.builder().memberId(trainerId.uuid()).build());
                     klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
@@ -207,16 +231,26 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .map(m -> buildMemberModel(m, groupUuid, hasTrainingAuthority, trainerIds))
                 .toList();
 
-        return new TrainingGroupResponse(
-                new AgeRangeResponse(group.getAgeRange().maxAge(), group.getAgeRange().minAge()),
-                group.getId().uuid(), memberModels, group.getName(), trainerModels);
+        return TrainingGroupResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .ageRange(AgeRangeResponseBuilder.builder()
+                        .minAge(group.getAgeRange().minAge())
+                        .maxAge(group.getAgeRange().maxAge())
+                        .build())
+                .trainers(trainerModels)
+                .members(memberModels)
+                .build();
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(
             GroupMembership membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
 
         MemberId memberId = membership.memberId();
-        GroupMembershipResponse response = new GroupMembershipResponse(membership.joinedAt(), memberId.uuid());
+        GroupMembershipResponse response = GroupMembershipResponseBuilder.builder()
+                .memberId(memberId.uuid())
+                .joinedAt(membership.joinedAt())
+                .build();
         EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))

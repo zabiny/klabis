@@ -27,5 +27,5 @@ interface BulkSyncResultConverter extends Converter<com.klabis.events.applicatio
     EventSyncEntry toDto(com.klabis.events.application.BulkSyncResult.EventSyncEntry entry);
 
     @ValueMapping(source = "SYNCED", target = "SUCCESS")
-    EventImportEntryStatus toDto(com.klabis.events.application.BulkSyncResult.SyncStatus status);
+    EventSyncEntryStatus toDto(com.klabis.events.application.BulkSyncResult.SyncStatus status);
 }
