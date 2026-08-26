@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.application.SuspensionBlockedException;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,10 +15,10 @@ import java.util.UUID;
 @RestControllerAdvice
 class MembersExceptionHandler {
 
-    private final MemberMapper memberMapper;
+    private final ConversionService conversionService;
 
-    MembersExceptionHandler(MemberMapper memberMapper) {
-        this.memberMapper = memberMapper;
+    MembersExceptionHandler(ConversionService conversionService) {
+        this.conversionService = conversionService;
     }
 
     @ExceptionHandler(SuspensionBlockedException.class)
@@ -43,7 +44,8 @@ class MembersExceptionHandler {
                     .path("/api/members/{memberId}/account")
                     .buildAndExpand(snapshot.memberId().uuid())
                     .toUri();
-            debt = new OutstandingDebtWarning(accountLink, memberMapper.monetaryAmountToDto(snapshot.balance()));
+            debt = new OutstandingDebtWarning(accountLink,
+                    conversionService.convert(snapshot.balance(), MonetaryAmount.class));
         }
 
         return ResponseEntity
