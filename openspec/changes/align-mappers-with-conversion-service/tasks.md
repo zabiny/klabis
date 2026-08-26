@@ -33,6 +33,6 @@
 ## 5. Verification and documentation
 
 - [x] 5.1 Run full backend test suite via test-runner skill — confirm no regressions
-- [ ] 5.2 Update `backend-patterns` skill to document the `Converter<S,T>` + `ConversionService` pattern as the standard way to expose MapStruct mapper conversions to external callers (superseding direct mapper injection)
-- [ ] 5.3 Code review (backend-developer/code-reviewer agent) before committing
-- [ ] 5.4 Commit per-slice (sections 2, 3, 4 each as their own commit) plus a final commit for section 5
+- [x] 5.2 Update `backend-patterns` skill to document the `Converter<S,T>` + `ConversionService` pattern as the standard way to expose MapStruct mapper conversions to external callers (superseding direct mapper injection)
+- [x] 5.3 Code review (backend-developer/code-reviewer agent) before committing
+- [x] 5.4 Commit per-slice (sections 2, 3, 4 each as their own commit) plus a final commit for section 5
