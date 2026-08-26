@@ -27,12 +27,12 @@
 
 ## 3. Merge `event-types.yaml` into `events.yaml`
 
-- [ ] 3.1 Move `event-types.yaml`'s `paths` and `components.schemas` entries into `events.yaml`,
+- [x] 3.1 Move `event-types.yaml`'s `paths` and `components.schemas` entries into `events.yaml`,
       preserving the `EventTypes` tag.
-- [ ] 3.2 Update `klabis.yaml`'s path `$ref`s for the two `event-types` paths
+- [x] 3.2 Update `klabis.yaml`'s path `$ref`s for the two `event-types` paths
       (`/api/event-types`, `/api/event-types/{id}`) to point at `./events.yaml` instead.
-- [ ] 3.3 Delete `docs/openapi/spec/event-types.yaml`.
-- [ ] 3.4 Run `./gradlew openapiBundle -PopenapiCheck` then `./gradlew openapiBundle` — diff
+- [x] 3.3 Delete `docs/openapi/spec/event-types.yaml`.
+- [x] 3.4 Run `./gradlew openapiBundle -PopenapiCheck` then `./gradlew openapiBundle` — diff
       against the 1.2 baseline, must be byte-identical.
 
 ## 4. Gradle codegen wiring
