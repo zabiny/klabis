@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
-import com.klabis.common.ui.HalForms;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -357,12 +356,6 @@ public class EventController implements EventsApi {
     }
 
 }
-
-record CancelEventRequest(
-        @jakarta.validation.constraints.Size(max = 500, message = "Cancellation reason must not exceed 500 characters")
-        @HalForms(formInputType = "textarea")
-        String cancellationReason
-) {}
 
 class EventAffordanceSupport {
 

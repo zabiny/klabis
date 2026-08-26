@@ -37,32 +37,67 @@
 
 ## 4. Gradle codegen wiring
 
-- [ ] 4.1 Add a `specFile: String` parameter to `openApiModule(...)` in
+- [x] 4.1 Add a `specFile: String` parameter to `openApiModule(...)` in
       `backend/buildSrc/src/main/kotlin/OpenApiModule.kt`; set `inputSpec` from
       `docs/openapi/spec/$specFile` instead of the shared `klabis-full.json` path.
-- [ ] 4.2 Remove the `models: List<String>` and `apis: List<String>` parameters from
-      `openApiModule(...)`'s signature and from the `globalProperties` block (the `"models"`/`"apis"`
-      keys in `globalProperties` are dropped entirely — every tag/schema in the target file is now
-      generated).
-- [ ] 4.3 Update the 7 unaffected call sites in `backend/build.gradle.kts` to point `specFile` at
+- [x] 4.2 Remove the `models: List<String>` and `apis: List<String>` parameters from
+      `openApiModule(...)`'s signature and from the `globalProperties` block. **Deviation from
+      design.md:** the `"models"`/`"apis"` `globalProperties` keys are NOT omitted — they are set to
+      `""` (empty string). Confirmed via `--info` log that an omitted key means "generate nothing"
+      (`Skipping generation of models/APIs.`); only a present-but-empty value means "generate
+      everything". This is unrelated to the withdrawn Decision 5 in
+      `openspec/changes/archive/2026-08-25-custom-openapi-codegen/design.md` (a different,
+      never-shipped `CodegenConfig`-level mechanism) — confirmed empirically that request DTOs
+      reachable only via `requestBody` (e.g. `CreateEventTypeRequest`) DO generate under
+      `models=""`/`apis=""`.
+- [x] 4.3 Update the 7 unaffected call sites in `backend/build.gradle.kts` to point `specFile` at
       their own file: `members` → `members.yaml`; `finance` → `finance.yaml`; `calendar` →
       `calendar.yaml`; `membershipfees` → `membershipfees.yaml`; `common` → `common.yaml`; `oris` →
-      `oris.yaml` (drop its now unnecessary `apis = listOf("OrisImport")` filter and placeholder
-      `models` list — confirm via `grep tags: oris.yaml` that `OrisImport` remains the only tag
-      first).
-- [ ] 4.4 Merge the `events`/`event-types` call sites into a single `events` call with
-      `specFile = "events.yaml"` (drop the separate `event-types` call entirely).
-- [ ] 4.5 Collapse the `groupsFamily`/`groupsFree`/`groupsTraining` call sites into a single
+      `oris.yaml` (dropped its now unnecessary `apis = listOf("OrisImport")` filter and placeholder
+      `models` list — confirmed via `grep tags: oris.yaml` that `OrisImport` remains the only tag).
+- [x] 4.4 Merge the `events`/`event-types` call sites into a single `events` call with
+      `specFile = "events.yaml"` (dropped the separate `event-types` call entirely).
+- [x] 4.5 Collapse the `groupsFamily`/`groupsFree`/`groupsTraining` call sites into a single
       `groups` call: `module = "groups"`, `pkg = "com.klabis.groups.infrastructure.restapi"`,
-      `specFile = "groups.yaml"`. Merge the three existing `mappings`/`extraImportMappings` blocks
-      (`EntityModelParentResponse`/`EntityModelFamilyGroupMembershipResponse`,
-      `EntityModelOwnerResponse`/`EntityModelFreeGroupMembershipResponse`/
-      `EntityModelPendingInvitationResponse`, `EntityModelTrainerResponse`/
-      `EntityModelGroupMembershipResponse`) into one combined `mapOf(...)` pair — confirm no key
-      collision before merging (already verified disjoint during design).
-- [ ] 4.6 Confirm every `openApiModule(...)` call still `dependsOn(openapiBundle)` (kept
-      deliberately — see design.md Decision 5 — for the spec validation side effect, not for
-      `inputSpec` correctness).
+      `specFile = "groups.yaml"`. Merged the three existing `mappings`/`extraImportMappings` blocks
+      into one combined `mapOf(...)` pair — confirmed no key collision.
+- [x] 4.6 Confirmed every `openApiModule(...)` call still `dependsOn(openapiBundle)` — unchanged.
+
+**Unplanned work required to make 4.1–4.6 actually compile** (discovered only once `models=""`
+started generating everything reachable, not documented in design.md):
+
+- Deleted dead hand-written `backend/src/main/java/com/klabis/oris/OrisEventSummary.java` — the
+  `models = listOf("_NoGeneratedModelsForOris")` placeholder had been hiding that this schema was
+  always safe to generate (zero hand-written references to the old class existed).
+- Converted the hand-written nested record `CancelEventRequest` in `EventController.java` into a
+  spec-generated one: added `x-field-extra-annotation:
+  com.klabis.common.ui.HalForms(formInputType = "textarea")` to `docs/openapi/spec/events.yaml`'s
+  `CancelEventRequest.cancellationReason` property (existing extension mechanism, no template
+  change needed) and removed the hand-written record.
+- Added a `postProcessAllModels` override to `KlabisSpringCodegen.java` (with two new private
+  helpers, `envelopeAndFragmentNames`/`embeddedReferencedClassnames`) that removes every HAL
+  envelope schema and its orphaned `allOf`-decomposition fragments from the generated model set —
+  `models=""`/`apis=""` generates every schema reachable in the document, including envelope
+  schemas that were always meant to stay ungenerated (per the `klabis-api-spec` skill: "Payload and
+  envelope are separate schemas") and their synthetic `AllOf<Property>` sub-schemas, none of which
+  any hand-written code ever references. Uses a fixed-point reachability pass over the
+  `CodegenProperty` graph, seeded with roots from operation request/response content AND from
+  envelope `_embedded` blocks (the latter needed because `_embedded` content is assembled at
+  runtime by `HalResponseContext`/`HalResponseBodyAdvice`, never as a Java field — see
+  `MemberInGroupResponse`, reachable only via
+  `EntityModelMembershipFeeGroupResponseWithMembers._embedded.members`). Also strips same-package
+  stale `imports` entries left over from openapi-generator's own model-collapse behavior (observed
+  on `EntityModelFreeGroupMembershipResponseAllOfLinks`, whose generated record has no field typed
+  against its own dangling import). This also incidentally resolved a `MethodEnum` symbol bug
+  (`RESOLVE_INLINE_ENUMS` inconsistently naming a shared inline enum across its many
+  `HalFormsTemplate.method` occurrences) — the affected `*AllOfTemplates` classes are themselves
+  envelope fragments the filter now removes.
+- Renamed `EventImportEntryStatus` → `EventSyncEntryStatus` in two hand-written MapStruct
+  converters (`BulkImportResultConverter`, `BulkSyncResultConverter`) — `EventSyncEntry.status`/
+  `EventImportEntry.status` share one inline enum that `RESOLVE_INLINE_ENUMS` promotes to a single
+  class named after whichever occurrence the generator resolves second; dropping `models`/`apis`
+  changed which occurrence that is. Left a comment explaining the fragility for future spec
+  changes.
 
 ## 5. Fix hand-written groups imports
 
