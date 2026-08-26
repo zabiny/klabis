@@ -2,70 +2,52 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.5.0
+version: 0.6.0
 ---
 
 # Klabis API Spec
 
-`docs/openapi/spec/` is **the** source of truth for the REST API: Java DTOs, API interfaces and
-frontend HAL types are all generated from it.
+`docs/openapi/spec/` is **the** source of truth for the REST API: Java DTOs, the `*Api` interfaces
+controllers implement, endpoint authorization, and the frontend HAL types are all generated from it.
+The Java signature is a consequence of the spec, never the driver.
 
 Never edit generated output — `docs/openapi/klabis-full.json`, `build/generated/**`,
 `frontend/src/api/klabisApi.d.ts`.
 
-The spec drives real codegen: payload DTOs, the `*Api` interfaces controllers implement, endpoint
-authorization, and the frontend HAL types. The Java signature is a consequence of the spec, never the
-driver.
-
 ```
-./gradlew openapiBundle                          # from backend/ — spec/ -> klabis-full.json
-./gradlew openapiBundle -PopenapiCheck           # validate only, write nothing
+./gradlew openapiBundle                  # from backend/ — spec/ -> klabis-full.json
+./gradlew openapiBundle -PopenapiCheck   # validate only, write nothing
+npm run openapi                          # from frontend/ — regenerates klabisApi.d.ts + halTypes.ts
 ```
 
-### `klabis-full.json` is generated from the spec — and is the sole input to BOTH backend and frontend codegen
+Changing the spec requires regenerating **both** the bundle and the frontend types.
 
-`docs/openapi/klabis-full.json` is the published API document — Swagger UI, the backend's
-`KlabisSpringCodegen`-based Java codegen, and the frontend's `klabisApi.d.ts` are all built from it.
-`openapiBundle` produces it from `docs/openapi/spec/`, so there is a single source of truth end to
-end, and a single bundle to keep it that way — no separate codegen-only bundle exists anymore (see
-"HAL envelopes are unwrapped structurally" below).
+`docs/openapi/spec/README.md` documents the pipeline and directory layout for anyone browsing the
+repo; it is the reference for those mechanics rather than something restated here.
 
-- **`klabis-full.json` is a gitignored build artifact, not a review target.** Review the spec;
-  regenerate the bundle. Never hand-edit it.
-- **A schema name in the spec is a wire contract** — `halTypes.ts` indexes into `klabisApi.d.ts` by
-  schema name. See "A payload schema's name is wire contract" below; this is why `event-types` keeps
-  the `*Dto` suffix.
-- Changing the spec requires regenerating **both** the bundle (`./gradlew openapiBundle`) and the
-  frontend types (`npm run openapi` from `frontend/`).
-- **Never put `@Operation` / `@ApiResponse` / `@Parameter` on a controller** — see below.
+## Which reference to read
 
-#### Why the controllers carry no springdoc annotations
+Load the file matching what you are changing — each is authoritative for its area, and the rules
+differ enough between them that generalising from one to another produces broken spec.
 
-`documentationProvider = "springdoc"` makes the generator emit them onto the `*Api` interface,
-straight from the spec. Springdoc reads annotations off the concrete class and Java does not inherit
-method annotations from an interface — but the controller `@Override`s a method whose *declaration*
-carries them, and springdoc resolves that. So `/v3/api-docs` is spec-derived too, and hand-written
-duplicates are pure drift surface.
+| Working on | Read |
+|---|---|
+| Any response: media types, HAL envelope vs. payload schema, `_embedded` keys, `x-hal-links`/`x-hal-templates` | `references/hypermedia.md` |
+| Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-owner-visible`) | `references/field-security.md` |
+| Constraints on request fields, cross-field rules | `references/validation.md` |
+| A PATCH endpoint (the `JsonNullable<T>` tri-state) | `references/patch-bodies.md` |
+| Registering a new module for codegen, or migrating one to spec-first | `references/adding-a-module.md` |
 
-The generated set is strictly richer than what the controllers used to hold: it also carries
-`security`, `tags`, every error response with its description and `@Content` schema, and
-`@Parameter(hidden = true)` on the `x-spring-provide-args` arguments. Measured over the whole app
-when the 26 controllers were stripped: operations 117 → 117 (none lost), summaries 82 → 117,
-descriptions 51 → 111, parameter descriptions 95 → 133.
+How the backend then *consumes* what the spec generates — controllers implementing `*Api`,
+postprocessors, `HalResponseContext` — is the `backend-patterns` skill.
 
-**The catch is a generic return type in `@Schema(implementation = ...)`.** `documentationProvider`
-renders each response's baseType into `@Schema(implementation = <baseType>.class)`, and a paginated
-response's real type is `Page<X>` — not legal Java there (JLS 15.8.2: a class literal takes a raw
-type). Same problem for a `schemaMappings` target of `java.lang.Object` (springdoc would render it as
-`"type": "string"`, worse than nothing). `KlabisSpringCodegen.fromResponse()` (`buildSrc/`) handles
-both by leaving that response's `baseType` unset, so `api.mustache`'s `{{#baseType}}...{{/baseType}}`
-never opens the `content = {...}` block for it — no post-process patch needed. This used to be a
-`doLast` regex over the generated `*Api.java`; it is gone as of `custom-openapi-codegen`.
+## Core rule: DTOs carry wire types
 
-The exceptions are the 7 files with no generated counterpart, which legitimately keep their
-annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
-`GroupsExceptionHandler`, the hand-written `MemberOptionResponse`/`MemberSummaryResponse`, and
-`@Hidden` on `ActingUser`/`ActingMember`.
+API DTOs are transport records mirroring the JSON payload. `string`/`format: uuid`, never a
+`MemberId` object. Conversion to domain types belongs in the mapper or the controller.
+
+The spec describes JSON — a domain type is not derivable from it, and a generated DTO cannot invent
+one.
 
 ## Layout
 
@@ -75,8 +57,10 @@ docs/openapi/spec/
   _shared/
     hal.yaml           Link, Links, PageMetadata, HalFormsTemplate(s), HalFormsProperty, HalFormsOptions
     problem.yaml       RFC 7807 ProblemDetail
-  members.yaml         one file per module
-  event-types.yaml
+    pagination.yaml    generic PageParam/SizeParam
+    responses.yaml     shared error responses (BadRequest, Unauthorized, Forbidden, NotFound, …)
+  <module>.yaml        one file per module: members, events, groups, finance,
+                       membershipfees, calendar, common, oris
 ```
 
 `klabis.yaml` references each path individually, with JSON-pointer escaping (`/` is `~1`):
@@ -116,770 +100,33 @@ the *other* module's definition, `x-klabis-owner-visible: <name>` then fails wit
 that operation" even though the operation's own file looks correct. Check for a duplicate component
 name before believing the error at face value.
 
-## Validation lives in the spec too
-
-Bean-validation constraints are generated from standard OpenAPI keywords, so they belong in the spec
-alongside the types:
-
-| spec | generates |
-|---|---|
-| `required: [firstName, …]` | `@NotNull` (not `@NotBlank` — see below) |
-| `x-klabis-not-blank: true` | `@NotBlank` (Klabis extension; schema properties only) |
-| `x-klabis-past: true` | `@Past` (Klabis extension; schema properties only) |
-| `x-klabis-url: true` | `@URL` (Klabis extension; schema properties only) |
-| `x-klabis-class-constraint: <FQN>` | that annotation on the record itself — cross-field rules |
-| `maxLength` / `minLength` | `@Size(max=…, min=…)` |
-| `pattern` | `@Pattern(regexp=…)` |
-| `format: email` | `@Email` |
-| `minimum` / `maximum` | `@Min` / `@Max` |
-| `type: [x, 'null']` | `JsonNullable<X>` — PATCH tri-state, see below |
-
-A schema that omits them produces a DTO that accepts anything — the failure shows up as a controller
-test expecting `400` and getting `200`, or as missing entries under `fieldErrors`. When migrating a
-module, transcribe the Jakarta annotations off the hand-written record; springdoc reports most of
-them in `klabis-codefirst.json` already.
-
-**`required` is not `@NotBlank`.** In OpenAPI `required` only means the key must be present, so it
-generates `@NotNull` — which accepts `""`. Adding `minLength: 1` gets you `@Size(min = 1)`, which
-rejects `""` but still accepts `"   "`. OpenAPI has no standard keyword meaning "not blank".
-
-Klabis therefore has its own: **`x-klabis-not-blank: true`** on the property, emitted as `@NotBlank`
-by the overridden `pojo.mustache`. Use it wherever the hand-written record had `@NotBlank`; the field
-also keeps the redundant `@NotNull` from `required`, which is harmless.
-
-**`x-klabis-past: true`** works the same way for `@Past`, which OpenAPI likewise cannot express
-(`format: date` says nothing about the range), and **`x-klabis-url: true`** for `@URL`. All three
-live in `PROPERTY_ONLY_CONSTRAINT_EXTENSIONS` in `validate.mjs`; adding a fourth constraint of this
-kind means one entry there plus one branch in `pojo.mustache`.
-
-**Do not pair `x-klabis-url` with `format: uri`.** That format makes the generator emit
-`java.net.URI`, and Hibernate's `@URL` constrains `CharSequence` — the combination changes the Java
-type out from under the mapper and the constraint silently never applies. Leave the property a plain
-string and let the extension carry the validation.
-
-**Check the schema is actually generated before converting a `pattern` hack to it.** Not every
-schema in the spec has a generated counterpart: one that is mapped away via `schemaMappings`, or
-simply absent from a module's `models` allow-list, is documented for the frontend but produces no
-Java. There the extension emits nothing and the validation still lives in a hand-written annotation,
-so swapping `pattern: '^(?!\s*$).+'` for `x-klabis-not-blank` is a pure regression.
-`find backend/build/generated/openapi -name '<Schema>.java'` settles it.
-
-### Cross-field rules: `x-klabis-class-constraint`
-
-A rule spanning two properties ("these deadlines must be non-decreasing") has no OpenAPI keyword, and
-the `@AssertTrue` accessor that used to express it cannot survive migration — a generated record has
-no method bodies. Write a class-level Bean Validation constraint instead and name it on the schema:
-
-```yaml
-UpdateEventRequest:
-  type: object
-  x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
-```
-
-The value is a fully-qualified annotation name **without** the leading `@`; `pojo.mustache` renders it
-above the record. Unlike `additionalModelTypeAnnotations` — which applies to every model in the task —
-this is keyed on the individual schema.
-
-The annotation is rendered with **no argument list**, so all its members must have defaults; a
-constraint needing a mandatory attribute means extending the template block to carry arguments.
-
-Two things the validator must handle, both learned from `DeadlinesOrderedValidator`:
-- **It must be `public`.** Hibernate's default factory instantiates validators reflectively and
-  rejects a package-private class with `HV000064`.
-- **Re-anchor the violation on the property** via `addPropertyNode`, or the 400 response stops naming
-  the offending field and just reports a class-level error.
-
-Reading the value usually means reflection over the record component, since the same rule tends to
-apply to both a POST and a PATCH request — and on the PATCH side it arrives wrapped in
-`JsonNullable<T>`.
-
-Two limits:
-- **Schema properties only.** Only `pojo.mustache` has a branch for it, so the generator would drop
-  the extension on a `parameters` entry; `validate.mjs` rejects it there rather than letting it pass as
-  a silent no-op. For a constrained `@RequestParam` use `pattern: '^(?!\s*$).+'` instead — see the
-  `validatePasswordSetupToken` `token` parameter in `common.yaml`.
-- **The custom message is still lost.** `@NotBlank(message = "…")` texts do not survive; assertions
-  must expect the Bean Validation default (`"must not be blank"`).
-
-**Validation messages become the Bean Validation defaults** (`"size must be between 1 and 100"`).
-OpenAPI cannot express a custom message, so hand-written `@NotBlank(message = "…")` texts are lost on
-migration. Update the assertions to the default text rather than contriving a way to keep the old
-one — the constraint still fires, only the wording changes.
-
-## PATCH bodies: nullable properties become `JsonNullable<T>`
-
-A PATCH body needs three states, not two: *absent* (leave the field alone), *present and null* (clear
-it), and *present with a value*. A plain Java field cannot express that — `null` would mean both
-"untouched" and "clear". Marking the property nullable generates `JsonNullable<T>`, which can.
-
-**Use the OpenAPI 3.1 spelling.** The specs are `3.1.0`, where the 3.0 `nullable: true` keyword is
-**silently ignored** — the property stays non-nullable, the wrapper never appears, and nothing warns
-(`skipValidateSpec` is on):
-
-```yaml
-name:
-  type: ['string', 'null']          # -> JsonNullable<String>
-  maxLength: 100
-
-ageRange:                            # a $ref property needs the oneOf form
-  oneOf:
-    - $ref: '#/components/schemas/AgeRangeRequest'
-    - type: 'null'                   # -> JsonNullable<AgeRangeRequest>
-```
-
-`nullable: true` and `allOf` + `nullable` both generate the bare type. This is driven by
-`openApiNullable = "true"` in `openApiModule(...)` plus the `isNullable` branch in the overridden
-`pojo.mustache`; if that template is ever re-forked from upstream, port the branch or every PATCH DTO
-silently loses its wrappers.
-
-Only PATCH bodies want this. A nullable response property or POST/PUT body would generate the
-wrapper too, forcing an unwrap on every read for a distinction those payloads do not have. Several
-response schemas still carry a leftover `nullable: true`; it is inert only because the 3.0 keyword is
-ignored, so do not "modernise" them to the 3.1 spelling.
-
-### `oneOf` strips property-level `x-klabis-*`
-
-The generator discards vendor extensions from any property written as a `oneOf`. This is a property
-of the composition keyword itself, not of what it contains — a scalar
-`oneOf: [{type: string}, {type: 'null'}]` loses them just as a `$ref` branch does, even though the
-union spelling `type: ['string', 'null']` keeps them.
-
-That is only a dilemma for `$ref` properties, since a scalar can always use the union spelling
-instead. **Neither composition keyword is a way out**, and `allOf` is a trap worth naming, because
-it looks like one:
-
-```yaml
-gender:
-  allOf:                             # keeps x-klabis-authority — but generates a bare Gender
-    - $ref: '#/components/schemas/Gender'
-  x-klabis-authority: MEMBERS_MANAGE
-```
-
-`allOf` does keep the extension, but it costs the `JsonNullable` wrapper — and
-`RequestBodyFieldAuthorizationAdvice` **skips every component that is not `JsonNullable`-typed**, so
-the `@HasAuthority` it emits is never evaluated. Keeping the annotation while losing the wrapper
-protects nothing. This shipped: `UpdateMemberRequest.gender` was written exactly this way, and
-`MEMBERS:MANAGE` went unenforced on it until 2026-07-31.
-
-**Inline the type instead**, so the property keeps both:
-
-```yaml
-gender:
-  type: ['string', 'null']
-  enum: ['MALE', 'FEMALE', null]
-  x-klabis-authority: MEMBERS_MANAGE
-```
-
-Inlining loses the schema name that `schemaMappings` keys on, so add an entry for the generated
-`<Parent>_<property>` name (`UpdateMemberRequest_gender` → `com.klabis.members.domain.Gender`) to
-keep the domain type. `PatchRequestWrapperArchitectureTest` pins both halves: every component is
-wrapped, and the exact set of components carrying an authority.
-
-### Consuming the tri-state
-
-`JsonNullable.map` applies the mapper to a *present null* — it branches on presence, not on nullness.
-A mapper that dereferences the value turns an intended `400` into an NPE and a `500`:
-
-```java
-// forwards the null so the domain's own Assert rejects it
-field.map(value -> value == null ? null : convert(value))
-```
-
-`orElse(current)` is the "apply patch" primitive: the wrapped value when present (including null),
-the fallback when absent.
-
-## Core rule: DTOs carry wire types
-
-API DTOs are transport records mirroring the JSON payload. `string`/`format: uuid`, never a
-`MemberId` object. Conversion to domain types belongs in the mapper or the controller.
-
-The spec describes JSON — a domain type is not derivable from it, and a generated DTO cannot invent
-one.
-
-## `x-klabis-*` — field-level security
-
-On schema properties. Each maps to exactly one existing Java annotation.
-
-(`x-klabis-authority` and `x-klabis-owner-visible` also work one level up, on an operation, and
-`x-klabis-owner-id` also works on a path parameter — see
-[endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below. The
-remaining one is property-only and the bundler rejects it on an operation.)
-
-| extension | value | generates | semantics |
-|---|---|---|---|
-| `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field — or, on an operation's path parameter, the parameter — holding the owner's ID, used to evaluate `x-klabis-owner-visible`. On a property without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). |
-| `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
-| `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
-
-```yaml
-MemberDetailsResponse:
-  type: object
-  properties:
-    id:
-      type: string
-      format: uuid
-      x-klabis-owner-id: true
-    dateOfBirth:
-      type: string
-      format: date
-      x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: true   # admins OR the member themselves
-```
-
-Enforcement lives in `FieldSecurityBeanSerializerModifier`, which works **only on records** and reads
-annotations off the accessor method. A denied field is omitted or masked per
-`@HandleAuthorizationDenied`.
-
-## `x-klabis-authority` on an operation — endpoint authorization
-
-The authority an endpoint requires belongs in the spec, not on the controller. On an operation it
-generates `@HasAuthority` on the **generated interface method**:
-
-```yaml
-paths:
-  /api/members/{id}:
-    get:
-      operationId: getMember
-      x-klabis-authority: MEMBERS_READ    # -> @HasAuthority(Authority.MEMBERS_READ) on MembersApi.getMember
-```
-
-The overridden `api.mustache` reads this key directly and emits the annotation above the method —
-the same way `pojo.mustache` reads it off a schema property. Nothing rewrites it, so the published
-`klabis-full.json` carries the spec key alone, not a Java string derived from it.
-
-Do not also annotate the controller. The authority is stated once, in the spec; a second copy in
-Java is what this replaces.
-
-This relies on `MethodSecurityAnnotations`, which resolves security annotations across the interface
-boundary — Java does not inherit method annotations from an interface, so without it the generated
-annotation would compile and silently enforce nothing.
-
-### `x-klabis-owner-visible` on an operation — ownership authorization
-
-`@OwnerVisible` and `@OwnerId` are a pair: `HasAuthorityMethodInterceptor.checkOwnership()` scans the
-method's parameters for the one carrying `@OwnerId` to know whose ownership to check.
-`@OwnerVisible` on a method without a matching `@OwnerId` parameter enforces nothing — it denies
-rather than resolving ownership, silently dropping the owner-or-authority semantics the endpoint
-advertises. The two halves are declared on two different nodes:
-
-```yaml
-paths:
-  /api/members/{id}:
-    patch:
-      operationId: updateMember
-      x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: true       # -> @OwnerVisible on the method
-      parameters:
-        - $ref: '#/components/parameters/MemberIdParam'
-
-components:
-  parameters:
-    MemberIdParam:
-      name: id
-      in: path
-      required: true
-      x-klabis-owner-id: true            # -> @OwnerId on the parameter
-```
-
-`api.mustache` emits `@OwnerVisible`, `pathParams.mustache` emits `@OwnerId`, and neither can see
-the other — so **`validate.mjs` is the only thing keeping the pair together.** It requires an
-operation declaring `x-klabis-owner-visible` to have exactly one parameter marked
-`x-klabis-owner-id` (zero denies; two would silently resolve against whichever came first).
-
-**`x-klabis-owner-id` may sit on a `$ref` parameter shared with operations that never opt into
-ownership.** `MemberIdParam` is used by `getMember`, `updateMember`, `suspendMember` and
-`resumeMember`, but only `updateMember` declares `x-klabis-owner-visible`; the other three get an
-inert `@OwnerId`. That is harmless because nothing reads `@OwnerId` on its own — both
-`checkOwnership()` and `RequestBodyFieldAuthorizationAdvice` only consult it for a method or field
-already marked `@OwnerVisible`. `@OwnerId` on a parameter is only allowed on a **path** parameter —
-`pathParams.mustache` is the only parameter template with a branch for it, so anywhere else the key
-would be silently dropped. `validate.mjs` rejects that too, along with an owner-id parameter that
-`x-spring-paginated` would fold into `Pageable` (`page`/`size`/`sort` are query parameters, so the
-same check covers them).
-
-Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
-codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
-`MemberControllerApiTest` for the enforcement tests.
-
-**Declared alone, it means owner-only.** The OR is with whatever authority is declared, so with none
-declared there is nothing to OR against: `HasAuthorityMethodInterceptor.invoke()` computes
-`authorityGranted` as `requiredAuthority != null && hasAuthority(...)`, leaving ownership the sole
-path to `proceed()`. A lone `x-klabis-owner-visible` therefore *narrows* access to the owner rather
-than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
-— `MemberFeeChoice`'s and `MemberFeeSummary`'s 5 operations use exactly this. Do not reach for an
-imperative controller check for that case.
-
-Such operations need a test asserting that a caller holding the module's MANAGE authority is still
-`403` (see `MemberFeeChoiceControllerTest`). Nothing else in the suite distinguishes owner-only from
-owner-OR-MANAGE, so pairing an authority in later would widen access silently.
-
-**Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
-a method without `@HasAuthority` and no check reports it; the endpoint still requires
-authentication (`/api/**` is `.authenticated()`), but loses its authority check. When adding an
-operation, state the authority deliberately.
-
-## Payload and envelope are separate schemas
-
-`_links` is not part of a DTO — Spring HATEOAS adds it when the controller wraps the payload in an
-`EntityModel`. Model that split, or the generated Java record grows a bogus `links` component:
-
-```yaml
-EntityModelMemberDetailsResponse:      # envelope; never generated into Java
-  allOf:
-    - $ref: '#/components/schemas/MemberDetailsResponse'
-    - type: object
-      properties:
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-MemberDetailsResponse:                 # payload; this is what becomes a record
-  type: object
-  properties: …
-```
-
-Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*` /
-`CollectionModel*`, not to the item.
-
-### Bodyless success responses still need an empty HAL content block
-
-A `201` or `204` with no `content:` at all generates a method whose `produces` lists only
-`application/problem+json` (inherited from the error responses). A client that sends
-`Accept: application/prs.hal-forms+json` — as the frontend does on every request — then gets **406
-Not Acceptable** instead of the success status. Declare the media type with an empty schema:
-
-```yaml
-        '204':
-          description: Calendar item successfully updated
-          content:
-            application/prs.hal-forms+json: {}
-```
-
-No body is produced; this only pins the negotiated media type. Easy to miss because MockMvc tests
-that omit `.accept(...)` pass either way — the gap surfaces only against a real client, or a test that
-sets the header.
-
-### HAL envelopes are unwrapped structurally — no `schemaMappings`, no separate codegen bundle
-
-`KlabisSpringCodegen` (`backend/buildSrc/`) resolves a response's `EntityModel*` / `PagedModel*` /
-`CollectionModel*` HAL envelope schema down to its real payload type by inspecting the schema's
-*shape*, not its name — see `openspec/changes/custom-openapi-codegen/design.md` for the full
-rationale and `HalEnvelopeDetector` for the two shapes it matches:
-
-- **Shape 1 — single entity:** `allOf` of exactly two members, the first a `$ref`, the second an
-  inline object whose properties are a subset of `{_links, _templates, _embedded}`. Unwraps to the
-  `$ref` target.
-- **Shape 2 — collection:** a plain object with a `_links` property and exactly one
-  `_embedded.<name>: array[$ref]`-shaped property. Unwraps to the array item's payload type (composed
-  through a nested Shape 1, if the item is itself an envelope), as `List<T>` or — when the operation
-  declares `x-spring-paginated: true` — `Page<T>`.
-
-This means **the generator needs no separate `application/json` sibling to resolve the payload
-type** — it reads the HAL envelope schema directly. Still declare one anyway wherever the response is
-genuinely served as plain JSON to some caller (most Klabis responses are), since that is a real
-content-negotiation option, not a codegen workaround; see "Bodyless success responses" above for why
-a bare `{}` entry still matters for `produces`. The single codegen-only bundle
-(`bundleSpecForCodegen` / `bundle.mjs --strip-hal`) this used to require no longer exists — backend
-codegen reads `docs/openapi/klabis-full.json` directly, the exact same bundle the frontend consumes.
-
-| response shape | `application/json` schema (optional, real content negotiation) | generated Java |
-|---|---|---|
-| single resource (`EntityModelFooResponse`) | `$ref: FooResponse` | `FooResponse` |
-| collection (`CollectionModelEntityModelFooDto`) | `type: array, items: $ref FooDto` | `List<FooDto>` |
-| paged (`PagedModelEntityModelFooResponse`) | named array schema, e.g. `FooResponseList` | `Page<FooResponse>` |
-
-Pagination is read from `x-spring-paginated: true` on the **operation**, independent of which content
-type resolves the payload — an operation serving only `application/json` still gets `Page<T>`, and a
-paginated operation's `application/json` sibling (even a bare array with no `page`/`_links`) still
-resolves to `Page<T>`, never `List<T>`.
-
-### `mappings` is now only for hand-written overrides the generator cannot derive from spec structure
-
-Envelope→payload redirection needs **zero** `mappings`/`extraImportMappings` entries — the structural
-detection above handles every `EntityModel*`/`PagedModel*`/`CollectionModel*` schema in the spec, by
-shape, with no naming convention to follow. A `mappings` entry in `openApiModule(...)` is only for a
-case the generator genuinely cannot infer from the spec alone:
-
-- **A nested Java class.** `PaymentRuleResponse` → `MembershipFeeTierResponse.PaymentRuleResponse` —
-  the schema name matches a top-level class name that isn't the one actually used.
-- **A domain enum redirect.** `Authority` → `com.klabis.common.users.Authority` — without the
-  mapping the generator synthesizes its own duplicate enum class instead of reusing the domain one.
-- **A cross-module application type.** `BulkSyncResult` → `com.klabis.events.application.BulkSyncResult`
-  — the target package differs from the module's own `restapi` package.
-- **A marker type with no payload of its own.** `EntityModelRootModel` → `common.ui.RootModel`,
-  `EntityModelDashboardModel` → `common.ui.DashboardModel` — shaped as
-  `{type: object, properties: {_links}}` (no `allOf`, no `_embedded`), which
-  `HalEnvelopeDetector` **deliberately does not match** — see "Payload and envelope are separate
-  schemas" below for why these two are legitimately envelope-only.
-- **The `java.lang.Object` fallback.** `SuspensionBlockedWarning` → `java.lang.Object` — a
-  discriminator-less `oneOf` union with no single Java type to stand for it. `KlabisSpringCodegen`
-  suppresses the resulting (illegal) `@Schema(implementation = java.lang.Object.class)` doc block the
-  same way it suppresses one for `Page<T>`.
-
-**`type: array` — named or inline — always generates `List<T>` directly, with no wrapper class and
-no mapping needed**, confirmed by generating with the actual pinned generator version (7.18.0):
-see `docs/technicalAnalysis/openapi-generator-list-types.md`.
-
-**A controller returning `Collection<T>` for a non-paginated list should be migrated to `List<T>`
-instead of kept mapped.** There is no generator-native way to produce `Collection<T>` from an array
-schema (only `List<T>`, always), so the choice is between a `schemaMappings` entry that exists purely
-to preserve an incidental `Collection<T>` signature, or changing the controller's declared return type
-to `List<T>` — prefer the latter. The underlying value is normally already a `List` (`.stream()...
-.toList()`), so this is usually a one-line signature change, not a behavior change;
-`HalResponseBodyAdvice.wrapCollection` branches on `instanceof Collection<?>`, which `List` satisfies
-identically. `event-types`' `EventTypeController.listEventTypes` is the reference example.
-
-**`List` still cannot be a `schemaMappings` target.** It remains a reserved container name in the
-generator's type system, dropped *silently*, producing `ResponseEntity<>` with no diagnostic — this
-is a non-issue now that array schemas are left unmapped rather than redirected onto anything, but
-worth knowing if a future case seems to need remapping a `List<T>` response onto something else.
-
-**`models` still needs every payload schema listed explicitly, per module.** Structural envelope
-unwrapping is unrelated to *discovery* — a proposal to have the generator discover a module's schemas
-by tag reachability was investigated and withdrawn (design.md Decision 5: the generator exposes no
-hook for it; model filtering lives entirely in `DefaultGenerator`, outside any `CodegenConfig`
-override point). Adding a new request/response DTO to an already-migrated module still means adding
-its schema name to that module's `models` list in `openApiModule(...)`, exactly as before.
-
-#### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not an `application/json` sibling
-
-`haltypes.mjs` builds each `*Resource` type by picking a schema out of the response's `content` map.
-Because the bundler alphabetizes content-type keys, `"application/json"` always sorts ahead of
-`"application/prs.hal-forms+json"` — so without an explicit preference, declaring both content types
-would silently retype `*Resource` off the *bare* payload/array instead of the envelope, dropping
-`_embedded`/`page` from the generated type even though the wire response still has them.
-`haltypes.mjs` explicitly prefers `application/prs.hal-forms+json`/`application/hal+json` over any
-other content type (falling back only if neither is present) — this is handled centrally, so nothing
-extra is required per-endpoint. But if a `*Resource` type ever looks wrong, this is the first thing
-to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content ordering (ordering in
-the YAML doesn't survive bundling anyway — keys are re-sorted).
-
-#### A response already declaring more than one HAL-ish content type may reject a third
-
-Adding `application/json` to a response that already lists **two** content types pointing at the same
-schema (`application/hal+json` *and* `application/prs.hal-forms+json` — the `common` module's
-`rootNavigation`/`dashboard` are the only endpoints in the spec that do this) can make the generator's
-return-type resolution give up and collapse the method to `ResponseEntity<Void>`, silently breaking
-the controller's `@Override`. Confirmed empirically (generating with two vs. three content types on
-the same schema) — there's no known clean fix, so **skip the `application/json` sibling** for a
-response in this situation and leave a comment explaining why, the same way `common.yaml` does for
-`rootNavigation`/`dashboard`. This is rare: it only arises for a marker-type response with no real
-payload of its own, which is the same shape that makes the sibling low-value anyway.
-
-#### A test without an explicit `Accept` header may start asserting against the wrong content type
-
-Content negotiation for a response now has a plain `application/json` option alongside HAL-FORMS. A
-`MockMvc` test asserting `$._links...`/`$._templates...` that omits `.accept(...)` can start resolving
-to the bare payload instead, failing those assertions even though the endpoint still serves HAL-FORMS
-correctly to the real frontend (which always sends `Accept: application/prs.hal-forms+json`). Fix by
-adding the header explicitly:
-
-```java
-mockMvc.perform(get("/api/users/{id}/permissions", id).accept(MediaTypes.HAL_FORMS_JSON))
-    .andExpect(jsonPath("$._links.self.href").exists());
-```
-
-Same root cause as "Bodyless success responses" above (a test without `.accept(...)` "passes either
-way" until the set of producible media types changes) — check for this whenever migrating a module
-whose controller tests assert on `_links`/`_templates`.
-
-### A payload schema's name is wire contract
-
-Spring HATEOAS derives the `_embedded` key of a collection from the **payload class name** at
-runtime, and that class name comes from the schema name in the spec:
-
-```
-schema EventTypeDto  ->  record EventTypeDto  ->  "_embedded": { "eventTypeDtoList": [...] }
-```
-
-So renaming a payload schema renames a JSON key that clients read literally — a breaking change, not
-a rename. The envelope schema must spell the same key:
-
-```yaml
-CollectionModelEntityModelEventTypeDto:
-  type: object
-  properties:
-    _embedded:
-      type: object
-      properties:
-        eventTypeDtoList:          # <camelCase payload class name> + "List"
-          type: array
-          items:
-            $ref: '#/components/schemas/EntityModelEventTypeDto'
-```
-
-**`@Relation` overrides that default.** The class-name rule above only holds when the payload class
-carries no `@Relation`. When it does, the annotation wins and the spec must spell the annotation's
-value:
-
-```java
-@Relation(collectionRelation = "transactions", itemRelation = "transaction")
-public record TransactionResource(...) { }
-```
-```yaml
-_embedded:
-  type: object
-  properties:
-    transactions:              # from @Relation, NOT "transactionResourceList"
-```
-
-So before writing an envelope, grep the payload class for `@Relation` rather than deriving the key
-from its name. Applying the default to a class that overrides it produces a key no response ever
-contains, and — per the second guard below — nothing reports it.
-
-Two guards, both worth knowing because each fails at a different moment:
-
-- **`halTypes.ts` indexes into `klabisApi.d.ts`** by schema name
-  (`components['schemas']['EntityModelEventTypeDto']`). A name that does not exist there is a `tsc`
-  error — loud, immediate. Since the bundler owns `klabis-full.json`, that name comes from the spec,
-  so the fix is to correct the schema name there and regenerate — never to edit `klabisApi.d.ts`.
-- **The `_embedded` key is not checked by anything.** Getting it wrong in the envelope produces
-  frontend types naming a property no response ever contains: `undefined` at runtime, an empty list
-  in the UI, no error anywhere.
-
-If a rename looks harmless because the tests stayed green, check whether a test was edited in the
-same change. Adjusting a `$._embedded.*List` JSON path *is* the breakage surfacing — not the fix.
-
-## `x-hal-*` — hypermedia
-
-On the **response object**, not on the schema — links describe the representation, not the payload.
-
-```yaml
-responses:
-  '200':
-    content:
-      application/prs.hal-forms+json:
-        schema: { $ref: '#/components/schemas/EntityModelMemberDetailsResponse' }
-    x-hal-links:
-      self: { description: This member }
-      collection: { operation: listMembers, description: Back to the member list }
-      permissions: { description: 'Requires MEMBERS:PERMISSIONS' }
-    x-hal-templates:
-      default: { operation: updateMember }
-      suspend: { operation: suspendMember, description: Present only while the member is active }
-```
-
-Reference operations by `operation: <operationId>` — never `operationRef` with escaped slashes.
-The bundler validates that the target exists.
-
-### What the frontend gets from them
-
-`npm run openapi` generates `frontend/src/api/halTypes.ts` from these declarations — per operation a
-`*Rels` constant, a `*Hal` interface and a `*Resource` type intersecting the payload schema:
-
-```ts
-import {GetMemberRels} from '@/api/halTypes';
-GetMemberRels.links[0]        // 'account' — typed, not a bare string literal
-```
-
-Use those constants instead of string literals so renaming a relation in the spec breaks the build
-rather than silently breaking at runtime.
-
-**Consume the generated values, don't retype them.** A local map of the same string literals typed
-as `Record<..., GetMemberLinkRel>` looks safe but is not: it only asserts that each value is *some*
-valid rel, so renaming one in the spec still type-checks. Index into `GetMemberRels.links` (an
-`as const` tuple) or type the response with `GetMemberHal`.
-
-Worth verifying whenever you wire up a new page: rename a rel in `halTypes.ts` by hand, confirm
-`npx tsc --noEmit -p tsconfig.app.json` fails, then regenerate.
-
-`frontend/src/api/types.ts` stays hand-written: it describes the HAL-FORMS **media type**
-(`Link`, `HalResponse`, `HalFormsTemplate`, …), which is defined by the standard, not by Klabis.
-
-### These describe the MAXIMAL variant
-
-`klabisLinkTo` returns `Optional` and `klabisAfford` returns an empty list when the caller lacks
-authorization, so **any link or template may be absent at runtime** and the same endpoint returns
-different `_links`/`_templates` per user.
-
-Consequences:
-
-- Generated TS types make every rel optional. The value is the union of rel names, not a presence
-  guarantee.
-- Conditions — authorization, entity state — are **not expressible** in `x-hal-*`. Put them in
-  `description` and in the OpenSpec design.md prose.
-- Never write a spec implying a link is always present.
-
-### Linking to an operation that does not exist in the spec yet
-
-`operation:` is validated against the bundled `operationId`s, so a link pointing at an operation the
-spec does not (yet) declare fails the bundle:
-
-```
-/paths/.../x-hal-links/event: operation "getEvent" does not match any operationId
-```
-
-`operation` is optional — a descriptor carrying only `description` validates. Document the link now,
-leave a note, and attach `operation:` when the target module lands. Do not delete the rel (the link
-exists at runtime and the frontend types should know about it), and do not relax the validator.
-
-The spec moves first.
-
-1. Edit `docs/openapi/spec/<module>.yaml`
-2. `./gradlew compileJava` — regenerates `docs/openapi/klabis-full.json` (via `openapiBundle`, which
-   every `openApiGenerate<Module>` task now depends on directly) and then the DTOs/`*Api`, failing on
-   whatever no longer matches. This is the real check — a plain `./gradlew openapiBundle` only
-   validates the spec syntactically; it does not run the Java generator.
-3. Fix the controller against the regenerated interface
-4. `cd frontend && npm run openapi`
-5. `npx tsc --noEmit -p tsconfig.app.json` — catches schema-name mismatches in `halTypes.ts`
-
-`./gradlew openapiBundle` validates extensions and refs without generating anything; useful for a
-fast syntax check, but passing it does not mean the code compiles.
-
-If step 3 shows the spec is wrong, go back to step 1. **Never adjust the spec to match existing Java
-just to silence a mismatch** — that reintroduces code-first through the back door. The exception is a
-genuine spec bug, which is a spec change like any other.
-
-## Registering a module for codegen
-
-Writing the YAML generates nothing on its own. Each module gets its own codegen task, registered with
-`openApiModule(...)` in `backend/build.gradle.kts`:
-
-```kotlin
-openApiModule(
-    module = "members",                                       // -> build/generated/openapi/members
-    pkg = "com.klabis.members.infrastructure.restapi",         // same package as the controller
-    apis = listOf("Members", "Registration"),                  // OpenAPI tags
-    models = listOf("MemberDetailsResponse", /* ... */),
-    mappings = mapOf(
-        // listMembers' PagedModelEntityModelMemberSummaryResponse envelope and its
-        // MemberSummaryResponseList application/json sibling both resolve to
-        // Page<MemberSummaryResponse> structurally — no mapping needed (see "HAL envelopes are
-        // unwrapped structurally" above). suspendMember's 409 body has no single Java type
-        // (a discriminator-less oneOf) — Object is the honest hand-written fallback.
-        "SuspensionBlockedWarning" to "java.lang.Object"
-    ),
-    generator = "klabis-spring"
-)
-```
-
-A module with no hand-written overrides needs no `mappings` at all — `event-types` and `calendar` are
-`mappings = mapOf()` end to end. `models` must still list every payload schema explicitly either way.
-
-One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
-`schemaMappings` is global per task, so a single task could never let two modules each define their
-own `AddressRequest`.
-
-`pkg` must be the package the hand-written controller already lives in — cross-module link processors
-reach these types through Modulith named interfaces.
-
-**`apis` must list the tags explicitly.** The underlying `apis` global property generates *every*
-tag when given an empty string, which would emit every other module's `*Api.java` into this module's
-package. Forgetting a tag is safe by comparison: the interface is simply not generated and
-`implements XApi` fails to compile.
-
-**Tags must be single words.** A tag containing a space (`Calendar Feed Token`, `Event
-Registrations`, `My Profile`) is silently dropped: the build succeeds, no warning is printed, and the
-interface simply never appears. Watch for a trailing space too — `"Members "` is not `"Members"`.
-Existing controllers carry several multi-word `@Tag` names, so when migrating one, give the spec a
-single-word tag (`IcalToken`, not `Calendar Feed Token`) and use that same string in `apis`. The tag
-is spec-side only, so renaming it changes neither the wire nor `klabis-full.json`, which takes its
-tags from `@Tag` on the controller.
-
-**The generator never deletes.** It only writes, so a schema you rename or drop leaves its old record
-behind in `build/generated/openapi/<module>/`— and since that directory is on `sourceSets.main`, the
-ghost keeps compiling. Local builds stay green while a clean CI build fails. `openApiModule` handles
-this with `doFirst { delete(outputDir) }`; keep it when touching that function.
-
-## Adding a module
-
-Every existing module is already spec-first; this is the recipe for a genuinely new one, and the
-reference for how the existing ones are put together.
-
-1. `./gradlew generateOpenApiDocs` then read `docs/openapi/generated/klabis-codefirst.json` — only
-   useful if the endpoints already exist in Java; for a new module, skip to step 3
-2. That dump is the ground truth for parameters, request bodies and status codes
-3. Write `<module>.yaml`; add one `$ref` per path to `klabis.yaml`. Name payload schemas after the
-   existing Java DTO classes — see "A payload schema's name is wire contract"
-4. Add `x-hal-links` / `x-hal-templates` by reading the controller's postprocessors and
-   `RepresentationModelProcessor` implementations — springdoc cannot see them, so the drift check
-   will not catch a missing one
-5. Transcribe each `@HasAuthority` off the controller into `x-klabis-authority` on the matching
-   operation, then delete it from the controller. Compare the generated `*Api` interface against the
-   controller as it was — an authority that silently changes or disappears here is not something the
-   tests will necessarily catch
-   Authorization is not always an annotation. A controller may enforce it **imperatively** — a
-   private `checkXxxAccess()` throwing `AccessDeniedException`, typically "owner OR MANAGE
-   authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair; move it into the
-   spec and delete the helper. A helper that permits *only* the caller themselves, with no authority
-   alternative, is `x-klabis-owner-visible` on its own — declaring it alone does not widen access
-   (see that extension's section). Read each method body before concluding an endpoint is
-   unprotected, because an imperative check is invisible both to reflection and to the drift check.
-6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
-7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the
-   domain objects with `HalResponseContext` (below).
-   **Strip the path from the class-level `@RequestMapping`.** Generated interface methods carry the
-   full absolute path, so a controller that still declares `@RequestMapping(value = "/api/foo")`
-   makes Spring concatenate the two into `/api/foo/api/foo` and every endpoint 404s. Keep the
-   annotation for `produces` only: `@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)`,
-   as `MemberAccountController` and `EventTypeController` do.
-8. Re-run the drift check until the module reports `mismatched: 0`
-9. `cd frontend && npm run openapi`, then `npx tsc --noEmit -p tsconfig.app.json`
-
-### Returning plain payloads
-
-A generated interface method returns the payload, not a `RepresentationModel`. The controller stores
-the domain object(s) in `HalResponseContext`; `HalResponseBodyAdvice` picks them back up, builds the
-`EntityModel`/`PagedModel`/`CollectionModel`, and runs the existing postprocessors:
-
-```java
-HalResponseContext.setDomain(eventType);          // single
-HalResponseContext.setDomainList(eventTypes);     // collection or page — paired 1:1 by index
-```
-
-Links and affordances that belonged to the **collection itself** cannot be built in the method any
-more (there is no model to add them to). They move into a
-`RepresentationModelProcessor<CollectionModel<EntityModel<T>>>`; the advice contributes the self
-link, the processor contributes affordances via `klabisAfford*` so they stay authorization-sensitive.
-
-Controllers that still build their own models are untouched — without an entry in
-`HalResponseContext` the advice passes the body through unchanged.
-
-### Request bodies bound to domain types
-
-Some controllers deserialize straight into a domain command
-(`@RequestBody EventType.CreateEventType`). That violates "DTOs carry wire types" and cannot survive
-migration: generate a `CreateFooRequest` DTO from the spec and add a mapper to the domain command.
-Keep the domain record — the domain and its service still use it, it just stops being the
-deserialization target.
-
-**The drift check compares schemas by name, not by content.** Two schemas called
-`RegisterMemberRequest` match even when their properties differ wildly. After the check goes green,
-diff the module's schemas property-by-property against `klabis-codefirst.json` — that is where
-transcription mistakes actually surface.
-
-Expect the springdoc output to be wrong in places — it does not know about `@JsonValue` mixins, and
-it introspects Java types rather than the wire, so a wrapper like `JsonNullable<T>` can surface as an
-object with the wrapper's own fields rather than as the value it serializes to. Where it disagrees
-with the actual wire format, the spec follows the **wire**, and the discrepancy is documented in the
-spec rather than mirrored.
-
-### A newly annotated method can fail a link/affordance unit test
-
-Moving authorization into the spec makes it **discoverable by reflection** for the first time. That
-can break a passing unit test without any behaviour changing, and the failure looks alarming — a HAL
-link silently disappears.
-
-The cause is in `HalFormsSupport`: every `klabisLinkTo` / `klabisAfford*` guard reads
-`INSTANCE != null && !INSTANCE.isMethodAuthorized(...)`. `INSTANCE` is a static set by
-`@PostConstruct`, so in a plain unit test with no Spring context it is null and **authorization is
-skipped entirely**. Such a test passes without ever exercising the check. Once the target method
-carries `@HasAuthority` / `@OwnerVisible`, a leftover `INSTANCE` from another test class's context in
-the same fork activates the real check — and `isMethodAuthorized` returns `false` unless an
-`OwnershipResolver` is actually available, since the ownership branch falls through to `return false`
-when `ownershipResolverProvider.getIfAvailable()` is null.
-
-Symptom: the test passes standalone and fails when run after any `@SpringBootTest` in the same fork.
-
-Fix the test, not the assertion — and verify the production behaviour separately (the module's
-MockMvc controller test with `@WithKlabisMockUser` is the real evidence, since it exercises genuine
-authentication). Either wire a real `OwnershipResolver` into a `HalFormsSupport` and set `INSTANCE`
-for the test's duration (`AccountRootLinkProcessorTest` and `AccountMemberDetailLinkProcessorTest`
-do this, and must restore the previous value afterwards or they leak the same problem onward), or use
-the `@WebMvcTest` + `@Import(HalFormsSupport.class)` + `@WithKlabisMockUser` slice that
-`AffordanceAuthorizationTest` uses. Give the resolver the real UUID-comparison semantics; one that
-returns `true` unconditionally makes the test assert nothing.
+## Why the controllers carry no springdoc annotations
+
+`documentationProvider = "springdoc"` makes the generator emit `@Operation` / `@ApiResponse` /
+`@Parameter` onto the `*Api` interface, straight from the spec. Springdoc reads annotations off the
+concrete class and Java does not inherit method annotations from an interface — but the controller
+`@Override`s a method whose *declaration* carries them, and springdoc resolves that. So
+`/v3/api-docs` is spec-derived too, and a hand-written duplicate on a controller is pure drift
+surface.
+
+The generated set is strictly richer than what the controllers used to hold: it also carries
+`security`, `tags`, every error response with its description and `@Content` schema, and
+`@Parameter(hidden = true)` on the `x-spring-provide-args` arguments. Measured over the whole app
+when the 26 controllers were stripped: operations 117 → 117 (none lost), summaries 82 → 117,
+descriptions 51 → 111, parameter descriptions 95 → 133.
+
+**The catch is a generic return type in `@Schema(implementation = ...)`.** `documentationProvider`
+renders each response's baseType into `@Schema(implementation = <baseType>.class)`, and a paginated
+response's real type is `Page<X>` — not legal Java there (JLS 15.8.2: a class literal takes a raw
+type). Same problem for a `schemaMappings` target of `java.lang.Object` (springdoc would render it as
+`"type": "string"`, worse than nothing). `KlabisSpringCodegen.fromResponse()` (`buildSrc/`) handles
+both by leaving that response's `baseType` unset, so `api.mustache`'s `{{#baseType}}...{{/baseType}}`
+never opens the `content = {...}` block for it — no post-process patch needed.
+
+The exceptions are the 7 files with no generated counterpart, which legitimately keep their
+annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
+`GroupsExceptionHandler`, the hand-written `MemberOptionResponse`/`MemberSummaryResponse`, and
+`@Hidden` on `ActingUser`/`ActingMember`.
 
 ## Anti-patterns
 
