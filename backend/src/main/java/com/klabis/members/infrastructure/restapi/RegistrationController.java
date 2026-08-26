@@ -5,6 +5,7 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Member;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,11 +28,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class RegistrationController implements RegistrationApi {
 
     private final RegistrationPort registrationService;
-    private final MemberMapper memberMapper;
+    private final ConversionService conversionService;
 
-    public RegistrationController(RegistrationPort registrationService, MemberMapper memberMapper) {
+    public RegistrationController(RegistrationPort registrationService, ConversionService conversionService) {
         this.registrationService = registrationService;
-        this.memberMapper = memberMapper;
+        this.conversionService = conversionService;
     }
 
     /**
@@ -48,7 +49,8 @@ class RegistrationController implements RegistrationApi {
             RegisterMemberRequest request,
             @ActingUser UserId currentUserId) {
 
-        RegistrationPort.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
+        RegistrationPort.RegisterNewMember serviceCommand = conversionService.convert(
+                new RegisterMemberRequestWithParameters(request, currentUserId), RegistrationPort.RegisterNewMember.class);
         Member member = registrationService.registerMember(serviceCommand);
 
         ResponseEntity.BodyBuilder response = ResponseEntity

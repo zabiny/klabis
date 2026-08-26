@@ -43,6 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Birth Number Audit – Controller Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
 @Import({MemberMapperImpl.class})
+// MemberSummaryConverter/MemberDetailsConverter/DeactivationReasonConverter (Converter beans) are
+// auto-discovered by WebMvcTypeExcludeFilter; MemberMapperImpl is imported because they use it
+// (uses = MemberMapper.class) and a plain @Mapper interface is not auto-discovered by @WebMvcTest.
 @WithPostprocessors
 class BirthNumberAuditControllerTest {
 

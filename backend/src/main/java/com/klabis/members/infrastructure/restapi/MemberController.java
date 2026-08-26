@@ -19,6 +19,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -47,15 +48,15 @@ public class MemberController implements MembersApi {
 
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
-    private final MemberMapper memberMapper;
+    private final ConversionService conversionService;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
-            MemberMapper memberMapper) {
+            ConversionService conversionService) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
-        this.memberMapper = memberMapper;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -97,7 +98,7 @@ public class MemberController implements MembersApi {
 
         var command = new Member.SuspendMembership(
                 currentUserId,
-                memberMapper.deactivationReasonToDomain(request.reason()),
+                conversionService.convert(request.reason(), com.klabis.members.domain.DeactivationReason.class),
                 request.note()
         );
 
@@ -135,7 +136,7 @@ public class MemberController implements MembersApi {
 
         HalResponseContext.setDomainList(memberPage.getContent());
 
-        return ResponseEntity.ok(memberPage.map(memberMapper::toSummaryResponse));
+        return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
     }
 
     private MemberFilter buildFilter(String q, String status, CurrentUserData currentUser) {
@@ -191,7 +192,7 @@ public class MemberController implements MembersApi {
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
         HalResponseContext.setDomain(member);
-        return ResponseEntity.ok(memberMapper.toDetailsResponse(member));
+        return ResponseEntity.ok(conversionService.convert(member, MemberDetailsResponse.class));
     }
 
 }

@@ -22,17 +22,17 @@
 
 ## 4. Slice: MemberMapper -> ConversionService
 
-- [ ] 4.1 Add `RegisterMemberRequestWithParameters(RegisterMemberRequest request, UserId registeredBy)` record in `members.infrastructure.restapi`
-- [ ] 4.2 Create `Converter<Member, MemberSummaryResponse>`, `Converter<Member, MemberDetailsResponse>`, `Converter<DeactivationReasonDto, DeactivationReason>`, `Converter<RegisterMemberRequestWithParameters, RegistrationPort.RegisterNewMember>` beans
-- [ ] 4.3 Move/keep `guardianToResponse` and `createPersonalInformation` as internal helpers reachable from the new converters (either as `default` methods on `MemberMapper` referenced via `uses`, or inlined into the relevant converter — pick whichever keeps `MemberMapper` as a coherent internal-only mapper)
-- [ ] 4.4 Update `MemberController` to inject `ConversionService` instead of `MemberMapper`; replace all 3 call sites (`deactivationReasonToDomain`, `toSummaryResponse` via `Page.map`, `toDetailsResponse`)
-- [ ] 4.5 Update `RegistrationController` to inject `ConversionService` instead of `MemberMapper`; replace `toRegisterNewMemberCommand(request, registeredBy)` call with `conversionService.convert(new RegisterMemberRequestWithParameters(request, registeredBy), RegistrationPort.RegisterNewMember.class)`
-- [ ] 4.6 Update/remove obsolete test-side `MemberMapper` wiring found in 1.1 (including `BirthNumberAuditControllerTest`'s `@Import({MemberMapperImpl.class})` pattern)
-- [ ] 4.7 Run `MemberMappingTests`, `UpdateMemberApiTest`, and other affected `@WebMvcTest`s — confirm behavior unchanged
+- [x] 4.1 Add `RegisterMemberRequestWithParameters(RegisterMemberRequest request, UserId registeredBy)` record in `members.infrastructure.restapi`
+- [x] 4.2 Create `Converter<Member, MemberSummaryResponse>`, `Converter<Member, MemberDetailsResponse>`, `Converter<DeactivationReasonDto, DeactivationReason>`, `Converter<RegisterMemberRequestWithParameters, RegistrationPort.RegisterNewMember>` beans
+- [x] 4.3 Move/keep `guardianToResponse` and `createPersonalInformation` as internal helpers reachable from the new converters (either as `default` methods on `MemberMapper` referenced via `uses`, or inlined into the relevant converter — pick whichever keeps `MemberMapper` as a coherent internal-only mapper)
+- [x] 4.4 Update `MemberController` to inject `ConversionService` instead of `MemberMapper`; replace all 3 call sites (`deactivationReasonToDomain`, `toSummaryResponse` via `Page.map`, `toDetailsResponse`)
+- [x] 4.5 Update `RegistrationController` to inject `ConversionService` instead of `MemberMapper`; replace `toRegisterNewMemberCommand(request, registeredBy)` call with `conversionService.convert(new RegisterMemberRequestWithParameters(request, registeredBy), RegistrationPort.RegisterNewMember.class)`
+- [x] 4.6 Update/remove obsolete test-side `MemberMapper` wiring found in 1.1 (including `BirthNumberAuditControllerTest`'s `@Import({MemberMapperImpl.class})` pattern)
+- [x] 4.7 Run `MemberMappingTests`, `UpdateMemberApiTest`, and other affected `@WebMvcTest`s — confirm behavior unchanged
 
 ## 5. Verification and documentation
 
-- [ ] 5.1 Run full backend test suite via test-runner skill — confirm no regressions
+- [x] 5.1 Run full backend test suite via test-runner skill — confirm no regressions
 - [ ] 5.2 Update `backend-patterns` skill to document the `Converter<S,T>` + `ConversionService` pattern as the standard way to expose MapStruct mapper conversions to external callers (superseding direct mapper injection)
 - [ ] 5.3 Code review (backend-developer/code-reviewer agent) before committing
 - [ ] 5.4 Commit per-slice (sections 2, 3, 4 each as their own commit) plus a final commit for section 5

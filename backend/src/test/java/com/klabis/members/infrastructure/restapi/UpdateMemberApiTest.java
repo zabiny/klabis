@@ -77,9 +77,6 @@ class UpdateMemberApiTest {
     private MemberRepository memberRepository;
 
     @MockitoBean
-    private MemberMapper memberMapper;
-
-    @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
 
     private final UUID testMemberId = UUID.randomUUID();
