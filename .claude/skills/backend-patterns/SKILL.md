@@ -502,23 +502,6 @@ interface BulkSyncResultConverter extends Converter<com.klabis.events.applicatio
 }
 ```
 
-#### Pitfall: don't let `@SpringMapperConfig` generate a cross-mapper `ConversionServiceAdapter`
-
-`mapstruct-spring-extensions`' `@SpringMapperConfig(conversionServiceAdapterPackage = ..., conversionServiceAdapterClassName = ...)` generates one aggregator class (e.g. `KlabisConversionServiceAdapter`) that collects **every** `Converter`'s source/target types as static fields/methods in a single package — meant to support cross-mapper composition (`uses = ConversionServiceAdapter.class`). This codebase's `Converter` + `ConversionService` pattern never needs that composition (every conversion is looked up by the caller directly via `ConversionService`), so the adapter has zero consumers — but it still gets generated, and it is actively harmful: the moment *any* `Converter`'s source or target type is a Spring-Modulith-module-private `.domain` type (e.g. `members.domain.Member`, which has no `package-info.java`/`@NamedInterface` exposing it), the generated adapter class — sitting in the shared `common.mapping` package — makes the `common` module illegally depend on that module's internals, failing `ModuleStructureVerificationTest`.
-
-**Fix:** `MapstructSpringMapperConfig` (`common.mapping`) stays a plain `@MapperConfig`, with no `@SpringMapperConfig` annotation:
-
-```java
-@MapperConfig(
-        componentModel = "spring",
-        injectionStrategy = InjectionStrategy.CONSTRUCTOR
-)
-public interface MapstructSpringMapperConfig {
-}
-```
-
-Only add `@SpringMapperConfig` back if a genuine cross-mapper `uses = ConversionServiceAdapter.class` composition is introduced later — and even then, keep any `Converter` touching a module-private `.domain` type out of that composition, or expose the type via a named interface first.
-
 ## JDBC Persistence Layer (Memento Pattern)
 
 ### Memento Class
