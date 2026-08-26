@@ -2,6 +2,7 @@ package com.klabis.common.mapping;
 
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.MapperConfig;
+import org.mapstruct.extensions.spring.SpringMapperConfig;
 
 /**
  * Shared MapStruct config for all Spring-managed mappers: componentModel = "spring" with
@@ -16,6 +17,10 @@ import org.mapstruct.MapperConfig;
 @MapperConfig(
         componentModel = "spring",
         injectionStrategy = InjectionStrategy.CONSTRUCTOR
+)
+@SpringMapperConfig(
+        conversionServiceAdapterPackage = "com.klabis.mapstruct",
+        conversionServiceAdapterClassName = "KlabisConversionServiceAdapter"
 )
 public interface MapstructSpringMapperConfig {
 }
