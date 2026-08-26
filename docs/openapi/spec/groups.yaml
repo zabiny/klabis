@@ -1325,6 +1325,8 @@ components:
 
     FamilyGroupSummaryResponse:
       type: object
+      x-klabis-relation:
+        collectionRelation: familyGroupSummaryResponseList
       properties:
         id:
           type: string
@@ -1371,30 +1373,36 @@ components:
 
     EntityModelParentResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
+        - $ref: '#/components/schemas/ParentResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
 
+    ParentResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
     EntityModelFamilyGroupMembershipResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
-            joinedAt:
-              type: string
-              format: date-time
+        - $ref: '#/components/schemas/FamilyGroupMembershipResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    FamilyGroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time
 
     # === Groups (FreeGroup) ======================================================================
 
@@ -1467,6 +1475,8 @@ components:
 
     GroupSummaryResponse:
       type: object
+      x-klabis-relation:
+        collectionRelation: groupSummaryResponseList
       properties:
         id:
           type: string
@@ -1512,30 +1522,36 @@ components:
 
     EntityModelOwnerResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
+        - $ref: '#/components/schemas/OwnerResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
 
+    OwnerResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
     EntityModelFreeGroupMembershipResponse:
       allOf:
-        - type: object
-          properties:
-            memberId:
-              type: string
-              format: uuid
-            joinedAt:
-              type: string
-              format: date-time
+        - $ref: '#/components/schemas/FreeGroupMembershipResponse'
         - type: object
           properties:
             _links:
               $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    FreeGroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time
 
     # PendingInvitationResponse embedded inside EntityModelGroupResponse.pendingInvitations (owner
     # view of a single group's own invitations — carries a "self" affordance for cancelInvitation on
@@ -1550,6 +1566,8 @@ components:
 
     PendingInvitationResponse:
       type: object
+      x-klabis-relation:
+        collectionRelation: pendingInvitationResponseList
       properties:
         groupId:
           type: string

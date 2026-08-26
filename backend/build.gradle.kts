@@ -468,7 +468,8 @@ openApiModule(
     apis = listOf("FamilyGroups"),
     models = listOf(
         "CreateFamilyGroupRequest",
-        "AddMemberRequest"
+        "AddMemberRequest",
+        "FamilyGroupSummaryResponse"
     ),
     mappings = emptyMap()
 )
@@ -484,7 +485,9 @@ openApiModule(
         "RenameGroupRequest",
         "AddOwnerRequest",
         "InviteMemberRequest",
-        "CancelInvitationRequest"
+        "CancelInvitationRequest",
+        "GroupSummaryResponse",
+        "PendingInvitationResponse"
     ),
     mappings = emptyMap()
 )

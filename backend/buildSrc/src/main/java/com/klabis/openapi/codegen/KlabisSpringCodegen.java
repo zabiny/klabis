@@ -8,6 +8,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.servers.Server;
 import org.openapitools.codegen.CodegenMediaType;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.languages.SpringCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
@@ -43,6 +44,11 @@ import java.util.Set;
  *     <li>{@link #getContent} — prevents an {@code import} of an envelope class from ever being
  *     added, by unwrapping each media type's schema before {@code super} walks the content map; a
  *     class the generator never produces would otherwise fail the build.</li>
+ *     <li>{@link #fromProperty} — Category C (design.md Decision 3): unwraps a model property whose
+ *     items are a Shape 1-item envelope ({@code array of $ref allOf[payload, {_links,...}]}) to a
+ *     bare {@code List<Payload>}, never {@code List<EntityModel<Payload>>} — the same rewrite
+ *     principle as {@link #handleMethodResponse}, just applied to a property's schema instead of an
+ *     operation's response schema.</li>
  * </ul>
  * Discovering which schemas/tags to generate at all ({@code models}/{@code apis} allow-lists) is
  * NOT something this class controls — that lives entirely in {@code DefaultGenerator}, outside any
@@ -166,6 +172,34 @@ public class KlabisSpringCodegen extends SpringCodegen {
             unwrapped.addMediaType(entry.getKey(), rewritten);
         }
         return super.getContent(unwrapped, imports, mediaTypeSchemaSuffix);
+    }
+
+    /**
+     * Category C (design.md Decision 3) — rewrites a model property shaped as
+     * {@code array of $ref to allOf[payload, {_links,...}]} (Shape 1-item, e.g.
+     * {@code FamilyGroupResponse.parents}/{@code GroupResponse.owners}) to a bare
+     * {@code array of $ref-to-payload} schema before delegating to {@code super}, so the resolved
+     * Java type is {@code List<Payload>} — never {@code List<EntityModel<Payload>>}. HAL
+     * {@code _links} per item stays a runtime concern of the existing
+     * {@code RepresentationModelProcessor}/{@code EntityModel.of(...)} call sites, untouched by this
+     * rewrite.
+     *
+     * <p>Mirrors {@link #handleMethodResponse}'s rewrite-then-delegate shape: this method never
+     * duplicates {@code DefaultCodegen}'s own property-resolution logic, it only substitutes the raw
+     * {@link Schema} {@code super} sees. {@link HalEnvelopeDetector#detectPropertyItemUnwrap} is the
+     * pure structural check (already unit-tested against the {@code EntityModelTrainerResponse}-style
+     * fixture in {@code HalEnvelopeDetectorPropertyItemTest}) — this override supplies the missing
+     * per-model call site {@code HalEnvelopeDetector} alone cannot reach.
+     */
+    @Override
+    public CodegenProperty fromProperty(String name, Schema p, boolean required, boolean schemaIsFromAdditionalProperties) {
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        Optional<EnvelopeUnwrap> unwrap = HalEnvelopeDetector.detectPropertyItemUnwrap(p, schemas);
+
+        Schema<?> effective = unwrap
+            .map(u -> (Schema<?>) new Schema<>().type("array").items(u.targetSchema()))
+            .orElse(p);
+        return super.fromProperty(name, effective, required, schemaIsFromAdditionalProperties);
     }
 
     /**

@@ -200,31 +200,59 @@
 
 ## 6. Category B+C — `groupsFamily`, `groupsFree` modules (named item schemas already exist)
 
-- [ ] 6.1 Add `x-klabis-relation` to `FamilyGroupSummaryResponse`
+- [x] 6.1 Add `x-klabis-relation` to `FamilyGroupSummaryResponse`
       (`collectionRelation: familyGroupSummaryResponseList`), `GroupSummaryResponse`
       (`collectionRelation: groupSummaryResponseList`), `PendingInvitationResponse`
       (`collectionRelation: pendingInvitationResponseList`) in `groups.yaml`.
-- [ ] 6.2 Add `FamilyGroupSummaryResponse`, `GroupSummaryResponse`, `PendingInvitationResponse` to
+- [x] 6.2 Add `FamilyGroupSummaryResponse`, `GroupSummaryResponse`, `PendingInvitationResponse` to
       their modules' `models` lists; generate, diff.
-- [ ] 6.2a Field-security check (design.md Decision 0): none of these three carry field-level
-      security annotations today — confirm that stays true in the generated form, then delete the
-      three hand-written classes.
-- [ ] 6.3 Implement Category C's property-level unwrap in `KlabisSpringCodegen` using the hook
-      confirmed in Phase 1; unit-test it against `FamilyGroupResponse.parents`/`.members` and
-      `GroupResponse.owners`/`.members`/`.pendingInvitations` fixtures (all already reference named
-      item schemas — `OwnerResponse`, `ParentResponse`, `FreeGroupMembershipResponse`,
-      `FamilyGroupMembershipResponse` — no spec promotion needed for this phase).
-- [ ] 6.4 Add `FamilyGroupResponse`, `ParentResponse`, `FamilyGroupMembershipResponse`,
-      `GroupResponse`, `OwnerResponse`, `FreeGroupMembershipResponse` to the two modules' `models`
-      lists; generate, diff each property's resolved type is `List<Payload>` (never
-      `List<EntityModel<Payload>>`).
-- [ ] 6.4a Field-security check (design.md Decision 0): none of these six carry field-level security
-      annotations today — confirm that stays true in the generated form.
-- [ ] 6.4b Delete the six hand-written classes — only after 6.4a passes; fix imports in
-      `FamilyGroupController`/`FreeGroupController`/`PendingInvitationsController` and their
-      postprocessors/model builders (`InvitationModelBuilder` stays — it still constructs
-      `EntityModel<PendingInvitationResponse>` at runtime, only the payload type is now generated).
-- [ ] 6.5 Run `groupsFamily`, `groupsFree` module tests via the test-runner agent.
+- [x] 6.2a Field-security check (design.md Decision 0): none of these three carry field-level
+      security annotations today — confirmed that stays true in the generated form, then deleted the
+      three hand-written classes. Call sites fixed (`FamilyGroupController.toSummaryResponse`,
+      `FreeGroupController.listGroups`, `PendingInvitationsController`, `InvitationModelBuilder`) —
+      domain ID types generate as raw `UUID` (`.uuid()`/`.value()` needed at call sites) and generated
+      record field order is alphabetized, not declaration order.
+
+- [ ] 6.3 **BLOCKED/DEFERRED** — Category C's property-level unwrap itself was implemented and
+      proven correct in isolation (`KlabisSpringCodegen.fromProperty` override + 3 passing unit tests
+      in `KlabisSpringCodegenFromPropertyTest`, mirroring `handleMethodResponse`'s rewrite-then-
+      delegate shape; full buildSrc suite 36/36 green). The four inline payload halves
+      (`ParentResponse`, `FamilyGroupMembershipResponse`, `OwnerResponse`,
+      `FreeGroupMembershipResponse`) were promoted to named schemas in `groups.yaml` as designed.
+      Generating `FamilyGroupResponse`/`GroupResponse` with these six models on the `models` list
+      confirms the codegen mechanism works exactly as specified: `parents`/`members`/`owners`/
+      `pendingInvitations` all resolve to `List<Payload>`, never `List<EntityModel<Payload>>`.
+      **However, wiring this into the actual module is blocked**: once the record's field type is
+      `List<Payload>`, `FamilyGroupController`/`FreeGroupController` can no longer compile, because
+      `EntityModel<T>` does not implement `T` (Java generics are invariant) — and building each item
+      as `EntityModel<X>` is not incidental, it is how the controller attaches conditionally-present
+      per-item `_links`/affordances (a "member" link, plus an owner/manager-conditional self+DELETE
+      affordance) that the frontend consumes directly. No existing runtime mechanism
+      (`HalResponseBodyAdvice`, `ModelWithDomainPostprocessor`, or any `RepresentationModelProcessor`
+      in the codebase) attaches per-item HAL links to a *nested* collection property inside another
+      DTO — every existing one only wraps a top-level `EntityModel`/`PagedModel`/`CollectionModel`
+      return value. A frontend investigation confirmed these per-item links/templates encode real
+      conditional authorization with no other representation today, so this is not dead weight to
+      drop — it needs a new architecture piece (e.g. a generic nested-collection-item-links
+      mechanism) that is out of scope for this change. Deferred to a separate design effort.
+      `fromProperty` implementation + its test are KEPT in buildSrc (harmless, proven-correct,
+      reusable once the new architecture lands) but NOT wired into any module's `models` list for
+      the root records.
+- [ ] 6.4 **DEFERRED** — see 6.3. Not attempted: adding `FamilyGroupResponse`, `ParentResponse`,
+      `FamilyGroupMembershipResponse`, `GroupResponse`, `OwnerResponse`,
+      `FreeGroupMembershipResponse` to the `models` lists is blocked on the same per-item-links gap.
+- [ ] 6.4a **DEFERRED** — see 6.3. Field-security check not performed since 6.4 was not attempted
+      (for the record: grepping the six hand-written classes shows none carry field-level security
+      annotations today, same as design.md predicted — this fact stands ready for whenever 6.4 is
+      unblocked).
+- [ ] 6.4b **DEFERRED** — see 6.3. The six hand-written classes stay in place.
+- [x] 6.5 Ran `groupsFamily`, `groupsFree` module tests via the test-runner skill against the
+      CURRENT (Category B only) checkpoint: 616/616 passed
+      (`FamilyGroupManagementServiceTest`, `FamilyGroupTest`, `FamilyGroupPersistenceTest`,
+      `FamilyGroupControllerTest`, `FamilyGroupsNavigationTest`, `FreeGroupManagementServiceTest`,
+      `FreeGroupTest`, `FreeGroupPersistenceTest`, `FreeGroupControllerTest`,
+      `MemberSuspendedEventIntegrationTest`, `MemberSuspendedListenerTest`). This is a safe, complete
+      checkpoint — Category B deletions are the only production-code change in scope.
 
 ## 7. Category B+C — `groupsTraining` module (needs inline-to-named schema promotion)
 

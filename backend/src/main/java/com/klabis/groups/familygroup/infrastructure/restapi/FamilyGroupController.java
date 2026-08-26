@@ -129,7 +129,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     private FamilyGroupSummaryResponse toSummaryResponse(FamilyGroup group) {
-        return new FamilyGroupSummaryResponse(group.getId(), group.getName(), group.getMembers().size());
+        return new FamilyGroupSummaryResponse(group.getId().uuid(), group.getMembers().size(), group.getName());
     }
 
     private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, boolean hasMembersManage) {

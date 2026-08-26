@@ -62,7 +62,7 @@ class FreeGroupController implements GroupsApi {
 
         HalResponseContext.setDomainList(groups);
         return ResponseEntity.ok(groups.stream()
-                .map(group -> new GroupSummaryResponse(group.getId(), group.getName()))
+                .map(group -> new GroupSummaryResponse(group.getId().uuid(), group.getName()))
                 .toList());
     }
 
