@@ -1,8 +1,8 @@
 ---
 name: backend-patterns
-description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), REST controllers with HATEOAS affordances (klabisLinkTo/klabisAfford), JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
+description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), spec-first REST controllers implementing generated *Api interfaces, HAL/HATEOAS wiring (HalResponseContext, ModelWithDomainPostprocessor, klabisLinkTo/klabisAfford), DTO↔domain mapping via ConversionService Converters, JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Klabis Backend Patterns
@@ -28,10 +28,12 @@ com.klabis.<module>/
 │   └── <Module>Configuration.java  # @Configuration for module beans (if needed)
 │
 ├── infrastructure/
-│   ├── restapi/               # REST controllers, DTOs, mappers
-│   │   ├── <Aggregate>Controller.java  # @RestController @PrimaryAdapter
-│   │   ├── <Aggregate>Mapper.java      # MapStruct @Mapper
-│   │   └── ...request/response records
+│   ├── restapi/               # REST controllers, converters, postprocessors
+│   │   ├── <Aggregate>Controller.java  # @RestController @PrimaryAdapter, implements <X>Api
+│   │   ├── <Dto>Converter.java         # MapStruct @Mapper extends Converter<S,T>
+│   │   └── ...postprocessors (often nested at the end of the controller file)
+│   │   # NOTE: the <X>Api interface and request/response DTOs are GENERATED from
+│   │   #       docs/openapi/spec/<module>.yaml — they are not in src/main/java
 │   │
 │   ├── jdbc/                  # Persistence
 │   │   ├── <Aggregate>RepositoryAdapter.java  # @SecondaryAdapter
@@ -194,53 +196,66 @@ public class DuplicateRegistrationException extends BusinessRuleViolationExcepti
 
 ## REST API Layer
 
-### Controller Annotations Stack
+### Spec-First: the Controller Implements a Generated `*Api` Interface
+
+The REST layer is **spec-first**. `docs/openapi/spec/*.yaml` is the source of truth; the build generates, per module, an `*Api` interface plus the request/response DTOs into `backend/build/generated/openapi/<module>/`. A controller's job is to `implements <X>Api` and supply method bodies — nothing else. 26 of 27 controllers follow this (`PwaDisabledController` is the lone exception: it serves no spec'd endpoint).
 
 ```java
 @PrimaryAdapter
 @RestController
-@RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Members", description = "...")
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @ExposesResourceFor(Member.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-class MemberController { ... }
-```
+public class MemberController implements MembersApi {
 
-### `@HasAuthority` Method/Class-Level Authorization
+    private final ManagementPort managementService;
+    private final ConversionService conversionService;
+    // constructor injection …
 
-`@HasAuthority(Authority.X)` is the type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for **single-authority global checks**. Use `@PreAuthorize` only when you need boolean logic, parameter access, or context-specific rules.
-
-Class-level applies to all methods; method-level overrides it:
-
-```java
-@RestController
-@HasAuthority(Authority.MEMBERS_READ)         // default for all endpoints
-class MemberController {
-    @GetMapping ResponseEntity<?> list() { ... }            // requires MEMBERS:READ
-
-    @PostMapping
-    @HasAuthority(Authority.MEMBERS_CREATE)   // overrides class-level
-    ResponseEntity<?> create() { ... }
+    @Override
+    public ResponseEntity<MemberDetailsResponse> getMember(@PathVariable UUID id,
+                                                           @ActingUser CurrentUserData currentUser) { … }
 }
 ```
 
-Enforcement: `HasAuthorityMethodInterceptor` (AuthorizationAdvisor). Failure throws `AccessDeniedException` → 403. Apply at controller layer only, not service layer.
+**What is generated onto the interface — so it must NOT be written on the controller:**
+
+| Concern | Generated from | Spec source |
+|---|---|---|
+| `@RequestMapping(method=…, value=PATH_…, produces=…)` | path + operation | the path item itself |
+| `@HasAuthority(Authority.X)` | `x-klabis-authority: MEMBERS_READ` | per-operation |
+| `@Operation`, `@Parameter`, `@ApiResponse`, `@Tag`, `@SecurityRequirement` | `documentationProvider=springdoc` | summary/description/responses |
+| `@RequestBody`, `@RequestParam`, `@PathVariable`, `@Valid`, Bean Validation | parameter + schema definitions | parameters/requestBody |
+
+Writing any of these on the controller is either drift (a hand-written `@Operation` that no longer matches the spec) or a silent break (see the HV000151 note below). **To change an endpoint's URL, authority, status codes, or validation, edit the spec YAML and regenerate — never patch the controller.** The `klabis-api-spec` skill covers the spec authoring side (`x-klabis-*` extensions, module layout).
+
+The generated interface also exposes path constants — `MembersApi.PATH_GET_MEMBER` = `"/api/members/{id}"` — for anything that needs the literal path (security config, tests) rather than re-typing it.
+
+The controller keeps only: `@PrimaryAdapter`, `@RestController`, a `@RequestMapping(produces = …)` default, `@ExposesResourceFor(Aggregate.class)`, and `@Override` on each method. Note there is no `value=`/`path=` on the class-level `@RequestMapping` — the full path comes from the interface.
+
+### `@HasAuthority` — declared in the spec, not the controller
+
+`@HasAuthority(Authority.X)` is the type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for **single-authority global checks**, enforced by `HasAuthorityMethodInterceptor` (AuthorizationAdvisor); failure throws `AccessDeniedException` → 403.
+
+For spec'd endpoints you do not write it — set `x-klabis-authority: MEMBERS_READ` on the operation and the generator emits the annotation onto the interface method. Omitting the extension means "any authenticated caller" (per the `/api/**` `.authenticated()` rule), which is a deliberate choice worth a comment in the YAML rather than an accident.
+
+Reach for a hand-written `@PreAuthorize` on the override only when you need boolean logic, parameter access, or context-specific rules that a single authority cannot express — that is the one authorization concern the spec cannot carry.
 
 ### Field-Level Authorization on Controller Methods
 
+Field-level authorization on the request DTO (`@HasAuthority`, `@OwnerVisible` on `JsonNullable<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in the controller. On a generated DTO these come from the spec's `x-klabis-authority` / `x-klabis-owner-visible` field extensions; the `@OwnerId` marker on the path variable is declared in the spec too.
+
 ```java
-@PatchMapping("/{id}")
-@HasAuthority(Authority.MEMBERS_MANAGE)
-@OwnerVisible
-ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id,
-                                  @Valid @RequestBody UpdateMemberRequest request) {
+@Override
+public ResponseEntity<Void> updateMember(@PathVariable UUID id,
+                                         UpdateMemberRequest request,
+                                         @ActingUser CurrentUserData currentUser) {
     MemberId memberId = new MemberId(id);  // Convert UUID → type-safe ID at boundary
-    managementService.updateMember(memberId, UpdateMemberRequestMapper.toCommand(request));
+    managementService.updateMember(memberId, UpdateMemberRequestMapper.toCommand(request, currentUser.userId()));
     return ResponseEntity.noContent().build();
 }
 ```
 
-Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `JsonNullable<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in controller.
+Note the override repeats `@PathVariable` here but carries no `@RequestBody` on `request` — that asymmetry is deliberate and explained under "Which annotations belong on the override".
 
 ### HATEOAS — Controllers Return Plain DTOs; HalResponseBodyAdvice Wraps Them
 
@@ -249,25 +264,33 @@ Field-level authorization on request DTO (`@HasAuthority`, `@OwnerVisible` on `J
 **Controller — return the plain DTO, stash the domain object(s) in `HalResponseContext` before returning:**
 
 ```java
-@GetMapping("/{id}")
-ResponseEntity<MemberDetailsResponse> getMember(@PathVariable UUID id, @ActingUser CurrentUserData currentUser) {
+@Override
+public ResponseEntity<MemberDetailsResponse> getMember(@PathVariable UUID id, @ActingUser CurrentUserData currentUser) {
     Member member = managementService.getMemberAndRecordView(new MemberId(id), currentUser.userId(), ...);
 
     HalResponseContext.setDomain(member);          // must run after everything that can throw
-    return ResponseEntity.ok(memberMapper.toDetailsResponse(member));
+    return ResponseEntity.ok(conversionService.convert(member, MemberDetailsResponse.class));
 }
 ```
 
-For a paginated collection, use `setDomainList` — same order as the DTO `Page` content, paired 1:1 by index:
+For a collection, use `setDomainList` — same order as the DTO content, paired 1:1 by index. This works for both a `Page<Dto>` (wrapped into `PagedModel`) and a plain `List<Dto>`/`Collection<Dto>` (wrapped into `CollectionModel`); a size mismatch between the two lists fails fast with `IllegalStateException` rather than silently pairing the wrong domain object with a DTO:
 
 ```java
-@GetMapping
-ResponseEntity<Page<MemberSummaryResponse>> listMembers(@ParameterObject Pageable pageable, ...) {
+@Override
+public ResponseEntity<Page<MemberSummaryResponse>> listMembers(..., @ParameterObject Pageable pageable, ...) {
     Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
     HalResponseContext.setDomainList(memberPage.getContent());
-    return ResponseEntity.ok(memberPage.map(memberMapper::toSummaryResponse));
+    return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
 }
+```
+
+**A second, independently-shaped collection alongside a single-item payload** goes through `HalResponseContext.embed(collection, ItemType.class)`, which renders it under `_embedded` next to the item's `_links`/`_templates`. It lives on the controller rather than in a postprocessor because the data usually needs a port the controller already holds, and because the payload's postprocessor is often shared with a *list* endpoint that has no such collection. One collection per response — a second call replaces the first. Current callers: `EventController` (registrations on an event) and `MembershipFeeGroupController` (members in a group).
+
+```java
+HalResponseContext.setDomain(group);
+HalResponseContext.embed(buildGroupMembers(group), MemberInGroupResponse.class);
+return ResponseEntity.ok(conversionService.convert(group, MembershipFeeGroupResponse.class));
 ```
 
 **Always call `HalResponseContext.set*` last, after any code that can throw.** If the controller throws afterwards, `MvcExceptionHandler` returns a `ProblemDetail`; `HalResponseBodyAdvice` detects that and clears the context instead of wrapping the error body, but only if nothing between `set*` and the exception can leave stale context data for a *different* concern.
@@ -275,8 +298,11 @@ ResponseEntity<Page<MemberSummaryResponse>> listMembers(@ParameterObject Pageabl
 **What the advice does, automatically, with no controller involvement:**
 - Single DTO → wraps it in `EntityModelWithDomain<T, D>` and runs it through every `RepresentationModelProcessor` bean — including `ModelWithDomainPostprocessor<Dto, Aggregate>` postprocessors.
 - `Page<Dto>` → runs it through `PagedResourcesAssembler`, pairing each DTO with its domain object via `HalResponseContext`'s stashed list, then derives the **self link directly from the current request's path and query parameters** (no `klabisLinkTo` call needed for the self link — the controller method already ran and passed authorization for exactly this request).
+- `Collection<Dto>` (a plain `List`, no paging) → same pairing, wrapped into a `CollectionModel` with a self link built the same way.
+- Anything a postprocessor registered via `HalResponseContext.embed` is rendered into `_embedded` **after** the processors run, so it lands beside the links and templates they added.
 - Non-HAL content types (e.g. `MemberOptionResponse` served as plain `application/json`) are left untouched — the advice checks `selectedContentType` and only wraps `HAL_JSON`/`HAL_FORMS_JSON` responses.
 - A `ProblemDetail` error body is never wrapped, and the context is cleared so nothing leaks into a later request on the same thread pool.
+- A body that is already a `RepresentationModel` is passed through — controllers still building their own `EntityModel` in the old style keep working, because without a `HalResponseContext` entry the advice does nothing.
 
 **Postprocessor — extend `ModelWithDomainPostprocessor<T, D>`, which receives the DTO-shaped `EntityModel<T>` and the domain aggregate `D`:**
 
@@ -393,28 +419,32 @@ Same HATEOAS rules apply — no affordances to POST endpoints.
 **`@ActingUser CurrentUserData`** — resolves the authenticated user from the JWT token. Falls back gracefully when no member is associated with the user (e.g., admin-only users):
 
 ```java
-@GetMapping("/me")
-ResponseEntity<EntityModel<MemberDetailsResponse>> getMyProfile(@ActingUser CurrentUserData currentUser) {
+@Override
+public ResponseEntity<MemberDetailsResponse> getMyProfile(@ActingUser CurrentUserData currentUser) {
     // currentUser is resolved from the authenticated JWT token
 }
 ```
 
+Both annotations are declared on the generated interface (the spec marks the parameter), so the override just repeats the parameter — see the annotation table above.
+
 **`@ActingMember MemberId`** — resolves the authenticated user's `MemberId` from the JWT `memberIdUuid` claim. Throws `MemberProfileRequiredException` (HTTP 403) if the user has no member profile. Use this instead of manually calling `requireMemberProfile(currentUser)`:
 
 ```java
-@PostMapping("/{id}/invite")
-ResponseEntity<Void> inviteMember(@PathVariable UUID id,
-                                  @ActingMember MemberId actingMember,
-                                  @RequestBody InviteRequest request) {
+@Override
+public ResponseEntity<Void> inviteMember(@PathVariable UUID id,
+                                         @ActingMember MemberId actingMember,
+                                         InviteRequest request) {
     // actingMember is guaranteed to be a member — throws 403 otherwise
 }
 ```
 
 Use `@ActingUser` when the endpoint is accessible to non-member users (admins). Use `@ActingMember` when the endpoint requires a member profile.
 
-### DTO → Command Mapping
+### DTO ↔ Domain Mapping: `Converter<S,T>` + `ConversionService`
 
-Use `@Mapper` (MapStruct) for straightforward field mapping; manual mapper class for complex PATCH operations.
+Mapping between generated DTOs and domain types goes through Spring's `ConversionService`, with each conversion registered as its own MapStruct-generated `Converter<S,T>` bean. Controllers inject `ConversionService`, never a concrete mapper type. Details and the reasoning are in the next section.
+
+**This migration is in progress.** At last check: 17 `Converter` interfaces exist and 10 controllers inject `ConversionService`, but static helper mappers are still called directly in several places — `MembershipFeesRequestMapper` / `MembershipFeesResponseMapper` (membershipfees), `RegistrationDtoMapper` (events), `UpdateMemberRequestMapper` (members). Those are the *old* shape. When you touch a controller that still calls one, prefer migrating that conversion to a `Converter` over extending the static mapper — but a multi-argument or heavily-branching mapping may legitimately stay a plain class (see the wrapper-record and `@Component implements Converter` notes below).
 
 ### Exposing Mapper Conversions: `Converter<S,T>` + `ConversionService`
 
@@ -644,11 +674,11 @@ record MemberDetailResponse(
 Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see the HATEOAS section above):
 
 ```java
-@GetMapping("/{id}")
-ResponseEntity<MemberDetailResponse> getMember(@PathVariable UUID id) {
+@Override
+public ResponseEntity<MemberDetailResponse> getMember(@PathVariable UUID id, @ActingUser CurrentUserData currentUser) {
     Member member = managementService.getMember(new MemberId(id));
     HalResponseContext.setDomain(member);
-    return ResponseEntity.ok(memberMapper.toDetailResponse(member));
+    return ResponseEntity.ok(conversionService.convert(member, MemberDetailResponse.class));
 }
 ```
 
@@ -701,13 +731,17 @@ record UpdateMemberRequest(
 ) {}
 ```
 
-Controller with `@OwnerId` path variable:
+The `@OwnerId` path variable and the method-level authorization are declared on the **generated interface** (emitted from the spec's `x-klabis-authority` / owner-visible extensions), which is where `RequestBodyFieldAuthorizationAdvice` reads them:
+
 ```java
-@PatchMapping("/{id}")
+// generated <X>Api interface — not hand-written
+@RequestMapping(method = RequestMethod.PATCH, value = MembersApi.PATH_UPDATE_MEMBER, ...)
 @HasAuthority(Authority.MEMBERS_MANAGE)
 @OwnerVisible
-ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, @RequestBody UpdateMemberRequest request) { ... }
+ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, @RequestBody UpdateMemberRequest request);
 ```
+
+The controller's override carries only `@Override` and the parameter names.
 
 If an unauthorized user sends a present `JsonNullable` for a protected field, `FieldAuthorizationException` is thrown → HTTP 403.
 
