@@ -63,6 +63,8 @@ interface MemberMapper {
 
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
 
+    MonetaryAmount monetaryAmountToDto(com.klabis.members.MonetaryAmount monetaryAmount);
+
     @Mapping(target = "validityDate", expression = "java(medicalCourse.validityDate() != null ? medicalCourse.validityDate().orElse(null) : null)")
     MedicalCourseDto medicalCourseToDto(MedicalCourse medicalCourse);
 

@@ -297,13 +297,12 @@ openApiModule(
         "AffectedGroup",
         // Inline enum on AffectedGroup.groupType, promoted to a named schema by
         // RESOLVE_INLINE_ENUMS (see TrainerLicenseDto_level precedent above).
-        "AffectedGroup_groupType"
+        "AffectedGroup_groupType",
+        // Generated REST DTO, distinct from the domain-shared com.klabis.members.MonetaryAmount
+        // (MemberFinancialStatePort) — MemberMapper converts between them at the REST boundary.
+        "MonetaryAmount"
     ),
-    mappings = mapOf(
-        // MonetaryAmount is a public root-level type shared with other modules (finance fills it via
-        // MemberFinancialStatePort) — redirect onto it rather than generating a duplicate.
-        "MonetaryAmount" to "com.klabis.members.MonetaryAmount"
-    )
+    mappings = emptyMap()
 )
 
 openApiModule(

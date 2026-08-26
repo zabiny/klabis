@@ -14,6 +14,12 @@ import java.util.UUID;
 @RestControllerAdvice
 class MembersExceptionHandler {
 
+    private final MemberMapper memberMapper;
+
+    MembersExceptionHandler(MemberMapper memberMapper) {
+        this.memberMapper = memberMapper;
+    }
+
     @ExceptionHandler(SuspensionBlockedException.class)
     ResponseEntity<SuspensionBlockedWarning> handleSuspensionBlocked(SuspensionBlockedException ex) {
         LastOwnerWarning groups = null;
@@ -37,7 +43,7 @@ class MembersExceptionHandler {
                     .path("/api/members/{memberId}/account")
                     .buildAndExpand(snapshot.memberId().uuid())
                     .toUri();
-            debt = new OutstandingDebtWarning(accountLink, snapshot.balance());
+            debt = new OutstandingDebtWarning(accountLink, memberMapper.monetaryAmountToDto(snapshot.balance()));
         }
 
         return ResponseEntity
