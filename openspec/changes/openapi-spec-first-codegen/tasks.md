@@ -1,9 +1,9 @@
 ## 1. Baseline snapshot
 
-- [ ] 1.1 Run `./gradlew clean compileJava` on current `main` and save the full generated source
+- [x] 1.1 Run `./gradlew clean compileJava` on current `main` and save the full generated source
       tree (`build/generated/openapi/*/src/main/java`) as a comparison baseline (e.g. a checksummed
       file listing per module, or a saved `find ... -type f` output).
-- [ ] 1.2 Save the current `docs/openapi/klabis-full.json` checksum as a bundle-equivalence
+- [x] 1.2 Save the current `docs/openapi/klabis-full.json` checksum as a bundle-equivalence
       baseline for steps 2–3.
 
 ## 2. Extract `_shared/responses.yaml`
