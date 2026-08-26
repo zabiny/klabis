@@ -4,13 +4,9 @@ import com.klabis.common.users.UserService;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
-import com.klabis.members.infrastructure.restapi.MonetaryAmountConverter;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -36,25 +32,10 @@ import java.lang.annotation.Target;
  * <p>
  * Beans treated as feature flags via {@code Optional<T>} injection (e.g. {@code OrisEventImportPort})
  * must NOT be added here — the mere presence of the mock would activate the feature in every test.
- * <p>
- * Also scans {@code members.infrastructure.restapi} for MapStruct-generated {@code Converter} beans
- * (e.g. {@code MonetaryAmountConverter}), required by {@code MembersExceptionHandler} via
- * {@code ConversionService}. It's a global {@code @RestControllerAdvice} scanned into every
- * {@code @WebMvcTest} regardless of the test's {@code controllers} filter.
- * <p>
- * Uses a plain {@code @ComponentScan} restricted to {@code Converter} beans (not MapStruct's
- * {@code @ConverterScan}, which also imports a competing {@code ConversionService} bean that
- * collides with the one {@code @WebMvcTest} already provides). Spring Boot's autoconfigured
- * conversion service picks up any {@code Converter} bean automatically.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Import(ClockConfiguration.class)
-@ComponentScan(
-        basePackageClasses = MonetaryAmountConverter.class,
-        useDefaultFilters = false,
-        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = Converter.class)
-)
 @MockitoBean(types = {
         FamilyGroupRepository.class,
         TrainingGroupRepository.class,
