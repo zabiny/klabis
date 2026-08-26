@@ -24,6 +24,12 @@ interface BulkImportResultConverter extends Converter<com.klabis.events.applicat
 
     EventImportEntry toDto(com.klabis.events.application.BulkImportResult.EventImportEntry entry);
 
+    // EventSyncEntryStatus, not EventImportEntryStatus: EventSyncEntry.status/EventImportEntry.status
+    // share one [SUCCESS, FAILED] inline enum, which RESOLVE_INLINE_ENUMS promotes to a single
+    // generated class named after whichever occurrence the generator resolves second — spec-first
+    // codegen (dropping the models/apis allow-list) flipped which occurrence that is, from
+    // EventImportEntryStatus to EventSyncEntryStatus. Confirm the actual generated class name in
+    // build/generated/openapi/events/.../EventImportEntry.java before renaming this back.
     @ValueMapping(source = "IMPORTED", target = "SUCCESS")
-    EventImportEntryStatus toDto(com.klabis.events.application.BulkImportResult.ImportStatus status);
+    EventSyncEntryStatus toDto(com.klabis.events.application.BulkImportResult.ImportStatus status);
 }

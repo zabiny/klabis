@@ -40,9 +40,9 @@ paths:
   /api/members/{id}/resume:
     $ref: './members.yaml#/paths/~1api~1members~1{id}~1resume'
   /api/event-types:
-    $ref: './event-types.yaml#/paths/~1api~1event-types'
+    $ref: './events.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
-    $ref: './event-types.yaml#/paths/~1api~1event-types~1{id}'
+    $ref: './events.yaml#/paths/~1api~1event-types~1{id}'
   /api/events:
     $ref: './events.yaml#/paths/~1api~1events'
   /api/events/{id}:

@@ -1,0 +1,38 @@
+components:
+  responses:
+    BadRequest:
+      description: Bad request - invalid argument
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'
+    Conflict:
+      description: Conflict - concurrent update (optimistic locking failure)
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'
+    UnprocessableEntity:
+      description: Unprocessable entity - request violates a business rule
+      content:
+        application/problem+json:
+          schema:
+            $ref: './problem.yaml#/components/schemas/ProblemDetail'

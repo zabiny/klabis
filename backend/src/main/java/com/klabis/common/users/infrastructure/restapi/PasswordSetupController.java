@@ -81,10 +81,10 @@ public class PasswordSetupController implements PasswordSetupApi {
 
         User activatedUser = passwordSetupService.completePasswordSetup(command, ipAddress);
 
-        PasswordSetupResponse response = new PasswordSetupResponse(
-                "Password set successfully. You can now log in.",
-                activatedUser.getUsername()
-        );
+        PasswordSetupResponse response = PasswordSetupResponseBuilder.builder()
+                .message("Password set successfully. You can now log in.")
+                .registrationNumber(activatedUser.getUsername())
+                .build();
 
         return ResponseEntity.ok(response);
     }
@@ -107,8 +107,9 @@ public class PasswordSetupController implements PasswordSetupApi {
     @Override
     public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(TokenRequestRequest request) {
         passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
-        return ResponseEntity.ok(new TokenRequestResponse(
-                "If your account is pending activation, you will receive an email with a new setup link."));
+        return ResponseEntity.ok(TokenRequestResponseBuilder.builder()
+                .message("If your account is pending activation, you will receive an email with a new setup link.")
+                .build());
     }
 
     private String getClientIpAddress(HttpServletRequest request) {

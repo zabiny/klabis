@@ -24,103 +24,122 @@ final class MembershipFeesResponseMapper {
     }
 
     static FeeSelectionCampaignResponse toResponse(FeeSelectionCampaign publication) {
-        return new FeeSelectionCampaignResponse(
-                publication.getDeadlineProcessedAt(),
-                publication.getId().value(),
-                publication.getVotingDeadline(),
-                publication.getYear()
-        );
+        return FeeSelectionCampaignResponseBuilder.builder()
+                .id(publication.getId().value())
+                .year(publication.getYear())
+                .votingDeadline(publication.getVotingDeadline())
+                .deadlineProcessedAt(publication.getDeadlineProcessedAt())
+                .build();
     }
 
     static MembershipFeeTierResponse toResponse(MembershipFeeTier level) {
-        return new MembershipFeeTierResponse(
-                level.getId().value(),
-                level.getName(),
-                level.getYearlyFee().amount(),
-                level.getYearlyFee().currency().getCurrencyCode()
-        );
+        return MembershipFeeTierResponseBuilder.builder()
+                .id(level.getId().value())
+                .name(level.getName())
+                .yearlyFeeAmount(level.getYearlyFee().amount())
+                .yearlyFeeCurrency(level.getYearlyFee().currency().getCurrencyCode())
+                .build();
     }
 
     static MembershipFeeTierSummaryResponse toSummaryResponse(MembershipFeeTier level) {
-        return new MembershipFeeTierSummaryResponse(
-                level.getId().value(),
-                level.getName(),
-                level.getRules().size(),
-                level.getYearlyFee().amount(),
-                level.getYearlyFee().currency().getCurrencyCode()
-        );
+        return MembershipFeeTierSummaryResponseBuilder.builder()
+                .id(level.getId().value())
+                .name(level.getName())
+                .yearlyFeeAmount(level.getYearlyFee().amount())
+                .yearlyFeeCurrency(level.getYearlyFee().currency().getCurrencyCode())
+                .ruleCount(level.getRules().size())
+                .build();
     }
 
     static PaymentRuleResponse toResponse(MembershipPaymentRule rule) {
         UUID eventTypeId = rule.eventTypeId().value();
         return switch (rule.value()) {
             case MembershipPaymentRule.RuleValue.Percentage p ->
-                    new PaymentRuleResponse(eventTypeId, null, null, p.percent(),
-                            rule.rankingShortName(), PaymentRuleResponseRuleType.PERCENTAGE);
+                    PaymentRuleResponseBuilder.builder()
+                            .eventTypeId(eventTypeId)
+                            .rankingShortName(rule.rankingShortName())
+                            .ruleType(PaymentRuleResponseRuleType.PERCENTAGE)
+                            .percentage(p.percent())
+                            .fixedAmount(null)
+                            .fixedCurrency(null)
+                            .build();
             case MembershipPaymentRule.RuleValue.FixedAmount f ->
-                    new PaymentRuleResponse(eventTypeId, f.amount().amount(),
-                            f.amount().currency().getCurrencyCode(), null,
-                            rule.rankingShortName(), PaymentRuleResponseRuleType.FIXED_AMOUNT);
+                    PaymentRuleResponseBuilder.builder()
+                            .eventTypeId(eventTypeId)
+                            .rankingShortName(rule.rankingShortName())
+                            .ruleType(PaymentRuleResponseRuleType.FIXED_AMOUNT)
+                            .percentage(null)
+                            .fixedAmount(f.amount().amount())
+                            .fixedCurrency(f.amount().currency().getCurrencyCode())
+                            .build();
         };
     }
 
     static MemberFeeChoiceResponse toResponse(UUID memberId, int year,
                                               Optional<MembershipFeeGroupId> currentChoice,
                                               Optional<MembershipFeeTierId> recommended) {
-        return new MemberFeeChoiceResponse(
-                currentChoice.map(MembershipFeeGroupId::value).orElse(null),
-                memberId,
-                recommended.map(MembershipFeeTierId::value).orElse(null),
-                year);
+        return MemberFeeChoiceResponseBuilder.builder()
+                .memberId(memberId)
+                .year(year)
+                .currentGroupId(currentChoice.map(MembershipFeeGroupId::value).orElse(null))
+                .recommendedLevelId(recommended.map(MembershipFeeTierId::value).orElse(null))
+                .build();
     }
 
     static MemberFeeHistoryResponse toResponse(List<MemberFeeHistoryPort.LevelAssignment> assignments) {
-        return new MemberFeeHistoryResponse(
-                assignments.stream()
-                        .map(a -> new FeeAssignmentResponse(
-                                a.groupId().value(),
-                                a.groupName(),
-                                a.joinedAt(),
-                                FeeAssignmentResponseSource.valueOf(a.source().name()),
-                                a.year()))
-                        .toList());
+        return MemberFeeHistoryResponseBuilder.builder()
+                .assignments(assignments.stream()
+                        .map(a -> FeeAssignmentResponseBuilder.builder()
+                                .year(a.year())
+                                .groupId(a.groupId().value())
+                                .groupName(a.groupName())
+                                .joinedAt(a.joinedAt())
+                                .source(MemberInGroupResponseSource.valueOf(a.source().name()))
+                                .build())
+                        .toList())
+                .build();
     }
 
     static MemberFeeSummaryResponse toResponse(MemberFeeHistoryPort.CurrentLevelInfo info) {
         CurrentGroupResponse currentGroup = info.groupId() != null
-                ? new CurrentGroupResponse(
-                        info.groupId().value(),
-                        info.name(),
-                        info.yearlyFee().amount())
+                ? CurrentGroupResponseBuilder.builder()
+                        .id(info.groupId().value())
+                        .name(info.name())
+                        .yearlyFee(info.yearlyFee().amount())
+                        .build()
                 : null;
         UUID recommendedLevelId = info.recommendedLevelId()
                 .map(MembershipFeeTierId::value)
                 .orElse(null);
-        return new MemberFeeSummaryResponse(currentGroup, recommendedLevelId, info.votingOpen());
+        return MemberFeeSummaryResponseBuilder.builder()
+                .currentGroup(currentGroup)
+                .votingOpen(info.votingOpen())
+                .recommendedLevelId(recommendedLevelId)
+                .build();
     }
 
     static MembershipFeeGroupResponse toResponse(MembershipFeeGroup group) {
-        return new MembershipFeeGroupResponse(
-                group.getId().value(),
-                group.memberCount(),
-                group.getName(),
-                group.getRulesSnapshot().stream().map(MembershipFeesResponseMapper::toResponse).toList(),
-                group.getSourceLevelId().value(),
-                MembershipFeeGroupResponseStatus.valueOf(group.getStatus().name()),
-                group.getYear(),
-                group.getYearlyFeeSnapshot().amount(),
-                group.getYearlyFeeSnapshot().currency().getCurrencyCode()
-        );
+        return MembershipFeeGroupResponseBuilder.builder()
+                .id(group.getId().value())
+                .sourceLevelId(group.getSourceLevelId().value())
+                .name(group.getName())
+                .year(group.getYear())
+                .yearlyFeeAmount(group.getYearlyFeeSnapshot().amount())
+                .yearlyFeeCurrency(group.getYearlyFeeSnapshot().currency().getCurrencyCode())
+                .status(MembershipFeeGroupResponseStatus.valueOf(group.getStatus().name()))
+                .memberCount(group.memberCount())
+                .rulesSnapshot(group.getRulesSnapshot().stream().map(MembershipFeesResponseMapper::toResponse).toList())
+                .build();
     }
 
     static MemberInGroupResponse toResponse(FeeGroupMembership membership, @Nullable MemberDto memberDto) {
-        return new MemberInGroupResponse(
-                memberDto != null ? memberDto.firstName() : null,
-                membership.joinedAt(),
-                memberDto != null ? memberDto.lastName() : null,
-                membership.memberId().value(),
-                memberDto != null ? memberDto.registrationNumber() : null,
-                FeeAssignmentResponseSource.valueOf(membership.source().name())
-        );
+        return MemberInGroupResponseBuilder.builder()
+                .memberId(membership.memberId().value())
+                .firstName(memberDto != null ? memberDto.firstName() : null)
+                .lastName(memberDto != null ? memberDto.lastName() : null)
+                .registrationNumber(memberDto != null ? memberDto.registrationNumber() : null)
+                .joinedAt(membership.joinedAt())
+                .source(MemberInGroupResponseSource.valueOf(membership.source().name()))
+                .build();
     }
 }

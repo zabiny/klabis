@@ -49,8 +49,13 @@ public class OrisController implements OrisImportApi {
                             .map(eventMap -> eventMap.values().stream())
                             .orElse(Stream.empty());
                 })
-                .map(e -> new OrisEventSummary(e.id(), e.name(), e.date(), e.location(),
-                        e.organizer1() != null ? e.organizer1().abbreviation() : null))
+                .map(e -> OrisEventSummaryBuilder.builder()
+                        .id(e.id())
+                        .name(e.name())
+                        .date(e.date())
+                        .location(e.location())
+                        .organizer(e.organizer1() != null ? e.organizer1().abbreviation() : null)
+                        .build())
                 .collect(Collectors.toMap(OrisEventSummary::id, Function.identity(), (a, b) -> a, LinkedHashMap::new))
                 .values().stream()
                 .toList();

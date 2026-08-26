@@ -103,7 +103,7 @@ class RegistrationRecordTransactionLinkProcessorTest {
         RegistrationSummaryDto dto = RegistrationSummaryDtoBuilder.builder()
                 .firstName("Jan")
                 .lastName("Novák")
-                .category(new EventCategoryDto(null, null, "M21"))
+                .category(EventCategoryDtoBuilder.builder().name("M21").build())
                 .registrationTime(Instant.now())
                 .coordinators(List.of())
                 .registeredMemberId(memberUuid)

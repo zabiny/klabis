@@ -10,6 +10,17 @@ import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.infrastructure.restapi.AddMemberRequest;
+import com.klabis.groups.infrastructure.restapi.CreateFamilyGroupRequest;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupMembershipResponse;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupMembershipResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupResponse;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupsApi;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupSummaryResponse;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupSummaryResponseBuilder;
+import com.klabis.groups.infrastructure.restapi.ParentResponse;
+import com.klabis.groups.infrastructure.restapi.ParentResponseBuilder;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
@@ -129,7 +140,11 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     private FamilyGroupSummaryResponse toSummaryResponse(FamilyGroup group) {
-        return new FamilyGroupSummaryResponse(group.getId().uuid(), group.getMembers().size(), group.getName());
+        return FamilyGroupSummaryResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .memberCount(group.getMembers().size())
+                .build();
     }
 
     private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, boolean hasMembersManage) {
@@ -137,7 +152,7 @@ class FamilyGroupController implements FamilyGroupsApi {
         Set<MemberId> parentIds = group.getParents();
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {
-                    EntityModel<ParentResponse> model = EntityModel.of(new ParentResponse(parentId.uuid()));
+                    EntityModel<ParentResponse> model = EntityModel.of(ParentResponseBuilder.builder().memberId(parentId.uuid()).build());
                     klabisLinkTo(methodOn(MembersApi.class).getMember(parentId.uuid(), null))
                             .map(link -> link.withRel("member"))
                             .ifPresent(model::add);
@@ -155,12 +170,20 @@ class FamilyGroupController implements FamilyGroupsApi {
                 .map(m -> buildChildModel(m, groupUuid, hasMembersManage))
                 .toList();
 
-        return new FamilyGroupResponse(group.getId().uuid(), memberModels, group.getName(), parentModels);
+        return FamilyGroupResponseBuilder.builder()
+                .id(group.getId().uuid())
+                .name(group.getName())
+                .parents(parentModels)
+                .members(memberModels)
+                .build();
     }
 
     private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership membership, UUID groupUuid, boolean hasMembersManage) {
         MemberId memberId = membership.memberId();
-        FamilyGroupMembershipResponse response = new FamilyGroupMembershipResponse(membership.joinedAt(), memberId.uuid());
+        FamilyGroupMembershipResponse response = FamilyGroupMembershipResponseBuilder.builder()
+                .memberId(memberId.uuid())
+                .joinedAt(membership.joinedAt())
+                .build();
         EntityModel<FamilyGroupMembershipResponse> model = EntityModel.of(response);
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .map(link -> link.withRel("member"))

@@ -19,14 +19,14 @@ class RegistrationDtoMapper {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        return new RegistrationSummaryDto(
-                toCategoryDto(registration, event),
-                toCoordinatorUuids(event.getCoordinators()),
-                member.firstName(),
-                member.lastName(),
-                registration.memberId().uuid(),
-                registration.registeredAt()
-        );
+        return RegistrationSummaryDtoBuilder.builder()
+                .firstName(member.firstName())
+                .lastName(member.lastName())
+                .category(toCategoryDto(registration, event))
+                .registrationTime(registration.registeredAt())
+                .coordinators(toCoordinatorUuids(event.getCoordinators()))
+                .registeredMemberId(registration.memberId().uuid())
+                .build();
     }
 
     private static List<UUID> toCoordinatorUuids(Set<MemberId> coordinators) {
@@ -35,7 +35,11 @@ class RegistrationDtoMapper {
 
     static EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
         return event.findCategory(registration.categoryId())
-                .map(category -> new EventCategoryDto(null, category.id().value(), category.name()))
+                .map(category -> EventCategoryDtoBuilder.builder()
+                        .id(category.id().value())
+                        .name(category.name())
+                        .fee(null)
+                        .build())
                 .orElse(null);
     }
 
