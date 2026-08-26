@@ -307,18 +307,37 @@
 
 ## 8. Closeout
 
-- [ ] 8.1 Run the full backend test suite (unit + Modulith integration) via the test-runner agent.
-- [ ] 8.2 Grep `backend/src/main/java` for any remaining hand-written class in an
+- [x] 8.1 Run the full backend test suite (unit + Modulith integration) via the test-runner agent.
+      **616/616 passed.**
+- [x] 8.2 Grep `backend/src/main/java` for any remaining hand-written class in an
       `infrastructure.restapi` package that duplicates a generated model name — confirm zero
-      matches.
-- [ ] 8.3 Code review (per project convention) before committing: verify no `@Schema`/`@Relation`/
+      matches. **Zero matches.** One hand-written class remains in `events.infrastructure.restapi`
+      (`RegistrationDto`, backing the single-registration detail endpoint) but it does not duplicate
+      any generated model name and was never in scope for this change — a distinct schema from
+      `RegistrationSummaryDto` (the list-endpoint DTO that *was* migrated).
+- [x] 8.3 Code review (per project convention) before committing: verify no `@Schema`/`@Relation`/
       `x-klabis-*` semantic drift between the deleted hand-written classes and their generated
-      replacements, and that `docs/openapi/klabis-full.json` was regenerated and committed alongside
-      the spec changes.
-- [ ] 8.4 Final field-security audit (design.md Decision 0): re-diff the generated sources for
+      replacements. **No drift found.** Reviewed `pojo.mustache`'s `x-klabis-*`/`x-klabis-relation`
+      render clauses against design.md Decision 0/2, the `KlabisSpringCodegen.fromProperty`/
+      `isMappedEnvelopeItem` guard against Decision 3a, and spot-checked positional record
+      construction in `MembershipFeesResponseMapper` and `TrainingGroupController` against the actual
+      generated (alphabetized) field order — all correct. Corrected stale task wording: per
+      `chore(openapi): remove klabis-full.json from git, generate on demand`, that file is gitignored
+      and generated on demand — confirmed `./gradlew openapiBundle -PopenapiCheck` still validates
+      cleanly (111 operations, 198 schemas) from the current `docs/openapi/spec/*.yaml`, not that it
+      was "regenerated and committed."
+- [x] 8.4 Final field-security audit (design.md Decision 0): re-diff the generated sources for
       `MemberSummaryResponse`, `EventSummaryDto`, `RegistrationSummaryDto` — the three classes
       confirmed to carry `@HasAuthority`/`@OwnerVisible`/`@OwnerId`/`@JsonIgnore` — against the git
       history of the deleted hand-written files (`git show <sha>:<path>` for each), field by field,
-      as an independent double-check before this change is considered done. This is the one
-      irreversible-if-missed step in the whole migration: a dropped authorization annotation ships
-      silently, with no failing test to catch it.
+      as an independent double-check before this change is considered done. **PASS on all three,
+      field-by-field:**
+      - `MemberSummaryResponse.active`/`.email`: `@HasAuthority(MEMBERS_MANAGE)` present in both
+        original and generated.
+      - `EventSummaryDto.status`: `@HasAuthority(EVENTS_MANAGE)` present in both; `.id`/
+        `.cancellationReason`/`.deadlines`/`.status`: `@HalForms(access = READ_ONLY)` present in both.
+      - `RegistrationSummaryDto.coordinators`: `@JsonIgnore @OwnerId` in both;
+        `.registeredMemberId`: `@JsonIgnore` (no `@OwnerId`) in both, matching the original;
+        `.registrationTime`: `@OwnerVisible @HasAuthority(EVENTS_REGISTRATIONS)` in both;
+        `.category`: `@JsonInclude(ALWAYS)` in both.
+      No gaps found.
