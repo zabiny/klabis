@@ -7,6 +7,7 @@ import com.klabis.events.CategoryPresetId;
 import com.klabis.events.application.CategoryPresetManagementPort;
 import com.klabis.events.domain.CategoryPreset;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -34,16 +35,20 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class CategoryPresetController implements CategoryPresetsApi {
 
     private final CategoryPresetManagementPort categoryPresetManagementService;
+    private final ConversionService conversionService;
 
-    CategoryPresetController(CategoryPresetManagementPort categoryPresetManagementService) {
+    CategoryPresetController(CategoryPresetManagementPort categoryPresetManagementService, ConversionService conversionService) {
         this.categoryPresetManagementService = categoryPresetManagementService;
+        this.conversionService = conversionService;
     }
 
     @Override
     public ResponseEntity<List<CategoryPresetDto>> listPresets() {
         List<CategoryPreset> presets = categoryPresetManagementService.listAll();
 
-        List<CategoryPresetDto> payload = presets.stream().map(CategoryPresetDtoMapper::toDto).toList();
+        List<CategoryPresetDto> payload = presets.stream()
+                .map(preset -> conversionService.convert(preset, CategoryPresetDto.class))
+                .toList();
 
         HalResponseContext.setDomainList(presets);
         return ResponseEntity.ok(payload);
@@ -56,7 +61,7 @@ class CategoryPresetController implements CategoryPresetsApi {
         CategoryPreset preset = categoryPresetManagementService.getPreset(new CategoryPresetId(id));
 
         HalResponseContext.setDomain(preset);
-        return ResponseEntity.ok(CategoryPresetDtoMapper.toDto(preset));
+        return ResponseEntity.ok(conversionService.convert(preset, CategoryPresetDto.class));
     }
 
     @Override
