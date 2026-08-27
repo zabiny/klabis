@@ -120,6 +120,6 @@ public class DataSyncImpl implements DataSync {
     }
 
     private Optional<SyncLine<?, ?>> findSyncLine(SyncId syncId) {
-        return syncLines.stream().filter(t -> t.matches(syncId)).findAny();
+        return syncLines.stream().filter(t -> t.canProcess(syncId)).findAny();
     }
 }

@@ -2,9 +2,22 @@ package com.klabis.common.sync;
 
 import org.springframework.core.convert.converter.Converter;
 
+/**
+ * Configuration of synchronization between two sources
+ * @param localSource
+ * @param externalSource
+ * @param converter
+ * @param reverseConverter
+ * @param <L>
+ * @param <E>
+ */
 public record SyncLine<L extends SyncData, E extends SyncData>(SyncSource<L> localSource, SyncSource<E> externalSource,
                                                                Converter<L, E> converter,
                                                                Converter<E, L> reverseConverter) {
+
+    public static <T extends SyncData> SyncLine<T, T> withoutMapping(SyncSource<T> localSource, SyncSource<T> externalSource) {
+        return new SyncLine<>(localSource, externalSource, t -> t, t -> t);
+    }
 
     public SyncLine {
         if (!externalSource.isOppositeOf(localSource)) {
@@ -12,7 +25,7 @@ public record SyncLine<L extends SyncData, E extends SyncData>(SyncSource<L> loc
         }
     }
 
-    public boolean matches(SyncId syncId) {
+    public boolean canProcess(SyncId syncId) {
         return localSource.matches(syncId) || externalSource.matches(syncId);
     }
 

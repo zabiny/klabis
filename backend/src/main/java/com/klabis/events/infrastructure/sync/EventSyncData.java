@@ -2,8 +2,6 @@ package com.klabis.events.infrastructure.sync;
 
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.klabis.common.sync.SyncData;
-import com.klabis.common.sync.SyncId;
-import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventId;
 
 /**
@@ -23,11 +21,4 @@ public record EventSyncData(EventId eventId, Integer orisId, EventDetails orisDe
         }
     }
 
-    @Override
-    public SyncId getSyncId() {
-        if (eventId != null) {
-            return SyncId.localId(SyncType.EVENT, eventId.value().toString());
-        }
-        return SyncId.externalId(SyncType.EVENT, orisId.toString());
-    }
 }

@@ -1,5 +1,8 @@
 package com.klabis.common.sync;
 
+/**
+ * Interface for data synchronization. Allows to trigger synchronization in either direction using just SyncId ID.
+ */
 public interface DataSync {
 
     enum SyncResult {

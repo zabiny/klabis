@@ -1,8 +1,14 @@
 package com.klabis.common.sync;
 
-import org.springframework.data.annotation.Id;
-
-public record SyncRecord(@Id java.util.UUID id, SyncId localId, SyncId externalId,
+/**
+ * Represents state of synchronization of 1 data object to 1 external source (currently just ORIS, but later may be extended to multiple systems)
+ * @param id
+ * @param localId
+ * @param externalId
+ * @param result
+ * @param failureException
+ */
+public record SyncRecord(java.util.UUID id, SyncId localId, SyncId externalId,
                          DataSync.SyncResult result, Throwable failureException) {
 
     public SyncRecord {

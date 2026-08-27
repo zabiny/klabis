@@ -4,6 +4,11 @@ import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.Optional;
 
+/**
+ * Adapter to synchronization data source (local application data, external API, etc.)
+ *
+ * @param <T>
+ */
 @SecondaryPort
 public interface SyncSource<T extends SyncData> {
 

@@ -1,5 +1,8 @@
-package com.klabis.common.sync;
+package com.klabis.common.sync.infrastructure.inmemory;
 
+import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncRecord;
+import com.klabis.common.sync.SyncRecordRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 

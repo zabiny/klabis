@@ -24,7 +24,7 @@ class DataSyncImplTest {
     @BeforeEach
     void setUp() {
         syncLine = mock(SyncLine.class);
-        lenient().when(syncLine.matches(any())).thenReturn(true);
+        lenient().when(syncLine.canProcess(any())).thenReturn(true);
         lenient().when(syncLine.push(LOCAL_ID)).thenReturn(EXTERNAL_ID);
         lenient().when(syncLine.pull(EXTERNAL_ID)).thenReturn(LOCAL_ID);
         syncRecords = new FakeSyncRecordRepository();
@@ -226,7 +226,7 @@ class DataSyncImplTest {
     @Test
     @DisplayName("no matching sync line throws IllegalArgumentException")
     void noMatchingSyncLine_throws() {
-        lenient().when(syncLine.matches(any())).thenReturn(false);
+        lenient().when(syncLine.canProcess(any())).thenReturn(false);
 
         assertThatThrownBy(() -> testedInstance.sync(LOCAL_ID, DataSync.Direction.PUSH))
                 .isInstanceOf(IllegalArgumentException.class);
