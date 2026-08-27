@@ -1,5 +1,9 @@
 package com.klabis.events.application;
 
+import com.klabis.common.sync.DataSync;
+import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncRecord;
+import com.klabis.common.sync.SyncType;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.oris.OrisIntegrationComponent;
@@ -18,11 +22,11 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
     private static final Logger log = LoggerFactory.getLogger(OrisBulkSyncService.class);
 
     private final EventRepository eventRepository;
-    private final OrisEventImportPort orisEventImportPort;
+    private final DataSync dataSync;
 
-    OrisBulkSyncService(EventRepository eventRepository, OrisEventImportPort orisEventImportPort) {
+    OrisBulkSyncService(EventRepository eventRepository, DataSync dataSync) {
         this.eventRepository = eventRepository;
-        this.orisEventImportPort = orisEventImportPort;
+        this.dataSync = dataSync;
     }
 
     @Override
@@ -34,13 +38,17 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
         int failureCount = 0;
 
         for (Event event : events) {
-            try {
-                orisEventImportPort.syncEventFromOris(event.getId());
+            SyncRecord record = dataSync.sync(
+                    SyncId.localId(SyncType.EVENT, event.getId().value().toString()),
+                    DataSync.Direction.PULL);
+            if (record.result() == DataSync.SyncResult.SYNCED) {
                 results.add(BulkSyncResult.EventSyncEntry.synced(event.getId(), event.getName()));
                 successCount++;
-            } catch (Exception e) {
-                log.warn("Bulk ORIS sync failed for event {} ({}): {}", event.getId(), event.getName(), e.getMessage());
-                results.add(BulkSyncResult.EventSyncEntry.failed(event.getId(), event.getName(), e.getMessage()));
+            } else {
+                log.warn("Bulk ORIS sync failed for event {} ({}): {}",
+                        event.getId(), event.getName(), record.failureCause());
+                results.add(BulkSyncResult.EventSyncEntry.failed(
+                        event.getId(), event.getName(), record.failureCause()));
                 failureCount++;
             }
         }
