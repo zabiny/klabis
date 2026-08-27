@@ -2181,12 +2181,7 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        EntityModelFamilyGroupMembershipResponse: {
-            /** Format: date-time */
-            joinedAt?: string;
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelFamilyGroupMembershipResponse: components["schemas"]["FamilyGroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
         };
         EntityModelFamilyGroupResponse: components["schemas"]["FamilyGroupResponse"] & {
@@ -2200,20 +2195,10 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        EntityModelFreeGroupMembershipResponse: {
-            /** Format: date-time */
-            joinedAt?: string;
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelFreeGroupMembershipResponse: components["schemas"]["FreeGroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelGroupMembershipResponse: {
-            /** Format: date-time */
-            joinedAt?: string;
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelGroupMembershipResponse: components["schemas"]["GroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
         };
         EntityModelGroupResponse: components["schemas"]["GroupResponse"] & {
@@ -2266,16 +2251,10 @@ export interface components {
         EntityModelMembershipFeeTierSummaryResponse: components["schemas"]["MembershipFeeTierSummaryResponse"] & {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelOwnerResponse: {
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelOwnerResponse: components["schemas"]["OwnerResponse"] & {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelParentResponse: {
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelParentResponse: components["schemas"]["ParentResponse"] & {
             _links?: components["schemas"]["Links"];
         };
         EntityModelPaymentRuleResponse: components["schemas"]["PaymentRuleResponse"] & {
@@ -2303,10 +2282,7 @@ export interface components {
         EntityModelRootModel: {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelTrainerResponse: {
-            /** Format: uuid */
-            memberId?: string;
-        } & {
+        EntityModelTrainerResponse: components["schemas"]["TrainerResponse"] & {
             _links?: components["schemas"]["Links"];
         };
         EntityModelTrainingGroupResponse: components["schemas"]["TrainingGroupResponse"] & {
@@ -2408,6 +2384,12 @@ export interface components {
             sortOrder?: number;
         };
         EventTypeDtoList: components["schemas"]["EventTypeDto"][];
+        FamilyGroupMembershipResponse: {
+            /** Format: date-time */
+            joinedAt?: string;
+            /** Format: uuid */
+            memberId?: string;
+        };
         /** @description Family group detail with parents and children as independently linked items. */
         FamilyGroupResponse: {
             /** Format: uuid */
@@ -2447,8 +2429,20 @@ export interface components {
             year?: number;
         };
         FeeSelectionCampaignResponseList: components["schemas"]["FeeSelectionCampaignResponse"][];
+        FreeGroupMembershipResponse: {
+            /** Format: date-time */
+            joinedAt?: string;
+            /** Format: uuid */
+            memberId?: string;
+        };
         /** @enum {string} */
         Gender: "MALE" | "FEMALE";
+        GroupMembershipResponse: {
+            /** Format: date-time */
+            joinedAt?: string;
+            /** Format: uuid */
+            memberId?: string;
+        };
         /** @description Free group detail with owners, members and invitations as independently linked items. */
         GroupResponse: {
             /** Format: uuid */
@@ -2770,6 +2764,10 @@ export interface components {
             accountLink: string;
             balance: components["schemas"]["MonetaryAmount"];
         };
+        OwnerResponse: {
+            /** Format: uuid */
+            memberId?: string;
+        };
         PageMetadata: {
             /** Format: int64 */
             number: number;
@@ -2801,6 +2799,10 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
             page?: components["schemas"]["PageMetadata"];
+        };
+        ParentResponse: {
+            /** Format: uuid */
+            memberId?: string;
         };
         /** @description Response for completed password setup. */
         PasswordSetupResponse: {
@@ -2951,8 +2953,11 @@ export interface components {
          *      */
         RegistrationSummaryDto: {
             category?: components["schemas"]["EventCategoryDto"];
+            coordinators?: string[];
             firstName?: string;
             lastName?: string;
+            /** Format: uuid */
+            registeredMemberId?: string;
             /** Format: date-time */
             registrationTime?: string;
         };
@@ -2984,8 +2989,8 @@ export interface components {
          *     checked and reported together, not exclusively.
          *      */
         SuspensionBlockedWarning: {
-            debt?: components["schemas"]["OutstandingDebtWarning"] | null;
-            groups?: components["schemas"]["LastOwnerWarning"] | null;
+            debt?: components["schemas"]["OutstandingDebtWarning"];
+            groups?: components["schemas"]["LastOwnerWarning"];
         };
         TokenRequestRequest: {
             /** Format: email */
@@ -3002,6 +3007,10 @@ export interface components {
             level?: "T1" | "T2" | "T3";
             /** Format: date */
             validityDate?: string;
+        };
+        TrainerResponse: {
+            /** Format: uuid */
+            memberId?: string;
         };
         TrainingGroupAddMemberRequest: {
             /** Format: uuid */
@@ -4568,6 +4577,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["FamilyGroupResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelFamilyGroupResponse"];
                 };
             };
@@ -4998,6 +5008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["GroupResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelGroupResponse"];
                 };
             };
@@ -6611,6 +6622,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["TrainingGroupResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelTrainingGroupResponse"];
                 };
             };
