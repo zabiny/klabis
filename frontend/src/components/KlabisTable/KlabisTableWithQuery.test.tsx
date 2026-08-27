@@ -263,6 +263,47 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
     })
 
+    describe('Relative HAL link href', () => {
+        it('builds the query URL from a relative link href without throwing (regression: Invalid URL)', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            renderWithQuery(
+                <KlabisTableWithQuery link={{href: '/api/members'}}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice')).toBeInTheDocument()
+            })
+
+            // The origin is stripped back off, so the fetched URL stays relative
+            const calledUrl = fetchSpy.mock.calls[0][0] as string
+            expect(calledUrl.startsWith('/api/members?')).toBe(true)
+            expect(calledUrl).toContain('page=0')
+            expect(calledUrl).toContain('size=10')
+        })
+
+        it('preserves existing query params on a relative link href', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            renderWithQuery(
+                <KlabisTableWithQuery link={{href: '/api/events?year=2026&when=budouci'}}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalled()
+            })
+
+            const calledUrl = fetchSpy.mock.calls[0][0] as string
+            expect(calledUrl.startsWith('/api/events?')).toBe(true)
+            expect(calledUrl).toContain('year=2026')
+            expect(calledUrl).toContain('when=budouci')
+        })
+    })
+
     describe('Error States', () => {
         it('displays error when fetch fails', async () => {
             const error = new Error('Failed to fetch members')
