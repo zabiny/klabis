@@ -323,6 +323,15 @@ export function validateSpec(document, {authorities}) {
         // HAL-wrapped property would need the marker beside the `$ref`, where OpenAPI 3.0 ignores
         // siblings outright and 3.1 tooling honours them inconsistently — refused until a real
         // case appears. Pointing at an already-enveloped schema would double-wrap it.
+        //
+        // Coupled to `deriveEntityItems` in derive.mjs, which DELETES `x-hal-entity-items` from
+        // every `type: array` node carrying it (see the comment there), and validation runs after
+        // derivation — see the ordering comment above `validateSpec` in the entry-point bundle.mjs.
+        // So a correctly-placed marker never reaches the checks below at all; what does reach them
+        // is a marker on a non-array or with a non-`true` value, which is exactly the authoring
+        // mistake they exist to catch. In particular the already-enveloped check cannot fire on the
+        // deriver's own retargeted `items.$ref`. If that delete is ever removed, this check starts
+        // flagging every migrated module.
         if (Object.hasOwn(node, 'x-hal-entity-items')) {
             const value = node['x-hal-entity-items'];
             if (value !== true) {
