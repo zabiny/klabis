@@ -196,11 +196,34 @@
 
 ## 4. Migrate the remaining simple modules
 
-- [ ] 4.1 `members` (3 envelopes, 1 `x-spring-paginated`) — same 5 steps as section 3, one commit.
-- [ ] 4.2 `calendar` (3 envelopes, 1 `x-klabis-hal: false` on `getMySchedule`) — same, one commit.
-- [ ] 4.3 `common` (3 envelopes, 4 `x-klabis-hal: false` on the pre-auth password endpoints) — same,
-      one commit.
-- [ ] 4.4 `oris` (`listOrisEvents` needs only `x-klabis-hal: false`) — same, one commit.
+- [x] 4.1 `members` (3 envelopes, 1 `x-spring-paginated`) — same 5 steps as section 3, one commit.
+      `cdca77ca`, tests 608/608. Also resolved task 1.5: both `description` lines went with the
+      schemas that carried them, no separate edit needed.
+
+      `MembersApi.java` differs from baseline by `@Content`/`produces` **ordering** only — the spec
+      listed hal-forms first, the codegen now appends it. Entry counts identical; `produces` is a
+      content-negotiation set and `@Content` is documentation, so this is a permutation, not a
+      change. **Expect the same wherever a spec listed hal-forms before `application/json`.**
+- [x] 4.2 `calendar` (3 envelopes, 1 `x-klabis-hal: false` on `getMySchedule`) — same, one commit.
+      `d6a09b04`, tests 289/289. `CalendarApi.java` byte-identical to baseline.
+
+      This is the module that justifies Decision 7's unconditional `_templates`: `IcalTokenResponse`
+      is returned by two operations, only one declaring `x-hal-templates`. Gating on that extension
+      derives two incompatible `EntityModelIcalTokenResponse` definitions and hits the collision
+      guard.
+- [x] 4.3 `common` — **partial by design**, one commit `aa3d7f93`, tests 619/620.
+
+      Only `EntityModelPermissionsResponse` is derived. `EntityModelRootModel` and
+      `EntityModelDashboardModel` stay hand-written: `RootModel`/`DashboardModel` are empty marker
+      records with no `application/json` payload to derive from, and adding one collapses the
+      generated return type to `ResponseEntity<Void>` (documented empirically in the module header).
+      A comment at both schemas records why they are exempt.
+
+      The one test failure, `RootControllerTest.shouldAddAdminLinkForDeveloper`, is pre-existing and
+      unrelated — `57dec7bf` renamed the admin link target from `/sandplace` to `/admin` without
+      updating the test. Verified failing on clean HEAD.
+- [x] 4.4 `oris` (`listOrisEvents` needs only `x-klabis-hal: false`) — **no work required**: the
+      marker was added in 2.8 and the response was already an inline array with no envelope schema.
 
 ## 5. Migrate the large modules
 
